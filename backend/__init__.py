@@ -14,7 +14,7 @@ import rasterio.warp
 
 
 app = Bottle(autojson=False)
-app.install(JSONPlugin(json_dumps=lambda s: jsonify(jsonify_document(s))))
+app.install(JSONPlugin(json_dumps=lambda s: jsonify(jsonify_document(s), indent=4, sort_keys=True)))
 
 FIELDS = ['platform', 'instrument', 'product']
 
