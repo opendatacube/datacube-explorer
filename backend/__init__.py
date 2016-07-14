@@ -72,9 +72,8 @@ def datasets():
     return {"error": "Too many. TODO: paging"}
 
 
-@app.route(URL_PREFIX + "/datasets/ls8_nbar")
-def ls8_nbar():
-    product = "ls8_nbar_albers"
+@app.route(URL_PREFIX + "/datasets/<product>")
+def ls8_nbar(product):
     year = 2014
     time = Range(datetime(year, 1, 1), datetime(year, 7, 1))
     scenes = index.datasets.search(product=product, time=time)
