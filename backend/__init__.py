@@ -9,19 +9,13 @@ from dateutil import parser
 from bottle import Bottle, JSONPlugin, run
 from datacube.index import index_connect
 from datacube.model import Range
+from datacube.utils import jsonify_document
 
 index = index_connect()
 
 
-class MyJsonEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return JSONEncoder.default(self, obj)
-
-
 app = Bottle(autojson=False)
-app.install(JSONPlugin(json_dumps=lambda s: jsonify(s, cls=MyJsonEncoder)))
+app.install(JSONPlugin(json_dumps=lambda s: jsonify(jsonify_document(s))))
 
 FIELDS = ["platform", "instrument", "product"]
 
