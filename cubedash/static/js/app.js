@@ -142,9 +142,10 @@ var markerClusters = new L.MarkerClusterGroup({
 var datasets = L.geoJson(null, {
   style: function (feature) {
     return {
-      color: "black",
-      fill: false,
-      opacity: 1,
+      color: "#888a8c",
+      fill: true,
+      opacity: 0.6,
+      weight: 2,
       clickable: false
     };
   },

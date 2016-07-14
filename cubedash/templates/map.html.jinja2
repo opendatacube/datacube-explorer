@@ -16,8 +16,8 @@
             width: 100px;
             text-align: center;
             z-index: 9999;
-            background: #2b2b2b linear-gradient(to bottom, #464646 0%, #2b2b2b 100%);
-            padding: 25px;
+            background: #2b2b2b linear-gradient(to bottom, #6f7173 0%, #424242 100%);
+            padding: 13px 15px;
             color: #fff;
         }
     </style>
@@ -29,7 +29,7 @@
 {% block content %}
     <div class="panel">
         <select id='select-year'>
-            {% for year in range(1986, 2017) %}
+            {% for year in range(2016, 1985, -1) %}
                 <option value="{{ year }}">{{ year }}</option>
             {% endfor %}
         </select>
