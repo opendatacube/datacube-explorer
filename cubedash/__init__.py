@@ -1,23 +1,21 @@
-from collections import defaultdict
-
-from datacube.index import index_connect
-
-index = index_connect()
-
-from dateutil import parser
-from datacube.model import Range
-from datacube.utils import jsonify_document
-from json import dumps as jsonify
+import collections
 from datetime import datetime
-import shapely.ops
+from json import dumps as jsonify
+
 import shapely.geometry
-import rasterio.warp
+import shapely.ops
 from cachetools import cached
+from dateutil import parser
 
 import flask
-from flask.ext.compress import Compress
 import os
+import rasterio.warp
+from datacube.index import index_connect
+from datacube.model import Range
+from datacube.utils import jsonify_document
+from flask.ext.compress import Compress
 
+index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 app = flask.Flask(__name__, static_path='', static_url_path=static_prefix)
 Compress(app)
@@ -60,6 +58,7 @@ def next_date(date):
         return datetime(date.year + 1, 1, 1)
     else:
         return datetime(date.year, date.month + 1, 1)
+
 
 # There's probably a proper bottle way to do this.
 URL_PREFIX = '/api'
@@ -120,10 +119,10 @@ def month_iter(begin, end):
 
 @cached(cache={})
 def _timeline_years(from_year, product):
-    years = defaultdict(dict)
+    years = collections.OrderedDict()
     for time in month_iter(datetime(from_year, 1, 1), datetime.now()):
         count = index.datasets.count(product=product, time=time)
-        if not years[time.begin.year]:
+        if time.begin.year not in years:
             years[time.begin.year] = {}
         years[time.begin.year][time.begin.month] = count
     return years
