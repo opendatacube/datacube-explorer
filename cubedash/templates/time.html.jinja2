@@ -1,0 +1,56 @@
+{% extends "layout.html.jinja2" %}
+
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .data-table {
+            margin: 15px;
+        }
+        .data-table td, .data-table th {
+            padding: 15px;
+            text-align: right;
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+    <select name="products" id='select-product'>
+        {% for product in products %}
+            <option value="{{ product.name }}"
+                    {% if product.name == selected_product %}selected="selected"{% endif %}>
+                {{ product.description }}
+            </option>
+        {% endfor %}
+    </select>
+{% endblock %}
+{% block content %}
+    <html>
+    <table class="data-table">
+        <thead>
+        <th></th>
+        {% for month in range(1, 13) %}
+            <th>{{ month }}</th>
+        {% endfor %}
+        </thead>
+        {% for year in year_month_counts %}
+            <tr>
+                <th>{{ year }}</th>
+                {% for month in range(1, 13) %}
+                    <td>{{ year_month_counts[year][month] or 0 }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+    </html>
+{% endblock %}
+
+
+{% block footer %}
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script type="application/javascript">
+        $('#select-product').change(function() {
+            var product = $('#select-product :selected').val();
+            window.location.href = product;
+        });
+    </script>
+{% endblock %}

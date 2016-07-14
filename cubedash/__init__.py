@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from datetime import datetime
 from json import dumps as jsonify
 
@@ -20,7 +21,6 @@ index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
 Compress(app)
-
 
 FIELDS = ["platform", "instrument", "product"]
 
@@ -120,6 +120,17 @@ def month_iter(begin, end):
         begin = next_date(begin)
 
 
+@cached(cache={})
+def _timeline_years(from_year, product):
+    years = defaultdict(dict)
+    for time in month_iter(datetime(from_year, 1, 1), datetime.now()):
+        count = index.datasets.count(product=product, time=time)
+        if not years[time.begin.year]:
+            years[time.begin.year] = {}
+        years[time.begin.year][time.begin.month] = count
+    return years
+
+
 @app.route(URL_PREFIX + "/timeline/<product>")
 def product_timeline(product):
     result = []
@@ -140,6 +151,18 @@ def index_page():
     types = index.datasets.types.get_all()
     return flask.render_template(
         "map.html.jinja2", products=[p.definition for p in types]
+    )
+
+
+@app.route("/timeline/<product>")
+def timeline_page(product):
+    types = index.datasets.types.get_all()
+    years = _timeline_years(2013, product)
+    return flask.render_template(
+        "time.html.jinja2",
+        year_month_counts=years,
+        products=[p.definition for p in types],
+        selected_product=product,
     )
 
 
