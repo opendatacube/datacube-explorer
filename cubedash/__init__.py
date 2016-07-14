@@ -6,6 +6,7 @@ import flask
 import rasterio.warp
 import shapely.geometry
 import shapely.ops
+from cachetools import cached
 from dateutil import parser
 
 from datacube.index import index_connect
@@ -97,6 +98,7 @@ def dataset_to_feature(ds):
 
 
 @app.route(URL_PREFIX + "/datasets/<product>/<int:year>-<int:month>")
+@cached(cache={})
 def datasets_as_features(product, year, month):
     start = datetime(year, month, 1)
     time = Range(start, next_date(start))
