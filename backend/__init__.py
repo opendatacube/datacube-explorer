@@ -5,21 +5,15 @@ index = index_connect()
 from bottle import run, Bottle, JSONPlugin
 from dateutil import parser
 from datacube.model import Range
+from datacube.utils import jsonify_document
 from json import JSONEncoder, dumps as jsonify
 from datetime import datetime
 import shapely.ops
 import shapely.geometry
 
 
-class MyJsonEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return JSONEncoder.default(self, obj)
-
-
 app = Bottle(autojson=False)
-app.install(JSONPlugin(json_dumps=lambda s: jsonify(s, cls=MyJsonEncoder)))
+app.install(JSONPlugin(json_dumps=lambda s: jsonify(jsonify_document(s))))
 
 FIELDS = ['platform', 'instrument', 'product']
 
