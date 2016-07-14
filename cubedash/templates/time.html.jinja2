@@ -4,10 +4,9 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .data-table {
-            margin: 15px 0;
+        .panel .data-table {
+            margin: 0 -15px;
         }
-
         .data-table td, .data-table th {
             padding: 15px;
             text-align: right;
@@ -40,24 +39,26 @@
             {% endfor %}
         </div>
     </div>
-    <table class="data-table">
-        <thead>
-        <th></th>
-        {% for month in range(1, 13) %}
-            <th>{{ month }}</th>
-        {% endfor %}
-        </thead>
-        {% for year in year_month_counts %}
-            <tr>
-                <th>{{ year }}</th>
-                {% for month in range(1, 13) %}
-                    <td {% if not year_month_counts[year][month] %}class="zero"{% endif %}>
-                        {{ year_month_counts[year][month] or 0 }}
-                    </td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
-    </table>
+    <div class="panel odd">
+        <table class="data-table">
+            <thead>
+            <th></th>
+            {% for month in range(1, 13) %}
+                <th>{{ month }}</th>
+            {% endfor %}
+            </thead>
+            {% for year in year_month_counts %}
+                <tr>
+                    <th>{{ year }}</th>
+                    {% for month in range(1, 13) %}
+                        <td {% if not year_month_counts[year][month] %}class="zero"{% endif %}>
+                            {{ year_month_counts[year][month] or 0 }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
     </html>
 {% endblock %}
 
