@@ -8,6 +8,7 @@ import shapely.geometry
 import shapely.ops
 from cachetools import cached
 from dateutil import parser
+from flask.ext.compress import Compress
 
 from datacube.index import index_connect
 from datacube.model import Range
@@ -18,6 +19,7 @@ index = index_connect()
 
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
+Compress(app)
 
 
 FIELDS = ["platform", "instrument", "product"]
