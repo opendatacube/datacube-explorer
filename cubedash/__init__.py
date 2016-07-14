@@ -12,8 +12,10 @@ import shapely.geometry
 import rasterio.warp
 
 import flask
+import os
 
 app = flask.Flask(__name__)
+static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 
 
 FIELDS = ['platform', 'instrument', 'product']
@@ -70,13 +72,33 @@ def datasets():
     return as_json({'error': 'Too many. TODO: paging'})
 
 
+def dataset_to_feature(ds):
+    properties = {
+        'id': ds.id,
+        'product': ds.type.name,
+        'time': ds.center_time
+    }
+    return {
+        'type': 'Feature',
+        'geometry': warp_geometry(shapely.geometry.mapping(shapely.geometry.Polygon(ds.extent.points)), str(ds.crs)),
+        'properties': {
+            'id': ds.id,
+            'product': ds.type.name,
+            'time': ds.center_time
+        }
+    }
+
+
+
 @app.route(URL_PREFIX + '/datasets/<product>')
-def dataset_spatial(product):
+def datasets_as_features(product):
     year = 2014
     time = Range(datetime(year, 1, 1), datetime(year, 7, 1))
-    scenes = index.datasets.search(product=product, time=time)
-    geometry = datasets_union(scenes)
-    return as_json(warp_geometry(shapely.geometry.mapping(geometry), 'EPSG:3577'))
+    datasets = index.datasets.search(product=product, time=time)
+    return {
+        'type': 'FeatureCollection',
+        'features': [dataset_to_feature(ds) for ds in datasets]
+    }
 
 
 def month_iter(begin, end):
