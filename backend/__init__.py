@@ -78,7 +78,7 @@ def ls8_nbar():
 
 @app.route(URL_PREFIX + '/datasets/id/<id_>')
 def product(id_):
-    dataset_ = index.datasets.get(id_)
+    dataset_ = index.datasets.get(id_, include_sources=True)
     return dataset_.metadata_doc
 
 
