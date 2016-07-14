@@ -4,14 +4,6 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .data-table {
-            margin: 15px 0;
-        }
-
-        .data-table td, .data-table th {
-            padding: 15px;
-            text-align: left;
-        }
 
         .query-param {
             padding-right: 5px;
@@ -21,7 +13,8 @@
         .query-param > .key {
             display: inline-block;
             font-weight: bold;
-            min-width: 80px;
+            min-width: 60px;
+            font-size: 0.7em;
         }
     </style>
 {% endblock %}
@@ -35,22 +28,26 @@
             </div>
         {% endfor %}
     </div>
-    <html>
-    <table class="data-table">
-        <thead>
-        <th>Time</th>
-        <th>Type</th>
-        <th>Dataset</th>
-        </thead>
-        {% for dataset in datasets %}
-            <tr>
-                <td>{{ dataset.center_time | strftime }}</td>
-                <td>{{ dataset.type.name }}</td>
-                <td><a href='/datasets/{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
-            </tr>
-        {% endfor %}
-    </table>
-    </html>
+    <div class="panel odd">
+        {% if datasets %}
+            <table class="data-table">
+                <thead>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Dataset</th>
+                </thead>
+                {% for dataset in datasets %}
+                    <tr>
+                        <td>{{ dataset.center_time | strftime }}</td>
+                        <td>{{ dataset.type.name }}</td>
+                        <td><a href='/datasets/{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            No results.
+        {% endif %}
+    </div>
 {% endblock %}
 
 
