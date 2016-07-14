@@ -1,5 +1,5 @@
+import collections
 import os
-from collections import defaultdict
 from datetime import datetime
 from json import dumps as jsonify
 
@@ -16,8 +16,6 @@ from datacube.model import Range
 from datacube.utils import jsonify_document
 
 index = index_connect()
-
-
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
 Compress(app)
@@ -122,10 +120,10 @@ def month_iter(begin, end):
 
 @cached(cache={})
 def _timeline_years(from_year, product):
-    years = defaultdict(dict)
+    years = collections.OrderedDict()
     for time in month_iter(datetime(from_year, 1, 1), datetime.now()):
         count = index.datasets.count(product=product, time=time)
-        if not years[time.begin.year]:
+        if time.begin.year not in years:
             years[time.begin.year] = {}
         years[time.begin.year][time.begin.month] = count
     return years
