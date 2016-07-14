@@ -36,10 +36,10 @@ def _format_datetime(date, fmt=None):
 @app.template_filter('query_value')
 def _format_query_value(val):
     if type(val) == Range:
-        return _format_query_value(val.begin) + ' - ' + _format_query_value(val.end)
+        return '{} to {}'.format(_format_query_value(val.begin), _format_query_value(val.end))
     if type(val) == datetime:
         return _format_datetime(val)
-    return val
+    return str(val)
 
 
 def parse_query(request):
@@ -193,16 +193,26 @@ def timeline_page(product):
     )
 
 
-@app.route('/datasets/<product>')
-def datasets_page(product):
-    query = {'product': product}
-    query.update(parse_query(flask.request.args))
+@app.route('/datasets')
+def datasets_page():
+    args = flask.request.args
+    # Product is mandatory
+    query = {'product': args[product]}
+    query.update(parse_query(args))
     return flask.render_template(
         'datasets.html.jinja2',
         products=[p.definition for p in (index.datasets.types.get_all())],
         selected_product=product,
         datasets=index.datasets.search(**query),
         query_params=query
+    )
+
+
+@app.route('/datasets/<uuid:id_>')
+def dataset_page(id_):
+    return flask.render_template(
+        'dataset.html.jinja2',
+        dataset=(index.datasets.get(str(id_), include_sources=True))
     )
 
 
