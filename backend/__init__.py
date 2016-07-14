@@ -2,6 +2,7 @@ from datetime import datetime
 from json import JSONEncoder
 from json import dumps as jsonify
 
+import rasterio.warp
 import shapely.geometry
 import shapely.ops
 from dateutil import parser
@@ -46,6 +47,10 @@ def datasets_union(dss):
     )
 
 
+def warp_geometry(geom, crs):
+    return rasterio.warp.transform_geom(crs, "EPSG:4326", geom)
+
+
 # There's probably a proper bottle way to do this.
 URL_PREFIX = "/api"
 
@@ -74,7 +79,7 @@ def ls8_nbar():
     time = Range(datetime(year, 1, 1), datetime(year, 7, 1))
     scenes = index.datasets.search(product=product, time=time)
     geometry = datasets_union(scenes)
-    return shapely.geometry.mapping(geometry)
+    return warp_geometry(shapely.geometry.mapping(geometry), "EPSG:3577")
 
 
 @app.route(URL_PREFIX + "/datasets/id/<id_>")
