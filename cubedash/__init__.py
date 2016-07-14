@@ -217,7 +217,7 @@ def datasets_page():
         'datasets.html.jinja2',
         products=[p.definition for p in (index.datasets.types.get_all())],
         selected_product=product,
-        datasets=index.datasets.search(**query),
+        datasets=index.datasets.search_eager(**query),
         query_params=query
     )
 
