@@ -139,7 +139,7 @@ def dataset(id_):
 def index_page():
     types = index.datasets.types.get_all()
     return flask.render_template(
-        "index.html.jinja2", products=[p.definition for p in types]
+        "map.html.jinja2", products=[p.definition for p in types]
     )
 
 
