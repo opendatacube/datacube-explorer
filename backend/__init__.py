@@ -58,14 +58,14 @@ def warp_geometry(geom, crs):
 URL_PREFIX = "/api"
 
 
-@app.route(URL_PREFIX + "/types")
-def types():
+@app.route(URL_PREFIX + "/products")
+def products():
     types = index.datasets.types.get_all()
     return as_json({type_.name: type_.definition for type_ in types})
 
 
-@app.route(URL_PREFIX + "/types/<name>")
-def type(name):
+@app.route(URL_PREFIX + "/products/<name>")
+def product(name):
     type_ = index.datasets.types.get_by_name(name)
     return as_json(type_.definition)
 
