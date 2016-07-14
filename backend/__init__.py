@@ -2,21 +2,25 @@ from datacube.index import index_connect
 
 index = index_connect()
 
-from bottle import run, Bottle, JSONPlugin
 from dateutil import parser
 from datacube.model import Range
 from datacube.utils import jsonify_document
-from json import JSONEncoder, dumps as jsonify
+from json import dumps as jsonify
 from datetime import datetime
 import shapely.ops
 import shapely.geometry
 import rasterio.warp
 
+import flask
 
-app = Bottle(autojson=False)
-app.install(JSONPlugin(json_dumps=lambda s: jsonify(jsonify_document(s), indent=4)))
+app = flask.Flask(__name__)
+
 
 FIELDS = ['platform', 'instrument', 'product']
+
+
+def as_json(o):
+    return jsonify(jsonify_document(o), indent=4)
 
 
 def parse_query(request):
@@ -50,37 +54,37 @@ URL_PREFIX = '/api'
 
 
 @app.route(URL_PREFIX + '/types')
-def products():
+def types():
     types = index.datasets.types.get_all()
-    return {type_.name: type_.definition for type_ in types}
+    return as_json({type_.name: type_.definition for type_ in types})
 
 
 @app.route(URL_PREFIX + '/types/<name>')
-def product(name):
+def type(name):
     type_ = index.datasets.types.get_by_name(name)
-    return type_.definition
+    return as_json(type_.definition)
 
 
 @app.route(URL_PREFIX + '/datasets')
 def datasets():
-    return {'error': 'Too many. TODO: paging'}
+    return as_json({'error': 'Too many. TODO: paging'})
 
 
 @app.route(URL_PREFIX + '/datasets/<product>')
-def ls8_nbar(product):
+def dataset_spatial(product):
     year = 2014
     time = Range(datetime(year, 1, 1), datetime(year, 7, 1))
     scenes = index.datasets.search(product=product, time=time)
     geometry = datasets_union(scenes)
-    return warp_geometry(shapely.geometry.mapping(geometry), 'EPSG:3577')
+    return as_json(warp_geometry(shapely.geometry.mapping(geometry), 'EPSG:3577'))
 
 
 def month_iter(begin, end):
     def next_date(date):
         if date.month == 12:
-            return datetime(date.year+1, 1, 1)
+            return datetime(date.year + 1, 1, 1)
         else:
-            return datetime(date.year, date.month+1, 1)
+            return datetime(date.year, date.month + 1, 1)
 
     begin = datetime(begin.year, begin.month, 1)
     while begin < end:
@@ -94,13 +98,14 @@ def product_timeline(product):
     for time in month_iter(datetime(2013, 1, 1), datetime.now()):
         datasets = index.datasets.search_eager(product=product, time=time)
         result.append((time.begin, len(datasets)))
-    return {'data': result}
+    return as_json({'data': result})
 
 
 @app.route(URL_PREFIX + '/datasets/id/<id_>')
 def product(id_):
     dataset_ = index.datasets.get(id_, include_sources=True)
-    return dataset_.metadata_doc
+    return as_json(dataset_.metadata_doc)
 
 
-run(app=app, host='0.0.0.0', port=8080, debug=True)
+if __name__ == '__main__':
+    app.run(port=8080)
