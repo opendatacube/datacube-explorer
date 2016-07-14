@@ -58,6 +58,8 @@
             var month = $('#select-month :selected').text();
 
             $("#loading").show();
+            datasets.clearLayers();
+
             $.getJSON("/api/datasets/ls8_nbar_albers/2013-"+month, function (data) {
                 datasets.addData(data);
                 $("#loading").hide();
