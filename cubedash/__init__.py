@@ -102,7 +102,7 @@ def product_timeline(product):
 
 
 @app.route(URL_PREFIX + '/datasets/id/<id_>')
-def product(id_):
+def dataset(id_):
     dataset_ = index.datasets.get(id_, include_sources=True)
     return as_json(dataset_.metadata_doc)
 
