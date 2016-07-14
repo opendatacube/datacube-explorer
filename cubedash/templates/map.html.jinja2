@@ -29,7 +29,12 @@
 {% block panel %}
     <select name="products" id='select-product'>
         {% for product in products %}
-            <option  value="{{ product.name }}">{{ product.description }}</option>
+            <option value="{{ product.name }}">{{ product.description }}</option>
+        {% endfor %}
+    </select>
+    <select id='select-year'>
+        {% for year in range(1986, 2017) %}
+            <option value="{{ year }}">{{ year }}</option>
         {% endfor %}
     </select>
     <select id='select-month'>
@@ -54,17 +59,22 @@
     <script src="js/app.js"></script>
     <script type="application/javascript">
 
-        $('#select-month').change(function(el) {
-            var month = $('#select-month :selected').text();
+        function reload_map() {
+            var product = $('#select-product :selected').val();
+            var year = $('#select-year :selected').val();
+            var month = $('#select-month :selected').val();
 
             $("#loading").show();
             datasets.clearLayers();
 
-            $.getJSON("/api/datasets/ls8_nbar_albers/2013-"+month, function (data) {
+            $.getJSON("/api/datasets/" + product + "/" + year + "-" + month, function (data) {
                 datasets.addData(data);
                 $("#loading").hide();
             })
-        }).change();
-
+        }
+        $('#select-month').change(reload_map);
+        $('#select-year').change(reload_map);
+        $('#select-product').change(reload_map);
+        reload_map();
     </script>
 {% endblock %}
