@@ -128,5 +128,10 @@ def dataset(id_):
     return as_json(dataset_.metadata_doc)
 
 
+@app.route('/')
+def index_page():
+    types = index.datasets.types.get_all()
+    return flask.render_template('index.html.jinja2', products=[p.definition for p in types])
+
 if __name__ == '__main__':
     app.run(port=8080, debug=True)
