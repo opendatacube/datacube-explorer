@@ -156,9 +156,6 @@ var datasets = L.geoJson(null, {
     });
   }
 });
-$.getJSON("data/ls8_nbar.geojson", function (data) {
-  datasets.addData(data);
-});
 
 map = L.map("map", {
   zoom: 5,
@@ -302,4 +299,21 @@ if (!L.Browser.touch) {
   .disableScrollPropagation(container);
 } else {
   L.DomEvent.disableClickPropagation(container);
+}
+
+function set_onclick(button, i) {
+  button.click(function () {
+     datasets.clearLayers();
+    $("#loading").show();
+    $.getJSON("/api/datasets/ls8_nbar_albers/2013-"+i, function (data) {
+      datasets.addData(data);
+    $("#loading").hide();
+    });
+  })
+}
+
+for (i=1; i<=12; ++i) {
+  button = $('<button type="button" class="col-xs-1 btn btn-primary">'+i+'</button>');
+  set_onclick(button, i);
+  button.appendTo('#buttons');
 }
