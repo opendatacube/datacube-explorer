@@ -12,13 +12,16 @@
             padding: 15px;
             text-align: right;
         }
+
         .data-table td.zero {
             color: #ababab;
         }
+
         #bar-chart {
             font-size: 0;
             height: 50px;
         }
+
         .bar {
             width: 3px;
             display: inline-block;
@@ -26,25 +29,16 @@
         }
     </style>
 {% endblock %}
-{% block panel %}
-    <select name="products" id='select-product'>
-        {% for product in products %}
-            <option value="{{ product.name }}"
-                    {% if product.name == selected_product %}selected="selected"{% endif %}>
-                {{ product.description }}
-            </option>
-        {% endfor %}
-    </select>
-{% endblock %}
 {% block content %}
     <html>
-    <div id="bar-chart" style="width: {{ 3*year_month_counts|length*12 }}px">
-        {% for year in year_month_counts %}
-            {% for month in range(1, 13) %}
-                <span class="bar" style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"></span>
+    <div class="panel">
+        <div id="bar-chart" style="width: {{ 3*year_month_counts|length*12 }}px">
+            {% for year in year_month_counts %}
+                {% for month in range(1, 13) %}
+                    <span class="bar" style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"></span>
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
-
+        </div>
     </div>
     <table class="data-table">
         <thead>
