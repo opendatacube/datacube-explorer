@@ -1,0 +1,75 @@
+{% extends "layout.html.jinja2" %}
+
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .metadata-tree {
+            margin: 15px 0;
+        }
+
+        .property {
+            padding-left: 15px;
+        }
+
+        .property .key {
+            font-weight: bold;
+        }
+
+        #content .panel.inverted {
+        {#            background-color: #2b2b2b;#}{#            color: #DDECEE;#} padding: 15px;
+            background-color: #808080;
+        {#            margin: 15px 0;#}
+        }
+
+        .badge {
+        }
+
+        .sources a {
+            color: #fff;
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+{% endblock %}
+{% block content %}
+    <div class="panel">
+        <h2>{{ dataset.metadata.label }}</h2>
+        <div>
+            {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
+                <div>
+                    <span>{{ key }}: {{ value | query_value }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% if dataset.metadata.sources %}
+        <div class="panel inverted">
+            <h2>Derived From</h2>
+            <div class="sources">
+                {% for key, value in dataset.metadata.sources.items() %}
+                    <span class="badge">{{ key }}: <a href="{{ value.id }}">{{ value.ga_label }}</a></span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    <div class="panel metadata-tree">
+        <h2>Metadata</h2>
+        {%- for key, value in dataset.metadata_doc.items() recursive %}
+            <div class="property">
+                {% if value is mapping %}
+                    <div class="key">{{ key }}:</div>
+                    {{ loop(value.items()) }}
+                {% else %}
+                    <span class="key">{{ key }}:</span>
+                    <span class="value">{{ value }}</span>
+                {% endif %}
+            </div>
+        {%- endfor %}
+    </div>
+{% endblock %}
+
+
+{% block footer %}
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+{% endblock %}

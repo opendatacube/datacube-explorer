@@ -46,13 +46,14 @@
     <table class="data-table">
         <thead>
         <th>Time</th>
+        <th>Type</th>
         <th>Dataset</th>
         </thead>
         {% for dataset in datasets %}
             <tr>
                 <td>{{ dataset.center_time | strftime}}</td>
-                <td>{{ dataset.metadata.platform }}</td>
                 <td>{{ dataset.type.name }}</td>
+                <td><a href='{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
             </tr>
         {% endfor %}
     </table>
