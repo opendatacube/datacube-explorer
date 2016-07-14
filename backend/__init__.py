@@ -82,6 +82,28 @@ def ls8_nbar():
     return warp_geometry(shapely.geometry.mapping(geometry), "EPSG:3577")
 
 
+def month_iter(begin, end):
+    def next_date(date):
+        if date.month == 12:
+            return datetime(date.year + 1, 1, 1)
+        else:
+            return datetime(date.year, date.month + 1, 1)
+
+    begin = datetime(begin.year, begin.month, 1)
+    while begin < end:
+        yield Range(begin, next_date(begin))
+        begin = next_date(begin)
+
+
+@app.route(URL_PREFIX + "/timeline/<product>")
+def product_timeline(product):
+    result = []
+    for time in month_iter(datetime(2013, 1, 1), datetime.now()):
+        datasets = index.datasets.search_eager(product=product, time=time)
+        result.append((time.begin, len(datasets)))
+    return {"data": result}
+
+
 @app.route(URL_PREFIX + "/datasets/id/<id_>")
 def product(id_):
     dataset_ = index.datasets.get(id_, include_sources=True)
