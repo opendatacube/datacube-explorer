@@ -93,19 +93,19 @@ URL_PREFIX = '/api'
 
 
 @app.route(URL_PREFIX + '/products')
-def products():
+def get_products():
     types = index.datasets.types.get_all()
     return as_json({type_.name: type_.definition for type_ in types})
 
 
 @app.route(URL_PREFIX + '/products/<name>')
-def product(name):
+def get_product(name):
     type_ = index.datasets.types.get_by_name(name)
     return as_json(type_.definition)
 
 
 @app.route(URL_PREFIX + '/datasets')
-def datasets():
+def get_datasets():
     return as_json({'error': 'Too many. TODO: paging'})
 
 
@@ -160,7 +160,7 @@ def _timeline_years(from_year, product):
 
 
 @app.route(URL_PREFIX + '/timeline/<product>')
-def product_timeline(product):
+def get_product_timeline(product):
     result = []
     for time in month_iter(datetime(2013, 1, 1), datetime.now()):
         count = index.datasets.count(product=product, time=time)
@@ -169,15 +169,28 @@ def product_timeline(product):
 
 
 @app.route(URL_PREFIX + '/datasets/id/<id_>')
-def dataset(id_):
+def get_dataset(id_):
     dataset_ = index.datasets.get(id_, include_sources=True)
     return as_json(dataset_.metadata_doc)
 
 
 @app.route('/')
 def index_page():
+    product = _get_product()
     types = index.datasets.types.get_all()
-    return flask.render_template('map.html.jinja2', products=[p.definition for p in types])
+    return flask.render_template(
+        'map.html.jinja2',
+        products=[p.definition for p in types],
+        selected_product=product
+    )
+
+
+def _get_product():
+    if 'product' in flask.request.args:
+        product = flask.request.args['product']
+    else:
+        product = 'ls8_nbar_albers'
+    return product
 
 
 @app.route('/timeline/<product>')
@@ -197,7 +210,8 @@ def timeline_page(product):
 def datasets_page():
     args = flask.request.args
     # Product is mandatory
-    query = {'product': args[product]}
+    product = _get_product()
+    query = {'product': product}
     query.update(parse_query(args))
     return flask.render_template(
         'datasets.html.jinja2',

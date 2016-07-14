@@ -21,54 +21,109 @@
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background: #fcfcfc;
-            margin: 0;
+            max-width: 1024px;
+            margin: 20px auto 0;
+            padding: 0 15px;
         }
 
         #header {
-            width: 100%;
-            height: 50px;
-            z-index: 100;
-            background: #464646;
-
-        }
-
-        #header > .logo {
-            background: #2b2b2b;
-            background: linear-gradient(to bottom, #2b2b2b 50%, #464646 100%);
+            background: linear-gradient(to bottom, #2b2b2b 0%, #464646 100%);
             color: #efefef;
-            vertical-align: middle;
-            text-align: center;
-            text-decoration: none;
-            font-weight: bold;
         }
-
-        #header > div, #header > a {
-            float: left;
-            height: 20px;
+        #header .panel {
             padding: 15px;
             line-height: 20px;
+            height: 20px;
+        }
+
+        #logo {
+            line-height: 30px;
+            padding: 0 15px;
+            font-size: 1.6em;
+            text-decoration: none;
+            font-weight: bold;
+            color: inherit;
+        }
+        #logo .sub-heading {
+            font-size: 0.8em;
+            color: #959595;
+            font-weight:normal;
+        }
+        #logo, nav {
+            display: inline-block;
+            vertical-align: bottom;
+        }
+
+        nav ul {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+            text-align: right;
+            vertical-align: bottom;
+        }
+        nav li {
+            float: left;
+            margin: 0;
+        }
+        nav li a {
+            padding: 4px 9px;
+            display: inline-block;
+            background: #2b2b2b;
+            border-color: #2b2b2b;
+            color: #efefef;
+            text-decoration: none;
+            font-size: 0.86em;
+        }
+        nav li a:hover {
+            background: linear-gradient(to bottom, #464646 0%, #2b2b2b 100%);
+        }
+        nav li a:active, nav li a.active {
+            background: linear-gradient(to bottom, #464646 0%, #2b2b2b 100%);
+        }
+        #header {
+            clear: left;
+        }
+
+        #header, #content {
+            border: 1px solid #ccc;
+            border-width: 0 1px;
         }
 
         #content {
             width: auto;
-            height: calc(100vh - 50px);
         }
 
         #content .panel {
             padding: 15px;
             background: #efefef;
         }
+
     </style>
 </head>
 <body>
+<a href="/" id="logo">DataCube <span class="sub-heading">products</span></a>
+<nav>
+    <ul>
+        <li><a href="/?product={{ selected_product }}" class="active">Map</a></li>
+        <li><a href="/timeline/{{ selected_product }}">Timeline</a></li>
+        <li><a href="/datasets?product={{ selected_product }}">Datasets</a></li>
+    </ul>
+</nav>
 <div id="header">
-    <a href="/" class="logo">DataCube</a>
     <div class="panel">
-        {% block panel %}{% endblock %}
+        {% block panel %}
+            <select name="products" id='select-product'>
+                {% for product in products %}
+                    <option value="{{ product.name }}"
+                            {% if product.name == selected_product %}selected="selected"{% endif %}>
+                        {{ product.description }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% endblock %}
     </div>
 </div>
 </div>
-
 <div id="content">{% block content %}{% endblock %}</div>
 {% block footer %}{% endblock %}
 </body>

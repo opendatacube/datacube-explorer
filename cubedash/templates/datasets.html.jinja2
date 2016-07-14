@@ -23,16 +23,7 @@
         }
     </style>
 {% endblock %}
-{% block panel %}
-    <select name="products" id='select-product'>
-        {% for product in products %}
-            <option value="{{ product.name }}"
-                    {% if product.name == selected_product %}selected="selected"{% endif %}>
-                {{ product.description }}
-            </option>
-        {% endfor %}
-    </select>
-{% endblock %}
+
 {% block content %}
     <div class="panel">
         {% for key in query_params %}
