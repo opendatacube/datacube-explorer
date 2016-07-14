@@ -5,11 +5,15 @@
     {{ super() }}
     <style type="text/css">
         .data-table {
-            margin: 15px;
+            margin: 15px 0;
         }
+
         .data-table td, .data-table th {
             padding: 15px;
             text-align: right;
+        }
+        .data-table td.zero {
+            color: #ababab;
         }
     </style>
 {% endblock %}
@@ -36,7 +40,9 @@
             <tr>
                 <th>{{ year }}</th>
                 {% for month in range(1, 13) %}
-                    <td>{{ year_month_counts[year][month] or 0 }}</td>
+                    <td {% if not year_month_counts[year][month] %}class="zero"{% endif %}>
+                        {{ year_month_counts[year][month] or 0 }}
+                    </td>
                 {% endfor %}
             </tr>
         {% endfor %}
@@ -48,7 +54,7 @@
 {% block footer %}
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script type="application/javascript">
-        $('#select-product').change(function() {
+        $('#select-product').change(function () {
             var product = $('#select-product :selected').val();
             window.location.href = product;
         });
