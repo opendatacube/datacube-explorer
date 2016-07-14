@@ -121,8 +121,8 @@ def month_iter(begin, end):
 def product_timeline(product):
     result = []
     for time in month_iter(datetime(2013, 1, 1), datetime.now()):
-        datasets = index.datasets.search_eager(product=product, time=time)
-        result.append((time.begin, len(datasets)))
+        count = index.datasets.count(product=product, time=time)
+        result.append((time.begin, count))
     return as_json({'data': result})
 
 
