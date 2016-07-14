@@ -6,7 +6,7 @@ import shapely.geometry
 import shapely.ops
 from dateutil import parser
 
-from bottle import Bottle, JSONPlugin, post, request, route, run, static_file, template
+from bottle import Bottle, JSONPlugin, run
 from datacube.index import index_connect
 from datacube.model import Range
 
@@ -52,7 +52,7 @@ def datasets_union(dss):
     )
 
 
-@app.route("/datacube/ls8_nbar")
+@app.route("/api/ls8_nbar")
 def ls8_nbar():
     product = "ls8_nbar_albers"
     year = 2014
@@ -60,6 +60,18 @@ def ls8_nbar():
     scenes = index.datasets.search(product=product, time=time)
     geometry = datasets_union(scenes)
     return shapely.geometry.mapping(geometry)
+
+
+@app.route("/api/types")
+def products():
+    types = index.datasets.types.get_all()
+    return {type_.name: type_.definition for type_ in types}
+
+
+@app.route("/api/types/<name>")
+def product(name):
+    type_ = index.datasets.types.get_by_name(name)
+    return type_.definition
 
 
 run(app=app, host="0.0.0.0", port=8080, debug=True)
