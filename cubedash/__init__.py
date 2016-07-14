@@ -28,6 +28,20 @@ def as_json(o):
     return jsonify(jsonify_document(o), indent=4)
 
 
+@app.template_filter("strftime")
+def _format_datetime(date, fmt=None):
+    return date.strftime("%Y-%m-%d %H:%M:%S")
+
+
+@app.template_filter("query_value")
+def _format_query_value(val):
+    if type(val) == Range:
+        return _format_query_value(val.begin) + " - " + _format_query_value(val.end)
+    if type(val) == datetime:
+        return _format_datetime(val)
+    return val
+
+
 def parse_query(request):
     query = {}
     for field in ACCEPTABLE_SEARCH_FIELDS:
@@ -189,6 +203,7 @@ def datasets_page(product):
         products=[p.definition for p in (index.datasets.types.get_all())],
         selected_product=product,
         datasets=index.datasets.search(**query),
+        query_params=query,
     )
 
 

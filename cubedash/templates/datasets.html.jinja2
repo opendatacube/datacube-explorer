@@ -10,7 +10,16 @@
 
         .data-table td, .data-table th {
             padding: 15px;
-            text-align: right;
+            text-align: left;
+        }
+        .query-param {
+            padding-right: 5px;
+            display: block;
+        }
+        .query-param > .key {
+            display: inline-block;
+            font-weight: bold;
+            min-width: 80px;
         }
     </style>
 {% endblock %}
@@ -25,6 +34,14 @@
     </select>
 {% endblock %}
 {% block content %}
+    <div class="panel">
+        {% for key in query_params %}
+            <div class="query-param">
+                <span class="key">{{ key }}:</span>
+                <span class="value">{{ query_params[key] | query_value }}</span>
+            </div>
+        {% endfor %}
+    </div>
     <html>
     <table class="data-table">
         <thead>
@@ -33,7 +50,7 @@
         </thead>
         {% for dataset in datasets %}
             <tr>
-                <td>{{ dataset.center_time }}</td>
+                <td>{{ dataset.center_time | strftime}}</td>
                 <td>{{ dataset.metadata.platform }}</td>
                 <td>{{ dataset.type.name }}</td>
             </tr>
