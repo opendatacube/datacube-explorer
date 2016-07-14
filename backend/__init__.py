@@ -52,7 +52,28 @@ def datasets_union(dss):
     )
 
 
-@app.route("/api/ls8_nbar")
+# There's probably a proper bottle way to do this.
+URL_PREFIX = "/api"
+
+
+@app.route(URL_PREFIX + "/types")
+def products():
+    types = index.datasets.types.get_all()
+    return {type_.name: type_.definition for type_ in types}
+
+
+@app.route(URL_PREFIX + "/types/<name>")
+def product(name):
+    type_ = index.datasets.types.get_by_name(name)
+    return type_.definition
+
+
+@app.route(URL_PREFIX + "/datasets")
+def datasets():
+    return {"error": "Too many. TODO: paging"}
+
+
+@app.route(URL_PREFIX + "/datasets/ls8_nbar")
 def ls8_nbar():
     product = "ls8_nbar_albers"
     year = 2014
@@ -62,16 +83,10 @@ def ls8_nbar():
     return shapely.geometry.mapping(geometry)
 
 
-@app.route("/api/types")
-def products():
-    types = index.datasets.types.get_all()
-    return {type_.name: type_.definition for type_ in types}
-
-
-@app.route("/api/types/<name>")
-def product(name):
-    type_ = index.datasets.types.get_by_name(name)
-    return type_.definition
+@app.route(URL_PREFIX + "/datasets/id/<id_>")
+def product(id_):
+    dataset_ = index.datasets.get(id_)
+    return dataset_.metadata_doc
 
 
 run(app=app, host="0.0.0.0", port=8080, debug=True)
