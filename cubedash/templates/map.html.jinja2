@@ -1,0 +1,38 @@
+{% extends "layout.html.jinja2" %}
+
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        #map {
+            width: 100%;
+            height: calc(100vh - 50px);
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+    <select name="products">
+        {% for product in products %}
+            <option value="{{ product.name }}">{{ product.description }}</option>
+        {% endfor %}
+    </select>
+    <select>
+        {% for month in range(1, 13) %}
+            <option value="{{ month }}">{{ month }}</option>
+        {% endfor %}
+    </select>
+{% endblock %}
+{% block content %}
+    <div id="map"></div>
+{% endblock %}
+
+
+{% block footer %}
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.1.1/list.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-markercluster/v0.4.0/leaflet.markercluster.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js"></script>
+    <script src="leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
+    <script src="js/app.js"></script>
+{% endblock %}

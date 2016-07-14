@@ -135,7 +135,7 @@ def dataset(id_):
 @app.route('/')
 def index_page():
     types = index.datasets.types.get_all()
-    return flask.render_template('index.html.jinja2', products=[p.definition for p in types])
+    return flask.render_template('map.html.jinja2', products=[p.definition for p in types])
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True)
