@@ -15,6 +15,15 @@
         .data-table td.zero {
             color: #ababab;
         }
+        #bar-chart {
+            font-size: 0;
+            height: 50px;
+        }
+        .bar {
+            width: 3px;
+            display: inline-block;
+            background-color: red;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -29,6 +38,14 @@
 {% endblock %}
 {% block content %}
     <html>
+    <div id="bar-chart" style="width: {{ 3*year_month_counts|length*12 }}px">
+        {% for year in year_month_counts %}
+            {% for month in range(1, 13) %}
+                <span class="bar" style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"></span>
+            {% endfor %}
+        {% endfor %}
+
+    </div>
     <table class="data-table">
         <thead>
         <th></th>
