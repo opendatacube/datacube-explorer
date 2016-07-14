@@ -38,11 +38,11 @@
             color: #efefef;
             vertical-align: middle;
             text-align: center;
-
+            text-decoration: none;
             font-weight: bold;
         }
 
-        #header > div {
+        #header > div, #header > a {
             float: left;
             height: 20px;
             padding: 15px;
@@ -57,7 +57,7 @@
 </head>
 <body>
 <div id="header">
-    <div class="logo">DataCube</div>
+    <a href="/" class="logo">DataCube</a>
     <div class="panel">
         {% block panel %}{% endblock %}
     </div>
