@@ -132,13 +132,16 @@ def month_iter(begin, end):
 
 @cached(cache={})
 def _timeline_years(from_year, product):
+    max_value = 0
     years = collections.OrderedDict()
     for time in month_iter(datetime(from_year, 1, 1), datetime.now()):
         count = index.datasets.count(product=product, time=time)
+        if max_value < count:
+            max_value = count
         if time.begin.year not in years:
             years[time.begin.year] = {}
         years[time.begin.year][time.begin.month] = count
-    return years
+    return years, max_value
 
 
 @app.route(URL_PREFIX + "/timeline/<product>")
@@ -170,7 +173,8 @@ def timeline_page(product):
     years = _timeline_years(2013, product)
     return flask.render_template(
         "time.html.jinja2",
-        year_month_counts=years,
+        year_month_counts=years[0],
+        max_count=years[1],
         products=[p.definition for p in types],
         selected_product=product,
     )
