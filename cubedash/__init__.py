@@ -56,6 +56,13 @@ def warp_geometry(geom, crs):
     return rasterio.warp.transform_geom(crs, "EPSG:4326", geom)
 
 
+def next_date(date):
+    if date.month == 12:
+        return datetime(date.year + 1, 1, 1)
+    else:
+        return datetime(date.year, date.month + 1, 1)
+
+
 # There's probably a proper bottle way to do this.
 URL_PREFIX = "/api"
 
@@ -89,24 +96,20 @@ def dataset_to_feature(ds):
     }
 
 
-@app.route(URL_PREFIX + "/datasets/<product>")
-def datasets_as_features(product):
-    year = 2014
-    time = Range(datetime(year, 1, 1), datetime(year, 7, 1))
+@app.route(URL_PREFIX + "/datasets/<product>/<int:year>-<int:month>")
+def datasets_as_features(product, year, month):
+    start = datetime(year, month, 1)
+    time = Range(start, next_date(start))
     datasets = index.datasets.search(product=product, time=time)
-    return {
-        "type": "FeatureCollection",
-        "features": [dataset_to_feature(ds) for ds in datasets],
-    }
+    return as_json(
+        {
+            "type": "FeatureCollection",
+            "features": [dataset_to_feature(ds) for ds in datasets],
+        }
+    )
 
 
 def month_iter(begin, end):
-    def next_date(date):
-        if date.month == 12:
-            return datetime(date.year + 1, 1, 1)
-        else:
-            return datetime(date.year, date.month + 1, 1)
-
     begin = datetime(begin.year, begin.month, 1)
     while begin < end:
         yield Range(begin, next_date(begin))
