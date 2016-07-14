@@ -12,10 +12,12 @@
             padding: 15px;
             text-align: left;
         }
+
         .query-param {
             padding-right: 5px;
             display: block;
         }
+
         .query-param > .key {
             display: inline-block;
             font-weight: bold;
@@ -42,9 +44,9 @@
         </thead>
         {% for dataset in datasets %}
             <tr>
-                <td>{{ dataset.center_time | strftime}}</td>
+                <td>{{ dataset.center_time | strftime }}</td>
                 <td>{{ dataset.type.name }}</td>
-                <td><a href='{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
+                <td><a href='/datasets/{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
             </tr>
         {% endfor %}
     </table>
@@ -53,11 +55,11 @@
 
 
 {% block footer %}
-    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script type="application/javascript">
         $('#select-product').change(function () {
             var product = $('#select-product :selected').val();
-            window.location.href = product;
+            // TODO: Other query params?
+            window.location.href = '/datasets?product=' + product;
         });
     </script>
 {% endblock %}
