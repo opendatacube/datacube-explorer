@@ -16,12 +16,6 @@
             font-weight: bold;
         }
 
-        #content .panel.inverted {
-        {#            background-color: #2b2b2b;#}{#            color: #DDECEE;#} padding: 15px;
-            background-color: #808080;
-        {#            margin: 15px 0;#}
-        }
-
         .badge {
         }
 
@@ -31,6 +25,7 @@
     </style>
 {% endblock %}
 {% block panel %}
+
 {% endblock %}
 {% block content %}
     <div class="panel">
@@ -44,7 +39,7 @@
         </div>
     </div>
     {% if dataset.metadata.sources %}
-        <div class="panel inverted">
+        <div>
             <h2>Derived From</h2>
             <div class="sources">
                 {% for key, value in dataset.metadata.sources.items() %}
@@ -67,9 +62,4 @@
             </div>
         {%- endfor %}
     </div>
-{% endblock %}
-
-
-{% block footer %}
-    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 {% endblock %}

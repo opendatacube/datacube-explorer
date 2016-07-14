@@ -27,7 +27,7 @@
         }
 
         #header {
-            background: linear-gradient(to bottom, #2b2b2b 0%, #464646 100%);
+            background: linear-gradient(to bottom, #424242 0%, #3a3a3a 100%);
             color: #efefef;
         }
         #header .panel {
@@ -37,7 +37,7 @@
         }
 
         #logo {
-            line-height: 30px;
+            line-height: 45px;
             padding: 0 15px;
             font-size: 1.6em;
             text-decoration: none;
@@ -75,18 +75,13 @@
             font-size: 0.86em;
         }
         nav li a:hover {
-            background: linear-gradient(to bottom, #464646 0%, #2b2b2b 100%);
+            background: linear-gradient(to bottom, #464646 0%, #3a3a3a 100%);
         }
         nav li a:active, nav li a.active {
-            background: linear-gradient(to bottom, #464646 0%, #2b2b2b 100%);
+            background: linear-gradient(to bottom, #464646 0%, #3a3a3a 100%);
         }
         #header {
             clear: left;
-        }
-
-        #header, #content {
-            border: 1px solid #ccc;
-            border-width: 0 1px;
         }
 
         #content {
@@ -102,6 +97,7 @@
 </head>
 <body>
 <a href="/" id="logo">DataCube <span class="sub-heading">products</span></a>
+{% if selected_product %}
 <nav>
     <ul>
         <li><a href="/?product={{ selected_product }}" class="active">Map</a></li>
@@ -109,9 +105,11 @@
         <li><a href="/datasets?product={{ selected_product }}">Datasets</a></li>
     </ul>
 </nav>
+{% endif %}
+{% block panel %}
 <div id="header">
     <div class="panel">
-        {% block panel %}
+
             <select name="products" id='select-product'>
                 {% for product in products %}
                     <option value="{{ product.name }}"
@@ -120,11 +118,12 @@
                     </option>
                 {% endfor %}
             </select>
-        {% endblock %}
+
     </div>
 </div>
-</div>
+{% endblock %}
 <div id="content">{% block content %}{% endblock %}</div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 {% block footer %}{% endblock %}
 </body>
 </html>
