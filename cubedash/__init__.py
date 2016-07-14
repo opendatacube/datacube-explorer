@@ -10,11 +10,11 @@ import shapely.ops
 from cachetools import cached
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
-from flask.ext.compress import Compress
 
 from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
+from flask_compress import Compress
 
 index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
