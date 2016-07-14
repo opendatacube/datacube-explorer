@@ -1,6 +1,6 @@
 {% extends "layout.html.jinja2" %}
 
-{% block title %}Index{% endblock %}
+{% block title %}{{ dataset.metadata.label }}{% endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">
