@@ -6,6 +6,7 @@ import shapely.geometry
 import shapely.ops
 from cachetools import cached
 from dateutil import parser
+from dateutil.relativedelta import relativedelta
 
 import flask
 import os
@@ -20,7 +21,7 @@ static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronte
 app = flask.Flask(__name__, static_path='', static_url_path=static_prefix)
 Compress(app)
 
-FIELDS = ['platform', 'instrument', 'product']
+ACCEPTABLE_SEARCH_FIELDS = ['platform', 'instrument', 'product']
 
 
 def as_json(o):
@@ -29,9 +30,22 @@ def as_json(o):
 
 def parse_query(request):
     query = {}
-    for field in FIELDS:
-        query[field] = request[field]
-    query['time'] = Range(parser.parse(request['after']), parser.parse(request['before']))
+    for field in ACCEPTABLE_SEARCH_FIELDS:
+        if field in request:
+            query[field] = request[field]
+
+    to_time = parser.parse(request['before']) if 'before' in request else None
+    from_time = parser.parse(request['after']) if 'after' in request else None
+
+    # Default from/to values (a one month range)
+    if not from_time and not to_time:
+        to_time = datetime.now()
+    if not to_time:
+        to_time = from_time + relativedelta(months=1)
+    if not from_time:
+        from_time = to_time - relativedelta(months=1)
+
+    query['time'] = Range(from_time, to_time)
 
     def range_dodge(val):
         if isinstance(val, list):
@@ -158,6 +172,18 @@ def timeline_page(product):
         year_month_counts=years,
         products=[p.definition for p in types],
         selected_product=product
+    )
+
+
+@app.route('/datasets/<product>')
+def datasets_page(product):
+    query = {'product': product}
+    query.update(parse_query(flask.request.args))
+    return flask.render_template(
+        'datasets.html.jinja2',
+        products=[p.definition for p in (index.datasets.types.get_all())],
+        selected_product=product,
+        datasets=index.datasets.search(**query)
     )
 
 
