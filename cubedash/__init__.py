@@ -204,7 +204,7 @@ def _get_product():
 @app.route("/timeline/<product>")
 def timeline_page(product):
     types = index.datasets.types.get_all()
-    years = _timeline_years(2013, product)
+    years = _timeline_years(datetime.today().year - 15, product)
     return flask.render_template(
         "time.html.jinja2",
         year_month_counts=years[0],
