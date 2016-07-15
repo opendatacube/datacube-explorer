@@ -4,13 +4,11 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-
+        .property {
+            font-family: monospace;
+        }
         .property .property {
             padding-left: 15px;
-        }
-
-        .property .key {
-            font-weight: bold;
         }
     </style>
 {% endblock %}
@@ -22,8 +20,9 @@
         <h2>{{ dataset.metadata.label }}</h2>
         <div>
             {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
-                <div>
-                    <span>{{ key }}: {{ value | query_value }}</span>
+                <div class="query-param">
+                    <span class="key">{{ key }}:</span>
+                    <span class="value">{{ value | query_value }}</span>
                 </div>
             {% endfor %}
         </div>
