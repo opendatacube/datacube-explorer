@@ -233,6 +233,16 @@ def datasets_page():
 def dataset_page(id_):
     dataset = index.datasets.get(str(id_), include_sources=True)
 
+    ordered_metadata = get_ordered_metadata(dataset.metadata_doc)
+
+    return flask.render_template(
+        'dataset.html.jinja2',
+        dataset=dataset,
+        dataset_metadata=ordered_metadata
+    )
+
+
+def get_ordered_metadata(metadata_doc):
     def get_property_priority(ordered_properties, keyval):
         key, val = keyval
         if key not in ordered_properties:
@@ -241,18 +251,19 @@ def dataset_page(id_):
 
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
     ordered_metadata = collections.OrderedDict(
-        sorted(dataset.metadata_doc.items(),
+        sorted(metadata_doc.items(),
                key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER))
     )
     ordered_metadata['lineage'] = collections.OrderedDict(
         sorted(ordered_metadata['lineage'].items(),
                key=functools.partial(get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER))
     )
-    return flask.render_template(
-        'dataset.html.jinja2',
-        dataset=dataset,
-        dataset_metadata=ordered_metadata
-    )
+
+    if 'source_datasets' in ordered_metadata['lineage']:
+        for type, source_dataset_doc in ordered_metadata['lineage']['source_datasets'].items():
+            ordered_metadata['lineage']['source_datasets'][type] = get_ordered_metadata(source_dataset_doc)
+
+    return ordered_metadata
 
 
 EODATASETS_PROPERTY_ORDER = ['id', 'ga_label', 'ga_level', 'product_type', 'product_level', 'product_doi',
