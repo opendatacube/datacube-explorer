@@ -159,8 +159,8 @@ var datasets = L.geoJson(null, {
 });
 
 map = L.map("map", {
-  zoom: 5,
-  center: [-29.2756326,134.9387844],
+  zoom: 4,
+  center: [-26.2756326,134.9387844],
   layers: [cartoLight, datasets, markerClusters, highlight],
   zoomControl: false,
   attributionControl: false
