@@ -5,17 +5,6 @@
     {{ super() }}
     <style type="text/css">
 
-        .query-param {
-            padding-right: 5px;
-            display: block;
-        }
-
-        .query-param > .key {
-            display: inline-block;
-            font-weight: bold;
-            min-width: 60px;
-            font-size: 0.7em;
-        }
     </style>
 {% endblock %}
 
@@ -33,13 +22,11 @@
             <table class="data-table">
                 <thead>
                 <th>Time</th>
-                <th>Type</th>
                 <th>Dataset</th>
                 </thead>
                 {% for dataset in datasets %}
                     <tr>
                         <td>{{ dataset.center_time | strftime }}</td>
-                        <td>{{ dataset.type.name }}</td>
                         <td><a href='/datasets/{{ dataset.id }}'>{{ dataset.metadata.label }}</a></td>
                     </tr>
                 {% endfor %}

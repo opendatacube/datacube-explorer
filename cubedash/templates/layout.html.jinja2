@@ -22,7 +22,7 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background: #fcfcfc;
             max-width: 1024px;
-            margin: 20px auto 0;
+            margin: 20px auto;
             padding: 0 15px;
             color: #424242;
         }
@@ -103,6 +103,7 @@
         }
         .panel h2 {
             margin-top: 0;
+            margin-bottom: 15px;
         }
 
         <!-- tables of values -->
@@ -128,6 +129,19 @@
 
         .data-table td.zero {
             color: #ababab;
+        }
+
+        <!-- lists of key-values -->
+        .query-param {
+            padding-right: 5px;
+            display: block;
+        }
+
+        .query-param > .key {
+            display: inline-block;
+            font-weight: bold;
+            min-width: 80px;
+            font-size: 0.7em;
         }
 
     </style>
