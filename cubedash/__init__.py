@@ -197,7 +197,7 @@ def _get_product():
     if "product" in flask.request.args:
         product = flask.request.args["product"]
     else:
-        product = "ls8_nbar_albers"
+        product = "ls7_level1_scene"
     return product
 
 
