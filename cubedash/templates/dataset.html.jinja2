@@ -18,6 +18,10 @@
             font-family: monospace;
             font-size: 0.86em;
         }
+
+        .spacer {
+            padding-top: 15px;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -27,7 +31,7 @@
     <div class="panel odd">
         <h2>{{ dataset.metadata.label }}</h2>
         <span class="file-path">{{ dataset.local_path }}</span>
-        <div>
+        <div class="spacer">
             {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
                 <div class="query-param">
                     <span class="key">{{ key }}:</span>
