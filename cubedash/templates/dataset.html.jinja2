@@ -10,6 +10,13 @@
         .property .property {
             padding-left: 15px;
         }
+        .embedded > .property {
+            margin-left: 15px;
+            border-left: 3px solid #ccc;
+            color: #3A7734;
+        }
+
+        <!-- an embedded source dataset document -->
     </style>
 {% endblock %}
 {% block panel %}
@@ -39,8 +46,8 @@
     {% endif %}
     <div class="panel odd metadata-tree">
         <h2>Metadata</h2>
-        {%- for key, value in dataset.metadata_doc.items() recursive %}
-            <div class="property">
+        {%- for key, value in dataset_metadata.items() recursive %}
+            <div class="property {% if key == 'source_datasets' %}embedded{% endif %}">
                 {% if value is mapping %}
                     <div class="key">{{ key }}:</div>
                     {{ loop(value.items()) }}

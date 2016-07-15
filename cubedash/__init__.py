@@ -1,4 +1,5 @@
 import collections
+import functools
 import os
 from datetime import datetime
 from json import dumps as jsonify
@@ -231,11 +232,64 @@ def datasets_page():
 
 @app.route("/datasets/<uuid:id_>")
 def dataset_page(id_):
+    dataset = index.datasets.get(str(id_), include_sources=True)
+
+    def get_property_priority(ordered_properties, keyval):
+        key, val = keyval
+        if key not in ordered_properties:
+            return 999
+        return ordered_properties.index(key)
+
+    # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
+    ordered_metadata = collections.OrderedDict(
+        sorted(
+            dataset.metadata_doc.items(),
+            key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
+        )
+    )
+    ordered_metadata["lineage"] = collections.OrderedDict(
+        sorted(
+            ordered_metadata["lineage"].items(),
+            key=functools.partial(
+                get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER
+            ),
+        )
+    )
     return flask.render_template(
-        "dataset.html.jinja2",
-        dataset=(index.datasets.get(str(id_), include_sources=True)),
+        "dataset.html.jinja2", dataset=dataset, dataset_metadata=ordered_metadata
     )
 
 
+EODATASETS_PROPERTY_ORDER = [
+    "id",
+    "ga_label",
+    "ga_level",
+    "product_type",
+    "product_level",
+    "product_doi",
+    "creation_dt",
+    "size_bytes",
+    "checksum_path",
+    "platform",
+    "instrument",
+    "format",
+    "usgs",
+    "rms_string",
+    "acquisition",
+    "extent",
+    "grid_spatial",
+    "gqa",
+    "browse",
+    "image",
+    "lineage",
+    "product_flags",
+]
+EODATASETS_LINEAGE_PROPERTY_ORDER = [
+    "algorithm",
+    "machine",
+    "ancillary_quality",
+    "ancillary",
+    "source_datasets",
+]
 if __name__ == "__main__":
     app.run(port=8080, debug=True)
