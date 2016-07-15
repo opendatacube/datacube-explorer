@@ -26,8 +26,10 @@
 
     </script>
 {% endblock %}
-{% block content %}
-    <div class="panel">
+
+
+{% block selector %}
+    {{ super() }}
         <select id='select-year'>
             {% for year in range(2016, 1985, -1) %}
                 <option value="{{ year }}">{{ year }}</option>
@@ -38,7 +40,9 @@
                 <option value="{{ month }}">{{ month }}</option>
             {% endfor %}
         </select>
-    </div>
+{% endblock %}
+
+{% block content %}
     <div id="loading">Loading...</div>
     <div id="map"></div>
 {% endblock %}

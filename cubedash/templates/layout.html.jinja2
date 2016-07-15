@@ -160,7 +160,7 @@
 {% block panel %}
 <div id="header">
     <div class="panel">
-
+            {% block selector %}
             <select name="products" id='select-product'>
                 {% for product in products %}
                     <option value="{{ product.name }}"
@@ -169,7 +169,7 @@
                     </option>
                 {% endfor %}
             </select>
-
+            {% endblock %}
     </div>
 </div>
 {% endblock %}
