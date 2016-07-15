@@ -13,8 +13,10 @@
             width: 3px;
             display: inline-block;
             background-color: #424242;
+            border-bottom: 3px solid #595959;
         }
-        .bar:hover{
+
+        .bar:hover {
             background-color: #595959;
         }
     </style>
@@ -25,7 +27,9 @@
         <div id="bar-chart" style="width: {{ 3*year_month_counts|length*12 }}px">
             {% for year in year_month_counts %}
                 {% for month in range(1, 13) %}
-                    <span class="bar" style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"></span>
+                    <span class="bar"
+                          style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
+                          title="{{ year_month_counts[year][month] }} in {{ month | month_name }} {{ year }}"></span>
                 {% endfor %}
             {% endfor %}
         </div>
@@ -35,7 +39,7 @@
             <thead>
             <th></th>
             {% for month in range(1, 13) %}
-                <th>{{ month }}</th>
+                <th>{{ month | month_name }}</th>
             {% endfor %}
             </thead>
             {% for year in year_month_counts %}
