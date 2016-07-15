@@ -13,6 +13,11 @@
         .embedded > .property > .key {
             font-weight: bold;
         }
+
+        .file-path {
+            font-family: monospace;
+            font-size: 0.86em;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -21,6 +26,7 @@
 {% block content %}
     <div class="panel odd">
         <h2>{{ dataset.metadata.label }}</h2>
+        <span class="file-path">{{ dataset.local_path }}</span>
         <div>
             {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
                 <div class="query-param">
@@ -40,6 +46,7 @@
             </div>
         </div>
     {% endif %}
+
     <div class="panel odd metadata-tree">
         <h2>Metadata</h2>
         {%- for key, value in dataset_metadata.items() recursive %}
