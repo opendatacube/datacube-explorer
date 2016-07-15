@@ -4,6 +4,9 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
+        .panel {
+            overflow-x: auto;
+        }
         #bar-chart {
             font-size: 0;
             height: 50px;
@@ -13,11 +16,22 @@
             width: 3px;
             display: inline-block;
             background-color: #424242;
-            border-bottom: 3px solid #595959;
         }
 
         .bar:hover {
             background-color: #595959;
+        }
+
+        #year-labels {
+            font-size: 0;
+            height: 10px;
+        }
+
+        .year-label {
+            width: 36px;
+            display: inline-block;
+            font-size: 10px;
+            text-align: center;
         }
     </style>
 {% endblock %}
@@ -31,6 +45,11 @@
                           style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
                           title="{{ year_month_counts[year][month] }} in {{ month | month_name }} {{ year }}"></span>
                 {% endfor %}
+            {% endfor %}
+        </div>
+        <div id="year-labels" style="width: {{ 3*year_month_counts|length*12 }}px">
+            {% for year in year_month_counts %}
+                <span class="year-label">{{ year }}</span>
             {% endfor %}
         </div>
     </div>
