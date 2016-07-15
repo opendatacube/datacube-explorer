@@ -42,6 +42,12 @@ def _format_query_value(val):
     return str(val)
 
 
+@app.template_filter('month_name')
+def _format_month_name(val):
+    ds = datetime(2016, int(val), 2)
+    return ds.strftime("%b")
+
+
 def parse_query(request):
     query = {}
     for field in ACCEPTABLE_SEARCH_FIELDS:
