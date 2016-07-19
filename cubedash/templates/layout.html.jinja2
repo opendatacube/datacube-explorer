@@ -82,7 +82,7 @@
         nav li a:hover {
             background: linear-gradient(to bottom, #464646 0%, #424242 100%);
         }
-        nav li a:active, nav li a.active {
+        nav li a:active, nav li.active a {
             background: linear-gradient(to bottom, #464646 0%, #424242 100%);
         }
         #header {
@@ -153,9 +153,16 @@
 {% if selected_product %}
 <nav>
     <ul>
-        <li><a href="/{{ selected_product }}/spacial" class="active">Spacial</a></li>
-        <li><a href="/{{ selected_product }}/timeline">Timeline</a></li>
-        <li><a href="/{{ selected_product }}/datasets">Datasets</a></li>
+        {% set navigation_bar = [
+            ('/spacial', 'spacial', 'Spacial'),
+            ('/timeline', 'timeline', 'Timeline'),
+            ('/datasets', 'datasets', 'Datasets')
+        ] -%}
+        {% for href, id, caption in navigation_bar %}
+            <li{% if id == active_page %} class="active"{% endif %}>
+                <a href="/{{ selected_product }}{{ href|e }}" >{{ caption|e }}</a>
+            </li>
+        {% endfor %}
     </ul>
 </nav>
 {% endif %}
