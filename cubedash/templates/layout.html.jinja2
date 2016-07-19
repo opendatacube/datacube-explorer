@@ -153,9 +153,9 @@
 {% if selected_product %}
 <nav>
     <ul>
-        <li><a href="/?product={{ selected_product }}" class="active">Map</a></li>
-        <li><a href="/timeline/{{ selected_product }}">Timeline</a></li>
-        <li><a href="/datasets?product={{ selected_product }}">Datasets</a></li>
+        <li><a href="/{{ selected_product }}/spacial" class="active">Spacial</a></li>
+        <li><a href="/{{ selected_product }}/timeline">Timeline</a></li>
+        <li><a href="/{{ selected_product }}/datasets">Datasets</a></li>
     </ul>
 </nav>
 {% endif %}
