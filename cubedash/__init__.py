@@ -17,6 +17,10 @@ from datacube.model import Range
 from datacube.utils import jsonify_document
 from flask_compress import Compress
 
+_PRODUCT_PREFIX = "/<product>"
+# There's probably a proper flask way to do this.
+API_PREFIX = "/api"
+
 index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
@@ -99,23 +103,19 @@ def next_date(date):
         return datetime(date.year, date.month + 1, 1)
 
 
-# There's probably a proper bottle way to do this.
-URL_PREFIX = "/api"
-
-
-@app.route(URL_PREFIX + "/products")
+@app.route(API_PREFIX + "/products")
 def get_products():
     types = index.datasets.types.get_all()
     return as_json({type_.name: type_.definition for type_ in types})
 
 
-@app.route(URL_PREFIX + "/products/<name>")
+@app.route(API_PREFIX + "/products/<name>")
 def get_product(name):
     type_ = index.datasets.types.get_by_name(name)
     return as_json(type_.definition)
 
 
-@app.route(URL_PREFIX + "/datasets")
+@app.route(API_PREFIX + "/datasets")
 def get_datasets():
     return as_json({"error": "Too many. TODO: paging"})
 
@@ -132,7 +132,7 @@ def dataset_to_feature(ds):
     }
 
 
-@app.route(URL_PREFIX + "/datasets/<product>/<int:year>-<int:month>")
+@app.route(API_PREFIX + "/datasets/<product>/<int:year>-<int:month>")
 @cached(cache={})
 def datasets_as_features(product, year, month):
     start = datetime(year, month, 1)
@@ -167,24 +167,14 @@ def _timeline_years(from_year, product):
     return years, max_value
 
 
-@app.route(URL_PREFIX + "/timeline/<product>")
-def get_product_timeline(product):
-    result = []
-    for time in month_iter(datetime(2013, 1, 1), datetime.now()):
-        count = index.datasets.count(product=product, time=time)
-        result.append((time.begin, count))
-    return as_json({"data": result})
-
-
-@app.route(URL_PREFIX + "/datasets/id/<id_>")
-def get_dataset(id_):
-    dataset_ = index.datasets.get(id_, include_sources=True)
-    return as_json(dataset_.metadata_doc)
-
-
 @app.route("/")
-def index_page():
-    product = _get_product()
+def default_redirect():
+    """Redirect to default starting page."""
+    return flask.redirect(flask.url_for("map_page", product="ls7_level1_scene"))
+
+
+@app.route("%s/spacial" % _PRODUCT_PREFIX)
+def map_page(product):
     types = index.datasets.types.get_all()
     return flask.render_template(
         "map.html.jinja2",
@@ -193,15 +183,7 @@ def index_page():
     )
 
 
-def _get_product():
-    if "product" in flask.request.args:
-        product = flask.request.args["product"]
-    else:
-        product = "ls7_level1_scene"
-    return product
-
-
-@app.route("/timeline/<product>")
+@app.route("%s/timeline" % _PRODUCT_PREFIX)
 def timeline_page(product):
     types = index.datasets.types.get_all()
     years = _timeline_years(datetime.today().year - 15, product)
@@ -214,11 +196,9 @@ def timeline_page(product):
     )
 
 
-@app.route("/datasets")
-def datasets_page():
+@app.route("%s/datasets" % _PRODUCT_PREFIX)
+def datasets_page(product):
     args = flask.request.args
-    # Product is mandatory
-    product = _get_product()
     query = {"product": product}
     query.update(parse_query(args))
     return flask.render_template(
@@ -307,4 +287,4 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
     "source_datasets",
 ]
 if __name__ == "__main__":
-    app.run(port=8080, debug=True)
+    app.run(port=8080, debug=False)

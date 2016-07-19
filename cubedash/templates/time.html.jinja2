@@ -96,7 +96,7 @@
     <script type="application/javascript">
         $('#select-product').change(function () {
             var product = $('#select-product :selected').val();
-            window.location.href = product;
+            window.location.href = '/' + product + '/timeline';
         });
     </script>
 {% endblock %}
