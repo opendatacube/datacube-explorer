@@ -14,25 +14,31 @@
         }
 
         .bar {
-            width: 3px;
+            width: 2px;
             display: inline-block;
-            background-color: #424242;
+            background-color: #6f7173;
+        }
+        .bar.new-year {
+            background-color: #595959;
         }
 
         .bar:hover {
-            background-color: #595959;
+            background-color: #424242;
         }
 
         #year-labels {
             font-size: 0;
-            height: 10px;
         }
 
         .year-label {
-            width: 36px;
+            width: 24px;
             display: inline-block;
             font-size: 10px;
             text-align: center;
+            transform: rotate(45deg);
+            transform-origin: top left;
+            vertical-align: bottom;
+            height: 24px;
         }
     </style>
 {% endblock %}
@@ -54,16 +60,16 @@
 {% block content %}
     <html>
     <div class="panel">
-        <div id="bar-chart" style="width: {{ 3*year_month_counts|length*12 }}px">
+        <div id="bar-chart" style="width: {{ 2*year_month_counts|length*12 }}px">
             {% for year in year_month_counts %}
                 {% for month in range(1, 13) %}
-                    <span class="bar"
+                    <span class="bar {% if month == 1 %}new-year{% endif %}"
                           style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
                           title="{{ year_month_counts[year][month] }} in {{ month | month_name }} {{ year }}"></span>
                 {% endfor %}
             {% endfor %}
         </div>
-        <div id="year-labels" style="width: {{ 3*year_month_counts|length*12 }}px">
+        <div id="year-labels" style="width: {{ 2*year_month_counts|length*12 }}px">
             {% for year in year_month_counts %}
                 <span class="year-label">{{ year }}</span>
             {% endfor %}
