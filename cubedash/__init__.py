@@ -177,9 +177,7 @@ def default_redirect():
 def map_page(product):
     types = index.datasets.types.get_all()
     return flask.render_template(
-        "map.html.jinja2",
-        products=[p.definition for p in types],
-        selected_product=product,
+        "spacial.html", products=[p.definition for p in types], selected_product=product
     )
 
 
@@ -188,7 +186,7 @@ def timeline_page(product):
     types = index.datasets.types.get_all()
     years = _timeline_years(datetime.today().year - 15, product)
     return flask.render_template(
-        "time.html.jinja2",
+        "timeline.html",
         year_month_counts=years[0],
         max_count=years[1],
         products=[p.definition for p in types],
@@ -202,7 +200,7 @@ def datasets_page(product):
     query = {"product": product}
     query.update(parse_query(args))
     return flask.render_template(
-        "datasets.html.jinja2",
+        "datasets.html",
         products=[p.definition for p in (index.datasets.types.get_all())],
         selected_product=product,
         datasets=index.datasets.search_eager(**query),
@@ -217,7 +215,7 @@ def dataset_page(id_):
     ordered_metadata = get_ordered_metadata(dataset.metadata_doc)
 
     return flask.render_template(
-        "dataset.html.jinja2", dataset=dataset, dataset_metadata=ordered_metadata
+        "dataset.html", dataset=dataset, dataset_metadata=ordered_metadata
     )
 
 
@@ -287,4 +285,4 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
     "source_datasets",
 ]
 if __name__ == "__main__":
-    app.run(port=8080, debug=False)
+    app.run(port=8080, debug=True)
