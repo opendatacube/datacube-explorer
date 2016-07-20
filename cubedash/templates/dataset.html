@@ -5,22 +5,20 @@
     {{ super() }}
     <style type="text/css">
         .property {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
+            line-height: 1.3em;
         }
         .property .property {
             padding-left: 15px;
         }
         .embedded > .property > .key {
             font-weight: bold;
+
         }
 
         .file-path {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 0.86em;
-        }
-
-        .spacer {
-            padding-top: 15px;
         }
     </style>
 {% endblock %}
@@ -28,31 +26,28 @@
 
 {% endblock %}
 {% block content %}
-    <div class="panel odd">
+    <div class="panel highlight">
         <h2>{{ dataset.metadata.label }}</h2>
         <span class="file-path">{{ dataset.local_path }}</span>
-        <div class="spacer">
-            {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
-                <div class="query-param">
-                    <span class="key">{{ key }}:</span>
-                    <span class="value">{{ value | query_value }}</span>
-                </div>
+    </div>
+    <div class="panel">
+        {% if dataset.metadata.sources %}
+        <div class="sources">
+            {% for key, value in dataset.metadata.sources.items() %}
+                <div class="source">Source <em>{{ key }}</em>: <a href="{{ value.id }}">{{ value.ga_label }}</a></div>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
-    {% if dataset.metadata.sources %}
-        <div class="panel highlight">
-            <h2>Derived From</h2>
-            <div class="sources">
-                {% for key, value in dataset.metadata.sources.items() %}
-                    <span class="badge">{{ key }}: <a href="{{ value.id }}">{{ value.ga_label }}</a></span>
-                {% endfor %}
+    <div class="panel odd">
+        <h2>Fields</h2>
+        {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
+            <div class="query-param">
+                <span class="key">{{ key }}:</span>
+                <span class="value">{{ value | query_value }}</span>
             </div>
-        </div>
-    {% endif %}
-
-    <div class="panel odd metadata-tree">
-        <h2>Metadata</h2>
+        {% endfor %}
+        <h2>Raw Metadata</h2>
         {%- for key, value in dataset_metadata.items() recursive %}
             <div class="property">
                 {% if value is mapping %}
