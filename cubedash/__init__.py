@@ -185,7 +185,7 @@ def map_page(product):
 @app.route('%s/timeline' % _PRODUCT_PREFIX)
 def timeline_page(product):
     types = index.datasets.types.get_all()
-    years = _timeline_years(datetime.today().year - 15, product)
+    years = _timeline_years(1986, product)
     return flask.render_template(
         'timeline.html',
         year_month_counts=years[0],
