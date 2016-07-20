@@ -30,15 +30,16 @@
         <h2>{{ dataset.metadata.label }}</h2>
         <span class="file-path">{{ dataset.local_path }}</span>
     </div>
-    <div class="panel">
-        {% if dataset.metadata.sources %}
-        <div class="sources">
-            {% for key, value in dataset.metadata.sources.items() %}
-                <div class="source">Source <em>{{ key }}</em>: <a href="{{ value.id }}">{{ value.ga_label }}</a></div>
-            {% endfor %}
+    {% if dataset.metadata.sources %}
+        <div class="panel">
+
+            <div class="sources">
+                {% for key, value in dataset.metadata.sources.items() %}
+                    <div class="source">Source <em>{{ key }}</em>: <a href="{{ value.id }}">{{ value.ga_label }}</a></div>
+                {% endfor %}
+            </div>
         </div>
-        {% endif %}
-    </div>
+    {% endif %}
     <div class="panel odd">
         <h2>Fields</h2>
         {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
@@ -47,6 +48,8 @@
                 <span class="value">{{ value | query_value }}</span>
             </div>
         {% endfor %}
+    </div>
+    <div class="panel odd">
         <h2>Raw Metadata</h2>
         {%- for key, value in dataset_metadata.items() recursive %}
             <div class="property">

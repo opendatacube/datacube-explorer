@@ -116,6 +116,12 @@
             margin-top: 0;
         }
 
+        /* Add line between adjacent panels */
+        .panel.odd + .panel.odd,
+        .panel.highlight + .panel.odd {
+            border-top: 1px solid #adb0b3;
+        }
+
         /* Table of values */
         .panel .data-table {
             margin: 0 -15px;
