@@ -46,17 +46,15 @@
 {% block content %}
     <div id="loading">
         <i class="fa fa-cog fa-spin fa-fw"></i>
-        <span class="sr-only">Loading...</span>
+        <span>Loading...</span>
     </div>
     <div id="map"></div>
 {% endblock %}
 
 
 {% block footer %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
-    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-markercluster/v0.4.0/leaflet.markercluster.js"></script>
-    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js"></script>
-    <script src="/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
+    <script src="/external/leaflet-0.7.7/leaflet.js"></script>
+    <script src="/external/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
     <script type="application/javascript">
         (function () {
             function sizeLayerControl() {
@@ -140,37 +138,6 @@
             map.on("layerremove", updateAttribution);
 
             L.control.zoom({position: "bottomright"}).addTo(map);
-            L.control.locate({
-                position: "bottomright",
-                drawCircle: true,
-                follow: true,
-                setView: true,
-                keepCurrentZoomLevel: true,
-                markerStyle: {
-                    weight: 1,
-                    opacity: 0.8,
-                    fillOpacity: 0.8
-                },
-                circleStyle: {
-                    weight: 1,
-                    clickable: false
-                },
-                icon: "fa fa-location-arrow",
-                metric: false,
-                strings: {
-                    title: "My location",
-                    popup: "You are within {distance} {unit} from this point",
-                    outsideMapBoundsMsg: "You seem located outside the boundaries of the map"
-                },
-                locateOptions: {
-                    maxZoom: 18,
-                    watch: true,
-                    enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 10000
-                }
-            }).addTo(map);
-
             L.control.groupedLayers(
                     {
                         "Street Map": cartoLight,
