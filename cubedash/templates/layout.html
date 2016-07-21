@@ -23,8 +23,8 @@
             background: #fcfcfc;
             background: linear-gradient(to bottom, #e0e0e0 0%, #fcfcfc 60px);
             max-width: 1024px;
-            margin: 20px auto;
-            padding: 0 15px;
+            margin: 20px auto 30px;
+            padding: 0 30px;
             color: #424242;
             font-size: 0.86em;
         }
@@ -45,12 +45,15 @@
 
         #logo {
             padding: 0 30px 15px;
+        }
+        #logo a {
             font-size: 2em;
             text-decoration: none;
             font-weight: bold;
             color: inherit;
         }
-        #logo .sub-heading {
+
+        #logo .subheading {
             font-size: 0.8em;
             color: #959595;
             font-weight:normal;
@@ -159,7 +162,12 @@
     </style>
 </head>
 <body>
-<a href="/" id="logo">DataCube <span class="sub-heading">products</span></a>
+<div id="logo">
+    <a href="/">
+        <span>DataCube</span>
+        <span class="subheading">products</span>
+    </a>
+</div>
 {% if selected_product %}
 <nav>
     <ul>
