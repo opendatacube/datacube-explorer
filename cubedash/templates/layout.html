@@ -6,16 +6,10 @@
     <title>{% block title %}{% endblock %}</title>
 
     {% block head %}
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-        <link rel="stylesheet"
-              href="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-markercluster/v0.4.0/MarkerCluster.css">
-        <link rel="stylesheet"
-              href="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-markercluster/v0.4.0/MarkerCluster.Default.css">
-        <link rel="stylesheet"
-              href="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.css">
-        <link rel="stylesheet" href="/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css">
-        <link rel="stylesheet" href="/css/normalise.css">
+        <link rel="stylesheet" href="/external/leaflet-0.7.7/leaflet.css">
+        <link rel="stylesheet" href="/external/font-awesome-4.6.3/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/external/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css">
+        <link rel="stylesheet" href="/external/normalise.css">
     {% endblock %}
     <style type="text/css">
         body {
@@ -201,7 +195,7 @@
 </div>
 {% endblock %}
 <div id="content">{% block content %}{% endblock %}</div>
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="/external/jquery-3.1.0.min.js"></script>
 {% block footer %}{% endblock %}
 </body>
 </html>
