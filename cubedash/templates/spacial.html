@@ -31,16 +31,16 @@
 
 {% block selector %}
     {{ super() }}
-        <select id='select-year'>
-            {% for year in range(2016, 1985, -1) %}
-                <option value="{{ year }}">{{ year }}</option>
-            {% endfor %}
-        </select>
-        <select id='select-month'>
-            {% for month in range(1, 13) %}
-                <option value="{{ month }}">{{ month }}</option>
-            {% endfor %}
-        </select>
+    <select id='select-year'>
+        {% for year in range(2016, 1985, -1) %}
+            <option value="{{ year }}">{{ year }}</option>
+        {% endfor %}
+    </select>
+    <select id='select-month'>
+        {% for month in range(1, 13) %}
+            <option value="{{ month }}">{{ month }}</option>
+        {% endfor %}
+    </select>
 {% endblock %}
 
 {% block content %}
@@ -53,30 +53,153 @@
 
 
 {% block footer %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.1.1/list.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
     <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-markercluster/v0.4.0/leaflet.markercluster.js"></script>
     <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js"></script>
-    <script src="leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
-    <script src="/js/app.js"></script>
+    <script src="/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js"></script>
     <script type="application/javascript">
+        (function () {
+            function sizeLayerControl() {
+                $(".leaflet-control-layers").css("max-height", $("#map").height() - 50);
+            }
 
-        function reload_map() {
-            var product = $('#select-product :selected').val();
-            var year = $('#select-year :selected').val();
-            var month = $('#select-month :selected').val();
+            $(window).resize(function () {
+                sizeLayerControl();
+            });
 
-            $("#loading").show();
-            datasets.clearLayers();
+            /* Basemap Layers */
+            var cartoLight = L.tileLayer(
+                    "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                    {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                    }
+            );
+            var usgsImagery = L.layerGroup([
+                        L.tileLayer(
+                                "http://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
+                                "tile/{z}/{y}/{x}",
+                                {
+                                    maxZoom: 15
+                                }
+                        ),
+                        L.tileLayer.wms(
+                                "http://raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
+                                "ImageServer/WMSServer?",
+                                {
+                                    minZoom: 16,
+                                    maxZoom: 19,
+                                    layers: "0",
+                                    format: 'image/jpeg',
+                                    transparent: true,
+                                    attribution: "Aerial Imagery courtesy USGS"
+                                }
+                        )
+                    ]
+            );
 
-            $.getJSON("/api/datasets/" + product + "/" + year + "-" + month, function (data) {
-                datasets.addData(data);
-                $("#loading").hide();
-            })
-        }
-        $('#select-month').change(reload_map);
-        $('#select-year').change(reload_map);
-        $('#select-product').change(reload_map);
-        reload_map();
+            var datasets = L.geoJson(null, {
+                style: function (feature) {
+                    return {
+                        color: "#888a8c",
+                        fill: true,
+                        opacity: 0.6,
+                        weight: 2,
+                        clickable: false
+                    };
+                }
+            });
+
+
+            var map = L.map("map", {
+                zoom: 4,
+                center: [-26.2756326, 134.9387844],
+                layers: [cartoLight, datasets],
+                zoomControl: false,
+                attributionControl: false
+            });
+
+
+            var attributionDiv;
+            var attributionControl = L.control({position: "bottomright"});
+            attributionControl.onAdd = function (map) {
+                attributionDiv = L.DomUtil.create("div", "leaflet-control-attribution");
+                return attributionDiv;
+            };
+            map.addControl(attributionControl);
+            function updateAttribution(e) {
+                $.each(map._layers, function (index, layer) {
+                    if (layer.getAttribution) {
+                        attributionDiv.innerHTML = layer.getAttribution();
+                    }
+                });
+            }
+
+            map.on("layeradd", updateAttribution);
+            map.on("layerremove", updateAttribution);
+
+            L.control.zoom({position: "bottomright"}).addTo(map);
+            L.control.locate({
+                position: "bottomright",
+                drawCircle: true,
+                follow: true,
+                setView: true,
+                keepCurrentZoomLevel: true,
+                markerStyle: {
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.8
+                },
+                circleStyle: {
+                    weight: 1,
+                    clickable: false
+                },
+                icon: "fa fa-location-arrow",
+                metric: false,
+                strings: {
+                    title: "My location",
+                    popup: "You are within {distance} {unit} from this point",
+                    outsideMapBoundsMsg: "You seem located outside the boundaries of the map"
+                },
+                locateOptions: {
+                    maxZoom: 18,
+                    watch: true,
+                    enableHighAccuracy: true,
+                    maximumAge: 10000,
+                    timeout: 10000
+                }
+            }).addTo(map);
+
+            L.control.groupedLayers(
+                    {
+                        "Street Map": cartoLight,
+                        "Aerial Imagery": usgsImagery
+                    },
+                    {},
+                    {
+                        collapsed: false
+                    }
+            ).addTo(map);
+
+
+            function reload_map() {
+                var product = $('#select-product :selected').val();
+                var year = $('#select-year :selected').val();
+                var month = $('#select-month :selected').val();
+
+                $("#loading").show();
+                datasets.clearLayers();
+
+                $.getJSON("/api/datasets/" + product + "/" + year + "-" + month, function (data) {
+                    datasets.addData(data);
+                    $("#loading").hide();
+                })
+            }
+
+            $('#select-month, #select-year, #select-product').change(reload_map);
+            reload_map();
+        })();
+
     </script>
 {% endblock %}
