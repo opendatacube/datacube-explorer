@@ -128,10 +128,22 @@
             font-weight: bold;
             font-size: 0.8em;
         }
-        .data-table td, .data-table th {
+        .data-table td, .data-table th, .link-cell > a {
             padding: 0 15px;
             text-align: left;
             line-height: 30px;
+        }
+        /* A link cell has padding on the anchor, not the cell */
+        .data-table td.link-cell, .data-table th.link-cell {
+            padding: 0;
+        }
+        .link-cell > a {
+            display: block;
+            text-decoration: none;
+        }
+        .link-cell > a:hover {
+            background-color: #424242;
+            color: #d2d7d9;
         }
 
         .data-table.numerical td, .data-table.numerical th {;

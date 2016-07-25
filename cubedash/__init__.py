@@ -1,21 +1,22 @@
+import calendar
 import collections
 import functools
+import os
 from datetime import datetime
 from json import dumps as jsonify
 
+import flask
+import rasterio.warp
 import shapely.geometry
 import shapely.ops
 from cachetools import cached
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
+from flask_compress import Compress
 
-import flask
-import os
-import rasterio.warp
 from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
-from flask_compress import Compress
 
 _PRODUCT_PREFIX = '/<product>'
 # There's probably a proper flask way to do this.
@@ -51,6 +52,18 @@ def _format_query_value(val):
 def _format_month_name(val):
     ds = datetime(2016, int(val), 2)
     return ds.strftime("%b")
+
+
+@app.context_processor
+def month_bounds():
+    def _month_start(year, month):
+        return datetime(year, month, 1, hour=0, minute=0, second=0)
+
+    def _month_end(year, month):
+        return datetime(year, month, calendar.monthrange(year, month)[1], hour=23, minute=59, second=59)
+
+    return {'month_start': _month_start, 'month_end': _month_end}
+
 
 
 def parse_query(request):
