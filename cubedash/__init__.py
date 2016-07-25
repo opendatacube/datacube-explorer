@@ -199,11 +199,13 @@ def datasets_page(product):
     args = flask.request.args
     query = {"product": product}
     query.update(parse_query(args))
+    # TODO: Add sort option to index API
+    datasets = sorted(index.datasets.search_eager(**query), key=lambda d: d.center_time)
     return flask.render_template(
         "datasets.html",
         products=[p.definition for p in (index.datasets.types.get_all())],
         selected_product=product,
-        datasets=index.datasets.search_eager(**query),
+        datasets=datasets,
         query_params=query,
     )
 
