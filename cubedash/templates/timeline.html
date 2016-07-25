@@ -49,10 +49,11 @@
     <div class="panel">
         <div id="bar-chart" style="width: {{ 2*year_month_counts|length*12 }}px">
             {% for year in year_month_counts %}
-                {% for month in range(1, 13) %}
-                    <span class="bar {% if month == 1 %}new-year{% endif %}"
-                          style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
-                          title="{{ year_month_counts[year][month] }} in {{ month | month_name }} {{ year }}"></span>
+                {% for month in year_month_counts[year] %}
+                    <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
+                       class="bar {% if month == 1 %}new-year{% endif %}"
+                       style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
+                       title="View the {{ year_month_counts[year][month] }} datasets for {{ month | month_name }} {{ year }}"></a>
                 {% endfor %}
             {% endfor %}
         </div>
