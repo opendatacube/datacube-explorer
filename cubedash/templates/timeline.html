@@ -43,20 +43,6 @@
     </style>
 {% endblock %}
 
-{% block selector %}
-    {{ super() }}
-        <select id='select-start-year'>
-            {% for year in range(2016, 1985, -1) %}
-                <option value="{{ year }}">{{ year }}</option>
-            {% endfor %}
-        </select>
-        <select id='select-end-year'>
-            {% for year in range(2016, 1985, -1) %}
-                <option value="{{ year }}">{{ year }}</option>
-            {% endfor %}
-        </select>
-{% endblock %}
-
 {% block content %}
     <html>
     <div class="panel">
