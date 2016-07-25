@@ -1,3 +1,4 @@
+import calendar
 import collections
 import functools
 import os
@@ -53,6 +54,24 @@ def _format_query_value(val):
 def _format_month_name(val):
     ds = datetime(2016, int(val), 2)
     return ds.strftime("%b")
+
+
+@app.context_processor
+def month_bounds():
+    def _month_start(year, month):
+        return datetime(year, month, 1, hour=0, minute=0, second=0)
+
+    def _month_end(year, month):
+        return datetime(
+            year,
+            month,
+            calendar.monthrange(year, month)[1],
+            hour=23,
+            minute=59,
+            second=59,
+        )
+
+    return {"month_start": _month_start, "month_end": _month_end}
 
 
 def parse_query(request):
