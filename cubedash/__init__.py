@@ -183,11 +183,11 @@ def default_redirect():
     return flask.redirect(flask.url_for('map_page', product='ls7_level1_scene'))
 
 
-@app.route('%s/spacial' % _PRODUCT_PREFIX)
+@app.route('%s/spatial' % _PRODUCT_PREFIX)
 def map_page(product):
     types = index.datasets.types.get_all()
     return flask.render_template(
-        'spacial.html',
+        'spatial.html',
         products=[p.definition for p in types],
         selected_product=product
     )
