@@ -12,7 +12,6 @@ import shapely.ops
 from cachetools import cached
 from dateutil import parser
 from dateutil.relativedelta import relativedelta
-from flask_compress import Compress
 
 from datacube.index import index_connect
 from datacube.model import Range
@@ -25,7 +24,6 @@ API_PREFIX = '/api'
 index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend')
 app = flask.Flask(__name__, static_path='', static_url_path=static_prefix)
-Compress(app)
 
 ACCEPTABLE_SEARCH_FIELDS = ['platform', 'instrument', 'product']
 
