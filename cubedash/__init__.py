@@ -16,7 +16,6 @@ from dateutil.relativedelta import relativedelta
 from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
-from flask_compress import Compress
 
 _PRODUCT_PREFIX = "/<product>"
 # There's probably a proper flask way to do this.
@@ -25,7 +24,6 @@ API_PREFIX = "/api"
 index = index_connect()
 static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
 app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
-Compress(app)
 
 ACCEPTABLE_SEARCH_FIELDS = ["platform", "instrument", "product"]
 
