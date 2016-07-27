@@ -52,7 +52,7 @@
                 {% for month in year_month_counts[year] %}
                     <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
                        class="bar {% if month == 1 %}new-year{% endif %}"
-                       style="height: {{ (year_month_counts[year][month] or 0)/max_count*100 }}%"
+                       style="height: {{ (year_month_counts[year][month] or 0)/(max_count if max_count > 0 else 1)*100 }}%"
                        title="View the {{ year_month_counts[year][month] }} datasets for {{ month | month_name }} {{ year }}"></a>
                 {% endfor %}
             {% endfor %}
