@@ -163,13 +163,6 @@ def datasets_as_features(product, year, month):
     )
 
 
-def month_iter(begin, end):
-    begin = datetime(begin.year, begin.month, 1)
-    while begin < end:
-        yield Range(begin, next_date(begin))
-        begin = next_date(begin)
-
-
 @cached(cache={})
 def _timeline_years(from_year, product):
     product_timelines = index.datasets.count_through_time(
