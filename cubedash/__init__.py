@@ -1,7 +1,6 @@
 import calendar
 import collections
 import functools
-import os
 from datetime import datetime
 from json import dumps as jsonify
 
@@ -39,9 +38,9 @@ def _format_datetime(date, fmt=None):
 
 @app.template_filter('query_value')
 def _format_query_value(val):
-    if type(val) == Range:
+    if isinstance(val, Range):
         return '{} to {}'.format(_format_query_value(val.begin), _format_query_value(val.end))
-    if type(val) == datetime:
+    if isinstance(val, datetime):
         return _format_datetime(val)
     return str(val)
 
@@ -216,7 +215,7 @@ def datasets_page(product):
     datasets = sorted(index.datasets.search_eager(**query), key=lambda d: d.center_time)
     return flask.render_template(
         'datasets.html',
-        products=[p.definition for p in (index.datasets.types.get_all())],
+        products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
         datasets=datasets,
         query_params=query
@@ -254,8 +253,8 @@ def get_ordered_metadata(metadata_doc):
     )
 
     if 'source_datasets' in ordered_metadata['lineage']:
-        for type, source_dataset_doc in ordered_metadata['lineage']['source_datasets'].items():
-            ordered_metadata['lineage']['source_datasets'][type] = get_ordered_metadata(source_dataset_doc)
+        for type_, source_dataset_doc in ordered_metadata['lineage']['source_datasets'].items():
+            ordered_metadata['lineage']['source_datasets'][type_] = get_ordered_metadata(source_dataset_doc)
 
     return ordered_metadata
 
@@ -265,5 +264,6 @@ EODATASETS_PROPERTY_ORDER = ['id', 'ga_label', 'ga_level', 'product_type', 'prod
                              'rms_string', 'acquisition', 'extent', 'grid_spatial', 'gqa', 'browse', 'image', 'lineage',
                              'product_flags']
 EODATASETS_LINEAGE_PROPERTY_ORDER = ['algorithm', 'machine', 'ancillary_quality', 'ancillary', 'source_datasets']
+
 if __name__ == '__main__':
     app.run(port=8080, debug=True)
