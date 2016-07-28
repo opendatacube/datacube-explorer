@@ -22,8 +22,7 @@ _PRODUCT_PREFIX = "/<product>"
 API_PREFIX = "/api"
 
 index = index_connect()
-static_prefix = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-app = flask.Flask(__name__, static_path="", static_url_path=static_prefix)
+app = flask.Flask("cubedash")
 
 ACCEPTABLE_SEARCH_FIELDS = ["platform", "instrument", "product"]
 
