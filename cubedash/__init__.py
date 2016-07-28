@@ -158,16 +158,12 @@ def datasets_as_features(product, year, month):
 
 @cached(cache={})
 def _timeline_years(from_year, product):
-    product_timelines = index.datasets.count_through_time(
+    timeline = index.datasets.count_product_through_time(
             '1 month',
             product=product,
             time=Range(datetime(from_year, 1, 1),
                        datetime.utcnow())
     )
-    if product not in product_timelines:
-        raise ValueError('No result for product %r'% product)
-
-    timeline = product_timelines[product]
 
     max_value = 0
     years = collections.OrderedDict()
