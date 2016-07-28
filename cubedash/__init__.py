@@ -165,15 +165,26 @@ def month_iter(begin, end):
 
 @cached(cache={})
 def _timeline_years(from_year, product):
+    product_timelines = index.datasets.count_through_time(
+            '1 month',
+            product=product,
+            time=Range(datetime(from_year, 1, 1),
+                       datetime.utcnow())
+    )
+    if product not in product_timelines:
+        raise ValueError('No result for product %r'% product)
+
+    timeline = product_timelines[product]
+
     max_value = 0
     years = collections.OrderedDict()
-    for time in month_iter(datetime(from_year, 1, 1), datetime.now()):
-        count = index.datasets.count(product=product, time=time)
+    for (time, end_time), count in timeline:
         if max_value < count:
             max_value = count
-        if time.begin.year not in years:
-            years[time.begin.year] = {}
-        years[time.begin.year][time.begin.month] = count
+        if time.year not in years:
+            years[time.year] = {}
+        years[time.year][time.month] = count
+
     return years, max_value
 
 
