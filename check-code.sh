@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Convenience script for running Travis-like checks.
+
+set -eu
+set -x
+
+pylint -j 2 --reports no cubedash
+
