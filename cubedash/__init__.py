@@ -11,6 +11,7 @@ import shapely.geometry
 import shapely.ops
 from cachetools import cached
 from dateutil import parser
+from dateutil import tz
 from dateutil.relativedelta import relativedelta
 
 from datacube.index import index_connect
@@ -61,7 +62,6 @@ def month_bounds():
         return datetime(year, month, calendar.monthrange(year, month)[1], hour=23, minute=59, second=59)
 
     return {'month_start': _month_start, 'month_end': _month_end}
-
 
 
 def parse_query(request):
@@ -159,10 +159,12 @@ def datasets_as_features(product, year, month):
 @cached(cache={})
 def _timeline_years(from_year, product):
     timeline = index.datasets.count_product_through_time(
-            '1 month',
-            product=product,
-            time=Range(datetime(from_year, 1, 1),
-                       datetime.utcnow())
+        '1 month',
+        product=product,
+        time=Range(
+            datetime(from_year, 1, 1, tzinfo=tz.tzutc()),
+            datetime.utcnow()
+        )
     )
 
     max_value = 0
