@@ -10,7 +10,7 @@ import rasterio.warp
 import shapely.geometry
 import shapely.ops
 from cachetools import cached
-from dateutil import parser
+from dateutil import parser, tz
 from dateutil.relativedelta import relativedelta
 
 from datacube.index import index_connect
@@ -168,7 +168,7 @@ def _timeline_years(from_year, product):
     timeline = index.datasets.count_product_through_time(
         "1 month",
         product=product,
-        time=Range(datetime(from_year, 1, 1), datetime.utcnow()),
+        time=Range(datetime(from_year, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
     )
 
     max_value = 0
