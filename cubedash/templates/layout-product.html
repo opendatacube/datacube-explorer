@@ -4,20 +4,22 @@
     <nav>
         <ul>
             {% set navigation_bar = [
-                ('/spatial', 'spatial', 'Spatial'),
-                ('/timeline', 'timeline', 'Timeline'),
-                ('/datasets', 'datasets', 'Datasets')
+                ('spatial', 'product_spatial_page'),
+                ('timeline', 'product_timeline_page'),
+                ('datasets', 'product_datasets_page')
             ] -%}
-            {% for href, id, caption in navigation_bar %}
+            {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
-                    <a href="/{{ selected_product }}{{ href|e }}" >{{ caption|e }}</a>
+                    <a href="{{ url_for(page_method, product=selected_product) }}">
+                        {{ id | title }}
+                    </a>
                 </li>
             {% endfor %}
         </ul>
     </nav>
     <div id="header">
         <div class="panel">
-                {% block selector %}
+            {% block selector %}
                 <select name="products" id='select-product'>
                     {% for product in products %}
                         <option value="{{ product.name }}"
@@ -26,7 +28,7 @@
                         </option>
                     {% endfor %}
                 </select>
-                {% endblock %}
+            {% endblock %}
         </div>
     </div>
 {% endblock %}

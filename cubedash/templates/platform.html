@@ -15,7 +15,7 @@
     {% for product, counts in product_counts %}
         <div class="panel odd">
             <h2>{{ product }}</h2>
-            {{ chart_timeline(counts) }}
+            {{ chart_timeline(counts, product) }}
         </div>
     {% endfor %}
 {% endblock %}
