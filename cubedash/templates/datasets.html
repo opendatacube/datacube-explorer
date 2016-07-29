@@ -13,12 +13,8 @@
 
 {% block content %}
     <div class="panel">
-        {% for key in query_params %}
-            <div class="query-param">
-                <span class="key">{{ key }}:</span>
-                <span class="value">{{ query_params[key] | query_value }}</span>
-            </div>
-        {% endfor %}
+        {% from "macros.html" import query_param_list %}
+        {{ query_param_list(query_params) }}
     </div>
     <div class="panel odd">
         {% if datasets %}
