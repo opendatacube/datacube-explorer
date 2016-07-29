@@ -8,6 +8,7 @@ import flask
 import rasterio.warp
 import shapely.geometry
 import shapely.ops
+import sys
 from cachetools import cached
 from dateutil import parser
 from dateutil import tz
@@ -16,8 +17,6 @@ from dateutil.relativedelta import relativedelta
 from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
-
-DEBUG_MODE = True
 
 _PRODUCT_PREFIX = '/<product>'
 # There's probably a proper flask way to do this.
@@ -268,5 +267,6 @@ EODATASETS_PROPERTY_ORDER = ['id', 'ga_label', 'ga_level', 'product_type', 'prod
 EODATASETS_LINEAGE_PROPERTY_ORDER = ['algorithm', 'machine', 'ancillary_quality', 'ancillary', 'source_datasets']
 
 if __name__ == '__main__':
+    DEBUG_MODE = len(sys.argv) == 2 and sys.argv[1] == '--debug'
     app.jinja_env.auto_reload = DEBUG_MODE
     app.run(port=8080, debug=DEBUG_MODE)
