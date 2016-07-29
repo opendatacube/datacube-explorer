@@ -16,6 +16,8 @@ from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
 
+DEBUG_MODE = True
+
 _PRODUCT_PREFIX = "/<product>"
 # There's probably a proper flask way to do this.
 API_PREFIX = "/api"
@@ -302,4 +304,5 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
 ]
 
 if __name__ == "__main__":
-    app.run(port=8080, debug=True)
+    app.jinja_env.auto_reload = DEBUG_MODE
+    app.run(port=8080, debug=DEBUG_MODE)
