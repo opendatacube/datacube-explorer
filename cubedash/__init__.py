@@ -1,6 +1,7 @@
 import calendar
 import collections
 import functools
+import sys
 from datetime import datetime
 from json import dumps as jsonify
 
@@ -15,8 +16,6 @@ from dateutil.relativedelta import relativedelta
 from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
-
-DEBUG_MODE = True
 
 _PRODUCT_PREFIX = "/<product>"
 # There's probably a proper flask way to do this.
@@ -304,5 +303,6 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
 ]
 
 if __name__ == "__main__":
+    DEBUG_MODE = len(sys.argv) == 2 and sys.argv[1] == "--debug"
     app.jinja_env.auto_reload = DEBUG_MODE
     app.run(port=8080, debug=DEBUG_MODE)
