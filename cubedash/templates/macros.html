@@ -1,0 +1,29 @@
+
+{% macro chart_timeline(year_month_counts, max_count) -%}
+    <div class="chart-timeline">
+        <div class="chart-timeline-bars" style="width: {{ 2*year_month_counts|length*12 }}px">
+            {% for year in year_month_counts %}
+                {% for month in year_month_counts[year] %}
+                    <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
+                       class="chart-timeline-bar {% if month == 1 %}new-year{% endif %}"
+                       style="height: {{ (year_month_counts[year][month] or 0)/(max_count if max_count > 0 else 1)*100 }}%"
+                       title="View the {{ year_month_counts[year][month] }} datasets for {{ month | month_name }} {{ year }}"></a>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="chart-timeline-years" style="width: {{ 2*year_month_counts|length*12 }}px">
+            {% for year in year_month_counts %}
+                <span class="chart-timeline-year">{{ year }}</span>
+            {% endfor %}
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro query_param_list(d) -%}
+    {% for key, value in d | dictsort if value is not mapping %}
+        <div class="query-param">
+            <span class="key">{{ key }}:</span>
+            <span class="value">{{ value | query_value }}</span>
+        </div>
+    {% endfor %}
+{%- endmacro %}

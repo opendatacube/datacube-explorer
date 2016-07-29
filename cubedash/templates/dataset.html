@@ -42,12 +42,8 @@
     {% endif %}
     <div class="panel odd">
         <h2>Fields</h2>
-        {% for key, value in dataset.metadata.fields.items() if value is not mapping %}
-            <div class="query-param">
-                <span class="key">{{ key }}:</span>
-                <span class="value">{{ value | query_value }}</span>
-            </div>
-        {% endfor %}
+        {% from "macros.html" import query_param_list %}
+        {{ query_param_list(dataset.metadata.fields) }}
     </div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>

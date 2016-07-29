@@ -8,29 +8,31 @@
         .panel {
             overflow-x: auto;
         }
-        #bar-chart {
+
+        .chart-timeline-bars {
             font-size: 0;
             height: 50px;
         }
 
-        .bar {
+        .chart-timeline-bar {
             width: 2px;
             display: inline-block;
             background-color: #6f7173;
         }
-        .bar.new-year {
+
+        .chart-timeline-bar.new-year {
             background-color: #595959;
         }
 
-        .bar:hover {
+        .chart-timeline-bar:hover {
             background-color: #424242;
         }
 
-        #year-labels {
+        .chart-timeline-years {
             font-size: 0;
         }
 
-        .year-label {
+        .chart-timeline-year {
             width: 24px;
             display: inline-block;
             font-size: 10px;
@@ -45,23 +47,9 @@
 {% endblock %}
 
 {% block content %}
-    <html>
     <div class="panel">
-        <div id="bar-chart" style="width: {{ 2*year_month_counts|length*12 }}px">
-            {% for year in year_month_counts %}
-                {% for month in year_month_counts[year] %}
-                    <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
-                       class="bar {% if month == 1 %}new-year{% endif %}"
-                       style="height: {{ (year_month_counts[year][month] or 0)/(max_count if max_count > 0 else 1)*100 }}%"
-                       title="View the {{ year_month_counts[year][month] }} datasets for {{ month | month_name }} {{ year }}"></a>
-                {% endfor %}
-            {% endfor %}
-        </div>
-        <div id="year-labels" style="width: {{ 2*year_month_counts|length*12 }}px">
-            {% for year in year_month_counts %}
-                <span class="year-label">{{ year }}</span>
-            {% endfor %}
-        </div>
+        {% from "macros.html" import chart_timeline %}
+        {{ chart_timeline(year_month_counts, max_count) }}
     </div>
     <div class="panel odd">
         <table class="data-table numerical">
@@ -80,7 +68,7 @@
                         {% else %}
                             <td class="link-cell">
                                 <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
-                                    title="View datasets for {{ month | month_name }} {{ year }}">
+                                   title="View datasets for {{ month | month_name }} {{ year }}">
                                     {{ year_month_counts[year][month] or 0 }}
                                 </a>
                             </td>
@@ -90,7 +78,6 @@
             {% endfor %}
         </table>
     </div>
-    </html>
 {% endblock %}
 
 
