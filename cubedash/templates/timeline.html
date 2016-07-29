@@ -1,55 +1,12 @@
-{% extends "layout.html" %}
+{% extends "layout-product.html" %}
 {% set active_page = "timeline" %}
 
 {% block title %}Timeline{% endblock %}
-{% block head %}
-    {{ super() }}
-    <style type="text/css">
-        .panel {
-            overflow-x: auto;
-        }
-
-        .chart-timeline-bars {
-            font-size: 0;
-            height: 50px;
-        }
-
-        .chart-timeline-bar {
-            width: 2px;
-            display: inline-block;
-            background-color: #6f7173;
-        }
-
-        .chart-timeline-bar.new-year {
-            background-color: #595959;
-        }
-
-        .chart-timeline-bar:hover {
-            background-color: #424242;
-        }
-
-        .chart-timeline-years {
-            font-size: 0;
-        }
-
-        .chart-timeline-year {
-            width: 24px;
-            display: inline-block;
-            font-size: 10px;
-            text-align: center;
-            transform: rotate(45deg);
-            transform-origin: top left;
-            vertical-align: bottom;
-            height: 24px;
-        }
-
-    </style>
-{% endblock %}
 
 {% block content %}
-    <div class="panel">
+    <div class="panel overflow">
         {% from "macros.html" import chart_timeline %}
-        {{ chart_timeline(year_month_counts, max_count) }}
+        {{ chart_timeline(timeline) }}
     </div>
     <div class="panel odd">
         <table class="data-table numerical">
@@ -59,17 +16,17 @@
                 <th>{{ month | month_name }}</th>
             {% endfor %}
             </thead>
-            {% for year in year_month_counts %}
+            {% for group in timeline | groupby('0.begin.year') %}
                 <tr>
-                    <th>{{ year }}</th>
-                    {% for month in range(1, 13) %}
-                        {% if not year_month_counts[year][month] %}
-                            <td class="zero" title="No datasets for {{ month | month_name }} {{ year }}">0</td>
+                    <th>{{ group.grouper }}</th>
+                    {% for (start_time, end_time), count in group.list %}
+                        {% if not count %}
+                            <td class="zero" title="No datasets for {{ start_time.month | month_name }} {{ start_time.year }}">0</td>
                         {% else %}
                             <td class="link-cell">
-                                <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
-                                   title="View datasets for {{ month | month_name }} {{ year }}">
-                                    {{ year_month_counts[year][month] or 0 }}
+                                <a href="datasets?after={{ start_time }}&before={{ end_time }}"
+                                   title="View datasets for {{ start_time.month | month_name }} {{ start_time.year }}">
+                                    {{ count or 0 }}
                                 </a>
                             </td>
                         {% endif %}

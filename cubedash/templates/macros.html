@@ -1,19 +1,18 @@
 
-{% macro chart_timeline(year_month_counts, max_count) -%}
+{% macro chart_timeline(timeline) -%}
     <div class="chart-timeline">
-        <div class="chart-timeline-bars" style="width: {{ 2*year_month_counts|length*12 }}px">
-            {% for year in year_month_counts %}
-                {% for month in year_month_counts[year] %}
-                    <a href="datasets?after={{ month_start(year, month) }}&before={{ month_end(year, month) }}"
-                       class="chart-timeline-bar {% if month == 1 %}new-year{% endif %}"
-                       style="height: {{ (year_month_counts[year][month] or 0)/(max_count if max_count > 0 else 1)*100 }}%"
-                       title="View the {{ year_month_counts[year][month] }} datasets for {{ month | month_name }} {{ year }}"></a>
-                {% endfor %}
+        {% set max_count = timeline | map('last') | max %}
+        <div class="chart-timeline-bars">
+            {% for (start_time, end_time), count in timeline %}
+                <a href="datasets?after={{ start_time }}&before={{ end_time }}"
+                   class="chart-timeline-bar {% if start_time.month == 1 %}new-year{% endif %}"
+                   style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%"
+                   title="View the {{ count }} datasets for {{ start_time.month | month_name }} {{ start_time.year }}"></a>
             {% endfor %}
         </div>
-        <div class="chart-timeline-years" style="width: {{ 2*year_month_counts|length*12 }}px">
-            {% for year in year_month_counts %}
-                <span class="chart-timeline-year">{{ year }}</span>
+        <div class="chart-timeline-years">
+            {% for group in timeline | groupby('0.begin.year') %}
+                <span class="chart-timeline-year">{{ group.grouper }}</span>
             {% endfor %}
         </div>
     </div>

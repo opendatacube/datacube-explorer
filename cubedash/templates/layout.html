@@ -88,6 +88,10 @@
             clear: left;
         }
 
+        #header h2 {
+            margin-top: 0;
+        }
+
         #content {
             width: auto;
             background-color: #ebf0f2;
@@ -103,6 +107,9 @@
         #content .panel.highlight {
             background: linear-gradient(to bottom, #6f7173 0%, #424242 100%);
             color: #efefef;
+        }
+        .panel.overflow {
+            overflow-x: auto;
         }
         #content .panel.highlight a {
             color: #999;
@@ -166,6 +173,43 @@
             font-size: 0.8em;
         }
 
+
+        .chart-timeline-bars {
+            font-size: 0;
+            height: 50px;
+            white-space: nowrap;
+        }
+
+        .chart-timeline-bar {
+            width: 2px;
+            display: inline-block;
+            background-color: #6f7173;
+        }
+
+        .chart-timeline-bar.new-year {
+            background-color: #595959;
+        }
+
+        .chart-timeline-bar:hover {
+            background-color: #424242;
+        }
+
+        .chart-timeline-years {
+            font-size: 0;
+            white-space: nowrap;
+        }
+
+        .chart-timeline-year {
+            width: 24px;
+            display: inline-block;
+            font-size: 10px;
+            text-align: center;
+            transform: rotate(45deg);
+            transform-origin: top left;
+            vertical-align: bottom;
+            height: 24px;
+        }
+
     </style>
 </head>
 <body>
@@ -175,39 +219,10 @@
         <span class="subheading">products</span>
     </a>
 </div>
-{% if selected_product %}
-<nav>
-    <ul>
-        {% set navigation_bar = [
-            ('/spatial', 'spatial', 'Spatial'),
-            ('/timeline', 'timeline', 'Timeline'),
-            ('/datasets', 'datasets', 'Datasets')
-        ] -%}
-        {% for href, id, caption in navigation_bar %}
-            <li{% if id == active_page %} class="active"{% endif %}>
-                <a href="/{{ selected_product }}{{ href|e }}" >{{ caption|e }}</a>
-            </li>
-        {% endfor %}
-    </ul>
-</nav>
-{% endif %}
-{% block panel %}
-<div id="header">
-    <div class="panel">
-            {% block selector %}
-            <select name="products" id='select-product'>
-                {% for product in products %}
-                    <option value="{{ product.name }}"
-                            {% if product.name == selected_product %}selected="selected"{% endif %}>
-                        {{ product.description }}
-                    </option>
-                {% endfor %}
-            </select>
-            {% endblock %}
-    </div>
-</div>
-{% endblock %}
+
+{% block header %}{% endblock %}
 <div id="content">{% block content %}{% endblock %}</div>
+
 <script src="/external/jquery-3.1.0.min.js"></script>
 {% block footer %}{% endblock %}
 </body>

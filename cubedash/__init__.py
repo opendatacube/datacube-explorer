@@ -53,22 +53,9 @@ def _format_month_name(val):
     return ds.strftime("%b")
 
 
-@app.context_processor
-def month_bounds():
-    def _month_start(year, month):
-        return datetime(year, month, 1, hour=0, minute=0, second=0)
-
-    def _month_end(year, month):
-        return datetime(
-            year,
-            month,
-            calendar.monthrange(year, month)[1],
-            hour=23,
-            minute=59,
-            second=59,
-        )
-
-    return {"month_start": _month_start, "month_end": _month_end}
+@app.template_filter("max")
+def _max_val(ls):
+    return max(ls)
 
 
 def parse_query(request):
@@ -169,17 +156,17 @@ def _timeline_years(from_year, product):
         product=product,
         time=Range(datetime(from_year, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
     )
+    return timeline
 
-    max_value = 0
-    years = collections.OrderedDict()
-    for (time, end_time), count in timeline:
-        if max_value < count:
-            max_value = count
-        if time.year not in years:
-            years[time.year] = {}
-        years[time.year][time.month] = count
 
-    return years, max_value
+@cached(cache={})
+def _timelines_platform(platform):
+    products = index.datasets.count_by_product_through_time(
+        "1 month",
+        platform=platform,
+        time=Range(datetime(1986, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
+    )
+    return products
 
 
 @app.route("/")
@@ -198,14 +185,21 @@ def map_page(product):
 
 @app.route("%s/timeline" % _PRODUCT_PREFIX)
 def timeline_page(product):
-    types = index.datasets.types.get_all()
-    years = _timeline_years(1986, product)
     return flask.render_template(
         "timeline.html",
-        year_month_counts=years[0],
-        max_count=years[1],
-        products=[p.definition for p in types],
+        timeline=_timeline_years(1986, product),
+        products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
+    )
+
+
+@app.route("/platform/<platform>")
+def platform_page(platform):
+    return flask.render_template(
+        "platform.html",
+        product_counts=_timelines_platform(platform),
+        products=[p.definition for p in index.datasets.types.get_all()],
+        platform=platform,
     )
 
 
