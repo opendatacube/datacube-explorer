@@ -1,0 +1,41 @@
+language: python
+git:
+  depth: 99999
+python:
+- '2.7'
+- '3.5'
+sudo: false
+cache:
+  directories:
+  - $HOME/.cache/pip
+addons:
+  postgresql: '9.4'
+  apt:
+    packages:
+    - libhdf5-serial-dev
+    - libnetcdf-dev
+    - libproj-dev
+    - libgdal1-dev
+    - libudunits2-dev
+    - libblas-dev
+    - liblapack-dev
+    - gfortran
+before_install:
+- createdb agdcintegration
+install:
+- export CPLUS_INCLUDE_PATH="/usr/include/gdal"
+- export C_INCLUDE_PATH="/usr/include/gdal"
+- travis_retry pip install --upgrade pip
+- travis_retry pip install pytest pytest-cov mock pep8 pylint==1.5 coveralls gdal==1.10.0
+  compliance-checker flask shapely
+- travis_retry git clone https://github.com/data-cube/agdc-v2.git
+- travis_retry pip install agdc-v2/
+script:
+- ./check-code.sh
+notifications:
+    slack:
+        on_success: change
+        on_failure: always
+        on_pull_requests: false
+        rooms:
+            secure: XuckJxUiZGuprePxfosIwa+Q1MZXo+bsSmBeKGGK0Ep7EBn4GxbLsJ2XZACPqoPRePH5qHseg1FuHtXx1u0AcnEZ9wX9RHd3mx7TiY2fbE8TWN+vjOvfCxU/qraQxmdPrXja7Y7+OFxjhOKtVb6t2jHlQPpaXUq5Xo/L+73+Tr6IQuQctYCjEiJDtYNJqi8akMT29L9qmPWcYPcXyVpj0KMa8Db1YOkgal/OXqi/Uv5ZijXRERejDcudcaKk1pTL2aV/JUqXjaneEQoJL4dGBOYiWbS+Ye27XDyryHT2caFeH5cJ4KFn/T+3X49DtbjIZqR5pACQeKaAWm5iOKMP+GfonQxh6+4GUqgssn6d9/QWs0GsVtJcN/Rbq/kVMjX7anS5pJfUhiV63hfWIYzTXt1cuNXpupuVyOJLUZCcRyyKkFFLBXJcFPQ07UWofxj8ipa+SWvY24411VpvnANGqfuOTj/ZTQrM8SVVuPITjOn8AUX34ZqcHGajIlkcJKl0vEZZOExsdhgeZYRs24CZ4u4/EcGjJy9GgiXim5gBJbzPF7fDWjQ1oyIrLtdSvi2H/zX9vaKhsgbeRiLY6X3xdEq3APCWzswK+d5lzgfRjd9RxDC5yH8a22l4mhcHQQ9XqmC52AcUZv/QDHeN5qyKL07y09xxAwOqlQYmjP5XyVg=
