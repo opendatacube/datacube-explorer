@@ -6,10 +6,10 @@
     <title>{% block title %}{% endblock %}</title>
 
     {% block head %}
-        <link rel="stylesheet" href="/external/leaflet-0.7.7/leaflet.css">
-        <link rel="stylesheet" href="/external/font-awesome-4.6.3/css/font-awesome.min.css">
-        <link rel="stylesheet" href="/external/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css">
-        <link rel="stylesheet" href="/external/normalise.css">
+        <link rel="stylesheet" href="/static/external/leaflet-0.7.7/leaflet.css">
+        <link rel="stylesheet" href="/static/external/font-awesome-4.6.3/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/static/external/leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css">
+        <link rel="stylesheet" href="/static/external/normalise.css">
     {% endblock %}
     <style type="text/css">
         body {
@@ -223,7 +223,7 @@
 {% block header %}{% endblock %}
 <div id="content">{% block content %}{% endblock %}</div>
 
-<script src="/external/jquery-3.1.0.min.js"></script>
+<script src="/static/external/jquery-3.1.0.min.js"></script>
 {% block footer %}{% endblock %}
 </body>
 </html>
