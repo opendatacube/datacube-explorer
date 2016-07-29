@@ -6,7 +6,7 @@
 {% block content %}
     <div class="panel overflow">
         {% from "macros.html" import chart_timeline %}
-        {{ chart_timeline(timeline) }}
+        {{ chart_timeline(timeline, selected_product) }}
     </div>
     <div class="panel odd">
         <table class="data-table numerical">
@@ -24,7 +24,7 @@
                             <td class="zero" title="No datasets for {{ start_time.month | month_name }} {{ start_time.year }}">0</td>
                         {% else %}
                             <td class="link-cell">
-                                <a href="datasets?after={{ start_time }}&before={{ end_time }}"
+                                <a href="{{ url_for('product_datasets_page', product=selected_product, after=start_time, before=end_time) }}"
                                    title="View datasets for {{ start_time.month | month_name }} {{ start_time.year }}">
                                     {{ count or 0 }}
                                 </a>

@@ -1,4 +1,3 @@
-import calendar
 import collections
 import functools
 import sys
@@ -17,7 +16,6 @@ from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
 
-_PRODUCT_PREFIX = "/<product>"
 # There's probably a proper flask way to do this.
 API_PREFIX = "/api"
 
@@ -172,19 +170,21 @@ def _timelines_platform(platform):
 @app.route("/")
 def default_redirect():
     """Redirect to default starting page."""
-    return flask.redirect(flask.url_for("map_page", product="ls7_level1_scene"))
+    return flask.redirect(
+        flask.url_for("product_spatial_page", product="ls7_level1_scene")
+    )
 
 
-@app.route("%s/spatial" % _PRODUCT_PREFIX)
-def map_page(product):
+@app.route("/<product>/spatial")
+def product_spatial_page(product):
     types = index.datasets.types.get_all()
     return flask.render_template(
         "spatial.html", products=[p.definition for p in types], selected_product=product
     )
 
 
-@app.route("%s/timeline" % _PRODUCT_PREFIX)
-def timeline_page(product):
+@app.route("/<product>/timeline")
+def product_timeline_page(product):
     return flask.render_template(
         "timeline.html",
         timeline=_timeline_years(1986, product),
@@ -193,18 +193,8 @@ def timeline_page(product):
     )
 
 
-@app.route("/platform/<platform>")
-def platform_page(platform):
-    return flask.render_template(
-        "platform.html",
-        product_counts=_timelines_platform(platform),
-        products=[p.definition for p in index.datasets.types.get_all()],
-        platform=platform,
-    )
-
-
-@app.route("%s/datasets" % _PRODUCT_PREFIX)
-def datasets_page(product):
+@app.route("/<product>/datasets")
+def product_datasets_page(product):
     args = flask.request.args
     query = {"product": product}
     query.update(parse_query(args))
@@ -216,6 +206,16 @@ def datasets_page(product):
         selected_product=product,
         datasets=datasets,
         query_params=query,
+    )
+
+
+@app.route("/platform/<platform>")
+def platform_page(platform):
+    return flask.render_template(
+        "platform.html",
+        product_counts=_timelines_platform(platform),
+        products=[p.definition for p in index.datasets.types.get_all()],
+        platform=platform,
     )
 
 

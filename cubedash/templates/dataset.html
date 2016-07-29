@@ -35,7 +35,10 @@
 
             <div class="sources">
                 {% for key, value in dataset.metadata.sources.items() %}
-                    <div class="source">Source <em>{{ key }}</em>: <a href="{{ value.id }}">{{ value.ga_label }}</a></div>
+                    <div class="source">
+                        Source <em>{{ key }}</em>:
+                        <a href="{{ url_for('dataset_page', id_=value.id) }}">{{ value.ga_label }}</a>
+                    </div>
                 {% endfor %}
             </div>
         </div>
