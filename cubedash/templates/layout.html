@@ -5,16 +5,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{% block title %}{% endblock %}</title>
 
-    {% block head %}
-        <link rel="stylesheet"
-              href="{{ url_for('static', filename='leaflet-0.7.7/leaflet.css') }}">
-        <link rel="stylesheet"
-              href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.min.css') }}">
-        <link rel="stylesheet"
-              href="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css') }}">
-        <link rel="stylesheet"
-              href="{{ url_for('static', filename='normalise.css') }}">
-    {% endblock %}
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='normalise.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.min.css') }}">
+    {% block head %}{% endblock %}
+
     <style type="text/css">
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
