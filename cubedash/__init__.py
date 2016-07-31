@@ -35,8 +35,8 @@ def as_json(o):
 index = index_connect(validate_connection=False)
 
 
-@app.template_filter('strftime')
-def _format_datetime(date, fmt=None):
+@app.template_filter('printable_time')
+def _format_datetime(date):
     return date.strftime("%Y-%m-%d %H:%M:%S")
 
 
