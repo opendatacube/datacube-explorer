@@ -16,9 +16,6 @@ from datacube.index import index_connect
 from datacube.model import Range
 from datacube.utils import jsonify_document
 
-# There's probably a proper flask way to do this.
-API_PREFIX = "/api"
-
 app = flask.Flask("cubedash")
 
 ACCEPTABLE_SEARCH_FIELDS = ["platform", "instrument", "product"]
@@ -110,23 +107,6 @@ def next_date(date):
         return datetime(date.year + 1, 1, 1)
     else:
         return datetime(date.year, date.month + 1, 1)
-
-
-@app.route(API_PREFIX + "/products")
-def get_products():
-    types = index.datasets.types.get_all()
-    return as_json({type_.name: type_.definition for type_ in types})
-
-
-@app.route(API_PREFIX + "/products/<name>")
-def get_product(name):
-    type_ = index.datasets.types.get_by_name(name)
-    return as_json(type_.definition)
-
-
-@app.route(API_PREFIX + "/datasets")
-def get_datasets():
-    return as_json({"error": "Too many. TODO: paging"})
 
 
 def dataset_to_feature(ds):
