@@ -4,6 +4,7 @@
 {% block title %}Map{% endblock %}
 {% block head %}
     {{ super() }}
+
     <style type="text/css">
         #map {
             width: 100%;
@@ -22,10 +23,11 @@
             color: #fff;
         }
     </style>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='leaflet-0.7.7/leaflet.css') }}">
 
-    <script>
-
-    </script>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css') }}">
 {% endblock %}
 
 
@@ -53,8 +55,8 @@
 
 
 {% block footer %}
-    <script src="{{ url_for('static', filename='leaflet-0.7.7/leaflet.js')}}"></script>
-    <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js')}}"></script>
+    <script src="{{ url_for('static', filename='leaflet-0.7.7/leaflet.js') }}"></script>
+    <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
     <script type="application/javascript">
         (function () {
             function sizeLayerControl() {
