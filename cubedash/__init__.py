@@ -8,7 +8,7 @@ import flask
 import rasterio.warp
 import shapely.geometry
 import shapely.ops
-from cachetools import cached
+from cachetools.func import ttl_cache
 from dateutil import parser
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
@@ -20,14 +20,22 @@ from datacube.utils import jsonify_document
 # There's probably a proper flask way to do this.
 API_PREFIX = '/api'
 
-index = index_connect()
 app = flask.Flask('cubedash')
 
 ACCEPTABLE_SEARCH_FIELDS = ['platform', 'instrument', 'product']
 
+# Only do expensive queries "once a day"
+# Enough time to last the remainder of the work day, but not enough to still be there the next morning
+CACHE_LONG_TIMEOUT_SECS = 60 * 60 * 18
+
 
 def as_json(o):
     return jsonify(jsonify_document(o), indent=4)
+
+
+# Thread and multiprocess safe.
+# As long as we don't run queries (ie. open db connections) before forking (hence validate=False).
+index = index_connect(validate_connection=False)
 
 
 @app.template_filter('strftime')
@@ -135,8 +143,8 @@ def dataset_to_feature(ds):
     }
 
 
-@app.route(API_PREFIX + '/datasets/<product>/<int:year>-<int:month>')
-@cached(cache={})
+@app.route('/api/datasets/<product>/<int:year>-<int:month>')
+@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
 def datasets_as_features(product, year, month):
     start = datetime(year, month, 1)
     time = Range(start, next_date(start))
@@ -147,7 +155,7 @@ def datasets_as_features(product, year, month):
     })
 
 
-@cached(cache={})
+@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
 def _timeline_years(from_year, product):
     timeline = index.datasets.count_product_through_time(
         '1 month',
@@ -160,7 +168,7 @@ def _timeline_years(from_year, product):
     return timeline
 
 
-@cached(cache={})
+@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
 def _timelines_platform(platform):
     products = index.datasets.count_by_product_through_time(
         '1 month',
