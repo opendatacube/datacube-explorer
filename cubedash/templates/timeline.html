@@ -1,11 +1,11 @@
-{% extends "layout-product.html" %}
+{% extends "layout/product-section.html" %}
 {% set active_page = "timeline" %}
 
 {% block title %}Timeline{% endblock %}
 
 {% block content %}
     <div class="panel overflow">
-        {% from "macros.html" import chart_timeline %}
+        {% from "layout/macros.html" import chart_timeline %}
         {{ chart_timeline(timeline, selected_product) }}
     </div>
     <div class="panel odd">
