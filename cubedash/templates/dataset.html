@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "layout/base.html" %}
 
 {% block title %}{{ dataset.metadata.label }}{% endblock %}
 {% block head %}
@@ -45,7 +45,7 @@
     {% endif %}
     <div class="panel odd">
         <h2>Fields</h2>
-        {% from "macros.html" import query_param_list %}
+        {% from "layout/macros.html" import query_param_list %}
         {{ query_param_list(dataset.metadata.fields) }}
     </div>
     <div class="panel odd">

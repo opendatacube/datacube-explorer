@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "layout/base.html" %}
 {% set active_page = "platform" %}
 
 {% block title %}{{ platform }}{% endblock %}
@@ -11,7 +11,7 @@
     </div>
 {% endblock %}
 {% block content %}
-    {% from "macros.html" import chart_timeline %}
+    {% from "layout/macros.html" import chart_timeline %}
     {% for product, counts in product_counts %}
         <div class="panel odd">
             <h2>{{ product }}</h2>
