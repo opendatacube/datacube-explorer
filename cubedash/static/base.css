@@ -1,0 +1,217 @@
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #fcfcfc;
+    background: linear-gradient(to bottom, #e0e0e0 0%, #fcfcfc 60px);
+    max-width: 1024px;
+    margin: 20px auto 30px;
+    min-height: calc(100vh - 50px);
+    padding: 0 30px;
+    color: #424242;
+    font-size: 0.86em;
+}
+
+a {
+    color: #2b2b2b;
+}
+
+#header {
+    background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);
+    color: #efefef;
+}
+
+#header .panel {
+    padding: 15px 30px;
+    line-height: 20px;
+    height: 20px;
+}
+
+#logo {
+    padding: 0 30px 15px;
+}
+
+#logo a {
+    font-size: 2em;
+    text-decoration: none;
+    font-weight: bold;
+    color: inherit;
+}
+
+#logo .subheading {
+    font-size: 0.8em;
+    color: #959595;
+    font-weight: normal;
+}
+
+#logo, nav {
+    display: inline-block;
+    vertical-align: bottom;
+}
+
+nav ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+    text-align: right;
+    vertical-align: bottom;
+}
+
+nav li {
+    float: left;
+    margin: 0;
+}
+
+nav li a {
+    padding: 4px 9px;
+    display: inline-block;
+    background: #2b2b2b;
+    border-color: #2b2b2b;
+    color: #efefef;
+    text-decoration: none;
+    font-size: 0.86em;
+}
+
+nav li a:hover {
+    background: linear-gradient(to bottom, #464646 0%, #424242 100%);
+}
+
+nav li a:active, nav li.active a {
+    background: linear-gradient(to bottom, #464646 0%, #424242 100%);
+}
+
+#header {
+    clear: left;
+}
+
+#header h2 {
+    margin-top: 0;
+}
+
+#content {
+    width: auto;
+    background-color: #ebf0f2;
+}
+
+#content .panel {
+    padding: 15px 30px;
+    background: #adb0b3;
+}
+
+#content .panel.odd {
+    background-color: #d2d7d9;
+}
+
+#content .panel.highlight {
+    background: linear-gradient(to bottom, #6f7173 0%, #424242 100%);
+    color: #efefef;
+}
+
+.panel.overflow {
+    overflow-x: auto;
+}
+
+#content .panel.highlight a {
+    color: #999;
+}
+
+.panel h2 {
+    margin: 15px 0 5px;
+}
+
+.panel h2:first-child {
+    margin-top: 0;
+}
+
+/* Add line between adjacent panels */
+.panel.odd + .panel.odd,
+.panel.highlight + .panel.odd {
+    border-top: 1px solid #adb0b3;
+}
+
+/* Table of values */
+.panel .data-table {
+    margin: 0 -15px;
+}
+
+.data-table th {
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.data-table td, .data-table th, .link-cell > a {
+    padding: 0 15px;
+    text-align: left;
+    line-height: 30px;
+}
+
+/* A link cell has padding on the anchor, not the cell */
+.data-table td.link-cell, .data-table th.link-cell {
+    padding: 0;
+}
+
+.link-cell > a {
+    display: block;
+    text-decoration: none;
+}
+
+.link-cell > a:hover {
+    background-color: #424242;
+    color: #d2d7d9;
+}
+
+.data-table.numerical td, .data-table.numerical th {;
+    text-align: right;
+}
+
+.data-table td.zero {
+    color: #ababab;
+}
+
+/* lists of key-values */
+.query-param {
+    line-height: 30px;
+}
+
+.query-param > .key {
+    display: inline-block;
+    font-weight: bold;
+    min-width: 80px;
+    font-size: 0.8em;
+}
+
+.chart-timeline-bars {
+    font-size: 0;
+    height: 50px;
+    white-space: nowrap;
+}
+
+.chart-timeline-bar {
+    width: 2px;
+    display: inline-block;
+    background-color: #6f7173;
+}
+
+.chart-timeline-bar.new-year {
+    background-color: #595959;
+}
+
+.chart-timeline-bar:hover {
+    background-color: #424242;
+}
+
+.chart-timeline-years {
+    font-size: 0;
+    white-space: nowrap;
+}
+
+.chart-timeline-year {
+    width: 24px;
+    display: inline-block;
+    font-size: 10px;
+    text-align: center;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    vertical-align: bottom;
+    height: 24px;
+}
+
