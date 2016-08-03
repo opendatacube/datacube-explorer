@@ -32,7 +32,7 @@ def as_json(o):
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking (hence validate=False).
-index = index_connect(validate_connection=False)
+index = index_connect(application_name='cubedash', validate_connection=False)
 
 
 @app.template_filter('printable_time')
