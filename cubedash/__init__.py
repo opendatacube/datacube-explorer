@@ -145,7 +145,7 @@ def _timeline_years(from_year, product):
             datetime.utcnow()
         )
     )
-    return timeline
+    return list(timeline)
 
 
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
@@ -158,7 +158,7 @@ def _timelines_platform(platform):
             datetime.utcnow()
         )
     )
-    return products
+    return list(products)
 
 
 @app.route('/')
