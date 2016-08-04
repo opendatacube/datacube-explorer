@@ -142,7 +142,7 @@ def _timeline_years(from_year, product):
         product=product,
         time=Range(datetime(from_year, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
     )
-    return timeline
+    return list(timeline)
 
 
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
@@ -152,7 +152,7 @@ def _timelines_platform(platform):
         platform=platform,
         time=Range(datetime(1986, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
     )
-    return products
+    return list(products)
 
 
 @app.route("/")
