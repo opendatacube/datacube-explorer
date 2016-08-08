@@ -28,7 +28,7 @@
 {% block content %}
     <div class="panel highlight">
         <h2>{{ dataset.metadata.label }}</h2>
-        <span class="file-path">{{ dataset.local_path }}</span>
+        Indexed by <strong>{{ dataset.indexed_by }}</strong> <span title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
     </div>
     {% if dataset.metadata.sources %}
         <div class="panel">
@@ -46,6 +46,9 @@
         <h2>Fields</h2>
         {% from "layout/macros.html" import query_param_list %}
         {{ query_param_list(dataset.metadata.fields) }}
+    </div>
+    <div class="panel">
+        <span class="file-path">{{ dataset.local_path }}</span>
     </div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>
