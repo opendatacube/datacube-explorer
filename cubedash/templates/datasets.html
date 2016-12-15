@@ -26,7 +26,7 @@
                 {% for dataset in datasets %}
                     <tr>
                         <td>{{ dataset.center_time | printable_time }}</td>
-                        <td><a href='{{ url_for('dataset_page', id_=dataset.id) }}'>{{ dataset.metadata.label }}</a></td>
+                        <td><a href='{{ url_for('dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a></td>
                     </tr>
                 {% endfor %}
             </table>

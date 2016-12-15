@@ -6,6 +6,7 @@ Common global filters and util methods.
 import collections
 import functools
 import logging
+import pathlib
 from datetime import datetime
 
 from dateutil import parser, tz
@@ -23,6 +24,26 @@ ACCEPTABLE_SEARCH_FIELDS = ["platform", "instrument", "product"]
 @bp.app_template_filter("printable_time")
 def _format_datetime(date):
     return date.strftime("%Y-%m-%d %H:%M:%S")
+
+
+@bp.app_template_filter("printable_dataset")
+def _dataset_label(dataset):
+    """
+    :type dataset: datacube.model.Dataset
+    :rype: str
+    """
+    # Identify by label if they have one
+    if "label" in dataset.metadata.fields:
+        return dataset.metadata.label
+    # Otherwise by the file/folder name if there's a path.
+    elif dataset.local_uri:
+        p = pathlib.Path(dataset.local_uri)
+        if p.name in ("ga-metadata.yaml", "agdc-metadata.yaml"):
+            return p.parent.name
+        else:
+            return p.name
+    # TODO: Otherwise try to build a label from the available fields?
+    return dataset.id
 
 
 @bp.app_template_filter("query_value")

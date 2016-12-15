@@ -151,10 +151,18 @@ def platform_page(platform):
 def dataset_page(id_):
     dataset = index.datasets.get(str(id_), include_sources=True)
 
+    source_datasets = {
+        type_: index.datasets.get(str(dataset_d["id"]))
+        for type_, dataset_d in dataset.metadata.sources.items()
+    }
+
     ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
 
     return flask.render_template(
-        "dataset.html", dataset=dataset, dataset_metadata=ordered_metadata
+        "dataset.html",
+        dataset=dataset,
+        dataset_metadata=ordered_metadata,
+        source_datasets=source_datasets,
     )
 
 
