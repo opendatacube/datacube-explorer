@@ -13,6 +13,7 @@ from dateutil import parser
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint
+from jinja2 import Markup, escape
 
 from datacube.model import Range
 
@@ -29,9 +30,18 @@ def _format_datetime(date):
 
 @bp.app_template_filter('printable_dataset')
 def _dataset_label(dataset):
+    label = _get_label(dataset)
+    # If archived, strike out the label.
+    if dataset.archived_time:
+        return Markup("<del>{}</del>".format(escape(label)))
+    else:
+        return label
+
+
+def _get_label(dataset):
     """
     :type dataset: datacube.model.Dataset
-    :rype: str
+    :rtype: str
     """
     # Identify by label if they have one
     if 'label' in dataset.metadata.fields:

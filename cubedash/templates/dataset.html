@@ -32,6 +32,14 @@
         <h2>{{ dataset | printable_dataset }}</h2>
         Indexed by <strong>{{ dataset.indexed_by }}</strong> <span
             title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
+        {% if dataset.archived_time %}
+            <div>
+                Archived
+                <span title="{{ dataset.archived_time }}">
+                    {{ dataset.archived_time | timesince }}
+                </span>
+            </div>
+        {% endif %}
     </div>
     {% if source_datasets %}
         <div class="panel">
