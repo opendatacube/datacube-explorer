@@ -162,6 +162,7 @@ def dataset_page(id_):
         "dataset.html",
         dataset=dataset,
         dataset_metadata=ordered_metadata,
+        derived_datasets=index.datasets.get_derived(str(id_)),
         source_datasets=source_datasets,
     )
 

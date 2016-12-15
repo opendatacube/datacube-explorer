@@ -69,4 +69,14 @@
             </div>
         {%- endfor %}
     </div>
+    {% if derived_datasets %}
+        <div class="panel">
+            <h2>Derived</h2>
+            {% for d_dataset in derived_datasets %}
+                <div>
+                    <a href="{{ url_for('dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 {% endblock %}
