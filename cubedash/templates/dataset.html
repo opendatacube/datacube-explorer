@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% block title %}{{ dataset.metadata.label }}{% endblock %}
+{% block title %}{{ dataset | printable_dataset }}{% endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">
@@ -8,9 +8,11 @@
             font-family: 'Courier New', monospace;
             line-height: 1.3em;
         }
+
         .property .property {
             padding-left: 15px;
         }
+
         .embedded > .property > .key {
             font-weight: bold;
 
@@ -27,16 +29,17 @@
 {% endblock %}
 {% block content %}
     <div class="panel highlight">
-        <h2>{{ dataset.metadata.label }}</h2>
-        Indexed by <strong>{{ dataset.indexed_by }}</strong> <span title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
+        <h2>{{ dataset | printable_dataset }}</h2>
+        Indexed by <strong>{{ dataset.indexed_by }}</strong> <span
+            title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
     </div>
-    {% if dataset.metadata.sources %}
+    {% if source_datasets %}
         <div class="panel">
             <div class="sources">
-                {% for key, value in dataset.metadata.sources.items() %}
+                {% for classifier, s_dataset in source_datasets.items() %}
                     <div class="source">
-                        Source <em>{{ key }}</em>:
-                        <a href="{{ url_for('dataset_page', id_=value.id) }}">{{ value.ga_label }}</a>
+                        Source <em>{{ classifier }}</em>:
+                        <a href="{{ url_for('dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
                     </div>
                 {% endfor %}
             </div>
