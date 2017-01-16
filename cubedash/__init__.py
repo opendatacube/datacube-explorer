@@ -4,13 +4,11 @@ from json import dumps as jsonify
 
 import flask
 import rasterio.warp
-import shapely.geometry
-import shapely.ops
 from cachetools.func import ttl_cache
 from dateutil import tz
 
 from datacube.index import index_connect
-from datacube.model import Range
+from datacube.model import CRS, Range
 from datacube.utils import jsonify_document
 
 from . import _utils as utils
@@ -32,16 +30,6 @@ def as_json(o):
 index = index_connect(application_name="cubedash", validate_connection=False)
 
 
-def datasets_union(dss):
-    return shapely.ops.unary_union(
-        [shapely.geometry.Polygon(ds.extent.points) for ds in dss]
-    )
-
-
-def warp_geometry(geom, crs):
-    return rasterio.warp.transform_geom(crs, "EPSG:4326", geom)
-
-
 def next_date(date):
     if date.month == 12:
         return datetime(date.year + 1, 1, 1)
@@ -53,10 +41,7 @@ def dataset_to_feature(ds):
     properties = {"id": ds.id, "product": ds.type.name, "time": ds.center_time}
     return {
         "type": "Feature",
-        "geometry": warp_geometry(
-            shapely.geometry.mapping(shapely.geometry.Polygon(ds.extent.points)),
-            str(ds.crs),
-        ),
+        "geometry": ds.extent.to_crs(CRS("EPSG:4326")).__geo_interface__,
         "properties": {"id": ds.id, "product": ds.type.name, "time": ds.center_time},
     }
 
