@@ -152,6 +152,11 @@ def dataset_page(id_):
     )
 
 
+@app.route("/view-dataset/<uuid:id_>")
+def view_dataset_page(id_):
+    dataset = index.datasets.get(str(id_), include_sources=True)
+
+
 if __name__ == "__main__":
     DEBUG_MODE = len(sys.argv) == 2 and sys.argv[1] == "--debug"
     app.jinja_env.auto_reload = DEBUG_MODE
