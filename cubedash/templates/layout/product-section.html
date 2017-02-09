@@ -6,8 +6,7 @@
             {% set navigation_bar = [
                 ('spatial', 'product_spatial_page'),
                 ('timeline', 'product_timeline_page'),
-                ('datasets', 'product_datasets_page'),
-                ('viewer', 'view_dataset_page')
+                ('datasets', 'product_datasets_page')
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
