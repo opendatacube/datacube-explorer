@@ -3,7 +3,6 @@ from datetime import datetime
 from json import dumps as jsonify
 
 import flask
-import rasterio.warp
 from cachetools.func import ttl_cache
 from dateutil import tz
 
@@ -145,9 +144,9 @@ def platform_page(platform):
 
 @app.route('/datasets/<uuid:id_>')
 def dataset_page(id_):
-    dataset = index.datasets.get(str(id_), include_sources=True)
+    dataset = index.datasets.get(id_, include_sources=True)
 
-    source_datasets = {type_: index.datasets.get(str(dataset_d['id']))
+    source_datasets = {type_: index.datasets.get(dataset_d['id'])
                        for type_, dataset_d in dataset.metadata.sources.items()}
 
     ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
@@ -156,7 +155,7 @@ def dataset_page(id_):
         'dataset.html',
         dataset=dataset,
         dataset_metadata=ordered_metadata,
-        derived_datasets=index.datasets.get_derived(str(id_)),
+        derived_datasets=index.datasets.get_derived(id_),
         source_datasets=source_datasets
     )
 
