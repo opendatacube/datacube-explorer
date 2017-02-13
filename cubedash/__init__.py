@@ -6,11 +6,11 @@ import flask
 from cachetools.func import ttl_cache
 from dateutil import tz
 
+from cubedash import _utils as utils
 from datacube.index import index_connect
-from datacube.model import CRS, Range
+from datacube.model import Range
 from datacube.utils import jsonify_document
-
-from . import _utils as utils
+from datacube.utils.geometry import CRS
 
 app = flask.Flask("cubedash")
 app.register_blueprint(utils.bp)
