@@ -7,9 +7,10 @@ from cachetools.func import ttl_cache
 from dateutil import tz
 
 from datacube.index import index_connect
-from datacube.model import CRS, Range
+from datacube.model import Range
+from datacube.utils.geometry import CRS
 from datacube.utils import jsonify_document
-from . import _utils as utils
+from cubedash import _utils as utils
 
 app = flask.Flask('cubedash')
 app.register_blueprint(utils.bp)
