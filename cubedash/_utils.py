@@ -44,8 +44,9 @@ def _get_label(dataset):
     :rtype: str
     """
     # Identify by label if they have one
-    if 'label' in dataset.metadata.fields:
-        return dataset.metadata.label
+    label = dataset.metadata.fields.get('label')
+    if label is not None:
+        return label
     # Otherwise by the file/folder name if there's a path.
     elif dataset.local_uri:
         p = pathlib.Path(dataset.local_uri)
