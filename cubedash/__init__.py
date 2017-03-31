@@ -6,11 +6,11 @@ import flask
 from cachetools.func import ttl_cache
 from dateutil import tz
 
+from cubedash import _utils as utils
 from datacube.index import index_connect
 from datacube.model import Range
-from datacube.utils.geometry import CRS
 from datacube.utils import jsonify_document
-from cubedash import _utils as utils
+from datacube.utils.geometry import CRS
 
 app = flask.Flask('cubedash')
 app.register_blueprint(utils.bp)
@@ -37,11 +37,6 @@ def next_date(date):
 
 
 def dataset_to_feature(ds):
-    properties = {
-        'id': ds.id,
-        'product': ds.type.name,
-        'time': ds.center_time
-    }
     return {
         'type': 'Feature',
         'geometry': ds.extent.to_crs(CRS('EPSG:4326')).__geo_interface__,
@@ -159,14 +154,6 @@ def dataset_page(id_):
         derived_datasets=index.datasets.get_derived(id_),
         source_datasets=source_datasets
     )
-
-
-@app.route('/view-dataset/<uuid:id_>')
-def view_dataset_page(id_):
-    dataset = index.datasets.get(str(id_), include_sources=True)
-
-
-
 
 
 if __name__ == '__main__':
