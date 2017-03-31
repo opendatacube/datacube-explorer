@@ -22,7 +22,16 @@ a {
 
 #header .panel {
     padding: 15px 30px;
-    line-height: 20px;
+    display: flex;
+}
+
+#header .panel > select {
+    margin-right: 5px;
+    padding: 5px;
+}
+
+#header .panel > select:last-child {
+    margin-right: 0;
 }
 
 #logo {
