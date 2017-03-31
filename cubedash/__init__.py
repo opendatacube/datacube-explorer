@@ -37,7 +37,6 @@ def next_date(date):
 
 
 def dataset_to_feature(ds):
-    properties = {"id": ds.id, "product": ds.type.name, "time": ds.center_time}
     return {
         "type": "Feature",
         "geometry": ds.extent.to_crs(CRS("EPSG:4326")).__geo_interface__,
@@ -149,11 +148,6 @@ def dataset_page(id_):
         derived_datasets=index.datasets.get_derived(id_),
         source_datasets=source_datasets,
     )
-
-
-@app.route("/view-dataset/<uuid:id_>")
-def view_dataset_page(id_):
-    dataset = index.datasets.get(str(id_), include_sources=True)
 
 
 if __name__ == "__main__":
