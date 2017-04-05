@@ -11,11 +11,11 @@
             height: calc(100vh - 100px);
         }
 
-        #loading {
+        .message-box {
             position: absolute;
-            left: calc(50% - 50px);
-            top: 50%;
-            width: 100px;
+            left: calc(50% - 100px);
+            top: 25%;
+            width: 200px;
             text-align: center;
             z-index: 9999;
             background: #2b2b2b linear-gradient(to bottom, #6f7173 0%, #424242 100%);
@@ -46,9 +46,12 @@
 {% endblock %}
 
 {% block content %}
-    <div id="loading">
+    <div id="msg-loading" class="message-box">
         <i class="fa fa-cog fa-spin fa-fw"></i>
         <span>Loading...</span>
+    </div>
+    <div id="msg-no-results" class="message-box">
+        <span>No datasets for period</span>
     </div>
     <div id="map"></div>
 {% endblock %}
@@ -151,18 +154,25 @@
                     }
             ).addTo(map);
 
+            var msgLoading = $("#msg-loading"),
+                msgNoResults = $("#msg-no-results").hide();
 
             function reload_map() {
                 var product = $('#select-product :selected').val();
                 var year = $('#select-year :selected').val();
                 var month = $('#select-month :selected').val();
 
-                $("#loading").show();
+                msgNoResults.hide();
+                msgLoading.show();
                 datasets.clearLayers();
 
                 $.getJSON("/api/datasets/" + product + "/" + year + "-" + month + "/poly", function (data) {
                     datasets.addData(data);
-                    $("#loading").hide();
+                    msgLoading.hide();
+
+                    if (data.properties.dataset_count == 0) {
+                        msgNoResults.show();
+                    }
                 })
             }
 
