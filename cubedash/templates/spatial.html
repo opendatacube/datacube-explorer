@@ -160,7 +160,7 @@
                 $("#loading").show();
                 datasets.clearLayers();
 
-                $.getJSON("/api/datasets/" + product + "/" + year + "-" + month, function (data) {
+                $.getJSON("/api/datasets/" + product + "/" + year + "-" + month + "/poly", function (data) {
                     datasets.addData(data);
                     $("#loading").hide();
                 })

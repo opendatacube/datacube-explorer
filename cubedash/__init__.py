@@ -3,6 +3,8 @@ from datetime import datetime
 from json import dumps as jsonify
 
 import flask
+import shapely.geometry
+import shapely.ops
 from cachetools.func import ttl_cache
 from dateutil import tz
 
@@ -54,6 +56,31 @@ def datasets_as_features(product, year, month):
         {
             "type": "FeatureCollection",
             "features": [dataset_to_feature(ds) for ds in datasets],
+        }
+    )
+
+
+@app.route("/api/datasets/<product>/<int:year>-<int:month>/poly")
+@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
+def dataset_shape(product, year, month):
+    start = datetime(year, month, 1)
+    time = Range(start, next_date(start))
+    datasets = index.datasets.search(product=product, time=time)
+    return as_json(
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": shapely.ops.unary_union(
+                        [
+                            shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
+                            for ds in datasets
+                            if ds.extent
+                        ]
+                    ).__geo_interface__,
+                }
+            ],
         }
     )
 
