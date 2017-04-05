@@ -66,22 +66,17 @@ def dataset_shape(product, year, month):
     start = datetime(year, month, 1)
     time = Range(start, next_date(start))
     datasets = index.datasets.search(product=product, time=time)
+    dataset_shapes = [
+        shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
+        for ds in datasets
+        if ds.extent
+    ]
     return as_json(
-        {
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "geometry": shapely.ops.unary_union(
-                        [
-                            shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
-                            for ds in datasets
-                            if ds.extent
-                        ]
-                    ).__geo_interface__,
-                }
-            ],
-        }
+        dict(
+            type="Feature",
+            geometry=shapely.ops.unary_union(dataset_shapes).__geo_interface__,
+            properties=dict(dataset_count=len(dataset_shapes)),
+        )
     )
 
 
