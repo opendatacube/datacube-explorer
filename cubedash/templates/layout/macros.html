@@ -1,4 +1,3 @@
-
 {% macro chart_timeline(timeline, product_name) -%}
     <div class="chart-timeline">
         {% set max_count = timeline | map('last') | max %}
@@ -19,10 +18,12 @@
 {%- endmacro %}
 
 {% macro query_param_list(d) -%}
-    {% for key, value in d | dictsort if value is not mapping %}
-        <div class="query-param">
-            <span class="key">{{ key }}:</span>
-            <span class="value">{{ value | query_value }}</span>
-        </div>
-    {% endfor %}
+    <div class="query-param-list">
+        {% for key, value in d | dictsort if value is not mapping %}
+            <div class="query-param">
+                <span class="key">{{ key }}:</span>
+                <span class="value">{{ value | query_value }}</span>
+            </div>
+        {% endfor %}
+    </div>
 {%- endmacro %}

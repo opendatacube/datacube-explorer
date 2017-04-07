@@ -177,6 +177,11 @@ nav li a:active, nav li.active a {
 }
 
 /* lists of key-values */
+
+.query-param-list {
+    width: auto;
+    column-count: 2;
+}
 .query-param {
     line-height: 30px;
 }
