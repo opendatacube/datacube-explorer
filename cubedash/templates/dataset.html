@@ -40,6 +40,9 @@
                 </span>
             </div>
         {% endif %}
+        <div>
+            {{ dataset.type.name }} ({{ dataset.type.metadata_type.name }})
+        </div>
     </div>
     {% if source_datasets %}
         <div class="panel">
