@@ -55,7 +55,7 @@ def datasets_as_features(product, year, month):
     return as_json(
         {
             "type": "FeatureCollection",
-            "features": [dataset_to_feature(ds) for ds in datasets],
+            "features": [dataset_to_feature(ds) for ds in datasets if ds.extent],
         }
     )
 
@@ -66,6 +66,7 @@ def dataset_shape(product, year, month):
     start = datetime(year, month, 1)
     time = Range(start, next_date(start))
     datasets = index.datasets.search(product=product, time=time)
+
     dataset_shapes = [
         shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
         for ds in datasets
