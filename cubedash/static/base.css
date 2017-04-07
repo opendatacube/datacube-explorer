@@ -96,6 +96,7 @@ nav li a:active, nav li.active a {
 }
 
 #content {
+    position: relative;
     width: auto;
     background-color: #ebf0f2;
 }
