@@ -34,8 +34,8 @@ index = index_connect(application_name='cubedash', validate_connection=False)
 def next_date(date):
     if date.month == 12:
         return datetime(date.year + 1, 1, 1)
-    else:
-        return datetime(date.year, date.month + 1, 1)
+
+    return datetime(date.year, date.month + 1, 1)
 
 
 def dataset_to_feature(ds):
