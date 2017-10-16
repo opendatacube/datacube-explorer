@@ -36,8 +36,8 @@ def _dataset_label(dataset):
     # If archived, strike out the label.
     if dataset.archived_time:
         return Markup("<del>{}</del>".format(escape(label)))
-    else:
-        return label
+
+    return label
 
 
 def _get_label(dataset):
@@ -54,8 +54,8 @@ def _get_label(dataset):
         p = pathlib.Path(dataset.local_uri)
         if p.name in ('ga-metadata.yaml', 'agdc-metadata.yaml'):
             return p.parent.name
-        else:
-            return p.name
+
+        return p.name
     # TODO: Otherwise try to build a label from the available fields?
     return dataset.id
 
@@ -132,8 +132,8 @@ def parse_query(request):
     def range_dodge(val):
         if isinstance(val, list):
             return Range(val[0], val[1])
-        else:
-            return Range(val - 0.00005, val + 0.00005)
+
+        return Range(val - 0.00005, val + 0.00005)
 
     if 'lon' in request and 'lat' in request:
         query['lon'] = range_dodge(request['lon'])
