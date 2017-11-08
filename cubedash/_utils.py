@@ -18,7 +18,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint
 from jinja2 import Markup, escape
 
-from datacube.model import Range
+from datacube.model import Range, DatasetType
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('utils', __name__)
@@ -111,8 +111,16 @@ def timesince(dt, default="just now"):
     return default
 
 
-def parse_query(request):
-    query = {}
+DEFAULT_PLATFORM_END_DATE = {
+    'LANDSAT_8': datetime.now() - relativedelta(months=2),
+    'LANDSAT_7': datetime.now() - relativedelta(months=2),
+    'LANDSAT_5': datetime(2011, 11, 30),
+}
+
+
+def parse_query(request, product: DatasetType):
+    query = {'product': product.name}
+
     for field in ACCEPTABLE_SEARCH_FIELDS:
         if field in request:
             query[field] = request[field]
@@ -122,7 +130,11 @@ def parse_query(request):
 
     # Default from/to values (a one month range)
     if not from_time and not to_time:
-        to_time = datetime.now()
+        platform_name = product.fields.get('platform')
+        if platform_name in DEFAULT_PLATFORM_END_DATE:
+            to_time = DEFAULT_PLATFORM_END_DATE[platform_name]
+        else:
+            to_time = datetime.now()
     if not to_time:
         to_time = from_time + relativedelta(months=1)
     if not from_time:
@@ -139,6 +151,7 @@ def parse_query(request):
     if 'lon' in request and 'lat' in request:
         query['lon'] = range_dodge(request['lon'])
         query['lat'] = range_dodge(request['lat'])
+
     return query
 
 
