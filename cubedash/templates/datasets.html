@@ -13,8 +13,41 @@
 
 {% block content %}
     <div class="panel">
-        {% from "layout/macros.html" import query_param_list %}
-        {{ query_param_list(query_params) }}
+        <form action="{{ url_for('product_datasets_page', product=selected_product) }}" id="textform" method="get">
+            <div class="search-param-list">
+                <div class="search-param">
+                    <div class="key">
+                        <label for="search-before">Between</label>
+                    </div>
+                    <div class="value time-range">
+                        <input type="date"
+                               id="search-before"
+                               name="after"
+                               value="{{ query_params.time.0.strftime('%Y-%m-%d') }}"/> -
+                        <input type="date"
+                               id="search-after"
+                               name="before"
+                               value="{{ query_params.time.1.strftime('%Y-%m-%d') }}"/>
+                    </div>
+                </div>
+                {% for key, value in query_params | dictsort if value is not mapping and key not in ('time', 'product') %}
+                    <div class="search-param">
+                        <div class="key">
+                            <label for="search-{{ key }}"
+                                   class="key">{{ key }}:</label>
+                        </div>
+                        <div class="value">
+                            <input type="text"
+                                   id="search-{{ key }}"
+                                   name="{{ key }}"
+                                   value="{{ value }}"/>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit">Search</button>
+        </form>
     </div>
     <div class="panel odd">
         {% if datasets %}
@@ -26,7 +59,9 @@
                 {% for dataset in datasets %}
                     <tr>
                         <td>{{ dataset.center_time | printable_time }}</td>
-                        <td><a href='{{ url_for('dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a></td>
+                        <td>
+                            <a href='{{ url_for('dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </table>

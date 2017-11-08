@@ -145,6 +145,7 @@ def product_datasets_page(product: str):
         "datasets.html",
         products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
+        selected_product_e=product_entity,
         datasets=datasets,
         query_params=query,
     )
