@@ -2,17 +2,18 @@ from __future__ import absolute_import
 
 import sys
 from datetime import datetime
-from json import dumps as jsonify
 
 import flask
 import shapely.geometry
 import shapely.ops
 from cachetools.func import ttl_cache
 from dateutil import tz
+from flask import jsonify, request
 
 from cubedash import _utils as utils
 from datacube.index import index_connect
 from datacube.model import Range
+from datacube.scripts.dataset import build_dataset_info
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
@@ -27,7 +28,7 @@ CACHE_LONG_TIMEOUT_SECS = 60 * 60 * 18
 
 
 def as_json(o):
-    return jsonify(jsonify_document(o), indent=4)
+    return jsonify(jsonify_document(o))
 
 
 # Thread and multiprocess safe.
@@ -141,6 +142,9 @@ def product_datasets_page(product: str):
         index.datasets.search_eager(**query, limit=_HARD_SEARCH_LIMIT),
         key=lambda d: d.center_time,
     )
+
+    if request_wants_json():
+        return as_json(dict(datasets=[build_dataset_info(index, d) for d in datasets]))
     return flask.render_template(
         "datasets.html",
         products=[p.definition for p in index.datasets.types.get_all()],
@@ -148,6 +152,14 @@ def product_datasets_page(product: str):
         selected_product_e=product_entity,
         datasets=datasets,
         query_params=query,
+    )
+
+
+def request_wants_json():
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"])
+    return (
+        best == "application/json"
+        and request.accept_mimetypes[best] > request.accept_mimetypes["text/html"]
     )
 
 
