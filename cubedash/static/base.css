@@ -186,11 +186,18 @@ nav li a:active, nav li.active a {
     line-height: 30px;
 }
 
-.query-param > .key {
+.query-param > .key, .search-param > .key {
     display: inline-block;
     font-weight: bold;
     min-width: 80px;
     font-size: 0.8em;
+    line-height: 30px;
+}
+
+button {
+    margin: 5px 0;
+    line-height: 1.5em;
+    padding: 0 8px;
 }
 
 .chart-timeline-bars {

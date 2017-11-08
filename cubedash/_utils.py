@@ -23,8 +23,6 @@ from datacube.model import Range, DatasetType
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('utils', __name__)
 
-ACCEPTABLE_SEARCH_FIELDS = ['platform', 'instrument', 'product']
-
 
 @bp.app_template_filter('printable_time')
 def _format_datetime(date):
@@ -121,7 +119,7 @@ DEFAULT_PLATFORM_END_DATE = {
 def parse_query(request, product: DatasetType):
     query = {'product': product.name}
 
-    for field in ACCEPTABLE_SEARCH_FIELDS:
+    for field in product.fields.keys():
         if field in request:
             query[field] = request[field]
 
