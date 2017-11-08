@@ -16,6 +16,8 @@ from datacube.model import Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
+_HARD_SEARCH_LIMIT = 500
+
 app = flask.Flask("cubedash")
 app.register_blueprint(utils.bp)
 
@@ -130,12 +132,15 @@ def product_timeline_page(product):
 
 
 @app.route("/<product>/datasets")
-def product_datasets_page(product):
+def product_datasets_page(product: str):
+    product_entity = index.products.get_by_name_unsafe(product)
     args = flask.request.args
-    query = {"product": product}
-    query.update(utils.parse_query(args))
+    query = utils.parse_query(args, product=product_entity)
     # TODO: Add sort option to index API
-    datasets = sorted(index.datasets.search_eager(**query), key=lambda d: d.center_time)
+    datasets = sorted(
+        index.datasets.search_eager(**query, limit=_HARD_SEARCH_LIMIT),
+        key=lambda d: d.center_time,
+    )
     return flask.render_template(
         "datasets.html",
         products=[p.definition for p in index.datasets.types.get_all()],
