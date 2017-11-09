@@ -1,0 +1,202 @@
+@import normalise.css
+
+body
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+    background: #fcfcfc
+    background: linear-gradient(to bottom, #e0e0e0 0%, #fcfcfc 60px)
+    max-width: 1024px
+    margin: 0 auto 30px
+    min-height: calc(100vh - 50px)
+    padding: 0 30px
+    color: #424242
+    font-size: 0.86em
+
+a
+    color: #2b2b2b
+
+#header
+    background-color: #424242
+    /*background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);
+    color: #efefef
+    .panel
+        padding: 15px 30px
+        display: flex
+        > select
+            margin-right: 5px
+            padding: 5px
+            &:last-child
+                margin-right: 0
+
+#logo
+    padding: 5px 30px 5px 25px
+    a
+        font-size: 2em
+        text-decoration: none
+        font-weight: bold
+        color: inherit
+    .subheading
+        font-size: 0.8em
+        color: #959595
+        font-weight: normal
+    display: inline-block
+    vertical-align: bottom
+
+nav
+    display: inline-block
+    vertical-align: bottom
+    ul
+        margin: 0
+        padding: 0
+        list-style-type: none
+        text-align: right
+        vertical-align: bottom
+    li
+        float: left
+        margin: 0
+        a
+            padding: 4px 9px
+            display: inline-block
+            background: #2b2b2b
+            border-color: #2b2b2b
+            color: #efefef
+            text-decoration: none
+            font-size: 0.86em
+            &:hover, &:active
+                background: linear-gradient(to bottom, #464646 0%, #424242 100%)
+        &.active a
+            background: linear-gradient(to bottom, #464646 0%, #424242 100%)
+
+#header
+    clear: left
+    h2
+        margin-top: 0
+
+#content
+    position: relative
+    width: auto
+    background-color: #ebf0f2
+    .panel
+        padding: 15px 30px
+        background: #adb0b3
+        &.odd
+            background-color: #d2d7d9
+        &.highlight
+            background: linear-gradient(to bottom, #6f7173 0%, #424242 100%)
+            color: #efefef
+
+.panel.overflow
+    overflow-x: auto
+
+#content .panel.highlight a
+    color: #999
+
+.panel
+    h2
+        margin: 15px 0 5px
+        &:first-child
+            margin-top: 0
+    &.odd + .panel.odd, &.highlight + .panel.odd
+        border-top: 1px solid #adb0b3
+    .data-table
+        margin: 0 -15px
+
+/* Add line between adjacent panels
+
+/* Table of values
+
+.data-table
+    th
+        font-weight: bold
+        font-size: 0.8em
+    td, th
+        padding: 0 15px
+        text-align: left
+        line-height: 30px
+
+.link-cell > a
+    padding: 0 15px
+    text-align: left
+    line-height: 30px
+
+/* A link cell has padding on the anchor, not the cell
+
+.data-table
+    td.link-cell, th.link-cell
+        padding: 0
+
+.link-cell > a
+    display: block
+    text-decoration: none
+    &:hover
+        background-color: #424242
+        color: #d2d7d9
+
+.data-table
+    &.numerical
+        td, th
+            text-align: right
+    td.zero
+        color: #ababab
+
+/* lists of key-values
+
+.query-param-list
+    width: auto
+    column-count: 2
+
+.query-param
+    line-height: 30px
+    > .key
+        display: inline-block
+        font-weight: bold
+        min-width: 80px
+        font-size: 0.8em
+        line-height: 30px
+
+.search-param > .key
+    display: inline-block
+    font-weight: bold
+    min-width: 80px
+    font-size: 0.8em
+    line-height: 30px
+
+button
+    margin: 5px 0
+    line-height: 1.5em
+    padding: 0 8px
+
+.chart-timeline-bars
+    font-size: 0
+    height: 50px
+    white-space: nowrap
+
+.chart-timeline-bar
+    width: 2px
+    display: inline-block
+    background-color: #6f7173
+    &.new-year
+        background-color: #595959
+    &:hover
+        background-color: #424242
+
+.chart-timeline-years
+    font-size: 0
+    white-space: nowrap
+
+.chart-timeline-year
+    width: 24px
+    display: inline-block
+    font-size: 10px
+    text-align: center
+    transform: rotate(45deg)
+    transform-origin: top left
+    vertical-align: bottom
+    height: 24px
+
+@import "gridforms/gridforms"
+
+// Minor tweak of gridforms defaults
+// Lighten borders
+.grid-form
+    +grid-form($grid-border-color: #777)
+
