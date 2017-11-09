@@ -10,14 +10,16 @@ import collections
 import functools
 import logging
 import pathlib
+from collections import defaultdict
 from datetime import datetime
 
-from dateutil import parser
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint
 from jinja2 import Markup, escape
+from werkzeug.datastructures import MultiDict
 
+from datacube.index.postgres._fields import RangeDocField, PgDocField
 from datacube.model import Range, DatasetType
 
 _LOG = logging.getLogger(__name__)
@@ -116,15 +118,82 @@ DEFAULT_PLATFORM_END_DATE = {
 }
 
 
-def parse_query(request, product: DatasetType):
-    query = {'product': product.name}
+def group_field_names(request: dict) -> dict:
+    """
+    In a request, a dash separates field names from a classifier (eg: begin/end).
 
-    for field in product.fields.keys():
-        if field in request:
-            query[field] = request[field]
+    Group the query classifiers by field names.
 
-    to_time = parser.parse(request['before']) if 'before' in request else None
-    from_time = parser.parse(request['after']) if 'after' in request else None
+    >>> group_field_names({'lat-begin': 1, 'lat-end': 2, 'orbit': 3})
+    {'lat': {'begin': 1, 'end': 2}, 'orbit': {'val': 3}}
+    """
+    out = defaultdict(dict)
+
+    for field_expr, val in request.items():
+        comps = field_expr.split('-')
+        field_name = comps[0]
+
+        if len(comps) == 1:
+            constraint = 'val'
+        elif len(comps) == 2:
+            constraint = comps[1]
+        else:
+            raise ValueError('Corrupt field name' + field_expr)
+
+        out[field_name][constraint] = val
+    return dict(out)
+
+
+def query_to_search(request: MultiDict, product: DatasetType) -> dict:
+    args = _parse_url_query_args(request, product)
+    args = _ensure_minimum_search_filters(args, product)
+    return args
+
+
+def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
+    """
+    Convert search arguments from url query args into datacube index search parameters
+    """
+    query = {}
+
+    field_groups = group_field_names(request)
+
+    for field_name, field_vals in field_groups.items():
+        field = product.metadata_type.dataset_fields.get(field_name)
+        if not field:
+            raise ValueError("No field %r for product %s" % (field_name, product.name))
+
+        if isinstance(field, RangeDocField):
+            parser = field.lower.parse_value
+        elif isinstance(field, PgDocField):
+            parser = field.parse_value
+        else:
+            parser = lambda a: a
+
+        if 'val' in field_vals:
+            val = parser(field_vals['val'])
+            if isinstance(field, RangeDocField):
+                val = Range(val, val)
+
+            query[field_name] = val
+        elif 'begin' in field_vals or 'end' in field_vals:
+            query[field_name] = Range(parser(field_vals.get('begin')), parser(field_vals.get('end')))
+        else:
+            raise ValueError('Unknown field classifier: %r' % field_vals)
+
+    return query
+
+
+def _ensure_minimum_search_filters(in_query: dict, product: DatasetType):
+    """
+    At a minimum, the query should filter by the current product and a time period.
+
+    (without these filters, the query would return all datasets in the datacube)
+    """
+    out_query = {'product': product.name, **in_query}
+
+    time = in_query.get('time', Range(None, None))
+    from_time, to_time = time
 
     # Default from/to values (a one month range)
     if not from_time and not to_time:
@@ -138,19 +207,9 @@ def parse_query(request, product: DatasetType):
     if not from_time:
         from_time = to_time - relativedelta(months=1)
 
-    query['time'] = Range(from_time, to_time)
+    out_query['time'] = Range(from_time, to_time)
 
-    def range_dodge(val):
-        if isinstance(val, list):
-            return Range(val[0], val[1])
-
-        return Range(val - 0.00005, val + 0.00005)
-
-    if 'lon' in request and 'lat' in request:
-        query['lon'] = range_dodge(request['lon'])
-        query['lat'] = range_dodge(request['lat'])
-
-    return query
+    return out_query
 
 
 def get_ordered_metadata(metadata_doc):

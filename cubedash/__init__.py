@@ -143,9 +143,10 @@ def product_timeline_page(product):
 def product_datasets_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
     args = flask.request.args
-    query = utils.parse_query(args, product=product_entity)
+
+    query = utils.query_to_search(args, product=product_entity)
     # TODO: Add sort option to index API
-    datasets = sorted(index.datasets.search_eager(**query, limit=_HARD_SEARCH_LIMIT), key=lambda d: d.center_time)
+    datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT), key=lambda d: d.center_time)
 
     if request_wants_json():
         return as_json(dict(
