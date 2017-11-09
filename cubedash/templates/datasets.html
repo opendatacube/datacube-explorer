@@ -13,30 +13,32 @@
 
 {% block content %}
     <div class="panel">
-        <form action="{{ url_for('product_datasets_page', product=selected_product) }}" id="textform" method="get">
-            <div class="search-param-list">
-                <div class="search-param">
-                    <div class="key">
-                        <label for="search-before">Between</label>
-                    </div>
-                    <div class="value time-range">
+        <form action="{{ url_for('product_datasets_page', product=selected_product) }}"
+              method="get"
+              class="grid-form">
+            <fieldset>
+                <div data-row-span="3">
+                    <div data-field-span="1">
+                        <label for="search-before">Time From</label>
                         <input type="date"
                                id="search-before"
-                               name="after"
-                               value="{{ query_params.time.0.strftime('%Y-%m-%d') }}"/> -
+                               name="time-begin"
+                               value="{{ query_params.time.0.strftime('%Y-%m-%d') }}"/>
+                    </div>
+                    <div data-field-span="1">
+                        <label for="search-after">Time To</label>
                         <input type="date"
                                id="search-after"
-                               name="before"
+                               name="time-end"
                                value="{{ query_params.time.1.strftime('%Y-%m-%d') }}"/>
                     </div>
                 </div>
+
                 {% for key, value in query_params | dictsort if value is not mapping and key not in ('time', 'product') %}
-                    <div class="search-param">
-                        <div class="key">
+                    <div data-row-span="1">
+                        <div data-field-span="1">
                             <label for="search-{{ key }}"
-                                   class="key">{{ key }}:</label>
-                        </div>
-                        <div class="value">
+                                   class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}:</label>
                             <input type="text"
                                    id="search-{{ key }}"
                                    name="{{ key }}"
@@ -44,10 +46,37 @@
                         </div>
                     </div>
                 {% endfor %}
-            </div>
+                <div data-row-span="3">
+                    <div data-field-span="1">
+                        <label for="add-search-field-type"
+                               class="key">Field</label>
+                        <select id="add-search-field-type"
+                                name="add-search-field-type">
+                            <option value="">-</option>
+                            {% for key, field in selected_product_e.metadata_type.dataset_fields |dictsort if key not in query_params %}
+                                <option value="{{ key }}">{{ field.description }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Search</button>
+                    </div>
+{#                    <div data-field-span="1">#}
+{#                        <label for="add-search-field-kind"#}
+{#                               class="key">is</label>#}
+{#                        <select name="add-search-field-kind">#}
+{#                            <option value="">=</option>#}
+{#                            <option value="">between</option>#}
+{#                        </select>#}
+{#                    </div>#}
+{#                    <div data-field-span="1">#}
+{#                        <label for="add-search-field-kind"#}
+{#                               class="key">is</label>#}
+{#                        <button>Add</button>#}
+{#                    </div>#}
+                </div>
 
-            <button type="submit">Search</button>
+            </fieldset>
         </form>
+
     </div>
     <div class="panel odd">
         {% if datasets %}

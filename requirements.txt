@@ -1,4 +1,5 @@
 datacube
+digitalearthau
 cachetools
 flask
 jinja2

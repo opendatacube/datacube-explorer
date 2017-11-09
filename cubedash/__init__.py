@@ -10,6 +10,7 @@ import shapely.ops
 from cachetools.func import ttl_cache
 from dateutil import tz
 from flask import request
+from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
 from datacube.index import index_connect
@@ -142,9 +143,11 @@ def product_timeline_page(product):
 @app.route('/<product>/datasets')
 def product_datasets_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
-    args = flask.request.args
+    args = MultiDict(flask.request.args)
+    add_field = args.pop('add-search-field-type', None)
 
     query = utils.query_to_search(args, product=product_entity)
+    print(repr(query))
     # TODO: Add sort option to index API
     datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT), key=lambda d: d.center_time)
 
