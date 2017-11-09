@@ -27,7 +27,6 @@
     &:-moz-placeholder
         @content
 
-
 =_breakpoints($min, $max: false)
     @if $max == false
         @media only screen and (min-width: $min)
@@ -43,7 +42,6 @@
         display: table
     &:after
         clear: both
-
 
 =grid-form($max-columns: 12, $font-size-large: 18px, $legend-color: lighten(#333, 5%), $field-padding: 8px, $label-font-size: 10px, $grid-border-color: #333, $label-color: #333, $field-focus-color: darken(#FFFDED, 5%))
 
@@ -124,8 +122,7 @@
                 background: $field-focus-color
                 label
                     color: darken($label-color, 5%)
-            
-                
+
     // Overide styles when printing to ensure good looking output.
     @media print
         [data-row-span]
@@ -137,10 +134,10 @@
                 border-right: 1px solid #333333
                 display: table-cell
                 float: none
-         
+
                 &.focus,
                 &:hover
-                    background: none 
+                    background: none
 
                 label:first-child
                     letter-spacing: 0
@@ -156,6 +153,7 @@
                     // Set the width for this particular field span
                     width: percentage($span_i/$grid_i)
 
+// These are set by the importing file instead.
 // Create Grid Form
-.grid-form
-    +grid-form
+//.grid-form
+//    +grid-form

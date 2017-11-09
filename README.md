@@ -28,3 +28,9 @@ A dashboard install is available from VDI on the NCI:
     /g/data/v10/public/run-dash.sh
 
 Then open the given link in your VDI web browser.
+
+## Stylesheets
+
+The css is compiled from Sass. Run `make` to rebuild them after a change,
+or use your editor to watch for changes (PyCharm will prompt to do so).
+

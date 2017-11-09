@@ -6,11 +6,7 @@
     <title>{% block title %}{% endblock %}</title>
 
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='normalise.css') }}">
-    <link rel="stylesheet"
           href="{{ url_for('static', filename='base.css') }}">
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='gridforms/gridforms.css') }}">
     <link rel="stylesheet"
           href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.min.css') }}">
     {% block head %}{% endblock %}
@@ -28,6 +24,7 @@
 <div id="content">{% block content %}{% endblock %}</div>
 
 <script src="{{ url_for('static', filename='jquery-3.1.0.min.js') }}"></script>
+<script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
 {% block footer %}{% endblock %}
 </body>
 </html>
