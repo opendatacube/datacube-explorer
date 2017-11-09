@@ -10,6 +10,8 @@
     <link rel="stylesheet"
           href="{{ url_for('static', filename='base.css') }}">
     <link rel="stylesheet"
+          href="{{ url_for('static', filename='gridforms/gridforms.css') }}">
+    <link rel="stylesheet"
           href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.min.css') }}">
     {% block head %}{% endblock %}
 
@@ -17,8 +19,8 @@
 <body>
 <div id="logo">
     <a href="/">
-        <span>DataCube</span>
-        <span class="subheading">products</span>
+        <img src="{{ url_for('static', filename='dea-logo-inline.png') }}"
+             alt="Digital Earth Australia"/>
     </a>
 </div>
 

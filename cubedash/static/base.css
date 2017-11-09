@@ -4,7 +4,7 @@ body {
     background: #fcfcfc;
     background: linear-gradient(to bottom, #e0e0e0 0%, #fcfcfc 60px);
     max-width: 1024px;
-    margin: 20px auto 30px;
+    margin: 0 auto 30px;
     min-height: calc(100vh - 50px);
     padding: 0 30px;
     color: #424242;
@@ -16,7 +16,8 @@ a {
 }
 
 #header {
-    background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);
+    background-color: #424242;
+    /*background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);*/
     color: #efefef;
 }
 
@@ -35,7 +36,7 @@ a {
 }
 
 #logo {
-    padding: 0 30px 15px;
+    padding: 5px 30px 5px 25px;
 }
 
 #logo a {
