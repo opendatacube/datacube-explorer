@@ -125,7 +125,7 @@ def group_field_names(request: dict) -> dict:
 
     Group the query classifiers by field names.
 
-    >>> group_field_names({'lat-begin': 1, 'lat-end': 2, 'orbit': 3})
+    >>> group_field_names({'lat-begin': '1', 'lat-end': '2', 'orbit': 3})
     {'lat': {'begin': 1, 'end': 2}, 'orbit': {'val': 3}}
     """
     out = defaultdict(dict)
@@ -139,7 +139,11 @@ def group_field_names(request: dict) -> dict:
         elif len(comps) == 2:
             constraint = comps[1]
         else:
-            raise ValueError("Corrupt field name" + field_expr)
+            raise ValueError("Corrupt field name " + field_expr)
+
+        # Skip empty values
+        if val is None or val == "":
+            continue
 
         out[field_name][constraint] = val
     return dict(out)

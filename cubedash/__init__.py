@@ -8,7 +8,7 @@ import shapely.geometry
 import shapely.ops
 from cachetools.func import ttl_cache
 from dateutil import tz
-from flask import jsonify, request
+from flask import jsonify, logging, request
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
@@ -35,6 +35,8 @@ def as_json(o):
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking (hence validate=False).
 index = index_connect(application_name="cubedash", validate_connection=False)
+
+_LOG = logging.getLogger(__name__)
 
 
 def next_date(date):
@@ -137,10 +139,10 @@ def product_timeline_page(product):
 def product_datasets_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
     args = MultiDict(flask.request.args)
-    add_field = args.pop("add-search-field-type", None)
 
     query = utils.query_to_search(args, product=product_entity)
-    print(repr(query))
+    _LOG.info("Query %r", query)
+
     # TODO: Add sort option to index API
     datasets = sorted(
         index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),

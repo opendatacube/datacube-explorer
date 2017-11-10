@@ -72,6 +72,8 @@ button { margin: 5px 0; line-height: 1.5em; padding: 0 8px; }
 
 .chart-timeline-year { width: 24px; display: inline-block; font-size: 10px; text-align: center; transform: rotate(45deg); transform-origin: top left; vertical-align: bottom; height: 24px; }
 
+.relative { position: relative; }
+
 .grid-form *, .grid-form *:before, .grid-form *:after { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }
 .grid-form input[type="text"], .grid-form input[type="email"], .grid-form input[type="number"], .grid-form input[type="password"], .grid-form input[type="search"], .grid-form input[type="tel"], .grid-form input[type="url"], .grid-form input[type="color"], .grid-form input[type="date"], .grid-form input[type="datetime"], .grid-form input[type="datetime-local"], .grid-form input[type="month"], .grid-form input[type="time"], .grid-form input[type="week"], .grid-form textarea, .grid-form select { font-size: 18px; padding: 0; margin: 0; width: 100%; }
 .grid-form input[type="text"], .grid-form input[type="email"], .grid-form input[type="number"], .grid-form input[type="password"], .grid-form input[type="search"], .grid-form input[type="tel"], .grid-form input[type="url"], .grid-form input[type="color"], .grid-form input[type="date"], .grid-form input[type="datetime"], .grid-form input[type="datetime-local"], .grid-form input[type="month"], .grid-form input[type="time"], .grid-form input[type="week"], .grid-form textarea { border: 0; background: transparent; }
@@ -92,8 +94,8 @@ button { margin: 5px 0; line-height: 1.5em; padding: 0 8px; }
 .grid-form [data-row-span] [data-field-span] label:first-child { margin-top: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; display: block; margin-bottom: 4px; }
 .grid-form [data-row-span] [data-field-span] label:first-child:hover { cursor: text; }
 .grid-form [data-row-span] [data-field-span]:last-child { border-right: none; }
-.grid-form [data-row-span] [data-field-span]:hover { background: #c7cacc; cursor: text; }
-.grid-form [data-row-span] [data-field-span].focus { background: #babdbf; }
+.grid-form [data-row-span] [data-field-span]:hover { background: #cfd1d3; cursor: text; }
+.grid-form [data-row-span] [data-field-span].focus { background: #c2c4c7; }
 .grid-form [data-row-span] [data-field-span].focus label { color: #262626; }
 @media print { .grid-form [data-row-span] { display: table; height: 56px; page-break-inside: avoid; }
   .grid-form [data-row-span] [data-field-span] { border-right: 1px solid #333333; display: table-cell; float: none; }
@@ -177,5 +179,6 @@ button { margin: 5px 0; line-height: 1.5em; padding: 0 8px; }
 .grid-form [data-row-span="12"] > [data-field-span="10"] { width: 83.33333%; }
 .grid-form [data-row-span="12"] > [data-field-span="11"] { width: 91.66667%; }
 .grid-form [data-row-span="12"] > [data-field-span="12"] { width: 100%; }
+.grid-form [data-row-span].disabled { display: none; }
 
 /*# sourceMappingURL=base.css.map */
