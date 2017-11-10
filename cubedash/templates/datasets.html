@@ -9,10 +9,11 @@
             text-transform: capitalize;
         }
     </style>
+
 {% endblock %}
 
 {% block content %}
-    <div class="panel">
+    <div class="panel relative">
         <form action="{{ url_for('product_datasets_page', product=selected_product) }}"
               method="get"
               class="grid-form">
@@ -34,22 +35,34 @@
                     </div>
                 </div>
 
-                {% for key, value in query_params | dictsort if value is not mapping and key not in ('time', 'product') %}
-                    <div data-row-span="1">
+                {% for key, field in selected_product_e.metadata_type.dataset_fields | dictsort if value is not mapping and key not in ('time', 'product') %}
+                    <div data-row-span="1" id="search-row-{{ key }}" {% if key not in query_params %}class="disabled"{% endif %}>
                         <div data-field-span="1">
                             <label for="search-{{ key }}"
                                    class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}:</label>
                             <input type="text"
                                    id="search-{{ key }}"
                                    name="{{ key }}"
-                                   value="{{ value }}"/>
+                                   {% if key not in query_params %}disabled="disabled"{% endif %}
+                                   value="{{ query_params[key] | default('') }}"/>
                         </div>
                     </div>
                 {% endfor %}
+            <div data-row-span="3">
+                <div data-field-span="1">
+                    <button type="submit">Search</button>
+                </div>
+            </div>
+            </fieldset>
+
+
+        </form>
+        <div class="grid-form">
+            <fieldset>
                 <div data-row-span="3">
                     <div data-field-span="1">
                         <label for="add-search-field-type"
-                               class="key">Field</label>
+                               class="key">Add Field</label>
                         <select id="add-search-field-type"
                                 name="add-search-field-type">
                             <option value="">-</option>
@@ -57,25 +70,25 @@
                                 <option value="{{ key }}">{{ field.description }}</option>
                             {% endfor %}
                         </select>
-                        <button type="submit">Search</button>
+
                     </div>
-{#                    <div data-field-span="1">#}
-{#                        <label for="add-search-field-kind"#}
-{#                               class="key">is</label>#}
-{#                        <select name="add-search-field-kind">#}
-{#                            <option value="">=</option>#}
-{#                            <option value="">between</option>#}
-{#                        </select>#}
-{#                    </div>#}
-{#                    <div data-field-span="1">#}
-{#                        <label for="add-search-field-kind"#}
-{#                               class="key">is</label>#}
-{#                        <button>Add</button>#}
-{#                    </div>#}
+                    {#                    <div data-field-span="1">#}
+                    {#                        <label for="add-search-field-kind"#}
+                    {#                               class="key">is</label>#}
+                    {#                        <select name="add-search-field-kind">#}
+                    {#                            <option value="">=</option>#}
+                    {#                            <option value="">between</option>#}
+                    {#                        </select>#}
+                    {#                    </div>#}
+                    {#                    <div data-field-span="1">#}
+                    {#                        <label for="add-search-field-kind"#}
+                    {#                               class="key">is</label>#}
+                    {#                        <button>Add</button>#}
+                    {#                    </div>#}
                 </div>
 
             </fieldset>
-        </form>
+        </div>
 
     </div>
     <div class="panel odd">
@@ -108,5 +121,17 @@
             // TODO: Other query params?
             window.location.href = '/' + product + '/datasets';
         });
+
+
+        $('#add-search-field-type').change(function() {
+            var add_field_name = $('#add-search-field-type').val();
+
+            var row = $('#search-row-'+add_field_name);
+            row.removeClass('disabled');
+            row.find('input, select').prop('disabled', false);
+
+            $('#add-search-field-type').val('');
+        });
+
     </script>
 {% endblock %}

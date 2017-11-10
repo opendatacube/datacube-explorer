@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import sys
 from datetime import datetime
-from flask import jsonify
+from flask import jsonify, logging
 
 import flask
 import shapely.geometry
@@ -36,6 +36,8 @@ def as_json(o):
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking (hence validate=False).
 index = index_connect(application_name='cubedash', validate_connection=False)
+
+_LOG = logging.getLogger(__name__)
 
 
 def next_date(date):
@@ -144,10 +146,10 @@ def product_timeline_page(product):
 def product_datasets_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
     args = MultiDict(flask.request.args)
-    add_field = args.pop('add-search-field-type', None)
 
     query = utils.query_to_search(args, product=product_entity)
-    print(repr(query))
+    _LOG.info('Query %r', query)
+
     # TODO: Add sort option to index API
     datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT), key=lambda d: d.center_time)
 

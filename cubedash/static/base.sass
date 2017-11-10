@@ -202,8 +202,24 @@ button
 
 @import "gridforms/gridforms"
 
+.relative
+    position: relative
+
 // Minor tweak of gridforms defaults
 // Lighten borders
 .grid-form
-    +grid-form($grid-border-color: #777, $field-focus-color: lighten(#adb0b3, 5%))
+
+    +grid-form($grid-border-color: #777, $field-focus-color: lighten(#adb0b3, 8%))
+
+    [data-row-span].disabled
+        display: none
+
+    //button
+    //    position: absolute
+    //    right: 10px
+    //    bottom: 10px
+    //    background-color: $bold_highlight
+    //    color: #fff
+    //    border: 0
+    //    padding: 5px 10px
 
