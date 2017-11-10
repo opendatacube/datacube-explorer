@@ -16,8 +16,8 @@ nav { display: inline-block; vertical-align: bottom; }
 nav ul { margin: 0; padding: 0; list-style-type: none; text-align: right; vertical-align: bottom; }
 nav li { float: left; margin: 0; }
 nav li a { padding: 4px 9px; display: inline-block; background: #2b2b2b; border-color: #2b2b2b; color: #efefef; text-decoration: none; font-size: 0.86em; }
-nav li a:hover, nav li a:active { background: linear-gradient(to bottom, #464646 0%, #424242 100%); }
-nav li.active a { background: linear-gradient(to bottom, #464646 0%, #424242 100%); }
+nav li a:hover, nav li a:active { background: linear-gradient(to bottom, #454545 0%, #424242 100%); }
+nav li.active a { background: linear-gradient(to bottom, #454545 0%, #424242 100%); }
 
 #header { clear: left; }
 #header h2 { margin-top: 0; }
@@ -25,7 +25,7 @@ nav li.active a { background: linear-gradient(to bottom, #464646 0%, #424242 100
 #content { position: relative; width: auto; background-color: #ebf0f2; }
 #content .panel { padding: 15px 30px; background: #adb0b3; }
 #content .panel.odd { background-color: #d2d7d9; }
-#content .panel.highlight { background: linear-gradient(to bottom, #6f7173 0%, #424242 100%); color: #efefef; }
+#content .panel.highlight { background: linear-gradient(to bottom, #686868 0%, #424242 100%); color: #efefef; }
 
 .panel.overflow { overflow-x: auto; }
 
@@ -64,8 +64,8 @@ button { margin: 5px 0; line-height: 1.5em; padding: 0 8px; }
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
-.chart-timeline-bar { width: 2px; display: inline-block; background-color: #6f7173; }
-.chart-timeline-bar.new-year { background-color: #595959; }
+.chart-timeline-bar { width: 2px; display: inline-block; background-color: #707070; }
+.chart-timeline-bar.new-year { background-color: #636363; }
 .chart-timeline-bar:hover { background-color: #424242; }
 
 .chart-timeline-years { font-size: 0; white-space: nowrap; }
@@ -92,8 +92,8 @@ button { margin: 5px 0; line-height: 1.5em; padding: 0 8px; }
 .grid-form [data-row-span] [data-field-span] label:first-child { margin-top: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; display: block; margin-bottom: 4px; }
 .grid-form [data-row-span] [data-field-span] label:first-child:hover { cursor: text; }
 .grid-form [data-row-span] [data-field-span]:last-child { border-right: none; }
-.grid-form [data-row-span] [data-field-span]:hover { background: #fffded; cursor: text; }
-.grid-form [data-row-span] [data-field-span].focus { background: #fffad4; }
+.grid-form [data-row-span] [data-field-span]:hover { background: #c7cacc; cursor: text; }
+.grid-form [data-row-span] [data-field-span].focus { background: #babdbf; }
 .grid-form [data-row-span] [data-field-span].focus label { color: #262626; }
 @media print { .grid-form [data-row-span] { display: table; height: 56px; page-break-inside: avoid; }
   .grid-form [data-row-span] [data-field-span] { border-right: 1px solid #333333; display: table-cell; float: none; }
