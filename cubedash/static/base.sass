@@ -1,3 +1,7 @@
+$panel_color: #adb0b3
+$bold_highlight: #424242
+$content_background: #ebf0f2
+
 @import normalise.css
 
 body
@@ -8,14 +12,14 @@ body
     margin: 0 auto 30px
     min-height: calc(100vh - 50px)
     padding: 0 30px
-    color: #424242
+    color: $bold_highlight
     font-size: 0.86em
 
 a
     color: #2b2b2b
 
 #header
-    background-color: #424242
+    background-color: $bold_highlight
     /*background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);
     color: #efefef
     .panel
@@ -54,17 +58,19 @@ nav
         float: left
         margin: 0
         a
+            $background_tab: darken($bold_highlight, 9%)
+
             padding: 4px 9px
             display: inline-block
-            background: #2b2b2b
-            border-color: #2b2b2b
+            background: $background_tab
+            border-color: $background_tab
             color: #efefef
             text-decoration: none
             font-size: 0.86em
             &:hover, &:active
-                background: linear-gradient(to bottom, #464646 0%, #424242 100%)
+                background: linear-gradient(to bottom, lighten($bold_highlight, 1%) 0%, $bold_highlight 100%)
         &.active a
-            background: linear-gradient(to bottom, #464646 0%, #424242 100%)
+            background: linear-gradient(to bottom, lighten($bold_highlight, 1%) 0%, $bold_highlight 100%)
 
 #header
     clear: left
@@ -74,14 +80,14 @@ nav
 #content
     position: relative
     width: auto
-    background-color: #ebf0f2
+    background-color: $content_background
     .panel
         padding: 15px 30px
-        background: #adb0b3
+        background: $panel_color
         &.odd
             background-color: #d2d7d9
         &.highlight
-            background: linear-gradient(to bottom, #6f7173 0%, #424242 100%)
+            background: linear-gradient(to bottom, lighten($bold_highlight, 15%) 0%, $bold_highlight 100%)
             color: #efefef
 
 .panel.overflow
@@ -96,7 +102,7 @@ nav
         &:first-child
             margin-top: 0
     &.odd + .panel.odd, &.highlight + .panel.odd
-        border-top: 1px solid #adb0b3
+        border-top: 1px solid $panel_color
     .data-table
         margin: 0 -15px
 
@@ -128,7 +134,7 @@ nav
     display: block
     text-decoration: none
     &:hover
-        background-color: #424242
+        background-color: $bold_highlight
         color: #d2d7d9
 
 .data-table
@@ -173,11 +179,12 @@ button
 .chart-timeline-bar
     width: 2px
     display: inline-block
-    background-color: #6f7173
+    background-color: lighten($bold_highlight, 18%)
+    $graph_highlight: $bold_highlight
     &.new-year
-        background-color: #595959
+        background-color: lighten($bold_highlight, 13%)
     &:hover
-        background-color: #424242
+        background-color: $bold_highlight
 
 .chart-timeline-years
     font-size: 0
@@ -198,5 +205,5 @@ button
 // Minor tweak of gridforms defaults
 // Lighten borders
 .grid-form
-    +grid-form($grid-border-color: #777)
+    +grid-form($grid-border-color: #777, $field-focus-color: lighten(#adb0b3, 5%))
 
