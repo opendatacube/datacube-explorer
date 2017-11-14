@@ -36,23 +36,55 @@
                 </div>
 
                 {% for key, field in selected_product_e.metadata_type.dataset_fields | dictsort if value is not mapping and key not in ('time', 'product') %}
-                    <div data-row-span="1" id="search-row-{{ key }}" {% if key not in query_params %}class="disabled"{% endif %}>
-                        <div data-field-span="1">
-                            <label for="search-{{ key }}"
-                                   class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}:</label>
-                            <input type="text"
-                                   id="search-{{ key }}"
-                                   name="{{ key }}"
-                                   {% if key not in query_params %}disabled="disabled"{% endif %}
-                                   value="{{ query_params[key] | default('') }}"/>
+                    {# If it's numeric, add start/end input boxes #}
+                    {% if field | is_numeric_field %}
+                        <div data-row-span="2" id="search-row-{{ key }}"
+                             {% if key not in query_params %}class="disabled"{% endif %}>
+                            <div data-field-span="1">
+                                <label for="search-{{ key }}-begin"
+                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}
+                                    from:</label>
+                                <input type="number"
+                                       step="{{ field | field_step_size }}"
+                                       id="search-{{ key }}-begin"
+                                       name="{{ key }}-begin"
+                                       {% if key not in query_params %}disabled="disabled"{% endif %}
+                                       value="{{ query_params[key] and query_params[key].begin or '' }}"/>
+
+                            </div>
+                            <div data-field-span="1">
+                                <label for="search-{{ key }}-end"
+                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}
+                                    to:</label>
+                                <input type="number"
+                                       id="search-{{ key }}-end"
+                                       step="{{ field | field_step_size }}"
+                                       name="{{ key }}-end"
+                                       {% if key not in query_params %}disabled="disabled"{% endif %}
+                                       value="{{ query_params[key] and query_params[key].end or '' }}"/>
+                            </div>
                         </div>
-                    </div>
+                    {% else %}
+                        <div data-row-span="1" id="search-row-{{ key }}"
+                             {% if key not in query_params %}class="disabled"{% endif %}>
+                            <div data-field-span="1">
+                                <label for="search-{{ key }}"
+                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}:</label>
+                                <input type="text"
+                                       id="search-{{ key }}"
+                                       name="{{ key }}"
+                                       {% if key not in query_params %}disabled="disabled"{% endif %}
+                                       value="{{ query_params[key] | default('') }}"/>
+                            </div>
+                        </div>
+                    {% endif %}
+
                 {% endfor %}
-            <div data-row-span="3">
-                <div data-field-span="1">
-                    <button type="submit">Search</button>
+                <div data-row-span="3">
+                    <div data-field-span="1">
+                        <button type="submit">Search</button>
+                    </div>
                 </div>
-            </div>
             </fieldset>
 
 
@@ -67,27 +99,15 @@
                                 name="add-search-field-type">
                             <option value="">-</option>
                             {% for key, field in selected_product_e.metadata_type.dataset_fields |dictsort if key not in query_params %}
-                                <option value="{{ key }}">{{ field.description }}</option>
+                                <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
                             {% endfor %}
                         </select>
 
                     </div>
-                    {#                    <div data-field-span="1">#}
-                    {#                        <label for="add-search-field-kind"#}
-                    {#                               class="key">is</label>#}
-                    {#                        <select name="add-search-field-kind">#}
-                    {#                            <option value="">=</option>#}
-                    {#                            <option value="">between</option>#}
-                    {#                        </select>#}
-                    {#                    </div>#}
-                    {#                    <div data-field-span="1">#}
-                    {#                        <label for="add-search-field-kind"#}
-                    {#                               class="key">is</label>#}
-                    {#                        <button>Add</button>#}
-                    {#                    </div>#}
                 </div>
 
             </fieldset>
+
         </div>
 
     </div>
@@ -123,10 +143,10 @@
         });
 
 
-        $('#add-search-field-type').change(function() {
+        $('#add-search-field-type').change(function () {
             var add_field_name = $('#add-search-field-type').val();
 
-            var row = $('#search-row-'+add_field_name);
+            var row = $('#search-row-' + add_field_name);
             row.removeClass('disabled');
             row.find('input, select').prop('disabled', false);
 

@@ -12,7 +12,16 @@ from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
 
+from datacube.index.postgres._fields import (
+    DoubleDocField,
+    IntDocField,
+    NumericDocField,
+    PgField,
+    RangeDocField,
+)
 from datacube.model import Range
+
+NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("filters", __name__)
@@ -75,6 +84,24 @@ def _format_month_name(val):
 @bp.app_template_filter("max")
 def _max_val(ls):
     return max(ls)
+
+
+@bp.app_template_filter("is_numeric_field")
+def _is_numeric_field(field: PgField):
+    if isinstance(field, RangeDocField):
+        return field.FIELD_CLASS in NUMERIC_FIELD_TYPES
+    else:
+        return isinstance(field, NUMERIC_FIELD_TYPES)
+
+
+@bp.app_template_filter("field_step_size")
+def _field_step(field: PgField):
+    if isinstance(field, RangeDocField):
+        field = field.FIELD_CLASS
+
+    return {IntDocField: 1, NumericDocField: 0.001, DoubleDocField: 0.001}.get(
+        field.__class__, 1
+    )
 
 
 @bp.app_template_filter("timesince")

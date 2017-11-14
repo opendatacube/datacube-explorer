@@ -80,14 +80,11 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
             parser = lambda a: a
 
         if "val" in field_vals:
-            val = parser(field_vals["val"])
-            if isinstance(field, RangeDocField):
-                val = Range(val, val)
-
-            query[field_name] = val
+            query[field_name] = parser(field_vals["val"])
         elif "begin" in field_vals or "end" in field_vals:
+            begin, end = field_vals.get("begin"), field_vals.get("end")
             query[field_name] = Range(
-                parser(field_vals.get("begin")), parser(field_vals.get("end"))
+                parser(begin) if begin else None, parser(end) if end else None
             )
         else:
             raise ValueError("Unknown field classifier: %r" % field_vals)
