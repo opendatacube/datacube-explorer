@@ -13,7 +13,18 @@ disable=no-self-use,
     fixme,
     no-value-for-parameter,
     file-ignored,
-    wrong-import-order
+    wrong-import-order,
+    ungrouped-imports,
+    bad-whitespace,
+    len-as-condition,
+    no-else-return
+
+# Disabled len-as-condition: Sometimes this allows more readable code as it's more explicit.
+# Eg.
+#      if dataset.uris is not None and len(dataset.uris) == 0:
+# vs
+#      if dataset.uris is not None and not dataset.uris:
+
 
 enable=python3
 
