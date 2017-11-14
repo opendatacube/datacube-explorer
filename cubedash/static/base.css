@@ -62,7 +62,14 @@ nav li.active a { background: linear-gradient(to bottom, #454545 0%, #424242 100
 
 .search-param > .key { display: inline-block; font-weight: bold; min-width: 80px; font-size: 0.8em; line-height: 30px; }
 
-button { margin: 5px 0; line-height: 30px; background-color: #5c5c5c; border: 0; color: #efefef; padding: 5px 20px; cursor: pointer; }
+button { margin: 5px 0; background-color: #5c5c5c; border: 0; color: #efefef; padding: 8px; cursor: pointer; }
+button:hover { background-color: #686868; }
+
+label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
+
+.form-footer { margin: 1em 0; }
+.form-footer > label { padding: 8px; }
+.form-footer select { padding: 6px; }
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
