@@ -3,7 +3,7 @@
         {% set max_count = timeline | map('last') | max %}
         <div class="chart-timeline-bars">
             {% for (start_time, end_time), count in timeline %}
-                <a href="{{ url_for('product_datasets_page', product=product_name, time_begin=start_time, time_end=end_time) }}"
+                <a href="{{ url_for('product.datasets_page', product=product_name, time_begin=start_time, time_end=end_time) }}"
                    class="chart-timeline-bar {% if start_time.month == 1 %}new-year{% endif %}"
                    style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%"
                    title="View the {{ count }} datasets for {{ start_time.month | month_name }} {{ start_time.year }}"></a>
