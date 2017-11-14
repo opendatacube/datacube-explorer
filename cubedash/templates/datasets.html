@@ -14,7 +14,7 @@
 
 {% block content %}
     <div class="panel relative">
-        <form action="{{ url_for('product_datasets_page', product=selected_product) }}"
+        <form action="{{ url_for('product.datasets_page', product=selected_product) }}"
               method="get"
               class="grid-form">
             <fieldset>
@@ -102,7 +102,7 @@
                     <tr>
                         <td>{{ dataset.center_time | printable_time }}</td>
                         <td>
-                            <a href='{{ url_for('dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
+                            <a href='{{ url_for('dataset.dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
                         </td>
                     </tr>
                 {% endfor %}

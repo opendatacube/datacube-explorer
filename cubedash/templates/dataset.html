@@ -50,7 +50,7 @@
                 {% for classifier, s_dataset in source_datasets.items() %}
                     <div class="source">
                         Source <em>{{ classifier }}</em>:
-                        <a href="{{ url_for('dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
+                        <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
                     </div>
                 {% endfor %}
             </div>
@@ -85,7 +85,7 @@
             <h2>Derived</h2>
             {% for d_dataset in derived_datasets %}
                 <div>
-                    <a href="{{ url_for('dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
+                    <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
                 </div>
             {% endfor %}
         </div>

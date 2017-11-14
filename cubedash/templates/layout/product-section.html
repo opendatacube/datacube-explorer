@@ -4,9 +4,9 @@
     <nav>
         <ul>
             {% set navigation_bar = [
-                ('spatial', 'product_spatial_page'),
-                ('timeline', 'product_timeline_page'),
-                ('datasets', 'product_datasets_page')
+                ('spatial', 'product.spatial_page'),
+                ('timeline', 'product.timeline_page'),
+                ('datasets', 'product.datasets_page')
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
