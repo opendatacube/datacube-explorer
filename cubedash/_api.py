@@ -11,7 +11,7 @@ from datacube.model import Range
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint("api", __name__)
+bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 def next_date(date):
@@ -21,7 +21,7 @@ def next_date(date):
     return datetime(date.year, date.month + 1, 1)
 
 
-@bp.route("/api/datasets/<product>/<int:year>-<int:month>")
+@bp.route("/datasets/<product>/<int:year>-<int:month>")
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
 def datasets_as_features(product, year, month):
     start = datetime(year, month, 1)
@@ -35,7 +35,7 @@ def datasets_as_features(product, year, month):
     )
 
 
-@bp.route("/api/datasets/<product>/<int:year>-<int:month>/poly")
+@bp.route("/datasets/<product>/<int:year>-<int:month>/poly")
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
 def dataset_shape(product, year, month):
     start = datetime(year, month, 1)
