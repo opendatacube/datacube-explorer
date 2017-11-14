@@ -116,7 +116,7 @@
             <table class="data-table">
                 <thead>
                 <th>Time</th>
-                <th>Dataset</th>
+                <th>Label</th>
                 </thead>
                 {% for dataset in datasets %}
                     <tr>
@@ -126,9 +126,14 @@
                         </td>
                     </tr>
                 {% endfor %}
+
             </table>
+            <p>
+                {{ datasets | length }} results
+                {% if datasets|length == result_limit %}<strong>(limit)</strong>{% endif %}
+            </p>
         {% else %}
-            No results.
+            <h3>No results.</h3>
         {% endif %}
     </div>
 {% endblock %}
