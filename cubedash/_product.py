@@ -61,6 +61,7 @@ def search_page(product: str):
         selected_product_e=product_entity,
         datasets=datasets,
         query_params=query,
+        result_limit=_HARD_SEARCH_LIMIT,
     )
 
 
