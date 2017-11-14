@@ -18,12 +18,12 @@ from cubedash._model import CACHE_LONG_TIMEOUT_SECS, index, as_json
 from flask import Blueprint
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('product', __name__)
+bp = Blueprint('product', __name__, url_prefix='/<product>')
 
 _HARD_SEARCH_LIMIT = 500
 
 
-@bp.route('/<product>/spatial')
+@bp.route('/spatial')
 def spatial_page(product):
     types = index.datasets.types.get_all()
     return flask.render_template(
@@ -33,7 +33,7 @@ def spatial_page(product):
     )
 
 
-@bp.route('/<product>/timeline')
+@bp.route('/timeline')
 def timeline_page(product):
     return flask.render_template(
         'timeline.html',
@@ -43,7 +43,7 @@ def timeline_page(product):
     )
 
 
-@bp.route('/<product>/datasets')
+@bp.route('/datasets')
 def datasets_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
     args = MultiDict(flask.request.args)

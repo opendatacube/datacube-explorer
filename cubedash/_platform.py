@@ -12,7 +12,7 @@ from werkzeug.datastructures import Range
 from cubedash._model import CACHE_LONG_TIMEOUT_SECS, index
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('platform', __name__)
+bp = Blueprint('platform', __name__, url_prefix='/platform')
 
 _HARD_SEARCH_LIMIT = 500
 
@@ -30,8 +30,8 @@ def _timelines_platform(platform):
     return list(products)
 
 
-@bp.route('/platform/<platform>')
-def platform_page(platform):
+@bp.route('/')
+def platforms_page(platform):
     return flask.render_template(
         'platform.html',
         product_counts=_timelines_platform(platform),

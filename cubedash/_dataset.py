@@ -9,10 +9,10 @@ from cubedash import _utils as utils
 from cubedash._model import index
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('dataset', __name__)
+bp = Blueprint('dataset', __name__, url_prefix='/dataset')
 
 
-@bp.route('/datasets/<uuid:id_>')
+@bp.route('/<uuid:id_>')
 def dataset_page(id_):
     dataset = index.datasets.get(id_, include_sources=True)
 
