@@ -22,6 +22,11 @@
             font-family: 'Courier New', monospace;
             font-size: 0.86em;
         }
+
+        .raw-metadata {
+            overflow-y: scroll;
+            max-height: 600px;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -66,19 +71,21 @@
     </div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>
-        {%- for key, value in dataset_metadata.items() recursive %}
-            <div class="property">
-                {% if value is mapping %}
-                    <div class="key">{{ key }}:</div>
-                    <div class="value {% if key == 'source_datasets' %}embedded{% endif %}">
-                        {{ loop(value.items()) }}
-                    </div>
-                {% else %}
-                    <span class="key">{{ key }}:</span>
-                    <span class="value">{{ value }}</span>
-                {% endif %}
-            </div>
-        {%- endfor %}
+        <div class="raw-metadata">
+            {%- for key, value in dataset_metadata.items() recursive %}
+                <div class="property">
+                    {% if value is mapping %}
+                        <div class="key">{{ key }}:</div>
+                        <div class="value {% if key == 'source_datasets' %}embedded{% endif %}">
+                            {{ loop(value.items()) }}
+                        </div>
+                    {% else %}
+                        <span class="key">{{ key }}:</span>
+                        <span class="value">{{ value }}</span>
+                    {% endif %}
+                </div>
+            {%- endfor %}
+        </div>
     </div>
     {% if derived_datasets %}
         <div class="panel">
