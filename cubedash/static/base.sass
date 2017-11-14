@@ -175,12 +175,29 @@ nav
 
 button
     margin: 5px 0
-    line-height: 30px
     background-color: lighten($bold_highlight, 10%)
     border: 0
     color: #efefef
-    padding: 5px 20px
+    padding: 8px
     cursor: pointer
+
+    &:hover
+        background-color: lighten($bold_highlight, 15%)
+
+// Similar to gridforms style
+label
+    text-transform: uppercase
+    letter-spacing: 1px
+    font-size: 10px
+    color: #333
+
+.form-footer
+    margin: 1em 0
+    > label
+        padding: 8px
+
+    select
+        padding: 6px
 
 .chart-timeline-bars
     font-size: 0

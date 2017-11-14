@@ -80,35 +80,23 @@
                     {% endif %}
 
                 {% endfor %}
-                <div data-row-span="3">
-                    <div data-field-span="1">
-                        <button type="submit">Search</button>
-                    </div>
-                </div>
+                <p>
+                    <button type="submit">Search</button>
+                </p>
             </fieldset>
 
 
         </form>
-        <div class="grid-form">
-            <fieldset>
-                <div data-row-span="3">
-                    <div data-field-span="1">
-                        <label for="add-search-field-type"
-                               class="key">Add Field</label>
-                        <select id="add-search-field-type"
-                                name="add-search-field-type">
-                            <option value="">-</option>
-                            {% for key, field in selected_product_e.metadata_type.dataset_fields |dictsort if key not in query_params %}
-                                <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
-                            {% endfor %}
-                        </select>
-
-                    </div>
-                </div>
-
-            </fieldset>
-
-        </div>
+        <p  class="form-footer">
+            <label for="add-search-field-type">Add field</label>
+            <select id="add-search-field-type"
+                    name="add-search-field-type">
+                <option value="">-</option>
+                {% for key, field in selected_product_e.metadata_type.dataset_fields |dictsort if key not in query_params %}
+                    <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
+                {% endfor %}
+            </select>
+        </p>
 
     </div>
     <div class="panel odd">
