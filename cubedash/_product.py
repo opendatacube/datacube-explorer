@@ -43,8 +43,8 @@ def timeline_page(product):
     )
 
 
-@bp.route('/datasets')
-def datasets_page(product: str):
+@bp.route('/search')
+def search_page(product: str):
     product_entity = index.products.get_by_name_unsafe(product)
     args = MultiDict(flask.request.args)
 
@@ -59,7 +59,7 @@ def datasets_page(product: str):
             datasets=[build_dataset_info(index, d) for d in datasets],
         ))
     return flask.render_template(
-        'datasets.html',
+        'search.html',
         products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
         selected_product_e=product_entity,

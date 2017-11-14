@@ -1,5 +1,5 @@
 {% extends "layout/product-section.html" %}
-{% set active_page = "datasets" %}
+{% set active_page = "search" %}
 
 {% block title %}Datasets{% endblock %}
 {% block head %}
@@ -14,7 +14,7 @@
 
 {% block content %}
     <div class="panel relative">
-        <form action="{{ url_for('product.datasets_page', product=selected_product) }}"
+        <form action="{{ url_for('product.search_page', product=selected_product) }}"
               method="get"
               class="grid-form">
             <fieldset>
