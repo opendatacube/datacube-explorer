@@ -21,6 +21,7 @@ def dataset_page(id_):
         for type_, dataset_d in dataset.metadata.sources.items()
     }
 
+    archived_location_times = index.datasets.get_archived_location_times(id_)
     ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
 
     return flask.render_template(
@@ -29,4 +30,5 @@ def dataset_page(id_):
         dataset_metadata=ordered_metadata,
         derived_datasets=index.datasets.get_derived(id_),
         source_datasets=source_datasets,
+        archive_location_times=archived_location_times,
     )
