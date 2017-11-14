@@ -15,11 +15,23 @@ def test_parse_query_args(dea_index: Index):
 
     product = dea_index.products.get_by_name("ls7_level1_scene")
     res = query_to_search(
-        MultiDict((("time-begin", "2017-08-08"), ("time-end", "2017-08-09"))), product
+        MultiDict(
+            (
+                ("time-begin", "2017-08-08"),
+                ("time-end", "2017-08-09"),
+                # If they specify their range backwards (high, low), we should parse it reversed.
+                # (Intention is "Numbers are between these values")
+                ("gqa-begin", 3),
+                ("gqa-end", -3),
+            )
+        ),
+        product,
     )
 
     assert res == dict(
-        time=Range(datetime(2017, 8, 8), datetime(2017, 8, 9)), product=product.name
+        time=Range(datetime(2017, 8, 8), datetime(2017, 8, 9)),
+        gqa=Range(-3, 3),
+        product=product.name,
     )
 
 

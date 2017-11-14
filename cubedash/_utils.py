@@ -30,7 +30,7 @@ def group_field_names(request: dict) -> dict:
     Group the query classifiers by field names.
 
     >>> group_field_names({'lat-begin': '1', 'lat-end': '2', 'orbit': 3})
-    {'lat': {'begin': 1, 'end': 2}, 'orbit': {'val': 3}}
+    {'lat': {'begin': '1', 'end': '2'}, 'orbit': {'val': 3}}
     """
     out = defaultdict(dict)
 
@@ -56,6 +56,16 @@ def group_field_names(request: dict) -> dict:
 def query_to_search(request: MultiDict, product: DatasetType) -> dict:
     args = _parse_url_query_args(request, product)
     args = _ensure_minimum_search_filters(args, product)
+
+    # If their range is backwards (high, low), let's reverse it.
+    # (the intention is "between these two numbers")
+    for key in args:
+        value = args[key]
+        if isinstance(value, Range):
+            if value.begin is not None and value.end is not None:
+                if value.end < value.begin:
+                    args[key] = Range(value.end, value.begin)
+
     return args
 
 
