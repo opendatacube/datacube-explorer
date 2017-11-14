@@ -148,15 +148,19 @@ nav
 
 .query-param-list
     width: auto
-    column-count: 2
+    display: flex
+    flex-wrap: wrap
 
 .query-param
     line-height: 30px
+    padding: 0 10px
+    margin: 2px 2px
+    background-color: lighten($bold_highlight, 10%)
+    color: #fff
+
     > .key
-        display: inline-block
         font-weight: bold
-        min-width: 80px
-        font-size: 0.8em
+        color: lighten($bold_highlight, 35%)
         line-height: 30px
 
 .search-param > .key

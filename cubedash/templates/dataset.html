@@ -67,7 +67,23 @@
         {{ query_param_list(dataset.metadata.fields) }}
     </div>
     <div class="panel">
-        <span class="file-path">{{ dataset.local_path }}</span>
+
+        {% for uri in dataset.uris %}
+            <p>
+                <b>Active:</b> <span class="file-path">{{ uri }}</span>
+            </p>
+        {% else %}
+            No known locations
+        {% endfor %}
+
+        {% if archive_location_times %}
+            {% for uri, archive_time in archive_location_times %}
+                <p>
+                    <b>Archived {{ archive_time | timesince }}:</b>
+                    <span class="file-path archived">{{ uri }}</span>
+                </p>
+            {% endfor %}
+        {% endif %}
     </div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>

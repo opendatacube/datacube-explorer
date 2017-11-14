@@ -59,6 +59,8 @@ def _format_query_value(val):
         return '{} to {}'.format(_format_query_value(val.begin), _format_query_value(val.end))
     if isinstance(val, datetime):
         return _format_datetime(val)
+    if val is None:
+        return '•'
     return str(val)
 
 

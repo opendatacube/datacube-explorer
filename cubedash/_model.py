@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from datacube.index._api import Index
 from datacube.index import index_connect
 from datacube.utils import jsonify_document
 from flask import jsonify, logging
@@ -15,4 +16,4 @@ def as_json(o):
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking (hence validate=False).
-index = index_connect(application_name='cubedash', validate_connection=False)
+index: Index = index_connect(application_name='cubedash', validate_connection=False)

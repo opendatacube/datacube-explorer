@@ -53,10 +53,10 @@ nav li.active a { background: linear-gradient(to bottom, #454545 0%, #424242 100
 .data-table td.zero { color: #ababab; }
 
 /* lists of key-values */
-.query-param-list { width: auto; column-count: 2; }
+.query-param-list { width: auto; display: flex; flex-wrap: wrap; }
 
-.query-param { line-height: 30px; }
-.query-param > .key { display: inline-block; font-weight: bold; min-width: 80px; font-size: 0.8em; line-height: 30px; }
+.query-param { line-height: 30px; padding: 0 10px; margin: 2px 2px; background-color: #5c5c5c; color: #fff; }
+.query-param > .key { font-weight: bold; color: #9b9b9b; line-height: 30px; }
 
 .search-param > .key { display: inline-block; font-weight: bold; min-width: 80px; font-size: 0.8em; line-height: 30px; }
 
