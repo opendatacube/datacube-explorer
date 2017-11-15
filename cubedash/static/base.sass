@@ -1,6 +1,9 @@
-$bold_highlight: #231f20
-$panel_color: lighten($bold_highlight, 60%)
-$content_background: lighten($bold_highlight, 70%)
+$bold_highlight: #212121
+
+$content_background: lighten($bold_highlight, 75%)
+
+$panel_color: lighten($bold_highlight, 65%)
+$panel2_color: lighten($content_background, 5%)
 
 // The four colors in the dea style guide. Use sparingly (highlights).
 $emphasis_strong: #00A1DE
@@ -12,14 +15,13 @@ $highlight_alt2: #EEAF30
 
 body
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
-    background: #fcfcfc
-    background: linear-gradient(to bottom, #e0e0e0 0%, #fcfcfc 60px)
-    max-width: 1024px
-    margin: 0 auto 30px
+    background: #e0e0e0
+
     min-height: calc(100vh - 50px)
-    padding: 0 30px
     color: $bold_highlight
     font-size: 0.86em
+    margin: 0 auto 30px
+    max-width: 1024px
 
 a
     color: #2b2b2b
@@ -27,8 +29,11 @@ a
 h3
     color: lighten($bold_highlight, 0%)
 
+$header_highlight: lighten($bold_highlight, 15%)
+$header_highlight_strong: lighten($bold_highlight, 20%)
+
 #header
-    background-color: $bold_highlight
+    background-color: $header_highlight
     color: #efefef
     .panel
         padding: 15px 30px
@@ -40,7 +45,7 @@ h3
                 margin-right: 0
 
 #logo
-    padding: 5px 30px 5px 25px
+    padding: 10px 30px 10px 25px
     display: inline-block
     vertical-align: bottom
     img
@@ -59,7 +64,7 @@ nav
         float: left
         margin: 0
         a
-            $background_tab: darken($bold_highlight, 9%)
+            $background_tab: $header_highlight_strong
 
             padding: 4px 9px
             display: inline-block
@@ -67,11 +72,10 @@ nav
             border-color: $background_tab
             color: #efefef
             text-decoration: none
-            font-size: 0.86em
             &:hover, &:active
-                background: linear-gradient(to bottom, lighten($bold_highlight, 1%) 0%, $bold_highlight 100%)
+                background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
         &.active a
-            background: linear-gradient(to bottom, lighten($bold_highlight, 1%) 0%, $bold_highlight 100%)
+            background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
 
 #header
     clear: left
@@ -86,9 +90,9 @@ nav
         padding: 15px 30px
         background: $panel_color
         &.odd
-            background-color: lighten($content_background, 5%)
+            background-color: $panel2_color
         &.highlight
-            background: linear-gradient(to bottom, lighten($bold_highlight, 15%) 0%, $bold_highlight 100%)
+            background: $header_highlight_strong
             color: #efefef
 
 .panel.overflow
@@ -172,14 +176,14 @@ nav
 
 button
     margin: 5px 0
-    background-color: lighten($bold_highlight, 10%)
+    background-color: $header_highlight
     border: 0
     color: #efefef
     padding: 8px
     cursor: pointer
 
     &:hover
-        background-color: lighten($bold_highlight, 15%)
+        background-color: lighten($header_highlight, 15%)
 
 // Similar to gridforms style
 label
