@@ -1,6 +1,12 @@
-$panel_color: #adb0b3
-$bold_highlight: #424242
-$content_background: #ebf0f2
+$bold_highlight: #231f20
+$panel_color: lighten($bold_highlight, 60%)
+$content_background: lighten($bold_highlight, 70%)
+
+// The four colors in the dea style guide. Use sparingly (highlights).
+$emphasis_strong: #00A1DE
+$emphasis_weak: #8FCAE7
+$highlight_alt: #7AB800
+$highlight_alt2: #EEAF30
 
 @import normalise.css
 
@@ -23,7 +29,6 @@ h3
 
 #header
     background-color: $bold_highlight
-    /*background: linear-gradient(to bottom, #424242 0%, #6f7173 100%);
     color: #efefef
     .panel
         padding: 15px 30px
@@ -36,17 +41,10 @@ h3
 
 #logo
     padding: 5px 30px 5px 25px
-    a
-        font-size: 2em
-        text-decoration: none
-        font-weight: bold
-        color: inherit
-    .subheading
-        font-size: 0.8em
-        color: #959595
-        font-weight: normal
     display: inline-block
     vertical-align: bottom
+    img
+        max-height: 80px
 
 nav
     display: inline-block
@@ -88,7 +86,7 @@ nav
         padding: 15px 30px
         background: $panel_color
         &.odd
-            background-color: #d2d7d9
+            background-color: lighten($content_background, 5%)
         &.highlight
             background: linear-gradient(to bottom, lighten($bold_highlight, 15%) 0%, $bold_highlight 100%)
             color: #efefef
