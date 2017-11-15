@@ -27,6 +27,10 @@
             overflow-y: scroll;
             max-height: 600px;
         }
+
+        .sub-header {
+            line-height: 1.4em;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -35,17 +39,19 @@
 {% block content %}
     <div class="panel highlight">
         <h2>{{ dataset | printable_dataset }}</h2>
-        Indexed by <strong>{{ dataset.indexed_by }}</strong> <span
-            title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
-        {% if dataset.archived_time %}
-            <div>
-                Archived
-                <span title="{{ dataset.archived_time }}">
+        <div class="sub-header">
+            Indexed by <strong>{{ dataset.indexed_by }}</strong> <span
+                title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
+            {% if dataset.archived_time %}
+                <div>
+                    Archived
+                    <span title="{{ dataset.archived_time }}">
                     {{ dataset.archived_time | timesince }}
-                </span>
-            </div>
-        {% endif %}
-        <div>
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+        <div class="sub-header">
             {{ dataset.type.name }} ({{ dataset.type.metadata_type.name }})
         </div>
     </div>
