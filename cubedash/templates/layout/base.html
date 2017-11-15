@@ -13,18 +13,18 @@
 
 </head>
 <body>
-<div id="logo">
-    <a href="/">
-        <img src="{{ url_for('static', filename='dea-logo-inline.png') }}"
-             alt="Digital Earth Australia"/>
-    </a>
+<div class="content-wrapper">
+    <div id="logo">
+        <a href="/">
+            <img src="{{ url_for('static', filename='dea-logo-inline.png') }}"
+                 alt="Digital Earth Australia"/>
+        </a>
+    </div>{% block header %}{% endblock %}
+    <div id="content">{% block content %}{% endblock %}</div>
+
+    <script src="{{ url_for('static', filename='jquery-3.1.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
+    {% block footer %}{% endblock %}
 </div>
-
-{% block header %}{% endblock %}
-<div id="content">{% block content %}{% endblock %}</div>
-
-<script src="{{ url_for('static', filename='jquery-3.1.0.min.js') }}"></script>
-<script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
-{% block footer %}{% endblock %}
 </body>
 </html>
