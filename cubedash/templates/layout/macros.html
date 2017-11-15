@@ -24,7 +24,7 @@
     <div class="query-param-list">
         {% for key, value in d | dictsort if value is not mapping %}
             <div class="query-param">
-                <span class="key">{{ key }}:</span>
+                <span class="key">{{ key }}</span>
                 <span class="value">{{ value | query_value }}</span>
             </div>
         {% endfor %}
