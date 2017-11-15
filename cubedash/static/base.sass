@@ -3,13 +3,20 @@ $bold_highlight: #212121
 $content_background: lighten($bold_highlight, 75%)
 
 $panel_color: lighten($bold_highlight, 65%)
-$panel2_color: lighten($content_background, 5%)
+$panel2_color: lighten($content_background, 6%)
 
 // The four colors in the dea style guide. Use sparingly (highlights).
 $emphasis_strong: #00A1DE
-$emphasis_weak: #8FCAE7
+$emphasis_weak: $emphasis_strong // darken($emphasis_strong, 10%)
+$emphasis_light: #8FCAE7
+
 $highlight_alt: #7AB800
 $highlight_alt2: #EEAF30
+
+
+$header_highlight: lighten($bold_highlight, 15%)
+$header_highlight_strong: lighten($bold_highlight, 20%)
+
 
 @import normalise.css
 
@@ -26,12 +33,13 @@ body
 a
     color: #2b2b2b
 
-h3
-    color: lighten($bold_highlight, 0%)
+h2
+    color: $bold_highlight
 
-$header_highlight: lighten($bold_highlight, 15%)
-$header_highlight_strong: lighten($bold_highlight, 20%)
-
+    .panel.highlight > &
+        color: #fff
+    .panel.odd > &
+        color: $emphasis_strong
 #header
     background-color: $header_highlight
     color: #efefef
@@ -79,8 +87,6 @@ nav
 
 #header
     clear: left
-    h2
-        margin-top: 0
 
 #content
     position: relative
@@ -140,7 +146,7 @@ nav
     text-decoration: none
     &:hover
         background-color: $bold_highlight
-        color: #d2d7d9
+        color: #fff
 
 .data-table
     &.numerical
@@ -160,11 +166,13 @@ nav
     line-height: 30px
     padding: 0 10px
     margin: 2px 2px
-    background-color: lighten($bold_highlight, 15%)
+    $param_highlight: lighten($bold_highlight, 20%)
+    background-color: $param_highlight
     color: #fff
+    //font-family: monospace
 
     > .key
-        color: lighten($bold_highlight, 45%)
+        color: lighten($param_highlight, 20%)
         line-height: 30px
 
 .search-param > .key
@@ -176,14 +184,15 @@ nav
 
 button
     margin: 5px 0
-    background-color: $header_highlight
+    background-color: $emphasis_weak
     border: 0
     color: #efefef
     padding: 8px
     cursor: pointer
+    font-size: 18px
 
     &:hover
-        background-color: lighten($header_highlight, 15%)
+        background-color: $emphasis_strong
 
 // Similar to gridforms style
 label
@@ -196,6 +205,7 @@ label
     margin: 1em 0
     > label
         padding: 8px
+        display: block
 
     select
         padding: 6px
@@ -208,12 +218,13 @@ label
 .chart-timeline-bar
     width: 2px
     display: inline-block
-    background-color: lighten($bold_highlight, 18%)
-    $graph_highlight: $bold_highlight
+    $graph_highlight: $emphasis_weak
+    background-color: $graph_highlight
+
     &.new-year
-        background-color: lighten($bold_highlight, 13%)
+        background-color: darken($graph_highlight, 5%)
     &:hover
-        background-color: $bold_highlight
+        background-color: darken($graph_highlight, 10%)
 
 .chart-timeline-years
     font-size: 0
