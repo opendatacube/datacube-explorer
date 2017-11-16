@@ -16,7 +16,7 @@ app.register_blueprint(_product.bp)
 def default_redirect():
     """Redirect to default starting page."""
     return flask.redirect(
-        flask.url_for("product.spatial_page", product="ls7_level1_scene")
+        flask.url_for("product.spatial_page", product_name="ls7_level1_scene")
     )
 
 
