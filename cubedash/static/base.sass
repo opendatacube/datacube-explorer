@@ -7,7 +7,7 @@ $panel2_color: lighten($content_background, 6%)
 
 // The four colors in the dea style guide. Use sparingly (highlights).
 $emphasis_strong: #00A1DE
-$emphasis_weak: $emphasis_strong // darken($emphasis_strong, 10%)
+$emphasis_weak: desaturate($emphasis_strong, 50%) // darken($emphasis_strong, 10%)
 $emphasis_light: #8FCAE7
 
 $highlight_alt: #7AB800
@@ -37,7 +37,7 @@ h2
     .panel.highlight > &
         color: #fff
     .panel.odd > &
-        color: $emphasis_strong
+        color: $emphasis_weak
 
 #header
     background-color: $header_highlight
@@ -131,7 +131,7 @@ nav
 
 .link-cell > a
     padding: 0 15px
-    text-align: left
+    text-align: right
     line-height: 30px
 
 /* A link cell has padding on the anchor, not the cell
