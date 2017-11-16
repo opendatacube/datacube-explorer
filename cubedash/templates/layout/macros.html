@@ -1,10 +1,10 @@
-{% macro chart_timeline(timeline, product_name) -%}
+{% macro chart_timeline(timeline, product) -%}
     <div class="chart-timeline">
         {% set max_count = timeline | map('last') | max %}
         <div class="chart-timeline-bars">
             {% for (start_time, end_time), count in timeline %}
                 <a href="{{ url_for('product.search_page',
-                            product=product_name,
+                            product_name=product.name,
                             **{'time-begin': start_time, 'time-end': end_time}
                             ) }}"
                    class="chart-timeline-bar {% if start_time.month == 1 %}new-year{% endif %}"

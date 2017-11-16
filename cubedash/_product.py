@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 
 import flask
+import functools
 from cachetools.func import ttl_cache
 
 from datetime import datetime
 
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from datacube.model import Range
+from datacube.model import Range, DatasetType
 from flask import request
 from werkzeug.datastructures import MultiDict
 
@@ -15,16 +16,29 @@ from cubedash import _utils as utils
 import logging
 from cubedash._model import CACHE_LONG_TIMEOUT_SECS, index, as_json
 
-from flask import Blueprint
+from flask import Blueprint, abort
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('product', __name__, url_prefix='/<product>')
+bp = Blueprint('product', __name__, url_prefix='/<product_name>')
 
 _HARD_SEARCH_LIMIT = 500
 
 
+def with_loaded_product(f):
+    """Convert the 'product_name' query argument into a 'product' entity"""
+    @functools.wraps(f)
+    def wrapper(product_name: str, *args, **kwargs):
+        product = index.products.get_by_name(product_name)
+        if product is None:
+            abort(404, "Unknown product %r" % product_name)
+        return f(product, *args, **kwargs)
+
+    return wrapper
+
+
 @bp.route('/spatial')
-def spatial_page(product):
+@with_loaded_product
+def spatial_page(product: DatasetType):
     types = index.datasets.types.get_all()
     return flask.render_template(
         'spatial.html',
@@ -34,7 +48,8 @@ def spatial_page(product):
 
 
 @bp.route('/timeline')
-def timeline_page(product):
+@with_loaded_product
+def timeline_page(product: DatasetType):
     return flask.render_template(
         'timeline.html',
         timeline=_timeline_years(1986, product),
@@ -44,11 +59,11 @@ def timeline_page(product):
 
 
 @bp.route('/search')
-def search_page(product: str):
-    product_entity = index.products.get_by_name_unsafe(product)
+@with_loaded_product
+def search_page(product: DatasetType):
     args = MultiDict(flask.request.args)
 
-    query = utils.query_to_search(args, product=product_entity)
+    query = utils.query_to_search(args, product=product)
     _LOG.info('Query %r', query)
 
     # TODO: Add sort option to index API
@@ -62,7 +77,6 @@ def search_page(product: str):
         'search.html',
         products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
-        selected_product_e=product_entity,
         datasets=datasets,
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT
@@ -77,10 +91,10 @@ def request_wants_json():
 
 
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def _timeline_years(from_year, product):
+def _timeline_years(from_year: int, product: DatasetType):
     timeline = index.datasets.count_product_through_time(
         '1 month',
-        product=product,
+        product=product.name,
         time=Range(
             datetime(from_year, 1, 1, tzinfo=tz.tzutc()),
             datetime.utcnow()

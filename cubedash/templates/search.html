@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="panel relative">
-        <form action="{{ url_for('product.search_page', product=selected_product) }}"
+        <form action="{{ url_for('product.search_page', product_name=selected_product.name) }}"
               method="get"
               class="grid-form">
             <fieldset>
@@ -26,14 +26,14 @@
                     </div>
                 </div>
 
-                {% for key, field in selected_product_e.metadata_type.dataset_fields | dictsort if value is not mapping and key not in ('time', 'product') %}
+                {% for key, field in selected_product.metadata_type.dataset_fields | dictsort if value is not mapping and key not in ('time', 'product') %}
                     {# If it's numeric, add start/end input boxes #}
                     {% if field | is_numeric_field %}
                         <div data-row-span="2" id="search-row-{{ key }}"
                              {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-begin"
-                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}
+                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}
                                     from:</label>
                                 <input type="number"
                                        step="{{ field | field_step_size }}"
@@ -45,7 +45,7 @@
                             </div>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-end"
-                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}
+                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}
                                     to:</label>
                                 <input type="number"
                                        id="search-{{ key }}-end"
@@ -60,7 +60,7 @@
                              {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}"
-                                       class="key">{{ selected_product_e.metadata_type.dataset_fields[key].description }}:</label>
+                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}:</label>
                                 <input type="text"
                                        id="search-{{ key }}"
                                        name="{{ key }}"
@@ -83,7 +83,7 @@
             <select id="add-search-field-type"
                     name="add-search-field-type">
                 <option value="">-</option>
-                {% for key, field in selected_product_e.metadata_type.dataset_fields |dictsort if key not in query_params %}
+                {% for key, field in selected_product.metadata_type.dataset_fields |dictsort if key not in query_params %}
                     <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
                 {% endfor %}
             </select>

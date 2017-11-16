@@ -9,7 +9,7 @@
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
-                    <a href="{{ url_for(page_method, product=selected_product) }}">
+                    <a href="{{ url_for(page_method, product_name=selected_product.name) }}">
                         {{ id | title }}
                     </a>
                 </li>
@@ -25,7 +25,7 @@
                         aria-label="Select product">
                     {% for product in products %}
                         <option value="{{ product.name }}"
-                                {% if product.name == selected_product %}selected="selected"{% endif %}>
+                                {% if product.name == selected_product.name %}selected="selected"{% endif %}>
                             {{ product.description }}
                         </option>
                     {% endfor %}

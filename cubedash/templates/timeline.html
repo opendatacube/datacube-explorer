@@ -27,7 +27,7 @@
                         {% else %}
                             <td class="link-cell">
                                 <a href="{{ url_for('product.search_page',
-                                            product=selected_product,
+                                            product_name=selected_product.name,
                                             **{"time-begin": start_time, "time-end": end_time}) }}"
                                    title="View datasets for {{ start_time.month | month_name }} {{ start_time.year }}">
                                     {{ count or 0 }}
