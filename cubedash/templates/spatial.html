@@ -4,25 +4,6 @@
 {% block title %}Map{% endblock %}
 {% block head %}
     {{ super() }}
-
-    <style type="text/css">
-        #map {
-            width: 100%;
-            height: calc(100vh - 100px);
-        }
-
-        .message-box {
-            position: absolute;
-            left: calc(50% - 100px);
-            top: 60px;
-            width: 200px;
-            text-align: center;
-            z-index: 9999;
-            background: #2b2b2b linear-gradient(to bottom, #6f7173 0%, #424242 100%);
-            padding: 13px 15px;
-            color: #fff;
-        }
-    </style>
     <link rel="stylesheet"
           href="{{ url_for('static', filename='leaflet-0.7.7/leaflet.css') }}">
 

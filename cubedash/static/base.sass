@@ -13,10 +13,8 @@ $emphasis_light: #8FCAE7
 $highlight_alt: #7AB800
 $highlight_alt2: #EEAF30
 
-
 $header_highlight: lighten($bold_highlight, 15%)
 $header_highlight_strong: lighten($bold_highlight, 20%)
-
 
 @import normalise.css
 
@@ -40,6 +38,7 @@ h2
         color: #fff
     .panel.odd > &
         color: $emphasis_strong
+
 #header
     background-color: $header_highlight
     color: #efefef
@@ -253,3 +252,19 @@ label
 
     [data-row-span].disabled
         display: none
+
+// Spatial page
+#map
+    width: 100%
+    height: calc(100vh - 100px)
+
+.message-box
+    position: absolute
+    left: calc(50% - 100px)
+    top: 60px
+    width: 200px
+    text-align: center
+    z-index: 9999
+    background: $header_highlight_strong
+    padding: 13px 15px
+    color: #fff

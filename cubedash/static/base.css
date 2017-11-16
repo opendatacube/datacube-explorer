@@ -190,4 +190,8 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="12"] > [data-field-span="12"] { width: 100%; }
 .grid-form [data-row-span].disabled { display: none; }
 
+#map { width: 100%; height: calc(100vh - 100px); }
+
+.message-box { position: absolute; left: calc(50% - 100px); top: 60px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
+
 /*# sourceMappingURL=base.css.map */
