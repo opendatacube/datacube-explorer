@@ -14,12 +14,12 @@
 
 {% block selector %}
     {{ super() }}
-    <select id='select-year'>
+    <select id='select-year' aria-label="Year" title="Select year">
         {% for year in range(2017, 1985, -1) %}
             <option value="{{ year }}">{{ year }}</option>
         {% endfor %}
     </select>
-    <select id='select-month'>
+    <select id='select-month' aria-label="Month" title="Select month">
         {% for month in range(1, 13) %}
             <option value="{{ month }}">{{ month | month_name }}</option>
         {% endfor %}
