@@ -1,7 +1,7 @@
 {% extends "layout/product-section.html" %}
 {% set active_page = "spatial" %}
 
-{% block title %}Map{% endblock %}
+{% block title %}{{ super() }} map{% endblock %}
 {% block head %}
     {{ super() }}
     <link rel="stylesheet"
