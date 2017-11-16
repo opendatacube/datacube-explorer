@@ -19,7 +19,10 @@
     <div id="header">
         <div class="panel">
             {% block selector %}
-                <select name="products" id='select-product'>
+                <select name="products"
+                        id='select-product'
+                        title="Select product"
+                        aria-label="Select product">
                     {% for product in products %}
                         <option value="{{ product.name }}"
                                 {% if product.name == selected_product %}selected="selected"{% endif %}>
