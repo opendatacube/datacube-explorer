@@ -1,21 +1,21 @@
 {% extends "layout/base.html" %}
 {% set active_page = "platform" %}
 
-{% block title %}{{ platform }}{% endblock %}
+{% block title %}Platform {{ platform }}{% endblock %}
 
-{% block header %}
-    <div id="header">
-        <div class="panel">
-            <h2>{{ platform }} Products</h2>
-        </div>
-    </div>
-{% endblock %}
 {% block content %}
+    <div class="panel highlight">
+        <h2>{{ platform }} Products</h2>
+    </div>
     {% from "layout/macros.html" import chart_timeline %}
     {% for product, counts in product_counts %}
         <div class="panel odd">
             <h2>{{ product.name }}</h2>
-            {{ chart_timeline(counts, product.name) }}
+            {{ chart_timeline(counts, product) }}
+        </div>
+    {% else %}
+        <div class="panel">
+            No products for platform '{{ platform }}'
         </div>
     {% endfor %}
 {% endblock %}
