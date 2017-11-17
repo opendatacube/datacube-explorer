@@ -5,7 +5,7 @@
 {% block head %}
     {{ super() }}
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='leaflet-0.7.7/leaflet.css') }}">
+          href="{{ url_for('static', filename='leaflet-1.2.0/leaflet.css') }}">
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css') }}">
@@ -39,7 +39,7 @@
 
 
 {% block footer %}
-    <script src="{{ url_for('static', filename='leaflet-0.7.7/leaflet.js') }}"></script>
+    <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
     <script type="application/javascript">
         (function () {
