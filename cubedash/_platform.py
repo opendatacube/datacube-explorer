@@ -1,15 +1,12 @@
 from __future__ import absolute_import
 
 import logging
-from datetime import datetime
 
 import flask
-from cachetools.func import ttl_cache
-from dateutil import tz
 from flask import Blueprint
-from werkzeug.datastructures import Range
 
-from cubedash._model import CACHE_LONG_TIMEOUT_SECS, index
+from cubedash import _product
+from cubedash._model import index
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('platform', __name__, url_prefix='/platform')
@@ -17,24 +14,17 @@ bp = Blueprint('platform', __name__, url_prefix='/platform')
 _HARD_SEARCH_LIMIT = 500
 
 
-@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def _timelines_platform(platform):
-    products = index.datasets.count_by_product_through_time(
-        '1 month',
-        platform=platform,
-        time=Range(
-            datetime(1986, 1, 1, tzinfo=tz.tzutc()),
-            datetime.utcnow()
-        )
-    )
-    return list(products)
+def _timelines_platform(platform_name):
+    for product in index.products.search(platform=platform_name):
+        _LOG.debug("Building timeline for platform product %s", product.name)
+        yield product, _product._timeline_years(1986, product)
 
 
-@bp.route('/')
-def platforms_page(platform):
+@bp.route('/<platform_name>')
+def platforms_page(platform_name):
     return flask.render_template(
         'platform.html',
-        product_counts=_timelines_platform(platform),
+        product_counts=_timelines_platform(platform_name),
         products=[p.definition for p in index.datasets.types.get_all()],
-        platform=platform
+        platform=platform_name
     )
