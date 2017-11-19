@@ -1,7 +1,8 @@
 {% extends "layout/base.html" %}
 {% block title %}{{ selected_product.name }}{% endblock %}
 
-{% block header %}<nav>
+{% block header %}
+    <nav>
         <ul>
             {% set navigation_bar = [
                 ('spatial', 'product.spatial_page'),
@@ -17,21 +18,19 @@
             {% endfor %}
         </ul>
     </nav>
-    <div id="header">
-        <div class="panel">
-            {% block selector %}
-                <select name="products"
-                        id='select-product'
-                        title="Select product"
-                        aria-label="Select product">
-                    {% for product in products %}
-                        <option value="{{ product.name }}"
-                                {% if product.name == selected_product.name %}selected="selected"{% endif %}>
-                            {{ product.description }}
-                        </option>
-                    {% endfor %}
-                </select>
-            {% endblock %}
-        </div>
-    </div>
+    <header>
+        {% block selector %}
+            <select name="products"
+                    id='select-product'
+                    title="Select product"
+                    aria-label="Select product">
+                {% for product in products %}
+                    <option value="{{ product.name }}"
+                            {% if product.name == selected_product.name %}selected="selected"{% endif %}>
+                        {{ product.description }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% endblock %}
+    </header>
 {% endblock %}

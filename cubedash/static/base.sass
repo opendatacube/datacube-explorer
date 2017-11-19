@@ -43,17 +43,20 @@ h2
     .panel.odd > &
         color: $emphasis_weak
 
-#header
+header
     background-color: $header_highlight
     color: #efefef
-    .panel
-        padding: 15px 30px
-        display: flex
-        > select
-            margin-right: 5px
-            padding: 5px
-            &:last-child
-                margin-right: 0
+    padding: 15px 30px
+
+    display: flex
+
+    #select-product
+        flex: 1 1
+    > select
+        margin-right: 5px
+        padding: 5px
+        &:last-child
+            margin-right: 0
 
 #logo
     padding: 10px 30px 10px 25px
@@ -77,7 +80,7 @@ nav
         a
             $background_tab: $header_highlight_strong
 
-            padding: 4px 9px
+            padding: 6px 9px
             display: inline-block
             background: $background_tab
             border-color: $background_tab
@@ -87,9 +90,6 @@ nav
                 background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
         &.active a
             background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
-
-#header
-    clear: left
 
 #content
     position: relative
