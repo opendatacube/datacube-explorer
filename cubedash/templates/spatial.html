@@ -16,13 +16,20 @@
     {{ super() }}
     <select id='select-year' aria-label="Year" title="Select year">
         {% for year in range(2017, 1985, -1) %}
-            <option value="{{ year }}">{{ year }}</option>
+            <option value="{{ year }}"
+                    {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
+                {{ year }}
+            </option>
         {% endfor %}
     </select>
     <select id='select-month' aria-label="Month" title="Select month">
         {% for month in range(1, 13) %}
-            <option value="{{ month }}">{{ month | month_name }}</option>
+            <option value="{{ month }}"
+                    {% if (month|string) == request.args.get('month') %}selected='selected'{% endif %}>
+                {{ month | month_name }}
+            </option>
         {% endfor %}
+
     </select>
 {% endblock %}
 
@@ -53,34 +60,34 @@
 
             /* Basemap Layers */
             var cartoLight = L.tileLayer(
-                    "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
-                    {
-                        maxZoom: 19,
-                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
-                    }
+                "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                    ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                }
             );
             var usgsImagery = L.layerGroup([
-                        L.tileLayer(
-                                "http://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
-                                "tile/{z}/{y}/{x}",
-                                {
-                                    maxZoom: 15
-                                }
-                        ),
-                        L.tileLayer.wms(
-                                "http://raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
-                                "ImageServer/WMSServer?",
-                                {
-                                    minZoom: 16,
-                                    maxZoom: 19,
-                                    layers: "0",
-                                    format: 'image/jpeg',
-                                    transparent: true,
-                                    attribution: "Aerial Imagery courtesy USGS"
-                                }
-                        )
-                    ]
+                    L.tileLayer(
+                        "http://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
+                        "tile/{z}/{y}/{x}",
+                        {
+                            maxZoom: 15
+                        }
+                    ),
+                    L.tileLayer.wms(
+                        "http://raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
+                        "ImageServer/WMSServer?",
+                        {
+                            minZoom: 16,
+                            maxZoom: 19,
+                            layers: "0",
+                            format: 'image/jpeg',
+                            transparent: true,
+                            attribution: "Aerial Imagery courtesy USGS"
+                        }
+                    )
+                ]
             );
 
             var datasets = L.geoJson(null, {
@@ -113,6 +120,7 @@
                 return attributionDiv;
             };
             map.addControl(attributionControl);
+
             function updateAttribution(e) {
                 $.each(map._layers, function (index, layer) {
                     if (layer.getAttribution) {
@@ -126,18 +134,19 @@
 
             L.control.zoom({position: "bottomright"}).addTo(map);
             L.control.groupedLayers(
-                    {
-                        "Street Map": cartoLight,
-                        "Aerial Imagery": usgsImagery
-                    },
-                    {},
-                    {
-                        collapsed: false
-                    }
+                {
+                    "Street Map": cartoLight,
+                    "Aerial Imagery": usgsImagery
+                },
+                {},
+                {
+                    collapsed: false
+                }
             ).addTo(map);
 
             var msgLoading = $("#msg-loading"),
-                msgNoResults = $("#msg-no-results").hide();
+                msgNoResults = $("#msg-no-results").hide(),
+                customTimePeriod = false;
 
             function reload_map() {
                 var product = $('#select-product :selected').val();
@@ -158,7 +167,23 @@
                 })
             }
 
-            $('#select-month, #select-year, #select-product').change(reload_map);
+            $('#select-month, #select-year').change(function () {
+                reload_map();
+                customTimePeriod = true;
+            });
+
+            $('#select-product').change(function () {
+                var product = $('#select-product :selected').val(),
+                    year = $('#select-year :selected').val(),
+                    month = $('#select-month :selected').val(),
+                    queryParams = window.location.search;
+
+                // Only add specific time parameters if they've edited them.
+                if (customTimePeriod) {
+                    queryParams = '?year=' + year + '&month=' + month;
+                }
+                window.location.href = '/' + product + '/spatial' + queryParams;
+            });
             reload_map();
         })();
 
