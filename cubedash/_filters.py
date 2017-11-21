@@ -13,13 +13,14 @@ from flask import Blueprint
 from jinja2 import Markup, escape
 
 from datacube.index.postgres._fields import (
+    DateDocField,
     DoubleDocField,
     IntDocField,
     NumericDocField,
     PgField,
     RangeDocField,
 )
-from datacube.model import Range
+from datacube.model import DatasetType, Range
 
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
 
@@ -86,12 +87,37 @@ def _max_val(ls):
     return max(ls)
 
 
+@bp.app_template_filter("searchable_fields")
+def _searchable_fields(product: DatasetType):
+    """Searchable field names for a product"""
+
+    # No point searching fields that are fixed for this product
+    # (eg: platform is always Landsat 7 on ls7_level1_scene)
+    skippable_product_keys = [k for k, v in product.fields.items() if (v is not None)]
+
+    return sorted(
+        [
+            (key, field)
+            for key, field in product.metadata_type.dataset_fields.items()
+            if key not in skippable_product_keys and key != "product"
+        ]
+    )
+
+
 @bp.app_template_filter("is_numeric_field")
 def _is_numeric_field(field: PgField):
     if isinstance(field, RangeDocField):
         return field.FIELD_CLASS in NUMERIC_FIELD_TYPES
     else:
         return isinstance(field, NUMERIC_FIELD_TYPES)
+
+
+@bp.app_template_filter("is_date_field")
+def _is_date_field(field: PgField):
+    if isinstance(field, RangeDocField):
+        return field.FIELD_CLASS is DateDocField
+    else:
+        return isinstance(field, DateDocField)
 
 
 @bp.app_template_filter("field_step_size")

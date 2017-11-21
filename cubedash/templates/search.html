@@ -9,24 +9,9 @@
               method="get"
               class="grid-form">
             <fieldset>
-                <div data-row-span="3">
-                    <div data-field-span="1">
-                        <label for="search-before">Time From</label>
-                        <input type="date"
-                               id="search-before"
-                               name="time-begin"
-                               value="{{ query_params.time.0.strftime('%Y-%m-%d') }}"/>
-                    </div>
-                    <div data-field-span="1">
-                        <label for="search-after">Time To</label>
-                        <input type="date"
-                               id="search-after"
-                               name="time-end"
-                               value="{{ query_params.time.1.strftime('%Y-%m-%d') }}"/>
-                    </div>
-                </div>
+                {% set field_list = selected_product | searchable_fields %}
 
-                {% for key, field in selected_product.metadata_type.dataset_fields | dictsort if value is not mapping and key not in ('time', 'product') %}
+                {% for key, field in field_list %}
                     {# If it's numeric, add start/end input boxes #}
                     {% if field | is_numeric_field %}
                         <div data-row-span="2" id="search-row-{{ key }}"
@@ -55,6 +40,29 @@
                                        value="{{ query_params[key] and query_params[key].end or '' }}"/>
                             </div>
                         </div>
+                    {% elif field | is_date_field %}
+                        <div data-row-span="3">
+                            <div data-field-span="1">
+                                <label for="search-{{ key }}-before">
+                                    {{ selected_product.metadata_type.dataset_fields[key].description }} From
+                                </label>
+                                <input type="date"
+                                       id="search-{{ key }}-before"
+                                       name="{{ key }}-begin"
+                                       value="{{ query_params[key] and
+                                        query_params[key].begin.strftime('%Y-%m-%d') or '' }}"/>
+                            </div>
+                            <div data-field-span="1">
+                                <label for="search-{{ key }}-after">
+                                    {{ selected_product.metadata_type.dataset_fields[key].description }} To
+                                </label>
+                                <input type="date"
+                                       id="search-{{ key }}-after"
+                                       name="{{ key }}-end"
+                                       value="{{ query_params[key] and
+                                        query_params[key].end.strftime('%Y-%m-%d') or '' }}"/>
+                            </div>
+                        </div>
                     {% else %}
                         <div data-row-span="1" id="search-row-{{ key }}"
                              {% if key not in query_params %}class="disabled"{% endif %}>
@@ -78,12 +86,12 @@
 
 
         </form>
-        <p  class="form-footer">
+        <p class="form-footer">
             <label for="add-search-field-type">Add field</label>
             <select id="add-search-field-type"
                     name="add-search-field-type">
                 <option value="">-</option>
-                {% for key, field in selected_product.metadata_type.dataset_fields |dictsort if key not in query_params %}
+                {% for key, field in field_list if key not in query_params %}
                     <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
                 {% endfor %}
             </select>
