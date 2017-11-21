@@ -17,7 +17,7 @@ _HARD_SEARCH_LIMIT = 500
 def _timelines_platform(platform_name):
     for product in index.products.search(platform=platform_name):
         _LOG.debug("Building timeline for platform product %s", product.name)
-        yield product, _product._timeline_years(1986, product)
+        yield product, _product.timeline_years(1986, product)
 
 
 @bp.route("/<platform_name>")

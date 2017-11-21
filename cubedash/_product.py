@@ -48,7 +48,7 @@ def spatial_page(product: DatasetType):
 def timeline_page(product: DatasetType):
     return flask.render_template(
         "timeline.html",
-        timeline=_timeline_years(1986, product),
+        timeline=timeline_years(1986, product),
         products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
     )
@@ -89,7 +89,7 @@ def request_wants_json():
 
 
 @ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def _timeline_years(from_year: int, product: DatasetType):
+def timeline_years(from_year: int, product: DatasetType):
     timeline = index.datasets.count_product_through_time(
         "1 month",
         product=product.name,
