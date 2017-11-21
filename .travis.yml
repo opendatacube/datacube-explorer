@@ -27,8 +27,8 @@ install:
 - travis_retry pip install --upgrade pip
 - travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0
   compliance-checker flask shapely
-- travis_retry git clone https://github.com/data-cube/agdc-v2.git
-- travis_retry pip install agdc-v2/
+- travis_retry git clone https://github.com/data-cube/dea-dashboard.git
+- travis_retry pip install dea-dashboard/
 script:
 - ./check-code.sh
 notifications:
