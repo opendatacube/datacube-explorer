@@ -2,22 +2,17 @@
 
 from setuptools import setup, find_packages
 
-import versioneer
-
 tests_require = [
     'pylint',
     'digitalearthau',
 ]
 
 dependency_links = [
-    'git+git://github.com/GeoscienceAustralia/digitalearthau/release/latest#egg=digitalearthau'
+    'git+git://github.com/GeoscienceAustralia/digitalearthau@develop#egg=digitalearthau'
 ]
 
 setup(
     name='dea-dashboard',
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
-
     url='https://github.com/data-cube/dea-dashboard',
     author='Geoscience Australia',
     
