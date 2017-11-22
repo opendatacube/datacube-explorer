@@ -14,8 +14,8 @@ header #select-product { flex: 1 1; }
 header > select { margin-right: 5px; padding: 5px; }
 header > select:last-child { margin-right: 0; }
 
-#logo { padding: 10px 30px 10px 25px; display: inline-block; vertical-align: bottom; }
-#logo img { max-height: 80px; }
+#logo { padding: 15px 30px 15px 30px; display: inline-block; vertical-align: bottom; }
+#logo img { max-height: 70px; }
 
 nav { display: inline-block; vertical-align: bottom; }
 nav ul { margin: 0; padding: 0; list-style-type: none; text-align: right; vertical-align: bottom; }
