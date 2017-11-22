@@ -28,7 +28,7 @@ install:
 - travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0
   compliance-checker flask shapely
 - travis_retry git clone https://github.com/opendatacube/datacube-core.git
-- travis_retry pip install datacube-core
+- travis_retry pip install datacube-core/.
 script:
 - ./check-code.sh
 notifications:
