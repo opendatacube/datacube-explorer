@@ -5,9 +5,8 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   style="display:block"
-   height="115.829"
-   width="385.8204"
+   preserveAspectRatio="true"
+   viewBox="0 0 385.8204 115.829"
    version="1.1"
    id="svg">
   <metadata
