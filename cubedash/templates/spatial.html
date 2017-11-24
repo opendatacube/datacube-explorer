@@ -60,7 +60,7 @@
 
             /* Basemap Layers */
             var cartoLight = L.tileLayer(
-                "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
                 {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
@@ -69,14 +69,14 @@
             );
             var usgsImagery = L.layerGroup([
                     L.tileLayer(
-                        "http://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
+                        "//basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
                         "tile/{z}/{y}/{x}",
                         {
                             maxZoom: 15
                         }
                     ),
                     L.tileLayer.wms(
-                        "http://raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
+                        "//raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
                         "ImageServer/WMSServer?",
                         {
                             minZoom: 16,
