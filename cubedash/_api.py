@@ -1,32 +1,18 @@
 import logging
-from datetime import datetime
 
-import shapely.geometry
-import shapely.ops
-from cachetools.func import ttl_cache
 from flask import Blueprint
 
-from cubedash._model import CACHE_LONG_TIMEOUT_SECS, as_json, index
-from datacube.model import Range
+from cubedash._model import as_json, cache, get_day, get_summary
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 
-def next_date(date):
-    if date.month == 12:
-        return datetime(date.year + 1, 1, 1)
-
-    return datetime(date.year, date.month + 1, 1)
-
-
-@bp.route("/datasets/<product>/<int:year>-<int:month>")
-@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def datasets_as_features(product, year, month):
-    start = datetime(year, month, 1)
-    time = Range(start, next_date(start))
-    datasets = index.datasets.search(product=product, time=time)
+@bp.route("/datasets/<product>/<int:year>-<int:month>-<int:day>")
+@cache.cached()
+def datasets_as_features(product: str, year: int, month: int, day: int):
+    datasets = get_day(product, year, month, day)
     return as_json(
         {
             "type": "FeatureCollection",
@@ -36,22 +22,15 @@ def datasets_as_features(product, year, month):
 
 
 @bp.route("/datasets/<product>/<int:year>-<int:month>/poly")
-@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def dataset_shape(product, year, month):
-    start = datetime(year, month, 1)
-    time = Range(start, next_date(start))
-    datasets = index.datasets.search(product=product, time=time)
+@cache.cached()
+def dataset_shape(product: str, year: int, month: int):
+    summary = get_summary(product, year, month)
 
-    dataset_shapes = [
-        shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
-        for ds in datasets
-        if ds.extent
-    ]
     return as_json(
         dict(
             type="Feature",
-            geometry=shapely.ops.unary_union(dataset_shapes).__geo_interface__,
-            properties=dict(dataset_count=len(dataset_shapes)),
+            geometry=summary.footprint_geometry.__geo_interface__,
+            properties=dict(dataset_count=summary.footprint_count),
         )
     )
 

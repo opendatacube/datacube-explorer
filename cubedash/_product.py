@@ -5,13 +5,12 @@ import logging
 from datetime import datetime
 
 import flask
-from cachetools.func import ttl_cache
 from dateutil import tz
 from flask import Blueprint, abort, request
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
-from cubedash._model import CACHE_LONG_TIMEOUT_SECS, as_json, index
+from cubedash._model import as_json, cache, index
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 
@@ -88,8 +87,10 @@ def request_wants_json():
     )
 
 
-@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def timeline_years(from_year: int, product: DatasetType):
+@cache.memoize()
+def timeline_years(from_year, product):
+    # type: (int, DatasetType) -> List
+
     timeline = index.datasets.count_product_through_time(
         "1 month",
         product=product.name,
