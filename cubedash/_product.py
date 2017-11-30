@@ -1,22 +1,19 @@
 from __future__ import absolute_import
 
-import flask
 import functools
-from cachetools.func import ttl_cache
-
+import logging
 from datetime import datetime
 
+import flask
+from datacube.model import Range, DatasetType
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from datacube.model import Range, DatasetType
+from flask import Blueprint, abort
 from flask import request
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
-import logging
-from cubedash._model import CACHE_LONG_TIMEOUT_SECS, index, as_json
-
-from flask import Blueprint, abort
+from cubedash._model import cache, index, as_json
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('product', __name__, url_prefix='/<product_name>')
@@ -26,6 +23,7 @@ _HARD_SEARCH_LIMIT = 500
 
 def with_loaded_product(f):
     """Convert the 'product_name' query argument into a 'product' entity"""
+
     @functools.wraps(f)
     def wrapper(product_name: str, *args, **kwargs):
         product = index.products.get_by_name(product_name)
@@ -67,7 +65,8 @@ def search_page(product: DatasetType):
     _LOG.info('Query %r', query)
 
     # TODO: Add sort option to index API
-    datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT), key=lambda d: d.center_time)
+    datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
+                      key=lambda d: d.center_time)
 
     if request_wants_json():
         return as_json(dict(
@@ -90,8 +89,10 @@ def request_wants_json():
            request.accept_mimetypes['text/html']
 
 
-@ttl_cache(ttl=CACHE_LONG_TIMEOUT_SECS)
-def timeline_years(from_year: int, product: DatasetType):
+@cache.memoize()
+def timeline_years(from_year, product):
+    # type: (int, DatasetType) -> List
+
     timeline = index.datasets.count_product_through_time(
         '1 month',
         product=product.name,

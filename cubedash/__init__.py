@@ -2,10 +2,9 @@ import sys
 
 import flask
 
+from . import _filters, _dataset, _platform, _product, _api, _model
 
-from . import _filters, _dataset, _platform, _product, _api
-
-app = flask.Flask('cubedash')
+app = _model.app
 app.register_blueprint(_filters.bp)
 app.register_blueprint(_api.bp)
 app.register_blueprint(_dataset.bp)

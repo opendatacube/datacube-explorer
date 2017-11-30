@@ -1,7 +1,10 @@
+cachetools
 datacube
 digitalearthau
-cachetools
 flask
+Flask-Cache
+gunicorn
 jinja2
+meinheld
 python-dateutil
 shapely
