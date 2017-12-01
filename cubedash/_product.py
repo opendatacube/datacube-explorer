@@ -13,7 +13,7 @@ from flask import request
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
-from cubedash._model import cache, index, as_json
+from cubedash._model import cache, index, as_json, get_summary
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('product', __name__, url_prefix='/<product_name>')
@@ -32,6 +32,25 @@ def with_loaded_product(f):
         return f(product, *args, **kwargs)
 
     return wrapper
+
+
+@bp.route('/')
+@with_loaded_product
+def overview_page(product: DatasetType):
+    types = index.datasets.types.get_all()
+
+    year = None
+    month = None
+    summary = get_summary(product.name, year, month)
+
+    return flask.render_template(
+        'product.html',
+        products=[p.definition for p in types],
+        summary=summary,
+        year=year,
+        month=month,
+        selected_product=product
+    )
 
 
 @bp.route('/spatial')
