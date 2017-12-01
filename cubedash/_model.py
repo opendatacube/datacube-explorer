@@ -10,7 +10,7 @@ import shapely
 import shapely.geometry
 import shapely.ops
 from flask import jsonify
-from flask_cache import Cache
+from flask_caching import Cache
 
 from datacube.index import index_connect
 from datacube.index._api import Index
