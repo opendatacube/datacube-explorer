@@ -60,19 +60,23 @@ class TimePeriodOverview(NamedTuple):
 
     footprint_count: int
 
+    @staticmethod
+    def add_periods(periods: Iterable["TimePeriodOverview"], group_by_month=False):
+        counter = Counter()
+        for p in periods:
+            counter.update(p.dataset_counts)
 
-def _add_periods(periods: Iterable["TimePeriodOverview"], group_by_month=False):
-    counter = sum(p.dataset_counts for p in periods)
+        if group_by_month:
+            counter = Counter(
+                datetime(date.year, date.month, 1).date() for date in counter.elements()
+            )
 
-    if group_by_month:
-        counter = Counter((date.year, date.month) for date in counter.elements())
-
-    return TimePeriodOverview(
-        sum(p.dataset_count for p in periods),
-        counter,
-        shapely.ops.unary_union(p.footprint_geometry for p in periods),
-        sum(p.footprint_count for p in periods),
-    )
+        return TimePeriodOverview(
+            sum(p.dataset_count for p in periods),
+            counter,
+            shapely.ops.unary_union([p.footprint_geometry for p in periods]),
+            sum(p.footprint_count for p in periods),
+        )
 
 
 def next_month(date: datetime):
@@ -90,8 +94,8 @@ def _get_month_summary(
 
     datasets = index.datasets.search_eager(product=product_name, time=time)
 
-    if not datasets:
-        return None
+    # if not datasets:
+    #     return None
 
     dataset_shapes = [
         shapely.geometry.asShape(ds.extent.to_crs(CRS("EPSG:4326")))
@@ -118,12 +122,12 @@ def get_summary(product_name, year, month):
         return _get_month_summary(product_name, year, month)
     elif year:
         # All months
-        return _add_periods(
+        return TimePeriodOverview.add_periods(
             get_summary(product_name, year, month) for month in range(1, 13)
         )
     else:
         # All years
-        return _add_periods(
+        return TimePeriodOverview.add_periods(
             (
                 get_summary(product_name, year, None)
                 for year in (range(1985, datetime.today().year + 1))

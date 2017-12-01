@@ -1,11 +1,11 @@
 {% macro chart_timeline(timeline, product) -%}
     <div class="chart-timeline">
-        {% set max_count = timeline | map('last') | max %}
+        {% set max_count = timeline.most_common(1)[0][1] %}
         <div class="chart-timeline-bars">
-            {% for (start_time, end_time), count in timeline %}
+            {% for start_time, count in timeline.items() %}
                 <a href="{{ url_for('product.search_page',
                             product_name=product.name,
-                            **{'time-begin': start_time, 'time-end': end_time}
+                            **{'time-begin': start_time}
                             ) }}"
                    class="chart-timeline-bar {% if start_time.month == 1 %}new-year{% endif %}"
                    style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%"
@@ -13,7 +13,7 @@
             {% endfor %}
         </div>
         <div class="chart-timeline-years">
-            {% for group in timeline | groupby('0.begin.year') %}
+            {% for group in timeline | groupby('year') %}
                 <span class="chart-timeline-year">{{ group.grouper }}</span>
             {% endfor %}
         </div>
