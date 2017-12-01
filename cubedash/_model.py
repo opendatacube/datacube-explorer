@@ -10,13 +10,14 @@ import flask
 import shapely
 import shapely.geometry
 import shapely.ops
+from flask import jsonify
+from flask_caching import Cache
+
 from datacube.index import index_connect
 from datacube.index._api import Index
 from datacube.model import Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
-from flask import jsonify
-from flask_cache import Cache
 
 # Only do expensive queries "once a day"
 # Enough time to last the remainder of the work day, but not enough to still be there the next morning

@@ -2,7 +2,7 @@ cachetools
 datacube
 digitalearthau
 flask
-Flask-Cache
+Flask-Caching
 gunicorn
 jinja2
 meinheld
