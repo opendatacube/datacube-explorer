@@ -1,0 +1,185 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ selected_product.name }}{% endblock %}
+
+{% block header %}
+    <header>
+        <select name="products"
+                id='select-product'
+                title="Select product"
+                aria-label="Select product">
+            <option value="">All</option>
+            {% for product in products %}
+                <option value="{{ product.name }}"
+                        {% if product.name == selected_product.name %}selected="selected"{% endif %}>
+                    {{ product.description }}
+                </option>
+            {% endfor %}
+        </select>
+        <select id='select-year' aria-label="Year" title="Select year">
+            <option value="">All</option>
+            {% for year in range(2017, 1985, -1) %}
+                <option value="{{ year }}"
+                        {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
+                    {{ year }}
+                </option>
+            {% endfor %}
+        </select>
+        <select id='select-month' aria-label="Month" title="Select month">
+            <option value="">All</option>
+            {% for month in range(1, 13) %}
+                <option value="{{ month }}"
+                        {% if (month|string) == request.args.get('month') %}selected='selected'{% endif %}>
+                    {{ month | month_name }}
+                </option>
+            {% endfor %}
+        </select>
+    </header>
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='leaflet-1.2.0/leaflet.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css') }}">
+{% endblock %}
+
+
+
+{% block content %}
+    <div class="panel overflow">
+        {% from "layout/macros.html" import chart_timeline %}
+        {{ chart_timeline(summary.dataset_counts, selected_product) }}
+    </div>
+    <div class="panel">
+        {{ summary.dataset_count }} datasets, {{ summary.footprint_count }} visible datasets.
+    </div>
+    <div class="relative">
+        <div id="msg-no-results" class="message-box">
+            <span>No displayable datasets for period</span>
+        </div>
+        <div id="map"></div>
+    </div>
+{% endblock %}
+
+
+{% block footer %}
+    <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
+    <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+    <script type="application/javascript">
+        (function () {
+            $(window).resize(function () {
+                $(".leaflet-control-layers").css("max-height", $("#map").height() - 50);
+            });
+
+
+            var datasets = L.geoJson(null, {
+                style: function (feature) {
+                    return {
+                        color: "#8FCAE7",
+                        fill: true,
+                        fillColor: "#888a8c",
+                        opacity: 0.6,
+                        weight: 2,
+                        clickable: false
+                    };
+                }
+            });
+
+
+            var map = L.map("map", {
+                zoom: 4,
+                center: [-26.2756326, 134.9387844],
+                /* Basemap Layers */
+                layers: [L.tileLayer(
+                    "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                    {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                    }
+                ), datasets],
+                zoomControl: false,
+                attributionControl: false
+            });
+
+
+            var attributionDiv;
+            var attributionControl = L.control({position: "bottomright"});
+            attributionControl.onAdd = function (map) {
+                attributionDiv = L.DomUtil.create("div", "leaflet-control-attribution");
+                return attributionDiv;
+            };
+            map.addControl(attributionControl);
+
+            function updateAttribution(e) {
+                $.each(map._layers, function (index, layer) {
+                    if (layer.getAttribution) {
+                        attributionDiv.innerHTML = layer.getAttribution();
+                    }
+                });
+            }
+
+            map.on("layeradd", updateAttribution);
+            map.on("layerremove", updateAttribution);
+
+            L.control.zoom({position: "bottomright"}).addTo(map);
+            L.control.groupedLayers(
+                {
+                    "Street Map": L.tileLayer(
+                        "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                        {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                            ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                        }
+                    ),
+                    "Aerial Imagery": L.layerGroup([
+                            L.tileLayer(
+                                "//basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
+                                "tile/{z}/{y}/{x}",
+                                {
+                                    maxZoom: 15
+                                }
+                            ),
+                            L.tileLayer.wms(
+                                "//raster.nationalmap.gov/arcgis/services/Orthoimagery/USGS_EROS_Ortho_SCALE/" +
+                                "ImageServer/WMSServer?",
+                                {
+                                    minZoom: 16,
+                                    maxZoom: 19,
+                                    layers: "0",
+                                    format: 'image/jpeg',
+                                    transparent: true,
+                                    attribution: "Aerial Imagery courtesy USGS"
+                                }
+                            )
+                        ]
+                    )
+                },
+                {},
+                {
+                    collapsed: false
+                }
+            ).addTo(map);
+
+            var msgNoResults = $("#msg-no-results");
+
+            {% if summary.footprint_count %}
+                datasets.addData({{ summary.footprint_geometry.__geo_interface__ | tojson }});
+                msgNoResults.hide();
+            {% endif %}
+
+            $('#select-product, #select-month, #select-year').change(function () {
+                var product = $('#select-product :selected').val(),
+                    year = $('#select-year :selected').val(),
+                    month = $('#select-month :selected').val(),
+                    queryParams = jQuery.param({year: year, month: month});
+
+                window.location.href = '/' + product + '?' + queryParams;
+            });
+        })();
+
+    </script>
+{% endblock %}

@@ -39,8 +39,8 @@ def with_loaded_product(f):
 def overview_page(product: DatasetType):
     types = index.datasets.types.get_all()
 
-    year = None
-    month = None
+    year = request.args.get('year', None, type=int)
+    month = request.args.get('month', None, type=int)
     summary = get_summary(product.name, year, month)
 
     return flask.render_template(

@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from __future__ import absolute_import
 
 from collections import Counter
 from datetime import datetime, timedelta
@@ -61,6 +60,8 @@ class TimePeriodOverview(NamedTuple):
 
     @staticmethod
     def add_periods(periods: Iterable['TimePeriodOverview'], group_by_month=False):
+        periods = list(periods)
+
         counter = Counter()
         for p in periods:
             counter.update(p.dataset_counts)
