@@ -18,12 +18,15 @@ setup(
     
     packages=find_packages(),
     install_requires=[
-        'datacube',
         'cachetools',
+        'datacube',
         'flask',
+        'Flask-Caching',
+        'gunicorn',
         'jinja2',
+        'meinheld',
         'python-dateutil',
-        'shapely'
+        'shapely',
     ],
     tests_require=tests_require,
     dependency_links=dependency_links,
