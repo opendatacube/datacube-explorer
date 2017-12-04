@@ -62,6 +62,8 @@ class TimePeriodOverview(NamedTuple):
 
     @staticmethod
     def add_periods(periods: Iterable["TimePeriodOverview"], group_by_month=False):
+        periods = list(periods)
+
         counter = Counter()
         for p in periods:
             counter.update(p.dataset_counts)
