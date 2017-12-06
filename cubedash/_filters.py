@@ -147,6 +147,13 @@ def timesince(dt, default="just now"):
     for period, singular, plural in periods:
 
         if period:
-            return "%d %s ago" % (period, singular if period == 1 else plural)
+            return _time("%d %s ago" % (period, singular if period == 1 else plural), dt)
 
-    return default
+    return _time(default, dt)
+
+
+def _time(label: str, actual_time: datetime) -> Markup:
+    return Markup(f"<time datetime={actual_time.isoformat()}"
+                  f" title={actual_time.isoformat()}>"
+                  f"{escape(label)}"
+                  f"</time>")

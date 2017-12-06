@@ -40,8 +40,8 @@
     <div class="panel highlight">
         <h2>{{ dataset | printable_dataset }}</h2>
         <div class="sub-header">
-            Indexed by <strong>{{ dataset.indexed_by }}</strong> <span
-                title="{{ dataset.indexed_time }}">{{ dataset.indexed_time | timesince }}</span>
+            Indexed by <strong>{{ dataset.indexed_by }}</strong>
+            {{ dataset.indexed_time | timesince }}
             {% if dataset.archived_time %}
                 <div>
                     Archived
