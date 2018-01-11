@@ -27,10 +27,22 @@
                 {% for product in products %}
                     <option value="{{ product.name }}"
                             {% if product.name == selected_product.name %}selected="selected"{% endif %}>
-                        {{ product.description }}
+                        {{ product.definition.description }}
                     </option>
                 {% endfor %}
             </select>
         {% endblock %}
     </header>
+{#    <ul>#}
+{#    {% for platform_name, ps in platform_products.items() %}#}
+{#        <li>#}
+{#            <span style="text-transform:lowercase;font-variant: small-caps">{{ platform_name }}</span>#}
+{#            <ul>#}
+{#                {% for p in ps %}#}
+{#                <li><strong>{{ p.name }}</strong>: {{ p.definition.description }}</li>#}
+{#                {% endfor %}#}
+{#            </ul>#}
+{#        </li>#}
+{#    {% endfor %}#}
+{#    </ul>#}
 {% endblock %}

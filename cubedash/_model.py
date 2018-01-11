@@ -116,9 +116,9 @@ def _get_month_summary(
 
 
 @cache.memoize()
-def get_summary(product_name, year, month):
-    # type: (str, Optional[int], Optional[int]) -> TimePeriodOverview
-
+def get_summary(
+    product_name: str, year: Optional[int], month: Optional[int]
+) -> TimePeriodOverview:
     if year and month:
         # Specific month
         return _get_month_summary(product_name, year, month)
