@@ -16,10 +16,10 @@
                 <th>{{ month | month_name }}</th>
             {% endfor %}
             </thead>
-            {% for group in timeline | groupby('0.begin.year') %}
+            {% for group in timeline | groupby('year') %}
                 <tr>
                     <th>{{ group.grouper }}</th>
-                    {% for (start_time, end_time), count in group.list %}
+                    {% for start_time, count in group.list %}
                         {% if not count %}
                             <td class="zero"
                                 title="No datasets for {{ start_time.month | month_name }} {{ start_time.year }}">0

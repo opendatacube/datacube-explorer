@@ -5,6 +5,10 @@ import logging
 from datetime import datetime
 
 import flask
+import itertools
+
+from typing import List
+
 from datacube.model import Range, DatasetType
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
@@ -19,6 +23,28 @@ _LOG = logging.getLogger(__name__)
 bp = Blueprint('product', __name__, url_prefix='/<product_name>')
 
 _HARD_SEARCH_LIMIT = 500
+
+
+@bp.context_processor
+def inject_product_list():
+    types = sorted(list(index.datasets.types.get_all()), key=_get_product_group)
+
+    # Group by platform
+    platform_products = dict(
+        (name or '', list(items))
+        for (name, items) in itertools.groupby(types, key=_get_product_group)
+    )
+
+    return dict(products=types,
+                platform_products=platform_products)
+
+
+def _get_product_group(dt: DatasetType):
+    group: str = dt.fields.get('product_type')
+    if not group:
+        return 'Misc'
+
+    return group.replace('_', ' ')
 
 
 def with_loaded_product(f):
@@ -37,15 +63,12 @@ def with_loaded_product(f):
 @bp.route('/')
 @with_loaded_product
 def overview_page(product: DatasetType):
-    types = index.datasets.types.get_all()
-
     year = request.args.get('year', None, type=int)
     month = request.args.get('month', None, type=int)
     summary = get_summary(product.name, year, month)
 
     return flask.render_template(
         'product.html',
-        products=[p.definition for p in types],
         summary=summary,
         year=year,
         month=month,
@@ -56,10 +79,8 @@ def overview_page(product: DatasetType):
 @bp.route('/spatial')
 @with_loaded_product
 def spatial_page(product: DatasetType):
-    types = index.datasets.types.get_all()
     return flask.render_template(
         'spatial.html',
-        products=[p.definition for p in types],
         selected_product=product
     )
 
@@ -69,8 +90,7 @@ def spatial_page(product: DatasetType):
 def timeline_page(product: DatasetType):
     return flask.render_template(
         'timeline.html',
-        timeline=timeline_years(1986, product),
-        products=[p.definition for p in index.datasets.types.get_all()],
+        timeline=get_summary(product.name, None, None).dataset_counts,
         selected_product=product
     )
 
@@ -93,7 +113,6 @@ def search_page(product: DatasetType):
         ))
     return flask.render_template(
         'search.html',
-        products=[p.definition for p in index.datasets.types.get_all()],
         selected_product=product,
         datasets=datasets,
         query_params=query,
@@ -109,9 +128,7 @@ def request_wants_json():
 
 
 @cache.memoize()
-def timeline_years(from_year, product):
-    # type: (int, DatasetType) -> List
-
+def timeline_years(from_year: int, product: DatasetType) -> List:
     timeline = index.datasets.count_product_through_time(
         '1 month',
         product=product.name,
