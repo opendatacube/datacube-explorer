@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .sub-header {
+            line-height: 1.4em;
+        }
+        a {
+            font-weight: bold;
+        }
+        .panel {
+            line-height: 1.5em;
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+
+{% endblock %}
+{% block content %}
+    <div class="panel highlight">
+        <h2>Collection overview</h2>
+        <div class="sub-header">
+            Open Data Cube {{ datacube_version }}
+        </div>
+    </div>
+    <div class="panel">
+        <ul>
+            {% for platform_name, ps in platform_products.items() %}
+                <li>
+                    <span style="text-transform:lowercase;font-variant: small-caps">{{ platform_name }}</span>
+                    <ul>
+                        {% for p in ps %}
+                            <li>
+                                <a href="{{ url_for('product.overview_page', product_name=p.name) }}">
+                                    {{ p.name }}
+                                </a><br/>
+                                {{ p.definition.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

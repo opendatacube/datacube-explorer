@@ -25,28 +25,6 @@ bp = Blueprint('product', __name__, url_prefix='/<product_name>')
 _HARD_SEARCH_LIMIT = 500
 
 
-@bp.context_processor
-def inject_product_list():
-    types = sorted(list(index.datasets.types.get_all()), key=_get_product_group)
-
-    # Group by platform
-    platform_products = dict(
-        (name or '', list(items))
-        for (name, items) in itertools.groupby(types, key=_get_product_group)
-    )
-
-    return dict(products=types,
-                platform_products=platform_products)
-
-
-def _get_product_group(dt: DatasetType):
-    group: str = dt.fields.get('product_type')
-    if not group:
-        return 'Misc'
-
-    return group.replace('_', ' ')
-
-
 def with_loaded_product(f):
     """Convert the 'product_name' query argument into a 'product' entity"""
 
