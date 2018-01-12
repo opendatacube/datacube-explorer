@@ -5,9 +5,9 @@
     <nav>
         <ul>
             {% set navigation_bar = [
-                ('spatial', 'product.spatial_page'),
-                ('timeline', 'product.timeline_page'),
-                ('search', 'product.search_page')
+                ('overview', 'product.overview_page'),
+                ('datasets', 'product.search_page'),
+                ('about', 'about_page'),
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
@@ -19,30 +19,35 @@
         </ul>
     </nav>
     <header>
-        {% block selector %}
-            <select name="products"
-                    id='select-product'
-                    title="Select product"
-                    aria-label="Select product">
-                {% for product in products %}
-                    <option value="{{ product.name }}"
-                            {% if product.name == selected_product.name %}selected="selected"{% endif %}>
-                        {{ product.definition.description }}
-                    </option>
-                {% endfor %}
-            </select>
-        {% endblock %}
+        <select name="products"
+                id='select-product'
+                title="Select product"
+                aria-label="Select product">
+            <option value="">All</option>
+            {% for product in products %}
+                <option value="{{ product.name }}"
+                        {% if product.name == selected_product.name %}selected="selected"{% endif %}>
+                    {{ product.name }}: {{ product.definition.description }}
+                </option>
+            {% endfor %}
+        </select>
+        <select id='select-year' aria-label="Year" title="Select year">
+            <option value="">All</option>
+            {% for year in range(2017, 1985, -1) %}
+                <option value="{{ year }}"
+                        {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
+                    {{ year }}
+                </option>
+            {% endfor %}
+        </select>
+        <select id='select-month' aria-label="Month" title="Select month">
+            <option value="">All</option>
+            {% for month in range(1, 13) %}
+                <option value="{{ month }}"
+                        {% if (month|string) == request.args.get('month') %}selected='selected'{% endif %}>
+                    {{ month | month_name }}
+                </option>
+            {% endfor %}
+        </select>
     </header>
-{#    <ul>#}
-{#    {% for platform_name, ps in platform_products.items() %}#}
-{#        <li>#}
-{#            <span style="text-transform:lowercase;font-variant: small-caps">{{ platform_name }}</span>#}
-{#            <ul>#}
-{#                {% for p in ps %}#}
-{#                <li><strong>{{ p.name }}</strong>: {{ p.definition.description }}</li>#}
-{#                {% endfor %}#}
-{#            </ul>#}
-{#        </li>#}
-{#    {% endfor %}#}
-{#    </ul>#}
 {% endblock %}
