@@ -12,7 +12,7 @@ from typing import List
 from datacube.model import Range, DatasetType
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from flask import Blueprint, abort
+from flask import Blueprint, abort, redirect, url_for
 from flask import request
 from werkzeug.datastructures import MultiDict
 
@@ -79,20 +79,13 @@ def overview_page(product: DatasetType):
 @bp.route('/spatial')
 @with_loaded_product
 def spatial_page(product: DatasetType):
-    return flask.render_template(
-        'spatial.html',
-        selected_product=product
-    )
+    return redirect(url_for('product.overview_page', product_name=product.name))
 
 
 @bp.route('/timeline')
 @with_loaded_product
 def timeline_page(product: DatasetType):
-    return flask.render_template(
-        'timeline.html',
-        timeline=get_summary(product.name, None, None).dataset_counts,
-        selected_product=product
-    )
+    return redirect(url_for('product.overview_page', product_name=product.name))
 
 
 @bp.route('/search')
