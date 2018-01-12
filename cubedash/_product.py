@@ -8,7 +8,7 @@ from typing import List
 
 import flask
 from dateutil import tz
-from flask import Blueprint, abort, request
+from flask import Blueprint, abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
@@ -75,17 +75,13 @@ def overview_page(product: DatasetType):
 @bp.route("/spatial")
 @with_loaded_product
 def spatial_page(product: DatasetType):
-    return flask.render_template("spatial.html", selected_product=product)
+    return redirect(url_for("product.overview_page", product_name=product.name))
 
 
 @bp.route("/timeline")
 @with_loaded_product
 def timeline_page(product: DatasetType):
-    return flask.render_template(
-        "timeline.html",
-        timeline=get_summary(product.name, None, None).dataset_counts,
-        selected_product=product,
-    )
+    return redirect(url_for("product.overview_page", product_name=product.name))
 
 
 @bp.route("/search")
