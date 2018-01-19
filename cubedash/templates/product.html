@@ -136,8 +136,8 @@
             $('#select-product, #select-month, #select-year, #select-day').change(function () {
                 var product = $('#select-product :selected').val(),
                     year = $('#select-year :selected').val(),
-                    month = $('#select-month :selected').val(),
-                    day = $('#select-day :selected').val(),
+                    month = year ? $('#select-month :selected').val() : null,
+                    day = month ? $('#select-day :selected').val() : null,
                     queryParams = jQuery.param({year: year, month: month, day:day});
 
                 window.location.href = '/' + product + '?' + queryParams;
