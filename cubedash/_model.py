@@ -87,15 +87,8 @@ def next_month(date: datetime):
     return datetime(date.year, date.month + 1, 1)
 
 
-def _get_month_summary(product_name: str, year: int, month: int) -> Optional[TimePeriodOverview]:
-    start = datetime(year, month, 1)
-    time = Range(start, next_month(start))
-
+def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOverview]:
     datasets = index.datasets.search_eager(product=product_name, time=time)
-
-    # if not datasets:
-    #     return None
-
     dataset_shapes = [shapely.geometry.asShape(ds.extent.to_crs(CRS('EPSG:4326')))
                       for ds in datasets if ds.extent]
     footprint_geometry = shapely.ops.unary_union(dataset_shapes)
@@ -108,10 +101,19 @@ def _get_month_summary(product_name: str, year: int, month: int) -> Optional[Tim
 
 
 @cache.memoize()
-def get_summary(product_name: str, year: Optional[int], month: Optional[int]) -> TimePeriodOverview:
+def get_summary(
+        product_name: str,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None) -> TimePeriodOverview:
+    # Specific day
+    if year and month and day:
+        start = datetime(year, month, day)
+        return _calculate_summary(product_name, Range(start, start + timedelta(days=1)))
+    # Specific month
     if year and month:
-        # Specific month
-        return _get_month_summary(product_name, year, month)
+        start = datetime(year, month, 1)
+        return _calculate_summary(product_name, Range(start, next_month(start)))
     elif year:
         # All months
         return TimePeriodOverview.add_periods(
