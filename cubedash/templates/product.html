@@ -15,11 +15,11 @@
 
 
 {% block content %}
-    <div class="panel overflow">
+    <div class="panel overflow right">
         {% from "layout/macros.html" import chart_timeline %}
         {{ chart_timeline(summary.dataset_counts, selected_product) }}
     </div>
-    <div class="panel">
+    <div class="panel right">
         {{ summary.dataset_count }} datasets, {{ summary.footprint_count }} visible datasets.
     </div>
     <div class="relative">

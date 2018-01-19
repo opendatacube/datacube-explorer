@@ -22,20 +22,18 @@ nav li a:hover, nav li a:active { background: linear-gradient(to bottom, #4a4a4a
 nav li.active a { background: linear-gradient(to bottom, #4a4a4a 0%, #474747 100%); }
 
 #content { position: relative; width: auto; background-color: #e0e0e0; }
-#content .panel { padding: 15px 30px; background: #c7c7c7; }
-#content .panel.odd { background-color: #f0f0f0; }
-#content .panel.highlight { background: #545454; color: #efefef; }
 
+.panel { padding: 15px 30px; background: #c7c7c7; border-bottom: 1px solid #b9b9b9; /* Add line between adjacent panels */ }
+.panel.odd { background-color: #f0f0f0; border-bottom: 0; }
+.panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
+.panel.highlight a { color: #999; }
+.panel.odd + .panel.odd, .panel.highlight + .panel.odd { border-top: 1px solid #c7c7c7; }
 .panel.overflow { overflow-x: auto; }
-
-#content .panel.highlight a { color: #999; }
-
+.panel.right { text-align: right; }
 .panel h2 { margin: 15px 0 5px; }
 .panel h2:first-child { margin-top: 0; }
-.panel.odd + .panel.odd, .panel.highlight + .panel.odd { border-top: 1px solid #c7c7c7; }
 .panel .data-table { margin: 0 -15px; }
 
-/* Add line between adjacent panels */
 /* Table of values */
 .data-table th { font-weight: bold; font-size: 0.8em; }
 .data-table td, .data-table th { padding: 0 15px; text-align: left; line-height: 30px; }

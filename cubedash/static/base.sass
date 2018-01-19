@@ -91,32 +91,39 @@ nav
     position: relative
     width: auto
     background-color: $content_background
-    .panel
-        padding: 15px 30px
-        background: $panel_color
-        &.odd
-            background-color: $panel2_color
-        &.highlight
-            background: $header_highlight_strong
-            color: #efefef
-
-.panel.overflow
-    overflow-x: auto
-
-#content .panel.highlight a
-    color: #999
 
 .panel
+    padding: 15px 30px
+    background: $panel_color
+    border-bottom: 1px solid #b9b9b9
+
+    &.odd
+        background-color: $panel2_color
+        border-bottom: 0
+
+    &.highlight
+        background: $header_highlight_strong
+        color: #efefef
+        border-bottom: 0
+        a
+            color: #999
+
+    /* Add line between adjacent panels
+    &.odd + .panel.odd, &.highlight + .panel.odd
+        border-top: 1px solid $panel_color
+
+    &.overflow
+        overflow-x: auto
+    &.right
+        text-align: right
+
     h2
         margin: 15px 0 5px
         &:first-child
             margin-top: 0
-    &.odd + .panel.odd, &.highlight + .panel.odd
-        border-top: 1px solid $panel_color
+
     .data-table
         margin: 0 -15px
-
-/* Add line between adjacent panels
 
 /* Table of values
 
