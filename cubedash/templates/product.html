@@ -15,10 +15,12 @@
 
 
 {% block content %}
+    {% if not day %}
     <div class="panel overflow right">
         {% from "layout/macros.html" import chart_timeline %}
         {{ chart_timeline(summary.dataset_counts, selected_product) }}
     </div>
+    {% endif %}
     <div class="panel right">
         {{ summary.dataset_count }} datasets, {{ summary.footprint_count }} visible datasets.
     </div>
@@ -131,11 +133,12 @@
                 msgNoResults.hide();
             {% endif %}
 
-            $('#select-product, #select-month, #select-year').change(function () {
+            $('#select-product, #select-month, #select-year, #select-day').change(function () {
                 var product = $('#select-product :selected').val(),
                     year = $('#select-year :selected').val(),
                     month = $('#select-month :selected').val(),
-                    queryParams = jQuery.param({year: year, month: month});
+                    day = $('#select-day :selected').val(),
+                    queryParams = jQuery.param({year: year, month: month, day:day});
 
                 window.location.href = '/' + product + '?' + queryParams;
             });

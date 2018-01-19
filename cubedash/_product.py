@@ -40,13 +40,15 @@ def with_loaded_product(f):
 def overview_page(product: DatasetType):
     year = request.args.get("year", None, type=int)
     month = request.args.get("month", None, type=int)
-    summary = get_summary(product.name, year, month)
+    day = request.args.get("day", None, type=int)
+    summary = get_summary(product.name, year, month, day)
 
     return flask.render_template(
         "product.html",
         summary=summary,
         year=year,
         month=month,
+        day=day,
         selected_product=product,
     )
 

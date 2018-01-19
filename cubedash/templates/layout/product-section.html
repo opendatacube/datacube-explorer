@@ -49,5 +49,14 @@
                 </option>
             {% endfor %}
         </select>
+        <select id='select-day' aria-label="Day" title="Select day">
+            <option value="">All</option>
+            {% for day in range(1, 31) %}
+                <option value="{{ day }}"
+                        {% if (day|string) == request.args.get('day') %}selected='selected'{% endif %}>
+                    {{ day }}
+                </option>
+            {% endfor %}
+        </select>
     </header>
 {% endblock %}
