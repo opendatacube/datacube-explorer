@@ -8,7 +8,8 @@ from __future__ import absolute_import, division
 import collections
 import functools
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 
 from dateutil.relativedelta import relativedelta
 from werkzeug.datastructures import MultiDict
@@ -55,7 +56,6 @@ def group_field_names(request: dict) -> dict:
 
 def query_to_search(request: MultiDict, product: DatasetType) -> dict:
     args = _parse_url_query_args(request, product)
-    args = _ensure_minimum_search_filters(args, product)
 
     # If their range is backwards (high, low), let's reverse it.
     # (the intention is "between these two numbers")
@@ -67,6 +67,28 @@ def query_to_search(request: MultiDict, product: DatasetType) -> dict:
                     args[key] = Range(value.end, value.begin)
 
     return args
+
+
+def _next_month(date: datetime):
+    if date.month == 12:
+        return datetime(date.year + 1, 1, 1)
+
+    return datetime(date.year, date.month + 1, 1)
+
+
+def as_time_range(
+    year: Optional[int] = None, month: Optional[int] = None, day: Optional[int] = None
+) -> Optional[Range]:
+    if year and month and day:
+        start = datetime(year, month, day)
+        return Range(start, start + timedelta(days=1))
+    if year and month:
+        start = datetime(year, month, 1)
+        return Range(start, _next_month(start))
+    if year:
+        start = datetime(year, 1, 1)
+        return Range(start, datetime(year + 1, 1, 1))
+    return None
 
 
 def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
@@ -100,34 +122,6 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
             raise ValueError("Unknown field classifier: %r" % field_vals)
 
     return query
-
-
-def _ensure_minimum_search_filters(in_query: dict, product: DatasetType):
-    """
-    At a minimum, the query should filter by the current product and a time period.
-
-    (without these filters, the query would return all datasets in the datacube)
-    """
-    out_query = {"product": product.name, **in_query}
-
-    time = in_query.get("time", Range(None, None))
-    from_time, to_time = time
-
-    # Default from/to values (a one month range)
-    if not from_time and not to_time:
-        platform_name = product.fields.get("platform")
-        if platform_name in DEFAULT_PLATFORM_END_DATE:
-            to_time = DEFAULT_PLATFORM_END_DATE[platform_name]
-        else:
-            to_time = datetime.now()
-    if not to_time:
-        to_time = from_time + relativedelta(months=1)
-    if not from_time:
-        from_time = to_time - relativedelta(months=1)
-
-    out_query["time"] = Range(from_time, to_time)
-
-    return out_query
 
 
 def get_ordered_metadata(metadata_doc):

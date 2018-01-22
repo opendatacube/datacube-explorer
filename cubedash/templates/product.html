@@ -16,10 +16,10 @@
 
 {% block content %}
     {% if not day %}
-    <div class="panel overflow right">
-        {% from "layout/macros.html" import chart_timeline %}
-        {{ chart_timeline(summary.dataset_counts, selected_product) }}
-    </div>
+        <div class="panel overflow right">
+            {% from "layout/macros.html" import chart_timeline %}
+            {{ chart_timeline(summary.dataset_counts, selected_product, per_day=request.args.get('year')) }}
+        </div>
     {% endif %}
     <div class="panel right">
         {{ summary.dataset_count }} datasets, {{ summary.footprint_count }} visible datasets.
@@ -138,7 +138,7 @@
                     year = $('#select-year :selected').val(),
                     month = year ? $('#select-month :selected').val() : null,
                     day = month ? $('#select-day :selected').val() : null,
-                    queryParams = jQuery.param({year: year, month: month, day:day});
+                    queryParams = jQuery.param({year: year, month: month, day: day});
 
                 window.location.href = '/' + product + '?' + queryParams;
             });

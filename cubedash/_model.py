@@ -18,6 +18,8 @@ from datacube.model import Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
+from . import _utils as utils
+
 # Only do expensive queries "once a day"
 # Enough time to last the remainder of the work day, but not enough to still be there the next morning
 NAME = "cubedash"
@@ -81,13 +83,6 @@ class TimePeriodOverview(NamedTuple):
         )
 
 
-def next_month(date: datetime):
-    if date.month == 12:
-        return datetime(date.year + 1, 1, 1)
-
-    return datetime(date.year, date.month + 1, 1)
-
-
 def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOverview]:
     datasets = index.datasets.search_eager(product=product_name, time=time)
     dataset_shapes = [
@@ -113,14 +108,9 @@ def get_summary(
     month: Optional[int] = None,
     day: Optional[int] = None,
 ) -> TimePeriodOverview:
-    # Specific day
-    if year and month and day:
-        start = datetime(year, month, day)
-        return _calculate_summary(product_name, Range(start, start + timedelta(days=1)))
-    # Specific month
+    # Specific month/day
     if year and month:
-        start = datetime(year, month, 1)
-        return _calculate_summary(product_name, Range(start, next_month(start)))
+        return _calculate_summary(product_name, utils.as_time_range(year, month, day))
     elif year:
         # All months
         return TimePeriodOverview.add_periods(
