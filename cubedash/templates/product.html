@@ -22,7 +22,12 @@
         </div>
     {% endif %}
     <div class="panel right">
-        {{ summary.dataset_count }} datasets, {{ summary.footprint_count }} visible datasets.
+        <a href="{{ url_for('product.search_page',
+                    product_name=selected_product.name,
+                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}">
+            {{ summary.dataset_count }} datasets
+        </a>,
+        {{ summary.footprint_count }} visible datasets.
     </div>
     <div class="relative">
         <div id="msg-no-results" class="message-box">
