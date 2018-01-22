@@ -1,15 +1,16 @@
-{% macro chart_timeline(timeline, product) -%}
+
+{% macro chart_timeline(timeline, product, per_day=False) -%}
     <div class="chart-timeline">
         {% set max_count = timeline.most_common(1)[0][1] %}
         <div class="chart-timeline-bars">
             {% for start_time, count in timeline.items() %}
-                <a href="{{ url_for('product.search_page',
+                <a href="{{ url_for('product.overview_page',
                             product_name=product.name,
-                            **{'time-begin': start_time}
+                            **{'year': start_time.year, 'month':start_time.month, 'day': start_time.day if per_day else none}
                             ) }}"
                    class="chart-timeline-bar {% if start_time.month == 1 %}new-year{% endif %}"
                    style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%"
-                   title="View the {{ count }} datasets for {{ start_time.month | month_name }} {{ start_time.year }}"></a>
+                   title="View the {{ count }} datasets for {{ start_time.day|string + ' ' if per_day else '' }} {{ start_time.month | month_name }} {{ start_time.year }}"></a>
             {% endfor %}
         </div>
         <div class="chart-timeline-years">

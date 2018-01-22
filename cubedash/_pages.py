@@ -31,8 +31,10 @@ def inject_product_list():
         for (name, items) in itertools.groupby(types, key=_get_product_group)
     )
 
-    return dict(products=types,
-                platform_products=platform_products)
+    return dict(
+        products=types,
+        platform_products=platform_products
+    )
 
 
 def _get_product_group(dt: DatasetType):

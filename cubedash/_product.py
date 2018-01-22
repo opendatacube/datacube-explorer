@@ -41,9 +41,7 @@ def with_loaded_product(f):
 @bp.route('/')
 @with_loaded_product
 def overview_page(product: DatasetType):
-    year = request.args.get('year', None, type=int)
-    month = request.args.get('month', None, type=int)
-    day = request.args.get('day', None, type=int)
+    year, month, day = y_m_d()
     summary = get_summary(product.name, year, month, day)
 
     return flask.render_template(
@@ -54,6 +52,17 @@ def overview_page(product: DatasetType):
         day=day,
         selected_product=product
     )
+
+
+def y_m_d():
+    year = request.args.get('year', None, type=int)
+    month = request.args.get('month', None, type=int)
+    day = request.args.get('day', None, type=int)
+    return year, month, day
+
+
+def time_range() -> Range:
+    return utils.as_time_range(*y_m_d())
 
 
 @bp.route('/spatial')
@@ -72,9 +81,17 @@ def timeline_page(product: DatasetType):
 @with_loaded_product
 def search_page(product: DatasetType):
     args = MultiDict(flask.request.args)
-
+    time = time_range()
+    args.pop('year', None), args.pop('month', None), args.pop('day', None)
     query = utils.query_to_search(args, product=product)
-    _LOG.info('Query %r', query)
+    # Add time range, selected product to query
+
+    query['product'] = product.name
+
+    if time:
+        query['time'] = time
+
+    _LOG.warning('Query %r', query)
 
     # TODO: Add sort option to index API
     datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
