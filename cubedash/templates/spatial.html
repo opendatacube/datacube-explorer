@@ -15,7 +15,7 @@
 {% block selector %}
     {{ super() }}
     <select id='select-year' aria-label="Year" title="Select year">
-        {% for year in range(2017, 1985, -1) %}
+        {% for year in range(current_year, 1985, -1) %}
             <option value="{{ year }}"
                     {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
                 {{ year }}
