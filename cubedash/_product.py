@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import functools
-import itertools
 import logging
 from datetime import datetime
 from typing import List
@@ -58,7 +57,7 @@ def y_m_d():
     return year, month, day
 
 
-def time_range() -> Range:
+def time_range_args() -> Range:
     return utils.as_time_range(*y_m_d())
 
 
@@ -77,9 +76,14 @@ def timeline_page(product: DatasetType):
 @bp.route("/search")
 @with_loaded_product
 def search_page(product: DatasetType):
+    time = time_range_args()
+
     args = MultiDict(flask.request.args)
-    time = time_range()
-    args.pop("year", None), args.pop("month", None), args.pop("day", None)
+    # Already retrieved
+    args.pop("year", None)
+    args.pop("month", None)
+    args.pop("day", None)
+
     query = utils.query_to_search(args, product=product)
     # Add time range, selected product to query
 
@@ -88,7 +92,7 @@ def search_page(product: DatasetType):
     if time:
         query["time"] = time
 
-    _LOG.warning("Query %r", query)
+    _LOG.info("Query %r", query)
 
     # TODO: Add sort option to index API
     datasets = sorted(
