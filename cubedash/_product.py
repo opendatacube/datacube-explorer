@@ -43,7 +43,8 @@ def spatial_page(product: DatasetType):
     return flask.render_template(
         'spatial.html',
         products=[p.definition for p in types],
-        selected_product=product
+        selected_product=product,
+        current_year=datetime.now().year
     )
 
 
