@@ -15,7 +15,6 @@
 
         .embedded > .property > .key {
             font-weight: bold;
-
         }
 
         .file-path {
@@ -30,6 +29,10 @@
 
         .sub-header {
             line-height: 1.4em;
+        }
+
+        .tree-node {
+            margin-left: 30px;
         }
     </style>
 {% endblock %}
@@ -55,18 +58,24 @@
             {{ dataset.type.name }} ({{ dataset.type.metadata_type.name }})
         </div>
     </div>
-    {% if source_datasets %}
-        <div class="panel">
-            <div class="sources">
-                {% for classifier, s_dataset in source_datasets.items() %}
-                    <div class="source">
-                        Source <em>{{ classifier }}</em>:
-                        <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
-                    </div>
-                {% endfor %}
+    <div class="panel">
+        {% for classifier, s_dataset in source_datasets.items() %}
+            <div>
+                → <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}"
+                     title="{{ classifier }}">{{ s_dataset | printable_dataset }}</a>
             </div>
+        {% endfor %}
+        <div class="tree-node">
+            → <strong>{{ dataset | printable_dataset }}</strong>
+            {% for d_dataset in derived_datasets %}
+                <div class="tree-node">
+                    → <a
+                        href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
+                </div>
+            {% endfor %}
         </div>
-    {% endif %}
+
+    </div>
     <div class="panel odd">
         <h2>Fields</h2>
         {% from "layout/macros.html" import query_param_list %}
@@ -76,7 +85,7 @@
 
         {% for uri in dataset.uris %}
             <p>
-                <b>Active:</b> <span class="file-path">{{ uri }}</span>
+                <b>Active:</b><br/><span class="file-path">{{ uri }}</span>
             </p>
         {% else %}
             No known locations
@@ -85,7 +94,7 @@
         {% if archive_location_times %}
             {% for uri, archive_time in archive_location_times %}
                 <p>
-                    <b>Archived {{ archive_time | timesince }}:</b>
+                    <b>Archived {{ archive_time | timesince }}:</b><br/>
                     <span class="file-path archived">{{ uri }}</span>
                 </p>
             {% endfor %}
@@ -109,14 +118,4 @@
             {%- endfor %}
         </div>
     </div>
-    {% if derived_datasets %}
-        <div class="panel">
-            <h2>Derived</h2>
-            {% for d_dataset in derived_datasets %}
-                <div>
-                    <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
 {% endblock %}
