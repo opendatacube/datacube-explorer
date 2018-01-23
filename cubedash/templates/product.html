@@ -15,23 +15,16 @@
 
 
 {% block content %}
-    {% if not day %}
-        <div class="panel overflow right">
-            {% from "layout/macros.html" import chart_timeline %}
-            {{ chart_timeline(summary.dataset_counts, selected_product, per_day=request.args.get('year')) }}
-        </div>
-    {% endif %}
-    <div class="panel right">
-        <a href="{{ url_for('product.search_page',
-                    product_name=selected_product.name,
-                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}">
-            {{ summary.dataset_count }} datasets
-        </a>,
-        {{ summary.footprint_count }} visible datasets.
-    </div>
     <div class="relative">
         <div id="msg-no-results" class="message-box">
             <span>No displayable datasets for period</span>
+        </div>
+        <div class="map-summary">
+            <a href="{{ url_for('product.search_page',
+                    product_name=selected_product.name,
+                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}">
+                {{ summary.dataset_count }} datasets</a>,
+            {{ summary.footprint_count }} visible datasets.
         </div>
         <div id="map"></div>
     </div>
@@ -41,12 +34,12 @@
 {% block footer %}
     <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+    {% from "layout/macros.html" import chart_timeline %}
     <script type="application/javascript">
         (function () {
             $(window).resize(function () {
                 $(".leaflet-control-layers").css("max-height", $("#map").height() - 50);
             });
-
 
             /* Basemap Layers */
 
@@ -70,7 +63,7 @@
 
 
             var map = L.map("map", {
-                zoom: 4,
+                zoom: 3,
                 center: [-26.2756326, 134.9387844],
                 /* Basemap Layers */
                 layers: [osm_mono, datasets],
@@ -78,25 +71,26 @@
                 attributionControl: false
             });
 
+            {% if not day %}
+                var timelineControl = L.control({position: "topright"});
+                timelineControl.onAdd = function (map) {
+                    var div = L.DomUtil.create("div", "timeline-control");
+                    div.innerHTML = {{ chart_timeline(summary.dataset_counts, selected_product, per_day=request.args.get('year')) | tojson }};
+                    return div;
+                };
+                map.addControl(timelineControl);
+            {% endif %}
 
-            var attributionDiv;
-            var attributionControl = L.control({position: "bottomright"});
-            attributionControl.onAdd = function (map) {
-                attributionDiv = L.DomUtil.create("div", "leaflet-control-attribution");
-                return attributionDiv;
+            var summaryControl = L.control({position: "bottomright"});
+            summaryControl.onAdd = function (map) {
+                var div = L.DomUtil.create("div", "summary-control");
+                var $mapsummary = $('.map-summary');
+                $mapsummary.hide();
+                div.innerHTML = $mapsummary.html();
+                return div;
             };
-            map.addControl(attributionControl);
+            map.addControl(summaryControl);
 
-            function updateAttribution(e) {
-                $.each(map._layers, function (index, layer) {
-                    if (layer.getAttribution) {
-                        attributionDiv.innerHTML = layer.getAttribution();
-                    }
-                });
-            }
-
-            map.on("layeradd", updateAttribution);
-            map.on("layerremove", updateAttribution);
 
             L.control.zoom({position: "bottomright"}).addTo(map);
             L.control.groupedLayers(
@@ -127,6 +121,7 @@
                 },
                 {},
                 {
+                    position: 'topright',
                     collapsed: false
                 }
             ).addTo(map);
