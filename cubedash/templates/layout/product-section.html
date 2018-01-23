@@ -32,7 +32,7 @@
             {% endfor %}
         </select>
         <select id='select-year' aria-label="Year" title="Select year">
-            <option value="">All</option>
+            <option value="">All years</option>
             {% for year in range(2017, 1985, -1) %}
                 <option value="{{ year }}"
                         {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
@@ -41,7 +41,7 @@
             {% endfor %}
         </select>
         <select id='select-month' aria-label="Month" title="Select month">
-            <option value="">All</option>
+            <option value="">All months</option>
             {% for month in range(1, 13) %}
                 <option value="{{ month }}"
                         {% if (month|string) == request.args.get('month') %}selected='selected'{% endif %}>
@@ -50,7 +50,7 @@
             {% endfor %}
         </select>
         <select id='select-day' aria-label="Day" title="Select day">
-            <option value="">All</option>
+            <option value="">All days</option>
             {% for day in range(1, 31) %}
                 <option value="{{ day }}"
                         {% if (day|string) == request.args.get('day') %}selected='selected'{% endif %}>
