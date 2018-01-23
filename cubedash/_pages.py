@@ -45,5 +45,5 @@ def _get_product_group(dt: DatasetType):
 def default_redirect():
     """Redirect to default starting page."""
     return flask.redirect(
-        flask.url_for("product.spatial_page", product_name="ls7_level1_scene")
+        flask.url_for("product.spatial_page", product_name="ls7_nbar_scene")
     )
