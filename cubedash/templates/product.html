@@ -131,7 +131,7 @@
             {% if summary.footprint_count %}
                 datasets.addData({{ summary.footprint_geometry.__geo_interface__ | tojson }});
                 msgNoResults.hide();
-                map.fitBounds(datasets.getBounds());
+                map.fitBounds(datasets.getBounds(), {animate: false});
             {% endif %}
 
             $('#select-product, #select-month, #select-year, #select-day').change(function () {
