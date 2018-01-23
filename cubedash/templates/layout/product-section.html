@@ -7,7 +7,6 @@
             {% set navigation_bar = [
                 ('overview', 'product.overview_page'),
                 ('datasets', 'product.search_page'),
-                ('about', 'about_page'),
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
@@ -16,6 +15,7 @@
                     </a>
                 </li>
             {% endfor %}
+            <li class="plain"><a href="{{ url_for('about_page') }}">About</a></li>
         </ul>
     </nav>
     <header>

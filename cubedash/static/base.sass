@@ -84,6 +84,13 @@ nav
             text-decoration: none
             &:hover, &:active
                 background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
+
+        &.plain a
+            background: none
+            color: inherit
+            &:hover, &:active
+                text-decoration: underline
+
         &.active a
             background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
 
