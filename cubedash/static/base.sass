@@ -93,7 +93,7 @@ nav
     background-color: $content_background
 
 .panel
-    padding: 15px 30px
+    padding: 30px
     background: $panel_color
     border-bottom: 1px solid #b9b9b9
 
@@ -165,28 +165,23 @@ nav
 
 .query-param-list
     width: auto
-    display: flex
-    flex-wrap: wrap
+    display: grid
+    grid-template-columns: 1fr 1fr
 
 .query-param
-    line-height: 30px
-    padding: 0 10px
-    margin: 2px 2px
+    margin-bottom: 15px
     $param_highlight: lighten($bold_highlight, 20%)
-    background-color: $param_highlight
-    color: #fff
     //font-family: monospace
 
     > .key
         color: lighten($param_highlight, 20%)
-        line-height: 30px
 
 .search-param > .key
     display: inline-block
     font-weight: bold
-    min-width: 80px
-    font-size: 0.8em
-    line-height: 30px
+    //min-width: 80px
+    //font-size: 0.8em
+    //line-height: 30px
 
 button
     margin: 5px 0

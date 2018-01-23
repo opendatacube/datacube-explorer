@@ -23,7 +23,7 @@ nav li.active a { background: linear-gradient(to bottom, #4a4a4a 0%, #474747 100
 
 #content { position: relative; width: auto; background-color: #e0e0e0; }
 
-.panel { padding: 15px 30px; background: #c7c7c7; border-bottom: 1px solid #b9b9b9; /* Add line between adjacent panels */ }
+.panel { padding: 30px; background: #c7c7c7; border-bottom: 1px solid #b9b9b9; /* Add line between adjacent panels */ }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
@@ -50,12 +50,12 @@ nav li.active a { background: linear-gradient(to bottom, #4a4a4a 0%, #474747 100
 .data-table td.zero { color: #ababab; }
 
 /* lists of key-values */
-.query-param-list { width: auto; display: flex; flex-wrap: wrap; }
+.query-param-list { width: auto; display: grid; grid-template-columns: 1fr 1fr; }
 
-.query-param { line-height: 30px; padding: 0 10px; margin: 2px 2px; background-color: #545454; color: #fff; }
-.query-param > .key { color: #878787; line-height: 30px; }
+.query-param { margin-bottom: 15px; }
+.query-param > .key { color: #878787; }
 
-.search-param > .key { display: inline-block; font-weight: bold; min-width: 80px; font-size: 0.8em; line-height: 30px; }
+.search-param > .key { display: inline-block; font-weight: bold; }
 
 button { margin: 5px 0; background-color: #2192bd; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
 button:hover { background-color: #00A1DE; }
