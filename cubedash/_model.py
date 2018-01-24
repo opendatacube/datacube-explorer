@@ -33,7 +33,7 @@ cache = Cache(app=app,
                   CACHE_KEY_PREFIX=NAME + '_cache_',
                   CACHE_TYPE='filesystem',
                   CACHE_DEFAULT_TIMEOUT=CACHE_LONG_TIMEOUT_SECS,
-                  CACHE_THRESHOLD=2000,
+                  CACHE_THRESHOLD=8000,
                   CACHE_DIR=str(CACHE_DIR),
               ))
 
