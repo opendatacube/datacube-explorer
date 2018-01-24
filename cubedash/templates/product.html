@@ -43,7 +43,7 @@
 
             /* Basemap Layers */
 
-            var osm_mono = L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
+            var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
                 maxZoom: 18,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             });
@@ -95,8 +95,8 @@
             L.control.zoom({position: "bottomright"}).addTo(map);
             L.control.groupedLayers(
                 {
-                    "Street Map": osm_mono,
-                    "Aerial Imagery": L.layerGroup([
+                    "Borders": osm_mono,
+                    "Imagery": L.layerGroup([
                             L.tileLayer(
                                 "//basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
                                 "tile/{z}/{y}/{x}",
