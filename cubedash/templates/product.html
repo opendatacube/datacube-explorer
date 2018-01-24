@@ -47,6 +47,14 @@
                 maxZoom: 18,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             });
+            var osm_carto_light = L.tileLayer(
+                "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                    ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                }
+            );
 
             var datasets = L.geoJson(null, {
                 style: function (feature) {
@@ -66,7 +74,7 @@
                 zoom: 3,
                 center: [-26.2756326, 134.9387844],
                 /* Basemap Layers */
-                layers: [osm_mono, datasets],
+                layers: [osm_carto_light, datasets],
                 zoomControl: false,
                 attributionControl: false
             });
@@ -95,7 +103,7 @@
             L.control.zoom({position: "bottomright"}).addTo(map);
             L.control.groupedLayers(
                 {
-                    "Borders": osm_mono,
+                    "Borders": osm_carto_light,
                     "Imagery": L.layerGroup([
                             L.tileLayer(
                                 "//basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/" +
