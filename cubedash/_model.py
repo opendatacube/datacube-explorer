@@ -77,16 +77,17 @@ class TimePeriodOverview(NamedTuple):
         return TimePeriodOverview(
             sum(p.dataset_count for p in periods),
             counter,
-            shapely.ops.unary_union([p.footprint_geometry for p in periods]),
+            shapely.ops.unary_union([p.footprint_geometry for p in periods if p.footprint_geometry]),
             sum(p.footprint_count for p in periods),
         )
 
 
 def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOverview]:
     datasets = index.datasets.search_eager(product=product_name, time=time)
+
     dataset_shapes = [shapely.geometry.asShape(ds.extent.to_crs(CRS('EPSG:4326')))
                       for ds in datasets if ds.extent]
-    footprint_geometry = shapely.ops.unary_union(dataset_shapes)
+    footprint_geometry = shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
 
     return TimePeriodOverview(len(datasets),
                               # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
