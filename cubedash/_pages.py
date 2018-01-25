@@ -1,8 +1,8 @@
-import flask
 import itertools
 
+import flask
+
 import datacube
-from datacube.model import DatasetType
 from . import _filters, _dataset, _platform, _product, _api, _model
 
 app = _model.app

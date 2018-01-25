@@ -13,6 +13,7 @@ from datacube.model import DatasetType
 _LOG = structlog.get_logger()
 
 
+# pylint: disable=broad-except
 def generate_reports(product_names):
     products = _load_products(product_names)
 

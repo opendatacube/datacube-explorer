@@ -15,12 +15,14 @@ setup(
     name='dea-dashboard',
     url='https://github.com/data-cube/dea-dashboard',
     author='Geoscience Australia',
-    
+
     packages=find_packages(),
     install_requires=[
         'cachetools',
         'datacube',
         'flask',
+        'fiona',
+        'structlog',
         'Flask-Caching',
         'gunicorn',
         'jinja2',
@@ -31,5 +33,5 @@ setup(
     tests_require=tests_require,
     dependency_links=dependency_links,
 )
-    
+
 
