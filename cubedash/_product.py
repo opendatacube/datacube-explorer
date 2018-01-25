@@ -49,7 +49,8 @@ def overview_page(product: DatasetType):
         year=year,
         month=month,
         day=day,
-        selected_product=product
+        selected_product=product,
+        selected_summary=get_summary(product.name)
     )
 
 
@@ -82,7 +83,7 @@ def search_page(product: DatasetType):
     time = time_range_args()
 
     args = MultiDict(flask.request.args)
-    # Already retrieved
+    # Already retrieved above
     args.pop('year', None)
     args.pop('month', None)
     args.pop('day', None)
@@ -108,6 +109,7 @@ def search_page(product: DatasetType):
     return flask.render_template(
         'search.html',
         selected_product=product,
+        selected_summary=get_summary(product.name),
         datasets=datasets,
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT
