@@ -7,12 +7,15 @@
         .sub-header {
             line-height: 1.4em;
         }
+
         a {
             font-weight: bold;
         }
+
         .panel {
             line-height: 1.5em;
         }
+
     </style>
 {% endblock %}
 {% block panel %}
@@ -26,23 +29,23 @@
         </div>
     </div>
     {% from "layout/macros.html" import chart_timeline %}
-    <div class="panel">
-        <ul>
-            {% for platform_name, ps in platform_products.items() %}
-                <li>
-                    <span style="text-transform:lowercase;font-variant: small-caps">{{ platform_name }}</span>
-                    <ul>
-                        {% for p, summary in ps %}
-                            <li>
-                                <a href="{{ url_for('product.overview_page', product_name=p.name) }}">
-                                    {{ p.name }}
-                                </a><br/>
-                                {{ p.definition.description }}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </li>
-            {% endfor %}
-        </ul>
+    <div class="panel odd">
+        {% for group_name, product_summaries in platform_products.items() %}
+            <h2>{{ group_name }}</h2>
+            <div class="panel odd">
+                {% for product, summary in product_summaries %}
+                    <h3>
+                        <a href="{{ url_for('product.overview_page', product_name=product.name) }}">
+                            {{ product.name }}
+                        </a>
+                    </h3>
+                    <p>
+                        {{ product.definition.description }}
+                        <strong>({{ summary.dataset_count }} total datasets)</strong>
+                    </p>
+                    {{ chart_timeline(summary.dataset_counts, product) }}
+                {% endfor %}
+            </div>
+        {% endfor %}
     </div>
 {% endblock %}
