@@ -2,16 +2,13 @@ from __future__ import absolute_import
 
 import functools
 import logging
-from datetime import datetime
-from typing import List
 
 import flask
-from dateutil import tz
 from flask import Blueprint, abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
-from cubedash._model import as_json, cache, get_summary, index
+from cubedash._model import as_json, get_summary, index
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 
@@ -119,13 +116,3 @@ def request_wants_json():
         best == "application/json"
         and request.accept_mimetypes[best] > request.accept_mimetypes["text/html"]
     )
-
-
-@cache.memoize()
-def timeline_years(from_year: int, product: DatasetType) -> List:
-    timeline = index.datasets.count_product_through_time(
-        "1 month",
-        product=product.name,
-        time=Range(datetime(from_year, 1, 1, tzinfo=tz.tzutc()), datetime.utcnow()),
-    )
-    return list(timeline)

@@ -35,16 +35,7 @@ CACHE_DIR = Path(__file__).parent.parent / "web-cache"
 SUMMARIES_DIR = Path(__file__).parent.parent / "product-summaries"
 
 app = flask.Flask(NAME)
-cache = Cache(
-    app=app,
-    config=dict(
-        CACHE_KEY_PREFIX=NAME + "_cache_",
-        CACHE_TYPE="filesystem",
-        CACHE_DEFAULT_TIMEOUT=CACHE_LONG_TIMEOUT_SECS,
-        CACHE_THRESHOLD=8000,
-        CACHE_DIR=str(CACHE_DIR),
-    ),
-)
+cache = Cache(app=app, config={"CACHE_TYPE": "simple"})
 
 
 def as_json(o):
@@ -142,7 +133,7 @@ def write_product_summary(product: DatasetType, path: Path) -> TimePeriodOvervie
         if year_folder.exists():
             s = read_summary(year_folder)
         else:
-            s = write_year_summary(product, year, year_folder)
+            s = _write_year_summary(product, year, year_folder)
 
         summaries.append(s)
 
@@ -152,7 +143,7 @@ def write_product_summary(product: DatasetType, path: Path) -> TimePeriodOvervie
     return summary
 
 
-def write_year_summary(
+def _write_year_summary(
     product: DatasetType, year: int, path: Path
 ) -> TimePeriodOverview:
     summaries = []
@@ -162,7 +153,7 @@ def write_year_summary(
         if month_folder.exists():
             s = read_summary(month_folder)
         else:
-            s = write_month_summary(product, year, month, month_folder)
+            s = _write_month_summary(product, year, month, month_folder)
 
         summaries.append(s)
 
@@ -172,10 +163,9 @@ def write_year_summary(
     return summary
 
 
-def write_month_summary(
+def _write_month_summary(
     product: DatasetType, year: int, month: int, path: Path
 ) -> TimePeriodOverview:
-
     summary = _calculate_summary(product.name, utils.as_time_range(year, month), "day")
     name = f"{product.name}-{year}-{month}"
 
@@ -246,6 +236,7 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
             )
 
 
+@cache.memoize(timeout=60)
 def get_summary(
     product_name: str,
     year: Optional[int] = None,
@@ -283,7 +274,11 @@ def get_summary_path(
     return path
 
 
+@cache.memoize(timeout=120)
 def list_products():
+    """
+    The list of products that we have generated reports for.
+    """
     everything = index.datasets.types.get_all()
     return sorted(
         (

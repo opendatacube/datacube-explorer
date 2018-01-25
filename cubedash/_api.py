@@ -10,7 +10,6 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 
 
 @bp.route("/datasets/<product>/<int:year>-<int:month>-<int:day>")
-@cache.cached()
 def datasets_as_features(product: str, year: int, month: int, day: int):
     datasets = get_day(product, year, month, day)
     return as_json(
@@ -22,7 +21,6 @@ def datasets_as_features(product: str, year: int, month: int, day: int):
 
 
 @bp.route("/datasets/<product>/<int:year>-<int:month>/poly")
-@cache.cached()
 def dataset_shape(product: str, year: int, month: int):
     summary = get_summary(product, year, month)
 
