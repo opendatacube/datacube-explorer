@@ -23,7 +23,8 @@
                 id='select-product'
                 title="Select product"
                 aria-label="Select product">
-            <option value="">All</option>
+
+            <option value="">All products</option>
             {% for product, summary in products if summary %}
                 <option value="{{ product.name }}"
                         {% if product.name == selected_product.name %}selected="selected"{% endif %}>
@@ -33,7 +34,11 @@
         </select>
         <select id='select-year' aria-label="Year" title="Select year">
             <option value="">All years</option>
-            {% for year in range(2017, 1985, -1) %}
+            {% for year in range(
+                    selected_summary.time_range.end.year,
+                    selected_summary.time_range.begin.year - 1,
+                    -1
+                ) %}
                 <option value="{{ year }}"
                         {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
                     {{ year }}
