@@ -22,23 +22,17 @@ def about_page():
 
 @app.context_processor
 def inject_product_list():
-    types = sorted(list(_model.index.datasets.types.get_all()), key=_get_product_group)
+    types = _model.list_products()
 
-    # Group by platform
+    # Group by product type
     platform_products = dict(
         (name or "", list(items))
-        for (name, items) in itertools.groupby(types, key=_get_product_group)
+        for (name, items) in itertools.groupby(
+            types, key=lambda t: t[0].fields.get("product_type")
+        )
     )
 
     return dict(products=types, platform_products=platform_products)
-
-
-def _get_product_group(dt: DatasetType):
-    group: str = dt.fields.get("product_type")
-    if not group:
-        return "Misc"
-
-    return group.replace("_", " ")
 
 
 @app.route("/")
