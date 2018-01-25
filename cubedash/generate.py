@@ -1,4 +1,7 @@
+import shutil
 import sys
+import tempfile
+from pathlib import Path
 from typing import List
 
 from click import echo, secho, style
@@ -16,8 +19,22 @@ def generate_reports(product_names):
     )
     for product in products:
         echo(f"\t{product.name}....", nl=False, err=True)
-        write_product_summary(product, get_summary_path(product.name))
-        secho("done", fg="green", err=True)
+        final_path = get_summary_path(product.name)
+        if final_path.exists():
+            echo("exists", err=True)
+            continue
+
+        tmp_dir = Path(
+            tempfile.mkdtemp(prefix=".dash-report-", dir=str(final_path.parent))
+        )
+        try:
+            write_product_summary(product, tmp_dir)
+            tmp_dir.rename(final_path)
+            secho("done", fg="green", err=True)
+        except Exception:
+            secho("error", fg="yellow", err=True)
+        finally:
+            shutil.rmtree(str(tmp_dir), ignore_errors=True)
 
 
 def _load_products(product_names) -> List[DatasetType]:
