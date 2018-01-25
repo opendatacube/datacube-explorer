@@ -3,7 +3,6 @@ import itertools
 import flask
 
 import datacube
-from datacube.model import DatasetType
 
 from . import _api, _dataset, _filters, _model, _platform, _product
 

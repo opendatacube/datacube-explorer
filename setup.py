@@ -17,6 +17,8 @@ setup(
         "cachetools",
         "datacube",
         "flask",
+        "fiona",
+        "structlog",
         "Flask-Caching",
         "gunicorn",
         "jinja2",
