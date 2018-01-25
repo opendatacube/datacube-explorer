@@ -294,7 +294,7 @@ def list_product_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverview]]
     The list of products that we have generated reports for.
     """
     everything = index.datasets.types.get_all()
-    return sorted(
+    existing_products = sorted(
         (
             (product, get_summary(product.name))
             for product in everything
@@ -302,6 +302,12 @@ def list_product_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverview]]
         ),
         key=lambda p: p[0].name,
     )
+    if not existing_products:
+        raise RuntimeError(
+            "No product reports. Run `python -m cubedash.generate --all` to generate some."
+        )
+
+    return existing_products
 
 
 def get_day(product_name: str, year: int, month: int, day: int):
