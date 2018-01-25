@@ -68,15 +68,20 @@ class TimePeriodOverview(NamedTuple):
 
     period: str
 
+    time_range: Range
+
     footprint_geometry: shapely.geometry.base.BaseGeometry
 
     footprint_count: int
 
     @staticmethod
     def add_periods(periods: Iterable['TimePeriodOverview'], group_by_month=False):
-        periods = list(periods)
+        periods = [p for p in periods if p.dataset_count > 0]
         counter = Counter()
         period = None
+
+        if not periods:
+            return TimePeriodOverview(0, None, None, None, None, None)
 
         for p in periods:
             counter.update(p.dataset_counts)
@@ -93,6 +98,10 @@ class TimePeriodOverview(NamedTuple):
             sum(p.dataset_count for p in periods),
             counter,
             period,
+            Range(
+                min(r.time_range.begin for r in periods),
+                max(r.time_range.end for r in periods)
+            ),
             shapely.ops.unary_union([p.footprint_geometry for p in periods if p.footprint_geometry]),
             sum(p.footprint_count for p in periods),
         )
@@ -109,52 +118,55 @@ def _calculate_summary(product_name: str, time: Range, period: str) -> Optional[
                               # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
                               Counter((d.time.begin.date() for d in datasets)),
                               period,
+                              time,
                               footprint_geometry,
                               len(dataset_shapes))
 
 
 def write_product_summary(product: DatasetType, path: Path) -> TimePeriodOverview:
-    # Update all months
-
     summaries = []
     for year in range(1985, datetime.today().year + 1):
         year_folder = path / ('%04d' % year)
 
-        # if not year_folder.exists():
-        write_year_summary(product, year, year_folder)
+        if year_folder.exists():
+            s = read_summary(year_folder)
+        else:
+            s = write_year_summary(product, year, year_folder)
 
-        summaries.append(read_summary(year_folder))
+        summaries.append(s)
 
     summary = TimePeriodOverview.add_periods(summaries, group_by_month=True)
+
     summary_to_file(f'{product.name}', path, summary)
     return summary
 
 
 def write_year_summary(product: DatasetType, year: int, path: Path) -> TimePeriodOverview:
-    # Update all months
-
     summaries = []
     for month in range(1, 13):
         month_folder = path / ('%02d' % month)
 
-        if not month_folder.exists():
-            write_month_summary(product, year, month, month_folder)
+        if month_folder.exists():
+            s = read_summary(month_folder)
+        else:
+            s = write_month_summary(product, year, month, month_folder)
 
-        summaries.append(read_summary(month_folder))
+        summaries.append(s)
 
     summary = TimePeriodOverview.add_periods(summaries)
-    summary_to_file(f'{product.name}-{year}', path, summary)
+    if summary.dataset_count > 0:
+        summary_to_file(f'{product.name}-{year}', path, summary)
     return summary
 
 
 def write_month_summary(product: DatasetType, year: int, month: int, path: Path) -> TimePeriodOverview:
-    # TODO: use temporary dir until done
-    path.mkdir(parents=True)
 
     summary = _calculate_summary(product.name, utils.as_time_range(year, month), 'day')
     name = f'{product.name}-{year}-{month}'
 
-    summary_to_file(name, path, summary)
+    if summary.dataset_count > 0:
+        path.mkdir(parents=True)
+        summary_to_file(name, path, summary)
 
     return summary
 
@@ -180,6 +192,10 @@ def read_summary(path: Path) -> TimePeriodOverview:
         timeline['total_count'],
         dataset_counts=Counter({dateutil.parser.parse(d): v for d, v in timeline['series'].items()}),
         period=timeline['period'],
+        time_range=Range(
+            dateutil.parser.parse(timeline['time_range'][0]),
+            dateutil.parser.parse(timeline['time_range'][1])
+        ),
         footprint_geometry=footprint,
         footprint_count=timeline['footprint_count']
     )
@@ -196,6 +212,7 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
                 total_count=summary.dataset_count,
                 footprint_count=summary.footprint_count,
                 period=summary.period,
+                time_range=[summary.time_range[0].isoformat(), summary.time_range[1].isoformat()],
                 series={d.isoformat(): v for d, v in summary.dataset_counts.items()}
             ),
             f
