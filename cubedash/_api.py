@@ -2,7 +2,7 @@ import logging
 
 from flask import Blueprint
 
-from cubedash._model import as_json, cache, get_day, get_summary
+from cubedash._model import as_json, get_day, get_summary
 from datacube.utils.geometry import CRS
 
 _LOG = logging.getLogger(__name__)

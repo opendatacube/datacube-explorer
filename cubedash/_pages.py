@@ -22,17 +22,17 @@ def about_page():
 
 @app.context_processor
 def inject_product_list():
-    types = _model.list_products()
+    product_summaries = _model.list_product_summaries()
 
     # Group by product type
-    platform_products = dict(
+    grouped_product_summarise = dict(
         (name or "", list(items))
         for (name, items) in itertools.groupby(
-            types, key=lambda t: t[0].fields.get("product_type")
+            product_summaries, key=lambda t: t[0].fields.get("product_type")
         )
     )
 
-    return dict(products=types, platform_products=platform_products)
+    return dict(products=product_summaries, grouped_products=grouped_product_summarise)
 
 
 @app.route("/")
