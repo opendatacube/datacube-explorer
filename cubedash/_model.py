@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import NamedTuple, Optional, Iterable
+from typing import NamedTuple, Optional, Iterable, Tuple
 
 import dateutil.parser
 import fiona
@@ -117,7 +117,23 @@ def _calculate_summary(product_name: str, time: Range, period: str) -> Optional[
                               len(dataset_shapes))
 
 
+def generate_summary() -> TimePeriodOverview:
+    """
+    Write (or replace) the summary of all products that we've got data for.
+    """
+    products = list_product_summaries()
+    summary = TimePeriodOverview.add_periods(
+        summary for product, summary in products
+    )
+
+    summary_to_file('all', get_summary_path(), summary)
+    return summary
+
+
 def write_product_summary(product: DatasetType, path: Path) -> TimePeriodOverview:
+    """
+    Generate and write a summary of the given product
+    """
     summaries = []
     for year in range(1985, datetime.today().year + 1):
         year_folder = path / ('%04d' % year)
@@ -250,7 +266,7 @@ def get_summary_path(product_name: Optional[str] = None,
 
 
 @cache.memoize(timeout=120)
-def list_products():
+def list_product_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverview]]:
     """
     The list of products that we have generated reports for.
     """
