@@ -4,10 +4,13 @@ import tempfile
 from pathlib import Path
 from typing import List
 
+import structlog
 from click import echo, secho, style
 
 from cubedash._model import get_summary_path, index, write_product_summary
 from datacube.model import DatasetType
+
+_LOG = structlog.get_logger()
 
 
 def generate_reports(product_names):
@@ -31,7 +34,8 @@ def generate_reports(product_names):
             write_product_summary(product, tmp_dir)
             tmp_dir.rename(final_path)
             secho("done", fg="green", err=True)
-        except Exception:
+        except Exception as e:
+            _LOG.exception("report.generate", product=product.name, exc_info=True)
             secho("error", fg="yellow", err=True)
         finally:
             shutil.rmtree(str(tmp_dir), ignore_errors=True)
