@@ -25,18 +25,20 @@
             Open Data Cube {{ datacube_version }}
         </div>
     </div>
+    {% from "layout/macros.html" import chart_timeline %}
     <div class="panel">
         <ul>
             {% for platform_name, ps in platform_products.items() %}
                 <li>
                     <span style="text-transform:lowercase;font-variant: small-caps">{{ platform_name }}</span>
                     <ul>
-                        {% for p in ps %}
+                        {% for p, summary in ps %}
                             <li>
                                 <a href="{{ url_for('product.overview_page', product_name=p.name) }}">
                                     {{ p.name }}
                                 </a><br/>
-                                {{ p.definition.description }}</li>
+                                {{ p.definition.description }}
+                            </li>
                         {% endfor %}
                     </ul>
                 </li>

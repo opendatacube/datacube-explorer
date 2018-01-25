@@ -24,10 +24,10 @@
                 title="Select product"
                 aria-label="Select product">
             <option value="">All</option>
-            {% for product in products %}
+            {% for product, summary in products if summary %}
                 <option value="{{ product.name }}"
                         {% if product.name == selected_product.name %}selected="selected"{% endif %}>
-                    {{ product.name }}: {{ product.definition.description }}
+                    {{ product.name }}: {{ product.definition.description }} ({{ summary.dataset_count}})
                 </option>
             {% endfor %}
         </select>
