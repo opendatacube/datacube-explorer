@@ -3,9 +3,9 @@
 {# If a user chooses these fields, they carry between different pages. #}
 {% set product_args = {
     'product_name':selected_product.name,
-    'year': request.args.year,
-    'month':request.args.month,
-    'day': request.args.day
+    'year': year,
+    'month':month,
+    'day': day
 } %}
 
 {% block title %}{{ selected_product.name }}{% endblock %}
@@ -43,32 +43,32 @@
         </select>
         <select id='select-year' aria-label="Year" title="Select year">
             <option value="">All years</option>
-            {% for year in range(
+            {% for year_opt in range(
                     selected_summary.time_range.end.year,
                     selected_summary.time_range.begin.year - 1,
                     -1
                 ) %}
-                <option value="{{ year }}"
-                        {% if (year|string) == request.args.get('year') %}selected='selected'{% endif %}>
-                    {{ year }}
+                <option value="{{ year_opt }}"
+                        {% if (year_opt) == year %}selected='selected'{% endif %}>
+                    {{ year_opt }}
                 </option>
             {% endfor %}
         </select>
         <select id='select-month' aria-label="Month" title="Select month">
             <option value="">All months</option>
-            {% for month in range(1, 13) %}
-                <option value="{{ month }}"
-                        {% if (month|string) == request.args.get('month') %}selected='selected'{% endif %}>
-                    {{ month | month_name }}
+            {% for month_opt in range(1, 13) %}
+                <option value="{{ month_opt }}"
+                        {% if (month_opt) == month %}selected='selected'{% endif %}>
+                    {{ month_opt | month_name }}
                 </option>
             {% endfor %}
         </select>
         <select id='select-day' aria-label="Day" title="Select day">
             <option value="">All days</option>
-            {% for day in range(1, 31) %}
-                <option value="{{ day }}"
-                        {% if (day|string) == request.args.get('day') %}selected='selected'{% endif %}>
-                    {{ day }}
+            {% for day_opt in range(1, 31) %}
+                <option value="{{ day_opt }}"
+                        {% if (day_opt) == day %}selected='selected'{% endif %}>
+                    {{ day_opt }}
                 </option>
             {% endfor %}
         </select>

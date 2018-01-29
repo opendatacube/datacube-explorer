@@ -1,97 +1,64 @@
 from __future__ import absolute_import
 
-import functools
-import logging
-
 import flask
+import structlog
 from flask import Blueprint, abort, redirect, url_for
 from flask import request
 from werkzeug.datastructures import MultiDict
 
 from cubedash import _utils as utils
 from cubedash._model import index, as_json, get_summary
-from datacube.model import Range, DatasetType
 from datacube.scripts.dataset import build_dataset_info
 
-_LOG = logging.getLogger(__name__)
-bp = Blueprint('product', __name__, url_prefix='/<product_name>')
+_LOG = structlog.getLogger()
+bp = Blueprint('product', __name__)
 
 _HARD_SEARCH_LIMIT = 500
 
 
-def with_loaded_product(f):
-    """Convert the 'product_name' query argument into a 'product' entity"""
-
-    @functools.wraps(f)
-    def wrapper(product_name: str, *args, **kwargs):
-        product = index.products.get_by_name(product_name)
-        if product is None:
-            abort(404, "Unknown product %r" % product_name)
-        return f(product, *args, **kwargs)
-
-    return wrapper
-
-
-@bp.route('/')
-@with_loaded_product
-def overview_page(product: DatasetType):
-    year, month, day = y_m_d()
-    summary = get_summary(product.name, year, month, day)
+# @bp.route('/')
+@bp.route('/<product_name>')
+@bp.route('/<product_name>/<int:year>')
+@bp.route('/<product_name>/<int:year>/<int:month>')
+@bp.route('/<product_name>/<int:year>/<int:month>/<int:day>')
+def overview_page(product_name: str = None,
+                  year: int = None,
+                  month: int = None,
+                  day: int = None):
+    product, summary = _load_product(product_name, year, month, day)
 
     return flask.render_template(
         'product.html',
-        summary=summary,
         year=year,
         month=month,
         day=day,
         selected_product=product,
-        selected_summary=get_summary(product.name)
+        selected_summary=summary
     )
 
 
-def y_m_d():
-    year = request.args.get('year', None, type=int)
-    month = request.args.get('month', None, type=int)
-    day = request.args.get('day', None, type=int)
-    return year, month, day
-
-
-def time_range_args() -> Range:
-    return utils.as_time_range(*y_m_d())
-
-
-@bp.route('/spatial')
-@with_loaded_product
-def spatial_page(product: DatasetType):
-    return redirect(url_for('product.overview_page', product_name=product.name))
-
-
-@bp.route('/timeline')
-@with_loaded_product
-def timeline_page(product: DatasetType):
-    return redirect(url_for('product.overview_page', product_name=product.name))
-
-
-@bp.route('/search')
-@with_loaded_product
-def search_page(product: DatasetType):
-    time = time_range_args()
+# @bp.route('/datasets')
+@bp.route('/datasets/<product_name>')
+@bp.route('/datasets/<product_name>/<int:year>')
+@bp.route('/datasets/<product_name>/<int:year>/<int:month>')
+@bp.route('/datasets/<product_name>/<int:year>/<int:month>/<int:day>')
+def search_page(product_name: str = None,
+                year: int = None,
+                month: int = None,
+                day: int = None):
+    product, summary = _load_product(product_name, year, month, day)
+    time = utils.as_time_range(year, month, day)
 
     args = MultiDict(flask.request.args)
-    # Already retrieved above
-    args.pop('year', None)
-    args.pop('month', None)
-    args.pop('day', None)
-
     query = utils.query_to_search(args, product=product)
     # Add time range, selected product to query
 
-    query['product'] = product.name
-
+    if product_name:
+        query['product'] = product_name
     if time:
         query['time'] = time
 
-    _LOG.info('Query %r', query)
+    _LOG.info('query', query=query)
 
     # TODO: Add sort option to index API
     datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
@@ -103,12 +70,40 @@ def search_page(product: DatasetType):
         ))
     return flask.render_template(
         'search.html',
+        year=year,
+        month=month,
+        day=day,
         selected_product=product,
-        selected_summary=get_summary(product.name),
+        selected_summary=summary,
         datasets=datasets,
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT
     )
+
+
+@bp.route('/<product_name>/spatial')
+def spatial_page(product_name: str):
+    """Legacy redirect to maintain old bookmarks"""
+    return redirect(url_for('product.overview_page', product_name=product_name))
+
+
+@bp.route('/<product_name>/timeline')
+def timeline_page(product_name: str):
+    """Legacy redirect to maintain old bookmarks"""
+    return redirect(url_for('product.overview_page', product_name=product_name))
+
+
+def _load_product(product_name, year, month, day):
+    product = None
+    if product_name:
+        product = index.products.get_by_name(product_name)
+        if not product:
+            abort(404, "Unknown product %r" % product_name)
+
+    summary = get_summary(product_name, year, month, day)
+    if not summary:
+        abort(404, "No data for %r" % product_name)
+    return product, summary
 
 
 def request_wants_json():
