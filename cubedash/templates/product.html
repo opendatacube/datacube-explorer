@@ -214,10 +214,42 @@
             var msgNoResults = $("#msg-no-results");
 
             {% if selected_summary.footprint_count %}
-                datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
                 msgNoResults.hide();
+                datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
                 map.fitBounds(datasets.getBounds(), {animate: false});
             {% endif %}
+
+
+            function _url_for_overview(product, year, month, day) {
+                /**
+                 * Build url: "/product_name/yyyy/mm/dd"
+                 *
+                 * All components optional
+                 *
+                 * Examples:
+                 *     /
+                 *     /ls7_nbar_scene
+                 *     /ls7_nbar_scene/2012
+                 *     /ls7_nbar_scene/2012/07
+                 *     /ls7_nbar_scene/2012/07/03
+                 */
+
+                var url = '/';
+                if (product) {
+                    url += product;
+                    [year, month, day].some(function (number) {
+                        if (!number) {
+                            // Don't join any further.
+                            return true;
+                        }
+
+                        url += '/';
+                        url += (number < 10 ? '0' : '') + number;
+                        return false;
+                    });
+                }
+                return url;
+            }
 
             $('#select-product, #select-month, #select-year, #select-day').change(function () {
                 var product = $('#select-product :selected').val(),
@@ -225,24 +257,7 @@
                     month = year ? $('#select-month :selected').val() : null,
                     day = month ? $('#select-day :selected').val() : null;
 
-                var url = '';
-                if (product) {
-                    url += '/';
-                    url += product;
-                    if (year) {
-                        url += '/';
-                        url += year;
-                        if (month) {
-                            url += '/';
-                            url += month;
-                            if (day) {
-                                url += '/';
-                                url += day;
-                            }
-                        }
-                    }
-                }
-                window.location.href = url;
+                window.location.href = _url_for_overview(product, year, month, day);
             });
         })();
 
