@@ -170,7 +170,6 @@
                 map.addControl(timelineControl);
             {% endif %}
 
-            L.control.zoom({position: "bottomright"}).addTo(map);
             L.control.groupedLayers(
                 {
                     "Topography": osm_carto_light,
@@ -199,10 +198,11 @@
                 },
                 {},
                 {
-                    position: 'topright',
+                    position: 'bottomright',
                     collapsed: false
                 }
             ).addTo(map);
+            L.control.zoom({position: "bottomright"}).addTo(map);
 
             var msgNoResults = $("#msg-no-results");
 
