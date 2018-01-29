@@ -1,4 +1,13 @@
 {% extends "layout/base.html" %}
+
+{# If a user chooses these fields, they carry between different pages. #}
+{% set product_args = {
+    'product_name':selected_product.name,
+    'year': request.args.year,
+    'month':request.args.month,
+    'day': request.args.day
+} %}
+
 {% block title %}{{ selected_product.name }}{% endblock %}
 
 {% block header %}
@@ -10,7 +19,7 @@
             ] -%}
             {% for id, page_method in navigation_bar %}
                 <li{% if id == active_page %} class="active"{% endif %}>
-                    <a href="{{ url_for(page_method, product_name=selected_product.name) }}">
+                    <a href="{{ url_for(page_method, **product_args) }}">
                         {{ id | title }}
                     </a>
                 </li>
@@ -28,7 +37,7 @@
             {% for product, summary in products if summary %}
                 <option value="{{ product.name }}"
                         {% if product.name == selected_product.name %}selected="selected"{% endif %}>
-                    {{ product.name }}: {{ product.definition.description }} ({{ summary.dataset_count}})
+                    {{ product.name }}: {{ product.definition.description }} ({{ summary.dataset_count }})
                 </option>
             {% endfor %}
         </select>

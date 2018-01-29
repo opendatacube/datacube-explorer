@@ -26,9 +26,7 @@
             <h2>{{ selected_product.name }}</h2>
             <p>{{ selected_product.definition.description }}</p>
 
-            <a href="{{ url_for('product.search_page',
-                    product_name=selected_product.name,
-                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}"
+            <a href="{{ url_for('product.search_page', **product_args) }}"
             >{{ summary.dataset_count or '0' }} datasets</a>
             {% if request.args.year %}
                 for
