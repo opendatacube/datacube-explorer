@@ -22,67 +22,70 @@
             </div>
             <div id="map"></div>
         </div>
-        <div class="panel info-panel">
-            <h2>{{ selected_product.name }}</h2>
-            <p>{{ selected_product.definition.description }}</p>
+        {% if selected_product %}
+            <div class="panel info-panel">
+                <h2>{{ selected_product.name }}</h2>
+                <p>{{ selected_product.definition.description }}</p>
 
-            <a href="{{ url_for('product.search_page', **product_args) }}"
-            >{{ summary.dataset_count or '0' }} datasets</a>
-            {% if request.args.year %}
-                for
-                {% if request.args.month %}
-                    {% if request.args.day %}{{ request.args.day }}
+                <a href="{{ url_for('product.search_page', **product_args) }}"
+                >{{ selected_summary.dataset_count or '0' }} datasets</a>
+                {% if year %}
+                    for
+                    {% if month %}
+                        {% if day %}{{ day }}
+                        {% endif %}
+                        {{ month | month_name }}
                     {% endif %}
-                    {{ request.args.month | month_name }}
+                    {{ year }}
                 {% endif %}
-                {{ request.args.year }}
-            {% endif %}
-            {% if summary.dataset_count != summary.footprint_count %}
-                ({{ summary.footprint_count }} visible datasets)
-            {% endif %}
+                {% if selected_summary.dataset_count != selected_summary.footprint_count %}
+                    ({{ selected_summary.footprint_count }} visible datasets)
+                {% endif %}
 
 
-            <h3>Fields ({{ selected_product.metadata_type.name }})</h3>
-            <ul>
-                {% for key, val in selected_product.fields.items() if val %}
-                    <li>{{ key }}: {% if val %}{{ val }}{% else %}<span class="muted">(searchable)</span>{% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
-
-
-            {# These fields are enforced by dataset-type-schema.yaml #}
-            {% if selected_product.definition.storage %}
-                <h3>Storage</h3>
+                <h3>Fields ({{ selected_product.metadata_type.name }})</h3>
                 <ul>
-                    {% for key, val in selected_product.definition.storage.items() %}
-                        <li>{{ key }}: {{ val }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-
-            {% if selected_product.definition.measurements %}
-                <h3>Measurements</h3>
-                <ul>
-                    {% for measurement in selected_product.definition.measurements %}
-                        <li>
-                            <div>
-                                {% for a in measurement.aliases %}{{ a }} / {% endfor %}
-                                {{ measurement.name }}
-                            </div>
-{#                            <div>#}
-{#                                type {{ measurement.dtype }};#}
-{#                                units {{ measurement.units }};#}
-{#                                nodata {{ measurement.nodata }}#}
-{#                            </div>#}
+                    {% for key, val in selected_product.fields.items() if val %}
+                        <li>{{ key }}: {% if val %}{{ val }}{% else %}<span class="muted">(searchable)</span>{% endif %}
                         </li>
                     {% endfor %}
                 </ul>
-            {% endif %}
-            {% if not request.args.full_metadata %}
-                <a href="{{ request.path }}?full_metadata=yes#metadata">raw metadata</a>
-            {% endif %}
-        </div>
+
+
+                {# These fields are enforced by dataset-type-schema.yaml #}
+                {% if selected_product.definition.storage %}
+                    <h3>Storage</h3>
+                    <ul>
+                        {% for key, val in selected_product.definition.storage.items() %}
+                            <li>{{ key }}: {{ val }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if selected_product.definition.measurements %}
+                    <h3>Measurements</h3>
+                    <ul>
+                        {% for measurement in selected_product.definition.measurements %}
+                            <li>
+                                <div>
+                                    {% for a in measurement.aliases %}{{ a }} / {% endfor %}
+                                    {{ measurement.name }}
+                                </div>
+                                {#                            <div>#}
+                                {#                                type {{ measurement.dtype }};#}
+                                {#                                units {{ measurement.units }};#}
+                                {#                                nodata {{ measurement.nodata }}#}
+                                {#                            </div>#}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if not request.args.full_metadata %}
+                    <a href="{{ request.path }}?full_metadata=yes#metadata">raw metadata</a>
+                {% endif %}
+
+            </div>
+        {% endif %}
     </div>
     {% if request.args.full_metadata %}
         <div class="panel" id="metadata">
@@ -162,7 +165,13 @@
                 var timelineControl = L.control({position: "topright"});
                 timelineControl.onAdd = function (map) {
                     var div = L.DomUtil.create("div", "timeline-control");
-                    div.innerHTML = {{ chart_timeline(summary.dataset_counts, selected_product, per_day=request.args.get('year')) | tojson }};
+                    div.innerHTML = {{
+                        chart_timeline(
+                            selected_summary.dataset_counts,
+                            selected_product,
+                            per_day=selected_summary.period=='day'
+                        ) | tojson
+                        }};
                     return div;
                 };
                 map.addControl(timelineControl);
@@ -204,8 +213,8 @@
 
             var msgNoResults = $("#msg-no-results");
 
-            {% if summary.footprint_count %}
-                datasets.addData({{ summary.footprint_geometry.__geo_interface__ | tojson }});
+            {% if selected_summary.footprint_count %}
+                datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
                 msgNoResults.hide();
                 map.fitBounds(datasets.getBounds(), {animate: false});
             {% endif %}
@@ -214,10 +223,26 @@
                 var product = $('#select-product :selected').val(),
                     year = $('#select-year :selected').val(),
                     month = year ? $('#select-month :selected').val() : null,
-                    day = month ? $('#select-day :selected').val() : null,
-                    queryParams = jQuery.param({year: year, month: month, day: day});
+                    day = month ? $('#select-day :selected').val() : null;
 
-                window.location.href = '/' + product + '?' + queryParams;
+                var url = '';
+                if (product) {
+                    url += '/';
+                    url += product;
+                    if (year) {
+                        url += '/';
+                        url += year;
+                        if (month) {
+                            url += '/';
+                            url += month;
+                            if (day) {
+                                url += '/';
+                                url += day;
+                            }
+                        }
+                    }
+                }
+                window.location.href = url;
             });
         })();
 
