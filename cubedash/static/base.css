@@ -193,4 +193,11 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 
 .message-box { position: absolute; left: calc(50% - 100px); top: 60px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
 
+.muted { opacity: 0.5; }
+
+.raw-metadata { overflow-y: scroll; max-height: 600px; }
+.raw-metadata .property { font-family: "Courier New", monospace; line-height: 1.3em; }
+.raw-metadata .property .property { padding-left: 15px; }
+.raw-metadata .property > .key { font-weight: bold; }
+
 /*# sourceMappingURL=base.css.map */
