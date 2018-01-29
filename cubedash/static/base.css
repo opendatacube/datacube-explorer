@@ -187,11 +187,17 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="12"] > [data-field-span="12"] { width: 100%; }
 .grid-form [data-row-span].disabled { display: none; }
 
+.map-panel { width: 100%; }
+
 #map { width: 100%; height: calc(100vh - 100px); }
 #map .summary-control { background: rgba(84, 84, 84, 0.9); color: #fff; padding: 15px 15px; }
 #map .summary-control a { color: #fff0f0; }
 
-.message-box { position: absolute; left: calc(50% - 100px); top: 60px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
+@media (min-width: 800px) { .panels { display: flex; }
+  .info-panel { width: 25%; } }
+.info-panel ul { list-style-type: none; padding: 0; }
+
+.message-box { position: absolute; left: calc(50% - 100px); top: 90px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
 
 .muted { opacity: 0.5; }
 
