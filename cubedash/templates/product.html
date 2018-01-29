@@ -22,12 +22,81 @@
         <div class="map-summary">
             <a href="{{ url_for('product.search_page',
                     product_name=selected_product.name,
-                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}">
-                {{ summary.dataset_count }} datasets</a>,
-            {{ summary.footprint_count }} visible datasets.
+                    **{'year': request.args.year, 'month':request.args.month, 'day': request.args.day}) }}"
+            >{{ summary.dataset_count }} datasets</a>
+            {% if request.args.year %}
+                for
+                {% if request.args.month %}
+                    {% if request.args.day %}{{ request.args.day }}
+                    {% endif %}
+                    {{ request.args.month | month_name }}
+                {% endif %}
+                {{ request.args.year }}
+            {% endif %}
+            {% if summary.dataset_count != summary.footprint_count %}
+                ({{ summary.footprint_count }} visible datasets)
+            {% endif %}
         </div>
         <div id="map"></div>
     </div>
+    <div class="panel">
+        <h2>{{ selected_product.name }}</h2>
+        <p>{{ selected_product.definition.description }}</p>
+
+        <h3>Fields ({{ selected_product.metadata_type.name }})</h3>
+        <ul>
+            {% for key, val in selected_product.fields.items() %}
+                <li>{{ key }}: {% if val %}{{ val }}{% else %}<span class="muted">(searchable)</span>{% endif %}</li>
+            {% endfor %}
+        </ul>
+
+
+        {# These fields are enforced by dataset-type-schema.yaml #}
+        {% if selected_product.definition.storage %}
+            <h3>Storage</h3>
+            <ul>
+                {% for key, val in selected_product.definition.storage.items() %}
+                    <li>{{ key }}: {{ val }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if selected_product.definition.measurements %}
+            <h3>Measurements</h3>
+            <ul>
+                {% for measurement in selected_product.definition.measurements %}
+                    <li>{{ measurement.name }} {{ measurement.dtype }} {{ measurement.units }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if not request.args.full_metadata %}
+            <a href="{{ request.path }}?full_metadata=yes#metadata">raw metadata</a>
+        {% endif %}
+    </div>
+    {% if request.args.full_metadata %}
+        <div class="panel" id="metadata">
+
+            <h3>Raw Metadata</h3>
+            <div class="raw-metadata">
+                {%- for key, value in selected_product.definition.items() recursive %}
+                    <div class="property">
+                        {% if value is mapping %}
+                            <div class="key">{{ key }}:</div>
+                            <div class="value {% if key == 'source_datasets' %}embedded{% endif %}">
+                                {{ loop(value.items()) }}
+                            </div>
+                        {% else %}
+                            <span class="key">{{ key }}:</span>
+                            <span class="value">{{ value }}</span>
+                        {% endif %}
+                    </div>
+                {%- endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+
+
 {% endblock %}
 
 
