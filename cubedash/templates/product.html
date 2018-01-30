@@ -169,7 +169,7 @@
                         chart_timeline(
                             selected_summary.dataset_counts,
                             selected_product,
-                            per_day=selected_summary.period=='day'
+                            period=selected_summary.period
                         ) | tojson
                         }};
                     return div;
