@@ -5,7 +5,6 @@ Common global filters for templates.
 from __future__ import absolute_import, division
 
 import logging
-import pathlib
 from datetime import datetime
 
 from dateutil import tz
@@ -22,6 +21,8 @@ from datacube.index.postgres._fields import (
 )
 from datacube.model import DatasetType, Range
 
+from . import _utils as utils
+
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
 
 _LOG = logging.getLogger(__name__)
@@ -35,32 +36,12 @@ def _format_datetime(date):
 
 @bp.app_template_filter("printable_dataset")
 def _dataset_label(dataset):
-    label = _get_label(dataset)
+    label = utils.dataset_label(dataset)
     # If archived, strike out the label.
     if dataset.archived_time:
         return Markup("<del>{}</del>".format(escape(label)))
 
     return label
-
-
-def _get_label(dataset):
-    """
-    :type dataset: datacube.model.Dataset
-    :rtype: str
-    """
-    # Identify by label if they have one
-    label = dataset.metadata.fields.get("label")
-    if label is not None:
-        return label
-    # Otherwise by the file/folder name if there's a path.
-    elif dataset.local_uri:
-        p = pathlib.Path(dataset.local_uri)
-        if p.name in ("ga-metadata.yaml", "agdc-metadata.yaml"):
-            return p.parent.name
-
-        return p.name
-    # TODO: Otherwise try to build a label from the available fields?
-    return dataset.id
 
 
 @bp.app_template_filter("query_value")
