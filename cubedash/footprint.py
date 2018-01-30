@@ -1,5 +1,6 @@
 # coding: utf-8
-
+# This is an import of legacy code, to be replaced and cleaned up. no pylint.
+# pylint: skip-file
 # In[28]:
 
 
