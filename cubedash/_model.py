@@ -267,7 +267,12 @@ def get_summary(
     path = get_summary_path(product_name, year, month)
     if not path.exists():
         _LOG.warning(
-            "report.missing", product_name=product_name, year=year, month=month, day=day
+            "report.missing",
+            product_name=product_name,
+            year=year,
+            month=month,
+            day=day,
+            expected_path=path,
         )
         return None
     return read_summary(path)
