@@ -3,6 +3,8 @@
 # In[28]:
 
 
+from __future__ import absolute_import, print_function
+
 import math
 import os
 import shutil
@@ -27,7 +29,6 @@ from shapely.geometry import mapping
 import wget
 
 get_ipython().magic("matplotlib inline")
-
 
 # In[2]:
 
@@ -58,7 +59,7 @@ period = (
 )  # int(sys.argv[1]) # Generate passes for this time period from start time
 output_path = "."  # sys.argv[2]
 if not os.path.exists(output_path):
-    print "OUTPUT PATH DOESN'T EXIST", output_path
+    print("OUTPUT PATH DOESN'T EXIST", output_path)
     sys.exit()
 sleep_status = 1  # how many minutes to sleep between status updates
 schedule = []
@@ -85,7 +86,6 @@ def download_file(url):
 
 
 def get_tles():
-
     # GetTLEs(): returns a list of tuples of kepler parameters for each satellite.
     resource = "http://www.celestrak.com/norad/elements/resource.txt"
     weather = "http://www.celestrak.com/norad/elements/weather.txt"
@@ -106,14 +106,14 @@ def get_tles():
     try:
         download_file(resource)
     except OSError:
-        print "COULD NOT DOWNLOAD resource.txt"
+        print("COULD NOT DOWNLOAD resource.txt")
         return ()
 
     try:
         download_file(weather)
 
     except OSError:
-        print "COULD NOT DOWNLOAD weather.txt"
+        print("COULD NOT DOWNLOAD weather.txt")
         return ()
 
     file_names = ["weather.txt", "resource.txt"]
@@ -125,7 +125,7 @@ def get_tles():
 
     tles = open("tles.txt", "r").readlines()
 
-    print "retrieving TLE file.........."
+    print("retrieving TLE file..........")
     # strip off the header tokens and newlines
     tles = [item.strip() for item in tles]
 
@@ -144,7 +144,6 @@ def get_tles():
 
 
 def getVectorFile(attributes, input_points, poly_or_line, ogr_output, ogr_format):
-
     # example usage: getVectorFile(dictionary,list of dicts with lat2 and lon2, 'polygon', SWATH_FILENAME, 'GeoJSON')
     spatialReference = osgeo.osr.SpatialReference()
     spatialReference.ImportFromProj4("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
@@ -171,7 +170,7 @@ def getVectorFile(attributes, input_points, poly_or_line, ogr_output, ogr_format
         geomtype = ogr.wkbPoint
 
     if ds is None:
-        print "Could not create file"
+        print("Could not create file")
         sys.exit(1)
     layer = ds.CreateLayer(attributes["Satellite name"], geom_type=geomtype)
 
@@ -281,7 +280,6 @@ def getVectorFile(attributes, input_points, poly_or_line, ogr_output, ogr_format
 
 
 def replace_string_in_file(infile, text_to_find, text_to_insert):
-
     in_file = open(infile, "r")
     temporary = open(os.path.join(output_path, "tmp.txt"), "w")
     for line in in_file:
@@ -299,7 +297,6 @@ def replace_string_in_file(infile, text_to_find, text_to_insert):
 def getEffectiveHeading(
     satellite, oi_deg, latitude, longitude, tle_orbit_radius, daily_revolutions
 ):
-
     lat_rad = math.radians(latitude)  # Latitude in radians
     oi_rad = math.radians(oi_deg)  # Orbital Inclination (OI) [radians]
     orbit_radius = tle_orbit_radius * 1000.0  # Orbit Radius (R) [m]
@@ -338,7 +335,7 @@ def getEffectiveHeading(
     beta = -1 * (
         math.atan(1 / (math.tan(oi_rad) * math.sin(rho_rad))) * 180 / math.pi
     )  # Heading Beta (degrees)
-    xn = n * xfac  #  Xn
+    xn = n * xfac  # Xn
     altitude = (orbit_radius - xn) / 1000  # altitude
     altitude_ = (
         orbit_radius * math.cos(altphi_rad / 180 * math.pi) / math.cos(lat_rad) - n
@@ -370,7 +367,6 @@ def addtomap(swathfile, layername):
 def getUpcomingPasses(
     satellite_name, tle_information, passes_begin_time, passes_period
 ):
-
     kml = simplekml.Kml()
     observer = ephem.Observer()
     observer.lat = ground_station[0]
@@ -386,7 +382,7 @@ def getUpcomingPasses(
 
     while 1:
 
-        print "---------------------------------------"
+        print("---------------------------------------")
         for tle in tles:
 
             if tle[0] == satellite_name:
@@ -405,9 +401,9 @@ def getUpcomingPasses(
                 twole = tlefile.read(tle[0], "tles.txt")
                 now = datetime.utcnow()
                 # TODO check age of TLE - if older than x days get_tle()
-                print "TLE EPOCH:", twole.epoch
-                print "---------------------------------------"
-                print tle[0]
+                print("TLE EPOCH:", twole.epoch)
+                print("---------------------------------------")
+                print(tle[0])
 
                 oi = float(str.split(tle[2], " ")[3])
                 # orb = Orbital(tle[0])
@@ -428,10 +424,10 @@ def getUpcomingPasses(
                 los_lat = sat.sublat.real * (180 / math.pi)
 
                 if aos_lat > los_lat:
-                    print "PASS                 = descending"
+                    print("PASS                 = descending")
                     node = "descending"
                 else:
-                    print "PASS                 = ascending"
+                    print("PASS                 = ascending")
                     node = "ascending"
                     oi = 360 - oi
 
@@ -440,10 +436,10 @@ def getUpcomingPasses(
                     (AOStime - now).days * 1440.0
                 )
 
-                print "Minutes to horizon   = ", minutesaway
-                print "AOStime              = ", rt
-                print "LOStime              = ", st
-                print "Transit time         = ", tt
+                print("Minutes to horizon   = ", minutesaway)
+                print("AOStime              = ", rt)
+                print("LOStime              = ", st)
+                print("Transit time         = ", tt)
 
                 orad = orb.get_lonlatalt(
                     datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S")
@@ -684,10 +680,10 @@ def getUpcomingPasses(
                 # print tkrt, tkra, tktt, tkta, tkst, tksa
                 if tkrt is None:
                     return ()
-                    # if datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S") > datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S"):
-                    #    tkrt = datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S") - datetime.strptime(str(tktt),"%Y/%m/%d %H:%M:%S")
-                    #    tkrt = str(tkt),"%Y/%m/%d %H:%M:%S"
-                    # print "NOW: ",now," TKRT: ",datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S")," TKST: ",datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S")
+                # if datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S") > datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S"):
+                #    tkrt = datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S") - datetime.strptime(str(tktt),"%Y/%m/%d %H:%M:%S")
+                #    tkrt = str(tkt),"%Y/%m/%d %H:%M:%S"
+                # print "NOW: ",now," TKRT: ",datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S")," TKST: ",datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S")
                 tkdeltatime = datetime.utcnow()
                 tkgeoeastpoint = []
                 tkgeowestpoint = []
@@ -820,7 +816,10 @@ def getUpcomingPasses(
                         # print "NOW: ",now," TKRT: ",datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S")," TKST: ",datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S")
                         # if ((datetime.strptime(str(tkrt),"%Y/%m/%d %H:%M:%S")>now) and (datetime.strptime(str(tkst),"%Y/%m/%d %H:%M:%S")<now)):
                         if tkrt > tkst:
-                            print "Executing tracking swath creation - tkpolypoints = ", tkpolypoints
+                            print(
+                                "Executing tracking swath creation - tkpolypoints = ",
+                                tkpolypoints,
+                            )
                             getVectorFile(
                                 now_attributes,
                                 tkpolypoints,
@@ -832,20 +831,22 @@ def getUpcomingPasses(
                 baseline = 1
                 if minutesaway <= period:
 
-                    print "---------------------------------------"
-                    print tle[0], "WILL BE MAKING A PASS IN ", minutesaway, " MINUTES"
-                    print " Rise Azimuth: ", ra
-                    print " Transit Time: ", tt
-                    print " Transit Altitude: ", ta
-                    print " Set Time: ", st
-                    print " Set Azimuth: ", sa
+                    print("---------------------------------------")
+                    print(tle[0], "WILL BE MAKING A PASS IN ", minutesaway, " MINUTES")
+                    print(" Rise Azimuth: ", ra)
+                    print(" Transit Time: ", tt)
+                    print(" Transit Altitude: ", ta)
+                    print(" Set Time: ", st)
+                    print(" Set Azimuth: ", sa)
                     # Create a temporal KML
-                    print (
-                        satname
-                        + "_"
-                        + str(
-                            orb.get_orbit_number(
-                                datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S")
+                    print(
+                        (
+                            satname
+                            + "_"
+                            + str(
+                                orb.get_orbit_number(
+                                    datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S")
+                                )
                             )
                         )
                     )
@@ -940,9 +941,11 @@ def getUpcomingPasses(
                     # see if there are any new additions to the schedule
 
                     if len(schedule) > 0:
-                        print (
-                            datetime.strptime(
-                                str(schedule[0]["AOS time"]), "%Y/%m/%d %H:%M:%S"
+                        print(
+                            (
+                                datetime.strptime(
+                                    str(schedule[0]["AOS time"]), "%Y/%m/%d %H:%M:%S"
+                                )
                             )
                         )
 
@@ -963,10 +966,12 @@ def getUpcomingPasses(
 
                         # Recompute the satellite position for the update time
                         sat.compute(observer)
-                        # print "MODIFIED OBSERVER DATE",observer.date
+                    # print "MODIFIED OBSERVER DATE",observer.date
 
                     else:
-                        print "--------NOTHING TO MODIFY MOVING TO NEXT SATELLITE IN LIST------"
+                        print(
+                            "--------NOTHING TO MODIFY MOVING TO NEXT SATELLITE IN LIST------"
+                        )
                         kml.save(os.path.join(output_path, satname + ".ALICE.kml"))
                         # TODO - write to html
                         # Exit the def if the schedule isn't able to update because there are no passes in the acquisition window
@@ -1204,7 +1209,6 @@ def getUpcomingPasses(
                                     )
 
                                     for i in geomlist:
-
                                         xyz = i.split()
 
                                         html_output.write(
@@ -1251,7 +1255,6 @@ def getUpcomingPasses(
                                     )
 
                                     for i in geomlist:
-
                                         xyz = i.split()
 
                                         html_output.write(
@@ -1417,11 +1420,11 @@ if __name__ == "__main__":
     # while 1:
     for i in satellites:
 
-        print "Looking for ", i
+        print("Looking for ", i)
         getUpcomingPasses(i, tles, datetime.utcnow(), period)
         # check for stale tle and update if required
         tle_timesinceretrieve = datetime.now() - tle_retrieve_time
-        print "Time since tle retrieved from celestrak: ", tle_timesinceretrieve
+        print("Time since tle retrieved from celestrak: ", tle_timesinceretrieve)
         if tle_timesinceretrieve > timedelta(hours=24):
             get_tles()
             tle_retrieve_time = datetime.utcnow()
@@ -1429,6 +1432,5 @@ if __name__ == "__main__":
 ## plot folium map
 folium.LayerControl().add_to(satellite_map)
 satellite_map
-
 
 # In[ ]:
