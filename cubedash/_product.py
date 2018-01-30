@@ -112,8 +112,6 @@ def _load_product(product_name, year, month, day):
     # Entire summary for the product.
     product_summary = get_summary(product_name)
     selected_summary = get_summary(product_name, year, month, day)
-    if not selected_summary:
-        abort(404, "No data for %r" % product_name)
 
     return product, product_summary, selected_summary
 
