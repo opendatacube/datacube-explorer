@@ -110,9 +110,14 @@ def _calculate_summary(
     product = index.products.get_by_name(product_name)
     datasets = index.datasets.search_eager(product=product_name, time=time)
 
-    dataset_shapes = [
-        shapely.geometry.asShape(ds.extent) for ds in datasets if ds.extent
-    ]
+    try:
+        dataset_shapes = [
+            shapely.geometry.asShape(ds.extent) for ds in datasets if ds.extent
+        ]
+    except AttributeError:
+        # `ds.extent` throws an exception on telemetry datasets, as it has no grid_spatial. (it should return None)
+        dataset_shapes = []
+
     footprint_geometry = None
     if dataset_shapes:
         reproj = partial(
