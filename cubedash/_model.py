@@ -3,19 +3,23 @@ from __future__ import absolute_import
 import json
 from collections import Counter
 from datetime import datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import NamedTuple, Optional, Iterable, Tuple
 
 import dateutil.parser
 import fiona
 import flask
+import pyproj
 import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
+import yaml
 from flask import jsonify
 from flask_caching import Cache
 from shapely.geometry import mapping, shape
+from shapely.prepared import prep
 
 from datacube.index import index_connect
 from datacube.index._api import Index
@@ -102,11 +106,19 @@ class TimePeriodOverview(NamedTuple):
 
 
 def _calculate_summary(product_name: str, time: Range, period: str) -> Optional[TimePeriodOverview]:
+    product = index.products.get_by_name(product_name)
     datasets = index.datasets.search_eager(product=product_name, time=time)
 
-    dataset_shapes = [shapely.geometry.asShape(ds.extent.to_crs(CRS('EPSG:4326')))
+    dataset_shapes = [shapely.geometry.asShape(ds.extent)
                       for ds in datasets if ds.extent]
-    footprint_geometry = shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
+    footprint_geometry = None
+    if dataset_shapes:
+        reproj = partial(
+            pyproj.transform,
+            pyproj.Proj(init=datasets[0].extent.crs),
+            pyproj.Proj(init='EPSG:4326')
+        )
+        footprint_geometry = shapely.ops.transform(reproj, shapely.ops.unary_union(dataset_shapes))
 
     return TimePeriodOverview(len(datasets),
                               # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
@@ -114,7 +126,7 @@ def _calculate_summary(product_name: str, time: Range, period: str) -> Optional[
                               period,
                               time,
                               footprint_geometry,
-                              len(dataset_shapes))
+                              len(dataset_shapes) if dataset_shapes else 0)
 
 
 def generate_summary() -> TimePeriodOverview:
