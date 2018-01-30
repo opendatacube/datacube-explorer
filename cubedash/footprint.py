@@ -310,7 +310,7 @@ def getEffectiveHeading(satellite, oi_deg, latitude, longitude, tle_orbit_radius
     altitude = (orbit_radius - xn) / 1000  # altitude
     altitude_ = (orbit_radius * math.cos(altphi_rad / 180 * math.pi) / math.cos(lat_rad) - n) / 1000
     rotation = math.atan((wO * math.cos(phi_rad) * math.cos(beta * math.pi / 180)) / (
-                av + wO * math.cos(phi_rad) * math.sin(beta * math.pi / 180))) * 180 / math.pi
+            av + wO * math.cos(phi_rad) * math.sin(beta * math.pi / 180))) * 180 / math.pi
     eh = beta + rotation
     alpha12 = eh
     s = 0.5 * 185000  # s = distance in metres
@@ -407,14 +407,27 @@ def getUpcomingPasses(satellite_name, tle_information, passes_begin_time, passes
                 # Create swath footprint ogr output
                 SWATH_FILENAME = os.path.join(output_path, satname + "." + str(orb.get_orbit_number(
                     datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))) + ".ALICE.orbit_swath.geojson")
-                attributes = {'Satellite name': satname, 'Orbit height': orad,
-                              'Orbit': orb.get_orbit_number(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S")),
-                              'Current time': str(now), 'Minutes to horizon': minutesaway, 'AOS time': str(rt),
-                              'LOS time': str(st), 'Transit time': str(tt), 'Node': node, 'SWATH_FILENAME': (
-                                satname + "." + str(orb.get_orbit_number(
-                            datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))) + ".ALICE.orbit_swath.geojson"),
-                              'ORBIT_FILENAME': (satname + "." + str(orb.get_orbit_number(
-                                  datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))) + ".ALICE.orbit_track.geojson")}
+                attributes = {
+                    'Satellite name': satname,
+                    'Orbit height': orad,
+                    'Orbit': orb.get_orbit_number(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S")),
+                    'Current time': str(now),
+                    'Minutes to horizon': minutesaway,
+                    'AOS time': str(rt),
+                    'LOS time': str(st),
+                    'Transit time': str(tt),
+                    'Node': node,
+                    'SWATH_FILENAME': (satname + "." +
+                                       str(
+                                           orb.get_orbit_number(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))
+                                       ) +
+                                       ".ALICE.orbit_swath.geojson"),
+                    'ORBIT_FILENAME': (satname + "." +
+                                       str(
+                                           orb.get_orbit_number(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))
+                                       ) +
+                                       ".ALICE.orbit_track.geojson")
+                }
 
                 # Append the attributes to the list of acquisitions for the acquisition period
                 if not any((x['Satellite name'] == satname and x['Orbit'] == orb.get_orbit_number(
@@ -472,15 +485,22 @@ def getUpcomingPasses(satellite_name, tle_information, passes_begin_time, passes
                 # Create current location ogr output
 
                 nowpoint = [
-                    {'lat2': orb.get_lonlatalt(datetime.utcnow())[1], 'lon2': orb.get_lonlatalt(datetime.utcnow())[0],
+                    {'lat2': orb.get_lonlatalt(datetime.utcnow())[1],
+                     'lon2': orb.get_lonlatalt(datetime.utcnow())[0],
                      'alt2': orb.get_lonlatalt(datetime.utcnow())[2] * 1000}]
 
                 # TODO ensure the now attributes are actually attributes for the current position of the satellite and include relevant next pass information...tricky?
                 # if ((attributes['Orbit']==orb.get_orbit_number(datetime.utcnow()))and(AOStime<now)):
-                now_attributes = {'Satellite name': satname, 'Orbit height': orb.get_lonlatalt(datetime.utcnow())[2],
-                                  'Orbit': orb.get_orbit_number(datetime.utcnow()), 'Current time': str(now),
-                                  'Minutes to horizon': "N/A", 'AOS time': "N/A", 'LOS time': "N/A",
-                                  'Transit time': "N/A", 'Node': "N/A"}
+                now_attributes = {
+                    'Satellite name': satname,
+                    'Orbit height': orb.get_lonlatalt(datetime.utcnow())[2],
+                    'Orbit': orb.get_orbit_number(datetime.utcnow()),
+                    'Current time': str(now),
+                    'Minutes to horizon': "N/A",
+                    'AOS time': "N/A", 'LOS time': "N/A",
+                    'Transit time': "N/A",
+                    'Node': "N/A"
+                }
                 # now_attributes=attributes
 
                 CURRENT_POSITION_FILENAME = os.path.join(output_path, satname + "_current_position.geojson")
@@ -532,8 +552,10 @@ def getUpcomingPasses(satellite_name, tle_information, passes_begin_time, passes
 
                     sat.compute(tkdeltatime)
                     tkgeotrack.append(
-                        {'lat2': sat.sublat.real * (180 / math.pi), 'lon2': sat.sublong.real * (180 / math.pi),
-                         'alt2': orb.get_lonlatalt(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))[2]})
+                        {'lat2': sat.sublat.real * (180 / math.pi),
+                         'lon2': sat.sublong.real * (180 / math.pi),
+                         'alt2': orb.get_lonlatalt(datetime.strptime(str(rt), "%Y/%m/%d %H:%M:%S"))[2]}
+                    )
 
                     tkeastaz = getEffectiveHeading(sat, oi, sat.sublat.real * (180 / math.pi),
                                                    sat.sublong.real * (180 / math.pi), orad, sat._n) + 90
