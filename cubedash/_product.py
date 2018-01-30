@@ -25,15 +25,19 @@ def overview_page(product_name: str = None,
                   year: int = None,
                   month: int = None,
                   day: int = None):
-    product, summary = _load_product(product_name, year, month, day)
+    product, product_summary, selected_summary = _load_product(product_name, year, month, day)
 
     return flask.render_template(
         'product.html',
         year=year,
         month=month,
         day=day,
-        selected_product=product,
-        selected_summary=summary
+
+        product=product,
+        # Summary for the whole product
+        product_summary=product_summary,
+        # Summary for the users' currently selected filters.
+        selected_summary=selected_summary,
     )
 
 
@@ -46,7 +50,7 @@ def search_page(product_name: str = None,
                 year: int = None,
                 month: int = None,
                 day: int = None):
-    product, summary = _load_product(product_name, year, month, day)
+    product, product_summary, selected_summary = _load_product(product_name, year, month, day)
     time = utils.as_time_range(year, month, day)
 
     args = MultiDict(flask.request.args)
@@ -73,8 +77,13 @@ def search_page(product_name: str = None,
         year=year,
         month=month,
         day=day,
-        selected_product=product,
-        selected_summary=summary,
+
+        product=product,
+        # Summary for the whole product
+        product_summary=product_summary,
+        # Summary for the users' currently selected filters.
+        selected_summary=selected_summary,
+
         datasets=datasets,
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT
@@ -100,10 +109,13 @@ def _load_product(product_name, year, month, day):
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
-    summary = get_summary(product_name, year, month, day)
-    if not summary:
+    # Entire summary for the product.
+    product_summary = get_summary(product_name)
+    selected_summary = get_summary(product_name, year, month, day)
+    if not selected_summary:
         abort(404, "No data for %r" % product_name)
-    return product, summary
+
+    return product, product_summary, selected_summary
 
 
 def request_wants_json():

@@ -1,6 +1,6 @@
 {% extends "layout/product-section.html" %}
 {% set active_page = "overview" %}
-{% block title %}{{ selected_product.name }}{% endblock %}
+{% block title %}{{ product.name }}{% endblock %}
 
 
 {% block head %}
@@ -22,10 +22,10 @@
             </div>
             <div id="map"></div>
         </div>
-        {% if selected_product %}
+        {% if product %}
             <div class="panel info-panel">
-                <h2>{{ selected_product.name }}</h2>
-                <p>{{ selected_product.definition.description }}</p>
+                <h2>{{ product.name }}</h2>
+                <p>{{ product.definition.description }}</p>
 
                 <a href="{{ url_for('product.search_page', **product_args) }}"
                 >{{ selected_summary.dataset_count or '0' }} datasets</a>
@@ -43,9 +43,9 @@
                 {% endif %}
 
 
-                <h3>Fields ({{ selected_product.metadata_type.name }})</h3>
+                <h3>Fields ({{ product.metadata_type.name }})</h3>
                 <ul>
-                    {% for key, val in selected_product.fields.items() if val %}
+                    {% for key, val in product.fields.items() if val %}
                         <li>{{ key }}: {% if val %}{{ val }}{% else %}<span class="muted">(searchable)</span>{% endif %}
                         </li>
                     {% endfor %}
@@ -53,19 +53,19 @@
 
 
                 {# These fields are enforced by dataset-type-schema.yaml #}
-                {% if selected_product.definition.storage %}
+                {% if product.definition.storage %}
                     <h3>Storage</h3>
                     <ul>
-                        {% for key, val in selected_product.definition.storage.items() %}
+                        {% for key, val in product.definition.storage.items() %}
                             <li>{{ key }}: {{ val }}</li>
                         {% endfor %}
                     </ul>
                 {% endif %}
 
-                {% if selected_product.definition.measurements %}
+                {% if product.definition.measurements %}
                     <h3>Measurements</h3>
                     <ul>
-                        {% for measurement in selected_product.definition.measurements %}
+                        {% for measurement in product.definition.measurements %}
                             <li>
                                 <div>
                                     {% for a in measurement.aliases %}{{ a }} / {% endfor %}
@@ -92,7 +92,7 @@
 
             <h3>Raw Metadata</h3>
             <div class="raw-metadata">
-                {%- for key, value in selected_product.definition.items() recursive %}
+                {%- for key, value in product.definition.items() recursive %}
                     <div class="property">
                         {% if value is mapping %}
                             <div class="key">{{ key }}:</div>
@@ -168,7 +168,7 @@
                     div.innerHTML = {{
                         chart_timeline(
                             selected_summary.dataset_counts,
-                            selected_product,
+                            product,
                             period=selected_summary.period
                         ) | tojson
                         }};

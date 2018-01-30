@@ -5,11 +5,11 @@
 
 {% block content %}
     <div class="panel relative">
-        <form action="{{ url_for('product.search_page', product_name=selected_product.name) }}"
+        <form action="{{ url_for('product.search_page', product_name=product.name) }}"
               method="get"
               class="grid-form">
             <fieldset>
-                {% set field_list = selected_product | searchable_fields %}
+                {% set field_list = product | searchable_fields %}
 
                 {% for key, field in field_list %}
                     {# If it's numeric, add start/end input boxes #}
@@ -18,7 +18,7 @@
                              {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-begin"
-                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}
+                                       class="key">{{ product.metadata_type.dataset_fields[key].description }}
                                     from:</label>
                                 <input type="number"
                                        step="{{ field | field_step_size }}"
@@ -30,7 +30,7 @@
                             </div>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-end"
-                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}
+                                       class="key">{{ product.metadata_type.dataset_fields[key].description }}
                                     to:</label>
                                 <input type="number"
                                        id="search-{{ key }}-end"
@@ -44,7 +44,7 @@
                         <div data-row-span="3">
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-before">
-                                    {{ selected_product.metadata_type.dataset_fields[key].description }} From
+                                    {{ product.metadata_type.dataset_fields[key].description }} From
                                 </label>
                                 <input type="date"
                                        id="search-{{ key }}-before"
@@ -54,7 +54,7 @@
                             </div>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-after">
-                                    {{ selected_product.metadata_type.dataset_fields[key].description }} To
+                                    {{ product.metadata_type.dataset_fields[key].description }} To
                                 </label>
                                 <input type="date"
                                        id="search-{{ key }}-after"
@@ -68,7 +68,7 @@
                              {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}"
-                                       class="key">{{ selected_product.metadata_type.dataset_fields[key].description }}:</label>
+                                       class="key">{{ product.metadata_type.dataset_fields[key].description }}:</label>
                                 <input type="text"
                                        id="search-{{ key }}"
                                        name="{{ key }}"
