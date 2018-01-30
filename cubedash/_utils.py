@@ -8,6 +8,7 @@ from __future__ import division
 
 import collections
 import functools
+import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
@@ -67,6 +68,26 @@ def query_to_search(request: MultiDict, product: DatasetType) -> dict:
                     args[key] = Range(value.end, value.begin)
 
     return args
+
+
+def dataset_label(dataset):
+    """
+    :type dataset: datacube.model.Dataset
+    :rtype: str
+    """
+    # Identify by label if they have one
+    label = dataset.metadata.fields.get('label')
+    if label is not None:
+        return label
+    # Otherwise by the file/folder name if there's a path.
+    elif dataset.local_uri:
+        p = pathlib.Path(dataset.local_uri)
+        if p.name in ('ga-metadata.yaml', 'agdc-metadata.yaml'):
+            return p.parent.name
+
+        return p.name
+    # TODO: Otherwise try to build a label from the available fields?
+    return dataset.id
 
 
 def _next_month(date: datetime):

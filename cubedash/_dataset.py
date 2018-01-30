@@ -22,11 +22,13 @@ def dataset_page(id_):
     archived_location_times = index.datasets.get_archived_location_times(id_)
     ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
 
+    derived_datasets = sorted(index.datasets.get_derived(id_), key=utils.dataset_label)
+
     return flask.render_template(
         'dataset.html',
         dataset=dataset,
         dataset_metadata=ordered_metadata,
-        derived_datasets=index.datasets.get_derived(id_),
+        derived_datasets=derived_datasets,
         source_datasets=source_datasets,
         archive_location_times=archived_location_times
     )
