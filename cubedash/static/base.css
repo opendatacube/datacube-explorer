@@ -52,9 +52,11 @@ nav li.active a { background: linear-gradient(to bottom, #4a4a4a 0%, #474747 100
 .data-table td.zero { color: #ababab; }
 
 /* lists of key-values */
-.query-param-list { width: auto; display: grid; grid-template-columns: 1fr 1fr; }
+.query-param-list { width: auto; display: grid; }
+.query-param-list.wide { grid-template-columns: 1fr 1fr; }
 
-.query-param > .key { color: #878787; }
+.query-param > .key { color: #737373; }
+.query-param .value > .query-param { margin-left: 15px; }
 
 .search-param > .key { display: inline-block; font-weight: bold; }
 
@@ -198,7 +200,7 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 
 .message-box { position: absolute; left: calc(50% - 100px); top: 90px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
 
-.muted { opacity: 0.5; }
+.muted { color: #737373; }
 
 .raw-metadata { overflow-y: scroll; max-height: 600px; }
 .raw-metadata .property { font-family: "Courier New", monospace; }
