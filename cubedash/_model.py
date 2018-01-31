@@ -262,7 +262,10 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
                 footprint_count=summary.footprint_count,
                 datasets_geojson=summary.datasets_geojson,
                 period=summary.period,
-                time_range=[summary.time_range[0].isoformat(), summary.time_range[1].isoformat()],
+                time_range=[
+                    summary.time_range[0].isoformat(),
+                    summary.time_range[1].isoformat()
+                ] if summary.time_range else None,
                 series={d.isoformat(): v for d, v in summary.dataset_counts.items()},
             ),
             f
