@@ -127,24 +127,8 @@
 
 
 {% block footer %}
+    {{ super() }}
     <script type="application/javascript">
-        $('#select-product').change(function () {
-            var product = $('#select-product :selected').val();
-            // TODO: Other query params?
-            window.location.href = '/' + product + '/search';
-        });
-
-        // TODO: Avoid duplication with 'product.html' selection change.
-        $('#select-product, #select-month, #select-year, #select-day').change(function () {
-                var product = $('#select-product :selected').val(),
-                    year = $('#select-year :selected').val(),
-                    month = year ? $('#select-month :selected').val() : null,
-                    day = month ? $('#select-day :selected').val() : null,
-                    queryParams = jQuery.param({year: year, month: month, day:day});
-
-                window.location.href = '/' + product + '/search?' + queryParams;
-        });
-
 
         $('#add-search-field-type').change(function () {
             var add_field_name = $('#add-search-field-type').val();

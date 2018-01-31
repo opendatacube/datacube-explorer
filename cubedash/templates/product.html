@@ -108,8 +108,12 @@
 
 
 {% block footer %}
+
     <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
     <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+
+    {{ super() }}
+
     {% from "layout/macros.html" import chart_timeline %}
     <script type="application/javascript">
         (function () {
@@ -213,45 +217,6 @@
             {% endif %}
 
 
-            function _url_for_overview(product, year, month, day) {
-                /**
-                 * Build url: "/product_name/yyyy/mm/dd"
-                 *
-                 * All components optional
-                 *
-                 * Examples:
-                 *     /
-                 *     /ls7_nbar_scene
-                 *     /ls7_nbar_scene/2012
-                 *     /ls7_nbar_scene/2012/07
-                 *     /ls7_nbar_scene/2012/07/03
-                 */
-
-                var url = '/';
-                if (product) {
-                    url += product;
-                    [year, month, day].some(function (number) {
-                        if (!number) {
-                            // Don't join any further.
-                            return true;
-                        }
-
-                        url += '/';
-                        url += (number < 10 ? '0' : '') + number;
-                        return false;
-                    });
-                }
-                return url;
-            }
-
-            $('#select-product, #select-month, #select-year, #select-day').change(function () {
-                var product = $('#select-product :selected').val(),
-                    year = $('#select-year :selected').val(),
-                    month = year ? $('#select-month :selected').val() : null,
-                    day = month ? $('#select-day :selected').val() : null;
-
-                window.location.href = _url_for_overview(product, year, month, day);
-            });
         })();
 
     </script>
