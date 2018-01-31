@@ -3,27 +3,23 @@ from __future__ import absolute_import
 import json
 from collections import Counter
 from datetime import datetime, timedelta
-from functools import partial
 from pathlib import Path
-from typing import Iterable, NamedTuple, Optional, Tuple
+from typing import Dict, Iterable, NamedTuple, Optional, Tuple
 
 import dateutil.parser
 import fiona
 import flask
-import pyproj
 import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-import yaml
 from flask import jsonify
 from flask_caching import Cache
-from shapely.geometry import mapping, shape
-from shapely.prepared import prep
+from shapely.geometry.base import BaseGeometry
 
 from datacube.index import index_connect
 from datacube.index._api import Index
-from datacube.model import DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
@@ -62,6 +58,9 @@ class TimePeriodOverview(NamedTuple):
 
     dataset_counts: Counter
 
+    # GeoJSON FeatureCollection dict. But only when there's a small number of them.
+    datasets_geojson: Optional[Dict]
+
     period: str
 
     time_range: Range
@@ -77,7 +76,7 @@ class TimePeriodOverview(NamedTuple):
         period = None
 
         if not periods:
-            return TimePeriodOverview(0, None, None, None, None, None)
+            return TimePeriodOverview(0, None, None, None, None, None, None)
 
         for p in periods:
             counter.update(p.dataset_counts)
@@ -92,6 +91,7 @@ class TimePeriodOverview(NamedTuple):
         return TimePeriodOverview(
             sum(p.dataset_count for p in periods),
             counter,
+            None,
             period,
             Range(
                 min(r.time_range.begin for r in periods),
@@ -104,40 +104,63 @@ class TimePeriodOverview(NamedTuple):
         )
 
 
+def _dataset_shape(ds: Dataset):
+    try:
+        extent = ds.extent
+    except AttributeError:
+        # `ds.extent` throws an exception on telemetry datasets, as they have no grid_spatial. It probably shouldn't.
+        return None
+
+    if extent is None:
+        return None
+
+    return shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+
+
 def _calculate_summary(
     product_name: str, time: Range, period: str
 ) -> Optional[TimePeriodOverview]:
     product = index.products.get_by_name(product_name)
-    datasets = index.datasets.search_eager(product=product_name, time=time)
+    datasets = [
+        (dataset, _dataset_shape(dataset))
+        for dataset in index.datasets.search(product=product_name, time=time)
+    ]
 
-    try:
-        dataset_shapes = [
-            shapely.geometry.asShape(ds.extent) for ds in datasets if ds.extent
-        ]
-    except AttributeError:
-        # `ds.extent` throws an exception on telemetry datasets, as it has no grid_spatial. (it should return None)
-        dataset_shapes = []
-
-    footprint_geometry = None
-    if dataset_shapes:
-        reproj = partial(
-            pyproj.transform,
-            pyproj.Proj(init=datasets[0].extent.crs),
-            pyproj.Proj(init="EPSG:4326"),
-        )
-        footprint_geometry = shapely.ops.transform(
-            reproj, shapely.ops.unary_union(dataset_shapes)
-        )
+    dataset_shapes = [shape for dataset, shape in datasets if shape]
+    footprint_geometry = (
+        shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
+    )
 
     return TimePeriodOverview(
         len(datasets),
         # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
-        Counter((d.time.begin.date() for d in datasets)),
+        Counter((dataset.time.begin.date() for dataset, shape in datasets)),
+        datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 100 else None,
         period,
         time,
         footprint_geometry,
-        len(dataset_shapes) if dataset_shapes else 0,
+        len(dataset_shapes),
     )
+
+
+def datasets_to_feature(datasets: Iterable[Tuple[Dataset, BaseGeometry]]):
+    return {
+        "type": "FeatureCollection",
+        "features": [dataset_to_feature(ds) for ds in datasets if ds[1]],
+    }
+
+
+def dataset_to_feature(ds: Tuple[Dataset, BaseGeometry]):
+    dataset, shape = ds
+    return {
+        "type": "Feature",
+        "geometry": shape.__geo_interface__,
+        "properties": {
+            "id": str(dataset.id),
+            "label": utils.dataset_label(dataset),
+            "start_time": dataset.time.begin.isoformat(),
+        },
+    }
 
 
 def generate_summary() -> TimePeriodOverview:
@@ -220,13 +243,14 @@ def read_summary(path: Path) -> TimePeriodOverview:
         if len(shapes) != 1:
             raise ValueError(f"Unexpected number of shapes in coverage? {len(shapes)}")
 
-        footprint = shape(shapes[0]["geometry"])
+        footprint = shapely.geometry.shape(shapes[0]["geometry"])
 
     return TimePeriodOverview(
         timeline["total_count"],
         dataset_counts=Counter(
             {dateutil.parser.parse(d): v for d, v in timeline["series"].items()}
         ),
+        datasets_geojson=timeline.get("datasets_geojson"),
         period=timeline["period"],
         time_range=Range(
             dateutil.parser.parse(timeline["time_range"][0]),
@@ -244,6 +268,7 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
             dict(
                 total_count=summary.dataset_count,
                 footprint_count=summary.footprint_count,
+                datasets_geojson=summary.datasets_geojson,
                 period=summary.period,
                 time_range=[
                     summary.time_range[0].isoformat(),
@@ -259,7 +284,7 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
         if summary.footprint_geometry:
             f.write(
                 {
-                    "geometry": mapping(summary.footprint_geometry),
+                    "geometry": shapely.geometry.mapping(summary.footprint_geometry),
                     "properties": {"id": name},
                 }
             )

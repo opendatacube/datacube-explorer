@@ -144,7 +144,7 @@
                         fillColor: "#8FCAE7",
                         opacity: 0.6,
                         weight: 2,
-                        clickable: false
+                        clickable: true
                     };
                 }
             });
@@ -212,7 +212,17 @@
 
             {% if selected_summary.footprint_count %}
                 msgNoResults.hide();
-                datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
+                {% if selected_summary.datasets_geojson %}
+                    datasets.addData({{ selected_summary.datasets_geojson | tojson }});
+                    datasets.eachLayer(function (layer) {
+                        var prop = layer.feature.properties;
+                        layer.bindPopup(
+                            "<a href=\"/dataset/" + prop.id + "\">" + prop.label + "</a> at " + prop.start_time,
+                            {'maxWidth': 500});
+                    });
+                {% else %}
+                    datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
+                {% endif %}
                 map.fitBounds(datasets.getBounds(), {animate: false});
             {% endif %}
 
