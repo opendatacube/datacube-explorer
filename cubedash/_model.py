@@ -129,7 +129,7 @@ def _calculate_summary(product_name: str, time: Range, period: str) -> Optional[
     return TimePeriodOverview(len(datasets),
                               # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
                               Counter((dataset.time.begin.date() for dataset, shape in datasets)),
-                              datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 100 else None,
+                              datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 250 else None,
                               period,
                               time,
                               footprint_geometry,
