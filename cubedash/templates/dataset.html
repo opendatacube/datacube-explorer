@@ -56,7 +56,7 @@
     <div class="panel odd">
         <h2>Fields</h2>
         {% from "layout/macros.html" import query_param_list %}
-        {{ query_param_list(dataset.metadata.fields) }}
+        {{ query_param_list(dataset.metadata.fields, wide=true, show_dicts=false) }}
     </div>
     <div class="panel">
 

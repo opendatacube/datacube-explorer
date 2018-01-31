@@ -17,6 +17,8 @@ $highlight_alt2: #EEAF30
 $header_highlight: lighten($bold_highlight, 15%)
 $header_highlight_strong: lighten($bold_highlight, 20%)
 
+$muted_text: lighten($bold_highlight, 32%)
+
 @import normalise.css
 
 body
@@ -174,13 +176,16 @@ nav
 .query-param-list
     width: auto
     display: grid
-    grid-template-columns: 1fr 1fr
+    &.wide
+        grid-template-columns: 1fr 1fr
 
 .query-param
-    $param_highlight: lighten($bold_highlight, 20%)
 
     > .key
-        color: lighten($param_highlight, 20%)
+        color: $muted_text
+
+    .value > .query-param
+        margin-left: 15px
 
 .search-param > .key
     display: inline-block
@@ -300,7 +305,7 @@ label
     color: #fff
 
 .muted
-    opacity: 0.5
+    color: $muted_text
 
 .raw-metadata
     overflow-y: scroll
