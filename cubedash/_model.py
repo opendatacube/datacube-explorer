@@ -88,6 +88,7 @@ class TimePeriodOverview(NamedTuple):
             )
             period = "month"
 
+        geometries = [p.footprint_geometry for p in periods if p.footprint_geometry]
         return TimePeriodOverview(
             sum(p.dataset_count for p in periods),
             counter,
@@ -97,9 +98,7 @@ class TimePeriodOverview(NamedTuple):
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods),
             ),
-            shapely.ops.unary_union(
-                [p.footprint_geometry for p in periods if p.footprint_geometry]
-            ),
+            shapely.ops.unary_union(geometries) if geometries else None,
             sum(p.footprint_count for p in periods),
         )
 
