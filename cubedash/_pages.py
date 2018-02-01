@@ -1,6 +1,7 @@
 import itertools
 
 import flask
+from datetime import datetime
 
 import datacube
 from . import _filters, _dataset, _platform, _product, _api, _model
@@ -22,7 +23,7 @@ def about_page():
 
 
 @app.context_processor
-def inject_product_list():
+def inject_globals():
     product_summaries = _model.list_product_summaries()
 
     # Group by product type
@@ -33,7 +34,8 @@ def inject_product_list():
 
     return dict(
         products=product_summaries,
-        grouped_products=grouped_product_summarise
+        grouped_products=grouped_product_summarise,
+        current_time=datetime.utcnow(),
     )
 
 
