@@ -17,6 +17,7 @@
 
 {% endblock %}
 {% block content %}
+    {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
         <h2>{{ dataset | printable_dataset }}</h2>
         <div class="sub-header">
@@ -55,11 +56,10 @@
     </div>
     <div class="panel odd">
         <h2>Fields</h2>
-        {% from "layout/macros.html" import query_param_list %}
         {{ query_param_list(dataset.metadata.fields, wide=true, show_dicts=false) }}
     </div>
     <div class="panel">
-
+        <h2>Locations</h2>
         {% for uri in dataset.uris %}
             <p>
                 <b>Active:</b><br/><span class="file-path">{{ uri }}</span>
@@ -79,20 +79,6 @@
     </div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>
-        <div class="raw-metadata">
-            {%- for key, value in dataset_metadata.items() recursive %}
-                <div class="property">
-                    {% if value is mapping %}
-                        <div class="key">{{ key }}:</div>
-                        <div class="value {% if key == 'source_datasets' %}embedded{% endif %}">
-                            {{ loop(value.items()) }}
-                        </div>
-                    {% else %}
-                        <span class="key">{{ key }}:</span>
-                        <span class="value">{{ value }}</span>
-                    {% endif %}
-                </div>
-            {%- endfor %}
-        </div>
+        {{ show_raw_document(dataset_metadata) }}
     </div>
 {% endblock %}

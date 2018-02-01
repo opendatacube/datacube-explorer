@@ -43,3 +43,36 @@
         {% endfor %}
     </div>
 {%- endmacro %}
+
+
+
+
+{% macro _show_raw_keyval(value) -%}
+    {% if value is string or value is number %}
+        <span class="value">{{ value }}</span>
+    {% elif value is mapping %}
+        {%- for key, val in value.items() %}
+            <div class="property">
+                <span class="key">{{ key }}:</span>
+                {{ _show_raw_keyval(val) }}
+            </div>
+        {%- endfor %}
+    {# A string is an iterable, so we check for it above #}
+    {% elif value is iterable %}
+        <ul>
+            {%- for item in value %}
+                <li>{{ _show_raw_keyval(item) }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <span class="value unknown">{{ value }}</span>
+    {% endif %}
+{%- endmacro %}
+
+
+
+{% macro show_raw_document(doc) -%}
+    <div class="raw-metadata">
+        {{ _show_raw_keyval(doc) }}
+    </div>
+{%- endmacro %}
