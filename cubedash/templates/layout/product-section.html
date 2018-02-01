@@ -40,25 +40,28 @@
                     {{ product_opt.name }}: {{ product_opt.definition.description }} ({{ summary.dataset_count }})
                 </option>
             {% endfor %}
+            {# If they're viewing a product without summaries generated, it wont be in the list above #}
+            {% if not product_summary %}
+                <option value="{{ product.name }}" selected="selected">
+                    {{ product.name }}: {{ product.definition.description }}
+                </option>
+            {% endif %}
         </select>
         <select id='select-year' aria-label="Year" title="Select year">
-            <option value="">All years</option>
-            {% for year_opt in range(
-                    product_summary.time_range.end.year,
-                    product_summary.time_range.begin.year - 1,
-                    -1
-                ) %}
-                <option value="{{ year_opt }}"
-                        {% if (year_opt) == year %}selected='selected'{% endif %}>
-                    {{ year_opt }}
-                </option>
-            {% endfor %}
+                <option value="">All years</option>
+                {% for year_opt in (range(
+                        product_summary.time_range.end.year,
+                        product_summary.time_range.begin.year - 1,
+                        -1
+                    ) if product_summary else range(current_time.year, 1985, -1)) %}
+                    <option value="{{ year_opt }}"
+                            {% if (year_opt) == year %}selected='selected'{% endif %}>{{ year_opt }}</option>
+                {% endfor %}
         </select>
         <select id='select-month' aria-label="Month" title="Select month">
             <option value="">All months</option>
             {% for month_opt in range(1, 13) %}
-                <option value="{{ month_opt }}"
-                        {% if (month_opt) == month %}selected='selected'{% endif %}>
+                <option value="{{ month_opt }}" {% if (month_opt) == month %}selected='selected'{% endif %}>
                     {{ month_opt | month_name }}
                 </option>
             {% endfor %}
@@ -66,8 +69,7 @@
         <select id='select-day' aria-label="Day" title="Select day">
             <option value="">All days</option>
             {% for day_opt in range(1, 31) %}
-                <option value="{{ day_opt }}"
-                        {% if (day_opt) == day %}selected='selected'{% endif %}>
+                <option value="{{ day_opt }}" {% if (day_opt) == day %}selected='selected'{% endif %}>
                     {{ day_opt }}
                 </option>
             {% endfor %}

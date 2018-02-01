@@ -1,4 +1,5 @@
 import itertools
+from datetime import datetime
 
 import flask
 
@@ -20,7 +21,7 @@ def about_page():
 
 
 @app.context_processor
-def inject_product_list():
+def inject_globals():
     product_summaries = _model.list_product_summaries()
 
     # Group by product type
@@ -31,7 +32,11 @@ def inject_product_list():
         )
     )
 
-    return dict(products=product_summaries, grouped_products=grouped_product_summarise)
+    return dict(
+        products=product_summaries,
+        grouped_products=grouped_product_summarise,
+        current_time=datetime.utcnow(),
+    )
 
 
 @app.route("/")

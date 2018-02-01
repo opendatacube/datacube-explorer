@@ -20,7 +20,11 @@
     <div class="panels">
         <div class="map-panel relative">
             <div id="msg-no-results" class="message-box">
-                <span>No displayable datasets for period</span>
+                {% if selected_summary %}
+                    <span>No displayable datasets for period</span>
+                {% else %}
+                    <span>No data: not yet generated</span>
+                {% endif %}
             </div>
             <div id="map"></div>
         </div>
@@ -30,7 +34,7 @@
                 <p>{{ product.definition.description }}</p>
 
                 <a href="{{ url_for('product.search_page', **product_args) }}" class="muted"
-                >{{ selected_summary.dataset_count or '0' }} datasets</a>
+                >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
                 {% if year %}
                     for
                     {% if month %}
