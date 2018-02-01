@@ -88,7 +88,14 @@ class TimePeriodOverview(NamedTuple):
             )
             period = "month"
 
-        geometries = [p.footprint_geometry for p in periods if p.footprint_geometry]
+        with_valid_geometries = [
+            p
+            for p in periods
+            if p.footprint_geometry
+            and p.footprint_geometry.is_valid
+            and not p.footprint_geometry.is_empty
+        ]
+
         return TimePeriodOverview(
             sum(p.dataset_count for p in periods),
             counter,
@@ -98,8 +105,12 @@ class TimePeriodOverview(NamedTuple):
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods),
             ),
-            shapely.ops.unary_union(geometries) if geometries else None,
-            sum(p.footprint_count for p in periods),
+            shapely.ops.unary_union(
+                [p.footprint_geometry for p in with_valid_geometries]
+            )
+            if with_valid_geometries
+            else None,
+            sum(p.footprint_count for p in with_valid_geometries),
         )
 
 
@@ -119,18 +130,23 @@ def _dataset_shape(ds: Dataset):
 def _calculate_summary(
     product_name: str, time: Range, period: str
 ) -> Optional[TimePeriodOverview]:
-    product = index.products.get_by_name(product_name)
+    log = _LOG.bind(product=product_name, time=time, time_period=period)
+    log.debug("summary.calc")
+
     datasets = [
         (dataset, _dataset_shape(dataset))
         for dataset in index.datasets.search(product=product_name, time=time)
     ]
-
-    dataset_shapes = [shape for dataset, shape in datasets if shape]
+    dataset_shapes = [
+        shape
+        for dataset, shape in datasets
+        if shape and shape.is_valid and not shape.is_empty
+    ]
     footprint_geometry = (
         shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
     )
 
-    return TimePeriodOverview(
+    summary = TimePeriodOverview(
         len(datasets),
         # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
         Counter((dataset.time.begin.date() for dataset, shape in datasets)),
@@ -140,6 +156,12 @@ def _calculate_summary(
         footprint_geometry,
         len(dataset_shapes),
     )
+    log.debug(
+        "summary.calc.done",
+        dataset_count=summary.dataset_count,
+        footprints_missing=summary.dataset_count - summary.footprint_count,
+    )
+    return summary
 
 
 def datasets_to_feature(datasets: Iterable[Tuple[Dataset, BaseGeometry]]):
@@ -248,13 +270,17 @@ def read_summary(path: Path) -> TimePeriodOverview:
         timeline["total_count"],
         dataset_counts=Counter(
             {dateutil.parser.parse(d): v for d, v in timeline["series"].items()}
-        ),
+        )
+        if timeline.get("series")
+        else None,
         datasets_geojson=timeline.get("datasets_geojson"),
         period=timeline["period"],
         time_range=Range(
             dateutil.parser.parse(timeline["time_range"][0]),
             dateutil.parser.parse(timeline["time_range"][1]),
-        ),
+        )
+        if timeline.get("time_range")
+        else None,
         footprint_geometry=footprint,
         footprint_count=timeline["footprint_count"],
     )
@@ -275,7 +301,9 @@ def summary_to_file(name: str, path: Path, summary: TimePeriodOverview):
                 ]
                 if summary.time_range
                 else None,
-                series={d.isoformat(): v for d, v in summary.dataset_counts.items()},
+                series={d.isoformat(): v for d, v in summary.dataset_counts.items()}
+                if summary.dataset_counts
+                else None,
             ),
             f,
         )
