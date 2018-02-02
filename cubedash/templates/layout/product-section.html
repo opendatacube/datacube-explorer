@@ -32,8 +32,6 @@
                 id='select-product'
                 title="Select product"
                 aria-label="Select product">
-
-            <option value="">All products</option>
             {% for product_opt, summary in products if summary %}
                 <option value="{{ product_opt.name }}"
                         {% if product_opt.name == product.name %}selected="selected"{% endif %}>
