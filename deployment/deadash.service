@@ -1,6 +1,6 @@
 [Unit]
 Description=Gunicorn service for DEA Dashboard
-After=nginx.service
+Requires=nginx.service
 
 [Service]
 User=deadash
