@@ -11,6 +11,15 @@
         .tree-node {
             margin-left: 30px;
         }
+
+        .dataset-location + .dataset-location {
+            margin-top: 15px;
+        }
+
+        .file-path {
+            font-family: monospace;
+            font-size: 12px;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -39,16 +48,20 @@
     <div class="panel">
         {% for classifier, s_dataset in source_datasets.items() %}
             <div>
-                ⬑ <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}"
-                     title="{{ classifier }}">{{ s_dataset | printable_dataset }}</a>
+                <span title="Source '{{ classifier }}'">
+                    🡑 <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
+                </span>
             </div>
         {% endfor %}
         <div class="tree-node">
             → <strong>{{ dataset | printable_dataset }}</strong>
             {% for d_dataset in derived_datasets %}
                 <div class="tree-node">
-                    ⤷ <a
-                        href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">{{ d_dataset | printable_dataset }}</a>
+                    <span title="Derived {{ d_dataset.type.name }}">
+                        ⤷ <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
+                            {{ d_dataset | printable_dataset }}
+                        </a>
+                    </span>
                 </div>
             {% endfor %}
         </div>
@@ -61,19 +74,20 @@
     <div class="panel">
         <h2>Locations</h2>
         {% for uri in dataset.uris %}
-            <p>
-                <b>Active:</b><br/><span class="file-path">{{ uri }}</span>
-            </p>
+            <div class="dataset-location">
+                <div><strong>Active:</strong></div>
+                <span class="file-path">{{ uri }}</span>
+            </div>
         {% else %}
-            No known locations
+            No known active locations
         {% endfor %}
 
         {% if archive_location_times %}
             {% for uri, archive_time in archive_location_times %}
-                <p>
-                    <b>Archived {{ archive_time | timesince }}:</b><br/>
+                <div class="dataset-location">
+                    <div><strong>Archived {{ archive_time | timesince }}:</strong></div>
                     <span class="file-path archived">{{ uri }}</span>
-                </p>
+                </div>
             {% endfor %}
         {% endif %}
     </div>
