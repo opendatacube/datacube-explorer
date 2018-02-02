@@ -36,20 +36,29 @@ Copy a datacube.conf to `/etc/datacube.conf`
 
 Place dashboard repo in `/var/www/dea-dashboard`
 
+    sudo mkdir /var/www/dea-dashboard
+    sudo chown centos /var/www/dea-dashboard
     git clone -b stable \
-        git@github.com:data-cube/dea-dashboard.git \
+        https://github.com/data-cube/dea-dashboard.git \
         /var/www/dea-dashboard
     
 Install its extra dependencies
 
-    cd /var/www/dea-dashboard    
+    cd /var/www/dea-dashboard
+    
+    # TODO: conda-specific package list?
+    conda install fiona    
     /opt/conda/bin/python ./setup.py develop
 
 ## nginx
 
-    sudo yum install epel-release
-    sudo yum install nginx lynx goaccess
+    yum install epel-release
+    yum install nginx lynx goaccess
     
+Copy config file. 
+
+(you will need to update the hostname in several places. TODO: Improve)
+ 
     # Config file
     cp /var/www/dea-dashboard/deployment/deadash.conf \
         /etc/nginx/conf.d/deadash.conf
@@ -73,9 +82,13 @@ https://certbot.eff.org/#centosrhel7-nginx
 
 Create user and group `deadash` to run the daemon.
 
-    - TODO: add commands here
-
-(and check that they can read  `/etc/datacube.conf` and `/var/www/dea-dashboard`).
+    useradd deadash
+    
+    # No one else needs read access to config
+    chown deadash /etc/datacube.conf
+    chmod 600 /etc/datacube.conf
+    
+(and check that they can read `/var/www/dea-dashboard`).
  
 Add as a systemd service
 
@@ -83,11 +96,27 @@ Add as a systemd service
     chmod 755 /etc/systemd/system/deadash.service  
     systemctl daemon-reload
     
-Start everything
+## Kick-off summary generation
 
-    systemd enable deadash
-    systemd start deadash
+TODO: a service for this
+
+    mkdir /var/www/dea-dashboard/product-summaries
+    chown deadash /var/www/dea-dashboard/product-summaries
+    
+    su - deadash
+    cd /var/www/dea-dashboard
+    nohup /opt/conda/bin/python -m cubedash.generate --all &>> product-summaries/gen.log &
+
+
+## Start everything
+
+    systemctl enable deadash
+    systemctl start  deadash
 
 Status
 
-    systemd status deadash
+    systemctl status deadash
+    
+    # Should have started automatically.
+    systemctl status nginx
+
