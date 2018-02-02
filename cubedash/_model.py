@@ -24,13 +24,8 @@ from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 from . import _utils as utils
 
-# Only do expensive queries "once a day"
-# Enough time to last the remainder of the work day, but not enough to still be there the next morning
 NAME = 'cubedash'
-CACHE_LONG_TIMEOUT_SECS = 60 * 60 * 18
-# TODO: Sensible cache directory handling?
-CACHE_DIR = Path(__file__).parent.parent / 'web-cache'
-
+# Pre-computed summaries of products (to avoid doing them on page load).
 SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
 
 app = flask.Flask(NAME)
