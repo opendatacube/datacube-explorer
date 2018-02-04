@@ -51,7 +51,7 @@
                         product_summary.time_range.end.year,
                         product_summary.time_range.begin.year - 1,
                         -1
-                    ) if product_summary else range(current_time.year, 1985, -1)) %}
+                    ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
                     <option value="{{ year_opt }}"
                             {% if (year_opt) == year %}selected='selected'{% endif %}>{{ year_opt }}</option>
                 {% endfor %}

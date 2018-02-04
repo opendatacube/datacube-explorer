@@ -45,7 +45,7 @@
                     {{ year }}
                 {% endif %}
                 {% if selected_summary.dataset_count != selected_summary.footprint_count %}
-                    ({{ selected_summary.footprint_count }} visible datasets)
+                    ({{ selected_summary.footprint_count or 'No' }} visible datasets)
                 {% endif %}
 
 
