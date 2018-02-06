@@ -105,14 +105,8 @@
     {% from "layout/macros.html" import chart_timeline %}
     <script type="application/javascript">
         (function () {
-            $(window).resize(function () {
-                $(".leaflet-control-layers").css("max-height", $("#map").height() - 50);
-            });
-
             var msgNoResults = $("#msg-no-results");
 
-
-            /* Basemap Layers */
 
             var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
                 maxZoom: 18,
@@ -127,122 +121,13 @@
                 }
             );
 
-            var datasets = null;
-
-            {# Is there anything to show? #}
-            {% if selected_summary.footprint_count %}
-                msgNoResults.hide();
-
-                {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
-                {% if selected_summary.datasets_geojson %}
-
-                    {# Show information for the hovered dataset #}
-                    var datasetInfoControl = L.control();
-                    datasetInfoControl.onAdd = function (map) {
-                        this._div = L.DomUtil.create('div', 'dataset-info');
-                        this.update();
-                        return this._div;
-                    };
-                    datasetInfoControl.update = function (props) {
-                        if (props) {
-                            this._div.innerHTML = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
-                        } else {
-                            this._div.innerHTML = '';
-                        }
-                    };
-
-                    datasets = L.geoJson(null, {
-                        style: function (feature) {
-                            return {
-                                color: "#7AB800",
-                                fill: true,
-                                fillColor: "#9aee00",
-                                opacity: 0.3,
-                                weight: 2,
-                                clickable: true
-                            };
-                        },
-                        onEachFeature: function (feature, layer) {
-                            layer.on({
-                                mouseover: function (e) {
-                                    var layer = e.target;
-
-                                    layer.setStyle({
-                                        color: '#666',
-                                        fillOpacity: 0.6
-                                    });
-
-                                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                                        layer.bringToFront();
-                                    }
-
-                                    datasetInfoControl.update(layer.feature.properties);
-                                }
-                                ,
-                                mouseout: function (e) {
-                                    datasets.resetStyle(e.target);
-                                    datasetInfoControl.update();
-                                },
-                                click: function (e) {
-                                    var props = e.target.feature.properties;
-                                    window.location.href = '/dataset/' + props.id;
-
-                                }
-                            });
-                        }
-                    });
-                    datasets.addData({{ selected_summary.datasets_geojson | tojson }});
-
-                {% else %}
-                    datasets = L.geoJson(null, {
-                        style: function (feature) {
-                            return {
-                                color: "#00A1DE",
-                                fill: true,
-                                fillColor: "#8FCAE7",
-                                opacity: 0.3,
-                                weight: 2,
-                                clickable: false
-                            };
-                        }
-                    });
-
-                    datasets.addData({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }});
-                {% endif %}
-            {% endif %}
-
             var map = L.map("map", {
                 zoom: 3,
                 center: [-26.2756326, 134.9387844],
-                /* Basemap Layers */
-                layers: [osm_carto_light, datasets],
+                layers: [osm_carto_light],
                 zoomControl: false,
                 attributionControl: false
             });
-            datasetInfoControl.addTo(map);
-
-
-            if (datasets) {
-                map.fitBounds(datasets.getBounds(), {animate: false});
-            }
-
-
-            {% if not day %}
-                var timelineControl = L.control({position: "topright"});
-                timelineControl.onAdd = function (map) {
-                    var div = L.DomUtil.create("div", "timeline-control");
-                    div.innerHTML = {{
-                        chart_timeline(
-                            selected_summary.dataset_counts,
-                            product,
-                            period=selected_summary.period
-                        ) | tojson
-                        }};
-                    return div;
-                };
-                map.addControl(timelineControl);
-            {% endif %}
-
             L.control.groupedLayers(
                 {
                     "Topography": osm_carto_light,
@@ -275,7 +160,113 @@
                     collapsed: false
                 }
             ).addTo(map);
+
             L.control.zoom({position: "bottomright"}).addTo(map);
+
+
+            {# Is there anything to show? #}
+            {% if selected_summary.footprint_count %}
+                msgNoResults.hide();
+
+                {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
+                {% if selected_summary.datasets_geojson %}
+                    var dataset_data = L.geoJson({{ selected_summary.datasets_geojson | tojson }},
+                        {
+                            style: function (feature) {
+                                return {
+                                    color: "#7AB800",
+                                    fill: true,
+                                    fillColor: "#9aee00",
+                                    opacity: 0.3,
+                                    weight: 2,
+                                    clickable: true
+                                };
+                            },
+                            onEachFeature: function (feature, layer) {
+                                layer.on({
+                                    mouseover: function (e) {
+                                        var layer = e.target;
+
+                                        layer.setStyle({
+                                            color: '#666',
+                                            fillOpacity: 0.6
+                                        });
+
+                                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                            layer.bringToFront();
+                                        }
+
+                                        datasetInfoControl.update(layer.feature.properties);
+                                    }
+                                    ,
+                                    mouseout: function (e) {
+                                        dataset_data.resetStyle(e.target);
+                                        datasetInfoControl.update();
+                                    },
+                                    click: function (e) {
+                                        var props = e.target.feature.properties;
+                                        window.location.href = '/dataset/' + props.id;
+                                    }
+                                });
+                            }
+                        });
+                    map.addLayer(dataset_data);
+
+                    {# Show information for the hovered dataset #}
+                    var datasetInfoControl = L.control();
+                    datasetInfoControl.onAdd = function (map) {
+                        this._div = L.DomUtil.create('div', 'dataset-info');
+                        this.update();
+                        return this._div;
+                    };
+                    datasetInfoControl.update = function (props) {
+                        if (props) {
+                            this._div.innerHTML = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
+                        } else {
+                            this._div.innerHTML = '';
+                        }
+                    };
+                    map.addControl(datasetInfoControl);
+
+                    map.fitBounds(dataset_data.getBounds(), {animate: false});
+                {% else %}
+                    var composite_data = L.geoJson({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }},
+                        {
+                            style: function (feature) {
+                                return {
+                                    color: "#00A1DE",
+                                    fill: true,
+                                    fillColor: "#8FCAE7",
+                                    opacity: 0.3,
+                                    weight: 2,
+                                    clickable: false
+                                };
+                            }
+                        }
+                    );
+                    map.addLayer(composite_data);
+                    map.fitBounds(composite_data.getBounds(), {animate: false});
+                {% endif %}
+            {% endif %}
+
+
+            {# If they have a timeline, show it. #}
+            {% if selected_summary.dataset_counts %}
+                var timelineControl = L.control({position: "topright"});
+                timelineControl.onAdd = function (map) {
+                    var div = L.DomUtil.create("div", "timeline-control");
+                    div.innerHTML = {{
+                        chart_timeline(
+                            selected_summary.dataset_counts,
+                            product,
+                            period=selected_summary.period
+                        ) | tojson
+                        }};
+                    return div;
+                };
+                map.addControl(timelineControl);
+            {% endif %}
+
 
 
         })();
