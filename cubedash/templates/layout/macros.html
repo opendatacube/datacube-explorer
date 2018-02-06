@@ -27,11 +27,15 @@
     </div>
 {%- endmacro %}
 
-{% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true) -%}
+{% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true, descriptions=None) -%}
     <div class="query-param-list {% if wide %}wide{% endif %}">
         {% for key, value in d | dictsort if (show_dicts or value is not mapping) and (show_nulls or value is not none ) recursive %}
-            <div class="query-param">
-                <span class="key">{{ key }}</span>
+            <div class="query-param" {% if descriptions  and descriptions[key] %}
+                 title="{{ descriptions[key].description}}"
+            {% endif %}>
+                <span class="key">
+                    {{ key }}
+                </span>
                 <span class="value">
                     {% if value is mapping %}
                         {{ loop(value.items()) }}

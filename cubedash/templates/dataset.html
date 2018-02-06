@@ -69,7 +69,13 @@
     </div>
     <div class="panel odd">
         <h2>Fields</h2>
-        {{ query_param_list(dataset.metadata.fields, wide=true, show_dicts=false) }}
+        {{ query_param_list(
+            dataset.metadata.fields,
+            wide=true,
+            show_dicts=false,
+            descriptions=dataset.type.metadata_type.dataset_fields
+            )
+                }}
     </div>
     <div class="panel">
         <h2>Locations</h2>
