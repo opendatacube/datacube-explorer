@@ -6,13 +6,11 @@ Example of running behind nginx on RHEL/CentOS 7.
 ## Conda
 
 Install conda and the latest stable datacube to location `/opt/conda`
-
-Official docs: [docs](http://datacube-core.readthedocs.io/en/stable/ops/conda.html)
-
-But using environments and cloning datacube manually are probbaly overkill.
-
-Possible alternative:
-
+    
+    sudo mkdir -p /opt/conda
+    sudo chown centos:centos /opt/conda
+    
+    cd ~
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
     bash miniconda.sh -f -b -p /opt/conda
     export PATH="/opt/conda/bin:$PATH"
@@ -46,14 +44,22 @@ Install its extra dependencies
 
     cd /var/www/dea-dashboard
     
-    # TODO: conda-specific package list?
-    conda install fiona    
+    # These need to come from conda, not pip.
+    # TODO: conda-specific package list? 
+    conda install fiona shapely
+    # Install all other dependencies
     /opt/conda/bin/python ./setup.py develop
 
 ## nginx
 
+(all remaining steps in the document assume root user)
+
+    sudo su -
+    
+Install nginx and dependencies 
+
     yum install epel-release
-    yum install nginx lynx goaccess
+    yum install nginx lynx cowsay goaccess
     
 Copy config file. 
 
@@ -95,6 +101,15 @@ Add as a systemd service
     cp deployment/deadash.service /etc/systemd/system
     chmod 755 /etc/systemd/system/deadash.service  
     systemctl daemon-reload
+    
+Server friendliness (tweak to personal taste)
+
+    cowsay Dashboard Test Server >> /etc/motd
+    echo >> /etc/motd
+    echo "Cubedash is running as servive 'deadash'" >> /etc/motd
+    echo >> /etc/motd
+    echo "    systemctl status deadash" >> /etc/motd
+    echo >> /etc/motd
     
 ## Kick-off summary generation
 
