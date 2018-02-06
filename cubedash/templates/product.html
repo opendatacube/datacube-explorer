@@ -250,8 +250,7 @@
             {% endif %}
 
 
-            {# If they have a timeline, show it. #}
-            {% if selected_summary.dataset_counts %}
+            {% if selected_summary.dataset_counts | length > 1 %}
                 var timelineControl = L.control({position: "topright"});
                 timelineControl.onAdd = function (map) {
                     var div = L.DomUtil.create("div", "timeline-control");
