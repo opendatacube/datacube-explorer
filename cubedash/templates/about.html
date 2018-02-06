@@ -17,9 +17,7 @@
         }
 
         .group-name {
-            text-transform: uppercase;
-            font-size: 0.86em;
-            color: #636161;
+            text-transform: lowercase;
         }
     </style>
 {% endblock %}
@@ -34,14 +32,14 @@
         </div>
     </div>
     <div class="panel">
-        Products available on this Open Data Cube instance.
+        Products available on this Open Data Cube instance
         {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
     </div>
     {% from "layout/macros.html" import chart_timeline %}
-    <div class="panel">
+    <div class="panel odd">
         {% for group_name, product_summaries in grouped_products.items() %}
             <h2 class="group-name">{{ group_name }}</h2>
-            <div class="panel">
+            <div class="panel odd">
                 {% for product, summary in product_summaries %}
                     <h3>
                         <a href="{{ url_for('product.overview_page', product_name=product.name) }}">
