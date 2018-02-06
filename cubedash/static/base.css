@@ -208,4 +208,6 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .raw-metadata .property .property { padding-left: 15px; }
 .raw-metadata .property > .key { font-weight: bold; }
 
+.dataset-info { background-color: #f0f0f0; padding: 15px; }
+
 /*# sourceMappingURL=base.css.map */
