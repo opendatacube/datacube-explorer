@@ -16,6 +16,11 @@
             line-height: 1.5em;
         }
 
+        .group-name {
+            text-transform: uppercase;
+            font-size: 0.86em;
+            color: #636161;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -28,11 +33,15 @@
             Open Data Cube {{ datacube_version }}
         </div>
     </div>
+    <div class="panel">
+        Products available on this Open Data Cube instance.
+        {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
+    </div>
     {% from "layout/macros.html" import chart_timeline %}
-    <div class="panel odd">
+    <div class="panel">
         {% for group_name, product_summaries in grouped_products.items() %}
-            <h2>{{ group_name }}</h2>
-            <div class="panel odd">
+            <h2 class="group-name">{{ group_name }}</h2>
+            <div class="panel">
                 {% for product, summary in product_summaries %}
                     <h3>
                         <a href="{{ url_for('product.overview_page', product_name=product.name) }}">
@@ -43,7 +52,7 @@
                         {{ product.definition.description }}
                         <strong>({{ summary.dataset_count }} total datasets)</strong>
                     </p>
-                    {{ chart_timeline(summary.dataset_counts, product) }}
+{#                    {{ chart_timeline(summary.dataset_counts, product) }}#}
                 {% endfor %}
             </div>
         {% endfor %}
