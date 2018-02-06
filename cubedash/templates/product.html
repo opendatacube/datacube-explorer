@@ -51,7 +51,7 @@
 
                 <h3>Fields ({{ product.metadata_type.name }})</h3>
 
-                {{ query_param_list(product.fields) }}
+                {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
 
 
                 {# These fields are enforced by dataset-type-schema.yaml #}
