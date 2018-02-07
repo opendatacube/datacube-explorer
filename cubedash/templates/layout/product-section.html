@@ -28,50 +28,106 @@
         </ul>
     </nav>
     <header>
-        <select name="products"
-                id='select-product'
-                title="Select product"
-                aria-label="Select product">
-            {% for product_opt, summary in products if summary %}
-                <option value="{{ product_opt.name }}"
-                        {% if product_opt.name == product.name %}selected="selected"{% endif %}>
-                    {{ product_opt.name }}: {{ product_opt.definition.description }} ({{ summary.dataset_count }})
-                </option>
-            {% endfor %}
-            {# If they're viewing a product without summaries generated, it wont be in the list above #}
-            {% if not product_summary %}
-                <option value="{{ product.name }}" selected="selected">
-                    {{ product.name }}: {{ product.definition.description }}
-                </option>
-            {% endif %}
-        </select>
-        <select id='select-year' aria-label="Year" title="Select year">
-                <option value="">All years</option>
-                {% for year_opt in (range(
+        {# Go to current page with different product/year/month options#}
+        {% set nav_endpoint=request.url_rule.endpoint %}
+
+        <div class="header-option">
+            <div><strong>{{ product.name }}</strong>{{ product.definition.description }}</div>
+            <ul>
+                {% for product_opt, summary in products if summary %}
+                    <li>
+                        {% if product_opt.name == product.name %}
+                            {{ product_opt.name }} 
+{#                            ({{ summary.dataset_count }})#}
+                        {% else %}
+                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
+                            title="{{ product_opt.definition.description }}">
+                            {{ product_opt.name }} 
+{#                            ({{ summary.dataset_count }})#}
+                        </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                {# If they're viewing a product without summaries generated, it wont be in the list above #}
+                {% if not product_summary %}
+                    <option value="{{ product.name }}" selected="selected">
+                        {{ product.name }}
+                    </option>
+                {% endif %}
+            </ul>
+        </div>
+        {% if product %}
+            <div class="header-option">
+                <div>{{ year or 'All years' }}</div>
+                <ul>
+                    <li>
+                        <a href="{{ url_for(nav_endpoint, product_name=product.name) }}">All years</a>
+                    </li>
+                    {% for year_opt in (range(
                         product_summary.time_range.end.year,
                         product_summary.time_range.begin.year - 1,
                         -1
                     ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
-                    <option value="{{ year_opt }}"
-                            {% if (year_opt) == year %}selected='selected'{% endif %}>{{ year_opt }}</option>
-                {% endfor %}
-        </select>
-        <select id='select-month' aria-label="Month" title="Select month">
-            <option value="">All months</option>
-            {% for month_opt in range(1, 13) %}
-                <option value="{{ month_opt }}" {% if (month_opt) == month %}selected='selected'{% endif %}>
-                    {{ month_opt | month_name }}
-                </option>
-            {% endfor %}
-        </select>
-        <select id='select-day' aria-label="Day" title="Select day">
-            <option value="">All days</option>
-            {% for day_opt in range(1, 31) %}
-                <option value="{{ day_opt }}" {% if (day_opt) == day %}selected='selected'{% endif %}>
-                    {{ day_opt }}
-                </option>
-            {% endfor %}
-        </select>
+                        <li class="{% if (year_opt) == year %}selected{% endif %}">
+                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}">
+                                {{ year_opt }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if year %}
+            <div class="header-option">
+                <div>
+                    {% if month %}
+                        {{ month | month_name }}
+                    {% else %}
+                        All months
+                    {% endif %}
+                </div>
+                <ul>
+                    <li>
+                        <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}">All Months</a>
+                    </li>
+                    {% for month_opt in range(1, 13) %}
+                        <li class="{% if (month_opt) == month %}selected{% endif %}">
+                            <a href="{{ url_for(
+                                    request.url_rule.endpoint,
+                                    product_name=product.name,
+                                    year=year,
+                                    month=month_opt
+                                    ) }}">
+                                {{ month_opt | month_name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if month %}
+            <div class="header-option">
+                <div>{{ day or 'All days' }}</div>
+                <ul id='select-day' aria-label="Day">
+                    <li><a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}">All
+                        Days</a></li>
+                    {% for day_opt in range(1, 31) %}
+                        <li class="{% if (day_opt) == day %}selected{% endif %}">
+                            <a href="{{ url_for(
+                                    request.url_rule.endpoint,
+                                    product_name=product.name,
+                                    year=year,
+                                    month=month,
+                                    day=day_opt
+                                    ) }}">
+                                {{ day_opt }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
     </header>
 {% endblock %}
 

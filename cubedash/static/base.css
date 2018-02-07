@@ -8,11 +8,18 @@ h2 { color: #212121; }
 .panel.odd > h2 { color: #2192bd; }
 
 header { background-color: #474747; color: #efefef; padding: 15px 30px; display: flex; }
-header #select-product { flex: 1 1; }
-header > select { margin-right: 5px; padding: 5px; }
-header > select:last-child { margin-right: 0; }
 
-#logo { padding: 15px 30px 15px 30px; display: inline-block; vertical-align: bottom; }
+.header-option { position: relative; margin-right: 5px; border-left: 1px #ccc dotted; vertical-align: bottom; }
+.header-option li.selected a { color: #EEAF30; }
+.header-option > div { padding: 0 15px; line-height: 2em; }
+.header-option > div strong { display: block; }
+.header-option ul { display: none; margin: 0; padding: 0; list-style: none; }
+.header-option li { margin: 0; background-color: #545454; }
+.header-option li:hover { background-color: #474747; }
+.header-option a { display: block; text-decoration: none; padding: 0 15px; line-height: 30px; color: #fff; }
+.header-option:hover ul { z-index: 10000; display: block; position: absolute; top: 100%; left: 0; }
+
+#logo { padding: 30px; display: inline-block; vertical-align: bottom; }
 
 nav { display: inline-block; vertical-align: bottom; }
 nav ul { margin: 0; padding: 0; list-style-type: none; text-align: right; vertical-align: bottom; }
