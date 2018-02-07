@@ -50,17 +50,61 @@ header
 
     display: flex
 
-    #select-product
-        flex: 1 1
-    > select
-        margin-right: 5px
-        padding: 5px
-        &:last-child
-            margin-right: 0
+.header-option
+    position: relative
+    margin-right: 5px 
+    
+    border-left: 1px #ccc dotted
+    
+    vertical-align: bottom
+        
+    li.selected a
+        color: $highlight_alt2
+
+    > div
+        padding: 0 15px
+        line-height: 2em
+            
+        strong
+            display: block
+        
+        //&::before
+        //    content: '◆'
+        //    color: $highlight_alt2
+        
+        //font-weight: bold            
+        //background-color: #E1E1E0
+    ul
+        display: none
+        margin: 0
+        padding: 0
+        
+        list-style: none
+    li
+        margin: 0
+        background-color: $header_highlight_strong
+        &:hover
+            background-color: $header_highlight
+            
+    a
+        display: block
+        text-decoration: none
+        padding: 0 15px
+        line-height: 30px
+        color: #fff
+    
+    &:hover ul
+        // Above maps etc
+        z-index: 10000
+        display: block
+        position: absolute
+        top: 100%
+        left: 0
 
 #logo
-    padding: 15px 30px 15px 30px
+    padding: 30px
     display: inline-block
+    //width: 300px
     vertical-align: bottom
 
 nav
@@ -263,7 +307,6 @@ label
     [data-row-span].disabled
         display: none
 
-
 .map-panel
     width: 100%
 
@@ -322,8 +365,6 @@ label
 
         & > .key
             font-weight: bold
-
-
 
 .dataset-info
     background-color: $panel2_color
