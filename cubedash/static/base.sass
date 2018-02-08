@@ -6,7 +6,8 @@ $panel_color: lighten($bold_highlight, 85%)
 $panel2_color: lighten($content_background, 6%)
 
 // The four colors in the dea style guide. Use sparingly (highlights).
-$emphasis_strong: #00A1DE
+
+$emphasis_strong: darken(#00A1DE, 5%)
 $emphasis_weak: desaturate($emphasis_strong, 30%)
 // darken($emphasis_strong, 10%)
 $emphasis_light: #8FCAE7
@@ -28,13 +29,72 @@ body
     min-height: calc(100vh - 50px)
     color: $bold_highlight
     font-size: 0.86em
-    margin: 30px auto
+    margin: 0 auto 15px
     padding: 0 20px
     max-width: 1024px
 
+#logo
+    padding: 15px 25px 100px 20px
+    //background-color: #000
+    position: absolute
+    top: 15px
+    right: 0
+    
+    img
+        height: 75px
+    
 .content-wrapper
+    //background: linear-gradient(to left, $emphasis_strong, $emphasis_light 400px,)
     position: relative
-    padding: 60px 0 15px
+    padding: 60px 0 30px
+    
+    
+
+#content
+    clear: right
+    position: relative
+    width: auto
+    
+    background-color: $content_background
+    //border-top: 2px #fff solid 
+    box-shadow: 0 -2px 0 0 #fff
+
+
+.map-panel
+    width: 100%
+
+// Spatial page
+#map
+    flex: 1 1
+    height: calc(100vh - 100px)
+    border-top: 7px #2DACE1 solid
+    //border-right: 2px #fff solid
+    //box-shadow: 0 0 0 3px #fff
+
+    .summary-control
+        background: rgba($header_highlight_strong, 0.9)
+        color: #fff
+        padding: 15px 15px
+
+        a
+            color: #fff0f0
+
+// show two columns on wide displays
+@media (min-width: 800px)
+    .panels
+        display: flex
+
+    .info-panel
+        width: 250px
+        border-top: 7px #7FD0EB solid
+
+.info-panel
+    ul
+        list-style-type: none
+        padding: 0
+
+
+
 
 a
     color: #2b2b2b
@@ -55,11 +115,17 @@ header
     flex-direction: row
 
 .header-option
-    background-color: $header_highlight
+    background-color: $header_highlight_strong
     position: relative
     border-collapse: collapse
+    max-width: 50%
+    
+    $active_color: $emphasis_strong
 
     vertical-align: bottom
+    &.primary
+        background-color: $header_highlight
+    
 
     li.selected a
         color: $highlight_alt2
@@ -82,9 +148,9 @@ header
     li
         margin: 0
         
-        background-color: $header_highlight_strong
+        background-color: $active_color
         &:hover
-            background-color: lighten($header_highlight_strong, 5%)
+            background-color: lighten($active_color, 5%)
 
     a
         display: block
@@ -93,7 +159,7 @@ header
         color: #fff
 
     &:hover 
-        background-color: $header_highlight_strong
+        background-color: $active_color
         
         ul
             // Above maps etc
@@ -106,15 +172,6 @@ header
             top: 100%
             left: 0
 
-#logo
-    padding: 0 15px
-    position: absolute
-    top: 0
-    right: 20px
-    
-    img
-        height: 75px
-    
 .header-wrapper
     &::after
         clear: left
@@ -151,12 +208,6 @@ nav
 
         &.active a
             background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
-
-#content
-    clear: right
-    position: relative
-    width: auto
-    background-color: $content_background
 
 .panel
     padding: 30px
@@ -321,35 +372,6 @@ label
 
     [data-row-span].disabled
         display: none
-
-.map-panel
-    width: 100%
-
-// Spatial page
-#map
-    flex: 1 1
-    height: calc(100vh - 100px)
-
-    .summary-control
-        background: rgba($header_highlight_strong, 0.9)
-        color: #fff
-        padding: 15px 15px
-
-        a
-            color: #fff0f0
-
-// show two columns on wide displays
-@media (min-width: 800px)
-    .panels
-        display: flex
-
-    .info-panel
-        width: 250px
-
-.info-panel
-    ul
-        list-style-type: none
-        padding: 0
 
 .message-box
     position: absolute
