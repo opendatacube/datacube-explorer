@@ -28,11 +28,12 @@
         </ul>
     </nav>
     <header>
+
         {# Go to current page with different product/year/month options#}
         {% set nav_endpoint=request.url_rule.endpoint %}
 
-        <div class="header-option">
-            <div><strong>{{ product.definition.description }}</strong></div>
+        <div class="header-option primary">
+            <div>{{ product.definition.description }}</div>
             <ul>
                 {% for product_opt, summary in products if summary %}
                     {% if product_opt.name != product.name %}
@@ -113,7 +114,13 @@
 
         {% if month %}
             <div class="header-option">
-                <div>{{ day or 'All days' }}</div>
+                <div>
+                    {% if day %}
+                        {{ day | day_ordinal }}
+                    {% else %}
+                        All days
+                    {% endif %}
+                </div>
                 <ul id='select-day' aria-label="Day">
                     <li>
                         <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}">
@@ -130,7 +137,7 @@
                                         month=month,
                                         day=day_opt
                                         ) }}">
-                                    {{ day_opt }}
+                                    {{ day_opt | day_ordinal }}
                                 </a>
                             </li>
                         {% endif %}

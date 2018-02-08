@@ -4,6 +4,7 @@ Common global filters for templates.
 
 from __future__ import absolute_import, division
 
+import calendar
 import logging
 from datetime import datetime
 
@@ -59,8 +60,24 @@ def _format_query_value(val):
 
 @bp.app_template_filter("month_name")
 def _format_month_name(val):
-    ds = datetime(2016, int(val), 2)
-    return ds.strftime("%b")
+    return calendar.month_name[val]
+
+
+@bp.app_template_filter("month_name")
+def _format_month_name(val):
+    return calendar.month_name[val]
+
+
+@bp.app_template_filter("day_ordinal")
+def _format_ordinal(val):
+    return f"{val}{_get_ordinal_suffix(val)}"
+
+
+def _get_ordinal_suffix(day):
+    if 4 <= day <= 20 or 24 <= day <= 30:
+        return "th"
+    else:
+        return ["st", "nd", "rd"][day % 10 - 1]
 
 
 @bp.app_template_filter("max")
