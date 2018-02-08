@@ -69,8 +69,8 @@ header
         line-height: 2em
         flex: 1 1
         
-        strong
-            display: block
+        &::after
+            content: ' ▾' 
 
     ul
         display: none
@@ -327,7 +327,7 @@ label
 
 // Spatial page
 #map
-    width: 100%
+    flex: 1 1
     height: calc(100vh - 100px)
 
     .summary-control
@@ -344,7 +344,7 @@ label
         display: flex
 
     .info-panel
-        width: 25%
+        width: 250px
 
 .info-panel
     ul
