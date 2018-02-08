@@ -32,7 +32,7 @@
         {% set nav_endpoint=request.url_rule.endpoint %}
 
         <div class="header-option">
-            <div><strong>{{ product.name }}</strong></div>
+            <div><strong>{{ product.definition.description }}</strong></div>
             <ul>
                 {% for product_opt, summary in products if summary %}
                     {% if product_opt.name != product.name %}
@@ -42,7 +42,6 @@
                                 {{ product_opt.name }}
                                 {#                            ({{ summary.dataset_count }})#}
                             </a>
-
                         </li>
                     {% endif %}
                 {% endfor %}

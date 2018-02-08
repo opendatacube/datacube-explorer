@@ -13,16 +13,16 @@
 
 </head>
 <body>
+
 <div class="content-wrapper">
+    <div id="logo">
+        <a href="/">
+            <img src="{{ url_for('static', filename='dea-logo-inline-reversed.png') }}"
+                 alt="Digital Earth Australia"/>
+        </a>
+    </div>
     <div class="header-wrapper">
-        <div id="logo">
-            <a href="/">
-                <img src="{{ url_for('static', filename='dea-logo-inline-reversed.png') }}"
-                     alt="Digital Earth Australia"/>
-            </a>
-        </div>
         {% block header %}{% endblock %}
-    <div style="clear:left;"></div>
     </div>
     <div id="content">{% block content %}{% endblock %}</div>
 

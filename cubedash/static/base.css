@@ -1,8 +1,8 @@
 @charset "UTF-8";
 @import url(normalise.css);
-body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 30px auto; padding: 52px 20px; max-width: 1024px; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 30px auto; padding: 0 20px; max-width: 1024px; }
 
-.content-wrapper { position: relative; }
+.content-wrapper { position: relative; padding: 60px 0 15px; }
 
 a { color: #2b2b2b; }
 
@@ -23,8 +23,8 @@ header { color: #efefef; padding: 0; width: fit-content; display: flex; flex-dir
 .header-option:hover { background-color: #545454; }
 .header-option:hover ul { z-index: 10000; display: grid; grid-template-columns: 1fr 1fr 1fr; position: absolute; top: 100%; left: 0; }
 
-#logo { padding: 0 15px; position: absolute; top: -64px; right: 31px; }
-#logo img { height: 100px; }
+#logo { padding: 0 15px; position: absolute; top: 0; right: 20px; }
+#logo img { height: 75px; }
 
 .header-wrapper::after { clear: left; }
 
