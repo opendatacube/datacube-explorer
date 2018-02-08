@@ -1,5 +1,5 @@
 @import url(normalise.css);
-body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 30px auto; padding: 30px 20px; max-width: 1024px; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 30px auto; padding: 52px 20px; max-width: 1024px; }
 
 .content-wrapper { position: relative; }
 
@@ -22,8 +22,8 @@ header { color: #efefef; padding: 0; width: fit-content; display: flex; flex-dir
 .header-option:hover { background-color: #545454; }
 .header-option:hover ul { z-index: 10000; display: grid; grid-template-columns: 1fr 1fr 1fr; position: absolute; top: 100%; left: 0; }
 
-#logo { padding: 0 15px; position: absolute; top: -40px; right: 15px; }
-#logo img { height: 80px; }
+#logo { padding: 0 15px; position: absolute; top: -64px; right: 31px; }
+#logo img { height: 100px; }
 
 .header-wrapper::after { clear: left; }
 
@@ -81,6 +81,8 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .form-footer { margin: 1em 0; }
 .form-footer > label { padding: 8px; display: block; }
 .form-footer select { padding: 6px; }
+
+.chart-timeline { padding: 15px; }
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
@@ -221,6 +223,6 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .raw-metadata .property .property { padding-left: 15px; }
 .raw-metadata .property > .key { font-weight: bold; }
 
-.dataset-info { background-color: #f0f0f0; padding: 15px; }
+.dataset-info { background-color: #f0f0f0; margin: 10px; padding: 15px; }
 
 /*# sourceMappingURL=base.css.map */
