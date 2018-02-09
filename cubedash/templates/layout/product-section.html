@@ -42,31 +42,31 @@
                     <strong>{{ product.name }}</strong>
                 {% endif %}
             </div>
-
-            <ul>
-                {% for product_opt, summary in products if summary %}
-                    {% if product_opt.name != product.name %}
-                        <li>
-                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
-                               title="{{ product_opt.definition.description }}">
-                                {{ product_opt.name }}
-                                {#                            ({{ summary.dataset_count }})#}
-                            </a>
-                        </li>
-                    {% endif %}
+            <ul class="groups">
+                {% for group_name, product_summaries in grouped_products %}
+                    <li>
+                        <h2 class="group-name">{{ group_name }}</h2>
+                        <ul class="items">
+                            {% for product_opt, summary in product_summaries if summary %}
+                                {% if product_opt.name != product.name %}
+                                    <li>
+                                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
+                                           title="{{ product_opt.definition.description }}">
+                                            {{ product_opt.name }}
+                                            {#                            ({{ summary.dataset_count }})#}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
                 {% endfor %}
-                {# If they're viewing a product without summaries generated, it wont be in the list above #}
-                {% if not product_summary %}
-                    <option value="{{ product.name }}" selected="selected">
-                        {{ product.name }}
-                    </option>
-                {% endif %}
             </ul>
         </div>
         {% if product %}
             <div class="header-option">
                 <div>{{ year or 'All years' }}</div>
-                <ul>
+                <ul class="items">
                     {% if year %}
                         <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name) }}">All</a>
@@ -97,7 +97,7 @@
                         All months
                     {% endif %}
                 </div>
-                <ul>
+                <ul class="items">
                     {% if month %}
                         <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}">All</a>
@@ -130,7 +130,7 @@
                         All days
                     {% endif %}
                 </div>
-                <ul id='select-day' aria-label="Day">
+                <ul class="items">
                     <li class="wildcard">
                         <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}">
                             All
