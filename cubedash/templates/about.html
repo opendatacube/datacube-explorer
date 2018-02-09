@@ -37,7 +37,7 @@
     </div>
     {% from "layout/macros.html" import chart_timeline %}
     <div class="panel odd">
-        {% for group_name, product_summaries in grouped_products.items() %}
+        {% for group_name, product_summaries in grouped_products %}
             <h2 class="group-name">{{ group_name }}</h2>
             <div class="panel odd">
                 {% for product, summary in product_summaries %}

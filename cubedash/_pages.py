@@ -25,11 +25,19 @@ def inject_globals():
     product_summaries = _model.list_product_summaries()
 
     # Group by product type
-    grouped_product_summarise = dict(
-        (name or "", list(items))
-        for (name, items) in itertools.groupby(
-            product_summaries, key=lambda t: t[0].fields.get("product_type")
-        )
+    def key(t):
+        return t[0].fields.get("product_type")
+
+    grouped_product_summarise = sorted(
+        (
+            (name or "", list(items))
+            for (name, items) in itertools.groupby(
+                sorted(product_summaries, key=key), key=key
+            )
+        ),
+        # Show largest groups first
+        key=lambda k: len(k[1]),
+        reverse=True,
     )
 
     return dict(

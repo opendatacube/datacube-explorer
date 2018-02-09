@@ -93,9 +93,6 @@ body
         list-style-type: none
         padding: 0
 
-
-
-
 a
     color: #2b2b2b
 
@@ -136,24 +133,49 @@ header
         flex: 1 1
         
         &::after
-            content: ' ▾' 
-
-    ul
+            content: ' ▾'
+    h2
+        margin: 0
+        padding: 15px 30px 0
+        font-size: 0.8em
+        color: darken($active_color, 15%)
+        text-transform: lowercase
+        
+    > ul
         display: none
+        
+    &:hover 
+        background-color: $active_color
+        
+        > ul
+            display: grid
+            position: absolute
+            top: 100%
+            left: 0
+            
+            // Above maps etc
+            z-index: 10000
+            
+            grid-template-columns: 1fr 1fr 1fr
+            
+        
+    ul
         margin: 0
         padding: 0
-
         list-style: none
-    li
-        margin: 0
         
-        background-color: $active_color
-        &:hover
-            background-color: lighten($active_color, 5%)
-            color: #fff
+        li
+            margin: 0
+            background-color: $active_color
+            
+            
+            &.wildcard
+                font-weight: bold
+                
+    ul.items li:hover
+        background-color: lighten($active_color, 5%)
+        color: #fff
         
-        &.wildcard
-            font-weight: bold
     a
         display: block
         text-decoration: none
@@ -161,19 +183,6 @@ header
         color: #fcfcfc
         font-weight: bold
 
-    &:hover 
-        background-color: $active_color
-        
-        ul
-            // Above maps etc
-            z-index: 10000
-            display: grid
-            
-            grid-template-columns: 1fr 1fr 1fr
-            
-            position: absolute
-            top: 100%
-            left: 0
 
 .header-wrapper
     &::after
