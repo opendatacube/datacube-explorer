@@ -63,11 +63,6 @@ def _format_month_name(val):
     return calendar.month_name[val]
 
 
-@bp.app_template_filter("month_name")
-def _format_month_name(val):
-    return calendar.month_name[val]
-
-
 @bp.app_template_filter("day_ordinal")
 def _format_ordinal(val):
     return f"{val}{_get_ordinal_suffix(val)}"
