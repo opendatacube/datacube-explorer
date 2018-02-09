@@ -33,7 +33,16 @@
         {% set nav_endpoint=request.url_rule.endpoint %}
 
         <div class="header-option primary">
-            <div>{{ product.definition.description }}</div>
+
+            <div>
+                {% if product.definition.description %}
+                    <strong>{{ product.name }}:</strong>
+                    {{ product.definition.description or product.name }}
+                {% else %}
+                    <strong>{{ product.name }}</strong>
+                {% endif %}
+            </div>
+
             <ul>
                 {% for product_opt, summary in products if summary %}
                     {% if product_opt.name != product.name %}
