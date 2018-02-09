@@ -34,8 +34,9 @@ header { color: #efefef; padding: 0; width: fit-content; display: flex; flex-dir
 .header-option > div::after { content: " ▾"; }
 .header-option ul { display: none; margin: 0; padding: 0; list-style: none; }
 .header-option li { margin: 0; background-color: #008fc5; }
-.header-option li:hover { background-color: #00a1de; }
-.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fff; }
+.header-option li:hover { background-color: #00a1de; color: #fff; }
+.header-option li.wildcard { font-weight: bold; }
+.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; }
 .header-option:hover { background-color: #008fc5; }
 .header-option:hover ul { z-index: 10000; display: grid; grid-template-columns: 1fr 1fr 1fr; position: absolute; top: 100%; left: 0; }
 

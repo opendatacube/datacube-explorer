@@ -125,8 +125,7 @@ header
     vertical-align: bottom
     &.primary
         background-color: $header_highlight
-    
-
+        
     li.selected a
         color: $highlight_alt2
     
@@ -151,12 +150,15 @@ header
         background-color: $active_color
         &:hover
             background-color: lighten($active_color, 5%)
-
+            color: #fff
+        
+        &.wildcard
+            font-weight: bold
     a
         display: block
         text-decoration: none
         padding: 15px 30px
-        color: #fff
+        color: #fcfcfc
 
     &:hover 
         background-color: $active_color

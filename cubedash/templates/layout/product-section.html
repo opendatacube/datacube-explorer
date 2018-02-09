@@ -59,7 +59,7 @@
                 <div>{{ year or 'All years' }}</div>
                 <ul>
                     {% if year %}
-                        <li>
+                        <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name) }}">All</a>
                         </li>
                     {% endif %}
@@ -90,7 +90,7 @@
                 </div>
                 <ul>
                     {% if month %}
-                        <li>
+                        <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}">All</a>
                         </li>
                     {% endif %}
@@ -122,7 +122,7 @@
                     {% endif %}
                 </div>
                 <ul id='select-day' aria-label="Day">
-                    <li>
+                    <li class="wildcard">
                         <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}">
                             All
                         </a>
