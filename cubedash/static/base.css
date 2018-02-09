@@ -3,6 +3,7 @@
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto 15px; padding: 0 20px; max-width: 1024px; }
 
 #logo { padding: 0 25px 100px 20px; position: absolute; top: 15px; right: 0; }
+#logo a { text-decoration: none; color: #fff; font-weight: bold; }
 #logo img { height: 75px; }
 
 .content-wrapper { position: relative; padding: 60px 0 30px; }
