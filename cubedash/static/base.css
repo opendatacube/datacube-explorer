@@ -30,13 +30,13 @@ header { color: #efefef; padding: 0; width: fit-content; display: flex; flex-dir
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 50%; vertical-align: bottom; }
 .header-option.primary { background-color: #474747; }
 .header-option li.selected a { color: #EEAF30; }
-.header-option > div { padding: 0 30px; margin: 15px 0; line-height: 2em; flex: 1 1; }
+.header-option > div { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; }
 .header-option > div::after { content: " ▾"; }
 .header-option ul { display: none; margin: 0; padding: 0; list-style: none; }
 .header-option li { margin: 0; background-color: #008fc5; }
 .header-option li:hover { background-color: #00a1de; color: #fff; }
 .header-option li.wildcard { font-weight: bold; }
-.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; }
+.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; font-weight: bold; }
 .header-option:hover { background-color: #008fc5; }
 .header-option:hover ul { z-index: 10000; display: grid; grid-template-columns: 1fr 1fr 1fr; position: absolute; top: 100%; left: 0; }
 
@@ -216,7 +216,7 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="12"] > [data-field-span="12"] { width: 100%; }
 .grid-form [data-row-span].disabled { display: none; }
 
-.message-box { position: absolute; left: calc(50% - 100px); top: 90px; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
+.message-box { position: absolute; left: calc(50% - 100px); top: 25%; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
 
 .muted { color: #737373; }
 
