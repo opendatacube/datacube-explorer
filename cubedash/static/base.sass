@@ -9,7 +9,7 @@ $panel2_color: lighten($content_background, 6%)
 
 $emphasis_strong: darken(#00A1DE, 5%)
 $emphasis_weak: desaturate($emphasis_strong, 30%)
-// darken($emphasis_strong, 10%)
+
 $emphasis_light: #8FCAE7
 
 $highlight_alt: #7AB800
@@ -35,35 +35,27 @@ body
 
 #logo
     padding: 0 25px 100px 20px
-    //background-color: #000
     position: absolute
     top: 15px
     right: 0
-    
+
     a
         text-decoration: none
         color: #fff
         font-weight: bold
 
-    img
-        height: 75px
-    
+
 .content-wrapper
-    //background: linear-gradient(to left, $emphasis_strong, $emphasis_light 400px,)
     position: relative
     padding: 60px 0 30px
-    
-    
 
 #content
     clear: right
     position: relative
     width: auto
-    
-    background-color: $content_background
-    //border-top: 2px #fff solid 
-    box-shadow: 0 -2px 0 0 #fff
 
+    background-color: $content_background
+    box-shadow: 0 -2px 0 0 #fff
 
 .map-panel
     width: 100%
@@ -73,8 +65,6 @@ body
     flex: 1 1
     height: calc(100vh - 100px)
     border-top: 7px #2DACE1 solid
-    //border-right: 2px #fff solid
-    //box-shadow: 0 0 0 3px #fff
 
     .summary-control
         background: rgba($header_highlight_strong, 0.9)
@@ -121,73 +111,73 @@ header
     position: relative
     border-collapse: collapse
     max-width: 50%
-    
-    $active_color: $emphasis_strong
 
+    $active_color: darken($emphasis_strong, 5%)
+    $item_padding: 15px 30px
+    
     vertical-align: bottom
     &.primary
         background-color: $header_highlight
-        
+
     li.selected a
         color: $highlight_alt2
-    
+
     > div
-        padding: 15px 30px
+        padding: $item_padding
         margin: 0
         line-height: 1.75em
         flex: 1 1
-        
+
         &::after
             content: ' ▾'
     h2
         margin: 0
-        padding: 15px 30px 0
+        padding: $item_padding
         font-size: 0.8em
-        color: darken($active_color, 15%)
+        color: $bold_highlight
         text-transform: lowercase
-        
+        font-variant: small-caps
+
     > ul
         display: none
-        
-    &:hover 
+
+    &:hover
         background-color: $active_color
-        
+
         > ul
             display: grid
             position: absolute
-            top: 100%
+            top: calc(100% - 2px)
             left: 0
-            
+
             // Above maps etc
             z-index: 10000
-            
+
             grid-template-columns: 1fr 1fr 1fr
-            
-        
+    > ul
+        background-color: $active_color
+
     ul
         margin: 0
         padding: 0
         list-style: none
-        
+
         li
             margin: 0
-            background-color: $active_color
-            
-            
+
             &.wildcard
                 font-weight: bold
-                
+
     ul.items li:hover
         background-color: lighten($active_color, 5%)
         color: #fff
-        
+
     a
         display: block
         text-decoration: none
-        padding: 15px 30px
+        padding: $item_padding
         color: #fcfcfc
         font-weight: bold
-
 
 .header-wrapper
     &::after
@@ -346,6 +336,7 @@ label
 
 .chart-timeline
     padding: 15px
+
 .chart-timeline-bars
     font-size: 0
     height: 50px
