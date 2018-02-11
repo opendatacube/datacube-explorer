@@ -4,7 +4,6 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 
 #logo { padding: 0 25px 100px 20px; position: absolute; top: 15px; right: 0; }
 #logo a { text-decoration: none; color: #fff; font-weight: bold; }
-#logo img { height: 75px; }
 
 .content-wrapper { position: relative; padding: 60px 0 30px; }
 
@@ -33,14 +32,15 @@ header { color: #efefef; padding: 0; width: fit-content; display: flex; flex-dir
 .header-option li.selected a { color: #EEAF30; }
 .header-option > div { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; }
 .header-option > div::after { content: " ▾"; }
-.header-option h2 { margin: 0; padding: 15px 30px 0; font-size: 0.8em; color: #005778; text-transform: lowercase; }
+.header-option h2 { margin: 0; padding: 15px 30px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
 .header-option > ul { display: none; }
-.header-option:hover { background-color: #008fc5; }
-.header-option:hover > ul { display: grid; position: absolute; top: 100%; left: 0; z-index: 10000; grid-template-columns: 1fr 1fr 1fr; }
+.header-option:hover { background-color: #007cab; }
+.header-option:hover > ul { display: grid; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; grid-template-columns: 1fr 1fr 1fr; }
+.header-option > ul { background-color: #007cab; }
 .header-option ul { margin: 0; padding: 0; list-style: none; }
-.header-option ul li { margin: 0; background-color: #008fc5; }
+.header-option ul li { margin: 0; }
 .header-option ul li.wildcard { font-weight: bold; }
-.header-option ul.items li:hover { background-color: #00a1de; color: #fff; }
+.header-option ul.items li:hover { background-color: #008fc5; color: #fff; }
 .header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; font-weight: bold; }
 
 .header-wrapper::after { clear: left; }
