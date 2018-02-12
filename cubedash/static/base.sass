@@ -25,6 +25,15 @@ $header_stripe2: #7fd0eb
 
 @import normalise.css
 
+\:root
+    --padd-s: 10px
+    --padd: 20px
+
+@media (min-width: 800px)
+    \:root
+        --padd-s: 15px
+        --padd: 30px
+
 body
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
     background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)
@@ -33,11 +42,11 @@ body
     color: $bold_highlight
     font-size: 0.86em
     margin: 0 auto 15px
-    padding: 0 20px
+    padding: 0 var(--padd-s)
     max-width: 1024px
 
 #logo
-    padding: 0 25px 100px 30px
+    padding-right: 25px
     position: absolute
     top: 15px
     right: 0
@@ -45,7 +54,6 @@ body
     a
         text-decoration: none
         color: #fff
-
 
 .content-wrapper
     position: relative
@@ -114,8 +122,8 @@ header
     max-width: 60%
 
     $active_color: darken($emphasis_strong, 5%)
-    $item_padding: 15px 30px
-    
+    $item_padding: var(--padd-s) var(--padd)
+
     vertical-align: bottom
     &.primary
         background-color: $header_highlight
@@ -179,7 +187,7 @@ header
         padding: $item_padding
         color: #fcfcfc
         font-weight: bold
-        
+
         &.active
             background-color: lighten($active_color, 5%)
 
@@ -221,7 +229,7 @@ nav
             background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
 
 .panel
-    padding: 30px
+    padding: var(--padd)
     line-height: 1.5em
     background: $panel_color
     border-bottom: 1px solid #b9b9b9
@@ -295,9 +303,11 @@ nav
 .query-param-list
     width: auto
     display: grid
-    &.wide
-        grid-template-columns: 1fr 1fr
 
+@media (min-width: 800px)
+    .query-param-list.wide
+        grid-template-columns: 1fr 1fr
+        
 .query-param
 
     > .key
