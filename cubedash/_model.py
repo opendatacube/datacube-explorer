@@ -9,6 +9,7 @@ from typing import Dict, Iterable, NamedTuple, Optional, Tuple
 import dateutil.parser
 import fiona
 import flask
+import pytz
 import shapely
 import shapely.geometry
 import shapely.ops
@@ -31,6 +32,10 @@ SUMMARIES_DIR = Path(__file__).parent.parent / "product-summaries"
 
 app = flask.Flask(NAME)
 cache = Cache(app=app, config={"CACHE_TYPE": "simple"})
+
+# Group datasets using this timezone when counting them.
+# Aus data comes from Alice Springs
+_GROUPING_TIME_ZONE = pytz.timezone("Australia/Darwin")
 
 
 def as_json(o):
@@ -122,10 +127,8 @@ def _dataset_shape(ds: Dataset):
     return shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
 
 
-def _calculate_summary(
-    product_name: str, time: Range, period: str
-) -> Optional[TimePeriodOverview]:
-    log = _LOG.bind(product=product_name, time=time, time_period=period)
+def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOverview]:
+    log = _LOG.bind(product=product_name, time=time)
     log.debug("summary.calc")
 
     datasets = [
@@ -143,10 +146,14 @@ def _calculate_summary(
 
     summary = TimePeriodOverview(
         len(datasets),
-        # TODO: AEST days rather than UTC is probably more useful for grouping AUS data.
-        Counter((dataset.time.begin.date() for dataset, shape in datasets)),
+        Counter(
+            (
+                _GROUPING_TIME_ZONE.fromutc(dataset.time.begin).date()
+                for dataset, shape in datasets
+            )
+        ),
         datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 250 else None,
-        period,
+        "day",
         time,
         footprint_geometry,
         len(dataset_shapes),
@@ -234,7 +241,7 @@ def _write_year_summary(
 def _write_month_summary(
     product: DatasetType, year: int, month: int, path: Path
 ) -> TimePeriodOverview:
-    summary = _calculate_summary(product.name, utils.as_time_range(year, month), "day")
+    summary = _calculate_summary(product.name, utils.as_time_range(year, month))
     name = f"{product.name}-{year}-{month}"
 
     if summary.dataset_count > 0:
@@ -323,9 +330,7 @@ def get_summary(
 ) -> Optional[TimePeriodOverview]:
     # Days are small enough to calculate on the fly
     if year and month and day:
-        return _calculate_summary(
-            product_name, utils.as_time_range(year, month, day), "day"
-        )
+        return _calculate_summary(product_name, utils.as_time_range(year, month, day))
 
     # Otherwise load from file
     path = get_summary_path(product_name, year, month)
