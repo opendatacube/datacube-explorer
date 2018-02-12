@@ -20,6 +20,9 @@ $header_highlight_strong: lighten($bold_highlight, 20%)
 
 $muted_text: lighten($bold_highlight, 32%)
 
+$header_stipe1: #2dace1
+$header_stripe2: #7fd0eb
+
 @import normalise.css
 
 body
@@ -63,7 +66,7 @@ body
 #map
     flex: 1 1
     height: calc(100vh - 100px)
-    border-top: 7px #2DACE1 solid
+    border-top: 7px $header_stipe1 solid
 
     .summary-control
         background: rgba($header_highlight_strong, 0.9)
@@ -80,7 +83,7 @@ body
 
     .info-panel
         width: 250px
-        border-top: 7px #7FD0EB solid
+        border-top: 7px $header_stripe2 solid
 
 .info-panel
     ul
