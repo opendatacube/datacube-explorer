@@ -11,12 +11,12 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 
 .map-panel { width: 100%; }
 
-#map { flex: 1 1; height: calc(100vh - 100px); border-top: 7px #2DACE1 solid; }
+#map { flex: 1 1; height: calc(100vh - 100px); border-top: 7px #2dace1 solid; }
 #map .summary-control { background: rgba(84, 84, 84, 0.9); color: #fff; padding: 15px 15px; }
 #map .summary-control a { color: #fff0f0; }
 
 @media (min-width: 800px) { .panels { display: flex; }
-  .info-panel { width: 250px; border-top: 7px #7FD0EB solid; } }
+  .info-panel { width: 250px; border-top: 7px #7fd0eb solid; } }
 .info-panel ul { list-style-type: none; padding: 0; }
 
 a { color: #2b2b2b; }
