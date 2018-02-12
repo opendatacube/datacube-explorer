@@ -166,8 +166,8 @@ header
             &.wildcard
                 font-weight: bold
 
-    ul.items li:hover
-        background-color: lighten($active_color, 5%)
+    ul.items a:hover
+        background-color: lighten($active_color, 10%)
         color: #fff
 
     a
@@ -176,6 +176,9 @@ header
         padding: $item_padding
         color: #fcfcfc
         font-weight: bold
+        
+        &.active
+            background-color: lighten($active_color, 5%)
 
 .header-wrapper
     &::after

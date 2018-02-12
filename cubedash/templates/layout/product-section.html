@@ -48,15 +48,13 @@
                         <h2 class="group-name">{{ group_name }}</h2>
                         <ul class="items">
                             {% for product_opt, summary in product_summaries if summary %}
-                                {% if product_opt.name != product.name %}
-                                    <li>
-                                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
-                                           title="{{ product_opt.definition.description }}">
-                                            {{ product_opt.name }}
-                                            {#                            ({{ summary.dataset_count }})#}
-                                        </a>
-                                    </li>
-                                {% endif %}
+                                <li>
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
+                                       title="{{ product_opt.definition.description }}"
+                                       class="{% if product_opt.name == product.name %}active{% endif %}">
+                                        {{ product_opt.name }}
+                                    </a>
+                                </li>
                             {% endfor %}
                         </ul>
                     </li>
@@ -77,13 +75,12 @@
                         product_summary.time_range.begin.year - 1,
                         -1
                     ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
-                        {% if (year_opt) != year %}
-                            <li>
-                                <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}">
-                                    {{ year_opt }}
-                                </a>
-                            </li>
-                        {% endif %}
+                        <li>
+                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}"
+                               class="{% if (year_opt) == year %}active{% endif %}">
+                                {{ year_opt }}
+                            </a>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -104,18 +101,17 @@
                         </li>
                     {% endif %}
                     {% for month_opt in range(1, 13) %}
-                        {% if (month_opt) != month %}
-                            <li>
-                                <a href="{{ url_for(
-                                    request.url_rule.endpoint,
-                                    product_name=product.name,
-                                    year=year,
-                                    month=month_opt
-                                    ) }}">
-                                    {{ month_opt | month_name }}
-                                </a>
-                            </li>
-                        {% endif %}
+                        <li>
+                            <a href="{{ url_for(
+                                request.url_rule.endpoint,
+                                product_name=product.name,
+                                year=year,
+                                month=month_opt
+                                ) }}"
+                               class="{% if (month_opt) == month %}active{% endif %}">
+                                {{ month_opt | month_name }}
+                            </a>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -137,19 +133,18 @@
                         </a>
                     </li>
                     {% for day_opt in range(1, 31) %}
-                        {% if (day_opt) != day %}
-                            <li>
-                                <a href="{{ url_for(
+                        <li>
+                            <a href="{{ url_for(
                                         request.url_rule.endpoint,
                                         product_name=product.name,
                                         year=year,
                                         month=month,
                                         day=day_opt
-                                        ) }}">
-                                    {{ day_opt | day_ordinal }}
-                                </a>
-                            </li>
-                        {% endif %}
+                                        ) }}"
+                               class="{% if (day_opt) == day %}active{% endif %}">
+                                {{ day_opt | day_ordinal }}
+                            </a>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
