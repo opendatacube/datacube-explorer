@@ -9,6 +9,7 @@ from typing import Dict, Iterable, NamedTuple, Optional, Tuple
 import dateutil.parser
 import fiona
 import flask
+import pandas as pd
 import pytz
 import shapely
 import shapely.geometry
@@ -144,14 +145,20 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
         shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
     )
 
+    # Initialise all requested days as zero
+    day_counts = Counter(
+        {d.date(): 0 for d in pd.date_range(time.begin, time.end, closed="left")}
+    )
+    day_counts.update(
+        (
+            _GROUPING_TIME_ZONE.fromutc(dataset.center_time).date()
+            for dataset, shape in datasets
+        )
+    )
+
     summary = TimePeriodOverview(
         len(datasets),
-        Counter(
-            (
-                _GROUPING_TIME_ZONE.fromutc(dataset.time.begin).date()
-                for dataset, shape in datasets
-            )
-        ),
+        day_counts,
         datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 250 else None,
         "day",
         time,
