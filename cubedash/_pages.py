@@ -3,6 +3,7 @@ from datetime import datetime
 
 import flask
 
+import cubedash
 import datacube
 
 from . import _api, _dataset, _filters, _model, _platform, _product
@@ -45,6 +46,7 @@ def inject_globals():
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
+        app_version=cubedash.__version__,
     )
 
 
