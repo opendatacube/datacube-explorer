@@ -5,6 +5,7 @@ from datetime import datetime
 
 import datacube
 from . import _filters, _dataset, _platform, _product, _api, _model
+import cubedash
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -44,6 +45,7 @@ def inject_globals():
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
+        app_version=cubedash.__version__
     )
 
 
