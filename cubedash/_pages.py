@@ -17,7 +17,7 @@ app.register_blueprint(_product.bp)
 
 @app.route("/about")
 def about_page():
-    return flask.render_template("about.html", datacube_version=datacube.__version__)
+    return flask.render_template("about.html")
 
 
 @app.context_processor
@@ -44,6 +44,7 @@ def inject_globals():
         products=product_summaries,
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
+        datacube_version=datacube.__version__,
     )
 
 

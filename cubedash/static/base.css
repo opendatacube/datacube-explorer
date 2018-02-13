@@ -3,7 +3,7 @@
 :root { --padd-s: 10px; --padd: 20px; }
 
 @media (min-width: 800px) { :root { --padd-s: 15px; --padd: 30px; } }
-body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto 15px; padding: 0 var(--padd-s); max-width: 1024px; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 var(--padd-s); max-width: 1024px; }
 
 #logo { padding-right: 25px; position: absolute; top: 15px; right: 0; }
 #logo a { text-decoration: none; color: #fff; }
@@ -29,6 +29,8 @@ h2 { color: #212121; }
 .panel.odd > h2 { color: #1d81a7; }
 
 header { color: #efefef; padding: 0; display: flex; flex-direction: row; }
+
+footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; }
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
 .header-option.primary { background-color: #474747; }
