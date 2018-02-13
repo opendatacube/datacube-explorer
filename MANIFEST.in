@@ -1,0 +1,2 @@
+include versioneer.py
+include cubedash/_version.py

@@ -2,6 +2,8 @@
 
 from setuptools import find_packages, setup
 
+import versioneer
+
 tests_require = ["pylint", "digitalearthau"]
 
 dependency_links = [
@@ -10,6 +12,8 @@ dependency_links = [
 
 setup(
     name="dea-dashboard",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     url="https://github.com/data-cube/dea-dashboard",
     author="Geoscience Australia",
     packages=find_packages(),
