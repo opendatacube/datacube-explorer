@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from setuptools import setup, find_packages
+import versioneer
 
 tests_require = [
     'pylint',
@@ -13,6 +14,8 @@ dependency_links = [
 
 setup(
     name='dea-dashboard',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     url='https://github.com/data-cube/dea-dashboard',
     author='Geoscience Australia',
 
@@ -36,5 +39,3 @@ setup(
     tests_require=tests_require,
     dependency_links=dependency_links,
 )
-
-
