@@ -42,7 +42,7 @@ body
     color: $bold_highlight
     font-size: 0.86em
     margin: 0 auto
-    padding: 0 var(--padd-s)
+    padding: 0 15px
     max-width: 1024px
 
 #logo
@@ -102,7 +102,7 @@ a
     color: #2b2b2b
 
 h2
-    color: $bold_highlight
+    color: lighten($bold_highlight, 10%)
 
     .panel.highlight > &
         color: #fff
@@ -235,9 +235,8 @@ nav
 
 .panel
     padding: var(--padd)
-    line-height: 1.5em
+    line-height: 1.7em
     background: $panel_color
-    border-bottom: 1px solid #b9b9b9
 
     &.odd
         background-color: $panel2_color
