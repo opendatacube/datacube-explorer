@@ -115,7 +115,7 @@ class TimePeriodOverview(NamedTuple):
         )
 
 
-def _dataset_shape(ds: Dataset):
+def dataset_shape(ds: Dataset):
     try:
         extent = ds.extent
     except AttributeError:
@@ -133,7 +133,7 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
     log.debug("summary.calc")
 
     datasets = [
-        (dataset, _dataset_shape(dataset))
+        (dataset, dataset_shape(dataset))
         for dataset in index.datasets.search(product=product_name, time=time)
     ]
     dataset_shapes = [

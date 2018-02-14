@@ -22,6 +22,7 @@ from datacube.index.postgres._fields import (
 )
 from datacube.model import DatasetType, Range
 
+from . import _model as model
 from . import _utils as utils
 
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
@@ -43,6 +44,19 @@ def _dataset_label(dataset):
         return Markup("<del>{}</del>".format(escape(label)))
 
     return label
+
+
+@bp.app_template_filter("dataset_geojson")
+def _dataset_geojson(dataset):
+    return {
+        "type": "Feature",
+        "geometry": model.dataset_shape(dataset).__geo_interface__,
+        "properties": {
+            "id": str(dataset.id),
+            "label": utils.dataset_label(dataset),
+            "start_time": dataset.time.begin.isoformat(),
+        },
+    }
 
 
 @bp.app_template_filter("query_value")
