@@ -1,6 +1,9 @@
 {% extends "layout/base.html" %}
 
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
+
+{% set extent_geojson = dataset | dataset_geojson %}
+
 {% block head %}
     {{ super() }}
     <link rel="stylesheet"
@@ -107,7 +110,11 @@
             {% endfor %}
         {% endif %}
     </div>
-    <div id="dataset-map"></div>
+    
+    {% if extent_geojson %}
+        <div id="dataset-map"></div>
+    {% endif %}
+    
     <div class="panel odd">
         <h2>Raw Metadata</h2>
         {{ show_raw_document(dataset_metadata) }}
@@ -120,36 +127,41 @@
 
     {{ super() }}
 
-    <script type="application/javascript">
-        var osm_carto_light = L.tileLayer(
-            "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
-            {
-                maxZoom: 7,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
-            }
-        );
 
-        var dataset_data = L.geoJson({{ dataset | dataset_geojson | tojson }},
-            {
-                style: function (feature) {
-                    return {
-                        color: "#1d81a7",
-                        fill: true,
-                        fillColor: "#1d81a7",
-                        opacity: 0.8,
-                        weight: 2,
-                        clickable: false
-                    };
+    {% if extent_geojson %}
+        <script type="application/javascript">
+
+            var osm_carto_light = L.tileLayer(
+                "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 7,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                    ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
                 }
+            );
+
+            var dataset_data = L.geoJson({{ extent_geojson | tojson }},
+                {
+                    style: function (feature) {
+                        return {
+                            color: "#1d81a7",
+                            fill: true,
+                            fillColor: "#1d81a7",
+                            opacity: 0.8,
+                            weight: 2,
+                            clickable: false
+                        };
+                    }
+                });
+            var map = L.map("dataset-map", {
+                zoom: 3,
+                center: [-26.2756326, 134.9387844],
+                layers: [osm_carto_light, dataset_data],
+                zoomControl: false,
+                attributionControl: false
             });
-        var map = L.map("dataset-map", {
-            zoom: 3,
-            center: [-26.2756326, 134.9387844],
-            layers: [osm_carto_light, dataset_data],
-            zoomControl: false,
-            attributionControl: false
-        });
-        map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom:5});
-    </script>
+            map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+        </script>
+    {% endif %}
+
 {% endblock %}
