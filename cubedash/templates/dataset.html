@@ -110,11 +110,11 @@
             {% endfor %}
         {% endif %}
     </div>
-    
+
     {% if extent_geojson %}
         <div id="dataset-map"></div>
     {% endif %}
-    
+
     <div class="panel odd">
         <h2>Raw Metadata</h2>
         {{ show_raw_document(dataset_metadata) }}
@@ -158,8 +158,10 @@
                 center: [-26.2756326, 134.9387844],
                 layers: [osm_carto_light, dataset_data],
                 zoomControl: false,
-                attributionControl: false
+                attributionControl: false,
+                scrollWheelZoom: false
             });
+            L.control.zoom({position: "bottomright"}).addTo(map);
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
         </script>
     {% endif %}
