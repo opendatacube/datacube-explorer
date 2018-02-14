@@ -41,9 +41,13 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter('dataset_geojson')
 def _dataset_geojson(dataset):
+    shape = model.dataset_shape(dataset)
+    if not shape:
+        return None
+
     return {
         'type': 'Feature',
-        'geometry': model.dataset_shape(dataset).__geo_interface__,
+        'geometry': shape.__geo_interface__,
         'properties': {
             'id': str(dataset.id),
             'label': utils.dataset_label(dataset),
