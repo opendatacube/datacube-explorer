@@ -3,6 +3,9 @@
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
 {% block head %}
     {{ super() }}
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='leaflet-1.2.0/leaflet.css') }}">
+
     <style type="text/css">
         .sub-header {
             line-height: 1.4em;
@@ -19,6 +22,10 @@
         .file-path {
             font-family: monospace;
             font-size: 12px;
+        }
+
+        #dataset-map {
+            height: 500px;
         }
     </style>
 {% endblock %}
@@ -45,11 +52,15 @@
             {{ dataset.type.name }} ({{ dataset.type.metadata_type.name }})
         </div>
     </div>
+
     <div class="panel">
         {% for classifier, s_dataset in source_datasets.items() %}
             <div>
                 <span title="Source '{{ classifier }}'">
-                    🡑 <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">{{ s_dataset | printable_dataset }}</a>
+                    🡑 <a
+                        href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
+                    {{ s_dataset | printable_dataset }}
+                    </a>
                 </span>
             </div>
         {% endfor %}
@@ -74,8 +85,7 @@
             wide=true,
             show_dicts=false,
             descriptions=dataset.type.metadata_type.dataset_fields
-            )
-                }}
+            ) }}
     </div>
     <div class="panel">
         <h2>Locations</h2>
@@ -97,8 +107,49 @@
             {% endfor %}
         {% endif %}
     </div>
+    <div id="dataset-map"></div>
     <div class="panel odd">
         <h2>Raw Metadata</h2>
         {{ show_raw_document(dataset_metadata) }}
     </div>
+{% endblock %}
+
+{% block footer %}
+
+    <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
+
+    {{ super() }}
+
+    <script type="application/javascript">
+        var osm_carto_light = L.tileLayer(
+            "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+            {
+                maxZoom: 7,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+            }
+        );
+
+        var dataset_data = L.geoJson({{ dataset | dataset_geojson | tojson }},
+            {
+                style: function (feature) {
+                    return {
+                        color: "#1d81a7",
+                        fill: true,
+                        fillColor: "#1d81a7",
+                        opacity: 0.8,
+                        weight: 2,
+                        clickable: false
+                    };
+                }
+            });
+        var map = L.map("dataset-map", {
+            zoom: 3,
+            center: [-26.2756326, 134.9387844],
+            layers: [osm_carto_light, dataset_data],
+            zoomControl: false,
+            attributionControl: false
+        });
+        map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom:5});
+    </script>
 {% endblock %}

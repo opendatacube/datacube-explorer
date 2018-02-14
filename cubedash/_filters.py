@@ -16,7 +16,7 @@ from datacube.model import Range, DatasetType
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
-from . import _utils as utils
+from . import _utils as utils, _model as model
 
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
 
@@ -37,6 +37,19 @@ def _dataset_label(dataset):
         return Markup("<del>{}</del>".format(escape(label)))
 
     return label
+
+
+@bp.app_template_filter('dataset_geojson')
+def _dataset_geojson(dataset):
+    return {
+        'type': 'Feature',
+        'geometry': model.dataset_shape(dataset).__geo_interface__,
+        'properties': {
+            'id': str(dataset.id),
+            'label': utils.dataset_label(dataset),
+            'start_time': dataset.time.begin.isoformat()
+        }
+    }
 
 
 @bp.app_template_filter('query_value')
