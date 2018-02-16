@@ -14,6 +14,7 @@ setup(
     name="dea-dashboard",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
+    python_requires=">=3.5.2",
     url="https://github.com/data-cube/dea-dashboard",
     author="Geoscience Australia",
     packages=find_packages(),
