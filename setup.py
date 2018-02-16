@@ -22,7 +22,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'cachetools',
-        'datacube',
+        'datacube>=1.5.4',
         'flask',
         'fiona',
         'pyorbital',
