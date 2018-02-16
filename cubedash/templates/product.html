@@ -226,7 +226,7 @@
                     };
                     map.addControl(datasetInfoControl);
 
-                    map.fitBounds(dataset_data.getBounds(), {animate: false});
+                    map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
                 {% else %}
                     var composite_data = L.geoJson({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }},
                         {
@@ -243,7 +243,7 @@
                         }
                     );
                     map.addLayer(composite_data);
-                    map.fitBounds(composite_data.getBounds(), {animate: false});
+                    map.fitBounds(composite_data.getBounds(), {animate: false, maxZoom: 6});
                 {% endif %}
             {% endif %}
 
