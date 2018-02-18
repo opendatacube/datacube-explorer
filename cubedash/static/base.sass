@@ -34,6 +34,10 @@ $header_stripe2: #7fd0eb
         --padd-s: 15px
         --padd: 30px
 
+// TODO: IE fallback
+$small_padding: var(--padd-s)
+$padding: var(--padd)
+
 body
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
     background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)
@@ -50,10 +54,15 @@ body
     position: absolute
     top: 15px
     right: 0
-
+    img
+        vertical-align: middle
+        padding-right: 2px
     a
         text-decoration: none
         color: #fff
+
+.logo-text
+    display: inline-block
 
 .content-wrapper
     position: relative
@@ -116,10 +125,10 @@ header
     flex-direction: row
 
 footer
-    padding: var(--padd-s) var(--padd)
+    padding: $small_padding $padding
     text-align: right
     color: #a6a6a6
-    
+
 .header-option
     background-color: $header_highlight_strong
     position: relative
@@ -127,7 +136,7 @@ footer
     max-width: 60%
 
     $active_color: darken($emphasis_strong, 5%)
-    $item_padding: var(--padd-s) var(--padd)
+    $item_padding: $small_padding $padding
 
     vertical-align: bottom
     &.primary
@@ -234,7 +243,7 @@ nav
             background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
 
 .panel
-    padding: var(--padd)
+    padding: $padding
     line-height: 1.7em
     background: $panel_color
 
@@ -311,7 +320,7 @@ nav
 @media (min-width: 800px)
     .query-param-list.wide
         grid-template-columns: 1fr 1fr
-        
+
 .query-param
 
     > .key
