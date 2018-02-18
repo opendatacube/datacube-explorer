@@ -11,24 +11,7 @@
 {% block title %}{{ product.name }}{% endblock %}
 
 {% block header %}
-    <nav>
-        <ul>
-            {% set navigation_bar = [
-                ('overview', 'product.overview_page'),
-                ('datasets', 'product.search_page'),
-            ] -%}
-            {% for id, page_method in navigation_bar %}
-                <li{% if id == active_page %} class="active"{% endif %}>
-                    <a href="{{ url_for(page_method, **product_args) }}">
-                        {{ id | title }}
-                    </a>
-                </li>
-            {% endfor %}
-            <li class="plain"><a href="{{ url_for('about_page') }}">About</a></li>
-        </ul>
-    </nav>
     <header>
-
         {# Go to current page with different product/year/month options#}
         {% set nav_endpoint=request.url_rule.endpoint %}
 
