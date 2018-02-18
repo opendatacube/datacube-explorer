@@ -6,7 +6,10 @@
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
 
 #logo { padding-right: 25px; position: absolute; top: 15px; right: 0; }
+#logo img { vertical-align: middle; padding-right: 2px; }
 #logo a { text-decoration: none; color: #fff; }
+
+.logo-text { display: inline-block; }
 
 .content-wrapper { position: relative; padding: 60px 0 30px; }
 
