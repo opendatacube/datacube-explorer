@@ -209,39 +209,6 @@ footer
     &::after
         clear: left
 
-nav
-    display: none
-    vertical-align: bottom
-    ul
-        margin: 0
-        padding: 0
-        list-style-type: none
-        text-align: right
-        vertical-align: bottom
-    li
-        float: left
-        margin: 0
-        a
-            $background_tab: $header_highlight_strong
-
-            padding: 15px 30px
-            display: inline-block
-            background: $background_tab
-            border-color: $background_tab
-            color: #efefef
-            text-decoration: none
-            &:hover, &:active
-                background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
-
-        &.plain a
-            background: none
-            color: inherit
-            &:hover, &:active
-                text-decoration: underline
-
-        &.active a
-            background: linear-gradient(to bottom, lighten($header_highlight, 1%) 0%, $header_highlight 100%)
-
 .panel
     padding: $padding
     line-height: 1.7em
