@@ -23,6 +23,7 @@ $muted_text: lighten($bold_highlight, 32%)
 $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
 
+// Adjust standard padding based on screen width
 \:root
     --padd-s: 10px
     --padd: 20px
@@ -155,6 +156,8 @@ footer
         background-color: $active_color
 
         > ul
+            // Fallback if no grid support (IE)
+            display: block
             display: grid
             position: absolute
             top: calc(100% - 2px)
