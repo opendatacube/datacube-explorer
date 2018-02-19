@@ -31,7 +31,7 @@
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-end"
                                        class="key">{{ product.metadata_type.dataset_fields[key].description }}
-                                    to:</label>
+                                    to (exclusive):</label>
                                 <input type="number"
                                        id="search-{{ key }}-end"
                                        step="{{ field | field_step_size }}"
@@ -54,7 +54,7 @@
                             </div>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-after">
-                                    {{ product.metadata_type.dataset_fields[key].description }} To
+                                    {{ product.metadata_type.dataset_fields[key].description }} to (exclusive)
                                 </label>
                                 <input type="date"
                                        id="search-{{ key }}-after"
