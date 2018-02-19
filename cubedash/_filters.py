@@ -84,6 +84,13 @@ def _get_ordinal_suffix(day):
         return ["st", "nd", "rd"][day % 10 - 1]
 
 
+@bp.app_template_filter('days_in_month')
+def day_range(year_month):
+    year, month = year_month
+    _, last_day = calendar.monthrange(year, month)
+    return range(1, last_day + 1)
+
+
 @bp.app_template_filter('max')
 def _max_val(ls):
     return max(ls)
