@@ -1,5 +1,4 @@
 @charset "UTF-8";
-@import url(normalise.css);
 :root { --padd-s: 10px; --padd: 20px; }
 
 @media (min-width: 800px) { :root { --padd-s: 15px; --padd: 30px; } }
@@ -18,8 +17,6 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 .map-panel { width: 100%; }
 
 #map { flex: 1 1; height: calc(100vh - 100px); border-top: 7px #2dace1 solid; }
-#map .summary-control { background: rgba(84, 84, 84, 0.9); color: #fff; padding: 15px 15px; }
-#map .summary-control a { color: #fff0f0; }
 
 @media (min-width: 800px) { .panels { display: flex; }
   .info-panel { width: 250px; border-top: 7px #7fd0eb solid; } }
@@ -37,7 +34,6 @@ footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; 
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
 .header-option.primary { background-color: #474747; }
-.header-option li.selected a { color: #EEAF30; }
 .header-option > div { padding: var(--padd-s) var(--padd); margin: 0; line-height: 1.75em; flex: 1 1; }
 .header-option > div::after { content: " ▾"; }
 .header-option h2 { margin: 0; padding: var(--padd-s) var(--padd); font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
@@ -52,33 +48,16 @@ footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; 
 .header-option a { display: block; text-decoration: none; padding: var(--padd-s) var(--padd); color: #fcfcfc; font-weight: bold; }
 .header-option a.active { background-color: #008fc5; }
 
-.header-wrapper::after { clear: left; }
-
-.panel { padding: var(--padd); line-height: 1.7em; background: #fafafa; /* Add line between adjacent panels */ }
+.panel { padding: var(--padd); line-height: 1.7em; background: #fafafa; }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
-.panel.odd + .panel.odd, .panel.highlight + .panel.odd { border-top: 1px solid #fafafa; }
-.panel.overflow { overflow-x: auto; }
-.panel.right { text-align: right; }
 .panel h2 { margin: 15px 0 5px; }
 .panel h2:first-child { margin-top: 0; }
-.panel .data-table { margin: 0 -15px; }
 
 /* Table of values */
 .data-table th { font-weight: bold; font-size: 0.8em; }
 .data-table td, .data-table th { padding: 0 15px; text-align: left; line-height: 30px; }
-
-.link-cell > a { padding: 0 15px; text-align: right; line-height: 30px; }
-
-/* A link cell has padding on the anchor, not the cell */
-.data-table td.link-cell, .data-table th.link-cell { padding: 0; }
-
-.link-cell > a { display: block; text-decoration: none; }
-.link-cell > a:hover { background-color: #212121; color: #fff; }
-
-.data-table.numerical td, .data-table.numerical th { text-align: right; }
-.data-table td.zero { color: #ababab; }
 
 /* lists of key-values */
 .query-param-list { width: auto; display: grid; }
@@ -86,8 +65,6 @@ footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; 
 @media (min-width: 800px) { .query-param-list.wide { grid-template-columns: 1fr 1fr; } }
 .query-param > .key { color: #737373; }
 .query-param .value > .query-param { margin-left: 15px; }
-
-.search-param > .key { display: inline-block; font-weight: bold; }
 
 button { margin: 5px 0; background-color: #1d81a7; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
 button:hover { background-color: #008fc5; }
