@@ -39,7 +39,7 @@ footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; 
 .header-option h2 { margin: 0; padding: var(--padd-s) var(--padd); font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
 .header-option > ul { display: none; }
 .header-option:hover { background-color: #007cab; }
-.header-option:hover > ul { display: grid; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; grid-template-columns: 1fr 1fr 1fr; }
+.header-option:hover > ul { display: block; display: grid; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; grid-template-columns: 1fr 1fr 1fr; }
 .header-option > ul { background-color: #007cab; }
 .header-option ul { margin: 0; padding: 0; list-style: none; }
 .header-option ul li { margin: 0; }
