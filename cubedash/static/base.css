@@ -30,13 +30,13 @@ h2 { color: #3b3b3b; }
 
 header { color: #efefef; padding: 0; display: flex; flex-direction: row; }
 
-footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; }
+footer { padding: 15px 30px; text-align: right; color: #a6a6a6; }
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
 .header-option.primary { background-color: #474747; }
-.header-option > div { padding: var(--padd-s) var(--padd); margin: 0; line-height: 1.75em; flex: 1 1; }
+.header-option > div { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; }
 .header-option > div::after { content: " ▾"; }
-.header-option h2 { margin: 0; padding: var(--padd-s) var(--padd); font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
+.header-option h2 { margin: 0; padding: 15px 30px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
 .header-option > ul { display: none; }
 .header-option:hover { background-color: #007cab; }
 .header-option:hover > ul { display: block; display: grid; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; grid-template-columns: 1fr 1fr 1fr; }
@@ -45,10 +45,10 @@ footer { padding: var(--padd-s) var(--padd); text-align: right; color: #a6a6a6; 
 .header-option ul li { margin: 0; }
 .header-option ul li.wildcard { font-weight: bold; }
 .header-option ul.items a:hover { background-color: #00a1de; color: #fff; }
-.header-option a { display: block; text-decoration: none; padding: var(--padd-s) var(--padd); color: #fcfcfc; font-weight: bold; }
+.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; font-weight: bold; }
 .header-option a.active { background-color: #008fc5; }
 
-.panel { padding: var(--padd); line-height: 1.7em; background: #fafafa; }
+.panel { padding: 30px; line-height: 1.7em; background: #fafafa; }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
