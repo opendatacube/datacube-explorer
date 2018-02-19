@@ -23,8 +23,6 @@ $muted_text: lighten($bold_highlight, 32%)
 $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
 
-@import normalise.css
-
 \:root
     --padd-s: 10px
     --padd: 20px
@@ -85,14 +83,6 @@ body
     height: calc(100vh - 100px)
     border-top: 7px $header_stipe1 solid
 
-    .summary-control
-        background: rgba($header_highlight_strong, 0.9)
-        color: #fff
-        padding: 15px 15px
-
-        a
-            color: #fff0f0
-
 // show two columns on wide displays
 @media (min-width: 800px)
     .panels
@@ -141,9 +131,6 @@ footer
     vertical-align: bottom
     &.primary
         background-color: $header_highlight
-
-    li.selected a
-        color: $highlight_alt2
 
     > div
         padding: $item_padding
@@ -205,10 +192,6 @@ footer
         &.active
             background-color: lighten($active_color, 5%)
 
-.header-wrapper
-    &::after
-        clear: left
-
 .panel
     padding: $padding
     line-height: 1.7em
@@ -225,22 +208,10 @@ footer
         a
             color: #999
 
-    /* Add line between adjacent panels
-    &.odd + .panel.odd, &.highlight + .panel.odd
-        border-top: 1px solid $panel_color
-
-    &.overflow
-        overflow-x: auto
-    &.right
-        text-align: right
-
     h2
         margin: 15px 0 5px
         &:first-child
             margin-top: 0
-
-    .data-table
-        margin: 0 -15px
 
 /* Table of values
 
@@ -253,31 +224,6 @@ footer
         text-align: left
         line-height: 30px
 
-.link-cell > a
-    padding: 0 15px
-    text-align: right
-    line-height: 30px
-
-/* A link cell has padding on the anchor, not the cell
-
-.data-table
-    td.link-cell, th.link-cell
-        padding: 0
-
-.link-cell > a
-    display: block
-    text-decoration: none
-    &:hover
-        background-color: $bold_highlight
-        color: #fff
-
-.data-table
-    &.numerical
-        td, th
-            text-align: right
-    td.zero
-        color: #ababab
-
 /* lists of key-values
 
 .query-param-list
@@ -289,16 +235,11 @@ footer
         grid-template-columns: 1fr 1fr
 
 .query-param
-
     > .key
         color: $muted_text
 
     .value > .query-param
         margin-left: 15px
-
-.search-param > .key
-    display: inline-block
-    font-weight: bold
 
 button
     margin: 5px 0
@@ -405,6 +346,7 @@ label
         & > .key
             font-weight: bold
 
+// Information box shown when hovering a map dataset
 .dataset-info
     background-color: $panel2_color
     margin: 10px
