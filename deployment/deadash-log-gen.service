@@ -1,0 +1,15 @@
+[Unit]
+Description=Generate access log report for deadash
+
+[Service]
+User=nginx
+Group=nginx
+
+Type=oneshot
+
+WorkingDirectory=/var/www/dea-dashboard/cubedash/static
+
+ExecStart=/bin/goaccess --log-format=COMBINED -a /var/log/nginx/access.log -o /var/www/dea-dashboard/cubedash/static/access.html
+
+PrivateTmp=true
+
