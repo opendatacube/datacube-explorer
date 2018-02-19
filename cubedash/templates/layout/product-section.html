@@ -16,7 +16,6 @@
         {% set nav_endpoint=request.url_rule.endpoint %}
 
         <div class="header-option primary">
-
             <div>
                 {% if product.definition.description %}
                     <strong>{{ product.name }}:</strong>
@@ -136,53 +135,3 @@
 {% endblock %}
 
 
-
-{% block footer %}
-    {{ super() }}
-    <script>
-        // TODO offset for current page
-        var base_url = {% if active_page == 'datasets' %}'/datasets/'{% else %}'/'{% endif %};
-
-        function _url_for_selection(product, year, month, day) {
-            /**
-             * Build url: "/product_name/yyyy/mm/dd"
-             *
-             * All components optional
-             *
-             * Examples:
-             *     /
-             *     /ls7_nbar_scene
-             *     /ls7_nbar_scene/2012
-             *     /ls7_nbar_scene/2012/07
-             *     /ls7_nbar_scene/2012/07/03
-             */
-
-
-            var url = base_url;
-
-            if (product) {
-                url += product;
-                [year, month, day].some(function (number) {
-                    if (!number) {
-                        // Don't join any further.
-                        return true;
-                    }
-
-                    url += '/';
-                    url += (number < 10 ? '0' : '') + number;
-                    return false;
-                });
-            }
-            return url;
-        }
-
-        $('#select-product, #select-month, #select-year, #select-day').change(function () {
-            var product = $('#select-product :selected').val(),
-                year = $('#select-year :selected').val(),
-                month = year ? $('#select-month :selected').val() : null,
-                day = month ? $('#select-day :selected').val() : null;
-
-            window.location.href = _url_for_selection(product, year, month, day);
-        });
-    </script>
-{% endblock %}
