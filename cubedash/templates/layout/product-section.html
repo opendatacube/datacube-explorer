@@ -16,119 +16,143 @@
         {% set nav_endpoint=request.url_rule.endpoint %}
 
         <div class="header-option primary">
-            <div>
+            <h2 class="option-title">
                 {% if product.definition.description %}
                     <strong>{{ product.name }}:</strong>
                     {{ product.definition.description or product.name }}
                 {% else %}
                     <strong>{{ product.name }}</strong>
                 {% endif %}
-            </div>
-            <ul class="groups">
-                {% for group_name, product_summaries in grouped_products %}
-                    <li>
-                        <h2 class="group-name">{{ group_name }}</h2>
-                        <ul class="items">
-                            {% for product_opt, summary in product_summaries if summary %}
-                                <li>
-                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
-                                       title="{{ product_opt.definition.description }}"
-                                       class="{% if product_opt.name == product.name %}active{% endif %}">
-                                        {{ product_opt.name }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </li>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li>
+                                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
+                                               title="{{ product_opt.definition.description }}"
+                                               class="{% if product_opt.name == product.name %}active{% endif %}">
+                                                {{ product_opt.name }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
         {% if product %}
             <div class="header-option">
-                <div>{{ year or 'All years' }}</div>
-                <ul class="items">
-                    {% for year_opt in (range(
+                <h2 class="option-title">{{ year or 'All years' }}</h2>
+                <div class="option-menu">
+
+                    {% set year_range=(range(
                         product_summary.time_range.end.year,
                         product_summary.time_range.begin.year - 1,
                         -1
                     ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
-                        <li>
-                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}"
-                               class="{% if (year_opt) == year %}active{% endif %}">
-                                {{ year_opt }}
-                            </a>
-                        </li>
+
+                    {% for row in year_range | batch(3) %}
+                        <ul>
+                            {% for year_opt in row %}
+                                <li>
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}"
+                                       class="{% if (year_opt) == year %}active{% endif %}">
+                                        {{ year_opt }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% endfor %}
-                    <li class="wildcard">
-                        <a href="{{ url_for(nav_endpoint, product_name=product.name) }}"
-                           class="{% if not year %}active{% endif %}">All</a>
-                    </li>
-                </ul>
+                    <ul>
+                        <li class="wildcard">
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name) }}"
+                               class="{% if not year %}active{% endif %}">All</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         {% endif %}
         {% if year %}
             <div class="header-option">
-                <div>
+                <h2 class="option-title">
                     {% if month %}
                         {{ month | month_name }}
                     {% else %}
                         All months
                     {% endif %}
-                </div>
-                <ul class="items">
-                    {% for month_opt in range(1, 13) %}
-                        <li>
-                            <a href="{{ url_for(
+                </h2>
+                <div class="option-menu">
+                    {% for row in range(1, 13) | batch(3) %}
+                        <ul>
+                            {% for month_opt in row %}
+                                <li>
+                                    <a href="{{ url_for(
                                 request.url_rule.endpoint,
                                 product_name=product.name,
                                 year=year,
                                 month=month_opt
                                 ) }}"
-                               class="{% if (month_opt) == month %}active{% endif %}">
-                                {{ month_opt | month_name }}
-                            </a>
-                        </li>
+                                       class="{% if (month_opt) == month %}active{% endif %}">
+                                        {{ month_opt | month_name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% endfor %}
-                    <li class="wildcard">
-                        <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}"
-                           class="{% if not month %}active{% endif %}">All</a>
-                    </li>
-                </ul>
+                    <ul>
+                        <li class="wildcard">
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}"
+                               class="{% if not month %}active{% endif %}">All</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         {% endif %}
 
         {% if month %}
             <div class="header-option">
-                <div>
+                <h2 class="option-title">
                     {% if day %}
                         {{ day | day_ordinal }}
                     {% else %}
                         All days
                     {% endif %}
-                </div>
-                <ul class="items">
-                    
-                    {% for day_opt in range(1, 31) %}
-                        <li>
-                            <a href="{{ url_for(
+                </h2>
+                <div class="option-menu">
+                    {% for row in range(1, 31) | batch(3) %}
+                        <ul>
+                            {% for day_opt in row %}
+                                <li>
+                                    <a href="{{ url_for(
                                         request.url_rule.endpoint,
                                         product_name=product.name,
                                         year=year,
                                         month=month,
                                         day=day_opt
                                         ) }}"
-                               class="{% if (day_opt) == day %}active{% endif %}">
-                                {{ day_opt | day_ordinal }}
+                                       class="{% if (day_opt) == day %}active{% endif %}">
+                                        {{ day_opt | day_ordinal }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
+                    <ul>
+                        <li class="wildcard">
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}"
+                               class="{% if not day %}active{% endif %}">
+                                All
                             </a>
                         </li>
-                    {% endfor %}
-                <li class="wildcard">
-                        <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}"
-                            class="{% if not day %}active{% endif %}">
-                            All
-                        </a>
-                    </li>
-                </ul>
+                    </ul>
+                </div>
             </div>
         {% endif %}
     </header>
