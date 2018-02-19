@@ -12,7 +12,7 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 
 .content-wrapper { position: relative; padding: 60px 0 30px; }
 
-#content { clear: right; position: relative; width: auto; background-color: #e0e0e0; box-shadow: 0 -2px 0 0 #fff; }
+#content { clear: right; position: relative; width: auto; background-color: #e0e0e0; }
 
 .map-panel { width: 100%; }
 
@@ -20,6 +20,8 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 
 @media (min-width: 800px) { .panels { display: flex; }
   .info-panel { width: 250px; border-top: 7px #7fd0eb solid; } }
+.panels { box-shadow: 0 -2px 0 0 #fff; }
+
 .info-panel ul { list-style-type: none; padding: 0; }
 
 a { color: #2b2b2b; }
