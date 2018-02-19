@@ -62,14 +62,14 @@
             </div>
         {%- endfor %}
     {# A string is an iterable, so we check for it above #}
-    {% elif value is iterable %}
-        <ul>
-            {%- for item in value %}
-                <li>{{ _show_raw_keyval(item) }}</li>
-            {% endfor %}
-        </ul>
+{#    {% elif value is iterable %}#}
+{#        <ul>#}
+{#            {%- for item in value %}#}
+{#                <li>{{ _show_raw_keyval(item) }}</li>#}
+{#            {% endfor %}#}
+{#        </ul>#}
     {% else %}
-        <span class="value unknown">{{ value }}</span>
+        <span class="value unknown">{{ value | tojson}}</span>
     {% endif %}
 {%- endmacro %}
 

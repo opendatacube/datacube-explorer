@@ -203,7 +203,6 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .muted { color: #737373; }
 
 .raw-metadata { overflow-y: scroll; max-height: 600px; }
-.raw-metadata ul { list-style-type: disc; padding-left: 15px; }
 .raw-metadata .property { font-family: "Courier New", monospace; }
 .raw-metadata .property .property { padding-left: 15px; }
 .raw-metadata .property > .key { font-weight: bold; }
