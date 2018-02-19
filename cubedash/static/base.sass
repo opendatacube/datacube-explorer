@@ -162,7 +162,7 @@ footer
         > .option-menu
             // Fallback if no grid support (IE)
             display: table
-            
+
             position: absolute
             top: calc(100% - 2px)
             left: 0
@@ -170,12 +170,12 @@ footer
             // Above maps etc
             z-index: 10000
 
-    .option-menu 
+    .option-menu
         > ul
             display: table-row
             & > li
                 display: table-cell
-                
+
         a:hover
             background-color: lighten($active_color, 10%)
             color: #fff
@@ -186,7 +186,7 @@ footer
         list-style: none
         li
             margin: 0
-            
+
     // The "All" menu items
     .wildcard
         font-weight: bold
@@ -335,6 +335,9 @@ label
     background: $header_highlight_strong
     padding: 13px 15px
     color: #fff
+    
+    a
+        color: lighten($emphasis_strong, 10%)
 
 .muted
     color: $muted_text
