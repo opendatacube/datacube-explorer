@@ -89,7 +89,7 @@
     {% from "layout/macros.html" import chart_timeline %}
     <script type="application/javascript">
         (function () {
-            var msgNoResults = $("#msg-no-results");
+            var msgNoResults = document.getElementById("msg-no-results");
 
 
             var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
@@ -151,7 +151,7 @@
 
             {# Is there anything to show? #}
             {% if selected_summary.footprint_count %}
-                msgNoResults.hide();
+                msgNoResults.style.display = 'none';
 
                 {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
                 {% if selected_summary.datasets_geojson %}
