@@ -6,6 +6,8 @@ User=nginx
 Group=nginx
 
 Type=oneshot
+# Low priority
+Nice=19
 
 WorkingDirectory=/var/www/dea-dashboard/cubedash/static
 
