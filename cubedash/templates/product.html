@@ -3,17 +3,6 @@
 {% block title %}{{ product.name }}{% endblock %}
 
 
-{% block head %}
-    {{ super() }}
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='leaflet-1.2.0/leaflet.css') }}">
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css') }}">
-
-{% endblock %}
-
-
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
@@ -94,8 +83,6 @@
 
 {% block footer %}
 
-    <script src="{{ url_for('static', filename='leaflet-1.2.0/leaflet.js') }}"></script>
-    <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
 
     {{ super() }}
 

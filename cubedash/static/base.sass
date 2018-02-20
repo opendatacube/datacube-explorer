@@ -96,7 +96,7 @@ body
 
 .panels
     box-shadow: 0 -2px 0 0 #fff
-    
+
 .info-panel
     ul
         list-style-type: none
@@ -313,19 +313,8 @@ label
     vertical-align: bottom
     height: 24px
 
-@import "gridforms/gridforms"
-
 .relative
     position: relative
-
-// Minor tweak of gridforms defaults
-// Lighten borders
-.grid-form
-
-    +grid-form($grid-border-color: #777, $field-focus-color: lighten(#adb0b3, 8%))
-
-    [data-row-span].disabled
-        display: none
 
 .message-box
     position: absolute
@@ -337,7 +326,7 @@ label
     background: $header_highlight_strong
     padding: 13px 15px
     color: #fff
-    
+
     a
         color: lighten($emphasis_strong, 10%)
 
@@ -362,3 +351,17 @@ label
     background-color: $panel2_color
     margin: 10px
     padding: 15px
+
+@import "gridforms/gridforms"
+
+// Minor tweak of gridforms defaults
+// Lighten borders
+.grid-form
+
+    +grid-form($grid-border-color: #777, $field-focus-color: lighten(#adb0b3, 8%))
+
+    [data-row-span].disabled
+        display: none
+        
+@import "leaflet-1.3.1/leaflet"
+@import "leaflet-groupedlayercontrol/leaflet.groupedlayercontrol"
