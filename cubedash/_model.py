@@ -36,7 +36,11 @@ cache = Cache(app=app, config={"CACHE_TYPE": "simple"})
 
 # Group datasets using this timezone when counting them.
 # Aus data comes from Alice Springs
-_GROUPING_TIME_ZONE = pytz.timezone("Australia/Darwin")
+GROUPING_TIME_ZONE = pytz.timezone("Australia/Darwin")
+# If there's fewer than this many datasets, display them as individual polygons in
+# the browser. Too many can bog down the browser's performance.
+# (Otherwise dataset footprint is shown as a single composite polygon)
+MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 300
 
 
 def as_json(o):
@@ -151,7 +155,7 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
     )
     day_counts.update(
         (
-            _GROUPING_TIME_ZONE.fromutc(dataset.center_time).date()
+            GROUPING_TIME_ZONE.fromutc(dataset.center_time).date()
             for dataset, shape in datasets
         )
     )
@@ -159,7 +163,9 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
     summary = TimePeriodOverview(
         len(datasets),
         day_counts,
-        datasets_to_feature(datasets) if 0 < len(dataset_shapes) < 250 else None,
+        datasets_to_feature(datasets)
+        if 0 < len(dataset_shapes) < MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
+        else None,
         "day",
         time,
         footprint_geometry,
