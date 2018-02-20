@@ -5,12 +5,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{% block title %}{% endblock %}</title>
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
     {% block head %}{% endblock %}
-
 </head>
-<body>    
+<body>
 <!--[if IE]>
 <div class='message-box'>
     <p>
@@ -34,11 +32,13 @@
         {% block header %}{% endblock %}
     </div>
     <div id="content">{% block content %}{% endblock %}</div>
-
-    <script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
-    {% block footer %}{% endblock %}
 </div>
-<footer>Open Data Cube v{{ datacube_version }}, Dash v{{app_version}}</footer>
+<footer>Open Data Cube v{{ datacube_version }}, Dash v{{ app_version }}</footer>
+
+<script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+<script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+<script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
+{% block footer %}{% endblock %}
 </body>
 </html>
