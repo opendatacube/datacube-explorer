@@ -137,11 +137,12 @@
         document.getElementById('add-search-field-type').onchange = function (event) {
 
             var add_field_name = event.target.value,
-                row = document.getElementById('search-row-' + add_field_name);
+                row = document.getElementById('search-row-' + add_field_name),
+                row_fields = row.querySelectorAll('input, select');
 
             // Show the row that was chosen
             row.classList.remove('disabled');
-            row.querySelectorAll('input, select').forEach(function (el) {
+            Array.prototype.forEach.call(row_fields, function (el) {
                 el.disabled = false;
             });
 
