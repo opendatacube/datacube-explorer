@@ -9,7 +9,7 @@ Type=oneshot
 
 WorkingDirectory=/var/www/dea-dashboard/cubedash/static
 
-ExecStart=/bin/goaccess --log-format=COMBINED -a /var/log/nginx/access.log -o /var/www/dea-dashboard/cubedash/static/access.html
+ExecStart=/var/www/dea-dashboard/deployment/deadash-gen-logs.sh
 
 PrivateTmp=true
 
