@@ -36,10 +36,9 @@
 </div>
 <footer>Open Data Cube v{{ datacube_version }}, Dash v{{ app_version }}</footer>
 
-<script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
-<script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
+
 {% block footer %}{% endblock %}
 </body>
 </html>

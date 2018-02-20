@@ -128,17 +128,25 @@
 
 {% block footer %}
     {{ super() }}
+
+    <!-- jQuery is only needed for gridforms. -->
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='gridforms/gridforms.js') }}"></script>
+
     <script type="application/javascript">
+        document.getElementById('add-search-field-type').onchange = function (event) {
 
-        $('#add-search-field-type').change(function () {
-            var add_field_name = $('#add-search-field-type').val();
+            var add_field_name = event.target.value,
+                row = document.getElementById('search-row-' + add_field_name);
 
-            var row = $('#search-row-' + add_field_name);
-            row.removeClass('disabled');
-            row.find('input, select').prop('disabled', false);
+            // Show the row that was chosen
+            row.classList.remove('disabled');
+            row.querySelectorAll('input, select').forEach(function (el) {
+                el.disabled = false;
+            });
 
-            $('#add-search-field-type').val('');
-        });
-
+            // Clear the select box (so the user can choose another)
+            event.target.value = '';
+        };
     </script>
 {% endblock %}
