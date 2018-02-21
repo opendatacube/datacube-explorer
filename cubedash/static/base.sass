@@ -29,6 +29,7 @@ $header_stripe2: #7fd0eb
         padding: 15px 30px
 
     padding: 10px 20px
+
 @mixin square_padding
     @media (min-width: 800px)
         padding: 30px 30px
@@ -167,6 +168,9 @@ footer
         position: absolute
         top: calc(100% - 2px)
         left: 0
+        &.left
+            left: initial
+            right: 0
 
         // Above maps etc
         z-index: 10000
