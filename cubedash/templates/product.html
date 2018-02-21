@@ -215,6 +215,7 @@
                 {% else %}
                     var composite_data = L.geoJson({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }},
                         {
+                            interactive: false,
                             style: function (feature) {
                                 return {
                                     color: "#00A1DE",
