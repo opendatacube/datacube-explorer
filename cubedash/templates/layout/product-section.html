@@ -88,7 +88,7 @@
                         All months
                     {% endif %}
                 </h2>
-                <div class="option-menu">
+                <div class="option-menu left">
                     {% for row in range(1, 13) | batch(3) %}
                         <ul>
                             {% for month_opt in row %}
@@ -125,7 +125,7 @@
                         All days
                     {% endif %}
                 </h2>
-                <div class="option-menu">
+                <div class="option-menu left">
                     {% for row in (year, month) | days_in_month | batch(3) %}
                         <ul>
                             {% for day_opt in row %}
