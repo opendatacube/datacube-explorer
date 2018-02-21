@@ -36,6 +36,18 @@ $header_stripe2: #7fd0eb
 
     padding: 20px 20px
 
+    
+// On small screens, move the description to the info panel.
+.product-description
+    display: none
+
+@media (max-width: 600px)
+    .option-description
+        display: none
+
+    .product-description
+        display: block
+        
 body
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
     background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)

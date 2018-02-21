@@ -18,8 +18,7 @@
         <div class="header-option primary">
             <h2 class="option-title" onclick="">
                 {% if product.definition.description %}
-                    <strong>{{ product.name }}:</strong>
-                    {{ product.definition.description or product.name }}
+                    <strong>{{ product.name }}</strong><span class="option-description">: {{ product.definition.description}}</span>
                 {% else %}
                     <strong>{{ product.name }}</strong>
                 {% endif %}

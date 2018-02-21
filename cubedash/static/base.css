@@ -1,4 +1,8 @@
 @charset "UTF-8";
+.product-description { display: none; }
+
+@media (max-width: 600px) { .option-description { display: none; }
+  .product-description { display: block; } }
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
 
 #logo { padding-right: 25px; position: absolute; top: 15px; right: 0; }
