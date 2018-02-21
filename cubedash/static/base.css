@@ -1,7 +1,4 @@
 @charset "UTF-8";
-:root { --padd-s: 10px; --padd: 20px; }
-
-@media (min-width: 800px) { :root { --padd-s: 15px; --padd: 30px; } }
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
 
 #logo { padding-right: 25px; position: absolute; top: 15px; right: 0; }
@@ -31,27 +28,32 @@ a { color: #2b2b2b; }
 
 header { color: #efefef; padding: 0; display: flex; flex-direction: row; }
 
-footer { padding: 15px 30px; text-align: right; color: #a6a6a6; font-size: 0.8em; }
+footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em; }
+@media (min-width: 800px) { footer { padding: 15px 30px; } }
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
-.header-option.primary { background-color: #474747; }
-.header-option > .option-title { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
-.header-option > .option-title::after { content: " ▾"; }
 .header-option h2 { font-size: 1em; font-weight: normal; }
-.header-option h3 { margin: 0; padding: 15px 30px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
-.header-option > .option-menu, .header-option > ul { display: none; background-color: #007cab; }
+.header-option h3 { margin: 0; padding: 20px 20px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
+@media (min-width: 800px) { .header-option h3 { padding: 30px 30px; } }
+.header-option.primary { background-color: #474747; }
+.header-option > .option-title { padding: 10px 20px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
+@media (min-width: 800px) { .header-option > .option-title { padding: 15px 30px; } }
+.header-option > .option-title::after { content: " ▾"; }
 .header-option:hover { background-color: #007cab; }
-.header-option:hover > .option-menu { display: table; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; }
+.header-option:hover .option-menu { background-color: #007cab; display: table; }
+.header-option .option-menu { display: none; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; }
 .header-option .option-menu > ul { display: table-row; }
 .header-option .option-menu > ul > li { display: table-cell; }
 .header-option .option-menu a:hover { background-color: #00a1de; color: #fff; }
 .header-option ul { margin: 0; padding: 0; list-style: none; }
 .header-option ul li { margin: 0; }
 .header-option .wildcard { font-weight: bold; }
-.header-option a { display: block; text-decoration: none; padding: 15px 30px; color: #fcfcfc; font-weight: bold; }
+.header-option a { display: block; text-decoration: none; padding: 10px 20px; color: #fcfcfc; font-weight: bold; }
+@media (min-width: 800px) { .header-option a { padding: 15px 30px; } }
 .header-option a.active { background-color: #008fc5; }
 
-.panel { padding: 30px; line-height: 1.7em; background: #fafafa; }
+.panel { padding: 20px 20px; line-height: 1.7em; background: #fafafa; }
+@media (min-width: 800px) { .panel { padding: 30px 30px; } }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
