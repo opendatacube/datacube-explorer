@@ -34,11 +34,46 @@
     </div>
     <div id="content">{% block content %}{% endblock %}</div>
 </div>
-<footer>Open Data Cube v{{ datacube_version }}, Dash v{{ app_version }}</footer>
+<footer>
+    Open Data Cube v{{ datacube_version }},
+    Dash v{{ app_version }}, <span id="map-attribution-text"></span>
+    {% block footer %}{% endblock %}
+</footer>
 
 <script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
 
-{% block footer %}{% endblock %}
+{% block body_footer %}{% endblock %}
+<script>
+    // If there's a map on the page, add layer attribution in the footer.
+    (function () {
+        var map = window.MAP;
+        if (map) {
+            var attributionEl = document.getElementById('map-attribution-text');
+
+            function updateAttribution(e) {
+                var attributions = Object.keys(map._layers).map(function (name) {
+                    var layer = map._layers[name];
+                    if (layer.getAttribution) {
+                        return layer.getAttribution();
+                    }
+                    return null;
+                });
+                var isDefined = function (a) {
+                    return a !== null;
+                };
+                var attributionText = new DOMParser().parseFromString(
+                    attributions.filter(isDefined).join(', '),
+                    'text/html'
+                ).body.textContent;
+                attributionEl.innerHTML = attributionText || "";
+            }
+
+            map.on("layeradd", updateAttribution);
+            map.on("layerremove", updateAttribution);
+            updateAttribution();
+        }
+    })();
+</script>
 </body>
 </html>

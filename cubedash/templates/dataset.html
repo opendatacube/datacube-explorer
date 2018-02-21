@@ -118,7 +118,7 @@
     </div>
 {% endblock %}
 
-{% block footer %}
+{% block body_footer %}
     {{ super() }}
     
     {% if extent_geojson %}
@@ -156,6 +156,8 @@
             });
             L.control.zoom({position: "bottomright"}).addTo(map);
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+            
+            window.MAP = map;
         </script>
     {% endif %}
 
