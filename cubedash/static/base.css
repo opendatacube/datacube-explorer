@@ -35,7 +35,7 @@ footer { padding: 15px 30px; text-align: right; color: #a6a6a6; font-size: 0.8em
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
 .header-option.primary { background-color: #474747; }
-.header-option > .option-title { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; }
+.header-option > .option-title { padding: 15px 30px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
 .header-option > .option-title::after { content: " ▾"; }
 .header-option h2 { font-size: 1em; font-weight: normal; }
 .header-option h3 { margin: 0; padding: 15px 30px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
