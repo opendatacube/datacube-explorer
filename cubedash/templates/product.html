@@ -19,6 +19,7 @@
         </div>
         {% if product %}
             <div class="panel info-panel">
+                <p class="product-description">{{ product.definition.description}}</p>
                 <a href="{{ url_for('product.search_page', **product_args) }}" class="muted"
                 >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
                 {% if year %}
