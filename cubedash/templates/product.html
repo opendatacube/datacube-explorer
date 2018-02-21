@@ -81,8 +81,7 @@
 {% endblock %}
 
 
-{% block footer %}
-
+{% block body_footer %}
 
     {{ super() }}
 
@@ -90,7 +89,6 @@
     <script type="application/javascript">
         (function () {
             var msgNoResults = document.getElementById("msg-no-results");
-
 
             var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
                 maxZoom: 18,
@@ -251,9 +249,7 @@
                 map.addControl(timelineControl);
             {% endif %}
 
-
-
+            window.MAP = map;
         })();
-
     </script>
 {% endblock %}
