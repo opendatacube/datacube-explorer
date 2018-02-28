@@ -87,7 +87,7 @@ def dataset_label(dataset):
 
         return p.name
     # TODO: Otherwise try to build a label from the available fields?
-    return dataset.id
+    return str(dataset.id)
 
 
 def _next_month(date: datetime):
