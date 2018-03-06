@@ -23,7 +23,7 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
   .info-panel { width: 250px; border-top: 7px #7fd0eb solid; } }
 .panels { box-shadow: 0 -2px 0 0 #fff; }
 
-.info-panel ul { list-style-type: none; padding: 0; }
+.info-panel ul { list-style-type: none; padding: 0; margin: 0; }
 
 a { color: #2b2b2b; }
 
@@ -62,8 +62,8 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
-.panel h2 { margin: 15px 0 5px; }
-.panel h2:first-child { margin-top: 0; }
+.panel h2, .panel h3 { margin: 15px 0 5px; }
+.panel h2:first-child, .panel h3:first-child { margin-top: 0; }
 
 /* Table of values */
 .data-table th { font-weight: bold; font-size: 0.8em; }
