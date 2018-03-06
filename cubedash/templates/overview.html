@@ -23,7 +23,7 @@
                     {{ product.definition.description }}
                 </div>
                 <div class="panel info-panel">
-                    <a href="{{ url_for('product.search_page', **product_args) }}" class="muted"
+                    <a href="{{ url_for('search_page', **product_args) }}" class="muted"
                     >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
                     {% if year %}
                         for
