@@ -4,7 +4,7 @@ import flask
 from datetime import datetime
 
 import datacube
-from . import _filters, _dataset, _platform, _product, _api, _model
+from . import _filters, _dataset, _platform, _overview, _api, _model
 import cubedash
 
 app = _model.app
@@ -12,7 +12,7 @@ app.register_blueprint(_filters.bp)
 app.register_blueprint(_api.bp)
 app.register_blueprint(_dataset.bp)
 app.register_blueprint(_platform.bp)
-app.register_blueprint(_product.bp)
+app.register_blueprint(_overview.bp)
 
 
 @app.route('/about')

@@ -28,7 +28,7 @@ def overview_page(product_name: str = None,
     product, product_summary, selected_summary = _load_product(product_name, year, month, day)
 
     return flask.render_template(
-        'product.html',
+        'overview.html',
         year=year,
         month=month,
         day=day,
