@@ -4,7 +4,7 @@
             {% set max_count = timeline.most_common(1)[0][1] %}
             <div class="chart-timeline-bars">
                 {% for start_time, count in timeline.items() | sort %}
-                    <a href="{{ url_for('product.overview_page',
+                    <a href="{{ url_for('overview_page',
                             product_name=product.name,
                             **{
                                 'year': start_time.year,

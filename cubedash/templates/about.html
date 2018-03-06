@@ -42,7 +42,7 @@
             <div class="panel odd">
                 {% for product, summary in product_summaries %}
                     <h3>
-                        <a href="{{ url_for('product.overview_page', product_name=product.name) }}">
+                        <a href="{{ url_for('overview_page', product_name=product.name) }}">
                             {{ product.name }}
                         </a>
                     </h3>

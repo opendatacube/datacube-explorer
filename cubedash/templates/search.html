@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="panel relative">
-        <form action="{{ url_for('product.search_page', product_name=product.name) }}"
+        <form action="{{ url_for('search_page', product_name=product.name) }}"
               method="get"
               class="grid-form">
             <fieldset>
