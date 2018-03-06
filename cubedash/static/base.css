@@ -64,6 +64,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .panel.highlight a { color: #999; }
 .panel h2, .panel h3 { margin: 15px 0 5px; }
 .panel h2:first-child, .panel h3:first-child { margin-top: 0; }
+.panel h2:last-child, .panel h3:last-child { margin-bottom: 0; }
 
 /* Table of values */
 .data-table th { font-weight: bold; font-size: 0.8em; }

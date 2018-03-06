@@ -159,31 +159,41 @@ def get_ordered_metadata(metadata_doc):
             key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
         )
     )
-    ordered_metadata["lineage"] = collections.OrderedDict(
-        sorted(
-            ordered_metadata["lineage"].items(),
-            key=functools.partial(
-                get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER
-            ),
+
+    # Order any embedded ones too.
+    if "lineage" in ordered_metadata:
+        ordered_metadata["lineage"] = collections.OrderedDict(
+            sorted(
+                ordered_metadata["lineage"].items(),
+                key=functools.partial(
+                    get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER
+                ),
+            )
         )
-    )
 
-    if "source_datasets" in ordered_metadata["lineage"]:
-        for type_, source_dataset_doc in ordered_metadata["lineage"][
-            "source_datasets"
-        ].items():
-            ordered_metadata["lineage"]["source_datasets"][
-                type_
-            ] = get_ordered_metadata(source_dataset_doc)
+        if "source_datasets" in ordered_metadata["lineage"]:
+            for type_, source_dataset_doc in ordered_metadata["lineage"][
+                "source_datasets"
+            ].items():
+                ordered_metadata["lineage"]["source_datasets"][
+                    type_
+                ] = get_ordered_metadata(source_dataset_doc)
 
+    # Products have an embedded metadata doc (subset of dataset metadata)
+    if "metadata" in ordered_metadata:
+        ordered_metadata["metadata"] = get_ordered_metadata(
+            ordered_metadata["metadata"]
+        )
     return ordered_metadata
 
 
 EODATASETS_PROPERTY_ORDER = [
     "id",
     "ga_label",
-    "ga_level",
+    "name",
+    "description",
     "product_type",
+    "metadata_type",
     "product_level",
     "product_doi",
     "creation_dt",

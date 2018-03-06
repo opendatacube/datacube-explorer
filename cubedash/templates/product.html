@@ -1,0 +1,43 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        
+
+    </style>
+{% endblock %}
+{% block panel %}
+
+{% endblock %}
+{% block content %}
+    {% from "layout/macros.html" import query_param_list, show_raw_document %}
+    
+{#    <div class="panel highlight">#}
+{#        <h2>{{ product.name }}</h2>#}
+{#        <div class="sub-header">#}
+{#            {{ dataset.indexed_time | timesince }}#}
+{#            {% if dataset.archived_time %}#}
+{#                <div>#}
+{#                    Archived#}
+{#                    <span title="{{ dataset.archived_time }}">#}
+{#                    {{ dataset.archived_time | timesince }}#}
+{#                    </span>#}
+{#                </div>#}
+{#            {% endif %}#}
+{#        </div>#}
+    <div class="panel odd">
+        {{ show_raw_document(product_metadata) }}
+    </div>
+    
+    <div class="panel">
+        Return to <a href="{{ url_for('overview_page', product_name=product.name) }}">overview</a>
+
+    </div>
+
+
+
+{% endblock %}
