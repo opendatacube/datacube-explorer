@@ -39,51 +39,45 @@
                     {% endif %}
 
 
-                    <h3>Fields ({{ product.metadata_type.name }})</h3>
+                <h3>Fields ({{ product.metadata_type.name }})</h3>
 
-                    {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
+                {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
 
 
-                    {# These fields are enforced by dataset-type-schema.yaml #}
-                    {% if product.definition.storage %}
-                        <h3>Storage</h3>
-                        {{ query_param_list(product.definition.storage, show_dicts=true) }}
-                    {% endif %}
+                {# These fields are enforced by dataset-type-schema.yaml #}
+                {% if product.definition.storage %}
+                    <h3>Storage</h3>
+                    {{ query_param_list(product.definition.storage, show_dicts=true) }}
+                {% endif %}
 
-                    {% if product.definition.measurements %}
-                        <h3>Measurements</h3>
-                        <ul>
-                            {% for measurement in product.definition.measurements %}
-                                <li>
-                                    <div>
-                                        {% for a in measurement.aliases %}<span class="muted">{{ a }}</span>
-                                            / {% endfor %}
-                                        <span class="muted">{{ measurement.name }}</span>
-                                    </div>
-                                    {#                            <div>#}
-                                    {#                                type {{ measurement.dtype }};#}
-                                    {#                                units {{ measurement.units }};#}
-                                    {#                                nodata {{ measurement.nodata }}#}
-                                    {#                            </div>#}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                    {% if not request.args.full_metadata %}
-                        <a href="{{ request.path }}?full_metadata=yes#metadata">raw metadata</a>
-                    {% endif %}
+                {% if product.definition.measurements %}
+                    <h3>Measurements</h3>
+                    <ul>
+                        {% for measurement in product.definition.measurements %}
+                            <li>
+                                <div>
+                                    {% for a in measurement.aliases %}<span class="muted">{{ a }}</span>
+                                        / {% endfor %}
+                                    <span class="muted">{{ measurement.name }}</span>
+                                </div>
+                                {#                            <div>#}
+                                {#                                type {{ measurement.dtype }};#}
+                                {#                                units {{ measurement.units }};#}
+                                {#                                nodata {{ measurement.nodata }}#}
+                                {#                            </div>#}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
 
-                </div>
+                <p>
+                    <a href="{{ url_for('product.product_page', name=product.name) }}" 
+                       class="muted">raw metadata</a>
+                </p>
+
             </div>
         {% endif %}
     </div>
-    {% if request.args.full_metadata %}
-        <div class="panel odd" id="metadata">
-            <h3>Raw Metadata for {{ product.name }}</h3>
-            {{ show_raw_document(product.definition) }}
-        </div>
-    {% endif %}
-
 {% endblock %}
 
 

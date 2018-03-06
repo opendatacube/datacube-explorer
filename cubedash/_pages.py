@@ -18,6 +18,7 @@ app = _model.app
 app.register_blueprint(_filters.bp)
 app.register_blueprint(_api.bp)
 app.register_blueprint(_dataset.bp)
+app.register_blueprint(_product.bp)
 app.register_blueprint(_platform.bp)
 
 _LOG = structlog.getLogger()

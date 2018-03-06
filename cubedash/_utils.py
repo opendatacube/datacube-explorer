@@ -156,20 +156,28 @@ def get_ordered_metadata(metadata_doc):
         sorted(metadata_doc.items(),
                key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER))
     )
-    ordered_metadata['lineage'] = collections.OrderedDict(
-        sorted(ordered_metadata['lineage'].items(),
-               key=functools.partial(get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER))
-    )
 
-    if 'source_datasets' in ordered_metadata['lineage']:
-        for type_, source_dataset_doc in ordered_metadata['lineage']['source_datasets'].items():
-            ordered_metadata['lineage']['source_datasets'][type_] = get_ordered_metadata(source_dataset_doc)
+    # Order any embedded ones too.
+    if 'lineage' in ordered_metadata:
+        ordered_metadata['lineage'] = collections.OrderedDict(
+            sorted(ordered_metadata['lineage'].items(),
+                   key=functools.partial(get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER))
+        )
 
+        if 'source_datasets' in ordered_metadata['lineage']:
+            for type_, source_dataset_doc in ordered_metadata['lineage']['source_datasets'].items():
+                ordered_metadata['lineage']['source_datasets'][type_] = get_ordered_metadata(source_dataset_doc)
+
+    # Products have an embedded metadata doc (subset of dataset metadata)
+    if 'metadata' in ordered_metadata:
+        ordered_metadata['metadata'] = get_ordered_metadata(ordered_metadata['metadata'])
     return ordered_metadata
 
 
-EODATASETS_PROPERTY_ORDER = ['id', 'ga_label', 'ga_level', 'product_type', 'product_level', 'product_doi',
-                             'creation_dt', 'size_bytes', 'checksum_path', 'platform', 'instrument', 'format', 'usgs',
+EODATASETS_PROPERTY_ORDER = ['id', 'ga_label', 'name', 'description', 'product_type', 'metadata_type',
+                             'product_level', 'product_doi',
+                             'creation_dt', 'size_bytes', 'checksum_path',
+                             'platform', 'instrument', 'format', 'usgs',
                              'rms_string', 'acquisition', 'extent', 'grid_spatial', 'gqa', 'browse', 'image', 'lineage',
                              'product_flags']
 EODATASETS_LINEAGE_PROPERTY_ORDER = ['algorithm', 'machine', 'ancillary_quality', 'ancillary', 'source_datasets']
