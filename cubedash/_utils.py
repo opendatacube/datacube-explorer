@@ -21,7 +21,7 @@ from flask import jsonify
 from shapely.geometry import Polygon
 from werkzeug.datastructures import MultiDict
 
-from datacube.index.postgres._fields import PgDocField, RangeDocField
+from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
@@ -131,16 +131,11 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
     field_groups = group_field_names(request)
 
     for field_name, field_vals in field_groups.items():
-        field = product.metadata_type.dataset_fields.get(field_name)
+        field: Field = product.metadata_type.dataset_fields.get(field_name)
         if not field:
             raise ValueError("No field %r for product %s" % (field_name, product.name))
 
-        if isinstance(field, RangeDocField):
-            parser = field.lower.parse_value
-        elif isinstance(field, PgDocField):
-            parser = field.parse_value
-        else:
-            parser = lambda a: a
+        parser = _field_parser(field)
 
         if "val" in field_vals:
             query[field_name] = parser(field_vals["val"])
@@ -153,6 +148,17 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
             raise ValueError("Unknown field classifier: %r" % field_vals)
 
     return query
+
+
+def _field_parser(field: Field):
+    if field.type_name.endswith("-range"):
+        field = field.lower
+
+    try:
+        parser = field.parse_value
+    except AttributeError:
+        parser = lambda a: a
+    return parser
 
 
 def default_utc(d: datetime) -> datetime:
