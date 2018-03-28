@@ -10,7 +10,7 @@ import dateutil.parser
 import fiona
 import flask
 import pandas as pd
-import pytz
+
 import shapely
 import shapely.geometry
 import shapely.ops
@@ -24,6 +24,7 @@ from datacube.index._api import Index
 from datacube.model import Range, DatasetType, Dataset
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
+from dateutil import tz
 from . import _utils as utils
 
 NAME = 'cubedash'
@@ -38,7 +39,7 @@ cache = Cache(
 
 # Group datasets using this timezone when counting them.
 # Aus data comes from Alice Springs
-GROUPING_TIME_ZONE = pytz.timezone('Australia/Darwin')
+GROUPING_TIME_ZONE = tz.gettz('Australia/Darwin')
 # If there's fewer than this many datasets, display them as individual polygons in
 # the browser. Too many can bog down the browser's performance.
 # (Otherwise dataset footprint is shown as a single composite polygon)
@@ -148,8 +149,8 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
     day_counts = Counter({
         d.date(): 0 for d in pd.date_range(time.begin, time.end, closed='left')
     })
-    day_counts.update((GROUPING_TIME_ZONE.fromutc(dataset.center_time).date()
-                       for dataset, shape in datasets))
+    day_counts.update(_default_utc(dataset.center_time).astimezone(GROUPING_TIME_ZONE).date()
+                      for dataset, shape in datasets)
 
     summary = TimePeriodOverview(
         len(datasets),
@@ -166,6 +167,12 @@ def _calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOve
         footprints_missing=summary.dataset_count - summary.footprint_count
     )
     return summary
+
+
+def _default_utc(d):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    return d
 
 
 def datasets_to_feature(datasets: Iterable[Tuple[Dataset, BaseGeometry]]):
