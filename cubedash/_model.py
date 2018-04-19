@@ -368,8 +368,9 @@ def get_summary_path(
     product_name: Optional[str] = None,
     year: Optional[int] = None,
     month: Optional[int] = None,
+    summaries_dir: Optional[Path] = None,
 ):
-    path = SUMMARIES_DIR
+    path = summaries_dir or SUMMARIES_DIR
     if product_name:
         path = path / product_name
     if year:
