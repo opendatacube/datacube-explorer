@@ -5,8 +5,8 @@ import logging
 import flask
 from flask import Blueprint
 
-from cubedash import _utils as utils
-from cubedash._model import index
+from . import _utils as utils
+from ._model import index
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("dataset", __name__, url_prefix="/dataset")

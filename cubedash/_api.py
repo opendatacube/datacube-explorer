@@ -2,8 +2,10 @@ import logging
 
 from flask import Blueprint
 
-from cubedash._model import as_json, get_day, get_summary
 from datacube.utils.geometry import CRS
+
+from ._model import as_json, get_day
+from .summary import get_summary
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")

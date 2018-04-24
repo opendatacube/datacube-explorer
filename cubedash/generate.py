@@ -1,6 +1,4 @@
-import shutil
 import sys
-import tempfile
 from pathlib import Path
 from typing import List, Sequence, Tuple
 
@@ -9,6 +7,8 @@ import structlog
 from click import echo, secho, style
 
 import cubedash._model as dash
+from cubedash import summary
+from cubedash.summary import SummaryStore
 from datacube.model import DatasetType
 
 _LOG = structlog.get_logger()
@@ -16,11 +16,10 @@ _LOG = structlog.get_logger()
 
 # pylint: disable=broad-except
 def generate_reports(
-    products: Sequence[DatasetType], summaries_dir: Path = None
+    products: Sequence[DatasetType], store: SummaryStore
 ) -> Tuple[int, int]:
     echo(
-        f"Updating {len(products)} products in "
-        f"{style(str(dash.get_summary_path()), bold=True)}",
+        f"Updating {len(products)} products in " f"{style(repr(store), bold=True)}",
         err=True,
     )
 
@@ -29,28 +28,21 @@ def generate_reports(
 
     for product in products:
         echo(f"\t{product.name}....", nl=False, err=True)
-        final_path = dash.get_summary_path(product.name, summaries_dir=summaries_dir)
-        if final_path.exists():
+        if store.has(product.name, None, None):
             echo("exists", err=True)
             continue
 
-        tmp_dir = Path(
-            tempfile.mkdtemp(prefix=".dash-report-", dir=str(final_path.parent))
-        )
         try:
-            dash.write_product_summary(product, tmp_dir)
-            tmp_dir.rename(final_path)
+            summary.write_product_summary(product, store)
             secho("done", fg="green", err=True)
             completed += 1
         except Exception:
             _LOG.exception("report.generate", product=product.name, exc_info=True)
             secho("error", fg="yellow", err=True)
             failures += 1
-        finally:
-            shutil.rmtree(str(tmp_dir), ignore_errors=True)
 
     echo("\tregenerating total....", nl=False, err=True)
-    dash.generate_summary()
+    summary.write_total_summary(store)
 
     secho(
         f"done. " f"{completed}/{len(products)} generated, " f"{failures} failures",
@@ -83,9 +75,12 @@ def cli(generate_all_products: bool, summaries_dir: str, product_names: List[str
     else:
         products = list(_load_products(product_names))
 
-    completed, failures = generate_reports(
-        products, summaries_dir=Path(summaries_dir) if summaries_dir else None
-    )
+    if summaries_dir:
+        store = summary.FileSummaryStore(base_path=Path(summaries_dir))
+    else:
+        store = summary._STORE
+
+    completed, failures = generate_reports(products, store=store)
     sys.exit(failures)
 
 

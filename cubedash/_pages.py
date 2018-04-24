@@ -8,11 +8,12 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from cubedash import _utils as utils
-from cubedash._model import as_json, get_summary, index
 from datacube.scripts.dataset import build_dataset_info
 
 from . import _api, _dataset, _filters, _model, _platform, _product
+from . import _utils as utils
+from ._model import as_json, index
+from .summary import get_products_with_summaries, get_summary
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -140,7 +141,7 @@ def about_page():
 
 @app.context_processor
 def inject_globals():
-    product_summaries = _model.list_product_summaries()
+    product_summaries = get_products_with_summaries()
 
     # Group by product type
     def key(t):
