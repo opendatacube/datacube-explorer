@@ -12,8 +12,6 @@ import fiona
 import pandas as pd
 import shapely
 import shapely.geometry
-import shapely.geometry
-import shapely.ops
 import shapely.ops
 import structlog
 from dateutil import tz
@@ -169,8 +167,7 @@ class SummaryStore:
     def get(self,
             product_name: Optional[str],
             year: Optional[int],
-            month: Optional[int]
-            ) -> TimePeriodOverview:
+            month: Optional[int]) -> TimePeriodOverview:
         raise NotImplementedError("Get summary")
 
     def has(self,
@@ -208,19 +205,18 @@ class FileSummaryStore(SummaryStore):
 
         self._summary_to_file(
             "-".join(str(s) for s in
-                     (product_name, year,  month) if s),
+                     (product_name, year, month) if s),
             path,
             summary
         )
 
     def get(self, product_name: Optional[str], year: Optional[int],
-            month: Optional[int]) -> TimePeriodOverview:
+            month: Optional[int]) -> Optional[TimePeriodOverview]:
         path = self._get_summary_path(product_name, year, month)
-        return self._read_summary(path)
+        if not path.exists():
+            return None
 
-    def has(self, product_name: Optional[str], year: Optional[int],
-            month: Optional[int]) -> bool:
-        return self._get_summary_path(product_name, year, month).exists()
+        return self._read_summary(path)
 
     def _get_summary_path(self,
                           product_name: Optional[str] = None,
@@ -301,6 +297,9 @@ class FileSummaryStore(SummaryStore):
             footprint_count=timeline['footprint_count']
         )
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(base_path={repr(self.base_path)})"
+
 
 def write_total_summary(store: SummaryStore) -> TimePeriodOverview:
     """
@@ -359,7 +358,7 @@ def _write_month_summary(product: DatasetType, year: int, month: int,
 ## Web App instances ##
 
 
-_STORE = FileSummaryStore(_model.SUMMARIES_DIR)
+DEFAULT_STORE = FileSummaryStore(_model.SUMMARIES_DIR)
 
 
 @cache.memoize(timeout=60)
@@ -374,7 +373,7 @@ def get_summary(
                                  utils.as_time_range(year, month, day))
 
     # Otherwise load from file
-    return _STORE.get(product_name, year, month)
+    return DEFAULT_STORE.get(product_name, year, month)
 
 
 @cache.memoize(timeout=120)
@@ -385,7 +384,7 @@ def get_products_with_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverv
 
     products = [
         (index.products.get_by_name(product_name), get_summary(product_name))
-        for product_name in _STORE.list_complete_products()
+        for product_name in DEFAULT_STORE.list_complete_products()
     ]
     if not products:
         raise RuntimeError(

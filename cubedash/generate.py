@@ -78,7 +78,7 @@ def cli(generate_all_products: bool, summaries_dir: str, product_names: List[str
     if summaries_dir:
         store = summary.FileSummaryStore(base_path=Path(summaries_dir))
     else:
-        store = summary._STORE
+        store = summary.DEFAULT_STORE
 
     completed, failures = generate_reports(products, store=store)
     sys.exit(failures)
