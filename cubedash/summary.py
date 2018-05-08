@@ -67,7 +67,8 @@ class TimePeriodOverview(NamedTuple):
         with_valid_geometries = [
             p
             for p in periods
-            if p.footprint_geometry
+            if p.footprint_count
+            and p.footprint_geometry
             and p.footprint_geometry.is_valid
             and not p.footprint_geometry.is_empty
         ]
@@ -90,7 +91,7 @@ class TimePeriodOverview(NamedTuple):
         )
 
 
-def calculate_summary(product_name: str, time: Range) -> Optional[TimePeriodOverview]:
+def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
     log = _LOG.bind(product=product_name, time=time)
     log.debug("summary.calc")
 
