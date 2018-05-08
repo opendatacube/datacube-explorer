@@ -40,19 +40,19 @@ echo "Starting restore $(date)"
 echo "Vars:"
 (set -o posix; set) | grep -e '^[a-z_]\+=' | sed 's/^/    /'
 
-if [ ! -e ${dump_file} ];
-then
-	# Fetch new one
-	echo "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
-	set -x
-	scp "r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
-	set +x
-fi
-
 if psql ${psql_args} -lqtA | grep -q "^$dbname|";
 then 
 	echo "DB exists"
 else
+	if [ ! -e ${dump_file} ];
+	then
+		# Fetch new one
+		echo "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
+		set -x
+		scp "r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
+		set +x
+	fi
+
 	createdb ${psql_args} "$dbname"
 
 
@@ -61,12 +61,11 @@ else
 	# "no data for failed tables": when postgis extension fails to (re)initialise, don't populate its data
 	# owner, privileges and tablespace are all NCI-specific.
 	pg_restore -v --no-owner --no-privileges --no-tablespaces --no-data-for-failed-tables ${psql_args} -d "${dbname}" -j 4 "${dump_file}" || true
+
+	# Hygiene
+	echo "Vacuuming"
+	psql ${psql_args} "${dbname}" -c "vacuum analyze;"
 fi
-
-
-# Hygiene
-echo "Vacuuming"
-psql ${psql_args} "${dbname}" -c "vacuum analyze;"
 
 ## Summary generation
 
