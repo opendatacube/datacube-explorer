@@ -211,9 +211,6 @@ class FileSummaryStore(SummaryStore):
         if summary.dataset_count == 0 and (year or month):
             return
 
-        if month is not None:
-            path.mkdir(parents=True)
-
         self._summary_to_file(
             "-".join(str(s) for s in (product_name, year, month) if s), path, summary
         )
@@ -243,6 +240,7 @@ class FileSummaryStore(SummaryStore):
         return path
 
     def _summary_to_file(self, name: str, path: Path, summary: TimePeriodOverview):
+        path.mkdir(parents=True, exist_ok=True)
         schema = {"geometry": "Polygon", "properties": {"id": "str"}}
         with (path / "timeline.json").open("w") as f:
             json.dump(
