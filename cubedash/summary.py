@@ -263,11 +263,15 @@ class FileSummaryStore(SummaryStore):
                     'properties': {'id': name}
                 })
 
-    def _read_summary(self, path: Path) -> TimePeriodOverview:
-        with (path / 'timeline.json').open('r') as f:
-            timeline = json.load(f)
-
+    def _read_summary(self, path: Path) -> Optional[TimePeriodOverview]:
+        timeline_path = path / 'timeline.json'
         coverage_path = path / 'dataset-coverage.shp'
+
+        if not timeline_path.exists() or not coverage_path.exists():
+            return None
+
+        with timeline_path.open('r') as f:
+            timeline = json.load(f)
 
         with fiona.open(str(coverage_path)) as f:
             shapes = list(f)
