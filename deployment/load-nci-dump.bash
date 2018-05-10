@@ -3,6 +3,8 @@
 set -eu
 umask 0022
 
+# NCI dates are in AEST
+export TZ="Australia/Sydney"
 
 # Optional first argument is day to load (eg. "yesterday")
 dump_id="$(date "-d${1:-today}" +%Y%m%d)"
@@ -49,7 +51,7 @@ else
 		# Fetch new one
 		echo "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
 		set -x
-		scp "r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
+		scp "lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
 		set +x
 	fi
 
@@ -78,18 +80,31 @@ echo "
 db_database: ${dbname}
 " > datacube.conf
 
+echo "Restarting deadash (with updated dataset information)"
+sudo systemctl restart deadash
+
 echo "Summary gen"
 # We randomise the product list to more evenly space large/small products between workers
-<"${summary_dir}/all-products.txt" sort -R | parallel --line-buffer -m -j4 /opt/conda/bin/python -m cubedash.generate --summaries-dir "${summary_dir}"
+<"${summary_dir}/all-products.txt" sort -R | parallel --line-buffer -m -j4 /opt/conda/bin/python -m cubedash.generate --summaries-dir "${summary_dir}" || true
 
+if [ ! -e "${summary_dir}/timeline.json" ];
+then
+	echo "Summary gen failure: no overall summary"
+	return 1
+fi
+
+echo "Switching to new summaries"
 # Switch to new summaries
 ln -snf "${summary_dir}" product-summaries
 
+echo "Restarting deadash (with updated summaries)"
 sudo systemctl restart deadash
 
+echo "Warming caching"
 # Not strictly necessary, but users will see the new data sooner
 bash /data/warm-cache.sh
 
-rm "${dump_file}"
+[ -e "${dump_file}" ] && rm -v "${dump_file}"
+
 echo "All Done $(date) ${summary_dir}"
 
