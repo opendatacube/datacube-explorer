@@ -46,6 +46,12 @@ class TimePeriodOverview(NamedTuple):
 
     footprint_count: int
 
+    # The most newly created dataset
+    newest_dataset_creation_time: datetime
+
+    # When this summary was generated
+    summary_gen_time: datetime
+
     @staticmethod
     def add_periods(periods: Iterable["TimePeriodOverview"], group_by_month=False):
         periods = [p for p in periods if p.dataset_count > 0]
@@ -53,7 +59,7 @@ class TimePeriodOverview(NamedTuple):
         period = None
 
         if not periods:
-            return TimePeriodOverview(0, None, None, None, None, None, None)
+            return TimePeriodOverview(0, None, None, None, None, None, None, None)
 
         for p in periods:
             counter.update(p.dataset_counts)
@@ -89,6 +95,18 @@ class TimePeriodOverview(NamedTuple):
             if with_valid_geometries
             else None,
             sum(p.footprint_count for p in with_valid_geometries),
+            max(
+                (
+                    p.newest_dataset_creation_time
+                    for p in periods
+                    if p.newest_dataset_creation_time is not None
+                ),
+                default=None,
+            ),
+            min(
+                (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
+                default=None,
+            ),
         )
 
 
@@ -130,6 +148,8 @@ def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
         time,
         footprint_geometry,
         len(dataset_shapes),
+        max(_dataset_created(dataset) for dataset, shape in datasets),
+        utils.default_utc(datetime.utcnow()),
     )
     log.debug(
         "summary.calc.done",
@@ -139,10 +159,18 @@ def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
     return summary
 
 
-def _default_utc(d):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d
+def _dataset_created(dataset: Dataset) -> Optional[datetime]:
+    if "created" in dataset.metadata.fields:
+        return dataset.metadata.created
+
+    value = dataset.metadata.creation_dt
+    if value:
+        try:
+            return utils.default_utc(dc_utils.parse_time(value))
+        except ValueError:
+            pass
+
+    return None
 
 
 def _datasets_to_feature(datasets: Iterable[Tuple[Dataset, BaseGeometry]]):
@@ -265,6 +293,8 @@ class FileSummaryStore(SummaryStore):
                     series={d.isoformat(): v for d, v in summary.dataset_counts.items()}
                     if summary.dataset_counts
                     else None,
+                    generation_time=summary.summary_gen_time,
+                    newest_dataset_creation_time=summary.newest_dataset_creation_time,
                 ),
                 f,
             )
@@ -322,6 +352,9 @@ class FileSummaryStore(SummaryStore):
             else None,
             footprint_geometry=footprint,
             footprint_count=timeline["footprint_count"],
+            newest_dataset_creation_time=timeline.get("generation_time"),
+            summary_gen_time=timeline.get("newest_dataset_creation_time")
+            or datetime.fromtimestamp(os.path.getctime(timeline_path)),
         )
 
     @cache.cached(timeout=120)
