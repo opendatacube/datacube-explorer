@@ -80,7 +80,14 @@
                        class="muted">raw metadata</a>
                 </p>
 
+                {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}
+                {% if selected_summary.newest_dataset_creation_time %}
+                <!-- Summarised {{ selected_summary.summary_gen_time | timesince }} -->
+                {% endif %}
             </div>
+
+
+
         {% endif %}
     </div>
 {% endblock %}
