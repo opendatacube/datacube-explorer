@@ -12,6 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional
 
+from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from werkzeug.datastructures import MultiDict
 
@@ -143,6 +144,12 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
             raise ValueError("Unknown field classifier: %r" % field_vals)
 
     return query
+
+
+def default_utc(d):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    return d
 
 
 def get_ordered_metadata(metadata_doc):

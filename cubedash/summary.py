@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import json
+import os
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -13,9 +14,9 @@ import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-from dateutil import tz
 from shapely.geometry.base import BaseGeometry
 
+from datacube import utils as dc_utils
 from datacube.model import Dataset, DatasetType, Range
 
 from . import _model
@@ -113,7 +114,9 @@ def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
         {d.date(): 0 for d in pd.date_range(time.begin, time.end, closed="left")}
     )
     day_counts.update(
-        _default_utc(dataset.center_time).astimezone(_model.GROUPING_TIME_ZONE).date()
+        utils.default_utc(dataset.center_time)
+        .astimezone(_model.GROUPING_TIME_ZONE)
+        .date()
         for dataset, shape in datasets
     )
 
@@ -192,6 +195,10 @@ class SummaryStore:
             )
         )
         return existing_products
+
+    def get_last_updated(self) -> Optional[datetime]:
+        """Time of last update, if known"""
+        return None
 
 
 class FileSummaryStore(SummaryStore):
@@ -316,6 +323,28 @@ class FileSummaryStore(SummaryStore):
             footprint_geometry=footprint,
             footprint_count=timeline["footprint_count"],
         )
+
+    @cache.cached(timeout=120)
+    def get_last_updated(self) -> Optional[datetime]:
+        """
+        When was our data last updated?
+        """
+        # Does a file tell us when the database was last cloned?
+        path = self.base_path / "generated.txt"
+        if path.exists():
+            date_text = path.read_text()
+            try:
+                return dateutil.parser.parse(date_text)
+            except ValueError:
+                _LOG.warn("invalid.date", text=date_text)
+
+        # Otherwise the oldest summary that was generated
+        overall_summary = self.get(None, None, None)
+        if overall_summary:
+            return overall_summary.summary_gen_time
+
+        # Otherwise the creation time of our summary folder
+        return datetime.fromtimestamp(os.path.getctime(self.base_path))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(base_path={repr(self.base_path)})"
