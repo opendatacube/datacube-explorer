@@ -36,7 +36,10 @@
 </div>
 <footer>
     Open Data Cube v{{ datacube_version }},
-    Dash v{{ app_version }}, <span id="map-attribution-text"></span>
+    Dash v{{ app_version }}, <span id="map-attribution-text"></span><br/>
+    {% if last_updated_time %}
+        Updated {{ last_updated_time | timesince }}
+    {% endif %}
     {% block footer %}{% endblock %}
 </footer>
 

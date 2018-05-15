@@ -23,35 +23,40 @@
                     {{ product.definition.description }}
                 </div>
                 <div class="panel info-panel">
-                    <a href="{{ url_for('search_page', **product_args) }}" class="muted"
-                    >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
                     {% if year %}
-                        for
+                        <h3>
                         {% if month %}
                             {% if day %}{{ day }}
                             {% endif %}
                             {{ month | month_name }}
                         {% endif %}
                         {{ year }}
+                        </h3>
                     {% endif %}
+                    <a href="{{ url_for('search_page', **product_args) }}" class="muted"
+                    >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
+
                     {% if selected_summary.dataset_count != selected_summary.footprint_count %}
                         ({{ selected_summary.footprint_count or 'No' }} visible)
                     {% endif %}
 
+                    {% if selected_summary.newest_dataset_creation_time %}
+                        <div>Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}</div>
+                    {% endif %}
 
-                <h3>Fields ({{ product.metadata_type.name }})</h3>
+                <h4>Fields ({{ product.metadata_type.name }})</h4>
 
                 {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
 
 
                 {# These fields are enforced by dataset-type-schema.yaml #}
                 {% if product.definition.storage %}
-                    <h3>Storage</h3>
+                    <h4>Storage</h4>
                     {{ query_param_list(product.definition.storage, show_dicts=true) }}
                 {% endif %}
 
                 {% if product.definition.measurements %}
-                    <h3>Measurements</h3>
+                    <h4>Measurements</h4>
                     <ul>
                         {% for measurement in product.definition.measurements %}
                             <li>

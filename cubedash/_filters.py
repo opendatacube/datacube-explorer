@@ -148,7 +148,7 @@ def timesince(dt, default="just now"):
     """
 
     now = datetime.utcnow().replace(tzinfo=tz.tzutc())
-    diff = now - dt
+    diff = now - utils.default_utc(dt)
 
     periods = (
         (diff.days // 365, "year", "years"),

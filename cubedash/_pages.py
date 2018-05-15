@@ -13,7 +13,7 @@ from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
 from ._model import index, as_json
-from .summary import get_summary, get_products_with_summaries
+from .summary import get_summary, get_products_with_summaries, DEFAULT_STORE
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -164,7 +164,8 @@ def inject_globals():
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
-        app_version=cubedash.__version__
+        app_version=cubedash.__version__,
+        last_updated_time=DEFAULT_STORE.get_last_updated()
     )
 
 
