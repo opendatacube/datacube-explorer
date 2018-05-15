@@ -29,7 +29,7 @@ GROUPING_TIME_ZONE = tz.gettz("Australia/Darwin")
 # If there's fewer than this many datasets, display them as individual polygons in
 # the browser. Too many can bog down the browser's performance.
 # (Otherwise dataset footprint is shown as a single composite polygon)
-MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 300
+MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
 
 
 def as_json(o):
