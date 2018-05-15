@@ -56,8 +56,9 @@ else
 		# Fetch new one
 		log_info "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
 		# Our public key is whitelisted in lpgs to scp the latest backup (only)
+		# '-p' to preserve time the backup was taken: we refer to it below
 		set -x
-		scp "lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
+		scp -p "lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
 		set +x
 	fi
 
@@ -92,6 +93,9 @@ sudo systemctl restart deadash
 log_info "Summary gen"
 # We randomise the product list to more evenly space large/small products between workers
 <"${summary_dir}/all-products.txt" sort -R | parallel --line-buffer -m -j4 /opt/conda/bin/python -m cubedash.generate --summaries-dir "${summary_dir}" || true
+
+# Record date/time of DB backup, cubedash will show it as last update time
+date -r "${dump_file}" > "${summary_dir}/generated.txt"
 
 if [ ! -e "${summary_dir}/timeline.json" ];
 then
