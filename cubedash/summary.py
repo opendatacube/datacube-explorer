@@ -59,7 +59,7 @@ class TimePeriodOverview(NamedTuple):
         period = None
 
         if not periods:
-            return TimePeriodOverview(0, None, None, None, None, None, None, None)
+            return TimePeriodOverview(0, None, None, None, None, None, None, None, None)
 
         for p in periods:
             counter.update(p.dataset_counts)
@@ -148,7 +148,7 @@ def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
         time,
         footprint_geometry,
         len(dataset_shapes),
-        max(_dataset_created(dataset) for dataset, shape in datasets),
+        max((_dataset_created(dataset) for dataset, shape in datasets), default=None),
         utils.default_utc(datetime.utcnow()),
     )
     log.debug(
@@ -168,6 +168,7 @@ def _dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return utils.default_utc(dc_utils.parse_time(value))
         except ValueError:
+            raise
             pass
 
     return None
@@ -293,8 +294,16 @@ class FileSummaryStore(SummaryStore):
                     series={d.isoformat(): v for d, v in summary.dataset_counts.items()}
                     if summary.dataset_counts
                     else None,
-                    generation_time=summary.summary_gen_time,
-                    newest_dataset_creation_time=summary.newest_dataset_creation_time,
+                    generation_time=(
+                        summary.summary_gen_time.isoformat()
+                        if summary.summary_gen_time
+                        else None
+                    ),
+                    newest_dataset_creation_time=(
+                        summary.newest_dataset_creation_time.isoformat()
+                        if summary.newest_dataset_creation_time
+                        else None
+                    ),
                 ),
                 f,
             )
@@ -352,9 +361,13 @@ class FileSummaryStore(SummaryStore):
             else None,
             footprint_geometry=footprint,
             footprint_count=timeline["footprint_count"],
-            newest_dataset_creation_time=timeline.get("generation_time"),
-            summary_gen_time=timeline.get("newest_dataset_creation_time")
-            or datetime.fromtimestamp(os.path.getctime(timeline_path)),
+            newest_dataset_creation_time=_safe_read_date(
+                timeline.get("newest_dataset_creation_time")
+            ),
+            summary_gen_time=_safe_read_date(timeline.get("generation_time"))
+            or utils.default_utc(
+                datetime.fromtimestamp(os.path.getctime(timeline_path))
+            ),
         )
 
     @cache.cached(timeout=120)
@@ -381,6 +394,13 @@ class FileSummaryStore(SummaryStore):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(base_path={repr(self.base_path)})"
+
+
+def _safe_read_date(d):
+    if d:
+        return utils.default_utc(dateutil.parser.parse(d))
+
+    return None
 
 
 def write_total_summary(store: SummaryStore) -> TimePeriodOverview:
