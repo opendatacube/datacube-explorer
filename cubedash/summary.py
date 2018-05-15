@@ -168,8 +168,9 @@ def _dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return utils.default_utc(dc_utils.parse_time(value))
         except ValueError:
-            raise
-            pass
+            _LOG.debug(
+                "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
+            )
 
     return None
 
