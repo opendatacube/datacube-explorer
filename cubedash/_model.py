@@ -5,6 +5,7 @@ from pathlib import Path
 
 import flask
 import shapely.geometry
+import shapely.validation
 import structlog
 from dateutil import tz
 from flask import jsonify
@@ -61,4 +62,17 @@ def dataset_shape(ds: Dataset):
     if extent is None:
         return None
 
-    return shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+    geom = shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+    if not geom.is_valid:
+        _LOG.info(
+            "dataset.invalid_extent",
+            dataset_id=ds.id,
+            shapely_reason_text=shapely.validation.explain_validity(geom),
+        )
+        # A zero distance may be used to “tidy” a polygon.
+        clean = geom.buffer(0.0)
+        assert clean.geom_type == "Polygon"
+        assert clean.is_valid
+        geom = clean
+
+    return geom
