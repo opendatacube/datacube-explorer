@@ -31,9 +31,6 @@ _LOG = structlog.get_logger()
 
 
 class TimePeriodOverview(NamedTuple):
-    # product_name: str
-    # year: int
-    # month: int
 
     dataset_count: int
 
@@ -120,8 +117,7 @@ def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
         for dataset in index.datasets.search(product=product_name, time=time)
     ]
     dataset_shapes = [
-        shape for dataset, shape in datasets
-        if shape and shape.is_valid and not shape.is_empty
+        shape for dataset, (shape, was_valid) in datasets if shape
     ]
     footprint_geometry = \
         shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
@@ -169,21 +165,22 @@ def _dataset_created(dataset: Dataset) -> Optional[datetime]:
     return None
 
 
-def _datasets_to_feature(datasets: Iterable[Tuple[Dataset, BaseGeometry]]):
+def _datasets_to_feature(datasets: Iterable[Tuple[Dataset, Tuple[BaseGeometry, bool]]]):
     return {
         'type': 'FeatureCollection',
         'features': [_dataset_to_feature(ds) for ds in datasets if ds[1]]
     }
 
 
-def _dataset_to_feature(ds: Tuple[Dataset, BaseGeometry]):
-    dataset, shape = ds
+def _dataset_to_feature(ds: Tuple[Dataset, Tuple[BaseGeometry, bool]]):
+    dataset, (shape, valid_extent) = ds
     return {
         'type': 'Feature',
         'geometry': shape.__geo_interface__,
         'properties': {
             'id': str(dataset.id),
             'label': utils.dataset_label(dataset),
+            'valid_extent': valid_extent,
             'start_time': dataset.time.begin.isoformat()
         }
     }
@@ -461,6 +458,7 @@ def get_summary(
 
     # Otherwise load from file
     return DEFAULT_STORE.get(product_name, year, month)
+
 
 @cache.memoize(timeout=120)
 def get_products_with_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverview]]:
