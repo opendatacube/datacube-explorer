@@ -8,6 +8,7 @@ from click import echo, secho, style
 
 import cubedash._model as dash
 from cubedash import summary
+from cubedash.logging import init_logging
 from cubedash.summary import SummaryStore
 from datacube.model import DatasetType
 
@@ -67,9 +68,23 @@ def _load_products(product_names) -> List[DatasetType]:
 @click.option('--summaries-dir',
               type=click.Path(exists=True, file_okay=False),
               default=None)
+@click.option('-v', '--verbose', is_flag=True)
+@click.option('--event-log-file',
+              help="Output jsonl logs to file",
+              type=click.Path(writable=True, dir_okay=True))
 @click.argument('product_names',
                 nargs=-1)
-def cli(generate_all_products: bool, summaries_dir: str, product_names: List[str]):
+def cli(generate_all_products: bool,
+        summaries_dir: str,
+        product_names: List[str],
+        event_log_file: str,
+        verbose: bool,
+        ):
+    init_logging(
+        open(event_log_file, 'a') if event_log_file else None,
+        verbose=verbose
+    )
+
     if generate_all_products:
         products = sorted(dash.index.products.get_all(), key=lambda p: p.name)
     else:
