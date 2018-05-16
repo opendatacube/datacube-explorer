@@ -62,30 +62,23 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     Get a usable extent from the dataset (if possible), and return
     whether the original was valid.
     """
+    log = _LOG.bind(dataset_id=ds.id)
     try:
         extent = ds.extent
     except AttributeError:
         # `ds.extent` throws an exception on telemetry datasets,
         # as they have no grid_spatial. It probably shouldn't.
-        _LOG.info(
-            'dataset.invalid_extent.attribute',
-            dataset_id=ds.id
-        )
         return None, False
 
     if extent is None:
-        _LOG.info(
-            'dataset.invalid_extent.empty',
-            dataset_id=ds.id
-        )
+        log.warn('invalid_dataset.empty_extent')
         return None, False
 
     geom = shapely.geometry.asShape(extent.to_crs(CRS('EPSG:4326')))
 
     if not geom.is_valid:
-        _LOG.info(
-            'dataset.invalid_extent.validation',
-            dataset_id=ds.id,
+        log.warn(
+            'invalid_dataset.invalid_extent',
             reason_text=shapely.validation.explain_validity(geom)
         )
         # A zero distance may be used to “tidy” a polygon.
@@ -95,8 +88,8 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return clean, False
 
     if geom.is_empty:
-        _LOG.info(
-            'dataset.invalid_extent.empty_geom',
+        _LOG.warn(
+            'invalid_dataset.empty_extent_geom',
             dataset_id=ds.id
         )
         return None, False

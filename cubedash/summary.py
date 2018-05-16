@@ -160,7 +160,7 @@ def _dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return utils.default_utc(dc_utils.parse_time(value))
         except ValueError:
-            _LOG.debug('invalid_dataset.creation_dt', dataset_id=dataset.id, value=value)
+            _LOG.warn('invalid_dataset.creation_dt', dataset_id=dataset.id, value=value)
 
     return None
 
@@ -364,7 +364,7 @@ class FileSummaryStore(SummaryStore):
             try:
                 return dateutil.parser.parse(date_text)
             except ValueError:
-                _LOG.warn("invalid.date", text=date_text)
+                _LOG.warn("invalid.summary.generated.txt", text=date_text, path=path)
 
         # Otherwise the oldest summary that was generated
         overall_summary = self.get(None, None, None)
