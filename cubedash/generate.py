@@ -83,6 +83,9 @@ def cli(
     event_log_file: str,
     verbose: bool,
 ):
+    """
+    Generate summary files for the given products
+    """
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     if generate_all_products:
