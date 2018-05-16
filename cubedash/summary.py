@@ -78,6 +78,21 @@ class TimePeriodOverview(NamedTuple):
                                  and p.footprint_geometry.is_valid
                                  and not p.footprint_geometry.is_empty]
 
+        try:
+            geometry_union = shapely.ops.unary_union(
+                [p.footprint_geometry for p in with_valid_geometries]
+            ) if with_valid_geometries else None
+        except ValueError:
+            _LOG.warn(
+                'summary.footprint.union', exc_info=True
+            )
+            # Attempt 2 at union: Exaggerate the overlap *slightly* to
+            # avoid non-noded intersection.
+            # TODO: does shapely have a snap-to-grid?
+            geometry_union = shapely.ops.unary_union(
+                [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+            ) if with_valid_geometries else None
+
         return TimePeriodOverview(
             sum(p.dataset_count for p in periods),
             counter,
@@ -87,9 +102,7 @@ class TimePeriodOverview(NamedTuple):
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods)
             ),
-            shapely.ops.unary_union(
-                [p.footprint_geometry for p in with_valid_geometries]
-            ) if with_valid_geometries else None,
+            geometry_union,
             sum(p.footprint_count for p in with_valid_geometries),
             max(
                 (
