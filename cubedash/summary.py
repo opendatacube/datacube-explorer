@@ -121,16 +121,19 @@ class TimePeriodOverview(NamedTuple):
         )
 
 
-def calculate_summary(product_name: str, time: Range) -> TimePeriodOverview:
-    log = _LOG.bind(product=product_name, time=time)
-    log.debug("summary.calc")
+def calculate_summary(product_name: str, time: Range, log=_LOG) -> TimePeriodOverview:
+    log = log.bind(product_name=product_name, time=time)
+    log.debug("summary.query")
 
     datasets = [
         (dataset, dataset_shape(dataset))
         for dataset in index.datasets.search(product=product_name, time=time)
     ]
+    log.debug("summary.query.done")
+
+    log.debug("summary.calc")
     dataset_shapes = [
-        shape for dataset, (shape, was_valid) in datasets if shape
+        shape for dataset, (shape, was_valid) in datasets if shape and not shape.is_empty
     ]
     footprint_geometry = \
         shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
@@ -412,16 +415,22 @@ def write_total_summary(store: SummaryStore) -> TimePeriodOverview:
 
 
 def write_product_summary(product: DatasetType,
-                          store: SummaryStore) -> TimePeriodOverview:
+                          store: SummaryStore,
+                          log=_LOG) -> TimePeriodOverview:
     """
     Generate and write a summary of the given product
     """
+    log = log.bind(product_name=product.name)
     summaries = []
     for year in range(1985, datetime.today().year + 1):
         s = store.get(product.name, year, None)
         if s is None:
-            s = _write_year_summary(product, year, store)
-
+            log = log.bind(year=year)
+            try:
+                s = _write_year_summary(product, year, store, log=log)
+            except ValueError:
+                log.error('summary.write.year')
+                raise
         summaries.append(s)
 
     summary = TimePeriodOverview.add_periods(summaries, group_by_month=True)
@@ -430,12 +439,13 @@ def write_product_summary(product: DatasetType,
 
 
 def _write_year_summary(product: DatasetType, year: int,
-                        store: SummaryStore) -> TimePeriodOverview:
+                        store: SummaryStore,
+                        log) -> TimePeriodOverview:
     summaries = []
     for month in range(1, 13):
         s = store.get(product.name, year, month)
         if s is None:
-            s = _write_month_summary(product, year, month, store)
+            s = _write_month_summary(product, year, month, store, log=log)
 
         summaries.append(s)
 
@@ -446,11 +456,16 @@ def _write_year_summary(product: DatasetType, year: int,
 
 
 def _write_month_summary(product: DatasetType, year: int, month: int,
-                         store: SummaryStore) -> TimePeriodOverview:
-    summary = calculate_summary(product.name, utils.as_time_range(year, month))
+                         store: SummaryStore,
+                         log) -> TimePeriodOverview:
+    summary = calculate_summary(
+        product.name,
+        utils.as_time_range(year, month),
+        log=log
+    )
+
     store.put(product.name, year, month, summary)
     return summary
-
 
 ## Web App instances ##
 
