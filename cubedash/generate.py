@@ -78,8 +78,10 @@ def cli(generate_all_products: bool,
         summaries_dir: str,
         product_names: List[str],
         event_log_file: str,
-        verbose: bool,
-        ):
+        verbose: bool):
+    """
+    Generate summary files for the given products
+    """
     init_logging(
         open(event_log_file, 'a') if event_log_file else None,
         verbose=verbose
