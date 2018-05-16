@@ -48,7 +48,7 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter("dataset_geojson")
 def _dataset_geojson(dataset):
-    shape = model.dataset_shape(dataset)
+    shape, valid_extent = model.dataset_shape(dataset)
     if not shape:
         return None
 
@@ -58,6 +58,7 @@ def _dataset_geojson(dataset):
         "properties": {
             "id": str(dataset.id),
             "label": utils.dataset_label(dataset),
+            "valid_extent": valid_extent,
             "start_time": dataset.time.begin.isoformat(),
         },
     }

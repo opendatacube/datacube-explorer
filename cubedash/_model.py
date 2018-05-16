@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional, Tuple
 
 import flask
 import shapely.geometry
@@ -10,6 +12,7 @@ import structlog
 from dateutil import tz
 from flask import jsonify
 from flask_caching import Cache
+from shapely.geometry import Polygon
 
 from datacube.index import index_connect
 from datacube.index._api import Index
@@ -51,28 +54,39 @@ def get_day(product_name: str, year: int, month: int, day: int):
     return index.datasets.search(product=product_name, time=time_range)
 
 
-def dataset_shape(ds: Dataset):
+def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
+    """
+    Get a usable extent from the dataset (if possible), and return
+    whether the original was valid.
+    """
     try:
         extent = ds.extent
     except AttributeError:
         # `ds.extent` throws an exception on telemetry datasets,
         # as they have no grid_spatial. It probably shouldn't.
-        return None
+        _LOG.info("dataset.invalid_extent.attribute", dataset_id=ds.id)
+        return None, False
 
     if extent is None:
-        return None
+        _LOG.info("dataset.invalid_extent.empty", dataset_id=ds.id)
+        return None, False
 
     geom = shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+
     if not geom.is_valid:
         _LOG.info(
-            "dataset.invalid_extent",
+            "dataset.invalid_extent.validation",
             dataset_id=ds.id,
-            shapely_reason_text=shapely.validation.explain_validity(geom),
+            reason_text=shapely.validation.explain_validity(geom),
         )
         # A zero distance may be used to “tidy” a polygon.
         clean = geom.buffer(0.0)
         assert clean.geom_type == "Polygon"
         assert clean.is_valid
-        geom = clean
+        return clean, False
 
-    return geom
+    if geom.is_empty:
+        _LOG.info("dataset.invalid_extent.empty_geom", dataset_id=ds.id)
+        return None, False
+
+    return geom, True
