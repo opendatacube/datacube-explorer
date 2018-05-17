@@ -33,7 +33,10 @@ index: Index = index_connect(application_name=NAME, validate_connection=False)
 # Pre-computed summaries of products (to avoid doing them on page load).
 SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
 
+# TODO: Proper configuration?
 DEFAULT_STORE = FileSummaryStore(index, SUMMARIES_DIR)
+# Which product to show by default when loading '/'. Picks the first available.
+DEFAULT_START_PAGE_PRODUCTS = ('ls7_nbar_scene', 'ls5_nbar_scene')
 
 _LOG = structlog.get_logger()
 
@@ -44,7 +47,6 @@ def get_summary(
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None) -> Optional[TimePeriodOverview]:
-    # Otherwise load from file
     return DEFAULT_STORE.get(product_name, year, month, day)
 
 
