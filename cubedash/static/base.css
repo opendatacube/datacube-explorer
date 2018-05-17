@@ -34,7 +34,7 @@ h4 { color: #4f4f4f; }
 
 header { color: #efefef; padding: 0; display: flex; flex-direction: row; }
 
-footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em; }
+footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em; line-height: 2em; }
 @media (min-width: 800px) { footer { padding: 15px 30px; } }
 
 .header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
