@@ -22,7 +22,6 @@ from datacube.index.postgres._fields import (
 )
 from datacube.model import DatasetType, Range
 
-from . import _model as model
 from . import _utils as utils
 
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
@@ -48,7 +47,7 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter("dataset_geojson")
 def _dataset_geojson(dataset):
-    shape, valid_extent = model.dataset_shape(dataset)
+    shape, valid_extent = utils.dataset_shape(dataset)
     if not shape:
         return None
 

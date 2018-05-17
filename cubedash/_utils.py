@@ -10,20 +10,29 @@ import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 
+import shapely.geometry
+import shapely.validation
+import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
+from flask import jsonify
+from shapely.geometry import Polygon
 from werkzeug.datastructures import MultiDict
 
 from datacube.index.postgres._fields import PgDocField, RangeDocField
-from datacube.model import DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range
+from datacube.utils import jsonify_document
+from datacube.utils.geometry import CRS
 
 DEFAULT_PLATFORM_END_DATE = {
     "LANDSAT_8": datetime.now() - relativedelta(months=2),
     "LANDSAT_7": datetime.now() - relativedelta(months=2),
     "LANDSAT_5": datetime(2011, 11, 30),
 }
+
+_LOG = structlog.get_logger()
 
 
 def group_field_names(request: dict) -> dict:
@@ -152,6 +161,10 @@ def default_utc(d):
     return d
 
 
+def as_json(o):
+    return jsonify(jsonify_document(o))
+
+
 def get_ordered_metadata(metadata_doc):
     def get_property_priority(ordered_properties, keyval):
         key, val = keyval
@@ -227,3 +240,40 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
     "ancillary",
     "source_datasets",
 ]
+
+
+def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
+    """
+    Get a usable extent from the dataset (if possible), and return
+    whether the original was valid.
+    """
+    log = _LOG.bind(dataset_id=ds.id)
+    try:
+        extent = ds.extent
+    except AttributeError:
+        # `ds.extent` throws an exception on telemetry datasets,
+        # as they have no grid_spatial. It probably shouldn't.
+        return None, False
+
+    if extent is None:
+        log.warn("invalid_dataset.empty_extent")
+        return None, False
+
+    geom = shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+
+    if not geom.is_valid:
+        log.warn(
+            "invalid_dataset.invalid_extent",
+            reason_text=shapely.validation.explain_validity(geom),
+        )
+        # A zero distance may be used to “tidy” a polygon.
+        clean = geom.buffer(0.0)
+        assert clean.geom_type == "Polygon"
+        assert clean.is_valid
+        return clean, False
+
+    if geom.is_empty:
+        _LOG.warn("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
+        return None, False
+
+    return geom, True

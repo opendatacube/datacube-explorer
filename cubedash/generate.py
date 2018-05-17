@@ -7,9 +7,8 @@ import structlog
 from click import echo, secho, style
 
 import cubedash._model as dash
-from cubedash import summary
-from cubedash.logging import init_logging
-from cubedash.summary import SummaryStore
+from cubedash.logs import init_logging
+from cubedash.summary import FileSummaryStore, SummaryStore
 from datacube.model import DatasetType
 
 _LOG = structlog.get_logger()
@@ -29,12 +28,12 @@ def generate_reports(
 
     for product in products:
         echo(f"\t{product.name}....", nl=False, err=True)
-        if store.has(product.name, None, None):
+        if store.has(product.name, None, None, None):
             echo("exists", err=True)
             continue
 
         try:
-            summary.write_product_summary(product, store)
+            store.get_or_update(product.name, None, None, None)
             secho("done", fg="green", err=True)
             completed += 1
         except Exception:
@@ -43,7 +42,7 @@ def generate_reports(
             failures += 1
 
     echo("\tregenerating total....", nl=False, err=True)
-    summary.write_total_summary(store)
+    store.update(None, None, None, None)
 
     secho(
         f"done. " f"{completed}/{len(products)} generated, " f"{failures} failures",
@@ -94,9 +93,9 @@ def cli(
         products = list(_load_products(product_names))
 
     if summaries_dir:
-        store = summary.FileSummaryStore(base_path=Path(summaries_dir))
+        store = FileSummaryStore(dash.index, base_path=Path(summaries_dir))
     else:
-        store = summary.DEFAULT_STORE
+        store = dash.DEFAULT_STORE
 
     completed, failures = generate_reports(products, store=store)
     sys.exit(failures)
