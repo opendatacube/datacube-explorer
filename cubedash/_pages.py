@@ -173,4 +173,13 @@ def inject_globals():
 @app.route("/")
 def default_redirect():
     """Redirect to default starting page."""
-    return flask.redirect(flask.url_for("overview_page", product_name="ls7_nbar_scene"))
+    available_product_names = [p.name for p, _ in _model.get_products_with_summaries()]
+
+    for product_name in _model.DEFAULT_START_PAGE_PRODUCTS:
+        if product_name in available_product_names:
+            default_product = product_name
+            break
+    else:
+        default_product = available_product_names[0]
+
+    return flask.redirect(flask.url_for("overview_page", product_name=default_product))
