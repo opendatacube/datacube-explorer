@@ -16,7 +16,7 @@ from datacube.model import Range, DatasetType
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
-from . import _utils as utils, _model as model
+from . import _utils as utils
 
 NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
 
@@ -41,7 +41,7 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter('dataset_geojson')
 def _dataset_geojson(dataset):
-    shape, valid_extent = model.dataset_shape(dataset)
+    shape, valid_extent = utils.dataset_shape(dataset)
     if not shape:
         return None
 

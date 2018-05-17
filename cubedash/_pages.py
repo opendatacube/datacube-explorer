@@ -12,8 +12,7 @@ import datacube
 from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
-from ._model import index, as_json
-from .summary import get_summary, get_products_with_summaries, DEFAULT_STORE
+from ._utils import as_json
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -76,12 +75,12 @@ def search_page(product_name: str = None,
     _LOG.info('query', query=query)
 
     # TODO: Add sort option to index API
-    datasets = sorted(index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
+    datasets = sorted(_model.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
                       key=lambda d: d.center_time)
 
     if request_wants_json():
         return as_json(dict(
-            datasets=[build_dataset_info(index, d) for d in datasets],
+            datasets=[build_dataset_info(_model.index, d) for d in datasets],
         ))
     return flask.render_template(
         'search.html',
@@ -116,13 +115,13 @@ def timeline_page(product_name: str):
 def _load_product(product_name, year, month, day):
     product = None
     if product_name:
-        product = index.products.get_by_name(product_name)
+        product = _model.index.products.get_by_name(product_name)
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
     # Entire summary for the product.
-    product_summary = get_summary(product_name)
-    selected_summary = get_summary(product_name, year, month, day)
+    product_summary = _model.get_summary(product_name)
+    selected_summary = _model.get_summary(product_name, year, month, day)
 
     return product, product_summary, selected_summary
 
@@ -143,7 +142,7 @@ def about_page():
 
 @app.context_processor
 def inject_globals():
-    product_summaries = get_products_with_summaries()
+    product_summaries = _model.get_products_with_summaries()
 
     # Group by product type
     def key(t):
@@ -165,7 +164,7 @@ def inject_globals():
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        last_updated_time=DEFAULT_STORE.get_last_updated()
+        last_updated_time=_model.get_last_updated()
     )
 
 
