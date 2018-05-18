@@ -31,7 +31,7 @@
                                 <h3 class="group-name">{{ group_name }}</h3>
                                 <ul class="items">
                                     {% for product_opt, summary in product_summaries if summary %}
-                                        <li>
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
                                             <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
                                                title="{{ product_opt.definition.description }}"
                                                class="{% if product_opt.name == product.name %}active{% endif %}">

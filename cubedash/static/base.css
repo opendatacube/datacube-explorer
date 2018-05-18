@@ -48,6 +48,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .header-option:hover { background-color: #007cab; }
 .header-option:hover .option-menu { background-color: #007cab; display: table; }
 .header-option .option-menu { display: none; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; }
+.header-option .option-menu li.empty { opacity: 0.6; }
 .header-option .option-menu.left { left: initial; right: 0; }
 .header-option .option-menu > ul { display: table-row; }
 .header-option .option-menu > ul > li { display: table-cell; }
