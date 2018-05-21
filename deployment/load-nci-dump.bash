@@ -12,7 +12,8 @@ psql_args="-h dea-pipeline-dev.cfeq4wxgcaui.ap-southeast-2.rds.amazonaws.com -U 
 dump_file="/data/nci/105-${dump_id}-datacube.pgdump"
 app_dir="/var/www/dea-dashboard"
 
-summary_dir="archive/${dump_id}"
+archive_dir="archive"
+summary_dir="${archive_dir}/${dump_id}"
 dbname="nci_${dump_id}"
 
 log_file="${summary_dir}/restore-$(date +'%dT%H%M').log"
@@ -76,10 +77,12 @@ else
 	psql ${psql_args} "${dbname}" -c "vacuum analyze;"
 fi
 
+[ -e "${dump_file}" ] && rm -v "${dump_file}"
+
 ## Summary generation
 
 # get list of products
-psql ${psql_args} "${dbname}" -c 'copy (select name from agdc.dataset_type order by name asc) to stdout' > "${summary_dir}/all-products.txt"
+psql ${psql_args} "${dbname}" -X -c 'copy (select name from agdc.dataset_type order by name asc) to stdout' > "${summary_dir}/all-products.txt"
 
 # Will load `datacube.conf` from current directory. Cubedash will use this directory too.
 echo "
@@ -100,7 +103,7 @@ date -r "${dump_file}" > "${summary_dir}/generated.txt"
 if [ ! -e "${summary_dir}/timeline.json" ];
 then
 	log_info "Summary gen failure: no overall summary"
-	return 1
+	exit 1
 fi
 
 log_info "Switching to new summaries"
@@ -114,7 +117,22 @@ log_info "Warming caching"
 # Not strictly necessary, but users will see the new data sooner
 bash /data/warm-cache.sh
 
-[ -e "${dump_file}" ] && rm -v "${dump_file}"
+
+log_info "Cleaning up old DBs"
+
+old_databases=$(psql ${psql_args} -X -t -c "select datname from pg_database where datname similar to 'nci_\d{8}' and ((now() - split_part(datname, '_', 2)::date) > interval '3 days');")
+
+for database in ${old_databases};
+do
+	echo "Dropping ${database}";
+	dropdb "${database}";
+done;
+
+
+log_info "Taring old summaries"
+cd "${archive_dir}"
+find .  -maxdepth 1 -iname '2???????' -mtime +4 -exec tar --remove-files -czf {}.tar.gz {} \;
+
 
 log_info "All Done $(date) ${summary_dir}"
 
