@@ -250,12 +250,11 @@ class SummaryStore:
         log.debug("summary.query.done")
 
         log.debug("summary.calc")
-        dataset_shapes = [
-            shape for dataset, (shape, was_valid) in datasets if
-            shape and not shape.is_empty
-        ]
-        footprint_geometry = \
-            shapely.ops.unary_union(dataset_shapes) if dataset_shapes else None
+        dataset_shapes = list(filter(_has_shape, datasets))
+
+        footprint_geometry = shapely.ops.unary_union(
+            [shape for _, (shape, _) in dataset_shapes]
+        ) if dataset_shapes else None
 
         # Initialise all requested days as zero
         day_counts = Counter({
@@ -264,12 +263,13 @@ class SummaryStore:
         day_counts.update(
             _utils.default_utc(dataset.center_time).astimezone(
                 self.GROUPING_TIME_ZONE).date()
-            for dataset, shape in datasets)
+            for dataset, shape in datasets
+        )
 
         summary = TimePeriodOverview(
             len(datasets),
             day_counts,
-            _datasets_to_feature(datasets) if 0 < len(
+            _datasets_to_feature(dataset_shapes) if 0 < len(
                 dataset_shapes) < self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY else None,
             'day',
             time,
@@ -285,6 +285,11 @@ class SummaryStore:
             footprints_missing=summary.dataset_count - summary.footprint_count
         )
         return summary
+
+
+def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
+    dataset, (shape, was_valid) = datasets
+    return shape is not None
 
 
 def _dataset_created(dataset: Dataset) -> Optional[datetime]:
@@ -304,7 +309,7 @@ def _dataset_created(dataset: Dataset) -> Optional[datetime]:
 def _datasets_to_feature(datasets: Iterable[Tuple[Dataset, Tuple[BaseGeometry, bool]]]):
     return {
         'type': 'FeatureCollection',
-        'features': [_dataset_to_feature(ds) for ds in datasets if ds[1]]
+        'features': [_dataset_to_feature(ds_valid) for ds_valid in datasets]
     }
 
 
