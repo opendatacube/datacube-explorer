@@ -1,11 +1,10 @@
+import sys
+
 import datetime
 import json
 import pathlib
-import sys
-import uuid
-from functools import partial
-
 import structlog
+import uuid
 
 
 def init_logging(output_file=None, verbose=False):
@@ -19,6 +18,11 @@ def init_logging(output_file=None, verbose=False):
     if output_file is None:
         output_file = sys.stdout
 
+    # Note that we can't use functools.partial: it JSONRendering will pass its
+    # own 'default' property that overrides our own.
+    def lenient_json_dump(obj, *args, **kwargs):
+        return json.dumps(obj, default=lenient_json_fallback, sort_keys=True)
+
     # Direct structlog into standard logging.
     processors = [
         structlog.stdlib.add_log_level,
@@ -26,13 +30,8 @@ def init_logging(output_file=None, verbose=False):
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         # Coloured output if to terminal, otherwise json
-        structlog.dev.ConsoleRenderer()
-        if output_file.isatty() else structlog.processors.JSONRenderer(
-            serializer=partial(
-                json.dumps,
-                default=lenient_json_fallback,
-                sort_keys=True
-            )
+        structlog.dev.ConsoleRenderer() if output_file.isatty() else structlog.processors.JSONRenderer(
+            serializer=lenient_json_dump
         ),
     ]
 
