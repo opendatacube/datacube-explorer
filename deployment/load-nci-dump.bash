@@ -77,6 +77,9 @@ else
 	psql ${psql_args} "${dbname}" -c "vacuum analyze;"
 fi
 
+# Collect query stats on the new DB
+psql ${psql_args} "${dbname}" -c "create extension if not exists pg_stat_statements;"
+
 [ -e "${dump_file}" ] && rm -v "${dump_file}"
 
 ## Summary generation
