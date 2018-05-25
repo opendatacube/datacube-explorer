@@ -7,8 +7,11 @@ import versioneer
 tests_require = ["pylint", "digitalearthau"]
 
 dependency_links = [
-    "git+git://github.com/GeoscienceAustralia/digitalearthau@develop#egg=digitalearthau"
+    # The last version that supports Stable (1.5) ODC
+    "git+git://github.com/GeoscienceAustralia/digitalearthau@dea-20180116#egg=digitalearthau"
 ]
+
+extras_require = {"test": tests_require}
 
 setup(
     name="dea-dashboard",
@@ -36,5 +39,6 @@ setup(
         "shapely",
     ],
     tests_require=tests_require,
+    extras_require=extras_require,
     dependency_links=dependency_links,
 )
