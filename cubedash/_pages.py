@@ -65,8 +65,8 @@ def search_page(product_name: str = None,
 
     args = MultiDict(flask.request.args)
     query = utils.query_to_search(args, product=product)
-    # Add time range, selected product to query
 
+    # Always add time range, selected product to query
     if product_name:
         query['product'] = product_name
     if time:
