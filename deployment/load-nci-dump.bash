@@ -63,8 +63,10 @@ else
 		set +x
 	fi
 
-	createdb ${psql_args} "$dbname"
+    # Record date/time of DB backup, cubedash will show it as last update time
+    date -r "${dump_file}" > "${summary_dir}/generated.txt"
 
+	createdb ${psql_args} "$dbname"
 
 	# TODO: the dump has "create extension" statements which will fail (but that's ok here)
 	log_info "Restoring"
@@ -100,8 +102,6 @@ log_info "Summary gen"
 # We randomise the product list to more evenly space large/small products between workers
 <"${summary_dir}/all-products.txt" sort -R | parallel --line-buffer -m -j4 /opt/conda/bin/python -m cubedash.generate --summaries-dir "${summary_dir}" || true
 
-# Record date/time of DB backup, cubedash will show it as last update time
-date -r "${dump_file}" > "${summary_dir}/generated.txt"
 
 if [ ! -e "${summary_dir}/timeline.json" ];
 then
