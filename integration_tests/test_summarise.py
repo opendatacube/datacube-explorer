@@ -8,7 +8,6 @@ from cubedash.summary import FileSummaryStore
 from datacube.model import Range
 
 
-@pytest.mark.skip
 def test_calc_scene_summary(populated_scene_index, tmpdir):
     store = FileSummaryStore(populated_scene_index, Path(tmpdir))
 
