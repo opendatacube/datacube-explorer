@@ -8,7 +8,7 @@ cache:
   directories:
   - $HOME/.cache/pip
 addons:
-  postgresql: '9.4'
+  postgresql: '9.6'
   apt:
     packages:
     - libhdf5-serial-dev
@@ -28,10 +28,10 @@ install:
 - travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0 compliance-checker
 - travis_retry git clone https://github.com/opendatacube/datacube-core.git
 - travis_retry pip install git+https://github.com/opendatacube/datacube-core.git@release-1.5
-- travis_retry pip install . --upgrade
+- travis_retry pip install .[test] --upgrade
 - pip freeze
 script:
-- ./check-code.sh
+- ./check-code.sh integration_tests
 notifications:
     slack:
         on_success: change
