@@ -8,7 +8,7 @@ tests_require = ["pylint", "digitalearthau"]
 
 dependency_links = [
     # The last version that supports Stable (1.5) ODC
-    "git+git://github.com/GeoscienceAustralia/digitalearthau@dea-20180116#egg=digitalearthau"
+    "git+git://github.com/GeoscienceAustralia/digitalearthau@dea-20180116#egg=digitalearthau-20180116"
 ]
 
 extras_require = {"test": tests_require}
