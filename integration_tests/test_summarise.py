@@ -101,20 +101,25 @@ def test_calc_albers_summary(populated_albers_index, tmpdir):
 
     # Calculate overall summary
     summary = store.get_or_update("ls8_nbar_scene", year=2017, month=None, day=None)
-    print(repr(summary))
-    assert summary.dataset_count == 617
-    assert summary.footprint_count == 617
-    assert summary.newest_dataset_creation_time == datetime(
-        2017, 7, 11, 4, 32, 11, tzinfo=tzutc()
+    _expect_values(
+        summary,
+        dataset_count=617,
+        footprint_count=617,
+        time_range=Range(
+            begin=datetime(2017, 4, 1, 0, 0), end=datetime(2017, 6, 1, 0, 0)
+        ),
+        newest_creation_time=datetime(2017, 7, 11, 4, 32, 11, tzinfo=tzutc()),
+        timeline_period="day",
+        # Data spans 61 days in 2017
+        timeline_count=61,
     )
-    # Data spans 61 days in 2017
-    assert len(summary.dataset_counts) == 61
-    assert summary.period == "day"
 
     # get_or_update should now return the cached copy.
     cached_s = store.get_or_update("ls8_nbar_scene", year=2017, month=None, day=None)
     assert cached_s.summary_gen_time is not None
-    assert cached_s.summary_gen_time == summary.summary_gen_time
+    assert (
+        cached_s.summary_gen_time == summary.summary_gen_time
+    ), "A new, rather than cached, summary was returned"
     assert cached_s.dataset_count == summary.dataset_count
 
     # No datasets in 2018
