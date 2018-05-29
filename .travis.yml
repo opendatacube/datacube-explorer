@@ -20,7 +20,7 @@ addons:
     - liblapack-dev
     - gfortran
 before_install:
-- createdb agdcintegration
+- createdb dea_integration
 install:
 - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
 - export C_INCLUDE_PATH="/usr/include/gdal"
