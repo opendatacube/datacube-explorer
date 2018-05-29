@@ -26,10 +26,10 @@ install:
 - export C_INCLUDE_PATH="/usr/include/gdal"
 - travis_retry pip install --upgrade pip
 - travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0 compliance-checker
-- travis_retry pip install git+https://github.com/opendatacube/datacube-core.git@release-1.5
-- travis_retry pip install git+https://github.com/GeoscienceAustralia/eo-datasets.git
+- travis_retry pip install -e git+https://github.com/opendatacube/datacube-core.git@release-1.5#egg=datacube
+- travis_retry pip install -e git+https://github.com/GeoscienceAustralia/eo-datasets.git#egg=eodatasets
 # Last version to support 1.5
-- travis_retry pip install git+https://github.com/GeoscienceAustralia/digitalearthau@dea-20180116
+- travis_retry pip install -e git+https://github.com/GeoscienceAustralia/digitalearthau@dea-20180116#egg=digitalearthau-20180116
 - travis_retry pip install .[test] --upgrade
 - pip freeze
 script:
