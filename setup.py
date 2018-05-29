@@ -6,11 +6,6 @@ import versioneer
 
 tests_require = ["pylint", "digitalearthau"]
 
-dependency_links = [
-    # The last version that supports Stable (1.5) ODC
-    "git+git://github.com/GeoscienceAustralia/digitalearthau@dea-20180116#egg=digitalearthau-20180116"
-]
-
 extras_require = {"test": tests_require}
 
 setup(
@@ -40,5 +35,4 @@ setup(
     ],
     tests_require=tests_require,
     extras_require=extras_require,
-    dependency_links=dependency_links,
 )
