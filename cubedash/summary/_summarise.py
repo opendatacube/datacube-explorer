@@ -45,8 +45,8 @@ class TimePeriodOverview(NamedTuple):
     # When this summary was generated
     summary_gen_time: datetime
 
-    @staticmethod
-    def add_periods(periods: Iterable['TimePeriodOverview'], group_by_month=False):
+    @classmethod
+    def add_periods(cls, periods: Iterable['TimePeriodOverview']):
         periods = [p for p in periods if p.dataset_count > 0]
         counter = Counter()
         period = None
@@ -58,12 +58,7 @@ class TimePeriodOverview(NamedTuple):
             counter.update(p.dataset_counts)
             period = p.period
 
-        if group_by_month:
-            counter = Counter(
-                datetime(date.year, date.month, 1).date()
-                for date in counter.elements()
-            )
-            period = 'month'
+        counter, period = cls._group_counter_if_needed(counter, period)
 
         with_valid_geometries = [p for p in periods
                                  if p.footprint_count and p.footprint_geometry
@@ -111,6 +106,24 @@ class TimePeriodOverview(NamedTuple):
                 default=None
             ),
         )
+
+    @staticmethod
+    def _group_counter_if_needed(counter, period):
+        if len(counter) > 365:
+            if period == 'day':
+                counter = Counter(
+                    datetime(date.year, date.month, 1).date()
+                    for date in counter.elements()
+                )
+                period = 'month'
+            elif period == 'month':
+                counter = Counter(
+                    datetime(date.year, 1, 1).date()
+                    for date in counter.elements()
+                )
+                period = 'year'
+
+        return counter, period
 
 
 class SummaryStore:

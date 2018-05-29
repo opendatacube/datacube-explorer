@@ -71,9 +71,9 @@ if __name__ == '__main__':
         dump_datasets(
             dc,
             TEST_DATA_DIR / 'ls8-nbar-scene-sample-2017.yaml.gz',
-            dataset_sample_fraction=0.2,
+            dataset_sample_fraction=0.1,
             product='ls8_nbar_scene',
-            time=Range(datetime(2017, 1, 1), datetime(2018, 1, 1)),
+            time=Range(datetime(2016, 1, 1), datetime(2018, 1, 1)),
         )
         # Huuge amount of lineage.
         dump_datasets(
