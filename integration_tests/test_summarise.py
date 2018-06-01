@@ -72,10 +72,20 @@ def _expect_values(
         assert s.newest_dataset_creation_time == default_utc(
             newest_creation_time
         ), "wrong newest dataset creation"
-        assert s.period == timeline_period, (
-            f"Should be a {timeline_period}, " f"not {s.period} timeline"
+        assert s.timeline_period == timeline_period, (
+            f"Should be a {timeline_period}, " f"not {s.timeline_period} timeline"
         )
-        assert len(s.dataset_counts) == timeline_count, "timeline entry count"
+        assert (
+            len(s.timeline_dataset_counts) == timeline_count
+        ), "wrong timeline entry count"
+        assert (
+            sum(s.timeline_dataset_counts.values()) == s.dataset_count
+        ), "timeline count doesn't match dataset count"
+
+        assert (
+            s.summary_gen_time is not None
+        ), "Missing summary_gen_time (there's a default)"
+
     except AssertionError:
         print(
             f"""Got:
@@ -83,8 +93,9 @@ def _expect_values(
         footprint_count {s.footprint_count}
         time range: {s.time_range}
         newest: {repr(s.newest_dataset_creation_time)}
-        period: {s.period}
-        period_count: {len(s.dataset_counts)}
+        timeline
+            period: {s.timeline_period}
+            dataset_counts: {len(s.timeline_dataset_counts)}
         """
         )
         raise
