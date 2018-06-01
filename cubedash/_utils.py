@@ -162,6 +162,10 @@ def default_utc(d):
     return d
 
 
+def now_utc():
+    return default_utc(datetime.utcnow())
+
+
 def as_json(o):
     return jsonify(jsonify_document(o))
 
