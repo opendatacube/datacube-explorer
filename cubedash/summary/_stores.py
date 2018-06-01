@@ -92,14 +92,14 @@ class FileSummaryStore(SummaryStore):
                     total_count=summary.dataset_count,
                     footprint_count=summary.footprint_count,
                     datasets_geojson=summary.datasets_geojson,
-                    period=summary.period,
+                    period=summary.timeline_period,
                     time_range=[
                         summary.time_range[0].isoformat(),
                         summary.time_range[1].isoformat()
                     ] if summary.time_range else None,
                     series={
-                        d.isoformat(): v for d, v in summary.dataset_counts.items()
-                    } if summary.dataset_counts else None,
+                        d.isoformat(): v for d, v in summary.timeline_dataset_counts.items()
+                    } if summary.timeline_dataset_counts else None,
                     generation_time=(
                         summary.summary_gen_time.isoformat()
                         if summary.summary_gen_time else None
@@ -146,11 +146,11 @@ class FileSummaryStore(SummaryStore):
 
         return TimePeriodOverview(
             dataset_count=timeline['total_count'],
-            dataset_counts=Counter(
+            timeline_dataset_counts=Counter(
                 {dateutil.parser.parse(d): v for d, v in timeline['series'].items()}
             ) if timeline.get('series') else None,
             datasets_geojson=timeline.get('datasets_geojson'),
-            period=timeline['period'],
+            timeline_period=timeline['period'],
             time_range=Range(
                 dateutil.parser.parse(timeline['time_range'][0]),
                 dateutil.parser.parse(timeline['time_range'][1])

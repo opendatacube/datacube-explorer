@@ -6,10 +6,15 @@ import pandas as pd
 import shapely
 import shapely.geometry
 import shapely.ops
+
+import dataclasses
+
 import structlog
+
+from dataclasses import dataclass
 from datetime import datetime
 from shapely.geometry.base import BaseGeometry
-from typing import NamedTuple, Iterable, Tuple, Dict
+from typing import Iterable, Tuple, Dict
 from typing import Optional
 
 from datacube import utils as dc_utils
@@ -23,15 +28,16 @@ from cubedash import _utils
 _LOG = structlog.get_logger()
 
 
-class TimePeriodOverview(NamedTuple):
+@dataclass
+class TimePeriodOverview:
     dataset_count: int
 
-    dataset_counts: Counter
+    timeline_dataset_counts: Counter
 
     # GeoJSON FeatureCollection dict. But only when there's a small number of them.
     datasets_geojson: Optional[Dict]
 
-    period: str
+    timeline_period: str
 
     time_range: Range
 
@@ -43,7 +49,7 @@ class TimePeriodOverview(NamedTuple):
     newest_dataset_creation_time: datetime
 
     # When this summary was generated
-    summary_gen_time: datetime
+    summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
 
     @classmethod
     def add_periods(cls, periods: Iterable['TimePeriodOverview']):
@@ -55,8 +61,8 @@ class TimePeriodOverview(NamedTuple):
             return TimePeriodOverview(0, None, None, None, None, None, None, None, None)
 
         for p in periods:
-            counter.update(p.dataset_counts)
-            period = p.period
+            counter.update(p.timeline_dataset_counts)
+            period = p.timeline_period
 
         counter, period = cls._group_counter_if_needed(counter, period)
 
@@ -81,24 +87,24 @@ class TimePeriodOverview(NamedTuple):
             ) if with_valid_geometries else None
 
         return TimePeriodOverview(
-            sum(p.dataset_count for p in periods),
-            counter,
-            None,
-            period,
-            Range(
+            dataset_count=sum(p.dataset_count for p in periods),
+            timeline_dataset_counts=counter,
+            timeline_period=period,
+            datasets_geojson=None,
+            time_range=Range(
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods)
             ),
-            geometry_union,
-            sum(p.footprint_count for p in with_valid_geometries),
-            max(
+            footprint_geometry=geometry_union,
+            footprint_count=sum(p.footprint_count for p in with_valid_geometries),
+            newest_dataset_creation_time=max(
                 (
                     p.newest_dataset_creation_time
                     for p in periods if p.newest_dataset_creation_time is not None
                 ),
                 default=None
             ),
-            min(
+            summary_gen_time=min(
                 (
                     p.summary_gen_time
                     for p in periods if p.summary_gen_time is not None
@@ -280,17 +286,18 @@ class SummaryStore:
         )
 
         summary = TimePeriodOverview(
-            len(datasets),
-            day_counts,
-            _datasets_to_feature(dataset_shapes) if 0 < len(
+            dataset_count=len(datasets),
+            timeline_dataset_counts=day_counts,
+            datasets_geojson=_datasets_to_feature(dataset_shapes) if 0 < len(
                 dataset_shapes) < self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY else None,
-            'day',
-            time,
-            footprint_geometry,
-            len(dataset_shapes),
-            max((_dataset_created(dataset) for dataset, shape in datasets),
-                default=None),
-            _utils.default_utc(datetime.utcnow())
+            timeline_period='day',
+            time_range=time,
+            footprint_geometry=footprint_geometry,
+            footprint_count=len(dataset_shapes),
+            newest_dataset_creation_time=max(
+                (_dataset_created(dataset) for dataset, shape in datasets),
+                default=None
+            ),
         )
         log.debug(
             "summary.calc.done",
