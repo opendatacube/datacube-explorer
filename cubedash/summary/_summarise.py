@@ -295,7 +295,7 @@ class SummaryStore:
             footprint_geometry=footprint_geometry,
             footprint_count=len(dataset_shapes),
             newest_dataset_creation_time=max(
-                (_dataset_created(dataset) for dataset, shape in datasets),
+                (_utils.default_utc(_dataset_created(dataset)) for dataset, shape in datasets),
                 default=None
             ),
         )
