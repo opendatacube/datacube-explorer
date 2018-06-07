@@ -156,13 +156,13 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
     return query
 
 
-def default_utc(d):
+def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
         return d.replace(tzinfo=tz.tzutc())
     return d
 
 
-def now_utc():
+def now_utc() -> datetime:
     return default_utc(datetime.utcnow())
 
 
