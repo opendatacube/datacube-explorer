@@ -3,7 +3,7 @@ from pathlib import Path
 
 from cubedash import logs
 from cubedash.summary import FileSummaryStore
-from datacube.index._api import Index
+from datacube.index import Index
 from datacube.scripts.dataset import create_dataset, load_rules_from_types
 from datacube.utils import read_documents
 from digitalearthau.testing import factories

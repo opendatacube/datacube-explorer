@@ -15,8 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 from cubedash import _utils
-from datacube.index._api import Index
-
+from datacube.index import Index
 from datacube.model import Range
 from ._summarise import TimePeriodOverview, SummaryStore
 
