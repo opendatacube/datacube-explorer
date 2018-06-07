@@ -2,28 +2,24 @@ from __future__ import absolute_import
 
 from collections import Counter
 
+import dataclasses
 import pandas as pd
 import shapely
 import shapely.geometry
 import shapely.ops
-
-import dataclasses
-
 import structlog
-
 from dataclasses import dataclass
 from datetime import datetime
+from dateutil import tz
 from shapely.geometry.base import BaseGeometry
 from typing import Iterable, Tuple, Dict
 from typing import Optional
 
-from datacube import utils as dc_utils
-from datacube.index._api import Index
-
-from datacube.model import Dataset
-from dateutil import tz
-from datacube.model import Range
 from cubedash import _utils
+from datacube import utils as dc_utils
+from datacube.index import Index
+from datacube.model import Dataset
+from datacube.model import Range
 
 _LOG = structlog.get_logger()
 

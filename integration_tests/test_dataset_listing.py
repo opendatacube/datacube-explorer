@@ -4,7 +4,7 @@ from werkzeug.datastructures import MultiDict
 
 from datacube.model import Range
 from cubedash._utils import query_to_search, DEFAULT_PLATFORM_END_DATE
-from datacube.index._api import Index
+from datacube.index import Index
 
 
 def test_parse_query_args(dea_index: Index):
