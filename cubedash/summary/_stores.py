@@ -15,7 +15,7 @@ import shapely.ops
 import structlog
 
 from cubedash import _utils
-from datacube.index._api import Index
+from datacube.index import Index
 from datacube.model import Range
 
 from ._summarise import SummaryStore, TimePeriodOverview

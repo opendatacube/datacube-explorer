@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable, Optional, Tuple
 
@@ -9,9 +8,8 @@ import structlog
 from flask_caching import Cache
 
 from cubedash.summary import FileSummaryStore, TimePeriodOverview
-from datacube.index import index_connect
-from datacube.index._api import Index
-from datacube.model import DatasetType, Range
+from datacube.index import Index, index_connect
+from datacube.model import DatasetType
 
 NAME = "cubedash"
 

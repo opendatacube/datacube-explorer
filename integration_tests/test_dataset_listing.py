@@ -4,7 +4,7 @@ import pytest
 from werkzeug.datastructures import MultiDict
 
 from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
-from datacube.index._api import Index
+from datacube.index import Index
 from datacube.model import Range
 
 

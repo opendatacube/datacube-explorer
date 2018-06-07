@@ -16,7 +16,7 @@ from shapely.geometry.base import BaseGeometry
 
 from cubedash import _utils
 from datacube import utils as dc_utils
-from datacube.index._api import Index
+from datacube.index import Index
 from datacube.model import Dataset, Range
 
 _LOG = structlog.get_logger()
