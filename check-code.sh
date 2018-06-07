@@ -6,6 +6,5 @@ set -x
 
 pylint -j 2 --reports no cubedash
 
-
-python -m pytest
+python -m pytest "$@"
 
