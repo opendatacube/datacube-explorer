@@ -21,6 +21,7 @@ addons:
     - gfortran
 before_install:
 - createdb dea_integration
+- cp .travis/honeypot.conf ~/.datacube.conf
 install:
 - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
 - export C_INCLUDE_PATH="/usr/include/gdal"
