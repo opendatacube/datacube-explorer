@@ -29,7 +29,7 @@ install:
 - travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0 compliance-checker
 - travis_retry pip install -e git+https://github.com/opendatacube/datacube-core.git#egg=datacube
 - travis_retry pip install -e git+https://github.com/GeoscienceAustralia/eo-datasets.git#egg=eodatasets
-- travis_retry pip install -e git+https://github.com/jeremyh/digitalearthau.git#egg=digitalearthau
+- travis_retry pip install -e git+https://github.com/GeoscienceAustralia/digitalearthau.git#egg=digitalearthau
 - travis_retry pip install .[test] --upgrade
 - pip freeze
 script:
