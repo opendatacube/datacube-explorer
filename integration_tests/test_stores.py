@@ -23,4 +23,4 @@ def test_store(session_dea_index, tmppath):
     store.put("some_product", 2017, None, None, orig)
     loaded = store.get("some_product", 2017, None, None)
 
-    assert str(orig) == str(loaded)
+    assert orig == loaded
