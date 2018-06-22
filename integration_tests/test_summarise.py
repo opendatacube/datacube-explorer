@@ -5,8 +5,46 @@ import pytest
 from dateutil.tz import tzutc
 
 from cubedash._utils import default_utc
-from cubedash.summary import FileSummaryStore, TimePeriodOverview
+from cubedash.summary import TimePeriodOverview
 from datacube.model import Range
+from datacube.scripts.dataset import create_dataset, load_rules_from_types
+from datacube.utils import read_documents
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
+
+
+def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
+    ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
+    dataset_count = 0
+    rules = load_rules_from_types(session_dea_index)
+    for _, doc in read_documents(dump_path):
+        created = session_dea_index.datasets.add(create_dataset(doc, None, rules))
+
+        assert created.type.name == ls8_nbar_scene.name
+        dataset_count += 1
+
+    print(f"Populated {dataset_count} of {expected_type}")
+    return dataset_count
+
+
+@pytest.fixture(scope="module", autouse=True)
+def populate_index(module_dea_index):
+    """
+    Index populated with example datasets. Assumes our tests wont modify the data!
+
+    It's session-scoped as it's expensive to populate.
+    """
+    _populate_from_dump(
+        module_dea_index,
+        "ls8_nbar_scene",
+        TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
+    )
+    _populate_from_dump(
+        module_dea_index,
+        "ls8_nbar_albers",
+        TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
+    )
+    return module_dea_index
 
 
 def test_calc_month(summary_store):

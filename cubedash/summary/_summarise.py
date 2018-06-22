@@ -52,7 +52,7 @@ class TimePeriodOverview:
         period = None
 
         if not periods:
-            return TimePeriodOverview(0, None, None, None, None, None, None, None, None)
+            return TimePeriodOverview(0, None, None, None, None, None, None, None)
 
         for p in periods:
             counter.update(p.timeline_dataset_counts)
@@ -147,11 +147,9 @@ class SummaryStore:
     # (Otherwise dataset footprint is shown as a single composite polygon)
     MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
 
-    def init(self) -> bool:
+    def init(self):
         """
         Create the store if it doesn't already exist
-
-        Returns true if was created, false if already existed.
         """
         # Default: nothing to set up.
         pass
@@ -239,11 +237,28 @@ class SummaryStore:
                 for product in self._index.products.get_all()
             )
 
-        self.put(product_name, year, month, day, summary)
+        self._do_put(product_name, year, month, day, summary)
+
         for listener in self._update_listeners:
             listener(product_name, year, month, day, summary)
-
         return summary
+
+    def _do_put(self, product_name, year, month, day, summary):
+
+        # Don't bother storing empty periods that are outside of the existing range.
+        # This doesn't have to be exact (note that someone may update in parallel too).
+        if summary.dataset_count == 0 and (year or month):
+            product_extent = self.get(product_name, None, None, None)
+            if (not product_extent) or (not product_extent.time_range):
+                return
+
+            start, end = product_extent.time_range
+            if datetime(year, month or 1, day or 1) < start:
+                return
+            if datetime(year, month or 12, day or 28) > end:
+                return
+
+        self.put(product_name, year, month, day, summary)
 
     def list_complete_products(self) -> Iterable[str]:
         """

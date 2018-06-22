@@ -25,6 +25,7 @@ setup(
         "fiona",
         "pyorbital",
         "geographiclib",
+        "geoalchemy2",
         "simplekml",
         "structlog",
         "Flask-Caching",

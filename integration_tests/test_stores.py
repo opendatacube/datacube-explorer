@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import datetime
 
 from dateutil import tz
@@ -6,21 +7,43 @@ from cubedash.summary import FileSummaryStore, TimePeriodOverview
 from datacube.model import Range
 
 
-def test_store(session_dea_index, tmppath):
+def test_store(summary_store):
     orig = TimePeriodOverview(
         1234,
-        None,
+        Counter(
+            [
+                datetime(2017, 1, 2, tzinfo=tz.tzutc()),
+                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
+                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
+                datetime(2017, 1, 1, tzinfo=tz.tzutc()),
+            ]
+        ),
         {},
         timeline_period="day",
-        time_range=Range(datetime(2017, 1, 2), datetime(2017, 2, 3)),
+        time_range=Range(
+            datetime(2017, 1, 2, tzinfo=tz.tzutc()),
+            datetime(2017, 2, 3, tzinfo=tz.tzutc()),
+        ),
         footprint_geometry=None,
         footprint_count=0,
         newest_dataset_creation_time=datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()),
     )
 
-    store = FileSummaryStore(session_dea_index, tmppath)
+    summary_store.put("some_product", 2017, None, None, orig)
+    loaded = summary_store.get("some_product", 2017, None, None)
 
-    store.put("some_product", 2017, None, None, orig)
-    loaded = store.get("some_product", 2017, None, None)
+    # pytest has better error messages for dict comparison
+    assert orig.__dict__ == loaded.__dict__
+    assert orig == loaded
 
+
+def test_store_empty(summary_store):
+    # A period with no datasets.
+    orig = TimePeriodOverview(0, None, None, None, None, None, None, None)
+
+    summary_store.put("some_product", 2017, 4, None, orig)
+    loaded = summary_store.get("some_product", 2017, 4, None)
+
+    # pytest has better error messages for dict comparison
+    assert orig.__dict__ == loaded.__dict__
     assert orig == loaded
