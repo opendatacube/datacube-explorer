@@ -2,68 +2,42 @@ import pytest
 from pathlib import Path
 
 from cubedash import logs
-from cubedash.summary import FileSummaryStore
+from cubedash.summary import FileSummaryStore, SummaryStore
+from cubedash.summary._stores import PgSummaryStore
 from datacube.index import Index
-from datacube.index.hl import Doc2Dataset
+from datacube.scripts.dataset import create_dataset, load_rules_from_types
 from datacube.utils import read_documents
 from digitalearthau.testing import factories
+from typing import Type
 
 pytest_plugins = "digitalearthau.testing.plugin"
 
-TEST_DATA_DIR = Path(__file__).parent / 'data'
-
-# Use session-scoped databases, as it takes a while to populate with
+# Use module-scoped databases, as it takes a while to populate with
 # our data, and we're treating it as read-only in tests.
 # -> Note: Since we're reusing the default config unchanged, we can't use the
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
-session_db = factories.db_fixture('local_config', scope='session')
-session_index = factories.index_fixture('session_db', scope='session')
-session_dea_index = factories.dea_index_fixture('session_index', scope='session')
+module_db = factories.db_fixture('local_config', scope='module')
+module_index = factories.index_fixture('module_db', scope='module')
+module_dea_index = factories.dea_index_fixture('module_index', scope='module')
 
 
-@pytest.fixture(scope='session')
-def populated_index(session_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
+@pytest.fixture(
+    scope='function',
+    params=['file_store', 'db_store'],
+)
+def summary_store(module_dea_index: Index, tmppath: Path, request) -> SummaryStore:
+    p = request.param
+    if p == 'file_store':
+        store = FileSummaryStore(module_dea_index, tmppath)
+    elif p == 'db_store':
+        store = PgSummaryStore(module_dea_index)
+        store.drop_all()
+        store.init()
+    else:
+        raise ValueError(f"Unknown store type {repr(p)}")
 
-    It's session-scoped as it's expensive to populate.
-    """
-    _populate_from_dump(
-        session_dea_index,
-        'ls8_nbar_scene',
-        TEST_DATA_DIR / 'ls8-nbar-scene-sample-2017.yaml.gz'
-    )
-    _populate_from_dump(
-        session_dea_index,
-        'ls8_nbar_albers',
-        TEST_DATA_DIR / 'ls8-nbar-albers-sample.yaml.gz'
-    )
-    return session_dea_index
-
-
-@pytest.fixture(scope='function')
-def summary_store(populated_index: Index, tmppath: Path):
-    return FileSummaryStore(populated_index, tmppath)
-
-
-def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
-    ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
-    dataset_count = 0
-
-    create_dataset = Doc2Dataset(session_dea_index)
-
-    for _, doc in read_documents(dump_path):
-        label = doc['ga_label'] if ('ga_label' in doc) else doc['id']
-        dataset, err = create_dataset(doc, f"file://example.com/test_dataset/{label}")
-        assert dataset is not None, err
-        created = session_dea_index.datasets.add(dataset)
-
-        assert created.type.name == ls8_nbar_scene.name
-        dataset_count += 1
-
-    print(f"Populated {dataset_count} of {expected_type}")
-    return dataset_count
+    return store
 
 
 @pytest.fixture(autouse=True, scope='session')
