@@ -22,6 +22,8 @@ from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
 from typing import Optional
 
+from geoalchemy2 import shape as geo_shape
+
 from cubedash import _utils
 from datacube.index import Index
 from datacube.model import Range
@@ -237,7 +239,7 @@ TIME_OVERVIEW = Table(
     Column('time_earliest', DateTime(timezone=True)),
     Column('time_latest', DateTime(timezone=True)),
 
-    Column('footprint_geometry', Geometry("MULTIPOLYGON")),
+    Column('footprint_geometry', Geometry()),
 
     Column('footprint_count', Integer),
 
@@ -340,7 +342,10 @@ class PgSummaryStore(SummaryStore):
             time_range=Range(res['time_earliest'], res['time_latest'])
             if res['time_earliest'] else None,
             # shapely.geometry.base.BaseGeometry
-            footprint_geometry=res['footprint_geometry'],
+            footprint_geometry=(
+                None if res['footprint_geometry'] is None
+                else geo_shape.to_shape(res['footprint_geometry'])
+            ),
             footprint_count=res['footprint_count'],
             # The most newly created dataset
             newest_dataset_creation_time=res['newest_dataset_creation_time'],
@@ -370,7 +375,10 @@ class PgSummaryStore(SummaryStore):
             time_earliest=begin,
             time_latest=end,
 
-            footprint_geometry=summary.footprint_geometry,
+            footprint_geometry=(
+                None if summary.footprint_geometry is None
+                else geo_shape.from_shape(summary.footprint_geometry)
+            ),
             footprint_count=summary.footprint_count,
 
             newest_dataset_creation_time=summary.newest_dataset_creation_time,
