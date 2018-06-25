@@ -4,11 +4,14 @@ from datetime import datetime
 from dateutil import tz
 from shapely import geometry as geo
 
-from cubedash.summary import TimePeriodOverview
+from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.model import Range
 
 
-def test_store(summary_store):
+def test_store_unchanged(summary_store: SummaryStore):
+    """
+    A put followed by a get should return identical data
+    """
     orig = TimePeriodOverview(
         1234,
         Counter(
@@ -49,9 +52,11 @@ def test_store(summary_store):
     assert orig == loaded
 
 
-def test_store_empty(summary_store):
-    # A period with no datasets.
-    orig = TimePeriodOverview(0, None, None, None, None, None, None, None)
+def test_store_empty(summary_store: SummaryStore):
+    """
+    Should be able to record a period with no datasets.
+    """
+    orig = TimePeriodOverview.empty()
 
     summary_store.put("some_product", 2017, 4, None, orig)
     loaded = summary_store.get("some_product", 2017, 4, None)
@@ -59,3 +64,14 @@ def test_store_empty(summary_store):
     # pytest has better error messages for dict comparison
     assert orig.__dict__ == loaded.__dict__
     assert orig == loaded
+
+
+def test_get_null(summary_store: SummaryStore):
+    """
+    An area with nothing generated should come back as null.
+
+    (It's important for us to distinguish between an area with zero datasets
+    and an area where the summary/extent has not been generated.)
+    """
+    loaded = summary_store.get("some_product", 2019, 4, None)
+    assert loaded is None
