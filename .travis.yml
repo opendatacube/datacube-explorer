@@ -9,6 +9,8 @@ cache:
   - $HOME/.cache/pip
 addons:
   postgresql: '9.6'
+  services:
+    - postgresql
   apt:
     packages:
     - libhdf5-serial-dev
