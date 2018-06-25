@@ -56,8 +56,9 @@ def get_products_with_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverv
     """
     The list of products that we have generated reports for.
     """
+    index_products = {p.name: p for p in index.products.get_all()}
     products = [
-        (index.products.get_by_name(product_name), get_summary(product_name))
+        (index_products[product_name], get_summary(product_name))
         for product_name in DEFAULT_STORE.list_complete_products()
     ]
     if not products:
