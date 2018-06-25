@@ -295,6 +295,7 @@ class PgSummaryStore(SummaryStore):
         # The engine used for our own tables.
         # We may use our own engine in the future, as in many places the original
         # datacube is read-only.
+        # pylint: disable=protected-access
         self._engine: Engine = index._db._engine
 
     def init(self):
