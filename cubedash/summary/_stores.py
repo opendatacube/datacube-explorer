@@ -15,6 +15,7 @@ import shapely.geometry
 import shapely.ops
 import structlog
 from geoalchemy2 import Geometry
+from geoalchemy2 import shape as geo_shape
 from sqlalchemy import (
     DDL,
     JSON,
@@ -264,7 +265,7 @@ TIME_OVERVIEW = Table(
     # Frustrating that there's no default datetimetz range type by default in postgres
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
-    Column("footprint_geometry", Geometry("MULTIPOLYGON")),
+    Column("footprint_geometry", Geometry()),
     Column("footprint_count", Integer),
     # The most newly created dataset
     Column("newest_dataset_creation_time", DateTime(timezone=True)),
@@ -368,7 +369,11 @@ class PgSummaryStore(SummaryStore):
             if res["time_earliest"]
             else None,
             # shapely.geometry.base.BaseGeometry
-            footprint_geometry=res["footprint_geometry"],
+            footprint_geometry=(
+                None
+                if res["footprint_geometry"] is None
+                else geo_shape.to_shape(res["footprint_geometry"])
+            ),
             footprint_count=res["footprint_count"],
             # The most newly created dataset
             newest_dataset_creation_time=res["newest_dataset_creation_time"],
@@ -394,7 +399,11 @@ class PgSummaryStore(SummaryStore):
             timeline_period=summary.timeline_period,
             time_earliest=begin,
             time_latest=end,
-            footprint_geometry=summary.footprint_geometry,
+            footprint_geometry=(
+                None
+                if summary.footprint_geometry is None
+                else geo_shape.from_shape(summary.footprint_geometry)
+            ),
             footprint_count=summary.footprint_count,
             newest_dataset_creation_time=summary.newest_dataset_creation_time,
             generation_time=summary.summary_gen_time,

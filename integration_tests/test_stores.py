@@ -2,8 +2,9 @@ from collections import Counter
 from datetime import datetime
 
 from dateutil import tz
+from shapely import geometry as geo
 
-from cubedash.summary import FileSummaryStore, TimePeriodOverview
+from cubedash.summary import TimePeriodOverview
 from datacube.model import Range
 
 
@@ -24,7 +25,18 @@ def test_store(summary_store):
             datetime(2017, 1, 2, tzinfo=tz.tzutc()),
             datetime(2017, 2, 3, tzinfo=tz.tzutc()),
         ),
-        footprint_geometry=None,
+        footprint_geometry=geo.Polygon(
+            [
+                # ll:
+                (-29.882_024, 113.105_949),
+                # lr:
+                (-29.930_607, 115.464_187),
+                # ur:
+                (-27.849_244, 115.494_523),
+                # ul
+                (-27.804_641, 113.18267),
+            ]
+        ),
         footprint_count=0,
         newest_dataset_creation_time=datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()),
     )
