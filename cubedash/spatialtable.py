@@ -15,14 +15,11 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
 
     The logic here mirrors the extent() function of datacube.model.Dataset.
     """
-    doc = md.dataset_fields['metadata_doc']
-
-    # This is Specific to the Postgres index driver.
-    assert isinstance(doc, NativeField)
+    doc = md.dataset_fields['metadata_doc'].alchemy_expression
 
     projection_offset = md.definition['dataset']['grid_spatial']
 
-    projection = doc.alchemy_expression[projection_offset]
+    projection = doc[projection_offset]
 
     valid_data_offset = projection_offset + ['valid_data']
     geo_ref_points_offset = projection_offset + ['geo_ref_points']
@@ -33,7 +30,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
             (
                 projection[valid_data_offset] != None,
                 func.ST_GeomFromGeoJSON(
-                    doc.alchemy_expression[valid_data_offset].astext
+                    doc[valid_data_offset].astext
                 )
             ),
         ],
@@ -41,10 +38,33 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
         else_=func.ST_MakePolygon(
             func.ST_MakeLine(
                 postgres.array(tuple(
-                    _gis_point(doc.alchemy_expression[geo_ref_points_offset + [key]])
+                    _gis_point(doc[geo_ref_points_offset + [key]])
                     for key in ('ll', 'ul', 'ur', 'lr', 'll')
                 ))
             )
+        )
+    )
+
+
+def get_dataset_crs_alchemy_expression(md: MetadataType):
+    doc = md.dataset_fields['metadata_doc'].alchemy_expression
+
+    projection_offset = md.definition['dataset']['grid_spatial']
+
+    # Most have a spatial_reference field we can use directly.
+    spatial_reference_offset = projection_offset + ['spatial_reference']
+    return func.coalesce(
+        doc[spatial_reference_offset].astext,
+        # Some older datasets have datum/zone fields instead.
+        # The only remaining ones in DEA are 'GDA94'.
+        case(
+            [
+                (
+                    doc[(projection_offset + ['datum'])].astext == 'GDA94',
+                    'EPSG:283' + doc[(projection_offset + ['zone'])].astext
+                )
+            ],
+            else_=None
         )
     )
 
@@ -64,8 +84,8 @@ if __name__ == '__main__':
                 select([
                     DATASET.c.id,
                     get_dataset_extent_alchemy_expression(eo_type).label('geom'),
-                    literal('epsg_something').label('crs'),
-                    eo_type.dataset_fields['time'].alchemy_expression.label('time')
+                    get_dataset_crs_alchemy_expression(eo_type).label('crs'),
+                    eo_type.dataset_fields['time'].alchemy_expression.label('time'),
                 ]).select_from(
                     DATASET.join(METADATA_TYPE)
                 ).where(
