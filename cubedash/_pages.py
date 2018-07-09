@@ -1,10 +1,13 @@
 import itertools
+import time
+
 from datetime import datetime
 
 import flask
 import structlog
 from flask import abort, redirect, url_for
 from flask import request
+from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
 import cubedash
@@ -186,3 +189,41 @@ def default_redirect():
             product_name=default_product
         )
     )
+
+
+# Add server timings to http headers.
+if app.debug:
+    @app.before_request
+    def time_start():
+        flask.g.start_render = time.time()
+        flask.g.datacube_query_time = 0
+        flask.g.datacube_query_count = 0
+
+
+    @event.listens_for(_model.index._db._engine, "before_cursor_execute")
+    def before_cursor_execute(conn, cursor, statement,
+                              parameters, context, executemany):
+        conn.info.setdefault('query_start_time', []).append(time.time())
+
+
+    @event.listens_for(_model.index._db._engine, "after_cursor_execute")
+    def after_cursor_execute(conn, cursor, statement,
+                             parameters, context, executemany):
+        flask.g.datacube_query_time += time.time() - conn.info['query_start_time'].pop(
+            -1)
+        flask.g.datacube_query_count += 1
+        # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
+
+
+    @app.after_request
+    def time_end(response: flask.Response):
+        render_time = time.time() - flask.g.start_render
+        response.headers.add_header(
+            'Server-Timing',
+            f'app;dur={render_time*1000},'
+            f'odcquery;dur={flask.g.datacube_query_time*1000};desc="ODC query time",'
+            f'odcquerycount_{flask.g.datacube_query_count};'
+            f'desc="{flask.g.datacube_query_count} ODC queries"'
+        )
+        return response
+
