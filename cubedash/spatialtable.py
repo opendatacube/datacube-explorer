@@ -1,7 +1,7 @@
 from datetime import datetime
 from geoalchemy2 import Geometry
 from sqlalchemy import func, case, cast, select, Table, Column, ForeignKey, String, \
-    bindparam
+    bindparam, Integer
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
@@ -35,7 +35,8 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
             (
                 projection[valid_data_offset] != None,
                 func.ST_GeomFromGeoJSON(
-                    doc[valid_data_offset].astext
+                    doc[valid_data_offset].astext,
+                    type_=Geometry
                 )
             ),
         ],
@@ -46,8 +47,9 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
                     _gis_point(doc[geo_ref_points_offset + [key]])
                     for key in ('ll', 'ul', 'ur', 'lr', 'll')
                 ))
-            )
-        )
+            ), type_=Geometry
+        ),
+
     )
 
 
@@ -66,7 +68,8 @@ def get_dataset_crs_alchemy_expression(md: MetadataType):
             [
                 (
                     doc[(projection_offset + ['datum'])].astext == 'GDA94',
-                    'EPSG:283' + doc[(projection_offset + ['zone'])].astext
+                    'EPSG:283' + func.abs(
+                        cast(doc[(projection_offset + ['zone'])].astext, Integer))
                 )
             ],
             else_=None
