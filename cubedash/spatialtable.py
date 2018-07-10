@@ -1,5 +1,7 @@
 from datetime import datetime
+from pprint import pprint
 
+from click import echo, secho, style
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     Column,
@@ -20,7 +22,7 @@ from sqlalchemy.engine import Engine
 from cubedash.summary._stores import METADATA as CUBEDASH_DB_METADATA
 from datacube import Datacube
 from datacube.drivers.postgres._schema import DATASET, DATASET_TYPE
-from datacube.model import MetadataType
+from datacube.model import DatasetType, MetadataType
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType):
@@ -115,41 +117,93 @@ DATASET_SPATIAL = Table(
 )
 
 
-def add_spatial_table():
+def add_spatial_table(*product_names):
 
     with Datacube(env="clone") as dc:
         engine: Engine = dc.index.datasets._db._engine
         DATASET_SPATIAL.create(engine, checkfirst=True)
 
-        eo_type = dc.index.metadata_types.get_by_name("eo")
-        print(f"Starting spatial insertion for {eo_type.name}. {datetime.now()}")
-        insert_count = _insert_spatial_records(engine, eo_type)
-        print(
-            f"Added {insert_count} dataset records for {eo_type.name}."
-            f"{datetime.now()}"
-        )
+        for product_name in product_names:
+            product = dc.index.products.get_by_name(product_name)
 
-
-def _insert_spatial_records(engine: Engine, md_type: MetadataType):
-    ret = engine.execute(
-        DATASET_SPATIAL.insert().from_select(
-            ["id", "product_ref", "time", "extent", "crs"],
-            select(
-                [
-                    DATASET.c.id,
-                    DATASET.c.dataset_type_ref,
-                    md_type.dataset_fields["time"].alchemy_expression.label("time"),
-                    get_dataset_extent_alchemy_expression(md_type).label("extent"),
-                    get_dataset_crs_alchemy_expression(md_type).label("crs"),
-                ]
+            echo(
+                f"{datetime.now()}"
+                f"Starting {style(product.name, bold=True)} extent update"
             )
-            .select_from(DATASET)
-            .where(DATASET.c.metadata_type_ref == bindparam("metadata_type_ref")),
-        ),
-        metadata_type_ref=md_type.id,
+            insert_count = _insert_spatial_records(engine, product)
+            echo(
+                f"{datetime.now()} "
+                f"Added {style(str(insert_count), bold=True)} new extents "
+                f"for {style(product.name, bold=True)}. "
+            )
+
+
+def _insert_spatial_records(engine: Engine, product: DatasetType):
+    ret = engine.execute(
+        postgres.insert(DATASET_SPATIAL)
+        .from_select(
+            ["id", "product_ref", "time", "extent", "crs"],
+            _select_dataset_extent_query(product.metadata_type)
+            .where(DATASET.c.dataset_type_ref == bindparam("product_ref"))
+            .where(DATASET.c.archived == None),
+        )
+        .on_conflict_do_nothing(index_elements=["id"]),
+        product_ref=product.id,
     )
     return ret.rowcount
 
 
+def _select_dataset_extent_query(md_type):
+    return select(
+        [
+            DATASET.c.id,
+            DATASET.c.dataset_type_ref,
+            md_type.dataset_fields["time"].alchemy_expression.label("time"),
+            get_dataset_extent_alchemy_expression(md_type).label("extent"),
+            get_dataset_crs_alchemy_expression(md_type).label("crs"),
+        ]
+    ).select_from(DATASET)
+
+
+def as_sql(expression, **params):
+    return str(
+        expression.params(**params).compile(
+            dialect=postgres.dialect(), compile_kwargs={"literal_binds": True}
+        )
+    )
+
+
+def print_query_tests(*product_names):
+    with Datacube(env="clone") as dc:
+        engine: Engine = dc.index.datasets._db._engine
+        DATASET_SPATIAL.create(engine, checkfirst=True)
+
+        for product_name in product_names:
+            product = dc.index.products.get_by_name(product_name)
+
+            one_dataset_query = (
+                _select_dataset_extent_query(product.metadata_type)
+                .where(DATASET.c.dataset_type_ref == bindparam("product_ref"))
+                .where(DATASET.c.archived == None)
+                .limit(1)
+            )
+
+            # Look at the raw query being generated.
+            # This is not very readable, but can be copied into PyCharm or
+            # equivalent for formatting.
+            secho(f"=== Raw Query ({product_name}) ===", bold=True)
+            echo(as_sql(one_dataset_query, product_ref=product.id))
+            secho("=== End Query ===", bold=True)
+
+            # Print an example extent row
+            ret = engine.execute(one_dataset_query, product_ref=product.id).fetchall()
+            assert len(ret) == 1
+            dataset_row = ret[0]
+            secho("=== Example dataset ===", bold=True)
+            echo(pprint(dict(dataset_row)))
+            secho("=== End example dataset ===", bold=True)
+
+
 if __name__ == "__main__":
-    add_spatial_table()
+    print_query_tests("ls8_nbar_albers", "ls8_level1_scene")
+    add_spatial_table("ls8_nbar_albers", "ls8_level1_scene")
