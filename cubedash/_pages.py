@@ -1,6 +1,7 @@
 import itertools
 import time
 
+import functools
 from datetime import datetime
 
 import flask
@@ -227,3 +228,48 @@ if app.debug:
         )
         return response
 
+
+    import inspect
+    import time
+    import sys
+
+
+    def decorate_all_methods(cls, decorator):
+        """
+        Decorate all public methods of the class with the given decorator.
+        """
+        for name, clasification, clz, attr in inspect.classify_class_attrs(cls):
+            if clasification == 'method' and not name.startswith('_'):
+                setattr(cls, name, decorator(attr))
+        return cls
+
+
+    def print_datacube_query_times():
+        from click import style
+
+        def with_timings(function):
+            """
+            Decorate the given function with a stderr print of timing
+            """
+
+            @functools.wraps(function)
+            def decorator(*args, **kwargs):
+                start_time = time.time()
+                ret = function(*args, **kwargs)
+                duration_secs = time.time() - start_time
+                print(
+                    f"== Index Call == {style(function.__name__, bold=True)}: "
+                    f"{duration_secs*1000}",
+                    file=sys.stderr,
+                    flush=True
+                )
+                return ret
+
+            return decorator
+
+        # Print call time for all db layer calls.
+        import datacube.drivers.postgres._api as api
+        decorate_all_methods(api.PostgresDbAPI, with_timings)
+
+
+    print_datacube_query_times()
