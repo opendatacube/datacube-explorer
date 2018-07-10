@@ -46,7 +46,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
     return case(
         [
             (
-                projection[valid_data_offset] != None,
+                doc[valid_data_offset] != None,
                 func.ST_GeomFromGeoJSON(doc[valid_data_offset].astext, type_=Geometry),
             )
         ],
@@ -55,7 +55,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
             func.ST_MakeLine(
                 postgres.array(
                     tuple(
-                        _gis_point(doc[geo_ref_points_offset + [key]])
+                        _gis_point(doc, geo_ref_points_offset + [key])
                         for key in ("ll", "ul", "ur", "lr", "ll")
                     )
                 )
@@ -91,10 +91,10 @@ def get_dataset_crs_alchemy_expression(md: MetadataType):
     )
 
 
-def _gis_point(obj):
+def _gis_point(doc, doc_offset):
     return func.ST_MakePoint(
-        cast(obj["x"].astext, postgres.DOUBLE_PRECISION),
-        cast(obj["y"].astext, postgres.DOUBLE_PRECISION),
+        cast(doc[doc_offset + ["x"]].astext, postgres.DOUBLE_PRECISION),
+        cast(doc[doc_offset + ["y"]].astext, postgres.DOUBLE_PRECISION),
     )
 
 
