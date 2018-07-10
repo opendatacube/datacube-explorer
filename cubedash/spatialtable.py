@@ -1,9 +1,24 @@
-from sqlalchemy import case, cast, func, literal, select
-from sqlalchemy.dialects import postgresql as postgres
+from datetime import datetime
 
+from geoalchemy2 import Geometry
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    String,
+    Table,
+    bindparam,
+    case,
+    cast,
+    func,
+    select,
+)
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+
+from cubedash.summary._stores import METADATA as CUBEDASH_DB_METADATA
 from datacube import Datacube
-from datacube.drivers.postgres._fields import NativeField
-from datacube.drivers.postgres._schema import DATASET, METADATA_TYPE
+from datacube.drivers.postgres._schema import DATASET, DATASET_TYPE
 from datacube.model import MetadataType
 
 
@@ -76,21 +91,60 @@ def _gis_point(obj):
     )
 
 
-if __name__ == "__main__":
+DATASET_SPATIAL = Table(
+    "dataset_spatial",
+    CUBEDASH_DB_METADATA,
+    # Note that we deliberately don't foreign-key to datacube tables: they may
+    # be in a separate database.
+    Column("id", postgres.UUID(as_uuid=True), primary_key=True, comment="Dataset ID"),
+    Column(
+        "product_ref",
+        None,
+        ForeignKey(DATASET_TYPE.c.id),
+        comment="Cubedash product list " "(corresponding to datacube dataset_type)",
+        nullable=False,
+    ),
+    Column("time", TSTZRANGE),
+    Column("extent", Geometry()),
+    Column("crs", String),
+)
+
+
+def add_spatial_table():
+
     with Datacube(env="clone") as dc:
+        engine: Engine = dc.index.datasets._db._engine
+        DATASET_SPATIAL.create(engine, checkfirst=True)
 
         eo_type = dc.index.metadata_types.get_by_name("eo")
-        for row in dc.index.datasets._db._engine.execute(
+        print(f"Starting spatial insertion for {eo_type.name}. {datetime.now()}")
+        insert_count = _insert_spatial_records(engine, eo_type)
+        print(
+            f"Added {insert_count} dataset records for {eo_type.name}."
+            f"{datetime.now()}"
+        )
+
+
+def _insert_spatial_records(engine: Engine, md_type: MetadataType):
+    ret = engine.execute(
+        DATASET_SPATIAL.insert().from_select(
+            ["id", "product_ref", "time", "extent", "crs"],
             select(
                 [
                     DATASET.c.id,
-                    get_dataset_extent_alchemy_expression(eo_type).label("geom"),
-                    get_dataset_crs_alchemy_expression(eo_type).label("crs"),
-                    eo_type.dataset_fields["time"].alchemy_expression.label("time"),
+                    DATASET.c.dataset_type_ref,
+                    md_type.dataset_fields["time"].alchemy_expression.label("time"),
+                    get_dataset_extent_alchemy_expression(md_type).label("extent"),
+                    get_dataset_crs_alchemy_expression(md_type).label("crs"),
                 ]
             )
-            .select_from(DATASET.join(METADATA_TYPE))
-            .where(METADATA_TYPE.c.id == eo_type.id)
-            .limit(1)
-        ).fetchall():
-            print(repr(row))
+            .select_from(DATASET)
+            .where(DATASET.c.metadata_type_ref == bindparam("metadata_type_ref")),
+        ),
+        metadata_type_ref=md_type.id,
+    )
+    return ret.rowcount
+
+
+if __name__ == "__main__":
+    add_spatial_table()
