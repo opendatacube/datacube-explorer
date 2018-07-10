@@ -4,6 +4,7 @@ from geoalchemy2 import Geometry
 from sqlalchemy import (
     Column,
     ForeignKey,
+    Integer,
     String,
     Table,
     bindparam,
@@ -44,7 +45,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
         [
             (
                 projection[valid_data_offset] != None,
-                func.ST_GeomFromGeoJSON(doc[valid_data_offset].astext),
+                func.ST_GeomFromGeoJSON(doc[valid_data_offset].astext, type_=Geometry),
             )
         ],
         # Otherwise construct a polygon from the four corner points.
@@ -56,7 +57,8 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
                         for key in ("ll", "ul", "ur", "lr", "ll")
                     )
                 )
-            )
+            ),
+            type_=Geometry,
         ),
     )
 
@@ -76,7 +78,10 @@ def get_dataset_crs_alchemy_expression(md: MetadataType):
             [
                 (
                     doc[(projection_offset + ["datum"])].astext == "GDA94",
-                    "EPSG:283" + doc[(projection_offset + ["zone"])].astext,
+                    "EPSG:283"
+                    + func.abs(
+                        cast(doc[(projection_offset + ["zone"])].astext, Integer)
+                    ),
                 )
             ],
             else_=None,
