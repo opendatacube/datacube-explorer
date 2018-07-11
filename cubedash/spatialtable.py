@@ -1,9 +1,12 @@
+import json
+import uuid
 from datetime import datetime
-from pprint import pprint
 
 import structlog
 from click import echo, secho, style
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geometry, WKBElement
+from geoalchemy2.shape import to_shape
+from psycopg2._range import Range as PgRange
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -22,6 +25,7 @@ from sqlalchemy.engine import Engine
 
 from cubedash.summary._stores import METADATA as CUBEDASH_DB_METADATA
 from datacube import Datacube
+from datacube.drivers.postgres._fields import RangeDocField
 from datacube.drivers.postgres._schema import DATASET, DATASET_TYPE
 from datacube.model import DatasetType, MetadataType
 
@@ -217,7 +221,22 @@ def print_query_tests(*product_names):
             ret = engine.execute(one_dataset_query).fetchall()
             assert len(ret) == 1
             dataset_row = ret[0]
-            show("Example dataset", pprint(dict(dataset_row)))
+            show("Example dataset", _as_json(dict(dataset_row)))
+
+
+def _as_json(obj):
+    def fallback(o, *args, **kwargs):
+        if isinstance(o, uuid.UUID):
+            return str(o)
+        if isinstance(o, WKBElement):
+            return to_shape(o).wkt
+        if isinstance(o, datetime):
+            return o.isoformat()
+        if isinstance(o, PgRange):
+            return ["∞" if o.lower_inf else o.lower, "∞" if o.upper_inf else o.upper]
+        return repr(o)
+
+    return json.dumps(obj, indent=4, default=fallback)
 
 
 if __name__ == "__main__":
