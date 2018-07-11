@@ -1,17 +1,18 @@
 from datetime import datetime
 from pprint import pprint
 
+import structlog
 from click import echo, secho, style
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     Table,
     bindparam,
     case,
-    cast,
     func,
     select,
 )
@@ -23,6 +24,8 @@ from cubedash.summary._stores import METADATA as CUBEDASH_DB_METADATA
 from datacube import Datacube
 from datacube.drivers.postgres._schema import DATASET, DATASET_TYPE
 from datacube.model import DatasetType, MetadataType
+
+_LOG = structlog.get_logger()
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType):
@@ -36,9 +39,6 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
-
-    projection = doc[projection_offset]
-
     valid_data_offset = projection_offset + ["valid_data"]
     geo_ref_points_offset = projection_offset + ["geo_ref_points"]
 
@@ -82,7 +82,7 @@ def get_dataset_crs_alchemy_expression(md: MetadataType):
                     doc[(projection_offset + ["datum"])].astext == "GDA94",
                     "EPSG:283"
                     + func.abs(
-                        cast(doc[(projection_offset + ["zone"])].astext, Integer)
+                        doc[(projection_offset + ["zone"])].astext.cast(Integer)
                     ),
                 )
             ],
@@ -93,8 +93,8 @@ def get_dataset_crs_alchemy_expression(md: MetadataType):
 
 def _gis_point(doc, doc_offset):
     return func.ST_MakePoint(
-        cast(doc[doc_offset + ["x"]].astext, postgres.DOUBLE_PRECISION),
-        cast(doc[doc_offset + ["y"]].astext, postgres.DOUBLE_PRECISION),
+        doc[doc_offset + ["x"]].astext.cast(postgres.DOUBLE_PRECISION),
+        doc[doc_offset + ["y"]].astext.cast(postgres.DOUBLE_PRECISION),
     )
 
 
@@ -139,18 +139,23 @@ def add_spatial_table(*product_names):
 
 
 def _insert_spatial_records(engine: Engine, product: DatasetType):
-    ret = engine.execute(
+    product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
+    query = (
         postgres.insert(DATASET_SPATIAL)
         .from_select(
             ["id", "product_ref", "time", "extent", "crs"],
             _select_dataset_extent_query(product.metadata_type)
-            .where(DATASET.c.dataset_type_ref == bindparam("product_ref"))
+            .where(DATASET.c.dataset_type_ref == product_ref)
             .where(DATASET.c.archived == None),
         )
-        .on_conflict_do_nothing(index_elements=["id"]),
-        product_ref=product.id,
+        .on_conflict_do_nothing(index_elements=["id"])
     )
-    return ret.rowcount
+
+    _LOG.debug(
+        "spatial_insert_query", product_name=product.name, query_sql=as_sql(query)
+    )
+
+    return engine.execute(query).rowcount
 
 
 def _select_dataset_extent_query(md_type):
@@ -166,8 +171,17 @@ def _select_dataset_extent_query(md_type):
 
 
 def as_sql(expression, **params):
+    """Convert sqlalchemy expression to SQL string.
+
+    (primarily for debugging: to see what sqlalchemy is doing)
+
+    This has its literal values bound, so it's more readable than the engine's
+    query logging.
+    """
+    if params:
+        expression = expression.params(**params)
     return str(
-        expression.params(**params).compile(
+        expression.compile(
             dialect=postgres.dialect(), compile_kwargs={"literal_binds": True}
         )
     )
@@ -178,12 +192,18 @@ def print_query_tests(*product_names):
         engine: Engine = dc.index.datasets._db._engine
         DATASET_SPATIAL.create(engine, checkfirst=True)
 
+        def show(title, output):
+            secho(f"=== {title} ({product_name}) ===", bold=True)
+            echo(output)
+            secho(f"=== End {title} ===", bold=True)
+
         for product_name in product_names:
             product = dc.index.products.get_by_name(product_name)
 
+            product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
             one_dataset_query = (
                 _select_dataset_extent_query(product.metadata_type)
-                .where(DATASET.c.dataset_type_ref == bindparam("product_ref"))
+                .where(DATASET.c.dataset_type_ref == product_ref)
                 .where(DATASET.c.archived == None)
                 .limit(1)
             )
@@ -191,17 +211,13 @@ def print_query_tests(*product_names):
             # Look at the raw query being generated.
             # This is not very readable, but can be copied into PyCharm or
             # equivalent for formatting.
-            secho(f"=== Raw Query ({product_name}) ===", bold=True)
-            echo(as_sql(one_dataset_query, product_ref=product.id))
-            secho("=== End Query ===", bold=True)
+            show("Raw Query", as_sql(one_dataset_query, product_ref=product.id))
 
             # Print an example extent row
-            ret = engine.execute(one_dataset_query, product_ref=product.id).fetchall()
+            ret = engine.execute(one_dataset_query).fetchall()
             assert len(ret) == 1
             dataset_row = ret[0]
-            secho("=== Example dataset ===", bold=True)
-            echo(pprint(dict(dataset_row)))
-            secho("=== End example dataset ===", bold=True)
+            show("Example dataset", pprint(dict(dataset_row)))
 
 
 if __name__ == "__main__":
