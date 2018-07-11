@@ -150,7 +150,7 @@ DATASET_SPATIAL = Table(
     # be in a separate database.
     Column("id", postgres.UUID(as_uuid=True), primary_key=True, comment="Dataset ID"),
     Column(
-        "product_ref",
+        "dataset_type_ref",
         None,
         ForeignKey(DATASET_TYPE.c.id),
         comment="Cubedash product list " "(corresponding to datacube dataset_type)",
@@ -163,25 +163,21 @@ DATASET_SPATIAL = Table(
 )
 
 
-def add_spatial_table(*product_names):
+def add_spatial_table(dc: Datacube, *products: DatasetType):
+    engine: Engine = dc.index.datasets._db._engine
+    DATASET_SPATIAL.create(engine, checkfirst=True)
 
-    with Datacube(env="clone") as dc:
-        engine: Engine = dc.index.datasets._db._engine
-        DATASET_SPATIAL.create(engine, checkfirst=True)
-
-        for product_name in product_names:
-            product = dc.index.products.get_by_name(product_name)
-
-            echo(
-                f"{datetime.now()}"
-                f"Starting {style(product.name, bold=True)} extent update"
-            )
-            insert_count = _insert_spatial_records(engine, product)
-            echo(
-                f"{datetime.now()} "
-                f"Added {style(str(insert_count), bold=True)} new extents "
-                f"for {style(product.name, bold=True)}. "
-            )
+    for product in products:
+        echo(
+            f"{datetime.now()}"
+            f"Starting {style(product.name, bold=True)} extent update"
+        )
+        insert_count = _insert_spatial_records(engine, product)
+        echo(
+            f"{datetime.now()} "
+            f"Added {style(str(insert_count), bold=True)} new extents "
+            f"for {style(product.name, bold=True)}. "
+        )
 
 
 def _insert_spatial_records(engine: Engine, product: DatasetType):
@@ -189,7 +185,14 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
     query = (
         postgres.insert(DATASET_SPATIAL)
         .from_select(
-            ["id", "product_ref", "time", "extent", "crs"],
+            [
+                "id",
+                "dataset_type_ref",
+                "time",
+                "native_footprint",
+                "native_srid",
+                "bounds",
+            ],
             _select_dataset_extent_query(product.metadata_type)
             .where(DATASET.c.dataset_type_ref == product_ref)
             .where(DATASET.c.archived == None),
@@ -205,6 +208,9 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
 
 
 def _select_dataset_extent_query(md_type):
+    if "lat" not in md_type.dataset_fields:
+        return select([None])
+
     lat, lon = md_type.dataset_fields["lat"], md_type.dataset_fields["lon"]
     assert isinstance(lat, RangeDocField)
     assert isinstance(lon, RangeDocField)
@@ -246,37 +252,37 @@ def as_sql(expression, **params):
     )
 
 
-def print_query_tests(*product_names):
-    with Datacube(env="clone") as dc:
-        engine: Engine = dc.index.datasets._db._engine
-        DATASET_SPATIAL.create(engine, checkfirst=True)
+def print_query_tests(dc: Datacube, *products: DatasetType):
+    engine: Engine = dc.index.datasets._db._engine
+    DATASET_SPATIAL.create(engine, checkfirst=True)
 
-        def show(title, output):
-            secho(f"=== {title} ({product_name}) ===", bold=True)
-            echo(output)
-            secho(f"=== End {title} ===", bold=True)
+    def show(title, output):
+        secho(f"=== {title} ({product.name}) ===", bold=True, err=True)
+        echo(output, err=True)
+        secho(f"=== End {title} ===", bold=True, err=True)
 
-        for product_name in product_names:
-            product = dc.index.products.get_by_name(product_name)
+    for product in products:
+        product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
+        one_dataset_query = (
+            _select_dataset_extent_query(product.metadata_type)
+            .where(DATASET.c.dataset_type_ref == product_ref)
+            .where(DATASET.c.archived == None)
+            .limit(1)
+        )
 
-            product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
-            one_dataset_query = (
-                _select_dataset_extent_query(product.metadata_type)
-                .where(DATASET.c.dataset_type_ref == product_ref)
-                .where(DATASET.c.archived == None)
-                .limit(1)
-            )
-
-            # Look at the raw query being generated.
-            # This is not very readable, but can be copied into PyCharm or
-            # equivalent for formatting.
+        # Look at the raw query being generated.
+        # This is not very readable, but can be copied into PyCharm or
+        # equivalent for formatting.
+        if DEBUG:
             show("Raw Query", as_sql(one_dataset_query, product_ref=product.id))
 
-            # Print an example extent row
-            ret = engine.execute(one_dataset_query).fetchall()
-            assert len(ret) == 1
+        # Print an example extent row
+        ret = engine.execute(one_dataset_query).fetchall()
+        if len(ret) == 1:
             dataset_row = ret[0]
             show("Example dataset", _as_json(dict(dataset_row)))
+        else:
+            show("No datasets", "<empty>")
 
 
 def _as_json(obj):
@@ -294,6 +300,12 @@ def _as_json(obj):
     return json.dumps(obj, indent=4, default=fallback)
 
 
+DEBUG = False
 if __name__ == "__main__":
-    print_query_tests("ls8_nbar_albers", "ls8_level1_scene")
-    add_spatial_table("ls8_nbar_albers", "ls8_level1_scene")
+    with Datacube(env="clone") as dc:
+        products = dc.index.products.get_all()
+        # Sample one of each product. Useful to find errors immediately.
+        print_query_tests(dc, *products)
+        # Populate whole table
+        if not DEBUG:
+            add_spatial_table(dc, *products)
