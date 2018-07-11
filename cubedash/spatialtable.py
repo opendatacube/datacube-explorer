@@ -11,12 +11,14 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    MetaData,
     SmallInteger,
     String,
     Table,
     bindparam,
     case,
     func,
+    literal,
     select,
 )
 from sqlalchemy.dialects import postgresql as postgres
@@ -69,29 +71,57 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
     )
 
 
-def get_dataset_crs_alchemy_expression(md: MetadataType):
+def get_dataset_srid_alchemy_expression(md: MetadataType):
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
     # Most have a spatial_reference field we can use directly.
     spatial_reference_offset = projection_offset + ["spatial_reference"]
+    spatial_ref = doc[spatial_reference_offset].astext
     return func.coalesce(
-        doc[spatial_reference_offset].astext,
+        case(
+            [
+                (
+                    # If matches shorthand code: eg. "epsg:1234"
+                    spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
+                    select([SPATIAL_REF_SYS.c.srid])
+                    .where(
+                        func.lower(SPATIAL_REF_SYS.c.auth_name)
+                        == func.lower(func.split_part(spatial_ref, ":", 1))
+                    )
+                    .where(
+                        SPATIAL_REF_SYS.c.auth_srid
+                        == func.split_part(spatial_ref, ":", 2).cast(Integer)
+                    )
+                    .as_scalar(),
+                )
+            ],
+            else_=None,
+        ),
         # Some older datasets have datum/zone fields instead.
         # The only remaining ones in DEA are 'GDA94'.
         case(
             [
                 (
                     doc[(projection_offset + ["datum"])].astext == "GDA94",
-                    "EPSG:283"
-                    + func.abs(
-                        doc[(projection_offset + ["zone"])].astext.cast(Integer)
-                    ),
+                    select([SPATIAL_REF_SYS.c.srid])
+                    .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
+                    .where(
+                        SPATIAL_REF_SYS.c.auth_srid
+                        == (
+                            "283"
+                            + func.abs(
+                                doc[(projection_offset + ["zone"])].astext.cast(Integer)
+                            )
+                        ).cast(Integer)
+                    )
+                    .as_scalar(),
                 )
             ],
             else_=None,
-        ),
+        )
+        # TODO: third option: CRS as text/WKT
     )
 
 
@@ -101,6 +131,17 @@ def _gis_point(doc, doc_offset):
         doc[doc_offset + ["y"]].astext.cast(postgres.DOUBLE_PRECISION),
     )
 
+
+POSTGIS_METADATA = MetaData(schema="public")
+SPATIAL_REF_SYS = Table(
+    "spatial_ref_sys",
+    POSTGIS_METADATA,
+    Column("srid", Integer, primary_key=True),
+    Column("auth_name", String(255)),
+    Column("auth_srid", Integer),
+    Column("srtext", String(2048)),
+    Column("proj4text", String(2048)),
+)
 
 DATASET_SPATIAL = Table(
     "dataset_spatial",
@@ -116,8 +157,9 @@ DATASET_SPATIAL = Table(
         nullable=False,
     ),
     Column("time", TSTZRANGE),
-    Column("extent", Geometry()),
-    Column("crs", String),
+    Column("native_footprint", Geometry()),
+    Column("native_srid", None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
+    Column("bounds", Geometry()),
 )
 
 
@@ -163,13 +205,26 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
 
 
 def _select_dataset_extent_query(md_type):
+    lat, lon = md_type.dataset_fields["lat"], md_type.dataset_fields["lon"]
+    assert isinstance(lat, RangeDocField)
+    assert isinstance(lon, RangeDocField)
+
     return select(
         [
             DATASET.c.id,
             DATASET.c.dataset_type_ref,
             md_type.dataset_fields["time"].alchemy_expression.label("time"),
-            get_dataset_extent_alchemy_expression(md_type).label("extent"),
-            get_dataset_crs_alchemy_expression(md_type).label("crs"),
+            get_dataset_extent_alchemy_expression(md_type).label("native_footprint"),
+            get_dataset_srid_alchemy_expression(md_type).label("native_srid"),
+            func.ST_MakeBox2D(
+                func.ST_MakePoint(
+                    lat.lower.alchemy_expression, lon.lower.alchemy_expression
+                ),
+                func.ST_MakePoint(
+                    lat.greater.alchemy_expression, lon.greater.alchemy_expression
+                ),
+                type_=Geometry,
+            ).label("bounds"),
         ]
     ).select_from(DATASET)
 
