@@ -191,7 +191,7 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
 
     for product in products:
         echo(
-            f"{datetime.now()}"
+            f"{datetime.now()} "
             f"Starting {style(product.name, bold=True)} extent update"
         )
         insert_count = _insert_spatial_records(engine, product)
@@ -352,7 +352,9 @@ def _as_json(obj):
         if isinstance(o, uuid.UUID):
             return str(o)
         if isinstance(o, WKBElement):
-            return to_shape(o).wkt
+            # Following the EWKT format: include srid
+            prefix = "SRID={o.srid};" if o.srid else ""
+            return prefix + to_shape(o).wkt
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):
