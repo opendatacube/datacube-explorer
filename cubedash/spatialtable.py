@@ -172,7 +172,7 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
     _add_convenience_views(engine)
 
     for product in products:
-        echo(f"{datetime.now()}"
+        echo(f"{datetime.now()} "
              f"Starting {style(product.name, bold=True)} extent update")
         insert_count = _insert_spatial_records(engine, product)
         echo(
@@ -292,36 +292,36 @@ def as_sql(expression, **params):
 
 
 def print_query_tests(dc: Datacube, *products: DatasetType):
-        engine: Engine = dc.index.datasets._db._engine
-        DATASET_SPATIAL.create(engine, checkfirst=True)
+    engine: Engine = dc.index.datasets._db._engine
+    DATASET_SPATIAL.create(engine, checkfirst=True)
 
-        def show(title, output):
-            secho(f"=== {title} ({product.name}) ===", bold=True, err=True)
-            echo(output, err=True)
-            secho(f"=== End {title} ===", bold=True, err=True)
+    def show(title, output):
+        secho(f"=== {title} ({product.name}) ===", bold=True, err=True)
+        echo(output, err=True)
+        secho(f"=== End {title} ===", bold=True, err=True)
 
-        for product in products:
-            product_ref = bindparam('product_ref', product.id, type_=SmallInteger)
-            one_dataset_query = _select_dataset_extent_query(
-                product.metadata_type).where(
-                DATASET.c.dataset_type_ref == product_ref
-            ).where(
-                DATASET.c.archived == None
-            ).limit(1)
+    for product in products:
+        product_ref = bindparam('product_ref', product.id, type_=SmallInteger)
+        one_dataset_query = _select_dataset_extent_query(
+            product.metadata_type).where(
+            DATASET.c.dataset_type_ref == product_ref
+        ).where(
+            DATASET.c.archived == None
+        ).limit(1)
 
-            # Look at the raw query being generated.
-            # This is not very readable, but can be copied into PyCharm or
-            # equivalent for formatting.
-            if DEBUG:
-                show('Raw Query', as_sql(one_dataset_query, product_ref=product.id))
+        # Look at the raw query being generated.
+        # This is not very readable, but can be copied into PyCharm or
+        # equivalent for formatting.
+        if DEBUG:
+            show('Raw Query', as_sql(one_dataset_query, product_ref=product.id))
 
-            # Print an example extent row
-            ret = engine.execute(one_dataset_query).fetchall()
-            if len(ret) == 1:
-                dataset_row = ret[0]
-                show('Example dataset', _as_json(dict(dataset_row)))
-            else:
-                show('No datasets', '<empty>')
+        # Print an example extent row
+        ret = engine.execute(one_dataset_query).fetchall()
+        if len(ret) == 1:
+            dataset_row = ret[0]
+            show('Example dataset', _as_json(dict(dataset_row)))
+        else:
+            show('No datasets', '<empty>')
 
 
 def _as_json(obj):
@@ -329,7 +329,9 @@ def _as_json(obj):
         if isinstance(o, uuid.UUID):
             return str(o)
         if isinstance(o, WKBElement):
-            return to_shape(o).wkt
+            # Following the EWKT format: include srid
+            prefix = 'SRID={o.srid};' if o.srid else ''
+            return prefix + to_shape(o).wkt
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):
