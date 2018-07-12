@@ -1,4 +1,5 @@
 import json
+import sys
 import uuid
 from datetime import datetime
 
@@ -19,6 +20,7 @@ from sqlalchemy import (
     case,
     func,
     literal,
+    null,
     select,
 )
 from sqlalchemy.dialects import postgresql as postgres
@@ -44,35 +46,53 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
     """
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
 
+    if "grid_spatial" not in md.definition["dataset"]:
+        # Non-spatial product
+        return None
+
     projection_offset = md.definition["dataset"]["grid_spatial"]
     valid_data_offset = projection_offset + ["valid_data"]
-    geo_ref_points_offset = projection_offset + ["geo_ref_points"]
 
-    # If we have valid_data offset, return it as a polygon.
-    return case(
-        [
-            (
-                doc[valid_data_offset] != None,
-                func.ST_GeomFromGeoJSON(doc[valid_data_offset].astext, type_=Geometry),
-            )
-        ],
-        # Otherwise construct a polygon from the four corner points.
-        else_=func.ST_MakePolygon(
-            func.ST_MakeLine(
-                postgres.array(
-                    tuple(
-                        _gis_point(doc, geo_ref_points_offset + [key])
-                        for key in ("ll", "ul", "ur", "lr", "ll")
-                    )
+    return func.ST_SetSRID(
+        case(
+            [
+                # If we have valid_data offset, use it as the polygon.
+                (
+                    doc[valid_data_offset] != None,
+                    func.ST_GeomFromGeoJSON(
+                        doc[valid_data_offset].astext, type_=Geometry
+                    ),
                 )
-            ),
-            type_=Geometry,
+            ],
+            # Otherwise construct a polygon from the four corner points.
+            else_=_bounds_polygon(doc, projection_offset),
         ),
+        get_dataset_srid_alchemy_expression(md),
+        type_=Geometry,
+    )
+
+
+def _bounds_polygon(doc, projection_offset):
+    geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+    return func.ST_MakePolygon(
+        func.ST_MakeLine(
+            postgres.array(
+                tuple(
+                    _gis_point(doc, geo_ref_points_offset + [key])
+                    for key in ("ll", "ul", "ur", "lr", "ll")
+                )
+            )
+        ),
+        type_=Geometry,
     )
 
 
 def get_dataset_srid_alchemy_expression(md: MetadataType):
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
+
+    if "grid_spatial" not in md.definition["dataset"]:
+        # Non-spatial product
+        return None
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
@@ -157,9 +177,9 @@ DATASET_SPATIAL = Table(
         nullable=False,
     ),
     Column("time", TSTZRANGE),
-    Column("native_footprint", Geometry()),
-    Column("native_srid", None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
-    Column("bounds", Geometry()),
+    Column("footprint", Geometry()),
+    # Column('native_srid', None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
+    # Column('bounds', Geometry()),
 )
 
 
@@ -185,14 +205,7 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
     query = (
         postgres.insert(DATASET_SPATIAL)
         .from_select(
-            [
-                "id",
-                "dataset_type_ref",
-                "time",
-                "native_footprint",
-                "native_srid",
-                "bounds",
-            ],
+            ["id", "dataset_type_ref", "time", "footprint"],
             _select_dataset_extent_query(product.metadata_type)
             .where(DATASET.c.dataset_type_ref == product_ref)
             .where(DATASET.c.archived == None),
@@ -208,31 +221,36 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
 
 
 def _select_dataset_extent_query(md_type):
-    if "lat" not in md_type.dataset_fields:
-        return select([None])
+    # If this product has lat/lon fields, we can take spatial bounds.
 
-    lat, lon = md_type.dataset_fields["lat"], md_type.dataset_fields["lon"]
-    assert isinstance(lat, RangeDocField)
-    assert isinstance(lon, RangeDocField)
-
+    footrprint_expression = get_dataset_extent_alchemy_expression(md_type)
     return select(
         [
             DATASET.c.id,
             DATASET.c.dataset_type_ref,
-            md_type.dataset_fields["time"].alchemy_expression.label("time"),
-            get_dataset_extent_alchemy_expression(md_type).label("native_footprint"),
-            get_dataset_srid_alchemy_expression(md_type).label("native_srid"),
-            func.ST_MakeBox2D(
-                func.ST_MakePoint(
-                    lat.lower.alchemy_expression, lon.lower.alchemy_expression
-                ),
-                func.ST_MakePoint(
-                    lat.greater.alchemy_expression, lon.greater.alchemy_expression
-                ),
-                type_=Geometry,
-            ).label("bounds"),
+            (md_type.dataset_fields["time"].alchemy_expression).label("time"),
+            (null() if footrprint_expression is None else footrprint_expression).label(
+                "footprint"
+            ),
         ]
     ).select_from(DATASET)
+
+
+def get_dataset_bounds_query(md_type):
+    if "lat" not in md_type.dataset_fields:
+        # Not a spatial product
+        return None
+
+    lat, lon = md_type.dataset_fields["lat"], md_type.dataset_fields["lon"]
+    assert isinstance(lat, RangeDocField)
+    assert isinstance(lon, RangeDocField)
+    return func.ST_MakeBox2D(
+        func.ST_MakePoint(lat.lower.alchemy_expression, lon.lower.alchemy_expression),
+        func.ST_MakePoint(
+            lat.greater.alchemy_expression, lon.greater.alchemy_expression
+        ),
+        type_=Geometry,
+    )
 
 
 def as_sql(expression, **params):
@@ -303,7 +321,10 @@ def _as_json(obj):
 DEBUG = False
 if __name__ == "__main__":
     with Datacube(env="clone") as dc:
-        products = dc.index.products.get_all()
+        products = [
+            p for p in dc.index.products.get_all() if p.name.startswith(sys.argv[1])
+        ]
+
         # Sample one of each product. Useful to find errors immediately.
         print_query_tests(dc, *products)
         # Populate whole table
