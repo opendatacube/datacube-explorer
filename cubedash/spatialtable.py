@@ -169,6 +169,8 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
     engine: Engine = dc.index.datasets._db._engine
     DATASET_SPATIAL.create(engine, checkfirst=True)
 
+    _add_convenience_views(engine)
+
     for product in products:
         echo(f"{datetime.now()}"
              f"Starting {style(product.name, bold=True)} extent update")
@@ -179,6 +181,44 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
             f"for {style(product.name, bold=True)}. "
 
         )
+
+
+def _add_convenience_views(engine):
+    """
+    Convenience view for seeing product names, sizes and readable geometry
+    """
+    engine.execute("""
+    create or replace view cubedash.view_extents as 
+    select 
+      dt.name as product, 
+      ST_AsEWKT(sizes.footprint) as footprint_ewkt, 
+      sizes.* 
+    from cubedash.dataset_spatial sizes 
+    inner join agdc.dataset_type dt on sizes.dataset_type_ref = dt.id;
+    """)
+
+    engine.execute("""
+    create or replace view cubedash.view_space_usage as (
+        select 
+            dt.name as product, 
+            sizes.* 
+        from (
+            select
+            dataset_type_ref,
+            count(*),
+            pg_size_pretty(sum(pg_column_size(id               ))) as id_col_size,
+            pg_size_pretty(sum(pg_column_size(time             ))) as time_col_size,
+            pg_size_pretty(sum(pg_column_size(footprint))) as footprint_col_size,
+            pg_size_pretty(round(avg(pg_column_size(footprint)), 0)) as avg_footprint_col_size,
+            count(*) filter (where (not ST_IsValid(footprint))) as invalid_footprints,
+            count(*) filter (where (ST_SRID(footprint) is null)) as missing_srid
+            from cubedash.dataset_spatial
+            group by 1
+        ) sizes
+        inner join agdc.dataset_type dt on sizes.dataset_type_ref = dt.id
+        order by sizes.count desc
+    );
+    """)
 
 
 def _insert_spatial_records(engine: Engine, product: DatasetType):
