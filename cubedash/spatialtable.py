@@ -44,13 +44,13 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
 
     The logic here mirrors the extent() function of datacube.model.Dataset.
     """
-    doc = md.dataset_fields["metadata_doc"].alchemy_expression
+    doc = _jsonb_doc_expression(md)
 
     if "grid_spatial" not in md.definition["dataset"]:
         # Non-spatial product
         return None
 
-    projection_offset = md.definition["dataset"]["grid_spatial"]
+    projection_offset = _projection_doc_offset(md)
     valid_data_offset = projection_offset + ["valid_data"]
 
     return func.ST_SetSRID(
@@ -72,6 +72,16 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
     )
 
 
+def _projection_doc_offset(md):
+    projection_offset = md.definition["dataset"]["grid_spatial"]
+    return projection_offset
+
+
+def _jsonb_doc_expression(md):
+    doc = md.dataset_fields["metadata_doc"].alchemy_expression
+    return doc
+
+
 def _bounds_polygon(doc, projection_offset):
     geo_ref_points_offset = projection_offset + ["geo_ref_points"]
     return func.ST_MakePolygon(
@@ -85,6 +95,65 @@ def _bounds_polygon(doc, projection_offset):
         ),
         type_=Geometry,
     )
+
+
+def _grid_point(dt: DatasetType):
+    """
+    Get an sqlalchemy expression to calculte the grid number of a dataset.
+
+    Eg.
+        On scenes this is the path/row
+        On tiles this is the tile numbers
+
+    Returns as a postgres array of small int.
+    """
+    grid_spec = dt.grid_spec
+
+    md_fields = dt.metadata_type.dataset_fields
+
+    print(dt.name)
+    print(repr(md_fields))
+
+    # If the product has a grid spec, we can calculate the grid number
+    if grid_spec is not None:
+        doc = _jsonb_doc_expression(dt.metadata_type)
+        projection_offset = _projection_doc_offset(dt.metadata_type)
+
+        # Calculate tile refs
+        center_point = func.ST_Centroid(_bounds_polygon(doc, projection_offset))
+
+        # todo: look at grid_spec crs. Use it for defaults, conversion.
+        size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
+        origin_x, origin_y = grid_spec.origin
+        return postgres.array(
+            (
+                func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(
+                    SmallInteger
+                ),
+                func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(
+                    SmallInteger
+                ),
+            )
+        )
+    # Otherwise does the product have a "sat_path/sat_row" fields? Use their values directly.
+    elif "sat_path" in md_fields:
+        # Use sat_path/sat_row as grid items
+        path_field: RangeDocField = md_fields["sat_path"]
+        row_field: RangeDocField = md_fields["sat_row"]
+
+        return postgres.array(
+            (
+                path_field.lower.alchemy_expression.cast(SmallInteger),
+                row_field.greater.alchemy_expression.cast(SmallInteger),
+            )
+        )
+    else:
+        _LOG.warn(
+            "no_grid_spec",
+            product_name=dt.name,
+            metadata_type_name=dt.metadata_type.name,
+        )
+        return null()
 
 
 def get_dataset_srid_alchemy_expression(md: MetadataType):
@@ -178,6 +247,7 @@ DATASET_SPATIAL = Table(
     ),
     Column("time", TSTZRANGE),
     Column("footprint", Geometry()),
+    Column("grid_point", postgres.ARRAY(SmallInteger, as_tuple=True)),
     # Column('native_srid', None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
     # Column('bounds', Geometry()),
 )
@@ -249,8 +319,8 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
     query = (
         postgres.insert(DATASET_SPATIAL)
         .from_select(
-            ["id", "dataset_type_ref", "time", "footprint"],
-            _select_dataset_extent_query(product.metadata_type)
+            ["id", "dataset_type_ref", "time", "footprint", "grid_point"],
+            _select_dataset_extent_query(product)
             .where(DATASET.c.dataset_type_ref == product_ref)
             .where(DATASET.c.archived == None),
         )
@@ -264,7 +334,8 @@ def _insert_spatial_records(engine: Engine, product: DatasetType):
     return engine.execute(query).rowcount
 
 
-def _select_dataset_extent_query(md_type):
+def _select_dataset_extent_query(dt: DatasetType):
+    md_type = dt.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
     footrprint_expression = get_dataset_extent_alchemy_expression(md_type)
@@ -276,6 +347,7 @@ def _select_dataset_extent_query(md_type):
             (null() if footrprint_expression is None else footrprint_expression).label(
                 "footprint"
             ),
+            _grid_point(dt).label("grid_point"),
         ]
     ).select_from(DATASET)
 
@@ -326,7 +398,7 @@ def print_query_tests(dc: Datacube, *products: DatasetType):
     for product in products:
         product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
         one_dataset_query = (
-            _select_dataset_extent_query(product.metadata_type)
+            _select_dataset_extent_query(product)
             .where(DATASET.c.dataset_type_ref == product_ref)
             .where(DATASET.c.archived == None)
             .limit(1)
