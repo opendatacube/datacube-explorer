@@ -243,7 +243,7 @@ DATASET_SPATIAL = Table(
         nullable=False,
     ),
     Column("time", TSTZRANGE),
-    Column("footprint", Geometry()),
+    Column("footprint", Geometry(spatial_index=False)),
     Column("grid_point", postgres.ARRAY(SmallInteger, as_tuple=True)),
     # Column('native_srid', None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
     # Column('bounds', Geometry()),
