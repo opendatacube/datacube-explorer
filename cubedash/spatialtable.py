@@ -96,9 +96,6 @@ def _grid_point(dt: DatasetType):
 
     md_fields = dt.metadata_type.dataset_fields
 
-    print(dt.name)
-    print(repr(md_fields))
-
     # If the product has a grid spec, we can calculate the grid number
     if grid_spec is not None:
         doc = _jsonb_doc_expression(dt.metadata_type)
@@ -242,7 +239,6 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
             f"{datetime.now()} "
             f"Added {style(str(insert_count), bold=True)} new extents "
             f"for {style(product.name, bold=True)}. "
-
         )
 
 
