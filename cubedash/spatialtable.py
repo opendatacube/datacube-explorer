@@ -1,6 +1,7 @@
 import json
 import sys
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 
 import structlog
@@ -8,6 +9,7 @@ from click import echo, secho, style
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
+from psycopg2.extensions import AsIs, adapt, register_adapter
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -26,6 +28,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
+from sqlalchemy.types import UserDefinedType
 
 from cubedash.summary._stores import METADATA as CUBEDASH_DB_METADATA
 from datacube import Datacube
@@ -122,15 +125,10 @@ def _grid_point(dt: DatasetType):
         # todo: look at grid_spec crs. Use it for defaults, conversion.
         size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
         origin_x, origin_y = grid_spec.origin
-        return postgres.array(
-            (
-                func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(
-                    SmallInteger
-                ),
-                func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(
-                    SmallInteger
-                ),
-            )
+        return func.point(
+            func.floor((func.ST_X(center_point) - origin_x) / size_x),
+            func.floor((func.ST_Y(center_point) - origin_y) / size_y),
+            type_=PgPoint,
         )
     # Otherwise does the product have a "sat_path/sat_row" fields? Use their values directly.
     elif "sat_path" in md_fields:
@@ -138,11 +136,10 @@ def _grid_point(dt: DatasetType):
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
 
-        return postgres.array(
-            (
-                path_field.lower.alchemy_expression.cast(SmallInteger),
-                row_field.greater.alchemy_expression.cast(SmallInteger),
-            )
+        return func.point(
+            path_field.lower.alchemy_expression,
+            row_field.greater.alchemy_expression,
+            type_=PgPoint,
         )
     else:
         _LOG.warn(
@@ -218,6 +215,38 @@ def _gis_point(doc, doc_offset):
     )
 
 
+@dataclass(frozen=True)
+class Point(object):
+    x: float
+    y: float
+
+
+def adapt_point(point):
+    x = adapt(point.x).getquoted()
+    y = adapt(point.y).getquoted()
+    return AsIs("'(%s, %s)'" % (x, y))
+
+
+register_adapter(Point, adapt_point)
+
+
+class PgPoint(UserDefinedType):
+    def get_col_spec(self):
+        return "point"
+
+    def bind_processor(self, dialect):
+        def process(value):
+            return value
+
+        return process
+
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            return value
+
+        return process
+
+
 POSTGIS_METADATA = MetaData(schema="public")
 SPATIAL_REF_SYS = Table(
     "spatial_ref_sys",
@@ -244,7 +273,7 @@ DATASET_SPATIAL = Table(
     ),
     Column("time", TSTZRANGE),
     Column("footprint", Geometry(spatial_index=False)),
-    Column("grid_point", postgres.ARRAY(SmallInteger, as_tuple=True)),
+    Column("grid_point", PgPoint),
     # Column('native_srid', None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
     # Column('bounds', Geometry()),
 )
