@@ -32,7 +32,7 @@ def populate_index(module_dea_index):
     """
     Index populated with example datasets. Assumes our tests wont modify the data!
 
-    It's session-scoped as it's expensive to populate.
+    It's module-scoped as it's expensive to populate.
     """
     _populate_from_dump(
         module_dea_index,

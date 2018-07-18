@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil import tz
 from shapely import geometry as geo
@@ -8,10 +8,7 @@ from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.model import Range
 
 
-def test_store_unchanged(summary_store: SummaryStore):
-    """
-    A put followed by a get should return identical data
-    """
+def _overview():
     orig = TimePeriodOverview(
         1234,
         Counter(
@@ -41,8 +38,18 @@ def test_store_unchanged(summary_store: SummaryStore):
             ]
         ),
         footprint_count=0,
-        newest_dataset_creation_time=datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()),
+        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
     )
+    return orig
+
+
+def test_store_unchanged(summary_store: SummaryStore):
+    """
+    A put followed by a get should return identical data
+    """
+    orig = _overview()
+
+    summary_store.get_last_updated()
 
     summary_store.put("some_product", 2017, None, None, orig)
     loaded = summary_store.get("some_product", 2017, None, None)
@@ -75,3 +82,53 @@ def test_get_null(summary_store: SummaryStore):
     """
     loaded = summary_store.get("some_product", 2019, 4, None)
     assert loaded is None
+
+
+def test_store_updated(summary_store: SummaryStore):
+    """
+    We should be able to update summaries.
+    """
+    o = _overview()
+
+    summary_store.put("some_product", 2017, None, None, o)
+    loaded = summary_store.get("some_product", 2017, None, None)
+
+    assert o is not loaded, (
+        "Store should not return the original objects " "(they may change)"
+    )
+
+    o.dataset_count = 4321
+    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+    summary_store.put("some_product", 2017, None, None, o)
+
+    loaded = summary_store.get("some_product", 2017, None, None)
+    assert loaded.dataset_count == 4321
+    assert loaded.newest_dataset_creation_time == datetime(
+        2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
+    )
+
+
+def test_store_records_last_updated(summary_store: SummaryStore):
+    o = _overview()
+    o.summary_gen_time -= timedelta(hours=2)
+
+    assert summary_store.get_last_updated() is None
+
+    summary_store.put("some_product", 2017, None, None, o)
+    summary_store.update(
+        "some_product", None, None, None, generate_missing_children=False
+    )
+    summary_store.update(None, None, None, None, generate_missing_children=False)
+
+    assert summary_store.get_last_updated() == o.summary_gen_time
+
+    # Add another, so it's even newer...
+
+    # A new one will be generated "now", so it will be newer than the above.
+    summary_store.put("some_product", 2018, None, None, TimePeriodOverview.empty())
+    summary_store.update(
+        "some_product", None, None, None, generate_missing_children=False
+    )
+    summary_store.update(None, None, None, None, generate_missing_children=False)
+
+    assert summary_store.get_last_updated() > o.summary_gen_time
