@@ -1,6 +1,7 @@
 import sys
 
 import json
+import re
 import structlog
 import uuid
 from click import echo, secho, style
@@ -21,7 +22,7 @@ from datacube.drivers.postgres._fields import RangeDocField
 from datacube.drivers.postgres._schema import DATASET, DATASET_TYPE
 from datacube.model import MetadataType, DatasetType
 from sqlalchemy.types import UserDefinedType
-from psycopg2.extensions import adapt, register_adapter, AsIs
+from psycopg2.extensions import adapt, AsIs
 
 
 _LOG = structlog.get_logger()
@@ -86,7 +87,7 @@ def _bounds_polygon(doc, projection_offset):
     )
 
 
-def _grid_point(dt: DatasetType):
+def _grid_point_fields(dt: DatasetType):
     """
     Get an sqlalchemy expression to calculte the grid number of a dataset.
 
@@ -193,36 +194,39 @@ def _gis_point(doc, doc_offset):
     )
 
 
-
-
 @dataclass(frozen=True)
 class Point(object):
     x: float
     y: float
 
 
-def adapt_point(point):
-    x = adapt(point.x).getquoted()
-    y = adapt(point.y).getquoted()
-    return AsIs("'(%s, %s)'" % (x, y))
-
-
-register_adapter(Point, adapt_point)
+_PG_POINT_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
 
 class PgPoint(UserDefinedType):
+    """
+    Postgres' built-in point type
+    """
     def get_col_spec(self):
         return 'point'
 
     def bind_processor(self, dialect):
-        def process(value):
-            return value
+        def process(point):
+            if point is None:
+                return None
+            x = adapt(point.x).getquoted()
+            y = adapt(point.y).getquoted()
+            return AsIs("'(%s, %s)'" % (x, y))
 
         return process
 
     def result_processor(self, dialect, coltype):
         def process(value):
-            return value
+            m = _PG_POINT_STRING.match(value)
+            if m:
+                return Point(float(m.group(1)), float(m.group(2)))
+            else:
+                raise ValueError("bad point representation: %r" % value)
 
         return process
 
@@ -362,7 +366,7 @@ def _select_dataset_extent_query(dt: DatasetType):
         (
             null() if footrprint_expression is None else footrprint_expression
         ).label('footprint'),
-        _grid_point(dt).label('grid_point'),
+        _grid_point_fields(dt).label('grid_point'),
     ]).select_from(
         DATASET
     )
@@ -441,6 +445,8 @@ def _as_json(obj):
             # Following the EWKT format: include srid
             prefix = f'SRID={o.srid};' if o.srid else ''
             return prefix + to_shape(o).wkt
+        if isinstance(o, Point):
+            return [o.x, o.y]
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):
