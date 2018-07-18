@@ -339,6 +339,18 @@ def _add_convenience_views(engine):
     """
     )
 
+    engine.execute(
+        """
+    create materialized view if not exists cubedash.product_extent as (
+        select dataset_type_ref, 
+               tstzrange(min(lower(time)), max(upper(time))), 
+               ST_Extent(footprint)
+        from cubedash.dataset_spatial 
+        group by 1
+    );
+    """
+    )
+
 
 def _insert_spatial_records(engine: Engine, product: DatasetType):
     product_ref = bindparam("product_ref", product.id, type_=SmallInteger)
@@ -451,7 +463,7 @@ def _as_json(obj):
             return str(o)
         if isinstance(o, WKBElement):
             # Following the EWKT format: include srid
-            prefix = "SRID={o.srid};" if o.srid else ""
+            prefix = f"SRID={o.srid};" if o.srid else ""
             return prefix + to_shape(o).wkt
         if isinstance(o, datetime):
             return o.isoformat()
