@@ -350,8 +350,12 @@ def _add_convenience_views(engine):
         """
     create materialized view if not exists cubedash.product_extent as (
         select dataset_type_ref, 
-               tstzrange(min(lower(time)), max(upper(time))), 
-               ST_Extent(footprint)
+               tstzrange(min(lower(time)), max(upper(time))) as time, 
+               ST_Extent(footprint) as footprint,
+               box(
+                    point(max(grid_point[0]), max(grid_point[1])),
+                    point(min(grid_point[0]), min(grid_point[1]))
+                ) as grid
         from cubedash.dataset_spatial 
         group by 1
     );
