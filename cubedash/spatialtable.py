@@ -133,22 +133,24 @@ def _grid_point_fields(dt: DatasetType):
         # todo: look at grid_spec crs. Use it for defaults, conversion.
         size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
         origin_x, origin_y = grid_spec.origin
-        return func.point(
-            func.floor((func.ST_X(center_point) - origin_x) / size_x),
-            func.floor((func.ST_Y(center_point) - origin_y) / size_y),
-            type_=PgPoint,
-        )
+        return func.ROW(
+            func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(
+                SmallInteger
+            ),
+            func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(
+                SmallInteger
+            ),
+        ).cast(PgGridCell)
     # Otherwise does the product have a "sat_path/sat_row" fields? Use their values directly.
     elif "sat_path" in md_fields:
         # Use sat_path/sat_row as grid items
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
 
-        return func.point(
-            path_field.lower.alchemy_expression,
-            row_field.greater.alchemy_expression,
-            type_=PgPoint,
-        )
+        return func.ROW(
+            path_field.lower.alchemy_expression.cast(SmallInteger),
+            row_field.greater.alchemy_expression.cast(SmallInteger),
+        ).cast(PgGridCell)
     else:
         _LOG.warn(
             "no_grid_spec",
@@ -224,41 +226,47 @@ def _gis_point(doc, doc_offset):
 
 
 @dataclass(frozen=True)
-class Point(object):
+class GridCell(object):
     x: float
     y: float
 
 
-_PG_POINT_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
+_PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
 
-class PgPoint(UserDefinedType):
+class PgGridCell(UserDefinedType):
     """
-    Postgres' built-in point type
+    A composite type with smallint x/y
+
+    For landsat path row and tile ids.
     """
 
     def get_col_spec(self):
-        return "point"
+        return "gridcell"
 
     def bind_processor(self, dialect):
-        def process(point):
-            if point is None:
+        def process(gridcell):
+            if gridcell is None:
                 return None
-            x = adapt(point.x).getquoted()
-            y = adapt(point.y).getquoted()
+            x = adapt(gridcell.x).getquoted()
+            y = adapt(gridcell.y).getquoted()
             return AsIs("'(%s, %s)'" % (x, y))
 
         return process
 
     def result_processor(self, dialect, coltype):
         def process(value):
-            m = _PG_POINT_STRING.match(value)
+            m = _PG_GRIDCELL_STRING.match(value)
             if m:
-                return Point(float(m.group(1)), float(m.group(2)))
+                return GridCell(int(m.group(1)), int(m.group(2)))
             else:
-                raise ValueError("bad point representation: %r" % value)
+                raise ValueError("bad grid_cell representation: %r" % value)
 
         return process
+
+    @property
+    def python_type(self):
+        return GridCell
 
 
 POSTGIS_METADATA = MetaData(schema="public")
@@ -287,14 +295,18 @@ DATASET_SPATIAL = Table(
     ),
     Column("time", TSTZRANGE),
     Column("footprint", Geometry(spatial_index=False)),
-    Column("grid_point", PgPoint),
-    # Column('native_srid', None, ForeignKey(SPATIAL_REF_SYS.c.srid)),
-    # Column('bounds', Geometry()),
+    Column("grid_point", PgGridCell),
 )
 
 
 def add_spatial_table(dc: Datacube, *products: DatasetType):
     engine: Engine = dc.index.datasets._db._engine
+
+    try:
+        engine.execute("create type gridcell as (x smallint, y smallint);")
+    except Exception:
+        _LOG.exception("creating_type")
+
     DATASET_SPATIAL.create(engine, checkfirst=True)
     # Ensure there's an index on the SRS table. (Using default pg naming conventions)
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
@@ -368,10 +380,7 @@ def _add_convenience_views(engine):
         select dataset_type_ref, 
                tstzrange(min(lower(time)), max(upper(time))) as time, 
                ST_Extent(footprint) as footprint,
-               box(
-                    point(max(grid_point[0]), max(grid_point[1])),
-                    point(min(grid_point[0]), min(grid_point[1]))
-                ) as grid
+               array_agg(distinct grid_point) as points
         from cubedash.dataset_spatial 
         group by 1
     );
@@ -492,7 +501,7 @@ def _as_json(obj):
             # Following the EWKT format: include srid
             prefix = f"SRID={o.srid};" if o.srid else ""
             return prefix + to_shape(o).wkt
-        if isinstance(o, Point):
+        if isinstance(o, PgGridCell):
             return [o.x, o.y]
         if isinstance(o, datetime):
             return o.isoformat()
