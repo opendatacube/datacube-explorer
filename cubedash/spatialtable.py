@@ -121,7 +121,14 @@ def _grid_point_fields(dt: DatasetType):
         projection_offset = _projection_doc_offset(dt.metadata_type)
 
         # Calculate tile refs
-        center_point = func.ST_Centroid(_bounds_polygon(doc, projection_offset))
+
+        geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+        center_point = func.ST_Centroid(
+            func.ST_Collect(
+                _gis_point(doc, geo_ref_points_offset + ["ll"]),
+                _gis_point(doc, geo_ref_points_offset + ["ur"]),
+            )
+        )
 
         # todo: look at grid_spec crs. Use it for defaults, conversion.
         size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
