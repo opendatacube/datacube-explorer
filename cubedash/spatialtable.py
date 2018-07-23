@@ -302,24 +302,6 @@ DATASET_SPATIAL = Table(
 def add_spatial_table(dc: Datacube, *products: DatasetType):
     engine: Engine = dc.index.datasets._db._engine
 
-    try:
-        engine.execute("create type gridcell as (x smallint, y smallint);")
-    except Exception:
-        _LOG.exception("creating_type")
-
-    DATASET_SPATIAL.create(engine, checkfirst=True)
-    # Ensure there's an index on the SRS table. (Using default pg naming conventions)
-    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
-    engine.execute(
-        """
-        create index if not exists
-            spatial_ref_sys_auth_name_auth_srid_idx
-        on spatial_ref_sys(auth_name, auth_srid);
-    """
-    )
-
-    _add_convenience_views(engine)
-
     for product in products:
         echo(
             f"{datetime.now()} "
@@ -460,9 +442,36 @@ def as_sql(expression, **params):
     )
 
 
+def create(dc: Datacube):
+    """
+    Create all tables if the cubedash schema doesn't already exist.
+    """
+    engine: Engine = dc.index.datasets._db._engine
+    if postgres.has_schema(engine, CUBEDASH_DB_METADATA.schema):
+        return
+
+    try:
+        engine.execute("create type gridcell as (x smallint, y smallint);")
+    except Exception:
+        pass
+
+    DATASET_SPATIAL.create(engine, checkfirst=True)
+
+    # Ensure there's an index on the SRS table. (Using default pg naming conventions)
+    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
+    engine.execute(
+        """
+        create index if not exists
+            spatial_ref_sys_auth_name_auth_srid_idx
+        on spatial_ref_sys(auth_name, auth_srid);
+    """
+    )
+
+    _add_convenience_views(engine)
+
+
 def print_query_tests(dc: Datacube, *products: DatasetType):
     engine: Engine = dc.index.datasets._db._engine
-    DATASET_SPATIAL.create(engine, checkfirst=True)
 
     def show(title, output):
         secho(f"=== {title} ({product.name}) ===", bold=True, err=True)
