@@ -7,8 +7,6 @@ from cubedash import logs
 from cubedash.summary import FileSummaryStore, SummaryStore
 from cubedash.summary._stores import PgSummaryStore
 from datacube.index import Index
-from datacube.scripts.dataset import create_dataset, load_rules_from_types
-from datacube.utils import read_documents
 from digitalearthau.testing import factories
 
 pytest_plugins = "digitalearthau.testing.plugin"
