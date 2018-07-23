@@ -24,6 +24,12 @@ from datacube.model import Range
 _LOG = structlog.get_logger()
 
 
+@dataclass(frozen=True)
+class GridCell(object):
+    x: float
+    y: float
+
+
 @dataclass
 class TimePeriodOverview:
     dataset_count: int
@@ -198,7 +204,8 @@ class SummaryStore:
                product_name: Optional[str],
                year: Optional[int],
                month: Optional[int],
-               day: Optional[int]):
+               day: Optional[int],
+               generate_missing_children=True):
         """Update the given summary and return the new one"""
 
         if year and month and day:

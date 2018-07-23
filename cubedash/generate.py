@@ -8,7 +8,8 @@ from click import echo, secho, style
 
 import cubedash._model as dash
 from cubedash.logs import init_logging
-from cubedash.summary import SummaryStore, FileSummaryStore
+from cubedash.summary import SummaryStore
+from cubedash.summary._stores import PgSummaryStore
 from datacube.model import DatasetType
 
 _LOG = structlog.get_logger()
@@ -51,6 +52,7 @@ def generate_reports(products: Sequence[DatasetType],
 
 
 def _load_products(product_names) -> List[DatasetType]:
+    products = dash.index.products.get_all()
     for product_name in product_names:
         product = dash.index.products.get_by_name(product_name)
         if product:
@@ -68,7 +70,7 @@ def _load_products(product_names) -> List[DatasetType]:
               type=click.Path(exists=True, file_okay=False),
               default=None)
 @click.option('-v', '--verbose', is_flag=True)
-@click.option('--event-log-file',
+@click.option('-l', '--event-log-file',
               help="Output jsonl logs to file",
               type=click.Path(writable=True, dir_okay=True))
 @click.argument('product_names',
@@ -92,7 +94,7 @@ def cli(generate_all_products: bool,
         products = list(_load_products(product_names))
 
     if summaries_dir:
-        store = FileSummaryStore(dash.index, base_path=Path(summaries_dir))
+        store = PgSummaryStore(dash.index)
     else:
         store = dash.DEFAULT_STORE
 

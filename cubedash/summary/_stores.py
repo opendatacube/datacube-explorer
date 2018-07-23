@@ -1,33 +1,39 @@
 from __future__ import absolute_import
 
-from collections import Counter
-
-import dateutil.parser
-import fiona
 import functools
 import json
 import os
+import re
+from collections import Counter
+from datetime import datetime, date
+from pathlib import Path
+from typing import Optional
+
+import dateutil.parser
+import fiona
 import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-from datetime import datetime, date
-from pathlib import Path
-from sqlalchemy import ForeignKey, SmallInteger, MetaData, Enum, JSON, event, DDL, \
-    select, and_, CheckConstraint
-from sqlalchemy import Table, Column, Integer, String, DateTime, Date
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
-from typing import Optional
-
 from geoalchemy2 import shape as geo_shape
+from psycopg2.extensions import adapt, AsIs
+from sqlalchemy import DateTime, Date
+from sqlalchemy import Enum, JSON, event, DDL, \
+    and_, CheckConstraint
+from sqlalchemy import func, select, Table, Column, ForeignKey, String, \
+    Integer, SmallInteger, MetaData, null
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.types import UserDefinedType
 
 from cubedash import _utils
+from datacube.drivers.postgres._schema import DATASET
+from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
 from datacube.model import Range
-from ._summarise import TimePeriodOverview, SummaryStore
+from ._summarise import TimePeriodOverview, SummaryStore, GridCell
 
 _LOG = structlog.get_logger()
 
@@ -208,6 +214,76 @@ CUBEDASH_SCHEMA = 'cubedash'
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 
 
+class PgGridCell(UserDefinedType):
+    """
+    A composite type with smallint x/y
+
+    For landsat path row and tile ids.
+    """
+    def get_col_spec(self):
+        return 'gridcell'
+
+    def bind_processor(self, dialect):
+        def process(gridcell):
+            if gridcell is None:
+                return None
+            x = adapt(gridcell.x).getquoted()
+            y = adapt(gridcell.y).getquoted()
+            return AsIs("'(%s, %s)'" % (x, y))
+
+        return process
+
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            m = _PG_GRIDCELL_STRING.match(value)
+            if m:
+                return GridCell(int(m.group(1)), int(m.group(2)))
+            else:
+                raise ValueError("bad grid_cell representation: %r" % value)
+
+        return process
+
+    @property
+    def python_type(self):
+        return GridCell
+
+
+POSTGIS_METADATA = MetaData(schema='public')
+SPATIAL_REF_SYS = Table(
+    'spatial_ref_sys', POSTGIS_METADATA,
+    Column('srid', Integer, primary_key=True),
+    Column('auth_name', String(255)),
+    Column('auth_srid', Integer),
+    Column('srtext', String(2048)),
+    Column('proj4text', String(2048)),
+)
+
+DATASET_SPATIAL = Table(
+    'dataset_spatial',
+    METADATA,
+    # Note that we deliberately don't foreign-key to datacube tables: they may
+    # be in a separate database.
+    Column(
+        'id',
+        postgres.UUID(as_uuid=True),
+        primary_key=True,
+        comment='Dataset ID',
+    ),
+    Column(
+        'dataset_type_ref',
+        None,
+        ForeignKey(DATASET_TYPE.c.id),
+        comment='Cubedash product list '
+                '(corresponding to datacube dataset_type)',
+        nullable=False,
+    ),
+    Column('time', TSTZRANGE),
+    Column('footprint', Geometry(spatial_index=False), ),
+    Column('grid_point', PgGridCell),
+    # When was the dataset created? creation_time if it has one, otherwise datacube index time.
+    Column('creation_time', DateTime(timezone=True), nullable=False),
+)
+
 PRODUCT = Table(
     'product', METADATA,
 
@@ -261,6 +337,11 @@ TIME_OVERVIEW = Table(
     ),
 )
 
+_PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
+
+
+
+
 event.listen(
     METADATA,
     'before_create',
@@ -271,6 +352,25 @@ event.listen(
     'before_create',
     DDL(f"create extension if not exists postgis")
 )
+
+
+@event.listens_for(METADATA, 'before_create')
+def create(target, connection, **kw):
+    """
+    Create all tables if the cubedash schema doesn't already exist.
+    """
+    try:
+        connection.execute("create type gridcell as (x smallint, y smallint);")
+    except Exception:
+        pass
+
+    # Ensure there's an index on the SRS table. (Using default pg naming conventions)
+    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
+    connection.execute("""
+        create index if not exists
+            spatial_ref_sys_auth_name_auth_srid_idx
+        on spatial_ref_sys(auth_name, auth_srid);
+    """)
 
 
 class PgSummaryStore(SummaryStore):
@@ -293,6 +393,79 @@ class PgSummaryStore(SummaryStore):
         self._engine.execute(
             DDL(f'drop schema if exists {CUBEDASH_SCHEMA} cascade')
         )
+
+    def calculate_summary(self,
+                          product_name: str,
+                          time: Range) -> TimePeriodOverview:
+        """
+        Create a summary of the given product/time range.
+
+        Default implementation uses the pure index api.
+        """
+        log = self._log.bind(product_name=product_name, time=time)
+        log.debug("summary.query")
+
+        res = self._engine.execute(
+            select((
+                func.count().label("dataset_count"),
+                func.ST_Union(DATASET_SPATIAL.c.footprint).label("footprint_geometry"),
+                func.max(DATASET_SPATIAL.c.creation_time).label("newest_dataset_creation_time"),
+                func.jsonb_agg(
+                    func.jsonb_build_object(
+                        # TODO: move ID to outer id field?
+                        'type', 'Feature',
+                        'geometry', func.ST_AsGeoJSON(DATASET_SPATIAL.c.footprint).cast(postgres.JSONB),
+                        'properties', func.jsonb_build_object(
+                            'id', DATASET_SPATIAL.c.id,
+                            # TODO: dataset label?
+                            'start_time', func.lower(DATASET_SPATIAL.c.time),
+                        ),
+                    )
+                ).label('datasets_geojson'),
+                null.label("timeline_dataset_counts"),
+            )).where(
+                DATASET_SPATIAL.c.dataset_type_ref == select([DATASET.c.id]).where(DATASET.c.name == product_name)
+            ).where(
+                DATASET_SPATIAL.c.time.overlaps(
+                    func.tstzrange(
+                        time.begin,
+                        time.end,
+                        type_=TSTZRANGE,
+                    )
+                )
+            )
+        )
+
+        row = res.fetchone()
+        log.debug("summary.query.done")
+
+        log.debug("summary.calc")
+
+        # Initialise all requested days as zero
+        # day_counts = Counter({
+        #     d.date(): 0 for d in pd.date_range(time.begin, time.end, closed='left')
+        # })
+        # day_counts.update(
+        #     _utils.default_utc(dataset.center_time).astimezone(
+        #         self.GROUPING_TIME_ZONE).date()
+        #     for dataset, shape in datasets
+        # )
+
+        # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
+
+        summary = TimePeriodOverview(
+            **res,
+            timeline_period='day',
+            time_range=time,
+            # TODO: filter invalid from the counts?
+            footprint_count=res['dataset_count'],
+        )
+        log.debug(
+            "summary.calc.done",
+            dataset_count=summary.dataset_count,
+            footprints_missing=summary.dataset_count - summary.footprint_count
+        )
+        return summary
 
     def get(self, product_name: Optional[str], year: Optional[int],
             month: Optional[int], day: Optional[int]) -> Optional[TimePeriodOverview]:
@@ -436,3 +609,10 @@ class PgSummaryStore(SummaryStore):
                 **row
             )
         )
+
+
+def _safe_read_date(d):
+    if d:
+        return _utils.default_utc(dateutil.parser.parse(d))
+
+    return None

@@ -11,6 +11,7 @@ from cubedash.summary import TimePeriodOverview, FileSummaryStore
 from datacube.index import Index
 from datacube.index import index_connect
 from datacube.model import DatasetType
+import dateutil.parser
 
 NAME = 'cubedash'
 
@@ -19,7 +20,6 @@ cache = Cache(
     app=app,
     config={'CACHE_TYPE': 'simple'}
 )
-
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
@@ -48,6 +48,14 @@ def get_summary(
 
 @cache.memoize(timeout=120)
 def get_last_updated():
+    # Drop a text file in to override the "updated time": for example, when we know it's an old clone of our DB.
+    path = SUMMARIES_DIR / 'generated.txt'
+    if path.exists():
+        date_text = path.read_text()
+        try:
+            return dateutil.parser.parse(date_text)
+        except ValueError:
+            _LOG.warn("invalid.summary.generated.txt", text=date_text, path=path)
     return DEFAULT_STORE.get_last_updated()
 
 

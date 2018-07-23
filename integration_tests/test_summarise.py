@@ -5,8 +5,8 @@ from pathlib import Path
 
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
+from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
-from datacube.scripts.dataset import create_dataset, load_rules_from_types
 from datacube.utils import read_documents
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
@@ -15,11 +15,14 @@ TEST_DATA_DIR = Path(__file__).parent / 'data'
 def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
     ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
     dataset_count = 0
-    rules = load_rules_from_types(session_dea_index)
+
+    create_dataset = Doc2Dataset(session_dea_index)
+
     for _, doc in read_documents(dump_path):
-        created = session_dea_index.datasets.add(
-            create_dataset(doc, None, rules),
-        )
+        label = doc['ga_label'] if ('ga_label' in doc) else doc['id']
+        dataset, err = create_dataset(doc, f"file://example.com/test_dataset/{label}")
+        assert dataset is not None, err
+        created = session_dea_index.datasets.add(dataset)
 
         assert created.type.name == ls8_nbar_scene.name
         dataset_count += 1
