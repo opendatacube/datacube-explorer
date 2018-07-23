@@ -510,7 +510,7 @@ def _as_json(obj):
             # Following the EWKT format: include srid
             prefix = f"SRID={o.srid};" if o.srid else ""
             return prefix + to_shape(o).wkt
-        if isinstance(o, PgGridCell):
+        if isinstance(o, GridCell):
             return [o.x, o.y]
         if isinstance(o, datetime):
             return o.isoformat()
