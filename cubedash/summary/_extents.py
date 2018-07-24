@@ -2,6 +2,7 @@ import json
 import sys
 import uuid
 from datetime import datetime
+from typing import Optional
 
 import structlog
 from click import echo, style
@@ -12,12 +13,13 @@ from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, nul
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
-from cubedash.summary._stores import DATASET_SPATIAL, SPATIAL_REF_SYS, PgGridCell
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS, PgGridCell
 from cubedash.summary._summarise import GridCell
 from datacube import Datacube
-from datacube.drivers.postgres._fields import RangeDocField
+from datacube.drivers.postgres._fields import RangeDocField, PgDocField
 from datacube.drivers.postgres._schema import DATASET
-from datacube.model import MetadataType, DatasetType
+from datacube.index import Index
+from datacube.model import MetadataType, DatasetType, Dataset
 
 _LOG = structlog.get_logger()
 
@@ -193,8 +195,8 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def add_spatial_table(dc: Datacube, *products: DatasetType):
-    engine: Engine = dc.index.datasets._db._engine
+def add_spatial_table(index: Index, *products: DatasetType):
+    engine: Engine = index.datasets._db._engine
 
     for product in products:
         echo(f"{datetime.now()} "
@@ -207,64 +209,10 @@ def add_spatial_table(dc: Datacube, *products: DatasetType):
         )
 
 
-def _add_convenience_views(engine):
-    """
-    Convenience view for seeing product names, sizes and readable geometry
-    """
-    engine.execute("""
-    create or replace view cubedash.view_extents as 
-    select 
-      dt.name as product, 
-      ST_AsEWKT(sizes.footprint) as footprint_ewkt, 
-      sizes.* 
-    from cubedash.dataset_spatial sizes 
-    inner join agdc.dataset_type dt on sizes.dataset_type_ref = dt.id;
-    """)
-
-    engine.execute("""
-    create or replace view cubedash.view_space_usage as (
-        select 
-            dt.name as product, 
-            sizes.* 
-        from (
-            select
-            dataset_type_ref,
-            count(*),
-            pg_size_pretty(sum(pg_column_size(id               ))) as id_col_size,
-            pg_size_pretty(sum(pg_column_size(time             ))) as time_col_size,
-            pg_size_pretty(sum(pg_column_size(footprint))) as footprint_col_size,
-            pg_size_pretty(round(avg(pg_column_size(footprint)), 0)) as avg_footprint_col_size,
-            count(*) filter (where (not ST_IsValid(footprint))) as invalid_footprints,
-            count(*) filter (where (ST_SRID(footprint) is null)) as missing_srid
-            from cubedash.dataset_spatial
-            group by 1
-        ) sizes
-        inner join agdc.dataset_type dt on sizes.dataset_type_ref = dt.id
-        order by sizes.count desc
-    );
-    """)
-
-    engine.execute("""
-    create materialized view if not exists cubedash.product_extent as (
-        select dataset_type_ref, 
-               tstzrange(min(lower(time)), max(upper(time))) as time, 
-               ST_Extent(footprint) as footprint,
-               array_agg(distinct grid_point) as points
-        from cubedash.dataset_spatial 
-        group by 1
-    );
-    """)
-
-
 def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
-    product_ref = bindparam('product_ref', product.id, type_=SmallInteger)
     query = postgres.insert(DATASET_SPATIAL).from_select(
-        ['id', 'dataset_type_ref', 'time', 'footprint', 'grid_point'],
-        _select_dataset_extent_query(product).where(
-            DATASET.c.dataset_type_ref == product_ref
-        ).where(
-            DATASET.c.archived == None
-        )
+        ['id', 'dataset_type_ref', 'time', 'footprint', 'grid_point', 'creation_time'],
+        _select_dataset_extent_query(product)
     ).on_conflict_do_nothing(
         index_elements=['id']
     )
@@ -280,6 +228,7 @@ def _select_dataset_extent_query(dt: DatasetType):
     # If this product has lat/lon fields, we can take spatial bounds.
 
     footrprint_expression = get_dataset_extent_alchemy_expression(md_type)
+    product_ref = bindparam('product_ref', dt.id, type_=SmallInteger)
     return select([
         DATASET.c.id,
         DATASET.c.dataset_type_ref,
@@ -290,9 +239,28 @@ def _select_dataset_extent_query(dt: DatasetType):
             null() if footrprint_expression is None else footrprint_expression
         ).label('footprint'),
         _grid_point_fields(dt).label('grid_point'),
+        _dataset_creation_expression(md_type).label('creation_time'),
     ]).select_from(
         DATASET
+    ).where(
+        DATASET.c.dataset_type_ref == product_ref
+    ).where(
+        DATASET.c.archived == None
     )
+
+
+def _dataset_creation_expression(md: MetadataType) -> Optional[datetime]:
+    """SQLAlchemy expression for the creation (processing) time of a dataset"""
+
+    # Either there's a field called "created", or we fallback to the default "creation_dt' in metadata type.
+    created_field = md.dataset_fields.get('created')
+    if created_field is not None:
+        assert isinstance(created_field, PgDocField)
+        return created_field.alchemy_expression
+
+    doc = md.dataset_fields['metadata_doc'].alchemy_expression
+    creation_dt = md.definition['dataset'].get('creation_dt') or ['creation_dt']
+    return func.agdc.common_timestamp(doc[creation_dt].astext)
 
 
 def get_dataset_bounds_query(md_type):
@@ -349,7 +317,9 @@ def _as_json(obj):
 
 
 DEBUG = False
-if __name__ == '__main__':
+
+
+def main():
     with Datacube(env='clone') as dc:
         products = [
             p for p in dc.index.products.get_all()
@@ -358,5 +328,7 @@ if __name__ == '__main__':
 
         # Sample one of each product. Useful to find errors immediately.
         # Populate whole table
-        if not DEBUG:
-            add_spatial_table(dc, *products)
+
+
+if __name__ == '__main__':
+    main()

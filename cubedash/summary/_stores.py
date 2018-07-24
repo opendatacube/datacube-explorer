@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import functools
 import json
 import os
-import re
 from collections import Counter
 from datetime import datetime, date
 from pathlib import Path
@@ -15,25 +14,22 @@ import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from psycopg2.extensions import adapt, AsIs
-from sqlalchemy import DateTime, Date
-from sqlalchemy import Enum, JSON, event, DDL, \
-    and_, CheckConstraint
-from sqlalchemy import func, select, Table, Column, ForeignKey, String, \
-    Integer, SmallInteger, MetaData, null
+from sqlalchemy import DDL, \
+    and_
+from sqlalchemy import func, select, null
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
-from sqlalchemy.types import UserDefinedType
 
 from cubedash import _utils
-from datacube.drivers.postgres._schema import DATASET
+from cubedash.summary import _extents
+from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
 from datacube.model import Range
-from ._summarise import TimePeriodOverview, SummaryStore, GridCell
+from ._summarise import TimePeriodOverview, SummaryStore
+from . import _schema
 
 _LOG = structlog.get_logger()
 
@@ -183,13 +179,6 @@ class FileSummaryStore(SummaryStore):
         When was our data last updated?
         """
         # Does a file tell us when the database was last cloned?
-        path = self.base_path / 'generated.txt'
-        if path.exists():
-            date_text = path.read_text()
-            try:
-                return dateutil.parser.parse(date_text)
-            except ValueError:
-                _LOG.warn("invalid.summary.generated.txt", text=date_text, path=path)
 
         # Otherwise the oldest summary that was generated
         overall_summary = self.get(None, None, None, None)
@@ -203,176 +192,6 @@ class FileSummaryStore(SummaryStore):
         return f"{self.__class__.__name__}(base_path={repr(self.base_path)})"
 
 
-def _safe_read_date(d):
-    if d:
-        return _utils.default_utc(dateutil.parser.parse(d))
-
-    return None
-
-
-CUBEDASH_SCHEMA = 'cubedash'
-METADATA = MetaData(schema=CUBEDASH_SCHEMA)
-
-
-class PgGridCell(UserDefinedType):
-    """
-    A composite type with smallint x/y
-
-    For landsat path row and tile ids.
-    """
-    def get_col_spec(self):
-        return 'gridcell'
-
-    def bind_processor(self, dialect):
-        def process(gridcell):
-            if gridcell is None:
-                return None
-            x = adapt(gridcell.x).getquoted()
-            y = adapt(gridcell.y).getquoted()
-            return AsIs("'(%s, %s)'" % (x, y))
-
-        return process
-
-    def result_processor(self, dialect, coltype):
-        def process(value):
-            m = _PG_GRIDCELL_STRING.match(value)
-            if m:
-                return GridCell(int(m.group(1)), int(m.group(2)))
-            else:
-                raise ValueError("bad grid_cell representation: %r" % value)
-
-        return process
-
-    @property
-    def python_type(self):
-        return GridCell
-
-
-POSTGIS_METADATA = MetaData(schema='public')
-SPATIAL_REF_SYS = Table(
-    'spatial_ref_sys', POSTGIS_METADATA,
-    Column('srid', Integer, primary_key=True),
-    Column('auth_name', String(255)),
-    Column('auth_srid', Integer),
-    Column('srtext', String(2048)),
-    Column('proj4text', String(2048)),
-)
-
-DATASET_SPATIAL = Table(
-    'dataset_spatial',
-    METADATA,
-    # Note that we deliberately don't foreign-key to datacube tables: they may
-    # be in a separate database.
-    Column(
-        'id',
-        postgres.UUID(as_uuid=True),
-        primary_key=True,
-        comment='Dataset ID',
-    ),
-    Column(
-        'dataset_type_ref',
-        None,
-        ForeignKey(DATASET_TYPE.c.id),
-        comment='Cubedash product list '
-                '(corresponding to datacube dataset_type)',
-        nullable=False,
-    ),
-    Column('time', TSTZRANGE),
-    Column('footprint', Geometry(spatial_index=False), ),
-    Column('grid_point', PgGridCell),
-    # When was the dataset created? creation_time if it has one, otherwise datacube index time.
-    Column('creation_time', DateTime(timezone=True), nullable=False),
-)
-
-PRODUCT = Table(
-    'product', METADATA,
-
-    Column('id', SmallInteger, primary_key=True, autoincrement=True),
-    Column('name', String, unique=True, nullable=False),
-)
-
-TIME_OVERVIEW = Table(
-    'time_overview', METADATA,
-    # Uniquely identified by three values:
-    Column('product_ref', None, ForeignKey(PRODUCT.c.id), primary_key=True),
-    Column('start_day', Date, primary_key=True),
-    Column('period_type', Enum('all', 'year', 'month', 'day', name='overviewperiod'),
-           primary_key=True),
-
-    Column('dataset_count', Integer, nullable=False),
-
-    Column('timeline_dataset_start_days', postgres.ARRAY(DateTime(timezone=True))),
-    Column('timeline_dataset_counts', postgres.ARRAY(Integer)),
-
-    # Only when there's a small number of them.
-    # GeoJSON featurecolleciton as it contains metadata per dataset (the id etc).
-    Column('datasets_geojson', JSON, nullable=True),
-
-    Column('timeline_period',
-           Enum('year', 'month', 'week', 'day', name='timelineperiod')),
-
-    # Frustrating that there's no default datetimetz range type by default in postgres
-    Column('time_earliest', DateTime(timezone=True)),
-    Column('time_latest', DateTime(timezone=True)),
-
-    Column('footprint_geometry', Geometry()),
-
-    Column('footprint_count', Integer),
-
-    # The most newly created dataset
-    Column('newest_dataset_creation_time', DateTime(timezone=True)),
-
-    # When this summary was generated
-    Column(
-        'generation_time',
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
-    ),
-
-    CheckConstraint(
-        r"array_length(timeline_dataset_start_days, 1) = "
-        r"array_length(timeline_dataset_counts, 1)",
-        name='timeline_lengths_equal'
-    ),
-)
-
-_PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
-
-
-
-
-event.listen(
-    METADATA,
-    'before_create',
-    DDL(f"create schema if not exists {CUBEDASH_SCHEMA}")
-)
-event.listen(
-    METADATA,
-    'before_create',
-    DDL(f"create extension if not exists postgis")
-)
-
-
-@event.listens_for(METADATA, 'before_create')
-def create(target, connection, **kw):
-    """
-    Create all tables if the cubedash schema doesn't already exist.
-    """
-    try:
-        connection.execute("create type gridcell as (x smallint, y smallint);")
-    except Exception:
-        pass
-
-    # Ensure there's an index on the SRS table. (Using default pg naming conventions)
-    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
-    connection.execute("""
-        create index if not exists
-            spatial_ref_sys_auth_name_auth_srid_idx
-        on spatial_ref_sys(auth_name, auth_srid);
-    """)
-
-
 class PgSummaryStore(SummaryStore):
 
     def __init__(self, index: Index, log=_LOG) -> None:
@@ -384,14 +203,17 @@ class PgSummaryStore(SummaryStore):
         self._engine: Engine = index._db._engine
 
     def init(self):
-        METADATA.create_all(self._engine, checkfirst=True)
+        _schema.METADATA.create_all(self._engine, checkfirst=True)
+        _extents.add_spatial_table(
+            self._index, *self._index.products.get_all()
+        )
 
     def drop_all(self):
         """
         Drop all cubedash-specific tables/schema.
         """
         self._engine.execute(
-            DDL(f'drop schema if exists {CUBEDASH_SCHEMA} cascade')
+            DDL(f'drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade')
         )
 
     def calculate_summary(self,
@@ -405,7 +227,7 @@ class PgSummaryStore(SummaryStore):
         log = self._log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        res = self._engine.execute(
+        result = self._engine.execute(
             select((
                 func.count().label("dataset_count"),
                 func.ST_Union(DATASET_SPATIAL.c.footprint).label("footprint_geometry"),
@@ -422,9 +244,10 @@ class PgSummaryStore(SummaryStore):
                         ),
                     )
                 ).label('datasets_geojson'),
-                null.label("timeline_dataset_counts"),
+                null().label("timeline_dataset_counts"),
             )).where(
-                DATASET_SPATIAL.c.dataset_type_ref == select([DATASET.c.id]).where(DATASET.c.name == product_name)
+                DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(
+                    DATASET_TYPE.c.name == product_name)
             ).where(
                 DATASET_SPATIAL.c.time.overlaps(
                     func.tstzrange(
@@ -436,7 +259,7 @@ class PgSummaryStore(SummaryStore):
             )
         )
 
-        row = res.fetchone()
+        row = result.fetchone()
         log.debug("summary.query.done")
 
         log.debug("summary.calc")
@@ -454,11 +277,11 @@ class PgSummaryStore(SummaryStore):
         # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
 
         summary = TimePeriodOverview(
-            **res,
+            **row,
             timeline_period='day',
             time_range=time,
             # TODO: filter invalid from the counts?
-            footprint_count=res['dataset_count'],
+            footprint_count=row['dataset_count'],
         )
         log.debug(
             "summary.calc.done",
