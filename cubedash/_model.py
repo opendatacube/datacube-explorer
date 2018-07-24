@@ -8,7 +8,7 @@ import flask
 import structlog
 from flask_caching import Cache
 
-from cubedash.summary import FileSummaryStore, TimePeriodOverview
+from cubedash.summary import PgSummaryStore, TimePeriodOverview
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
 
@@ -26,7 +26,7 @@ index: Index = index_connect(application_name=NAME, validate_connection=False)
 SUMMARIES_DIR = Path(__file__).parent.parent / "product-summaries"
 
 # TODO: Proper configuration?
-DEFAULT_STORE = FileSummaryStore(index, SUMMARIES_DIR)
+DEFAULT_STORE = PgSummaryStore(index)
 # Which product to show by default when loading '/'. Picks the first available.
 DEFAULT_START_PAGE_PRODUCTS = ("ls7_nbar_scene", "ls5_nbar_scene")
 
