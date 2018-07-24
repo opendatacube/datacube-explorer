@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 
 from cubedash import logs
-from cubedash.summary import FileSummaryStore, SummaryStore
+from cubedash.summary import SummaryStore
 from cubedash.summary._stores import PgSummaryStore
 from datacube.index import Index
 from digitalearthau.testing import factories
@@ -22,13 +22,11 @@ module_dea_index = factories.dea_index_fixture('module_index', scope='module')
 
 @pytest.fixture(
     scope='function',
-    params=['file_store', 'db_store'],
+    params=['db_store'],
 )
 def summary_store(module_dea_index: Index, tmppath: Path, request) -> SummaryStore:
     p = request.param
-    if p == 'file_store':
-        store = FileSummaryStore(module_dea_index, tmppath)
-    elif p == 'db_store':
+    if p == 'db_store':
         store = PgSummaryStore(module_dea_index)
         store.drop_all()
         store.init()
