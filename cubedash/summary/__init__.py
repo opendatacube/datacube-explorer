@@ -1,3 +1,3 @@
 
 from ._summarise import TimePeriodOverview
-from ._stores import FileSummaryStore, SummaryStore
+from ._stores import SummaryStore, PgSummaryStore
