@@ -26,6 +26,8 @@ from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
+_TARGET_CRS = "EPSG:4326"
+
 DEFAULT_PLATFORM_END_DATE = {
     "LANDSAT_8": datetime.now() - relativedelta(months=2),
     "LANDSAT_7": datetime.now() - relativedelta(months=2),
@@ -269,7 +271,7 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         log.warn("invalid_dataset.empty_extent")
         return None, False
 
-    geom = shapely.geometry.asShape(extent.to_crs(CRS("EPSG:4326")))
+    geom = shapely.geometry.asShape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not geom.is_valid:
         log.warn(

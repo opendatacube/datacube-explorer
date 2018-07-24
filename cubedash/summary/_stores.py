@@ -14,6 +14,7 @@ import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
+from cachetools.func import lru_cache
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import DDL, and_, func, null, select
 from sqlalchemy.dialects import postgresql as postgres
@@ -21,14 +22,19 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
-from cubedash.summary import _extents
-from cubedash.summary._schema import DATASET_SPATIAL, PRODUCT, TIME_OVERVIEW
+from cubedash.summary import _extents, _schema
+from cubedash.summary._schema import (
+    DATASET_SPATIAL,
+    PRODUCT,
+    SPATIAL_REF_SYS,
+    TIME_OVERVIEW,
+)
+from cubedash.summary._summarise import SummaryStore, TimePeriodOverview
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
 from datacube.model import Range
 
-from . import _schema
-from ._summarise import SummaryStore, TimePeriodOverview
+_OUTPUT_CRS_EPSG = 4326
 
 _LOG = structlog.get_logger()
 
@@ -224,6 +230,16 @@ class PgSummaryStore(SummaryStore):
             DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
         )
 
+    @lru_cache(1)
+    def _target_srid(self):
+        # The pre-populated srid primary keys in postgis all default to the epsg code,
+        # but we'll do the lookup anyway to be a good citizen.
+        return self._engine.execute(
+            select([SPATIAL_REF_SYS.c.srid])
+            .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
+            .where(SPATIAL_REF_SYS.c.auth_srid == _OUTPUT_CRS_EPSG)
+        ).scalar()
+
     def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
@@ -236,10 +252,11 @@ class PgSummaryStore(SummaryStore):
         result = self._engine.execute(
             select(
                 (
+                    func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
                     func.count().label("dataset_count"),
-                    func.ST_Union(DATASET_SPATIAL.c.footprint).label(
-                        "footprint_geometry"
-                    ),
+                    func.ST_Transform(
+                        func.ST_Union(DATASET_SPATIAL.c.footprint), self._target_srid()
+                    ).label("footprint_geometry"),
                     func.max(DATASET_SPATIAL.c.creation_time).label(
                         "newest_dataset_creation_time"
                     ),
@@ -276,10 +293,11 @@ class PgSummaryStore(SummaryStore):
                     func.tstzrange(time.begin, time.end, type_=TSTZRANGE)
                 )
             )
+            .group_by("srid")
         )
 
-        row = result.fetchone()
-        log.debug("summary.query.done")
+        rows = result.fetchall()
+        log.debug("summary.query.done", srid_rows=len(rows))
 
         log.debug("summary.calc")
 
@@ -295,13 +313,27 @@ class PgSummaryStore(SummaryStore):
 
         # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
 
-        summary = TimePeriodOverview(
-            **row,
-            timeline_period="day",
-            time_range=time,
-            # TODO: filter invalid from the counts?
-            footprint_count=row["dataset_count"],
+        # TODO: We're going to union the srid groups. Perhaps record stats per-srid?
+
+        def convert_row(row):
+            row = dict(row)
+            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
+            return row
+
+        srid_summaries = list(
+            TimePeriodOverview(
+                **convert_row(row),
+                timeline_period="day",
+                time_range=time,
+                # TODO: filter invalid from the counts?
+                footprint_count=row["dataset_count"],
+            )
+            for row in rows
         )
+        if len(srid_summaries) == 1:
+            summary = srid_summaries[0]
+        else:
+            summary = TimePeriodOverview.add_periods(srid_summaries)
         log.debug(
             "summary.calc.done",
             dataset_count=summary.dataset_count,

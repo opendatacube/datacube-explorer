@@ -4,7 +4,7 @@ import dataclasses
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 import shapely
@@ -50,6 +50,8 @@ class TimePeriodOverview:
 
     # When this summary was generated
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
+
+    srid: int = None
 
     @classmethod
     def add_periods(cls, periods: Iterable["TimePeriodOverview"]):
