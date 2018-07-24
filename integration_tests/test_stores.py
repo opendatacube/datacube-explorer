@@ -1,8 +1,11 @@
 from collections import Counter
 from datetime import datetime, timedelta
+
+import pytest
 from dateutil import tz
 
 from cubedash.summary import TimePeriodOverview, SummaryStore
+from cubedash.summary._stores import PgSummaryStore
 from datacube.model import Range
 from shapely import geometry as geo
 
@@ -98,6 +101,16 @@ def test_store_updated(summary_store: SummaryStore):
     assert loaded.dataset_count == 4321
     assert loaded.newest_dataset_creation_time == \
            datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+
+
+def test_srid_lookup(summary_store: SummaryStore):
+    if isinstance(summary_store, PgSummaryStore):
+        srid = summary_store._target_srid()
+        assert srid is not None
+        assert isinstance(srid, int)
+
+        srid2 = summary_store._target_srid()
+        assert srid == srid2
 
 
 def test_store_records_last_updated(summary_store: SummaryStore):

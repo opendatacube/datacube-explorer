@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from dateutil import tz
 from shapely.geometry.base import BaseGeometry
-from typing import Iterable, Tuple, Dict
+from typing import Iterable, Tuple, Dict, List
 from typing import Optional
 
 from cubedash import _utils
@@ -52,6 +52,8 @@ class TimePeriodOverview:
 
     # When this summary was generated
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
+
+    srid: int = None
 
     @classmethod
     def add_periods(cls, periods: Iterable['TimePeriodOverview']):
