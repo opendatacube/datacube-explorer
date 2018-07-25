@@ -1,22 +1,16 @@
 from __future__ import absolute_import
 
 import functools
-import json
-import os
 from collections import Counter
-from datetime import date, datetime
-from pathlib import Path
+from datetime import date
 from typing import Optional
 
 import dateutil.parser
-import fiona
-import shapely
-import shapely.geometry
-import shapely.ops
+import pandas as pd
 import structlog
 from cachetools.func import lru_cache
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, and_, func, null, select
+from sqlalchemy import DDL, Integer, and_, bindparam, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
@@ -62,12 +56,33 @@ class PgSummaryStore(SummaryStore):
 
     @lru_cache(1)
     def _target_srid(self):
-        # The pre-populated srid primary keys in postgis all default to the epsg code,
-        # but we'll do the lookup anyway to be a good citizen.
+        """
+        Get the srid key for our target CRS (that all geometry is returned as)
+
+        The pre-populated srid primary keys in postgis all default to the epsg code,
+        but we'll do the lookup anyway to be good citizens.
+        """
         return self._engine.execute(
             select([SPATIAL_REF_SYS.c.srid])
             .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
             .where(SPATIAL_REF_SYS.c.auth_srid == _OUTPUT_CRS_EPSG)
+        ).scalar()
+
+    @lru_cache()
+    def _get_srid_name(self, srid):
+        """
+        Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
+        """
+        return self._engine.execute(
+            select(
+                [
+                    func.concat(
+                        SPATIAL_REF_SYS.c.auth_name,
+                        ":",
+                        SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
+                    )
+                ]
+            ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
         ).scalar()
 
     def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
@@ -79,26 +94,32 @@ class PgSummaryStore(SummaryStore):
         log = self._log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        result = self._engine.execute(
+        output_srid = self._target_srid()
+        where_clause = DATASET_SPATIAL.c.time.overlaps(
+            func.tstzrange(time.begin, time.end, type_=TSTZRANGE)
+        )
+        select_by_srid = (
             select(
                 (
                     func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
                     func.count().label("dataset_count"),
                     func.ST_Transform(
-                        func.ST_Union(DATASET_SPATIAL.c.footprint), self._target_srid()
+                        func.ST_Union(DATASET_SPATIAL.c.footprint), output_srid
                     ).label("footprint_geometry"),
                     func.max(DATASET_SPATIAL.c.creation_time).label(
                         "newest_dataset_creation_time"
                     ),
-                    func.jsonb_agg(
+                    func.array_agg(
                         func.jsonb_build_object(
                             # TODO: move ID to outer id field?
                             "type",
                             "Feature",
                             "geometry",
-                            func.ST_AsGeoJSON(DATASET_SPATIAL.c.footprint).cast(
-                                postgres.JSONB
-                            ),
+                            func.ST_AsGeoJSON(
+                                func.ST_Transform(
+                                    DATASET_SPATIAL.c.footprint, output_srid
+                                )
+                            ).cast(postgres.JSONB),
                             "properties",
                             func.jsonb_build_object(
                                 "id",
@@ -109,7 +130,6 @@ class PgSummaryStore(SummaryStore):
                             ),
                         )
                     ).label("datasets_geojson"),
-                    null().label("timeline_dataset_counts"),
                 )
             )
             .where(
@@ -118,12 +138,28 @@ class PgSummaryStore(SummaryStore):
                     DATASET_TYPE.c.name == product_name
                 )
             )
-            .where(
-                DATASET_SPATIAL.c.time.overlaps(
-                    func.tstzrange(time.begin, time.end, type_=TSTZRANGE)
+            .where(where_clause)
+            .group_by("srid")
+            .alias("srid_summaries")
+        )
+
+        # Union all srid groups into one summary.
+        result = self._engine.execute(
+            select(
+                (
+                    func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
+                    func.array_agg(select_by_srid.c.srid).label("srids"),
+                    func.ST_Union(select_by_srid.c.footprint_geometry).label(
+                        "footprint_geometry"
+                    ),
+                    func.max(select_by_srid.c.newest_dataset_creation_time).label(
+                        "newest_dataset_creation_time"
+                    ),
+                    func.array_agg(select_by_srid.c.datasets_geojson).label(
+                        "datasets_geojson"
+                    ),
                 )
             )
-            .group_by("srid")
         )
 
         rows = result.fetchall()
@@ -132,14 +168,32 @@ class PgSummaryStore(SummaryStore):
         log.debug("summary.calc")
 
         # Initialise all requested days as zero
-        # day_counts = Counter({
-        #     d.date(): 0 for d in pd.date_range(time.begin, time.end, closed='left')
-        # })
-        # day_counts.update(
-        #     _utils.default_utc(dataset.center_time).astimezone(
-        #         self.GROUPING_TIME_ZONE).date()
-        #     for dataset, shape in datasets
-        # )
+
+        day_counts = Counter(
+            {d.date(): 0 for d in pd.date_range(time.begin, time.end, closed="left")}
+        )
+        day_counts.update(
+            Counter(
+                {
+                    day.date(): count
+                    for day, count in self._engine.execute(
+                        select(
+                            [
+                                func.date_trunc(
+                                    "day",
+                                    func.lower(DATASET_SPATIAL.c.time).op(
+                                        "AT TIME ZONE"
+                                    )(self.GROUPING_TIME_ZONE),
+                                ).label("day"),
+                                func.count(),
+                            ]
+                        )
+                        .where(where_clause)
+                        .group_by("day")
+                    )
+                }
+            )
+        )
 
         # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
 
@@ -148,22 +202,26 @@ class PgSummaryStore(SummaryStore):
         def convert_row(row):
             row = dict(row)
             row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
+            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
+            del row["srids"]
+
+            if row["dataset_count"] > self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
+                del row["datasets_geojson"]
             return row
 
-        srid_summaries = list(
-            TimePeriodOverview(
-                **convert_row(row),
-                timeline_period="day",
-                time_range=time,
-                # TODO: filter invalid from the counts?
-                footprint_count=row["dataset_count"],
-            )
-            for row in rows
+        assert len(rows) == 1
+        row = rows[0]
+
+        summary = TimePeriodOverview(
+            **convert_row(row),
+            timeline_period="day",
+            time_range=time,
+            # TODO
+            timeline_dataset_counts=day_counts,
+            # TODO: filter invalid from the counts?
+            footprint_count=row["dataset_count"],
         )
-        if len(srid_summaries) == 1:
-            summary = srid_summaries[0]
-        else:
-            summary = TimePeriodOverview.add_periods(srid_summaries)
+
         log.debug(
             "summary.calc.done",
             dataset_count=summary.dataset_count,

@@ -4,7 +4,7 @@ import dataclasses
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import pandas as pd
 import shapely
@@ -48,10 +48,11 @@ class TimePeriodOverview:
     # The most newly created dataset
     newest_dataset_creation_time: datetime
 
+    # List of CRSes that these datasets are in
+    crses: Set[str]
+
     # When this summary was generated
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
-
-    srid: int = None
 
     @classmethod
     def add_periods(cls, periods: Iterable["TimePeriodOverview"]):
@@ -117,6 +118,7 @@ class TimePeriodOverview:
                 ),
                 default=None,
             ),
+            crses=set.union(*(o.crses for o in periods)),
             summary_gen_time=min(
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
                 default=None,
@@ -125,7 +127,7 @@ class TimePeriodOverview:
 
     @staticmethod
     def empty():
-        return TimePeriodOverview(0, None, None, None, None, None, None, None)
+        return TimePeriodOverview(0, None, None, None, None, None, None, None, None)
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
@@ -153,7 +155,7 @@ class SummaryStore:
 
     # Group datasets using this timezone when counting them.
     # Aus data comes from Alice Springs
-    GROUPING_TIME_ZONE = tz.gettz("Australia/Darwin")
+    GROUPING_TIME_ZONE = "Australia/Darwin"
     # If there's fewer than this many datasets, display them as individual polygons in
     # the browser. Too many can bog down the browser's performance.
     # (Otherwise dataset footprint is shown as a single composite polygon)
@@ -294,62 +296,8 @@ class SummaryStore:
     def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
-
-        Default implementation uses the pure index api.
         """
-        log = self._log.bind(product_name=product_name, time=time)
-        log.debug("summary.query")
-
-        datasets = [
-            (dataset, _utils.dataset_shape(dataset))
-            for dataset in self._index.datasets.search(product=product_name, time=time)
-        ]
-        log.debug("summary.query.done")
-
-        log.debug("summary.calc")
-        dataset_shapes = list(filter(_has_shape, datasets))
-
-        footprint_geometry = (
-            shapely.ops.unary_union([shape for _, (shape, _) in dataset_shapes])
-            if dataset_shapes
-            else None
-        )
-
-        # Initialise all requested days as zero
-        day_counts = Counter(
-            {d.date(): 0 for d in pd.date_range(time.begin, time.end, closed="left")}
-        )
-        day_counts.update(
-            _utils.default_utc(dataset.center_time)
-            .astimezone(self.GROUPING_TIME_ZONE)
-            .date()
-            for dataset, shape in datasets
-        )
-
-        summary = TimePeriodOverview(
-            dataset_count=len(datasets),
-            timeline_dataset_counts=day_counts,
-            datasets_geojson=_datasets_to_feature(dataset_shapes)
-            if 0 < len(dataset_shapes) < self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
-            else None,
-            timeline_period="day",
-            time_range=time,
-            footprint_geometry=footprint_geometry,
-            footprint_count=len(dataset_shapes),
-            newest_dataset_creation_time=max(
-                (
-                    _utils.default_utc(_dataset_created(dataset))
-                    for dataset, shape in datasets
-                ),
-                default=None,
-            ),
-        )
-        log.debug(
-            "summary.calc.done",
-            dataset_count=summary.dataset_count,
-            footprints_missing=summary.dataset_count - summary.footprint_count,
-        )
-        return summary
+        raise NotImplementedError("Summary calc")
 
 
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
