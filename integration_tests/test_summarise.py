@@ -1,3 +1,5 @@
+from typing import Set
+
 import pytest
 from datetime import datetime
 from dateutil.tz import tzutc
@@ -48,11 +50,15 @@ def populate_index(module_dea_index):
         'ls8_nbar_albers',
         TEST_DATA_DIR / 'ls8-nbar-albers-sample.yaml.gz'
     )
+    # _populate_from_dump(
+    #     module_dea_index,
+    #     'wofs_albers',
+    #     TEST_DATA_DIR / 'wofs-albers-sample.yaml.gz'
+    # )
     return module_dea_index
 
 
 def test_calc_month(summary_store):
-
     # One Month
     _expect_values(
         summary_store.calculate_summary(
@@ -116,7 +122,6 @@ def test_calc_scene_all_time(summary_store):
 
 
 def test_calc_albers_summary_with_storage(summary_store):
-
     # Should not exist yet.
     summary = summary_store.get(
         'ls8_nbar_albers',
@@ -186,7 +191,8 @@ def _expect_values(s: TimePeriodOverview,
                    time_range: Range,
                    newest_creation_time: datetime,
                    timeline_period: str,
-                   timeline_count: int):
+                   timeline_count: int,
+                   crses: Set[str]):
     __tracebackhide__ = True
 
     try:
@@ -200,26 +206,37 @@ def _expect_values(s: TimePeriodOverview,
             f"Should be a {timeline_period}, "
             f"not {s.timeline_period} timeline"
         )
-        assert len(s.timeline_dataset_counts) == timeline_count, (
-            "wrong timeline entry count"
-        )
-        assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
-            "timeline count doesn't match dataset count"
-        )
 
         assert s.summary_gen_time is not None, (
             "Missing summary_gen_time (there's a default)"
         )
 
-    except AssertionError:
+        assert s.crses == crses, "Wrong dataset CRSes"
+
+        if s.timeline_dataset_counts is None:
+            if timeline_count is not None:
+                raise AssertionError(
+                    f"null timeline_dataset_counts. "
+                    f"Expected entry with {timeline_count} records."
+                )
+        else:
+            assert len(s.timeline_dataset_counts) == timeline_count, (
+                "wrong timeline entry count"
+            )
+
+            assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
+                "timeline count doesn't match dataset count"
+            )
+
+    except AssertionError as a:
         print(f"""Got:
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range: {s.time_range}
         newest: {repr(s.newest_dataset_creation_time)}
+        crses: {repr(s.crses)}
         timeline
             period: {s.timeline_period}
-            dataset_counts: {len(s.timeline_dataset_counts)}
+            dataset_counts: {None if s.timeline_dataset_counts is None else len(s.timeline_dataset_counts)}
         """)
         raise
-

@@ -112,6 +112,13 @@ def test_srid_lookup(summary_store: SummaryStore):
         srid2 = summary_store._target_srid()
         assert srid == srid2
 
+        assert summary_store._get_srid_name(srid) == 'EPSG:4326'
+
+        # Cached?
+        cache_hits = summary_store._get_srid_name.cache_info().hits
+        assert summary_store._get_srid_name(srid) == 'EPSG:4326'
+        assert summary_store._get_srid_name.cache_info().hits > cache_hits
+
 
 def test_store_records_last_updated(summary_store: SummaryStore):
     o = _overview()
