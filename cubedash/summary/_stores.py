@@ -9,7 +9,7 @@ import dateutil.parser
 import pandas as pd
 import structlog
 from cachetools.func import lru_cache
-from geoalchemy2 import shape as geo_shape
+from geoalchemy2 import shape as geo_shape, Geometry
 from sqlalchemy import DDL, \
     and_, bindparam, Integer
 from sqlalchemy import func, select
@@ -43,9 +43,8 @@ class PgSummaryStore(SummaryStore):
 
     def init(self):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
-        _extents.add_spatial_table(
-            self._index, *self._index.products.get_all()
-        )
+        for product in self._index.products.get_all():
+            _extents.refresh_product(self._index, product)
 
     def drop_all(self):
         """
@@ -86,6 +85,32 @@ class PgSummaryStore(SummaryStore):
             )
         ).scalar()
 
+    def _get_datasets_geojson(self, where_clause):
+        return self._engine.execute(
+            select([
+                    func.jsonb_build_object(
+                        'type', 'FeatureCollection',
+                        'geometries',
+                        func.jsonb_agg(
+                            func.jsonb_build_object(
+                                # TODO: move ID to outer id field?
+                                'type', 'Feature',
+                                'geometry', func.ST_AsGeoJSON(
+                                    func.ST_Transform(
+                                        DATASET_SPATIAL.c.footprint,
+                                        self._target_srid(),
+                                    )).cast(postgres.JSONB),
+                                'properties', func.jsonb_build_object(
+                                    'id', DATASET_SPATIAL.c.id,
+                                    # TODO: dataset label?
+                                    'start_time', func.lower(DATASET_SPATIAL.c.time),
+                                ),
+                            )
+                        )
+                    ).label('datasets_geojson')
+            ]).where(where_clause)
+        ).fetchone()['datasets_geojson']
+
     def calculate_summary(self,
                           product_name: str,
                           time: Range) -> TimePeriodOverview:
@@ -97,52 +122,41 @@ class PgSummaryStore(SummaryStore):
         log = self._log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        output_srid = self._target_srid()
-        where_clause = DATASET_SPATIAL.c.time.overlaps(func.tstzrange(time.begin, time.end, type_=TSTZRANGE, ))
+        where_clause = and_(
+            DATASET_SPATIAL.c.time.overlaps(func.tstzrange(time.begin, time.end, type_=TSTZRANGE, )),
+            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(
+                DATASET_TYPE.c.name == product_name)
+        )
         select_by_srid = select((
             func.ST_SRID(DATASET_SPATIAL.c.footprint).label('srid'),
             func.count().label("dataset_count"),
             func.ST_Transform(
                 func.ST_Union(DATASET_SPATIAL.c.footprint),
-                output_srid
+                self._target_srid(),
+                type_=Geometry()
             ).label("footprint_geometry"),
             func.max(DATASET_SPATIAL.c.creation_time).label("newest_dataset_creation_time"),
-            func.array_agg(
-                func.jsonb_build_object(
-                    # TODO: move ID to outer id field?
-                    'type', 'Feature',
-                    'geometry', func.ST_AsGeoJSON(
-                        func.ST_Transform(
-                            DATASET_SPATIAL.c.footprint,
-                            output_srid,
-                        )).cast(postgres.JSONB),
-                    'properties', func.jsonb_build_object(
-                        'id', DATASET_SPATIAL.c.id,
-                        # TODO: dataset label?
-                        'start_time', func.lower(DATASET_SPATIAL.c.time),
-                    ),
-                )
-            ).label('datasets_geojson'),
-        )).where(
-            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(
-                DATASET_TYPE.c.name == product_name)
-        ).where(where_clause).group_by('srid').alias('srid_summaries')
+        )).where(where_clause).group_by('srid').alias('srid_summaries')
 
         # Union all srid groups into one summary.
         result = self._engine.execute(
             select((
                 func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
                 func.array_agg(select_by_srid.c.srid).label("srids"),
-                func.ST_Union(select_by_srid.c.footprint_geometry).label("footprint_geometry"),
-                func.max(select_by_srid.c.newest_dataset_creation_time).label("newest_dataset_creation_time"),
-                func.array_agg(select_by_srid.c.datasets_geojson).label("datasets_geojson"),
+                func.ST_Union(select_by_srid.c.footprint_geometry, type_=Geometry()).label("footprint_geometry"),
+                func.max(select_by_srid.c.newest_dataset_creation_time).label("newest_dataset_creation_time")
             ))
         )
 
         rows = result.fetchall()
         log.debug("summary.query.done", srid_rows=len(rows))
 
-        log.debug("summary.calc")
+        assert len(rows) == 1
+        row = rows[0]
+        if row['dataset_count'] is None:
+            return TimePeriodOverview.empty()
+
+        log.debug("counter.calc")
 
         # Initialise all requested days as zero
 
@@ -171,16 +185,18 @@ class PgSummaryStore(SummaryStore):
 
         def convert_row(row):
             row = dict(row)
-            row['footprint_geometry'] = geo_shape.to_shape(row['footprint_geometry'])
-            row['crses'] = {self._get_srid_name(s) for s in row['srids']}
+            if row['footprint_geometry'] is not None:
+                row['footprint_geometry'] = geo_shape.to_shape(row['footprint_geometry'])
+
+            row['crses'] = None
+            if row['srids'] is not None:
+                row['crses']= {self._get_srid_name(s) for s in row['srids']}
             del row['srids']
 
-            if row['dataset_count'] > self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
-                del row['datasets_geojson']
+            if row['dataset_count'] is not None:
+                if row['dataset_count'] > self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
+                    del row['datasets_geojson']
             return row
-
-        assert len(rows) == 1
-        row = rows[0]
 
         summary = TimePeriodOverview(
             **convert_row(row),
@@ -190,6 +206,7 @@ class PgSummaryStore(SummaryStore):
             timeline_dataset_counts=day_counts,
             # TODO: filter invalid from the counts?
             footprint_count=row['dataset_count'],
+            datasets_geojson=self._get_datasets_geojson(where_clause)
         )
 
         log.debug(
@@ -257,6 +274,7 @@ class PgSummaryStore(SummaryStore):
             newest_dataset_creation_time=res['newest_dataset_creation_time'],
             # When this summary was last generated
             summary_gen_time=res['generation_time'],
+            crses=set(res['crses']) if res['crses'] is not None else None,
         )
 
     def _summary_to_row(self, summary: TimePeriodOverview) -> dict:
@@ -288,7 +306,8 @@ class PgSummaryStore(SummaryStore):
             footprint_count=summary.footprint_count,
 
             newest_dataset_creation_time=summary.newest_dataset_creation_time,
-            generation_time=summary.summary_gen_time
+            generation_time=summary.summary_gen_time,
+            crses=summary.crses
         )
 
     @functools.lru_cache()
@@ -320,7 +339,7 @@ class PgSummaryStore(SummaryStore):
     def put(self, product_name: Optional[str], year: Optional[int],
             month: Optional[int], day: Optional[int], summary: TimePeriodOverview):
 
-        product_id = self._get_product_id(product_name)
+        product_id = self._get_product_id(product_name) if product_name else None
         start_day, period = self._start_day(year, month, day)
         row = self._summary_to_row(summary)
         self._engine.execute(

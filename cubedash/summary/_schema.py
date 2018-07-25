@@ -125,6 +125,8 @@ TIME_OVERVIEW = Table(
 
     Column('footprint_count', Integer),
 
+    Column('crses', postgres.ARRAY(String)),
+
     # The most newly created dataset
     Column('newest_dataset_creation_time', DateTime(timezone=True)),
 

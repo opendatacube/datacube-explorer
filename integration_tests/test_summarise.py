@@ -75,7 +75,9 @@ def test_calc_month(summary_store):
             2017, 7, 4, 11, 18, 20, tzinfo=tzutc()
         ),
         timeline_period='day',
-        timeline_count=30
+        timeline_count=30,
+        crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28350',
+               'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
     )
 
 
@@ -96,7 +98,9 @@ def test_calc_scene_year(summary_store):
         ),
         newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
         timeline_period='day',
-        timeline_count=365
+        timeline_count=365,
+        crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28350',
+               'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
     )
 
 
@@ -117,7 +121,9 @@ def test_calc_scene_all_time(summary_store):
         ),
         newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
         timeline_period='month',
-        timeline_count=24
+        timeline_count=24,
+        crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28357', 'EPSG:28350',
+               'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
     )
 
 
@@ -158,7 +164,8 @@ def test_calc_albers_summary_with_storage(summary_store):
         ),
         timeline_period='day',
         # Data spans 61 days in 2017
-        timeline_count=61
+        timeline_count=61,
+        crses={'EPSG:3577'},
     )
 
     # get_or_update should now return the cached copy.
@@ -239,4 +246,8 @@ def _expect_values(s: TimePeriodOverview,
             period: {s.timeline_period}
             dataset_counts: {None if s.timeline_dataset_counts is None else len(s.timeline_dataset_counts)}
         """)
+        if 'timeline' in a.args[0]:
+            print("timeline keys:")
+            for day, count in s.timeline_dataset_counts.items():
+                print(f"\t{repr(day)}: {count}")
         raise

@@ -195,18 +195,10 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def add_spatial_table(index: Index, *products: DatasetType):
+def refresh_product(index: Index, product: DatasetType):
     engine: Engine = index.datasets._db._engine
-
-    for product in products:
-        echo(f"{datetime.now()} "
-             f"Starting {style(product.name, bold=True)} extent update")
-        insert_count = _populate_missing_dataset_extents(engine, product)
-        echo(
-            f"{datetime.now()} "
-            f"Added {style(str(insert_count), bold=True)} new extents "
-            f"for {style(product.name, bold=True)}. "
-        )
+    insert_count = _populate_missing_dataset_extents(engine, product)
+    return insert_count
 
 
 def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
