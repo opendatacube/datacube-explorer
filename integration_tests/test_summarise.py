@@ -5,8 +5,9 @@ from typing import Set
 import pytest
 from dateutil.tz import tzutc
 
+from cubedash import _utils
 from cubedash._utils import default_utc
-from cubedash.summary import TimePeriodOverview
+from cubedash.summary import PgSummaryStore, SummaryStore, TimePeriodOverview
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
@@ -58,11 +59,11 @@ def populate_index(module_dea_index):
     return module_dea_index
 
 
-def test_calc_month(summary_store):
+def test_calc_month(summary_store: SummaryStore):
     # One Month
     _expect_values(
         summary_store.calculate_summary(
-            "ls8_nbar_scene", Range(datetime(2017, 4, 1), datetime(2017, 5, 1))
+            "ls8_nbar_scene", _utils.as_time_range(2017, 4)
         ),
         dataset_count=408,
         footprint_count=408,
@@ -85,10 +86,10 @@ def test_calc_month(summary_store):
     )
 
 
-def test_calc_scene_year(summary_store):
+def test_calc_scene_year(summary_store: SummaryStore):
     # One year, storing result.
     _expect_values(
-        summary_store.update("ls8_nbar_scene", year=2017, month=None, day=None),
+        summary_store.calculate_summary("ls8_nbar_scene", _utils.as_time_range(2017)),
         dataset_count=1789,
         footprint_count=1789,
         time_range=Range(
@@ -110,7 +111,7 @@ def test_calc_scene_year(summary_store):
     )
 
 
-def test_calc_scene_all_time(summary_store):
+def test_calc_scene_all_time(summary_store: SummaryStore):
     # All time
     _expect_values(
         summary_store.update("ls8_nbar_scene", year=None, month=None, day=None),
@@ -136,7 +137,7 @@ def test_calc_scene_all_time(summary_store):
     )
 
 
-def test_calc_albers_summary_with_storage(summary_store):
+def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
     assert summary is None
@@ -172,7 +173,7 @@ def test_calc_albers_summary_with_storage(summary_store):
     assert cached_s.dataset_count == summary.dataset_count
 
 
-def test_no_datasets_in_time(summary_store):
+def test_no_datasets_in_time(summary_store: SummaryStore):
     # No datasets in 2018
     summary = summary_store.get_or_update(
         "ls8_nbar_albers", year=2018, month=None, day=None
@@ -192,6 +193,7 @@ def _expect_values(
 ):
     __tracebackhide__ = True
 
+    was_timeline_error = False
     try:
         assert s.dataset_count == dataset_count, "wrong dataset count"
         assert s.footprint_count == footprint_count, "wrong footprint count"
@@ -209,6 +211,7 @@ def _expect_values(
 
         assert s.crses == crses, "Wrong dataset CRSes"
 
+        was_timeline_error = True
         if s.timeline_dataset_counts is None:
             if timeline_count is not None:
                 raise AssertionError(
@@ -223,6 +226,16 @@ def _expect_values(
             assert (
                 sum(s.timeline_dataset_counts.values()) == s.dataset_count
             ), "timeline count doesn't match dataset count"
+        was_timeline_error = False
+
+        if s.dataset_count <= PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
+            assert s.datasets_geojson is not None, (
+                f"With < {PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets,"
+                f"there should be per-dataset geojson records included."
+            )
+            assert len(s.datasets_geojson["geometries"]) == s.dataset_count, (
+                "Number of dataset geojson " "records should match dataset count."
+            )
 
     except AssertionError as a:
         print(
@@ -237,7 +250,7 @@ def _expect_values(
             dataset_counts: {None if s.timeline_dataset_counts is None else len(s.timeline_dataset_counts)}
         """
         )
-        if "timeline" in a.args[0]:
+        if was_timeline_error:
             print("timeline keys:")
             for day, count in s.timeline_dataset_counts.items():
                 print(f"\t{repr(day)}: {count}")
