@@ -41,7 +41,7 @@ class PgGridCell(UserDefinedType):
     """
 
     def get_col_spec(self):
-        return "gridcell"
+        return f"{CUBEDASH_SCHEMA}.gridcell"
 
     def bind_processor(self, dialect):
         def process(gridcell):
