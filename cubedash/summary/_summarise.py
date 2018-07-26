@@ -164,7 +164,10 @@ class SummaryStore:
 
     # Group datasets using this timezone when counting them.
     # Aus data comes from Alice Springs
-    GROUPING_TIME_ZONE = 'Australia/Darwin'
+    GROUPING_TIME_ZONE_NAME = 'Australia/Darwin'
+    # cache
+    GROUPING_TIME_ZONE_TZ = tz.gettz(GROUPING_TIME_ZONE_NAME)
+
     # If there's fewer than this many datasets, display them as individual polygons in
     # the browser. Too many can bog down the browser's performance.
     # (Otherwise dataset footprint is shown as a single composite polygon)
