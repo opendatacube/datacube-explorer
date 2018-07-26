@@ -27,7 +27,7 @@ class PgGridCell(UserDefinedType):
     For landsat path row and tile ids.
     """
     def get_col_spec(self):
-        return 'gridcell'
+        return f'{CUBEDASH_SCHEMA}.gridcell'
 
     def bind_processor(self, dialect):
         def process(gridcell):
