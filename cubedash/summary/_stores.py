@@ -11,12 +11,13 @@ import structlog
 from cachetools.func import lru_cache
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, Integer, and_, bindparam, func, select
+from sqlalchemy import DDL, DateTime, Integer, and_, bindparam, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
+from cubedash._utils import default_utc
 from cubedash.summary import _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -130,9 +131,11 @@ class PgSummaryStore(SummaryStore):
         log = self._log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
+        begin_time = default_utc(time.begin)
+        end_time = default_utc(time.end)
         where_clause = and_(
             DATASET_SPATIAL.c.time.overlaps(
-                func.tstzrange(time.begin, time.end, type_=TSTZRANGE)
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE)
             ),
             DATASET_SPATIAL.c.dataset_type_ref
             == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name),
@@ -186,7 +189,7 @@ class PgSummaryStore(SummaryStore):
         # Initialise all requested days as zero
 
         day_counts = Counter(
-            {d.date(): 0 for d in pd.date_range(time.begin, time.end, closed="left")}
+            {d.date(): 0 for d in pd.date_range(begin_time, end_time, closed="left")}
         )
         day_counts.update(
             Counter(
@@ -204,7 +207,22 @@ class PgSummaryStore(SummaryStore):
                                 func.count(),
                             ]
                         )
-                        .where(where_clause)
+                        .where(
+                            and_(
+                                func.tstzrange(
+                                    begin_time, end_time, type_=TSTZRANGE
+                                ).contains(
+                                    func.lower(
+                                        DATASET_SPATIAL.c.time,
+                                        type_=DateTime(timezone=True),
+                                    )
+                                ),
+                                DATASET_SPATIAL.c.dataset_type_ref
+                                == select([DATASET_TYPE.c.id]).where(
+                                    DATASET_TYPE.c.name == product_name
+                                ),
+                            )
+                        )
                         .group_by("day")
                     )
                 }
@@ -227,9 +245,6 @@ class PgSummaryStore(SummaryStore):
                 row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
             del row["srids"]
 
-            if row["dataset_count"] is not None:
-                if row["dataset_count"] > self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
-                    del row["datasets_geojson"]
             return row
 
         summary = TimePeriodOverview(
