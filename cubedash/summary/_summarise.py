@@ -22,6 +22,8 @@ from datacube.model import Dataset, Range
 _LOG = structlog.get_logger()
 
 
+# An acceptable use of x/y names.
+# pylint: disable=invalid-name
 @dataclass(frozen=True)
 class GridCell(object):
     x: float

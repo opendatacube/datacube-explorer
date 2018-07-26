@@ -17,6 +17,7 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
+from cubedash._utils import alchemy_engine
 from cubedash.summary import _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -37,11 +38,7 @@ _LOG = structlog.get_logger()
 class PgSummaryStore(SummaryStore):
     def __init__(self, index: Index, log=_LOG) -> None:
         super().__init__(index, log)
-        # The engine used for our own tables.
-        # We may use our own engine in the future, as in many places the original
-        # datacube is read-only.
-        # pylint: disable=protected-access
-        self._engine: Engine = index._db._engine
+        self._engine: Engine = alchemy_engine(index)
 
     def init(self):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
