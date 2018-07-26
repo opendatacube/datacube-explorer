@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import functools
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 import dateutil.parser
@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
-from cubedash._utils import default_utc
 from cubedash.summary import _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -122,6 +121,11 @@ class PgSummaryStore(SummaryStore):
             ).where(where_clause)
         ).fetchone()["datasets_geojson"]
 
+    def _with_default_tz(self, d: datetime) -> datetime:
+        if d.tzinfo is None:
+            return d.replace(tzinfo=self.GROUPING_TIME_ZONE_TZ)
+        return d
+
     def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
@@ -131,8 +135,8 @@ class PgSummaryStore(SummaryStore):
         log = self._log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        begin_time = default_utc(time.begin)
-        end_time = default_utc(time.end)
+        begin_time = self._with_default_tz(time.begin)
+        end_time = self._with_default_tz(time.end)
         where_clause = and_(
             DATASET_SPATIAL.c.time.overlaps(
                 func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE)
@@ -202,7 +206,7 @@ class PgSummaryStore(SummaryStore):
                                     "day",
                                     func.lower(DATASET_SPATIAL.c.time).op(
                                         "AT TIME ZONE"
-                                    )(self.GROUPING_TIME_ZONE),
+                                    )(self.GROUPING_TIME_ZONE_NAME),
                                 ).label("day"),
                                 func.count(),
                             ]
