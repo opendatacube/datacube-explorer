@@ -1,7 +1,8 @@
-import itertools
-import time
-
 import functools
+import inspect
+import itertools
+import sys
+import time
 from datetime import datetime
 
 import flask
@@ -65,7 +66,7 @@ def search_page(product_name: str = None,
                 month: int = None,
                 day: int = None):
     product, product_summary, selected_summary = _load_product(product_name, year, month, day)
-    time = utils.as_time_range(year, month, day)
+    time_range = utils.as_time_range(year, month, day)
 
     args = MultiDict(flask.request.args)
     query = utils.query_to_search(args, product=product)
@@ -73,8 +74,8 @@ def search_page(product_name: str = None,
     # Always add time range, selected product to query
     if product_name:
         query['product'] = product_name
-    if time:
-        query['time'] = time
+    if time_range:
+        query['time'] = time_range
 
     _LOG.info('query', query=query)
 
@@ -227,11 +228,6 @@ if app.debug:
             f'desc="{flask.g.datacube_query_count} ODC queries"'
         )
         return response
-
-
-    import inspect
-    import time
-    import sys
 
 
     def decorate_all_methods(cls, decorator):
