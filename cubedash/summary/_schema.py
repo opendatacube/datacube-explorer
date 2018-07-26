@@ -167,10 +167,9 @@ def create(target, connection, **kw):
     """
     Create all tables if the cubedash schema doesn't already exist.
     """
-    try:
-        connection.execute(f"create type {CUBEDASH_SCHEMA}.gridcell as (x smallint, y smallint);")
-    except Exception:
-        pass
+    if not pg_exists(connection, f"{CUBEDASH_SCHEMA}.gridcell"):
+        connection.execute(f"create type {CUBEDASH_SCHEMA}.gridcell "
+                           f"as (x smallint, y smallint);")
 
     # Ensure there's an index on the SRS table. (Using default pg naming conventions)
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
@@ -181,6 +180,13 @@ def create(target, connection, **kw):
     """)
 
 
+
+def pg_exists(conn, name):
+    """
+    Does a postgres object exist?
+    :rtype bool
+    """
+    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
 def _add_convenience_views(engine):
