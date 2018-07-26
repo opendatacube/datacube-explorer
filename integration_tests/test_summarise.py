@@ -89,7 +89,7 @@ def test_calc_month(summary_store: SummaryStore):
 def test_calc_scene_year(summary_store: SummaryStore):
     # One year, storing result.
     _expect_values(
-        summary_store.calculate_summary("ls8_nbar_scene", _utils.as_time_range(2017)),
+        summary_store.update("ls8_nbar_scene", year=2017, month=None, day=None),
         dataset_count=1792,
         footprint_count=1792,
         time_range=Range(
