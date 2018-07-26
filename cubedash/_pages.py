@@ -16,7 +16,7 @@ import datacube
 from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
-from ._utils import as_json
+from ._utils import as_json, alchemy_engine
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -201,13 +201,13 @@ if app.debug:
         flask.g.datacube_query_count = 0
 
 
-    @event.listens_for(_model.index._db._engine, "before_cursor_execute")
+    @event.listens_for(alchemy_engine(_model.index), "before_cursor_execute")
     def before_cursor_execute(conn, cursor, statement,
                               parameters, context, executemany):
         conn.info.setdefault('query_start_time', []).append(time.time())
 
 
-    @event.listens_for(_model.index._db._engine, "after_cursor_execute")
+    @event.listens_for(alchemy_engine(_model.index), "after_cursor_execute")
     def after_cursor_execute(conn, cursor, statement,
                              parameters, context, executemany):
         flask.g.datacube_query_time += time.time() - conn.info['query_start_time'].pop(

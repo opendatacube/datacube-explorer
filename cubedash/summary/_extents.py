@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Optional
 
 import structlog
-from click import echo, style
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
@@ -13,6 +12,7 @@ from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, nul
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
+from cubedash._utils import alchemy_engine
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS, PgGridCell
 from cubedash.summary._summarise import GridCell
 from datacube import Datacube
@@ -177,7 +177,9 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
                         SPATIAL_REF_SYS.c.auth_name == 'EPSG'
                     ).where(
                         SPATIAL_REF_SYS.c.auth_srid == (
-                                '283' + func.abs(doc[(projection_offset + ['zone'])].astext.cast(Integer))
+                            '283' + func.abs(
+                                doc[(projection_offset + ['zone'])].astext.cast(Integer)
+                            )
                         ).cast(Integer)
                     ).as_scalar()
                 )
@@ -196,7 +198,7 @@ def _gis_point(doc, doc_offset):
 
 
 def refresh_product(index: Index, product: DatasetType):
-    engine: Engine = index.datasets._db._engine
+    engine: Engine = alchemy_engine(index)
     insert_count = _populate_missing_dataset_extents(engine, product)
     return insert_count
 
@@ -221,6 +223,10 @@ def _select_dataset_extent_query(dt: DatasetType):
 
     footrprint_expression = get_dataset_extent_alchemy_expression(md_type)
     product_ref = bindparam('product_ref', dt.id, type_=SmallInteger)
+
+    # "expr == None" is valid in sqlalchemy:
+    # pylint: disable=singleton-comparison
+
     return select([
         DATASET.c.id,
         DATASET.c.dataset_type_ref,

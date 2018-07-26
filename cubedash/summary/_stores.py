@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
+from cubedash._utils import alchemy_engine
 from cubedash.summary import _extents
 from cubedash.summary import _schema
 from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, SPATIAL_REF_SYS
@@ -35,11 +36,7 @@ class PgSummaryStore(SummaryStore):
 
     def __init__(self, index: Index, log=_LOG) -> None:
         super().__init__(index, log)
-        # The engine used for our own tables.
-        # We may use our own engine in the future, as in many places the original
-        # datacube is read-only.
-        # pylint: disable=protected-access
-        self._engine: Engine = index._db._engine
+        self._engine: Engine = alchemy_engine(index)
 
     def init(self):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
@@ -63,9 +60,13 @@ class PgSummaryStore(SummaryStore):
         but we'll do the lookup anyway to be good citizens.
         """
         return self._engine.execute(
-            select([SPATIAL_REF_SYS.c.srid])
-                .where(SPATIAL_REF_SYS.c.auth_name == 'EPSG')
-                .where(SPATIAL_REF_SYS.c.auth_srid == _OUTPUT_CRS_EPSG)
+            select([
+                SPATIAL_REF_SYS.c.srid
+            ]).where(
+                SPATIAL_REF_SYS.c.auth_name == 'EPSG'
+            ).where(
+                SPATIAL_REF_SYS.c.auth_srid == _OUTPUT_CRS_EPSG
+            )
         ).scalar()
 
     @lru_cache()
@@ -177,8 +178,11 @@ class PgSummaryStore(SummaryStore):
                     select([
                         func.date_trunc(
                             'day',
-                            func.lower(DATASET_SPATIAL.c.time)
-                                .op('AT TIME ZONE')(self.GROUPING_TIME_ZONE_NAME)
+                            func.lower(
+                                DATASET_SPATIAL.c.time
+                            ).op(
+                                'AT TIME ZONE'
+                            )(self.GROUPING_TIME_ZONE_NAME)
                         ).label('day'),
                         func.count()
                     ]).where(and_(

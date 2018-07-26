@@ -20,8 +20,11 @@ from dateutil.relativedelta import relativedelta
 from flask import jsonify
 from shapely.geometry import Polygon
 from typing import Tuple, Optional
+
+from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
+from datacube.index import Index
 from datacube.index.fields import Field
 from datacube.model import Dataset
 from datacube.model import Range, DatasetType
@@ -162,6 +165,13 @@ def _field_parser(field: Field):
     except AttributeError:
         parser = lambda a: a
     return parser
+
+
+def alchemy_engine(index: Index) -> Engine:
+    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+    # We could create our own from config, but there's no api for getting the ODC config for the index either.
+    # pylint: disable=protected-access
+    return index.datasets._db._engine
 
 
 def default_utc(d: datetime) -> datetime:
