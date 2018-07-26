@@ -55,7 +55,9 @@ class TimePeriodOverview:
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
 
     @classmethod
-    def add_periods(cls, periods: Iterable["TimePeriodOverview"]):
+    def add_periods(
+        cls, periods: Iterable["TimePeriodOverview"], max_individual_datasets=800
+    ):
         periods = [p for p in periods if p.dataset_count > 0]
         counter = Counter()
         period = None
@@ -99,11 +101,18 @@ class TimePeriodOverview:
                 else None
             )
 
+        total_datasets = sum(p.dataset_count for p in periods)
+        all_datasets_geojson = (
+            cls._combined_geojson(periods)
+            if total_datasets < max_individual_datasets
+            else None
+        )
+
         return TimePeriodOverview(
-            dataset_count=sum(p.dataset_count for p in periods),
+            dataset_count=total_datasets,
             timeline_dataset_counts=counter,
             timeline_period=period,
-            datasets_geojson=None,
+            datasets_geojson=all_datasets_geojson,
             time_range=Range(
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods),
@@ -124,6 +133,16 @@ class TimePeriodOverview:
                 default=None,
             ),
         )
+
+    @classmethod
+    def _combined_geojson(cls, periods):
+        all_datasets_geojson = dict(type="FeatureCollection", geometries=[])
+        for p in periods:
+            if p.datasets_geojson is not None:
+                all_datasets_geojson["geometries"].extend(
+                    p.datasets_geojson["geometries"]
+                )
+        return all_datasets_geojson
 
     @staticmethod
     def empty():
