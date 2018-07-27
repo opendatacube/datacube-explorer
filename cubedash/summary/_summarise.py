@@ -138,12 +138,10 @@ class TimePeriodOverview:
 
     @classmethod
     def _combined_geojson(cls, periods):
-        all_datasets_geojson = dict(type="FeatureCollection", geometries=[])
+        all_datasets_geojson = dict(type="FeatureCollection", features=[])
         for p in periods:
             if p.datasets_geojson is not None:
-                all_datasets_geojson["geometries"].extend(
-                    p.datasets_geojson["geometries"]
-                )
+                all_datasets_geojson["features"].extend(p.datasets_geojson["features"])
         return all_datasets_geojson
 
     @staticmethod

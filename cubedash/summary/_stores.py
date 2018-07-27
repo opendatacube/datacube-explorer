@@ -92,7 +92,7 @@ class PgSummaryStore(SummaryStore):
                     func.jsonb_build_object(
                         "type",
                         "FeatureCollection",
-                        "geometries",
+                        "features",
                         func.jsonb_agg(
                             func.jsonb_build_object(
                                 # TODO: move ID to outer id field?
