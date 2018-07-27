@@ -347,8 +347,6 @@ def print_sample_dataset(*product_names: str):
             )
             print(_as_json(dict(res)))
 
-            refresh_product(index, product)
-
 
 if __name__ == "__main__":
     print_sample_dataset(*(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"]))
