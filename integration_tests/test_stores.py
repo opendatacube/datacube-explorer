@@ -1,12 +1,10 @@
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 
-import pytest
 from dateutil import tz
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import PgSummaryStore
 from datacube.model import Range
 
 
@@ -46,36 +44,6 @@ def _overview():
     return orig
 
 
-def test_store_unchanged(summary_store: SummaryStore):
-    """
-    A put followed by a get should return identical data
-    """
-    orig = _overview()
-
-    summary_store.get_last_updated()
-
-    summary_store.put("some_product", 2017, None, None, orig)
-    loaded = summary_store.get("some_product", 2017, None, None)
-
-    # pytest has better error messages for dict comparison
-    assert orig.__dict__ == loaded.__dict__
-    assert orig == loaded
-
-
-def test_store_empty(summary_store: SummaryStore):
-    """
-    Should be able to record a period with no datasets.
-    """
-    orig = TimePeriodOverview.empty()
-
-    summary_store.put("some_product", 2017, 4, None, orig)
-    loaded = summary_store.get("some_product", 2017, 4, None)
-
-    # pytest has better error messages for dict comparison
-    assert orig.__dict__ == loaded.__dict__
-    assert orig == loaded
-
-
 def test_get_null(summary_store: SummaryStore):
     """
     An area with nothing generated should come back as null.
@@ -87,69 +55,17 @@ def test_get_null(summary_store: SummaryStore):
     assert loaded is None
 
 
-def test_store_updated(summary_store: SummaryStore):
-    """
-    We should be able to update summaries.
-    """
-    o = _overview()
-
-    summary_store.put("some_product", 2017, None, None, o)
-    loaded = summary_store.get("some_product", 2017, None, None)
-
-    assert o is not loaded, (
-        "Store should not return the original objects " "(they may change)"
-    )
-
-    o.dataset_count = 4321
-    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
-    summary_store.put("some_product", 2017, None, None, o)
-
-    loaded = summary_store.get("some_product", 2017, None, None)
-    assert loaded.dataset_count == 4321
-    assert loaded.newest_dataset_creation_time == datetime(
-        2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
-    )
-
-
 def test_srid_lookup(summary_store: SummaryStore):
-    if isinstance(summary_store, PgSummaryStore):
-        srid = summary_store._target_srid()
-        assert srid is not None
-        assert isinstance(srid, int)
+    srid = summary_store._target_srid()
+    assert srid is not None
+    assert isinstance(srid, int)
 
-        srid2 = summary_store._target_srid()
-        assert srid == srid2
+    srid2 = summary_store._target_srid()
+    assert srid == srid2
 
-        assert summary_store._get_srid_name(srid) == "EPSG:4326"
+    assert summary_store._get_srid_name(srid) == "EPSG:4326"
 
-        # Cached?
-        cache_hits = summary_store._get_srid_name.cache_info().hits
-        assert summary_store._get_srid_name(srid) == "EPSG:4326"
-        assert summary_store._get_srid_name.cache_info().hits > cache_hits
-
-
-@pytest.mark.skip("Still relevant?")
-def test_store_records_last_updated(summary_store: SummaryStore):
-    o = _overview()
-    o.summary_gen_time -= timedelta(hours=2)
-
-    assert summary_store.get_last_updated() is None
-
-    summary_store.put("some_product", 2017, None, None, o)
-    summary_store.update(
-        "some_product", None, None, None, generate_missing_children=False
-    )
-    summary_store.update(None, None, None, None, generate_missing_children=False)
-
-    assert summary_store.get_last_updated() == o.summary_gen_time
-
-    # Add another, so it's even newer...
-
-    # A new one will be generated "now", so it will be newer than the above.
-    summary_store.put("some_product", 2018, None, None, TimePeriodOverview.empty())
-    summary_store.update(
-        "some_product", None, None, None, generate_missing_children=False
-    )
-    summary_store.update(None, None, None, None, generate_missing_children=False)
-
-    assert summary_store.get_last_updated() > o.summary_gen_time
+    # Cached?
+    cache_hits = summary_store._get_srid_name.cache_info().hits
+    assert summary_store._get_srid_name(srid) == "EPSG:4326"
+    assert summary_store._get_srid_name.cache_info().hits > cache_hits

@@ -7,7 +7,7 @@ from dateutil.tz import tzutc
 
 from cubedash import _utils
 from cubedash._utils import default_utc
-from cubedash.summary import PgSummaryStore, SummaryStore, TimePeriodOverview
+from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
@@ -228,9 +228,9 @@ def _expect_values(
             ), "timeline count doesn't match dataset count"
         was_timeline_error = False
 
-        if s.dataset_count <= PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
+        if s.dataset_count <= SummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
             assert s.datasets_geojson is not None, (
-                f"With < {PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets,"
+                f"With < {SummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets,"
                 f"there should be per-dataset geojson records included."
             )
             assert (

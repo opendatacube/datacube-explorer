@@ -7,7 +7,7 @@ import structlog
 from click import echo, secho, style
 
 from cubedash.logs import init_logging
-from cubedash.summary import PgSummaryStore, SummaryStore, TimePeriodOverview
+from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
@@ -51,7 +51,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
         application_name=f"cubedash.generate.{variant}",
         validate_connection=False,
     )
-    store = PgSummaryStore(index, log=log)
+    store = SummaryStore(index, log=log)
     return store
 
 

@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Type
 
 import pytest
 
 from cubedash import logs
 from cubedash.summary import SummaryStore
-from cubedash.summary._stores import PgSummaryStore
 from datacube.index import Index
 from digitalearthau.testing import factories
 
@@ -21,16 +19,11 @@ module_index = factories.index_fixture("module_db", scope="module")
 module_dea_index = factories.dea_index_fixture("module_index", scope="module")
 
 
-@pytest.fixture(scope="function", params=["db_store"])
-def summary_store(module_dea_index: Index, tmppath: Path, request) -> SummaryStore:
-    p = request.param
-    if p == "db_store":
-        store = PgSummaryStore(module_dea_index)
-        store.drop_all()
-        store.init()
-    else:
-        raise ValueError(f"Unknown store type {repr(p)}")
-
+@pytest.fixture(scope="function")
+def summary_store(module_dea_index: Index) -> SummaryStore:
+    store = SummaryStore(module_dea_index)
+    store.drop_all()
+    store.init()
     return store
 
 

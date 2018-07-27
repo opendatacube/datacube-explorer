@@ -3,12 +3,13 @@ from __future__ import absolute_import
 import functools
 from collections import Counter
 from datetime import date, datetime
-from typing import Optional
+from typing import Iterable, Optional, Tuple
 
 import dateutil.parser
 import pandas as pd
 import structlog
 from cachetools.func import lru_cache
+from dateutil import tz
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import DDL, Integer, String, and_, bindparam, func, select
@@ -18,27 +19,40 @@ from sqlalchemy.engine import Engine
 
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
-from cubedash.summary import _extents, _schema
+from cubedash.summary import TimePeriodOverview, _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
     SPATIAL_REF_SYS,
     TIME_OVERVIEW,
 )
-from cubedash.summary._summarise import SummaryStore, TimePeriodOverview
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
 from datacube.model import DatasetType, Range
 
-_OUTPUT_CRS_EPSG = 4326
-
 _LOG = structlog.get_logger()
 
 
-class PgSummaryStore(SummaryStore):
+class SummaryStore:
     def __init__(self, index: Index, log=_LOG) -> None:
-        super().__init__(index, log)
+        self.index = index
+        self.log = log
+        self._update_listeners = []
+
         self._engine: Engine = alchemy_engine(index)
+
+    # Group datasets using this timezone when counting them.
+    # Aus data comes from Alice Springs
+    GROUPING_TIME_ZONE_NAME = "Australia/Darwin"
+    # cache
+    GROUPING_TIME_ZONE_TZ = tz.gettz(GROUPING_TIME_ZONE_NAME)
+
+    OUTPUT_CRS_EPSG_CODE = 4326
+
+    # If there's fewer than this many datasets, display them as individual polygons in
+    # the browser. Too many can bog down the browser's performance.
+    # (Otherwise dataset footprint is shown as a single composite polygon)
+    MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
 
     def init(self, init_products=True):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
@@ -48,7 +62,17 @@ class PgSummaryStore(SummaryStore):
                 self.init_product(product)
 
     def init_product(self, product: DatasetType):
-        _extents.refresh_product(self.index, product)
+        added_count = _extents.refresh_product(self.index, product)
+        earliest, latest = self._engine.execute(
+            select(
+                (
+                    func.min(DATASET_SPATIAL.c.center_time),
+                    func.max(DATASET_SPATIAL.c.center_time),
+                )
+            ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
+        ).fetchone()
+        self._set_product_extent(product.name, earliest, latest)
+        return added_count
 
     def drop_all(self):
         """
@@ -69,7 +93,7 @@ class PgSummaryStore(SummaryStore):
         return self._engine.execute(
             select([SPATIAL_REF_SYS.c.srid])
             .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
-            .where(SPATIAL_REF_SYS.c.auth_srid == _OUTPUT_CRS_EPSG)
+            .where(SPATIAL_REF_SYS.c.auth_srid == self.OUTPUT_CRS_EPSG_CODE)
         ).scalar()
 
     @lru_cache()
@@ -138,6 +162,7 @@ class PgSummaryStore(SummaryStore):
 
         Default implementation uses the pure index api.
         """
+        print(f"Gen {product_name}, {repr(time)}")
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
@@ -280,10 +305,15 @@ class PgSummaryStore(SummaryStore):
 
         start_day, period = self._start_day(year, month, day)
 
+        p = self._get_product(product_name)
+        if not p:
+            return None
+
+        product_id, _, _ = p
         res = self._engine.execute(
-            TIME_OVERVIEW.join(PRODUCT).select(
+            select([TIME_OVERVIEW]).where(
                 and_(
-                    PRODUCT.c.name == product_name,
+                    TIME_OVERVIEW.c.product_ref == product_id,
                     TIME_OVERVIEW.c.start_day == start_day,
                     TIME_OVERVIEW.c.period_type == period,
                 )
@@ -376,28 +406,31 @@ class PgSummaryStore(SummaryStore):
         )
 
     @functools.lru_cache()
-    def _get_product_id(self, name: str):
-        while True:
-            # Select product, otherwise insert.
+    def _get_product(self, name: str) -> Optional[Tuple[int, datetime, datetime]]:
+        row = self._engine.execute(
+            select(
+                [PRODUCT.c.id, PRODUCT.c.time_earliest, PRODUCT.c.time_latest]
+            ).where(PRODUCT.c.name == name)
+        ).fetchone()
+        if row:
+            return tuple(row)
+        else:
+            return None
 
-            row = self._engine.execute(
-                select([PRODUCT.c.id]).where(PRODUCT.c.name == name)
-            ).fetchone()
+    def _set_product_extent(self, name, time_earliest, time_latest):
+        # This insert may conflict if someone else added it in parallel,
+        # hence the loop to select again.
+        row = self._engine.execute(
+            postgres.insert(PRODUCT)
+            .on_conflict_do_update(
+                index_elements=["name"],
+                set_=dict(time_earliest=time_earliest, time_latest=time_latest),
+            )
+            .values(name=name, time_earliest=time_earliest, time_latest=time_latest)
+        ).inserted_primary_key
+        return row[0]
 
-            if row:
-                return row[0]
-
-            # This insert may conflict if someone else added it in parallel,
-            # hence the loop to select again.
-            row = self._engine.execute(
-                postgres.insert(PRODUCT)
-                .on_conflict_do_nothing(index_elements=["name"])
-                .values(name=name)
-            ).inserted_primary_key
-            if row:
-                return row[0]
-
-    def put(
+    def _put(
         self,
         product_name: Optional[str],
         year: Optional[int],
@@ -406,7 +439,7 @@ class PgSummaryStore(SummaryStore):
         summary: TimePeriodOverview,
     ):
 
-        product_id = self._get_product_id(product_name) if product_name else None
+        product_id, _, _ = self._get_product(product_name) if product_name else None
         start_day, period = self._start_day(year, month, day)
         row = self._summary_to_row(summary)
         self._engine.execute(
@@ -424,6 +457,115 @@ class PgSummaryStore(SummaryStore):
                 product_ref=product_id, start_day=start_day, period_type=period, **row
             )
         )
+
+    def has(
+        self,
+        product_name: Optional[str],
+        year: Optional[int],
+        month: Optional[int],
+        day: Optional[int],
+    ) -> bool:
+        return self.get(product_name, year, month, day) is not None
+
+    def get_or_update(
+        self,
+        product_name: Optional[str],
+        year: Optional[int],
+        month: Optional[int],
+        day: Optional[int],
+    ):
+        """
+        Get a cached summary if exists, otherwise generate one
+
+        Note that generating one can be *extremely* slow.
+        """
+        summary = self.get(product_name, year, month, day)
+        if summary:
+            return summary
+        else:
+            summary = self.update(product_name, year, month, day)
+            return summary
+
+    def update(
+        self,
+        product_name: Optional[str],
+        year: Optional[int],
+        month: Optional[int],
+        day: Optional[int],
+        generate_missing_children=True,
+    ):
+        """Update the given summary and return the new one"""
+        p = self._get_product(product_name)
+        if not p:
+            raise ValueError("Unknown product (initialised?)")
+        id_, min_time, max_time = p
+
+        get_child = self.get_or_update if generate_missing_children else self.get
+
+        if year and month and day:
+            # Don't store days, they're quick.
+            return self.calculate_summary(
+                product_name, _utils.as_time_range(year, month, day)
+            )
+        elif year and month:
+            summary = self.calculate_summary(
+                product_name, _utils.as_time_range(year, month)
+            )
+        elif year:
+            summary = TimePeriodOverview.add_periods(
+                get_child(product_name, year, month_, None) for month_ in range(1, 13)
+            )
+        elif product_name:
+            summary = TimePeriodOverview.add_periods(
+                get_child(product_name, year_, None, None)
+                for year_ in range(min_time.year, max_time.year + 1)
+            )
+        else:
+            summary = TimePeriodOverview.add_periods(
+                get_child(product.name, None, None, None)
+                for product in self.index.products.get_all()
+            )
+
+        self._do_put(product_name, year, month, day, summary)
+
+        for listener in self._update_listeners:
+            listener(product_name, year, month, day, summary)
+        return summary
+
+    def _do_put(self, product_name, year, month, day, summary):
+
+        # Don't bother storing empty periods that are outside of the existing range.
+        # This doesn't have to be exact (note that someone may update in parallel too).
+        if summary.dataset_count == 0 and (year or month):
+            product_extent = self.get(product_name, None, None, None)
+            if (not product_extent) or (not product_extent.time_range):
+                return
+
+            start, end = product_extent.time_range
+            if datetime(year, month or 1, day or 1) < start:
+                return
+            if datetime(year, month or 12, day or 28) > end:
+                return
+
+        self._put(product_name, year, month, day, summary)
+
+    def list_complete_products(self) -> Iterable[str]:
+        """
+        List products with summaries available.
+        """
+        all_products = self.index.datasets.types.get_all()
+        existing_products = sorted(
+            (
+                product.name
+                for product in all_products
+                if self.has(product.name, None, None, None)
+            )
+        )
+        return existing_products
+
+    def get_last_updated(self) -> Optional[datetime]:
+        """Time of last update, if known"""
+        return None
 
 
 def _safe_read_date(d):

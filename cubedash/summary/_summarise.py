@@ -4,20 +4,17 @@ import dataclasses
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
-import pandas as pd
 import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-from dateutil import tz
 from shapely.geometry.base import BaseGeometry
 
 from cubedash import _utils
 from datacube import utils as dc_utils
-from datacube.index import Index
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, Range
 
 _LOG = structlog.get_logger()
 
@@ -164,171 +161,6 @@ class TimePeriodOverview:
                 period = "year"
 
         return counter, period
-
-
-class SummaryStore:
-    def __init__(self, index: Index, log=_LOG) -> None:
-        self.index = index
-        self.log = log
-        self._update_listeners = []
-
-    # Group datasets using this timezone when counting them.
-    # Aus data comes from Alice Springs
-    GROUPING_TIME_ZONE_NAME = "Australia/Darwin"
-    # cache
-    GROUPING_TIME_ZONE_TZ = tz.gettz(GROUPING_TIME_ZONE_NAME)
-
-    # If there's fewer than this many datasets, display them as individual polygons in
-    # the browser. Too many can bog down the browser's performance.
-    # (Otherwise dataset footprint is shown as a single composite polygon)
-    MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
-
-    def init(self, init_products=True):
-        """
-        Create the store if it doesn't already exist
-        """
-        # Default: nothing to set up.
-        pass
-
-    def init_product(self, product: DatasetType):
-        """
-        Build a product extent cache.
-
-        (Can be rerun to add any newly added datasets.)
-        """
-        pass
-
-    def get(
-        self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
-    ) -> Optional[TimePeriodOverview]:
-        """Get a cached summary if one exists. Should always return quickly."""
-        raise NotImplementedError("Get summary")
-
-    def put(
-        self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
-        summary: TimePeriodOverview,
-    ):
-        """Put a summary in the cache, overridding any existing"""
-        raise NotImplementedError("Write summary")
-
-    def has(
-        self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
-    ) -> bool:
-        return self.get(product_name, year, month, day) is not None
-
-    def get_or_update(
-        self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
-    ):
-        """
-        Get a cached summary if exists, otherwise generate one
-
-        Note that generating one can be *extremely* slow.
-        """
-        summary = self.get(product_name, year, month, day)
-        if summary:
-            return summary
-        else:
-            summary = self.update(product_name, year, month, day)
-            return summary
-
-    def update(
-        self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
-        generate_missing_children=True,
-    ):
-        """Update the given summary and return the new one"""
-
-        get_child = self.get_or_update if generate_missing_children else self.get
-
-        if year and month and day:
-            # Don't store days, they're quick.
-            return self.calculate_summary(
-                product_name, _utils.as_time_range(year, month, day)
-            )
-        elif year and month:
-            summary = self.calculate_summary(
-                product_name, _utils.as_time_range(year, month)
-            )
-        elif year:
-            summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year, month_, None) for month_ in range(1, 13)
-            )
-        elif product_name:
-            summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year_, None, None)
-                for year_ in range(1985, datetime.today().year + 1)
-            )
-        else:
-            summary = TimePeriodOverview.add_periods(
-                get_child(product.name, None, None, None)
-                for product in self.index.products.get_all()
-            )
-
-        self._do_put(product_name, year, month, day, summary)
-
-        for listener in self._update_listeners:
-            listener(product_name, year, month, day, summary)
-        return summary
-
-    def _do_put(self, product_name, year, month, day, summary):
-
-        # Don't bother storing empty periods that are outside of the existing range.
-        # This doesn't have to be exact (note that someone may update in parallel too).
-        if summary.dataset_count == 0 and (year or month):
-            product_extent = self.get(product_name, None, None, None)
-            if (not product_extent) or (not product_extent.time_range):
-                return
-
-            start, end = product_extent.time_range
-            if datetime(year, month or 1, day or 1) < start:
-                return
-            if datetime(year, month or 12, day or 28) > end:
-                return
-
-        self.put(product_name, year, month, day, summary)
-
-    def list_complete_products(self) -> Iterable[str]:
-        """
-        List products with summaries available.
-        """
-        all_products = self.index.datasets.types.get_all()
-        existing_products = sorted(
-            (
-                product.name
-                for product in all_products
-                if self.has(product.name, None, None, None)
-            )
-        )
-        return existing_products
-
-    def get_last_updated(self) -> Optional[datetime]:
-        """Time of last update, if known"""
-        return None
-
-    def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
-        """
-        Create a summary of the given product/time range.
-        """
-        raise NotImplementedError("Summary calc")
 
 
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
