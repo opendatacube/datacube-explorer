@@ -233,7 +233,10 @@ def _expect_values(
                 f"With < {PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets,"
                 f"there should be per-dataset geojson records included."
             )
-            assert len(s.datasets_geojson["geometries"]) == s.dataset_count, (
+            assert (
+                "features" in s.datasets_geojson
+            ), "dataset geojson doesn't appear to be a valid FeatureCollection?"
+            assert len(s.datasets_geojson["features"]) == s.dataset_count, (
                 "Number of dataset geojson " "records should match dataset count."
             )
 
