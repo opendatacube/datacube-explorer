@@ -13,6 +13,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     SmallInteger,
@@ -92,11 +93,12 @@ DATASET_SPATIAL = Table(
         comment="Cubedash product list " "(corresponding to datacube dataset_type)",
         nullable=False,
     ),
-    Column("time", TSTZRANGE),
+    Column("center_time", DateTime(timezone=True)),
     Column("footprint", Geometry(spatial_index=False)),
     Column("grid_point", PgGridCell),
     # When was the dataset created? creation_time if it has one, otherwise datacube index time.
     Column("creation_time", DateTime(timezone=True), nullable=False),
+    Index("dataset_type_ref", "center_time"),
 )
 
 PRODUCT = Table(

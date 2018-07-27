@@ -222,7 +222,7 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
             [
                 "id",
                 "dataset_type_ref",
-                "time",
+                "center_time",
                 "footprint",
                 "grid_point",
                 "creation_time",
@@ -249,13 +249,15 @@ def _select_dataset_extent_query(dt: DatasetType):
 
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
-
+    time = md_type.dataset_fields["time"].alchemy_expression
     return (
         select(
             [
                 DATASET.c.id,
                 DATASET.c.dataset_type_ref,
-                (md_type.dataset_fields["time"].alchemy_expression).label("time"),
+                (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+                    "center_time"
+                ),
                 (
                     null() if footrprint_expression is None else footrprint_expression
                 ).label("footprint"),

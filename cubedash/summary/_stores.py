@@ -109,8 +109,8 @@ class PgSummaryStore(SummaryStore):
                                     "id",
                                     DATASET_SPATIAL.c.id,
                                     # TODO: dataset label?
-                                    "start_time",
-                                    func.lower(DATASET_SPATIAL.c.time),
+                                    "center_time",
+                                    DATASET_SPATIAL.c.center_time,
                                 ),
                             )
                         ),
@@ -136,8 +136,8 @@ class PgSummaryStore(SummaryStore):
         begin_time = self._with_default_tz(time.begin)
         end_time = self._with_default_tz(time.end)
         where_clause = and_(
-            DATASET_SPATIAL.c.time.overlaps(
-                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE)
+            func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                DATASET_SPATIAL.c.center_time
             ),
             DATASET_SPATIAL.c.dataset_type_ref
             == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name),
@@ -202,9 +202,9 @@ class PgSummaryStore(SummaryStore):
                             [
                                 func.date_trunc(
                                     "day",
-                                    func.lower(DATASET_SPATIAL.c.time).op(
-                                        "AT TIME ZONE"
-                                    )(self.GROUPING_TIME_ZONE_NAME),
+                                    DATASET_SPATIAL.c.center_time.op("AT TIME ZONE")(
+                                        self.GROUPING_TIME_ZONE_NAME
+                                    ),
                                 ).label("day"),
                                 func.count(),
                             ]
@@ -213,12 +213,7 @@ class PgSummaryStore(SummaryStore):
                             and_(
                                 func.tstzrange(
                                     begin_time, end_time, type_=TSTZRANGE
-                                ).contains(
-                                    func.lower(
-                                        DATASET_SPATIAL.c.time,
-                                        type_=DateTime(timezone=True),
-                                    )
-                                ),
+                                ).contains(DATASET_SPATIAL.c.center_time),
                                 DATASET_SPATIAL.c.dataset_type_ref
                                 == select([DATASET_TYPE.c.id]).where(
                                     DATASET_TYPE.c.name == product_name
