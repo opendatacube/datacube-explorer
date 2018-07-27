@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable, Tuple
 from typing import Optional
 
-from cubedash.summary import TimePeriodOverview, PgSummaryStore
+from cubedash.summary import TimePeriodOverview, SummaryStore
 from datacube.index import Index
 from datacube.index import index_connect
 from datacube.model import DatasetType
@@ -30,7 +30,7 @@ index: Index = index_connect(application_name=NAME, validate_connection=False)
 SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
 
 # TODO: Proper configuration?
-DEFAULT_STORE = PgSummaryStore(index)
+DEFAULT_STORE = SummaryStore(index)
 # Which product to show by default when loading '/'. Picks the first available.
 DEFAULT_START_PAGE_PRODUCTS = ('ls7_nbar_scene', 'ls5_nbar_scene')
 

@@ -67,18 +67,18 @@ SPATIAL_REF_SYS = Table(
 DATASET_SPATIAL = Table(
     'dataset_spatial',
     METADATA,
-    # Note that we deliberately don't foreign-key to datacube tables: they may
-    # be in a separate database.
     Column(
         'id',
         postgres.UUID(as_uuid=True),
         primary_key=True,
         comment='Dataset ID',
     ),
+    # Note that we deliberately don't foreign-key to datacube tables:
+    # - We don't want to add an external dependency on datacube core (breaking, eg, product deletion scripts)
+    # - they may be in a separate database.
     Column(
         'dataset_type_ref',
-        None,
-        ForeignKey(DATASET_TYPE.c.id),
+        SmallInteger,
         comment='Cubedash product list '
                 '(corresponding to datacube dataset_type)',
         nullable=False,
@@ -89,14 +89,19 @@ DATASET_SPATIAL = Table(
     # When was the dataset created? creation_time if it has one, otherwise datacube index time.
     Column('creation_time', DateTime(timezone=True), nullable=False),
 
-    Index('dataset_type_ref', 'center_time'),
+    Index('product_ref', 'center_time'),
 )
 
+# Note that we deliberately don't foreign-key to datacube tables:
+# - We don't want to add an external dependency on datacube core (breaking, eg, product deletion scripts)
+# - they may be in a separate database.
 PRODUCT = Table(
     'product', METADATA,
-
-    Column('id', SmallInteger, primary_key=True, autoincrement=True),
+    Column('id', SmallInteger, primary_key=True),
     Column('name', String, unique=True, nullable=False),
+
+    Column('time_earliest', DateTime(timezone=True)),
+    Column('time_latest', DateTime(timezone=True)),
 )
 
 TIME_OVERVIEW = Table(
@@ -180,7 +185,6 @@ def create(target, connection, **kw):
             spatial_ref_sys_auth_name_auth_srid_idx
         on spatial_ref_sys(auth_name, auth_srid);
     """)
-
 
 
 def pg_exists(conn, name):

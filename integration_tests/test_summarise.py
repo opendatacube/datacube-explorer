@@ -7,7 +7,7 @@ from pathlib import Path
 
 from cubedash import _utils
 from cubedash._utils import default_utc
-from cubedash.summary import TimePeriodOverview, PgSummaryStore, SummaryStore
+from cubedash.summary import TimePeriodOverview, SummaryStore
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
@@ -239,8 +239,8 @@ def _expect_values(s: TimePeriodOverview,
             )
         was_timeline_error = False
 
-        if s.dataset_count <= PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
-            assert s.datasets_geojson is not None, f"With < {PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets," \
+        if s.dataset_count <= SummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
+            assert s.datasets_geojson is not None, f"With < {SummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets," \
                                                    f"there should be per-dataset geojson records included."
             assert 'features' in s.datasets_geojson, "dataset geojson doesn't appear to be a valid FeatureCollection?"
             assert len(s.datasets_geojson['features']) == s.dataset_count, "Number of dataset geojson " \
