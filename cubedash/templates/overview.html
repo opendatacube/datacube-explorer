@@ -216,7 +216,7 @@
                     };
                     datasetInfoControl.update = function (props) {
                         if (props) {
-                            this._div.innerHTML = '<div><strong>' + props.label + '</strong></div>' + props.center_time;
+                            this._div.innerHTML = '<div><strong>' + props.grid_point.replace(',', ', ') + '</strong></div>' + props.center_time;
                         } else {
                             this._div.innerHTML = '';
                         }

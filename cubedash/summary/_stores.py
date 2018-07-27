@@ -11,7 +11,7 @@ import structlog
 from cachetools.func import lru_cache
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, DateTime, Integer, and_, bindparam, func, select
+from sqlalchemy import DDL, Integer, String, and_, bindparam, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
@@ -113,6 +113,10 @@ class PgSummaryStore(SummaryStore):
                                     "id",
                                     DATASET_SPATIAL.c.id,
                                     # TODO: dataset label?
+                                    "grid_point",
+                                    DATASET_SPATIAL.c.grid_point.cast(String),
+                                    "creation_time",
+                                    DATASET_SPATIAL.c.creation_time,
                                     "center_time",
                                     DATASET_SPATIAL.c.center_time,
                                 ),
