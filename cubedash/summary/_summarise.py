@@ -17,7 +17,7 @@ from shapely.geometry.base import BaseGeometry
 from cubedash import _utils
 from datacube import utils as dc_utils
 from datacube.index import Index
-from datacube.model import Dataset, Range
+from datacube.model import Dataset, DatasetType, Range
 
 _LOG = structlog.get_logger()
 
@@ -60,7 +60,7 @@ class TimePeriodOverview:
     def add_periods(
         cls, periods: Iterable["TimePeriodOverview"], max_individual_datasets=800
     ):
-        periods = [p for p in periods if p.dataset_count > 0]
+        periods = [p for p in periods if p is not None and p.dataset_count > 0]
         counter = Counter()
         period = None
 
@@ -170,8 +170,8 @@ class TimePeriodOverview:
 
 class SummaryStore:
     def __init__(self, index: Index, log=_LOG) -> None:
-        self._index = index
-        self._log = log
+        self.index = index
+        self.log = log
         self._update_listeners = []
 
     # Group datasets using this timezone when counting them.
@@ -190,6 +190,9 @@ class SummaryStore:
         Create the store if it doesn't already exist
         """
         # Default: nothing to set up.
+        pass
+
+    def init_product(self, product: DatasetType):
         pass
 
     def get(
@@ -251,6 +254,8 @@ class SummaryStore:
     ):
         """Update the given summary and return the new one"""
 
+        get_child = self.get_or_update if generate_missing_children else self.get
+
         if year and month and day:
             # Don't store days, they're quick.
             return self.calculate_summary(
@@ -262,18 +267,17 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                self.get_or_update(product_name, year, month_, None)
-                for month_ in range(1, 13)
+                get_child(product_name, year, month_, None) for month_ in range(1, 13)
             )
         elif product_name:
             summary = TimePeriodOverview.add_periods(
-                self.get_or_update(product_name, year_, None, None)
+                get_child(product_name, year_, None, None)
                 for year_ in range(1985, datetime.today().year + 1)
             )
         else:
             summary = TimePeriodOverview.add_periods(
-                self.get_or_update(product.name, None, None, None)
-                for product in self._index.products.get_all()
+                get_child(product.name, None, None, None)
+                for product in self.index.products.get_all()
             )
 
         self._do_put(product_name, year, month, day, summary)
@@ -303,7 +307,7 @@ class SummaryStore:
         """
         List products with summaries available.
         """
-        all_products = self._index.datasets.types.get_all()
+        all_products = self.index.datasets.types.get_all()
         existing_products = sorted(
             (
                 product.name

@@ -28,7 +28,7 @@ from cubedash.summary._schema import (
 from cubedash.summary._summarise import SummaryStore, TimePeriodOverview
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
-from datacube.model import Range
+from datacube.model import DatasetType, Range
 
 _OUTPUT_CRS_EPSG = 4326
 
@@ -42,8 +42,9 @@ class PgSummaryStore(SummaryStore):
 
     def init(self):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
-        for product in self._index.products.get_all():
-            _extents.refresh_product(self._index, product)
+
+    def init_product(self, product: DatasetType):
+        _extents.refresh_product(self.index, product)
 
     def drop_all(self):
         """
@@ -129,7 +130,7 @@ class PgSummaryStore(SummaryStore):
 
         Default implementation uses the pure index api.
         """
-        log = self._log.bind(product_name=product_name, time=time)
+        log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
         begin_time = self._with_default_tz(time.begin)
