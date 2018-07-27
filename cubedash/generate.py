@@ -41,6 +41,8 @@ def generate_report(item):
     except Exception:
         log.exception("generate.product.error", exc_info=True)
         return product_name, None
+    finally:
+        store.index.close()
 
 
 def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
