@@ -166,8 +166,7 @@ class SummaryStore:
         end_time = self._with_default_tz(time.end)
         where_clause = and_(
             func.tstzrange(begin_time, end_time, '[]', type_=TSTZRANGE, ).contains(DATASET_SPATIAL.c.center_time),
-            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(
-                DATASET_TYPE.c.name == product_name)
+            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name)
         )
         select_by_srid = select((
             func.ST_SRID(DATASET_SPATIAL.c.footprint).label('srid'),
@@ -215,15 +214,7 @@ class SummaryStore:
                             DATASET_SPATIAL.c.center_time.op('AT TIME ZONE')(self.GROUPING_TIME_ZONE_NAME)
                         ).label('day'),
                         func.count()
-                    ]).where(and_(
-                        func.tstzrange(
-                            begin_time, end_time, type_=TSTZRANGE,
-                        ).contains(
-                            DATASET_SPATIAL.c.center_time
-                        ),
-                        DATASET_SPATIAL.c.dataset_type_ref ==
-                        select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name)
-                    )).group_by('day')
+                    ]).where(where_clause).group_by('day')
                 )
             })
         )
