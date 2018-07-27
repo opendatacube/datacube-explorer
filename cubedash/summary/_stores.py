@@ -11,7 +11,7 @@ import structlog
 from cachetools.func import lru_cache
 from geoalchemy2 import shape as geo_shape, Geometry
 from sqlalchemy import DDL, \
-    and_, bindparam, Integer, DateTime
+    and_, bindparam, Integer, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
@@ -109,6 +109,8 @@ class PgSummaryStore(SummaryStore):
                             'properties', func.jsonb_build_object(
                                 'id', DATASET_SPATIAL.c.id,
                                 # TODO: dataset label?
+                                'grid_point', DATASET_SPATIAL.c.grid_point.cast(String),
+                                'creation_time', DATASET_SPATIAL.c.creation_time,
                                 'center_time', DATASET_SPATIAL.c.center_time,
                             ),
                         )
