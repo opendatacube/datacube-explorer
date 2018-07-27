@@ -242,17 +242,7 @@ class SummaryStore:
                                 func.count(),
                             ]
                         )
-                        .where(
-                            and_(
-                                func.tstzrange(
-                                    begin_time, end_time, type_=TSTZRANGE
-                                ).contains(DATASET_SPATIAL.c.center_time),
-                                DATASET_SPATIAL.c.dataset_type_ref
-                                == select([DATASET_TYPE.c.id]).where(
-                                    DATASET_TYPE.c.name == product_name
-                                ),
-                            )
-                        )
+                        .where(where_clause)
                         .group_by("day")
                     )
                 }
