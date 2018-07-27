@@ -242,7 +242,8 @@ def _expect_values(s: TimePeriodOverview,
         if s.dataset_count <= PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY:
             assert s.datasets_geojson is not None, f"With < {PgSummaryStore.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY} datasets," \
                                                    f"there should be per-dataset geojson records included."
-            assert len(s.datasets_geojson['geometries']) == s.dataset_count, "Number of dataset geojson " \
+            assert 'features' in s.datasets_geojson, "dataset geojson doesn't appear to be a valid FeatureCollection?"
+            assert len(s.datasets_geojson['features']) == s.dataset_count, "Number of dataset geojson " \
                                                                            "records should match dataset count."
 
     except AssertionError as a:
