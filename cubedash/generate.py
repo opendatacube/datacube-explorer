@@ -67,7 +67,8 @@ def run_generation(
     failures = 0
 
     echo("Initialising store...", err=True, nl=False)
-    store.init()
+    # We don't init products, as we'll do them individually in the workers below.
+    store.init(init_products=False)
     secho("done", fg="green", err=True)
 
     echo("Generating product summaries...", err=True)

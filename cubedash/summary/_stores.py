@@ -40,8 +40,12 @@ class PgSummaryStore(SummaryStore):
         super().__init__(index, log)
         self._engine: Engine = alchemy_engine(index)
 
-    def init(self):
+    def init(self, init_products=True):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
+        if init_products:
+            for product in self.index.products.get_all():
+                _LOG.debug("init.product", product_name=product.name)
+                self.init_product(product)
 
     def init_product(self, product: DatasetType):
         _extents.refresh_product(self.index, product)
