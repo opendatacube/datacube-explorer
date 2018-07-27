@@ -175,7 +175,7 @@ class SummaryStore:
     # (Otherwise dataset footprint is shown as a single composite polygon)
     MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
 
-    def init(self):
+    def init(self, init_products=True):
         """
         Create the store if it doesn't already exist
         """
@@ -183,6 +183,11 @@ class SummaryStore:
         pass
 
     def init_product(self, product: DatasetType):
+        """
+        Build a product extent cache.
+
+        (Can be rerun to add any newly added datasets.)
+        """
         pass
 
     def get(self,
