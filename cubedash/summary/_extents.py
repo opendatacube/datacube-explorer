@@ -177,9 +177,9 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
                         SPATIAL_REF_SYS.c.auth_name == 'EPSG'
                     ).where(
                         SPATIAL_REF_SYS.c.auth_srid == (
-                                '283' + func.abs(
-                            doc[(projection_offset + ['zone'])].astext.cast(Integer)
-                        )
+                            '283' + func.abs(
+                                doc[(projection_offset + ['zone'])].astext.cast(Integer)
+                            )
                         ).cast(Integer)
                     ).as_scalar()
                 )
@@ -329,8 +329,6 @@ def print_sample_dataset(*product_names: str):
                 _select_dataset_extent_query(product).limit(1)
             ).fetchone()
             print(_as_json(dict(res)))
-
-            refresh_product(index, product)
 
 
 if __name__ == '__main__':
