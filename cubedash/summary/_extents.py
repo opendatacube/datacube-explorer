@@ -177,9 +177,9 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
                         SPATIAL_REF_SYS.c.auth_name == 'EPSG'
                     ).where(
                         SPATIAL_REF_SYS.c.auth_srid == (
-                            '283' + func.abs(
-                                doc[(projection_offset + ['zone'])].astext.cast(Integer)
-                            )
+                                '283' + func.abs(
+                            doc[(projection_offset + ['zone'])].astext.cast(Integer)
+                        )
                         ).cast(Integer)
                     ).as_scalar()
                 )
@@ -211,10 +211,18 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
         index_elements=['id']
     )
 
-    _LOG.debug('spatial_insert_query', product_name=product.name,
-               query_sql=as_sql(query))
-
-    return engine.execute(query).rowcount
+    _LOG.debug(
+        'spatial_insert_query.start',
+        product_name=product.name,
+        query_sql=as_sql(query),
+    )
+    inserted = engine.execute(query).rowcount
+    _LOG.debug(
+        'spatial_insert_query.end',
+        product_name=product.name,
+        inserted=inserted
+    )
+    return inserted
 
 
 def _select_dataset_extent_query(dt: DatasetType):
@@ -238,9 +246,7 @@ def _select_dataset_extent_query(dt: DatasetType):
         ).label('footprint'),
         _grid_point_fields(dt).label('grid_point'),
         _dataset_creation_expression(md_type).label('creation_time'),
-    ]).select_from(
-        DATASET
-    ).where(
+    ]).where(
         DATASET.c.dataset_type_ref == product_ref
     ).where(
         DATASET.c.archived == None
@@ -314,19 +320,20 @@ def _as_json(obj):
     return json.dumps(obj, indent=4, default=fallback)
 
 
-DEBUG = False
-
-
-def main():
+def print_sample_dataset(*product_names: str):
     with Datacube(env='clone') as dc:
-        products = [
-            p for p in dc.index.products.get_all()
-            if p.name.startswith(sys.argv[1])
-        ]
+        index = dc.index
+        for product_name in product_names:
+            product = index.products.get_by_name(product_name)
+            res = alchemy_engine(index).execute(
+                _select_dataset_extent_query(product).limit(1)
+            ).fetchone()
+            print(_as_json(dict(res)))
 
-        # Sample one of each product. Useful to find errors immediately.
-        # Populate whole table
+            refresh_product(index, product)
 
 
 if __name__ == '__main__':
-    main()
+    print_sample_dataset(
+        *(sys.argv[1:] or ['ls8_nbar_scene', 'ls8_nbar_albers'])
+    )
