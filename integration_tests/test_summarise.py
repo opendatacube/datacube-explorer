@@ -234,6 +234,9 @@ def _expect_values(s: TimePeriodOverview,
                 "wrong timeline entry count"
             )
 
+            assert sum(s.grid_dataset_counts.values()) == s.dataset_count, (
+                "grid count doesn't match dataset count"
+            )
             assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
                 "timeline count doesn't match dataset count"
             )
