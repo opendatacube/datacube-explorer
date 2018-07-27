@@ -21,7 +21,7 @@ _LOG = structlog.get_logger()
 
 # An acceptable use of x/y names.
 # pylint: disable=invalid-name
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class GridCell(object):
     x: float
     y: float
@@ -32,6 +32,7 @@ class TimePeriodOverview:
     dataset_count: int
 
     timeline_dataset_counts: Counter
+    grid_dataset_counts: Counter
 
     # GeoJSON FeatureCollection dict. But only when there's a small number of them.
     datasets_geojson: Optional[Dict]
@@ -58,17 +59,22 @@ class TimePeriodOverview:
         cls, periods: Iterable["TimePeriodOverview"], max_individual_datasets=800
     ):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
-        counter = Counter()
         period = None
 
         if not periods:
             return TimePeriodOverview.empty()
 
+        timeline_counter = Counter()
         for p in periods:
-            counter.update(p.timeline_dataset_counts)
+            timeline_counter.update(p.timeline_dataset_counts)
             period = p.timeline_period
+        timeline_counter, period = cls._group_counter_if_needed(
+            timeline_counter, period
+        )
 
-        counter, period = cls._group_counter_if_needed(counter, period)
+        grid_counter = Counter()
+        for p in periods:
+            grid_counter.update(p.grid_dataset_counts)
 
         with_valid_geometries = [
             p
@@ -109,8 +115,9 @@ class TimePeriodOverview:
 
         return TimePeriodOverview(
             dataset_count=total_datasets,
-            timeline_dataset_counts=counter,
+            timeline_dataset_counts=timeline_counter,
             timeline_period=period,
+            grid_dataset_counts=grid_counter,
             datasets_geojson=all_datasets_geojson,
             time_range=Range(
                 min(r.time_range.begin for r in periods),
@@ -143,7 +150,9 @@ class TimePeriodOverview:
 
     @staticmethod
     def empty():
-        return TimePeriodOverview(0, None, None, None, None, None, None, None, None)
+        return TimePeriodOverview(
+            0, None, None, None, None, None, None, None, None, None
+        )
 
     @staticmethod
     def _group_counter_if_needed(counter, period):

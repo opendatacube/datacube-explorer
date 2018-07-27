@@ -249,6 +249,19 @@ class SummaryStore:
             )
         )
 
+        grid_counts = Counter(
+            {
+                item: count
+                for item, count in self._engine.execute(
+                    select(
+                        [DATASET_SPATIAL.c.grid_point.label("grid_point"), func.count()]
+                    )
+                    .where(where_clause)
+                    .group_by("grid_point")
+                )
+            }
+        )
+
         # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
 
         # TODO: We're going to union the srid groups. Perhaps record stats per-srid?
@@ -273,6 +286,7 @@ class SummaryStore:
             time_range=time,
             # TODO
             timeline_dataset_counts=day_counts,
+            grid_dataset_counts=grid_counts,
             # TODO: filter invalid from the counts?
             footprint_count=row["dataset_count"],
             datasets_geojson=self._get_datasets_geojson(where_clause),
@@ -340,11 +354,17 @@ class SummaryStore:
             if res["timeline_dataset_start_days"]
             else None
         )
+        grid_dataset_counts = (
+            Counter(dict(zip(res["grid_dataset_grids"], res["grid_dataset_counts"])))
+            if res["grid_dataset_grids"]
+            else None
+        )
 
         return TimePeriodOverview(
             dataset_count=res["dataset_count"],
             # : Counter
             timeline_dataset_counts=timeline_dataset_counts,
+            grid_dataset_counts=grid_dataset_counts,
             # GeoJSON FeatureCollection dict. But only when there's a small number of them.
             datasets_geojson=res["datasets_geojson"],
             timeline_period=res["timeline_period"],
@@ -369,17 +389,20 @@ class SummaryStore:
     def _summary_to_row(self, summary: TimePeriodOverview) -> dict:
 
         counts = summary.timeline_dataset_counts
-        day_counts = day_values = None
+        day_counts = day_values = grid_counts = grid_values = None
         if counts:
             day_values, day_counts = zip(
                 *sorted(summary.timeline_dataset_counts.items())
             )
+            grid_values, grid_counts = zip(*sorted(summary.grid_dataset_counts.items()))
 
         begin, end = summary.time_range if summary.time_range else (None, None)
         return dict(
             dataset_count=summary.dataset_count,
             timeline_dataset_start_days=day_values,
             timeline_dataset_counts=day_counts,
+            grid_dataset_grids=grid_values,
+            grid_dataset_counts=grid_counts,
             datasets_geojson=summary.datasets_geojson,
             timeline_period=summary.timeline_period,
             time_earliest=begin,
