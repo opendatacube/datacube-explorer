@@ -8,7 +8,7 @@ from sqlalchemy import DateTime, Date
 from sqlalchemy import Enum, JSON, event, DDL, \
     CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
-    Integer, SmallInteger, MetaData
+    Integer, SmallInteger, MetaData, Index
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.types import UserDefinedType
@@ -83,11 +83,13 @@ DATASET_SPATIAL = Table(
                 '(corresponding to datacube dataset_type)',
         nullable=False,
     ),
-    Column('time', TSTZRANGE),
+    Column('center_time', DateTime(timezone=True)),
     Column('footprint', Geometry(spatial_index=False), ),
     Column('grid_point', PgGridCell),
     # When was the dataset created? creation_time if it has one, otherwise datacube index time.
     Column('creation_time', DateTime(timezone=True), nullable=False),
+
+    Index('dataset_type_ref', 'center_time'),
 )
 
 PRODUCT = Table(
