@@ -453,8 +453,11 @@ class SummaryStore:
         day: Optional[int],
         summary: TimePeriodOverview,
     ):
+        p = self._get_product(product_name)
+        if not p:
+            raise ValueError("Unknown product %r" % product_name)
+        product_id, _, _ = p
 
-        product_id, _, _ = self._get_product(product_name) if product_name else None
         start_day, period = self._start_day(year, month, day)
         row = self._summary_to_row(summary)
         self._engine.execute(

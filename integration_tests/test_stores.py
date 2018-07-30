@@ -14,8 +14,8 @@ from datacube.model import Range
 
 def _overview():
     orig = TimePeriodOverview(
-        1234,
-        Counter(
+        dataset_count=1234,
+        timeline_dataset_counts=Counter(
             [
                 datetime(2017, 1, 2, tzinfo=tz.tzutc()),
                 datetime(2017, 1, 3, tzinfo=tz.tzutc()),
@@ -23,7 +23,8 @@ def _overview():
                 datetime(2017, 1, 1, tzinfo=tz.tzutc()),
             ]
         ),
-        {},
+        grid_dataset_counts=Counter([GridCell(1, 2), GridCell(1, 2), GridCell(3, 4)]),
+        datasets_geojson=None,
         timeline_period="day",
         time_range=Range(
             datetime(2017, 1, 2, tzinfo=tz.tzutc()),
@@ -75,8 +76,34 @@ def test_srid_lookup(summary_store: SummaryStore):
     assert summary_store._get_srid_name.cache_info().hits > cache_hits
 
 
-def test_gridcell_type(summary_store: SummaryStore):
+def test_put_get_summaries(summary_store: SummaryStore):
+    """
+    Test the serialisation/deserialisation from postgres
+    """
+    o = _overview()
+    product_name = "some_product"
+    summary_store._set_product_extent(
+        product_name, datetime(2017, 1, 1), datetime(2017, 4, 1)
+    )
+    summary_store._put(product_name, 2017, None, None, o)
+    loaded = summary_store.get(product_name, 2017, None, None)
 
+    assert o is not loaded, (
+        "Store should not return the original objects " "(they may change)"
+    )
+
+    o.dataset_count = 4321
+    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+    summary_store._put(product_name, 2017, None, None, o)
+
+    loaded = summary_store.get(product_name, 2017, None, None)
+    assert loaded.dataset_count == 4321
+    assert loaded.newest_dataset_creation_time == datetime(
+        2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
+    )
+
+
+def test_gridcell_type(summary_store: SummaryStore):
     # This will both serialise and deserialise
     cell = bindparam("ourcell", type_=PgGridCell)
     row = summary_store._engine.execute(

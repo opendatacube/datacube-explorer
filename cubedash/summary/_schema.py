@@ -18,6 +18,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Table,
+    cast,
     event,
     func,
 )
@@ -64,6 +65,32 @@ class PgGridCell(UserDefinedType):
     @property
     def python_type(self):
         return GridCell
+
+
+# (ancestors are out of our control)
+# pylint: disable=too-many-ancestors
+class ArrayOfGridCell(postgres.ARRAY):
+    """
+    Workaround
+    https://bitbucket.org/zzzeek/sqlalchemy/issues/3467/array-of-enums-does-not-allow-assigning
+
+    (TODO: our usage could be more cleanly fixed with psycopg2.new_array_type(), I believe)
+    """
+
+    def bind_expression(self, bindvalue):
+        return cast(bindvalue, self)
+
+    def result_processor(self, dialect, coltype):
+        super_rp = super().result_processor(dialect, coltype)
+
+        def handle_raw_string(value):
+            inner = re.match(r'^{"(.*)"}$', value).group(1)
+            return inner.split('","')
+
+        def process(value):
+            return super_rp(handle_raw_string(value))
+
+        return process
 
 
 POSTGIS_METADATA = MetaData(schema="public")
@@ -129,7 +156,7 @@ TIME_OVERVIEW = Table(
     Column("dataset_count", Integer, nullable=False),
     Column("timeline_dataset_start_days", postgres.ARRAY(DateTime(timezone=True))),
     Column("timeline_dataset_counts", postgres.ARRAY(Integer)),
-    Column("grid_dataset_grids", postgres.ARRAY(PgGridCell)),
+    Column("grid_dataset_grids", ArrayOfGridCell(PgGridCell)),
     Column("grid_dataset_counts", postgres.ARRAY(Integer)),
     # Only when there's a small number of them.
     # GeoJSON featurecolleciton as it contains metadata per dataset (the id etc).
@@ -158,6 +185,7 @@ TIME_OVERVIEW = Table(
         name="timeline_lengths_equal",
     ),
 )
+
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
