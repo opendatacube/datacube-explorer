@@ -23,8 +23,8 @@ def generate_report(item):
     config, product_name = item
     log = _LOG.bind(product=product_name)
 
+    store = _get_store(config, product_name, log=log)
     try:
-        store = _get_store(config, product_name, log=log)
         product = store.index.products.get_by_name(product_name)
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
