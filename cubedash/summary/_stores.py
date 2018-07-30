@@ -25,6 +25,7 @@ from cubedash.summary._schema import (
     PRODUCT,
     SPATIAL_REF_SYS,
     TIME_OVERVIEW,
+    PgGridCell,
 )
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.index import Index
@@ -401,7 +402,8 @@ class SummaryStore:
             dataset_count=summary.dataset_count,
             timeline_dataset_start_days=day_values,
             timeline_dataset_counts=day_counts,
-            grid_dataset_grids=grid_values,
+            # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
+            grid_dataset_grids=func.cast(grid_values, type_=postgres.ARRAY(PgGridCell)),
             grid_dataset_counts=grid_counts,
             datasets_geojson=summary.datasets_geojson,
             timeline_period=summary.timeline_period,

@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import re
 
 from geoalchemy2 import Geometry
-from psycopg2.extensions import AsIs, adapt
 from sqlalchemy import (
     DDL,
     JSON,
@@ -23,10 +22,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.types import UserDefinedType
-
-from datacube.drivers.postgres._schema import DATASET_TYPE
 
 from ._summarise import GridCell
 
@@ -48,11 +44,12 @@ class PgGridCell(UserDefinedType):
         def process(gridcell):
             if gridcell is None:
                 return None
-            x = adapt(gridcell.x).getquoted()
-            y = adapt(gridcell.y).getquoted()
-            return AsIs("'(%s, %s)'" % (x, y))
+            return "(%s, %s)" % (gridcell.x, gridcell.y)
 
         return process
+
+    def bind_expression(self, bindvalue):
+        return bindvalue.cast(PgGridCell)
 
     def result_processor(self, dialect, coltype):
         def process(value):
@@ -60,7 +57,7 @@ class PgGridCell(UserDefinedType):
             if m:
                 return GridCell(int(m.group(1)), int(m.group(2)))
             else:
-                raise ValueError("bad grid_cell representation: %r" % value)
+                raise ValueError("bad grid_cell representation: %r, %r" % (value))
 
         return process
 
@@ -158,7 +155,6 @@ TIME_OVERVIEW = Table(
 )
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
-
 
 event.listen(
     METADATA, "before_create", DDL(f"create schema if not exists {CUBEDASH_SCHEMA}")

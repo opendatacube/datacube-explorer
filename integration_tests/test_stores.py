@@ -3,8 +3,12 @@ from datetime import datetime
 
 from dateutil import tz
 from shapely import geometry as geo
+from sqlalchemy import bindparam, select
+from sqlalchemy.dialects import postgresql as postgres
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary._schema import PgGridCell
+from cubedash.summary._summarise import GridCell
 from datacube.model import Range
 
 
@@ -69,3 +73,22 @@ def test_srid_lookup(summary_store: SummaryStore):
     cache_hits = summary_store._get_srid_name.cache_info().hits
     assert summary_store._get_srid_name(srid) == "EPSG:4326"
     assert summary_store._get_srid_name.cache_info().hits > cache_hits
+
+
+def test_gridcell_type(summary_store: SummaryStore):
+
+    # This will both serialise and deserialise
+    cell = bindparam("ourcell", type_=PgGridCell)
+    row = summary_store._engine.execute(
+        select([cell]), ourcell=GridCell(3, 4)
+    ).fetchone()
+    [cell] = row
+    assert cell == GridCell(3, 4)
+
+    # Inside an array
+    cell = bindparam("ourcells", type_=postgres.ARRAY(PgGridCell))
+    row = summary_store._engine.execute(
+        select([cell]), ourcells=[GridCell(1, 2), GridCell(3, 4)]
+    ).fetchone()
+    [cell] = row
+    assert cell == [GridCell(1, 2), GridCell(3, 4)]
