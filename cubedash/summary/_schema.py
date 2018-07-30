@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import re
 
 from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, Date
+from sqlalchemy import DateTime, Date, cast
 from sqlalchemy import Enum, JSON, event, DDL, \
     CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
@@ -51,6 +51,30 @@ class PgGridCell(UserDefinedType):
     @property
     def python_type(self):
         return GridCell
+
+
+# (ancestors are out of our control)
+# pylint: disable=too-many-ancestors
+class ArrayOfGridCell(postgres.ARRAY):
+    """
+    Workaround
+    https://bitbucket.org/zzzeek/sqlalchemy/issues/3467/array-of-enums-does-not-allow-assigning
+
+    (TODO: our usage could be more cleanly fixed with psycopg2.new_array_type(), I believe)
+    """
+    def bind_expression(self, bindvalue):
+        return cast(bindvalue, self)
+
+    def result_processor(self, dialect, coltype):
+        super_rp = super().result_processor(dialect, coltype)
+
+        def handle_raw_string(value):
+            inner = re.match(r'^{"(.*)"}$', value).group(1)
+            return inner.split('","')
+
+        def process(value):
+            return super_rp(handle_raw_string(value))
+        return process
 
 
 POSTGIS_METADATA = MetaData(schema='public')
@@ -117,7 +141,7 @@ TIME_OVERVIEW = Table(
     Column('timeline_dataset_start_days', postgres.ARRAY(DateTime(timezone=True))),
     Column('timeline_dataset_counts', postgres.ARRAY(Integer)),
 
-    Column('grid_dataset_grids', postgres.ARRAY(PgGridCell)),
+    Column('grid_dataset_grids', ArrayOfGridCell(PgGridCell)),
     Column('grid_dataset_counts', postgres.ARRAY(Integer)),
 
     # Only when there's a small number of them.
@@ -154,6 +178,7 @@ TIME_OVERVIEW = Table(
         name='timeline_lengths_equal'
     ),
 )
+
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
