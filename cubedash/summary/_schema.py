@@ -83,12 +83,13 @@ DATASET_SPATIAL = Table(
         nullable=False,
     ),
     Column('center_time', DateTime(timezone=True)),
-    Column('footprint', Geometry(spatial_index=False), ),
+    Column('footprint', Geometry(spatial_index=False)),
     Column('grid_point', PgGridCell),
     # When was the dataset created? creation_time if it has one, otherwise datacube index time.
     Column('creation_time', DateTime(timezone=True), nullable=False),
 
-    Index('product_ref', 'center_time'),
+    # Default postgres naming conventions.
+    Index("dataset_spatial_dataset_type_ref_center_time_idx", 'dataset_type_ref', 'center_time'),
 )
 
 # Note that we deliberately don't foreign-key to datacube tables:
