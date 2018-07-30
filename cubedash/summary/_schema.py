@@ -44,7 +44,7 @@ class PgGridCell(UserDefinedType):
             if m:
                 return GridCell(int(m.group(1)), int(m.group(2)))
             else:
-                raise ValueError("bad grid_cell representation: %r, %r" % (value))
+                raise ValueError("bad grid_cell representation: %r" % value)
 
         return process
 
