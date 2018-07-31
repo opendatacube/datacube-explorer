@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 
-import psycopg2
 import re
 
+import psycopg2
 from geoalchemy2 import Geometry
 from psycopg2._psycopg import AsIs
 from psycopg2.extensions import register_adapter
 from psycopg2.extras import register_composite
-from sqlalchemy import DateTime, Date, cast
-from sqlalchemy import Enum, JSON, event, DDL, \
+from sqlalchemy import DateTime, Date
+from sqlalchemy import Enum, event, DDL, \
     CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
     Integer, SmallInteger, MetaData, Index
@@ -16,7 +16,6 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.types import UserDefinedType
 
 from ._summarise import GridCell
-
 
 CUBEDASH_SCHEMA = 'cubedash'
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
@@ -41,8 +40,8 @@ class PgGridCell(UserDefinedType):
 def adapt_point(point):
     return AsIs("'(%s, %s)'::%s" % (point.x, point.y, GRIDCELL_COL_SPEC))
 
-register_adapter(GridCell, adapt_point)
 
+register_adapter(GridCell, adapt_point)
 
 POSTGIS_METADATA = MetaData(schema='public')
 SPATIAL_REF_SYS = Table(
@@ -142,7 +141,6 @@ TIME_OVERVIEW = Table(
     ),
 )
 
-
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
 event.listen(
@@ -178,8 +176,8 @@ def create(target, connection, **kw):
 
 
 class GridCellComposite(psycopg2.extras.CompositeCaster):
-     def make(self, values):
-         return GridCell(*values)
+    def make(self, values):
+        return GridCell(*values)
 
 
 def pg_exists(conn, name):
