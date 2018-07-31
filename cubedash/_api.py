@@ -4,7 +4,7 @@ from flask import Blueprint
 
 from datacube.utils.geometry import CRS
 
-from ._model import get_summary
+from ._model import get_datasets_geojson, get_summary
 from ._utils import as_json
 
 _LOG = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 
 @bp.route("/datasets/<product>/<int:year>-<int:month>-<int:day>")
 def datasets_as_features(product: str, year: int, month: int, day: int):
-    return as_json(get_summary(product, year, month, day).datasets_geojson)
+    return as_json(get_datasets_geojson(product, year, month, day))
 
 
 @bp.route("/datasets/<product>/<int:year>-<int:month>/poly")

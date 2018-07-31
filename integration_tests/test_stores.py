@@ -24,7 +24,6 @@ def _overview():
             ]
         ),
         grid_dataset_counts=Counter([GridCell(1, 2), GridCell(1, 2), GridCell(3, 4)]),
-        datasets_geojson=None,
         timeline_period="day",
         time_range=Range(
             datetime(2017, 1, 2, tzinfo=tz.tzutc()),

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Dict, Iterable, Optional, Tuple
 
 import dateutil.parser
 import flask
@@ -46,6 +46,15 @@ def get_summary(
         return DEFAULT_STORE.get_or_update(product_name, year, month, day)
 
     return DEFAULT_STORE.get(product_name, year, month, day)
+
+
+def get_datasets_geojson(
+    product_name: str,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    day: Optional[int] = None,
+) -> Dict:
+    return DEFAULT_STORE.get_datasets_geojson(product_name, year, month, day)
 
 
 @cache.memoize(timeout=120)

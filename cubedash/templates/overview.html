@@ -164,8 +164,8 @@
                 msgNoResults.style.display = 'none';
 
                 {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
-                {% if selected_summary.datasets_geojson %}
-                    var dataset_data = L.geoJson({{ selected_summary.datasets_geojson | tojson }},
+                {% if datasets_geojson %}
+                    var dataset_data = L.geoJson({{ datasets_geojson | tojson }},
                         {
                             style: function (feature) {
                                 return {

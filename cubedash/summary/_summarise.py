@@ -34,9 +34,6 @@ class TimePeriodOverview:
     timeline_dataset_counts: Counter
     grid_dataset_counts: Counter
 
-    # GeoJSON FeatureCollection dict. But only when there's a small number of them.
-    datasets_geojson: Optional[Dict]
-
     timeline_period: str
 
     time_range: Range
@@ -107,18 +104,12 @@ class TimePeriodOverview:
             )
 
         total_datasets = sum(p.dataset_count for p in periods)
-        all_datasets_geojson = (
-            cls._combined_geojson(periods)
-            if total_datasets < max_individual_datasets
-            else None
-        )
 
         return TimePeriodOverview(
             dataset_count=total_datasets,
             timeline_dataset_counts=timeline_counter,
             timeline_period=period,
             grid_dataset_counts=grid_counter,
-            datasets_geojson=all_datasets_geojson,
             time_range=Range(
                 min(r.time_range.begin for r in periods),
                 max(r.time_range.end for r in periods),
@@ -139,14 +130,6 @@ class TimePeriodOverview:
                 default=None,
             ),
         )
-
-    @classmethod
-    def _combined_geojson(cls, periods):
-        all_datasets_geojson = dict(type="FeatureCollection", features=[])
-        for p in periods:
-            if p.datasets_geojson is not None:
-                all_datasets_geojson["features"].extend(p.datasets_geojson["features"])
-        return all_datasets_geojson
 
     @staticmethod
     def empty():
