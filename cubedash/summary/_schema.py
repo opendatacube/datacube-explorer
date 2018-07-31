@@ -9,7 +9,6 @@ from psycopg2.extensions import register_adapter
 from psycopg2.extras import register_composite
 from sqlalchemy import (
     DDL,
-    JSON,
     CheckConstraint,
     Column,
     Date,
@@ -22,7 +21,6 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Table,
-    cast,
     event,
     func,
 )
@@ -56,7 +54,6 @@ def adapt_point(point):
 
 
 register_adapter(GridCell, adapt_point)
-
 
 POSTGIS_METADATA = MetaData(schema="public")
 SPATIAL_REF_SYS = Table(
@@ -147,7 +144,6 @@ TIME_OVERVIEW = Table(
         name="timeline_lengths_equal",
     ),
 )
-
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
