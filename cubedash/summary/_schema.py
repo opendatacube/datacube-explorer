@@ -111,10 +111,6 @@ TIME_OVERVIEW = Table(
     Column('grid_dataset_grids', postgres.ARRAY(PgGridCell)),
     Column('grid_dataset_counts', postgres.ARRAY(Integer)),
 
-    # Only when there's a small number of them.
-    # GeoJSON featurecolleciton as it contains metadata per dataset (the id etc).
-    Column('datasets_geojson', JSON, nullable=True),
-
     Column('timeline_period',
            Enum('year', 'month', 'week', 'day', name='timelineperiod')),
 

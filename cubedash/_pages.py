@@ -14,6 +14,7 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
+from cubedash._model import get_datasets_geojson
 from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
@@ -41,6 +42,7 @@ def overview_page(product_name: str = None,
                   month: int = None,
                   day: int = None):
     product, product_summary, selected_summary = _load_product(product_name, year, month, day)
+    datasets = None if selected_summary.dataset_count > 1000 else get_datasets_geojson(product_name, year, month, day)
 
     return flask.render_template(
         'overview.html',
@@ -48,6 +50,7 @@ def overview_page(product_name: str = None,
         month=month,
         day=day,
 
+        datasets_geojson=datasets,
         product=product,
         # Summary for the whole product
         product_summary=product_summary,

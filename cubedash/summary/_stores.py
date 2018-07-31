@@ -162,12 +162,7 @@ class SummaryStore:
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        begin_time = self._with_default_tz(time.begin)
-        end_time = self._with_default_tz(time.end)
-        where_clause = and_(
-            func.tstzrange(begin_time, end_time, '[]', type_=TSTZRANGE, ).contains(DATASET_SPATIAL.c.center_time),
-            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name)
-        )
+        begin_time, end_time, where_clause = self._where(product_name, time)
         select_by_srid = select((
             func.ST_SRID(DATASET_SPATIAL.c.footprint).label('srid'),
             func.count().label("dataset_count"),
@@ -257,7 +252,6 @@ class SummaryStore:
             grid_dataset_counts=grid_counts,
             # TODO: filter invalid from the counts?
             footprint_count=row['dataset_count'],
-            datasets_geojson=self._get_datasets_geojson(where_clause)
         )
 
         log.debug(
@@ -266,6 +260,15 @@ class SummaryStore:
             footprints_missing=summary.dataset_count - summary.footprint_count
         )
         return summary
+
+    def _where(self, product_name, time):
+        begin_time = self._with_default_tz(time.begin)
+        end_time = self._with_default_tz(time.end)
+        where_clause = and_(
+            func.tstzrange(begin_time, end_time, '[]', type_=TSTZRANGE, ).contains(DATASET_SPATIAL.c.center_time),
+            DATASET_SPATIAL.c.dataset_type_ref == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name)
+        )
+        return begin_time, end_time, where_clause
 
     def get(self, product_name: Optional[str], year: Optional[int],
             month: Optional[int], day: Optional[int]) -> Optional[TimePeriodOverview]:
@@ -319,8 +322,6 @@ class SummaryStore:
             # : Counter
             timeline_dataset_counts=timeline_dataset_counts,
             grid_dataset_counts=grid_dataset_counts,
-            # GeoJSON FeatureCollection dict. But only when there's a small number of them.
-            datasets_geojson=res['datasets_geojson'],
             timeline_period=res['timeline_period'],
             # : Range
             time_range=Range(res['time_earliest'], res['time_latest'])
@@ -358,10 +359,7 @@ class SummaryStore:
 
             # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
             grid_dataset_grids=func.cast(grid_values, type_=postgres.ARRAY(PgGridCell)),
-
             grid_dataset_counts=grid_counts,
-
-            datasets_geojson=summary.datasets_geojson,
 
             timeline_period=summary.timeline_period,
 
@@ -447,6 +445,14 @@ class SummaryStore:
             month: Optional[int],
             day: Optional[int]) -> bool:
         return self.get(product_name, year, month, day) is not None
+
+    def get_datasets_geojson(self,
+                             product_name: Optional[str],
+                             year: Optional[int],
+                             month: Optional[int],
+                             day: Optional[int]):
+        begin_time, end_time, where_clause = self._where(product_name, _utils.as_time_range(year, month, day))
+        return self._get_datasets_geojson(where_clause)
 
     def get_or_update(self,
                       product_name: Optional[str],

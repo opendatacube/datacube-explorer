@@ -4,7 +4,7 @@ import flask
 import structlog
 from flask_caching import Cache
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Dict
 from typing import Optional
 
 from cubedash.summary import TimePeriodOverview, SummaryStore
@@ -49,6 +49,14 @@ def get_summary(
         return DEFAULT_STORE.get_or_update(product_name, year, month, day)
 
     return DEFAULT_STORE.get(product_name, year, month, day)
+
+
+def get_datasets_geojson(
+        product_name: str,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None) -> Dict:
+    return DEFAULT_STORE.get_datasets_geojson(product_name, year, month, day)
 
 
 @cache.memoize(timeout=120)
