@@ -160,7 +160,6 @@ class TimePeriodOverview:
         return counter, period
 
 
-
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None

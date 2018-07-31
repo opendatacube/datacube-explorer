@@ -1,8 +1,12 @@
 from __future__ import absolute_import
 
+import psycopg2
 import re
 
 from geoalchemy2 import Geometry
+from psycopg2._psycopg import AsIs
+from psycopg2.extensions import register_adapter
+from psycopg2.extras import register_composite
 from sqlalchemy import DateTime, Date, cast
 from sqlalchemy import Enum, JSON, event, DDL, \
     CheckConstraint
@@ -13,8 +17,10 @@ from sqlalchemy.types import UserDefinedType
 
 from ._summarise import GridCell
 
+
 CUBEDASH_SCHEMA = 'cubedash'
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
+GRIDCELL_COL_SPEC = f'{CUBEDASH_SCHEMA}.gridcell'
 
 
 class PgGridCell(UserDefinedType):
@@ -25,56 +31,17 @@ class PgGridCell(UserDefinedType):
     """
 
     def get_col_spec(self):
-        return f'{CUBEDASH_SCHEMA}.gridcell'
-
-    def bind_processor(self, dialect):
-        def process(gridcell):
-            if gridcell is None:
-                return None
-            return '(%s, %s)' % (gridcell.x, gridcell.y)
-
-        return process
-
-    def bind_expression(self, bindvalue):
-        return bindvalue.cast(PgGridCell)
-
-    def result_processor(self, dialect, coltype):
-        def process(value):
-            m = _PG_GRIDCELL_STRING.match(value)
-            if m:
-                return GridCell(int(m.group(1)), int(m.group(2)))
-            else:
-                raise ValueError("bad grid_cell representation: %r" % value)
-
-        return process
+        return GRIDCELL_COL_SPEC
 
     @property
     def python_type(self):
         return GridCell
 
 
-# (ancestors are out of our control)
-# pylint: disable=too-many-ancestors
-class ArrayOfGridCell(postgres.ARRAY):
-    """
-    Workaround
-    https://bitbucket.org/zzzeek/sqlalchemy/issues/3467/array-of-enums-does-not-allow-assigning
+def adapt_point(point):
+    return AsIs("'(%s, %s)'::%s" % (point.x, point.y, GRIDCELL_COL_SPEC))
 
-    (TODO: our usage could be more cleanly fixed with psycopg2.new_array_type(), I believe)
-    """
-    def bind_expression(self, bindvalue):
-        return cast(bindvalue, self)
-
-    def result_processor(self, dialect, coltype):
-        super_rp = super().result_processor(dialect, coltype)
-
-        def handle_raw_string(value):
-            inner = re.match(r'^{"(.*)"}$', value).group(1)
-            return inner.split('","')
-
-        def process(value):
-            return super_rp(handle_raw_string(value))
-        return process
+register_adapter(GridCell, adapt_point)
 
 
 POSTGIS_METADATA = MetaData(schema='public')
@@ -141,7 +108,7 @@ TIME_OVERVIEW = Table(
     Column('timeline_dataset_start_days', postgres.ARRAY(DateTime(timezone=True))),
     Column('timeline_dataset_counts', postgres.ARRAY(Integer)),
 
-    Column('grid_dataset_grids', ArrayOfGridCell(PgGridCell)),
+    Column('grid_dataset_grids', postgres.ARRAY(PgGridCell)),
     Column('grid_dataset_counts', postgres.ARRAY(Integer)),
 
     # Only when there's a small number of them.
@@ -210,6 +177,13 @@ def create(target, connection, **kw):
             spatial_ref_sys_auth_name_auth_srid_idx
         on spatial_ref_sys(auth_name, auth_srid);
     """)
+
+    register_composite('cubedash.gridcell', connection, globally=True, factory=GridCellComposite)
+
+
+class GridCellComposite(psycopg2.extras.CompositeCaster):
+     def make(self, values):
+         return GridCell(*values)
 
 
 def pg_exists(conn, name):
