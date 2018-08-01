@@ -79,7 +79,7 @@ def test_calc_month(summary_store: SummaryStore):
         timeline_count=30,
         crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28350',
                'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
-        size_bytes=64564,
+        size_bytes=245344352585,
     )
 
 
@@ -103,7 +103,7 @@ def test_calc_scene_year(summary_store: SummaryStore):
         timeline_count=365,
         crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28350',
                'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
-        size_bytes=34534,
+        size_bytes=1060669242142,
     )
 
 
@@ -127,7 +127,7 @@ def test_calc_scene_all_time(summary_store: SummaryStore):
         timeline_count=24,
         crses={'EPSG:28355', 'EPSG:28349', 'EPSG:28352', 'EPSG:28357', 'EPSG:28350',
                'EPSG:28351', 'EPSG:28353', 'EPSG:28356', 'EPSG:28354'},
-        size_bytes=34534,
+        size_bytes=1805759242975,
     )
 
 
@@ -170,7 +170,9 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         # Data spans 61 days in 2017
         timeline_count=61,
         crses={'EPSG:3577'},
-        size_bytes=None
+        # Ingested tiles don't store their size.
+        # TODO: probably should represent this as None instead of zero?
+        size_bytes=0
     )
 
     # get_or_update should now return the cached copy.
