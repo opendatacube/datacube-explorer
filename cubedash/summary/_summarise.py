@@ -96,8 +96,8 @@ class TimePeriodOverview:
             timeline_period=period,
             grid_dataset_counts=grid_counter,
             time_range=Range(
-                min(r.time_range.begin for r in periods),
-                max(r.time_range.end for r in periods)
+                min(r.time_range.begin for r in periods) if periods else None,
+                max(r.time_range.end for r in periods) if periods else None
             ),
             footprint_geometry=geometry_union,
             footprint_count=sum(p.footprint_count for p in with_valid_geometries),
