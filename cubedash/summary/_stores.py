@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import functools
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Iterable
 from typing import Optional
 
@@ -41,6 +41,10 @@ class ProductSummary:
     time_earliest: Optional[datetime]
     time_latest: Optional[datetime]
 
+    # How long ago the spatial extents for this product were last refreshed.
+    # (Field comes from DB on load)
+    last_refresh_age: Optional[timedelta] = None
+
     id_: Optional[int] = None
 
 
@@ -57,7 +61,7 @@ class SummaryStore:
     GROUPING_TIME_ZONE_NAME = 'Australia/Darwin'
     # cache
     GROUPING_TIME_ZONE_TZ = tz.gettz(GROUPING_TIME_ZONE_NAME)
-
+    # EPSG code for all polygons to be converted to (for footprints).
     OUTPUT_CRS_EPSG_CODE = 4326
 
     # If there's fewer than this many datasets, display them as individual polygons in
@@ -65,14 +69,29 @@ class SummaryStore:
     # (Otherwise dataset footprint is shown as a single composite polygon)
     MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
 
-    def init(self, init_products=True):
+    def init(self,
+             init_products=True,
+             refresh_older_than: timedelta = timedelta(days=1)):
         _schema.METADATA.create_all(self._engine, checkfirst=True)
         if init_products:
             for product in self.index.products.get_all():
-                _LOG.debug('init.product', product_name=product.name)
-                self.init_product(product)
+                self.init_product(product, refresh_older_than=refresh_older_than)
 
-    def init_product(self, product: DatasetType):
+    def init_product(self,
+                     product: DatasetType,
+                     refresh_older_than: timedelta = timedelta(days=1)):
+        our_product = self._get_product(product.name)
+
+        if (our_product is not None and
+                our_product.last_refresh_age < refresh_older_than):
+            _LOG.debug(
+                'init.product.skip.too_recent',
+                product_name=product.name,
+                age=our_product.last_refresh_age
+            )
+            return None
+
+        _LOG.debug('init.product', product_name=product.name)
         added_count = _extents.refresh_product(self.index, product)
         earliest, latest, total_count = self._engine.execute(
             select((
@@ -253,7 +272,6 @@ class SummaryStore:
                 }
             )
 
-
         summary = TimePeriodOverview(
             **row,
             timeline_period='day',
@@ -394,6 +412,7 @@ class SummaryStore:
                 PRODUCT.c.dataset_count,
                 PRODUCT.c.time_earliest,
                 PRODUCT.c.time_latest,
+                (func.now() - PRODUCT.c.last_refresh).label("last_refresh_age"),
                 PRODUCT.c.id.label("id_"),
             ]).where(PRODUCT.c.name == name)
         ).fetchone()
@@ -403,23 +422,23 @@ class SummaryStore:
             return None
 
     def _set_product_extent(self, product: ProductSummary):
-        # This insert may conflict if someone else added it in parallel,
-        # hence the loop to select again.
+
+        fields = dict(
+            dataset_count=product.dataset_count,
+            time_earliest=product.time_earliest,
+            time_latest=product.time_latest,
+            # Deliberately do all age calculations with the DB clock rather than local.
+            last_refresh=func.now(),
+        )
         row = self._engine.execute(
             postgres.insert(
                 PRODUCT
             ).on_conflict_do_update(
                 index_elements=['name'],
-                set_=dict(
-                    dataset_count=product.dataset_count,
-                    time_earliest=product.time_earliest,
-                    time_latest=product.time_latest,
-                )
+                set_=fields
             ).values(
                 name=product.name,
-                dataset_count=product.dataset_count,
-                time_earliest=product.time_earliest,
-                time_latest=product.time_latest
+                **fields,
             )
         ).inserted_primary_key
         return row[0]
