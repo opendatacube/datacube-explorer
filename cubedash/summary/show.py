@@ -6,6 +6,7 @@ import structlog
 from click import echo, secho
 
 from cubedash import _utils
+from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
 from cubedash.summary._summarise import GridCell
@@ -70,6 +71,8 @@ def cli(
     secho(product_name, nl=False, bold=True)
     echo(f" datasets for ", nl=False)
     secho(f"{year or 'all'} {month or 'all'} {day or 'all'}", fg="blue")
+    if summary.size_bytes is not None:
+        echo(sizeof_fmt(summary.size_bytes))
     echo(f"{round(t_end - t, 2)} seconds")
     echo()
     print_count_table(summary.grid_dataset_counts)
