@@ -108,7 +108,7 @@ class TimePeriodOverview:
                 ),
                 default=None
             ),
-            crses=set.union(*(o.crses for o in periods)),
+            crses=set.union(*(o.crses for o in periods)) if periods else set(),
             summary_gen_time=min(
                 (
                     p.summary_gen_time
