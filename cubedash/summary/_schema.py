@@ -210,4 +210,3 @@ def pg_exists(conn, name):
     :rtype bool
     """
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
-

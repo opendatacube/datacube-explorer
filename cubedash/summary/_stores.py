@@ -436,6 +436,7 @@ class SummaryStore:
                 **fields,
             )
         ).inserted_primary_key
+        self._get_product.cache_clear()
         return row[0]
 
     def _put(self, product_name: Optional[str], year: Optional[int],
