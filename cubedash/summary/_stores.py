@@ -479,6 +479,7 @@ class SummaryStore:
             .on_conflict_do_update(index_elements=["name"], set_=fields)
             .values(name=product.name, **fields)
         ).inserted_primary_key
+        self._get_product.cache_clear()
         return row[0]
 
     def _put(
