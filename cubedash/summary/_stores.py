@@ -66,11 +66,6 @@ class SummaryStore:
     # EPSG code for all polygons to be converted to (for footprints).
     OUTPUT_CRS_EPSG_CODE = 4326
 
-    # If there's fewer than this many datasets, display them as individual polygons in
-    # the browser. Too many can bog down the browser's performance.
-    # (Otherwise dataset footprint is shown as a single composite polygon)
-    MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY = 600
-
     def init(
         self, init_products=True, refresh_older_than: timedelta = timedelta(days=1)
     ):

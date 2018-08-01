@@ -52,9 +52,7 @@ class TimePeriodOverview:
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
 
     @classmethod
-    def add_periods(
-        cls, periods: Iterable["TimePeriodOverview"], max_individual_datasets=800
-    ):
+    def add_periods(cls, periods: Iterable["TimePeriodOverview"]):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = None
 
