@@ -194,7 +194,6 @@ class SummaryStore:
 
         Default implementation uses the pure index api.
         """
-        print(f"Gen {product_name}, {repr(time)}")
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
