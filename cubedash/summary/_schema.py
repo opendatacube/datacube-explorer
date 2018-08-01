@@ -7,7 +7,7 @@ from geoalchemy2 import Geometry
 from psycopg2._psycopg import AsIs
 from psycopg2.extensions import register_adapter
 from psycopg2.extras import register_composite
-from sqlalchemy import DateTime, Date
+from sqlalchemy import DateTime, Date, BigInteger
 from sqlalchemy import Enum, event, DDL, \
     CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
@@ -79,6 +79,8 @@ DATASET_SPATIAL = Table(
 
     # Must be nullable as currently satellite_telemetry products have no path/row field in their md type.
     Column('grid_point', PgGridCell),
+    # Size of this dataset in bytes, if the product includes it.
+    Column('size_bytes', BigInteger),
 
     Column('footprint', Geometry(spatial_index=False)),
 
@@ -157,6 +159,9 @@ TIME_OVERVIEW = Table(
     Column('footprint_count', Integer, nullable=False),
     Column('footprint_geometry', Geometry()),
     Column('crses', postgres.ARRAY(String)),
+
+    # Size of this dataset in bytes, if the product includes it.
+    Column('size_bytes', BigInteger),
 
     CheckConstraint(
         r"array_length(timeline_dataset_start_days, 1) = "

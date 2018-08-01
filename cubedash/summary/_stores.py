@@ -201,6 +201,7 @@ class SummaryStore:
                 self._target_srid(),
                 type_=Geometry()
             ).label("footprint_geometry"),
+            func.sum(DATASET_SPATIAL.c.size_bytes).label('size_bytes'),
             func.max(DATASET_SPATIAL.c.creation_time).label("newest_dataset_creation_time"),
         )).where(where_clause).group_by('srid').alias('srid_summaries')
 
@@ -209,6 +210,7 @@ class SummaryStore:
             select((
                 func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
                 func.array_agg(select_by_srid.c.srid).label("srids"),
+                func.sum(select_by_srid.c.size_bytes).label('size_bytes'),
                 func.ST_Union(select_by_srid.c.footprint_geometry, type_=Geometry()).label("footprint_geometry"),
                 func.max(select_by_srid.c.newest_dataset_creation_time).label("newest_dataset_creation_time")
             ))
@@ -353,6 +355,7 @@ class SummaryStore:
                 None if res['footprint_geometry'] is None
                 else geo_shape.to_shape(res['footprint_geometry'])
             ),
+            size_bytes=res['size_bytes'],
             footprint_count=res['footprint_count'],
             # The most newly created dataset
             newest_dataset_creation_time=res['newest_dataset_creation_time'],
@@ -387,6 +390,8 @@ class SummaryStore:
 
             time_earliest=begin,
             time_latest=end,
+
+            size_bytes=summary.size_bytes,
 
             footprint_geometry=(
                 None if summary.footprint_geometry is None
