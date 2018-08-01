@@ -102,6 +102,13 @@ PRODUCT = Table(
     Column("id", SmallInteger, primary_key=True),
     Column("name", String, unique=True, nullable=False),
     Column("dataset_count", Integer, nullable=False),
+    Column(
+        "last_refresh",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        comment="Last refresh of this product in the dataset_spatial table",
+    ),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
 )
@@ -151,7 +158,6 @@ TIME_OVERVIEW = Table(
         name="timeline_lengths_equal",
     ),
 )
-
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
