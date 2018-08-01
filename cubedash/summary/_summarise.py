@@ -48,6 +48,8 @@ class TimePeriodOverview:
     # List of CRSes that these datasets are in
     crses: Set[str]
 
+    size_bytes: int
+
     # When this summary was generated
     summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
 
@@ -124,6 +126,7 @@ class TimePeriodOverview:
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
                 default=None,
             ),
+            size_bytes=sum(p.size_bytes for p in periods if p.size_bytes is not None),
         )
 
     @staticmethod

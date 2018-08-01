@@ -45,6 +45,7 @@ def _overview():
         footprint_count=0,
         newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
         crses={"epsg:1234"},
+        size_bytes=123_400_000,
     )
     return orig
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Set
+from typing import Optional, Set
 
 import pytest
 from dateutil.tz import tzutc
@@ -83,6 +83,7 @@ def test_calc_month(summary_store: SummaryStore):
             "EPSG:28356",
             "EPSG:28354",
         },
+        size_bytes=64564,
     )
 
 
@@ -108,6 +109,7 @@ def test_calc_scene_year(summary_store: SummaryStore):
             "EPSG:28356",
             "EPSG:28354",
         },
+        size_bytes=34534,
     )
 
 
@@ -134,6 +136,7 @@ def test_calc_scene_all_time(summary_store: SummaryStore):
             "EPSG:28356",
             "EPSG:28354",
         },
+        size_bytes=34534,
     )
 
 
@@ -160,6 +163,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         # Data spans 61 days in 2017
         timeline_count=61,
         crses={"EPSG:3577"},
+        size_bytes=None,
     )
 
     # get_or_update should now return the cached copy.
@@ -190,6 +194,7 @@ def _expect_values(
     timeline_period: str,
     timeline_count: int,
     crses: Set[str],
+    size_bytes: Optional[int],
 ):
     __tracebackhide__ = True
 
@@ -210,6 +215,11 @@ def _expect_values(
         ), "Missing summary_gen_time (there's a default)"
 
         assert s.crses == crses, "Wrong dataset CRSes"
+
+        if size_bytes is None:
+            assert s.size_bytes is None, "Expected null size_bytes"
+        else:
+            assert s.size_bytes == size_bytes, "Wrong size_bytes"
 
         was_timeline_error = True
         if s.timeline_dataset_counts is None:
@@ -239,6 +249,7 @@ def _expect_values(
         time range: {s.time_range}
         newest: {repr(s.newest_dataset_creation_time)}
         crses: {repr(s.crses)}
+        size_bytes: {s.size_bytes}
         timeline
             period: {s.timeline_period}
             dataset_counts: {None if s.timeline_dataset_counts is None else len(s.timeline_dataset_counts)}

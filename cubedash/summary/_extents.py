@@ -8,7 +8,16 @@ import structlog
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
-from sqlalchemy import Integer, SmallInteger, bindparam, case, func, null, select
+from sqlalchemy import (
+    BigInteger,
+    Integer,
+    SmallInteger,
+    bindparam,
+    case,
+    func,
+    null,
+    select,
+)
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
@@ -144,6 +153,16 @@ def _grid_point_fields(dt: DatasetType):
         return null()
 
 
+def _size_bytes_field(dt: DatasetType):
+    md_fields = dt.metadata_type.dataset_fields
+    if "size_bytes" in md_fields:
+        return md_fields["size_bytes"].alchemy_expression
+
+    return _jsonb_doc_expression(dt.metadata_type)[("size_bytes")].astext.cast(
+        BigInteger
+    )
+
+
 def get_dataset_srid_alchemy_expression(md: MetadataType):
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
 
@@ -225,6 +244,7 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
                 "center_time",
                 "footprint",
                 "grid_point",
+                "size_bytes",
                 "creation_time",
             ],
             _select_dataset_extent_query(product),
@@ -262,6 +282,7 @@ def _select_dataset_extent_query(dt: DatasetType):
                     null() if footrprint_expression is None else footrprint_expression
                 ).label("footprint"),
                 _grid_point_fields(dt).label("grid_point"),
+                _size_bytes_field(dt).label("size_bytes"),
                 _dataset_creation_expression(md_type).label("creation_time"),
             ]
         )

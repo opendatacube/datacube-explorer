@@ -9,6 +9,7 @@ from psycopg2.extensions import register_adapter
 from psycopg2.extras import register_composite
 from sqlalchemy import (
     DDL,
+    BigInteger,
     CheckConstraint,
     Column,
     Date,
@@ -84,6 +85,8 @@ DATASET_SPATIAL = Table(
     Column("creation_time", DateTime(timezone=True), nullable=False),
     # Must be nullable as currently satellite_telemetry products have no path/row field in their md type.
     Column("grid_point", PgGridCell),
+    # Size of this dataset in bytes, if the product includes it.
+    Column("size_bytes", BigInteger),
     Column("footprint", Geometry(spatial_index=False)),
     # Default postgres naming conventions.
     Index(
@@ -152,6 +155,8 @@ TIME_OVERVIEW = Table(
     Column("footprint_count", Integer, nullable=False),
     Column("footprint_geometry", Geometry()),
     Column("crses", postgres.ARRAY(String)),
+    # Size of this dataset in bytes, if the product includes it.
+    Column("size_bytes", BigInteger),
     CheckConstraint(
         r"array_length(timeline_dataset_start_days, 1) = "
         r"array_length(timeline_dataset_counts, 1)",
