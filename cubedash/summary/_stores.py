@@ -223,8 +223,16 @@ class SummaryStore:
         log.debug("summary.query.done", srid_rows=len(rows))
 
         assert len(rows) == 1
-        row = rows[0]
-        has_data = row["dataset_count"] is not None
+        row = dict(rows[0])
+        row["dataset_count"] = row["dataset_count"] or 0
+        if row["footprint_geometry"] is not None:
+            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
+        row["crses"] = None
+        if row["srids"] is not None:
+            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
+        del row["srids"]
+
+        has_data = row["dataset_count"] > 0
 
         log.debug("counter.calc")
 
@@ -278,15 +286,6 @@ class SummaryStore:
                 }
             )
 
-        row = dict(row)
-        if row["footprint_geometry"] is not None:
-            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
-
-        row["crses"] = None
-        if row["srids"] is not None:
-            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
-        del row["srids"]
-
         summary = TimePeriodOverview(
             **row,
             timeline_period="day",
@@ -294,7 +293,7 @@ class SummaryStore:
             timeline_dataset_counts=day_counts,
             grid_dataset_counts=grid_counts,
             # TODO: filter invalid from the counts?
-            footprint_count=row["dataset_count"],
+            footprint_count=row["dataset_count"] or 0,
         )
 
         log.debug(
