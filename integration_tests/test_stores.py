@@ -7,6 +7,7 @@ from sqlalchemy import select, bindparam
 from sqlalchemy.dialects import postgresql as postgres
 from cubedash.summary import TimePeriodOverview, SummaryStore
 from cubedash.summary._schema import PgGridCell
+from cubedash.summary._stores import ProductSummary
 from cubedash.summary._summarise import GridCell
 from datacube.model import Range
 
@@ -80,8 +81,12 @@ def test_put_get_summaries(summary_store: SummaryStore):
     o = _overview()
     product_name = 'some_product'
     summary_store._set_product_extent(
-        product_name,
-        datetime(2017, 1, 1), datetime(2017, 4, 1)
+        ProductSummary(
+            product_name,
+            4321,
+            datetime(2017, 1, 1),
+            datetime(2017, 4, 1)
+        )
     )
     summary_store._put(product_name, 2017, None, None, o)
     loaded = summary_store.get(product_name, 2017, None, None)
