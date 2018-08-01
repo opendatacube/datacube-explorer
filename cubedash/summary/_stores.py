@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 import functools
 from collections import Counter
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
 import dateutil.parser
 import pandas as pd
@@ -32,6 +33,17 @@ from datacube.index import Index
 from datacube.model import DatasetType, Range
 
 _LOG = structlog.get_logger()
+
+
+@dataclass
+class ProductSummary:
+    name: str
+    dataset_count: int
+    # Null when dataset_count == 0
+    time_earliest: Optional[datetime]
+    time_latest: Optional[datetime]
+
+    id_: Optional[int] = None
 
 
 class SummaryStore:
@@ -64,15 +76,18 @@ class SummaryStore:
 
     def init_product(self, product: DatasetType):
         added_count = _extents.refresh_product(self.index, product)
-        earliest, latest = self._engine.execute(
+        earliest, latest, total_count = self._engine.execute(
             select(
                 (
                     func.min(DATASET_SPATIAL.c.center_time),
                     func.max(DATASET_SPATIAL.c.center_time),
+                    func.count(),
                 )
             ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
         ).fetchone()
-        self._set_product_extent(product.name, earliest, latest)
+        self._set_product_extent(
+            ProductSummary(product.name, total_count, earliest, latest)
+        )
         return added_count
 
     def drop_all(self):
@@ -209,75 +224,73 @@ class SummaryStore:
 
         assert len(rows) == 1
         row = rows[0]
-        if row["dataset_count"] is None:
-            return TimePeriodOverview.empty()
+        has_data = row["dataset_count"] is not None
 
         log.debug("counter.calc")
 
         # Initialise all requested days as zero
 
-        day_counts = Counter(
-            {d.date(): 0 for d in pd.date_range(begin_time, end_time, closed="left")}
-        )
-        day_counts.update(
-            Counter(
+        if not has_data:
+            grid_counts = Counter()
+            day_counts = Counter()
+        else:
+            day_counts = Counter(
                 {
-                    day.date(): count
-                    for day, count in self._engine.execute(
+                    d.date(): 0
+                    for d in pd.date_range(begin_time, end_time, closed="left")
+                }
+            )
+            day_counts.update(
+                Counter(
+                    {
+                        day.date(): count
+                        for day, count in self._engine.execute(
+                            select(
+                                [
+                                    func.date_trunc(
+                                        "day",
+                                        DATASET_SPATIAL.c.center_time.op(
+                                            "AT TIME ZONE"
+                                        )(self.GROUPING_TIME_ZONE_NAME),
+                                    ).label("day"),
+                                    func.count(),
+                                ]
+                            )
+                            .where(where_clause)
+                            .group_by("day")
+                        )
+                    }
+                )
+            )
+            grid_counts = Counter(
+                {
+                    item: count
+                    for item, count in self._engine.execute(
                         select(
                             [
-                                func.date_trunc(
-                                    "day",
-                                    DATASET_SPATIAL.c.center_time.op("AT TIME ZONE")(
-                                        self.GROUPING_TIME_ZONE_NAME
-                                    ),
-                                ).label("day"),
+                                DATASET_SPATIAL.c.grid_point.label("grid_point"),
                                 func.count(),
                             ]
                         )
                         .where(where_clause)
-                        .group_by("day")
+                        .group_by("grid_point")
                     )
                 }
             )
-        )
 
-        grid_counts = Counter(
-            {
-                item: count
-                for item, count in self._engine.execute(
-                    select(
-                        [DATASET_SPATIAL.c.grid_point.label("grid_point"), func.count()]
-                    )
-                    .where(where_clause)
-                    .group_by("grid_point")
-                )
-            }
-        )
+        row = dict(row)
+        if row["footprint_geometry"] is not None:
+            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
 
-        # TODO: self.MAX_DATASETS_TO_DISPLAY_INDIVIDUALLY
-
-        # TODO: We're going to union the srid groups. Perhaps record stats per-srid?
-
-        def convert_row(row):
-            row = dict(row)
-            if row["footprint_geometry"] is not None:
-                row["footprint_geometry"] = geo_shape.to_shape(
-                    row["footprint_geometry"]
-                )
-
-            row["crses"] = None
-            if row["srids"] is not None:
-                row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
-            del row["srids"]
-
-            return row
+        row["crses"] = None
+        if row["srids"] is not None:
+            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
+        del row["srids"]
 
         summary = TimePeriodOverview(
-            **convert_row(row),
+            **row,
             timeline_period="day",
             time_range=time,
-            # TODO
             timeline_dataset_counts=day_counts,
             grid_dataset_counts=grid_counts,
             # TODO: filter invalid from the counts?
@@ -313,15 +326,14 @@ class SummaryStore:
 
         start_day, period = self._start_day(year, month, day)
 
-        p = self._get_product(product_name)
-        if not p:
+        product = self._get_product(product_name)
+        if not product:
             return None
 
-        product_id, _, _ = p
         res = self._engine.execute(
             select([TIME_OVERVIEW]).where(
                 and_(
-                    TIME_OVERVIEW.c.product_ref == product_id,
+                    TIME_OVERVIEW.c.product_ref == product.id_,
                     TIME_OVERVIEW.c.start_day == start_day,
                     TIME_OVERVIEW.c.period_type == period,
                 )
@@ -421,27 +433,41 @@ class SummaryStore:
         )
 
     @functools.lru_cache()
-    def _get_product(self, name: str) -> Optional[Tuple[int, datetime, datetime]]:
+    def _get_product(self, name: str) -> Optional[ProductSummary]:
         row = self._engine.execute(
             select(
-                [PRODUCT.c.id, PRODUCT.c.time_earliest, PRODUCT.c.time_latest]
+                [
+                    PRODUCT.c.dataset_count,
+                    PRODUCT.c.time_earliest,
+                    PRODUCT.c.time_latest,
+                    PRODUCT.c.id.label("id_"),
+                ]
             ).where(PRODUCT.c.name == name)
         ).fetchone()
         if row:
-            return tuple(row)
+            return ProductSummary(name=name, **row)
         else:
             return None
 
-    def _set_product_extent(self, name, time_earliest, time_latest):
+    def _set_product_extent(self, product: ProductSummary):
         # This insert may conflict if someone else added it in parallel,
         # hence the loop to select again.
         row = self._engine.execute(
             postgres.insert(PRODUCT)
             .on_conflict_do_update(
                 index_elements=["name"],
-                set_=dict(time_earliest=time_earliest, time_latest=time_latest),
+                set_=dict(
+                    dataset_count=product.dataset_count,
+                    time_earliest=product.time_earliest,
+                    time_latest=product.time_latest,
+                ),
             )
-            .values(name=name, time_earliest=time_earliest, time_latest=time_latest)
+            .values(
+                name=product.name,
+                dataset_count=product.dataset_count,
+                time_earliest=product.time_earliest,
+                time_latest=product.time_latest,
+            )
         ).inserted_primary_key
         return row[0]
 
@@ -453,10 +479,9 @@ class SummaryStore:
         day: Optional[int],
         summary: TimePeriodOverview,
     ):
-        p = self._get_product(product_name)
-        if not p:
+        product = self._get_product(product_name)
+        if not product:
             raise ValueError("Unknown product %r" % product_name)
-        product_id, _, _ = p
 
         start_day, period = self._start_day(year, month, day)
         row = self._summary_to_row(summary)
@@ -466,13 +491,13 @@ class SummaryStore:
                 index_elements=["product_ref", "start_day", "period_type"],
                 set_=row,
                 where=and_(
-                    TIME_OVERVIEW.c.product_ref == product_id,
+                    TIME_OVERVIEW.c.product_ref == product.id_,
                     TIME_OVERVIEW.c.start_day == start_day,
                     TIME_OVERVIEW.c.period_type == period,
                 ),
             )
             .values(
-                product_ref=product_id, start_day=start_day, period_type=period, **row
+                product_ref=product.id_, start_day=start_day, period_type=period, **row
             )
         )
 
@@ -525,10 +550,9 @@ class SummaryStore:
         generate_missing_children=True,
     ):
         """Update the given summary and return the new one"""
-        p = self._get_product(product_name)
-        if not p:
+        product = self._get_product(product_name)
+        if not product:
             raise ValueError("Unknown product (initialised?)")
-        id_, min_time, max_time = p
 
         get_child = self.get_or_update if generate_missing_children else self.get
 
@@ -546,9 +570,12 @@ class SummaryStore:
                 get_child(product_name, year, month_, None) for month_ in range(1, 13)
             )
         elif product_name:
+            if product.dataset_count > 0:
+                years = range(product.time_earliest.year, product.time_latest.year + 1)
+            else:
+                years = []
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year_, None, None)
-                for year_ in range(min_time.year, max_time.year + 1)
+                get_child(product_name, year_, None, None) for year_ in years
             )
         else:
             summary = TimePeriodOverview.add_periods(

@@ -101,11 +101,10 @@ PRODUCT = Table(
     METADATA,
     Column("id", SmallInteger, primary_key=True),
     Column("name", String, unique=True, nullable=False),
-    # Column('dataset_count', Integer, nullable=False),
+    Column("dataset_count", Integer, nullable=False),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
 )
-
 TIME_OVERVIEW = Table(
     "time_overview",
     METADATA,
@@ -118,21 +117,24 @@ TIME_OVERVIEW = Table(
         primary_key=True,
     ),
     Column("dataset_count", Integer, nullable=False),
-    Column("timeline_dataset_start_days", postgres.ARRAY(DateTime(timezone=True))),
-    Column("timeline_dataset_counts", postgres.ARRAY(Integer)),
-    Column("grid_dataset_grids", postgres.ARRAY(PgGridCell)),
-    Column("grid_dataset_counts", postgres.ARRAY(Integer)),
-    Column(
-        "timeline_period", Enum("year", "month", "week", "day", name="timelineperiod")
-    ),
     # Frustrating that there's no default datetimetz range type by default in postgres
-    Column("time_earliest", DateTime(timezone=True)),
-    Column("time_latest", DateTime(timezone=True)),
-    Column("footprint_geometry", Geometry()),
-    Column("footprint_count", Integer),
-    Column("crses", postgres.ARRAY(String)),
+    Column("time_earliest", DateTime(timezone=True), nullable=False),
+    Column("time_latest", DateTime(timezone=True), nullable=False),
+    Column(
+        "timeline_dataset_start_days",
+        postgres.ARRAY(DateTime(timezone=True)),
+        nullable=False,
+    ),
+    Column("timeline_dataset_counts", postgres.ARRAY(Integer), nullable=False),
+    Column(
+        "timeline_period",
+        Enum("year", "month", "week", "day", name="timelineperiod"),
+        nullable=False,
+    ),
+    Column("grid_dataset_grids", postgres.ARRAY(PgGridCell), nullable=False),
+    Column("grid_dataset_counts", postgres.ARRAY(Integer), nullable=False),
     # The most newly created dataset
-    Column("newest_dataset_creation_time", DateTime(timezone=True)),
+    Column("newest_dataset_creation_time", DateTime(timezone=True), nullable=False),
     # When this summary was generated
     Column(
         "generation_time",
@@ -140,12 +142,16 @@ TIME_OVERVIEW = Table(
         server_default=func.now(),
         nullable=False,
     ),
+    Column("footprint_count", Integer, nullable=False),
+    Column("footprint_geometry", Geometry()),
+    Column("crses", postgres.ARRAY(String)),
     CheckConstraint(
         r"array_length(timeline_dataset_start_days, 1) = "
         r"array_length(timeline_dataset_counts, 1)",
         name="timeline_lengths_equal",
     ),
 )
+
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 

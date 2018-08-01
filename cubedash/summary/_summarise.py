@@ -58,9 +58,6 @@ class TimePeriodOverview:
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = None
 
-        if not periods:
-            return TimePeriodOverview.empty()
-
         timeline_counter = Counter()
         for p in periods:
             timeline_counter.update(p.timeline_dataset_counts)
@@ -129,12 +126,6 @@ class TimePeriodOverview:
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
                 default=None,
             ),
-        )
-
-    @staticmethod
-    def empty():
-        return TimePeriodOverview(
-            0, None, None, None, None, None, None, None, None, None
         )
 
     @staticmethod
