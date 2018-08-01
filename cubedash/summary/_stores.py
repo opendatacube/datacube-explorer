@@ -229,6 +229,10 @@ class SummaryStore:
             row['crses'] = {self._get_srid_name(s) for s in row['srids']}
         del row['srids']
 
+        # Convert from Python Decimal
+        if row['size_bytes'] is not None:
+            row['size_bytes'] = int(row['size_bytes'])
+
         has_data = row['dataset_count'] > 0
 
         log.debug("counter.calc")

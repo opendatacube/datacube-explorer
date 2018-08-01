@@ -40,6 +40,10 @@
                         ({{ selected_summary.footprint_count or 'No' }} visible)
                     {% endif %}
 
+                    {% if selected_summary.size_bytes %}
+                        <div>{{ selected_summary.size_bytes | printable_data_size }}</div>
+                    {% endif %}
+
                     {% if selected_summary.newest_dataset_creation_time %}
                         <div>Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}</div>
                     {% endif %}
