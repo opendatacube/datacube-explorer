@@ -58,7 +58,7 @@ class TimePeriodOverview:
     @classmethod
     def add_periods(cls, periods: Iterable['TimePeriodOverview']):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
-        period = None
+        period = 'day'
 
         timeline_counter = Counter()
         for p in periods:

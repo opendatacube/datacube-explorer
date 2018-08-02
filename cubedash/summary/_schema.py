@@ -7,7 +7,7 @@ from geoalchemy2 import Geometry
 from psycopg2._psycopg import AsIs
 from psycopg2.extensions import register_adapter
 from psycopg2.extras import register_composite
-from sqlalchemy import DateTime, Date, BigInteger
+from sqlalchemy import DateTime, Date, BigInteger, PrimaryKeyConstraint
 from sqlalchemy import Enum, event, DDL, \
     CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
@@ -112,16 +112,19 @@ PRODUCT = Table(
 TIME_OVERVIEW = Table(
     'time_overview', METADATA,
     # Uniquely identified by three values:
-    Column('product_ref', None, ForeignKey(PRODUCT.c.id), primary_key=True),
-    Column('start_day', Date, primary_key=True),
-    Column('period_type', Enum('all', 'year', 'month', 'day', name='overviewperiod'),
-           primary_key=True),
+    Column('product_ref', None, ForeignKey(PRODUCT.c.id)),
+    Column('period_type', Enum('all', 'year', 'month', 'day', name='overviewperiod')),
+    Column('start_day', Date),
 
     Column('dataset_count', Integer, nullable=False),
 
-    # Frustrating that there's no default datetimetz range type by default in postgres
-    Column('time_earliest', DateTime(timezone=True), nullable=False),
-    Column('time_latest', DateTime(timezone=True), nullable=False),
+    # Time range (if there's at least one dataset)
+    Column('time_earliest', DateTime(timezone=True)),
+    Column('time_latest', DateTime(timezone=True)),
+
+    Column('timeline_period',
+           Enum('year', 'month', 'week', 'day', name='timelineperiod'),
+           nullable=False),
 
     Column(
         'timeline_dataset_start_days',
@@ -134,18 +137,13 @@ TIME_OVERVIEW = Table(
         nullable=False
     ),
 
-    Column('timeline_period',
-           Enum('year', 'month', 'week', 'day', name='timelineperiod'),
-           nullable=False),
-
     Column('grid_dataset_grids', postgres.ARRAY(PgGridCell), nullable=False),
     Column('grid_dataset_counts', postgres.ARRAY(Integer), nullable=False),
 
     # The most newly created dataset
     Column(
         'newest_dataset_creation_time',
-        DateTime(timezone=True),
-        nullable=False
+        DateTime(timezone=True)
     ),
 
     # When this summary was generated
@@ -163,6 +161,7 @@ TIME_OVERVIEW = Table(
     # Size of this dataset in bytes, if the product includes it.
     Column('size_bytes', BigInteger),
 
+    PrimaryKeyConstraint('product_ref', 'start_day', 'period_type'),
     CheckConstraint(
         r"array_length(timeline_dataset_start_days, 1) = "
         r"array_length(timeline_dataset_counts, 1)",
