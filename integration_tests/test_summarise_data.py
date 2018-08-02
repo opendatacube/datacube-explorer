@@ -15,8 +15,11 @@ from cubedash.summary import TimePeriodOverview, SummaryStore
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
+from dateutil import tz
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
+
+DEFAULT_TZ = tz.gettz('Australia/Darwin')
 
 
 def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
@@ -74,8 +77,8 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
         dataset_count=408,
         footprint_count=408,
         time_range=Range(
-            begin=datetime(2017, 4, 1, 0, 0),
-            end=datetime(2017, 5, 1, 0, 0)
+            begin=datetime(2017, 4, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2017, 5, 1, 0, 0, tzinfo=DEFAULT_TZ)
         ),
         newest_creation_time=datetime(
             2017, 7, 4, 11, 18, 20, tzinfo=tzutc()
@@ -101,8 +104,8 @@ def test_generate_scene_year(run_generate, summary_store: SummaryStore):
         dataset_count=1792,
         footprint_count=1792,
         time_range=Range(
-            begin=datetime(2017, 1, 1, 0, 0),
-            end=datetime(2018, 1, 1, 0, 0)
+            begin=datetime(2017, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ)
         ),
         newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
         timeline_period='day',
@@ -127,8 +130,8 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
         dataset_count=3036,
         footprint_count=3036,
         time_range=Range(
-            begin=datetime(2016, 1, 1, 0, 0),
-            end=datetime(2018, 1, 1, 0, 0)
+            begin=datetime(2016, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ)
         ),
         newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
         timeline_period='month',
@@ -205,8 +208,8 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         dataset_count=918,
         footprint_count=918,
         time_range=Range(
-            begin=datetime(2017, 4, 1, 0, 0),
-            end=datetime(2017, 6, 1, 0, 0)
+            begin=datetime(2017, 4, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2017, 6, 1, 0, 0, tzinfo=DEFAULT_TZ)
         ),
         newest_creation_time=datetime(
             2017, 10, 25, 23, 9, 2, 486851, tzinfo=tzutc()
