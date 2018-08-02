@@ -141,7 +141,7 @@ class SummaryStore:
         return date(year or 1900, month or 1, day or 1), period
 
     @functools.lru_cache()
-    def _get_product(self, name: str) -> Optional[ProductSummary]:
+    def _product(self, name: str) -> ProductSummary:
         row = self._engine.execute(
             select(
                 [
@@ -153,9 +153,15 @@ class SummaryStore:
                 ]
             ).where(PRODUCT.c.name == name)
         ).fetchone()
-        if row:
-            return ProductSummary(name=name, **row)
-        else:
+        if not row:
+            raise ValueError("Unknown product %r (initialised?)" % name)
+
+        return ProductSummary(name=name, **row)
+
+    def _get_product(self, name: str) -> Optional[ProductSummary]:
+        try:
+            return self._product(name)
+        except ValueError:
             return None
 
     def _set_product_extent(self, product: ProductSummary):
@@ -172,7 +178,7 @@ class SummaryStore:
             .on_conflict_do_update(index_elements=["name"], set_=fields)
             .values(name=product.name, **fields)
         ).inserted_primary_key
-        self._get_product.cache_clear()
+        self._product.cache_clear()
         return row[0]
 
     def _put(
@@ -183,10 +189,7 @@ class SummaryStore:
         day: Optional[int],
         summary: TimePeriodOverview,
     ):
-        product = self._get_product(product_name)
-        if not product:
-            raise ValueError("Unknown product %r" % product_name)
-
+        product = self._product(product_name)
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
         ret = self._engine.execute(
@@ -261,10 +264,7 @@ class SummaryStore:
         generate_missing_children=True,
     ):
         """Update the given summary and return the new one"""
-        product = self._get_product(product_name)
-        if not product:
-            raise ValueError("Unknown product (initialised?)")
-
+        product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get
 
         if year and month and day:
