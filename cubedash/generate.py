@@ -11,7 +11,7 @@ from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.config import LocalConfig
 from datacube.index import index_connect, Index
 from datacube.model import DatasetType
-from datacube.ui.click import pass_config, environment_option
+from datacube.ui.click import pass_config, environment_option, config_option, log_queries_option
 
 _LOG = structlog.get_logger()
 
@@ -115,6 +115,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 
 @click.command()
 @environment_option
+@config_option
 @pass_config
 @click.option('--all',
               'generate_all_products',
