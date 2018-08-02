@@ -159,7 +159,7 @@ class Summariser:
         summary = TimePeriodOverview(
             **row,
             timeline_period="day",
-            time_range=time,
+            time_range=Range(begin_time, end_time),
             timeline_dataset_counts=day_counts,
             grid_dataset_counts=grid_counts,
             # TODO: filter invalid from the counts?
