@@ -50,8 +50,8 @@ class TimePeriodOverview:
 
     size_bytes: int
 
-    # When this summary was generated
-    summary_gen_time: datetime = dataclasses.field(default_factory=_utils.now_utc)
+    # When this summary was generated. Set on the server.
+    summary_gen_time: datetime = None
 
     @classmethod
     def add_periods(cls, periods: Iterable["TimePeriodOverview"]):

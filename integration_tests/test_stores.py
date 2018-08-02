@@ -1,3 +1,4 @@
+import time
 from collections import Counter
 from datetime import datetime
 
@@ -112,10 +113,13 @@ def test_put_get_summaries(summary_store: SummaryStore):
     Test the serialisation/deserialisation from postgres
     """
     o = _overview()
+    assert o.summary_gen_time is None, "Generation time should be set by server"
+
     product_name = "some_product"
     summary_store._set_product_extent(
         ProductSummary(product_name, 4321, datetime(2017, 1, 1), datetime(2017, 4, 1))
     )
+
     summary_store._put(product_name, 2017, None, None, o)
     loaded = summary_store.get(product_name, 2017, None, None)
 
@@ -123,16 +127,25 @@ def test_put_get_summaries(summary_store: SummaryStore):
         "Store should not return the original objects " "(they may change)"
     )
     assert o.dataset_count == 4
+    assert (
+        o.summary_gen_time is not None
+    ), "Summary-gen-time should have been added by the server"
+    original_gen_time = o.summary_gen_time
 
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+    time.sleep(1)
     summary_store._put(product_name, 2017, None, None, o)
+    assert o.summary_gen_time != original_gen_time
 
     loaded = summary_store.get(product_name, 2017, None, None)
     assert loaded.dataset_count == 4321
     assert loaded.newest_dataset_creation_time == datetime(
         2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
     )
+    assert (
+        loaded.summary_gen_time != original_gen_time
+    ), "An update should update the generation time"
 
 
 def test_gridcell_type(summary_store: SummaryStore):
