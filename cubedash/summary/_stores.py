@@ -384,7 +384,7 @@ def _summary_from_row(res):
 
 def _summary_to_row(summary: TimePeriodOverview) -> dict:
     counts = summary.timeline_dataset_counts
-    day_counts = day_values = grid_counts = grid_values = None
+    day_counts, day_values, grid_counts, grid_values = [], [], [], []
     if counts:
         day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
         grid_values, grid_counts = zip(*sorted(summary.grid_dataset_counts.items()))
@@ -408,6 +408,5 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         ),
         footprint_count=summary.footprint_count,
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
-        generation_time=summary.summary_gen_time,
         crses=summary.crses,
     )

@@ -16,7 +16,7 @@ from datacube.model import Range
 
 def _overview():
     orig = TimePeriodOverview(
-        dataset_count=1234,
+        dataset_count=4,
         timeline_dataset_counts=Counter(
             [
                 datetime(2017, 1, 2, tzinfo=tz.tzutc()),
@@ -25,7 +25,9 @@ def _overview():
                 datetime(2017, 1, 1, tzinfo=tz.tzutc()),
             ]
         ),
-        grid_dataset_counts=Counter([GridCell(1, 2), GridCell(1, 2), GridCell(3, 4)]),
+        grid_dataset_counts=Counter(
+            [GridCell(1, 2), GridCell(1, 2), GridCell(3, 4), GridCell(4, 5)]
+        ),
         timeline_period="day",
         time_range=Range(
             datetime(2017, 1, 2, tzinfo=tz.tzutc()),
@@ -43,12 +45,39 @@ def _overview():
                 (-27.804_641, 113.18267),
             ]
         ),
-        footprint_count=0,
+        footprint_count=3,
         newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
         crses={"epsg:1234"},
         size_bytes=123_400_000,
     )
     return orig
+
+
+def test_add_period_list():
+    total = TimePeriodOverview.add_periods([])
+    assert total.dataset_count == 0
+
+    joined = TimePeriodOverview.add_periods([_overview(), _overview(), total])
+    assert joined.dataset_count == _overview().dataset_count * 2
+
+    assert sum(joined.grid_dataset_counts.values()) == joined.dataset_count
+    assert sum(joined.timeline_dataset_counts.values()) == joined.dataset_count
+
+    assert joined.crses == _overview().crses
+    assert joined.size_bytes == _overview().size_bytes * 2
+
+
+def test_add_no_periods(summary_store: SummaryStore):
+    """
+    All the get/update methods should work on products with no datasets.
+    """
+    summary_store._set_product_extent(
+        ProductSummary("test_empty_product", 0, None, None)
+    )
+    summary_store.get_or_update("test_empty_product", 2015, 7, 4)
+    summary_store.get_or_update("test_empty_product", 2015, 7, None)
+    summary_store.get_or_update("test_empty_product", 2015, None, None)
+    summary_store.get_or_update("test_empty_product", None, None, None)
 
 
 def test_get_null(summary_store: SummaryStore):
@@ -93,6 +122,7 @@ def test_put_get_summaries(summary_store: SummaryStore):
     assert o is not loaded, (
         "Store should not return the original objects " "(they may change)"
     )
+    assert o.dataset_count == 4
 
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
