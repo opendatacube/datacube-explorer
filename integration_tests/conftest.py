@@ -1,5 +1,8 @@
+
 import pytest
 from pathlib import Path
+
+from click.testing import CliRunner
 
 from cubedash import logs
 from cubedash.summary import SummaryStore
@@ -22,7 +25,7 @@ module_dea_index = factories.dea_index_fixture('module_index', scope='module')
 def summary_store(module_dea_index: Index) -> SummaryStore:
     store = SummaryStore.create(module_dea_index)
     store.drop_all()
-    store.init()
+    store.init(init_products=False)
     return store
 
 
@@ -41,3 +44,25 @@ def init_logs(pytestconfig):
 @pytest.fixture
 def tmppath(tmpdir):
     return Path(str(tmpdir))
+
+
+@pytest.fixture
+def clirunner(global_integration_cli_args):
+    def _run_cli(cli_method,
+                 opts,
+                 catch_exceptions=False,
+                 expect_success=True):
+        exe_opts = list(global_integration_cli_args)
+        exe_opts.extend(opts)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli_method,
+            exe_opts,
+            catch_exceptions=catch_exceptions
+        )
+        if expect_success:
+            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
+        return result
+
+    return _run_cli

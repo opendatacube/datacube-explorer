@@ -3,14 +3,14 @@ Load a lot of real-world DEA datasets (very slow)
 
 And then check their statistics match expected.
 """
+from datetime import datetime
+from pathlib import Path
 from typing import Set, Optional
 
 import pytest
-from datetime import datetime
 from dateutil.tz import tzutc
-from pathlib import Path
 
-from cubedash import _utils
+from cubedash import generate
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview, SummaryStore
 from datacube.index.hl import Doc2Dataset
@@ -64,7 +64,17 @@ def populate_index(module_dea_index):
     return module_dea_index
 
 
-def test_calc_month(summary_store: SummaryStore):
+@pytest.fixture()
+def run_generate(clirunner, summary_store):
+    def do(*only_products):
+        products = only_products or ['--all']
+        # Run the generate CLI command for all products. The below tests will check outputs.
+        clirunner(generate.cli, *products)
+    return do
+
+
+def test_generate_month(run_generate, summary_store: SummaryStore):
+    run_generate('ls8_nbar_scene')
     # One Month
     _expect_values(
         summary_store.update(
@@ -88,10 +98,11 @@ def test_calc_month(summary_store: SummaryStore):
     )
 
 
-def test_calc_scene_year(summary_store: SummaryStore):
-    # One year, storing result.
+def test_generate_scene_year(run_generate, summary_store: SummaryStore):
+    run_generate()
+    # One year
     _expect_values(
-        summary_store.update(
+        summary_store.get(
             'ls8_nbar_scene',
             year=2017,
             month=None,
@@ -112,10 +123,12 @@ def test_calc_scene_year(summary_store: SummaryStore):
     )
 
 
-def test_calc_scene_all_time(summary_store: SummaryStore):
+def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
+    run_generate('ls8_nbar_scene')
+
     # All time
     _expect_values(
-        summary_store.update(
+        summary_store.get(
             'ls8_nbar_scene',
             year=None,
             month=None,
@@ -136,7 +149,44 @@ def test_calc_scene_all_time(summary_store: SummaryStore):
     )
 
 
+def test_generate_empty_time(run_generate, summary_store: SummaryStore):
+    run_generate('ls8_nbar_albers')
+
+    # No datasets in 2018
+    summary = summary_store.get_or_update(
+        'ls8_nbar_albers',
+        year=2018,
+        month=None,
+        day=None,
+    )
+    assert summary.dataset_count == 0, "There should be no datasets in 2018"
+
+    # Year that does not exist for LS8
+    summary = summary_store.get(
+        'ls8_nbar_albers',
+        year=2006,
+        month=None,
+        day=None,
+    )
+    assert summary is None
+
+
+def test_calc_empty(summary_store: SummaryStore):
+    summary_store.init()
+
+    # Should not exist.
+    summary = summary_store.get(
+        'ls8_fake_product',
+        year=2006,
+        month=None,
+        day=None,
+    )
+    assert summary is None
+
+
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
+    summary_store.init()
+
     # Should not exist yet.
     summary = summary_store.get(
         'ls8_nbar_albers',
@@ -191,17 +241,6 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert cached_s.summary_gen_time == summary.summary_gen_time, \
         "A new, rather than cached, summary was returned"
     assert cached_s.dataset_count == summary.dataset_count
-
-
-def test_no_datasets_in_time(summary_store: SummaryStore):
-    # No datasets in 2018
-    summary = summary_store.get_or_update(
-        'ls8_nbar_albers',
-        year=2018,
-        month=None,
-        day=None,
-    )
-    assert summary.dataset_count == 0, "There should be no datasets in 2018"
 
 
 def _expect_values(s: TimePeriodOverview,
