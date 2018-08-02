@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from cubedash import logs
+from cubedash import generate, logs
 from cubedash.summary import SummaryStore
 from datacube.index import Index
 from digitalearthau.testing import factories
@@ -59,3 +59,13 @@ def clirunner(global_integration_cli_args):
         return result
 
     return _run_cli
+
+
+@pytest.fixture()
+def run_generate(clirunner, summary_store):
+    def do(*only_products):
+        products = only_products or ["--all"]
+        # Run the generate CLI command for all products. The below tests will check outputs.
+        clirunner(generate.cli, *products)
+
+    return do

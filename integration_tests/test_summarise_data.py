@@ -64,16 +64,6 @@ def populate_index(module_dea_index):
     return module_dea_index
 
 
-@pytest.fixture()
-def run_generate(clirunner, summary_store):
-    def do(*only_products):
-        products = only_products or ["--all"]
-        # Run the generate CLI command for all products. The below tests will check outputs.
-        clirunner(generate.cli, *products)
-
-    return do
-
-
 def test_generate_month(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
     # One Month

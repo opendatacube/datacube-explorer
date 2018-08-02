@@ -148,6 +148,16 @@ def test_put_get_summaries(summary_store: SummaryStore):
     ), "An update should update the generation time"
 
 
+def test_generate_empty(run_generate):
+    """
+    Run cubedash.generate on a cube with no datasets.
+
+    Proper tests of 'generate' are in test_summarise_data.py, but take much longer to run.
+    This catches many simple DB, product and config setup issues quickly.
+    """
+    run_generate()
+
+
 def test_gridcell_type(summary_store: SummaryStore):
     # This will both serialise and deserialise
     cell = bindparam("ourcell", type_=PgGridCell)
