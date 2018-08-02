@@ -26,7 +26,7 @@ index: Index = index_connect(application_name=NAME, validate_connection=False)
 SUMMARIES_DIR = Path(__file__).parent.parent / "product-summaries"
 
 # TODO: Proper configuration?
-DEFAULT_STORE = SummaryStore(index)
+DEFAULT_STORE = SummaryStore.create(index)
 # Which product to show by default when loading '/'. Picks the first available.
 DEFAULT_START_PAGE_PRODUCTS = ("ls7_nbar_scene", "ls5_nbar_scene")
 
@@ -54,7 +54,7 @@ def get_datasets_geojson(
     month: Optional[int] = None,
     day: Optional[int] = None,
 ) -> Dict:
-    return DEFAULT_STORE.get_datasets_geojson(product_name, year, month, day)
+    return DEFAULT_STORE.get_dataset_footprints(product_name, year, month, day)
 
 
 @cache.memoize(timeout=120)

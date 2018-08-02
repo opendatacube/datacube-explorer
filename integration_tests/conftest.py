@@ -21,10 +21,15 @@ module_dea_index = factories.dea_index_fixture("module_index", scope="module")
 
 @pytest.fixture(scope="function")
 def summary_store(module_dea_index: Index) -> SummaryStore:
-    store = SummaryStore(module_dea_index)
+    store = SummaryStore.create(module_dea_index)
     store.drop_all()
     store.init()
     return store
+
+
+@pytest.fixture(scope="function")
+def summariser(summary_store: SummaryStore):
+    return summary_store._summariser
 
 
 @pytest.fixture(autouse=True, scope="session")

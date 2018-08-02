@@ -9,7 +9,7 @@ from cubedash import _utils
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
-from cubedash.summary._summarise import GridCell
+from cubedash.summary._model import GridCell
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.ui.click import environment_option, pass_config
@@ -21,7 +21,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
     index: Index = index_connect(
         config, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
-    store = SummaryStore(index, log=log)
+    store = SummaryStore.create(index, log=log)
     return store
 
 

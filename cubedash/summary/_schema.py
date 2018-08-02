@@ -28,7 +28,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.types import UserDefinedType
 
-from ._summarise import GridCell
+from ._model import GridCell
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)

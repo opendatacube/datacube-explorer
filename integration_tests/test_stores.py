@@ -7,9 +7,10 @@ from sqlalchemy import bindparam, select
 from sqlalchemy.dialects import postgresql as postgres
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary._model import GridCell
 from cubedash.summary._schema import PgGridCell
 from cubedash.summary._stores import ProductSummary
-from cubedash.summary._summarise import GridCell
+from cubedash.summary._summarise import Summariser
 from datacube.model import Range
 
 
@@ -61,20 +62,20 @@ def test_get_null(summary_store: SummaryStore):
     assert loaded is None
 
 
-def test_srid_lookup(summary_store: SummaryStore):
-    srid = summary_store._target_srid()
+def test_srid_lookup(summariser: Summariser):
+    srid = summariser._target_srid()
     assert srid is not None
     assert isinstance(srid, int)
 
-    srid2 = summary_store._target_srid()
+    srid2 = summariser._target_srid()
     assert srid == srid2
 
-    assert summary_store._get_srid_name(srid) == "EPSG:4326"
+    assert summariser._get_srid_name(srid) == "EPSG:4326"
 
     # Cached?
-    cache_hits = summary_store._get_srid_name.cache_info().hits
-    assert summary_store._get_srid_name(srid) == "EPSG:4326"
-    assert summary_store._get_srid_name.cache_info().hits > cache_hits
+    cache_hits = summariser._get_srid_name.cache_info().hits
+    assert summariser._get_srid_name(srid) == "EPSG:4326"
+    assert summariser._get_srid_name.cache_info().hits > cache_hits
 
 
 def test_put_get_summaries(summary_store: SummaryStore):

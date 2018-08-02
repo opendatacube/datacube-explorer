@@ -4,31 +4,20 @@ import functools
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional
 
 import dateutil.parser
-import pandas as pd
 import structlog
-from cachetools.func import lru_cache
-from dateutil import tz
-from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, Integer, String, and_, bindparam, func, select
+from sqlalchemy import DDL, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import TimePeriodOverview, _extents, _schema
-from cubedash.summary._schema import (
-    DATASET_SPATIAL,
-    PRODUCT,
-    SPATIAL_REF_SYS,
-    TIME_OVERVIEW,
-    PgGridCell,
-)
-from datacube.drivers.postgres._schema import DATASET_TYPE
+from cubedash.summary._schema import DATASET_SPATIAL, PRODUCT, TIME_OVERVIEW, PgGridCell
+from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import DatasetType, Range
 
@@ -51,20 +40,17 @@ class ProductSummary:
 
 
 class SummaryStore:
-    def __init__(self, index: Index, log=_LOG) -> None:
+    def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
         self.log = log
         self._update_listeners = []
 
         self._engine: Engine = alchemy_engine(index)
+        self._summariser = summariser
 
-    # Group datasets using this timezone when counting them.
-    # Aus data comes from Alice Springs
-    GROUPING_TIME_ZONE_NAME = "Australia/Darwin"
-    # cache
-    GROUPING_TIME_ZONE_TZ = tz.gettz(GROUPING_TIME_ZONE_NAME)
-    # EPSG code for all polygons to be converted to (for footprints).
-    OUTPUT_CRS_EPSG_CODE = 4326
+    @classmethod
+    def create(cls, index: Index, log=_LOG) -> "SummaryStore":
+        return cls(index, Summariser(alchemy_engine(index)), log=log)
 
     def init(
         self, init_products=True, refresh_older_than: timedelta = timedelta(days=1)
@@ -114,228 +100,6 @@ class SummaryStore:
             DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
         )
 
-    @lru_cache(1)
-    def _target_srid(self):
-        """
-        Get the srid key for our target CRS (that all geometry is returned as)
-
-        The pre-populated srid primary keys in postgis all default to the epsg code,
-        but we'll do the lookup anyway to be good citizens.
-        """
-        return self._engine.execute(
-            select([SPATIAL_REF_SYS.c.srid])
-            .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
-            .where(SPATIAL_REF_SYS.c.auth_srid == self.OUTPUT_CRS_EPSG_CODE)
-        ).scalar()
-
-    @lru_cache()
-    def _get_srid_name(self, srid):
-        """
-        Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
-        """
-        return self._engine.execute(
-            select(
-                [
-                    func.concat(
-                        SPATIAL_REF_SYS.c.auth_name,
-                        ":",
-                        SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
-                    )
-                ]
-            ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
-        ).scalar()
-
-    def _get_datasets_geojson(self, where_clause):
-        return self._engine.execute(
-            select(
-                [
-                    func.jsonb_build_object(
-                        "type",
-                        "FeatureCollection",
-                        "features",
-                        func.jsonb_agg(
-                            func.jsonb_build_object(
-                                # TODO: move ID to outer id field?
-                                "type",
-                                "Feature",
-                                "geometry",
-                                func.ST_AsGeoJSON(
-                                    func.ST_Transform(
-                                        DATASET_SPATIAL.c.footprint, self._target_srid()
-                                    )
-                                ).cast(postgres.JSONB),
-                                "properties",
-                                func.jsonb_build_object(
-                                    "id",
-                                    DATASET_SPATIAL.c.id,
-                                    # TODO: dataset label?
-                                    "grid_point",
-                                    DATASET_SPATIAL.c.grid_point.cast(String),
-                                    "creation_time",
-                                    DATASET_SPATIAL.c.creation_time,
-                                    "center_time",
-                                    DATASET_SPATIAL.c.center_time,
-                                ),
-                            )
-                        ),
-                    ).label("datasets_geojson")
-                ]
-            ).where(where_clause)
-        ).fetchone()["datasets_geojson"]
-
-    def _with_default_tz(self, d: datetime) -> datetime:
-        if d.tzinfo is None:
-            return d.replace(tzinfo=self.GROUPING_TIME_ZONE_TZ)
-        return d
-
-    def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
-        """
-        Create a summary of the given product/time range.
-
-        Default implementation uses the pure index api.
-        """
-        log = self.log.bind(product_name=product_name, time=time)
-        log.debug("summary.query")
-
-        begin_time, end_time, where_clause = self._where(product_name, time)
-        select_by_srid = (
-            select(
-                (
-                    func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
-                    func.count().label("dataset_count"),
-                    func.ST_Transform(
-                        func.ST_Union(DATASET_SPATIAL.c.footprint),
-                        self._target_srid(),
-                        type_=Geometry(),
-                    ).label("footprint_geometry"),
-                    func.sum(DATASET_SPATIAL.c.size_bytes).label("size_bytes"),
-                    func.max(DATASET_SPATIAL.c.creation_time).label(
-                        "newest_dataset_creation_time"
-                    ),
-                )
-            )
-            .where(where_clause)
-            .group_by("srid")
-            .alias("srid_summaries")
-        )
-
-        # Union all srid groups into one summary.
-        result = self._engine.execute(
-            select(
-                (
-                    func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
-                    func.array_agg(select_by_srid.c.srid).label("srids"),
-                    func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
-                    func.ST_Union(
-                        select_by_srid.c.footprint_geometry, type_=Geometry()
-                    ).label("footprint_geometry"),
-                    func.max(select_by_srid.c.newest_dataset_creation_time).label(
-                        "newest_dataset_creation_time"
-                    ),
-                )
-            )
-        )
-
-        rows = result.fetchall()
-        log.debug("summary.query.done", srid_rows=len(rows))
-
-        assert len(rows) == 1
-        row = dict(rows[0])
-        row["dataset_count"] = row["dataset_count"] or 0
-        if row["footprint_geometry"] is not None:
-            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
-        row["crses"] = None
-        if row["srids"] is not None:
-            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
-        del row["srids"]
-
-        # Convert from Python Decimal
-        if row["size_bytes"] is not None:
-            row["size_bytes"] = int(row["size_bytes"])
-
-        has_data = row["dataset_count"] > 0
-
-        log.debug("counter.calc")
-
-        # Initialise all requested days as zero
-
-        if not has_data:
-            grid_counts = Counter()
-            day_counts = Counter()
-        else:
-            day_counts = Counter(
-                {
-                    d.date(): 0
-                    for d in pd.date_range(begin_time, end_time, closed="left")
-                }
-            )
-            day_counts.update(
-                Counter(
-                    {
-                        day.date(): count
-                        for day, count in self._engine.execute(
-                            select(
-                                [
-                                    func.date_trunc(
-                                        "day",
-                                        DATASET_SPATIAL.c.center_time.op(
-                                            "AT TIME ZONE"
-                                        )(self.GROUPING_TIME_ZONE_NAME),
-                                    ).label("day"),
-                                    func.count(),
-                                ]
-                            )
-                            .where(where_clause)
-                            .group_by("day")
-                        )
-                    }
-                )
-            )
-            grid_counts = Counter(
-                {
-                    item: count
-                    for item, count in self._engine.execute(
-                        select(
-                            [
-                                DATASET_SPATIAL.c.grid_point.label("grid_point"),
-                                func.count(),
-                            ]
-                        )
-                        .where(where_clause)
-                        .group_by("grid_point")
-                    )
-                }
-            )
-
-        summary = TimePeriodOverview(
-            **row,
-            timeline_period="day",
-            time_range=time,
-            timeline_dataset_counts=day_counts,
-            grid_dataset_counts=grid_counts,
-            # TODO: filter invalid from the counts?
-            footprint_count=row["dataset_count"] or 0,
-        )
-
-        log.debug(
-            "summary.calc.done",
-            dataset_count=summary.dataset_count,
-            footprints_missing=summary.dataset_count - summary.footprint_count,
-        )
-        return summary
-
-    def _where(self, product_name, time):
-        begin_time = self._with_default_tz(time.begin)
-        end_time = self._with_default_tz(time.end)
-        where_clause = and_(
-            func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
-                DATASET_SPATIAL.c.center_time
-            ),
-            DATASET_SPATIAL.c.dataset_type_ref
-            == select([DATASET_TYPE.c.id]).where(DATASET_TYPE.c.name == product_name),
-        )
-        return begin_time, end_time, where_clause
-
     def get(
         self,
         product_name: Optional[str],
@@ -363,7 +127,7 @@ class SummaryStore:
         if not res:
             return None
 
-        return self._summary_from_row(res)
+        return _summary_from_row(res)
 
     def _start_day(self, year, month, day):
         period = "all"
@@ -375,84 +139,6 @@ class SummaryStore:
             period = "day"
 
         return date(year or 1900, month or 1, day or 1), period
-
-    def _summary_from_row(self, res):
-
-        timeline_dataset_counts = (
-            Counter(
-                dict(
-                    zip(
-                        res["timeline_dataset_start_days"],
-                        res["timeline_dataset_counts"],
-                    )
-                )
-            )
-            if res["timeline_dataset_start_days"]
-            else None
-        )
-        grid_dataset_counts = (
-            Counter(dict(zip(res["grid_dataset_grids"], res["grid_dataset_counts"])))
-            if res["grid_dataset_grids"]
-            else None
-        )
-
-        return TimePeriodOverview(
-            dataset_count=res["dataset_count"],
-            # : Counter
-            timeline_dataset_counts=timeline_dataset_counts,
-            grid_dataset_counts=grid_dataset_counts,
-            timeline_period=res["timeline_period"],
-            # : Range
-            time_range=Range(res["time_earliest"], res["time_latest"])
-            if res["time_earliest"]
-            else None,
-            # shapely.geometry.base.BaseGeometry
-            footprint_geometry=(
-                None
-                if res["footprint_geometry"] is None
-                else geo_shape.to_shape(res["footprint_geometry"])
-            ),
-            size_bytes=res["size_bytes"],
-            footprint_count=res["footprint_count"],
-            # The most newly created dataset
-            newest_dataset_creation_time=res["newest_dataset_creation_time"],
-            # When this summary was last generated
-            summary_gen_time=res["generation_time"],
-            crses=set(res["crses"]) if res["crses"] is not None else None,
-        )
-
-    def _summary_to_row(self, summary: TimePeriodOverview) -> dict:
-
-        counts = summary.timeline_dataset_counts
-        day_counts = day_values = grid_counts = grid_values = None
-        if counts:
-            day_values, day_counts = zip(
-                *sorted(summary.timeline_dataset_counts.items())
-            )
-            grid_values, grid_counts = zip(*sorted(summary.grid_dataset_counts.items()))
-
-        begin, end = summary.time_range if summary.time_range else (None, None)
-        return dict(
-            dataset_count=summary.dataset_count,
-            timeline_dataset_start_days=day_values,
-            timeline_dataset_counts=day_counts,
-            # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
-            grid_dataset_grids=func.cast(grid_values, type_=postgres.ARRAY(PgGridCell)),
-            grid_dataset_counts=grid_counts,
-            timeline_period=summary.timeline_period,
-            time_earliest=begin,
-            time_latest=end,
-            size_bytes=summary.size_bytes,
-            footprint_geometry=(
-                None
-                if summary.footprint_geometry is None
-                else geo_shape.from_shape(summary.footprint_geometry)
-            ),
-            footprint_count=summary.footprint_count,
-            newest_dataset_creation_time=summary.newest_dataset_creation_time,
-            generation_time=summary.summary_gen_time,
-            crses=summary.crses,
-        )
 
     @functools.lru_cache()
     def _get_product(self, name: str) -> Optional[ProductSummary]:
@@ -502,7 +188,7 @@ class SummaryStore:
             raise ValueError("Unknown product %r" % product_name)
 
         start_day, period = self._start_day(year, month, day)
-        row = self._summary_to_row(summary)
+        row = _summary_to_row(summary)
         self._engine.execute(
             postgres.insert(TIME_OVERVIEW)
             .on_conflict_do_update(
@@ -528,17 +214,21 @@ class SummaryStore:
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
-    def get_datasets_geojson(
+    def get_dataset_footprints(
         self,
         product_name: Optional[str],
         year: Optional[int],
         month: Optional[int],
         day: Optional[int],
-    ):
-        begin_time, end_time, where_clause = self._where(
+    ) -> Dict:
+        """
+        Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
+
+        Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
+        """
+        return self._summariser.get_dataset_footprints(
             product_name, _utils.as_time_range(year, month, day)
         )
-        return self._get_datasets_geojson(where_clause)
 
     def get_or_update(
         self,
@@ -576,11 +266,11 @@ class SummaryStore:
 
         if year and month and day:
             # Don't store days, they're quick.
-            return self.calculate_summary(
+            return self._summariser.calculate_summary(
                 product_name, _utils.as_time_range(year, month, day)
             )
         elif year and month:
-            summary = self.calculate_summary(
+            summary = self._summariser.calculate_summary(
                 product_name, _utils.as_time_range(year, month)
             )
         elif year:
@@ -648,3 +338,76 @@ def _safe_read_date(d):
         return _utils.default_utc(dateutil.parser.parse(d))
 
     return None
+
+
+def _summary_from_row(res):
+    timeline_dataset_counts = (
+        Counter(
+            dict(
+                zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"])
+            )
+        )
+        if res["timeline_dataset_start_days"]
+        else None
+    )
+    grid_dataset_counts = (
+        Counter(dict(zip(res["grid_dataset_grids"], res["grid_dataset_counts"])))
+        if res["grid_dataset_grids"]
+        else None
+    )
+
+    return TimePeriodOverview(
+        dataset_count=res["dataset_count"],
+        # : Counter
+        timeline_dataset_counts=timeline_dataset_counts,
+        grid_dataset_counts=grid_dataset_counts,
+        timeline_period=res["timeline_period"],
+        # : Range
+        time_range=Range(res["time_earliest"], res["time_latest"])
+        if res["time_earliest"]
+        else None,
+        # shapely.geometry.base.BaseGeometry
+        footprint_geometry=(
+            None
+            if res["footprint_geometry"] is None
+            else geo_shape.to_shape(res["footprint_geometry"])
+        ),
+        size_bytes=res["size_bytes"],
+        footprint_count=res["footprint_count"],
+        # The most newly created dataset
+        newest_dataset_creation_time=res["newest_dataset_creation_time"],
+        # When this summary was last generated
+        summary_gen_time=res["generation_time"],
+        crses=set(res["crses"]) if res["crses"] is not None else None,
+    )
+
+
+def _summary_to_row(summary: TimePeriodOverview) -> dict:
+    counts = summary.timeline_dataset_counts
+    day_counts = day_values = grid_counts = grid_values = None
+    if counts:
+        day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
+        grid_values, grid_counts = zip(*sorted(summary.grid_dataset_counts.items()))
+
+    begin, end = summary.time_range if summary.time_range else (None, None)
+    return dict(
+        dataset_count=summary.dataset_count,
+        timeline_dataset_start_days=day_values,
+        timeline_dataset_counts=day_counts,
+        # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
+        grid_dataset_grids=func.cast(grid_values, type_=postgres.ARRAY(PgGridCell)),
+        grid_dataset_counts=grid_counts,
+        timeline_period=summary.timeline_period,
+        time_earliest=begin,
+        time_latest=end,
+        size_bytes=summary.size_bytes,
+        footprint_geometry=(
+            None
+            if summary.footprint_geometry is None
+            else geo_shape.from_shape(summary.footprint_geometry)
+        ),
+        footprint_count=summary.footprint_count,
+        newest_dataset_creation_time=summary.newest_dataset_creation_time,
+        generation_time=summary.summary_gen_time,
+        crses=summary.crses,
+    )
