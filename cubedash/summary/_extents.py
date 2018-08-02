@@ -14,7 +14,7 @@ from sqlalchemy.engine import Engine
 
 from cubedash._utils import alchemy_engine
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS, PgGridCell
-from cubedash.summary._summarise import GridCell
+from cubedash.summary._model import GridCell
 from datacube import Datacube
 from datacube.drivers.postgres._fields import RangeDocField, PgDocField
 from datacube.drivers.postgres._schema import DATASET

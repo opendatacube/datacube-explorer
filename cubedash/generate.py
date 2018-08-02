@@ -51,7 +51,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
         application_name=f'cubedash.generate.{variant}',
         validate_connection=False
     )
-    store = SummaryStore(index, log=log)
+    store = SummaryStore.create(index, log=log)
     return store
 
 
