@@ -63,9 +63,9 @@ def clirunner(global_integration_cli_args):
 
 @pytest.fixture()
 def run_generate(clirunner, summary_store):
-    def do(*only_products):
+    def do(*only_products, expect_success=True):
         products = only_products or ["--all"]
-        # Run the generate CLI command for all products. The below tests will check outputs.
-        clirunner(generate.cli, *products)
+        res = clirunner(generate.cli, products, expect_success=expect_success)
+        return res
 
     return do

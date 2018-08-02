@@ -117,7 +117,9 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
         if product:
             yield product
         else:
-            echo(f"Unknown product {style(repr(product_name), bold=True)}", err=True)
+            raise click.BadParameter(
+                f"Unknown product {repr(product_name)}", param_hint="product_names"
+            )
 
 
 @click.command()

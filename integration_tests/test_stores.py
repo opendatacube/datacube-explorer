@@ -158,6 +158,17 @@ def test_generate_empty(run_generate):
     run_generate()
 
 
+def test_generate_raises_error(run_generate):
+    """
+    generate should return an error when an unknown product is asked for explicitly.
+    """
+    result = run_generate("fake_product", expect_success=False)
+    assert result.exit_code != 0, (
+        f"Command should return an error when unknown products are specified. "
+        f"Output: {result.output}"
+    )
+
+
 def test_gridcell_type(summary_store: SummaryStore):
     # This will both serialise and deserialise
     cell = bindparam("ourcell", type_=PgGridCell)

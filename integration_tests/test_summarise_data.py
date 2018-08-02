@@ -10,7 +10,6 @@ from typing import Optional, Set
 import pytest
 from dateutil.tz import tzutc
 
-from cubedash import generate
 from cubedash._utils import default_utc
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.index.hl import Doc2Dataset
