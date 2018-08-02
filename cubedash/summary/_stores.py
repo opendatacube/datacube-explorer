@@ -188,8 +188,12 @@ class SummaryStore:
 
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
-        self._engine.execute(
-            postgres.insert(TIME_OVERVIEW).on_conflict_do_update(
+        ret = self._engine.execute(
+            postgres.insert(
+                TIME_OVERVIEW
+            ).returning(
+                TIME_OVERVIEW.c.generation_time
+            ).on_conflict_do_update(
                 index_elements=[
                     'product_ref', 'start_day', 'period_type'
                 ],
@@ -206,6 +210,8 @@ class SummaryStore:
                 **row
             )
         )
+        [gen_time] = ret.fetchone()
+        summary.summary_gen_time = gen_time
 
     def has(self,
             product_name: Optional[str],
@@ -402,6 +408,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
             else geo_shape.from_shape(summary.footprint_geometry)
         ),
         footprint_count=summary.footprint_count,
+
+        generation_time=func.now(),
 
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses
