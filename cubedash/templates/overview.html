@@ -166,18 +166,22 @@
             {# Is there anything to show? #}
             {% if selected_summary.footprint_count %}
                 msgNoResults.style.display = 'none';
-
                 {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
-                {% if datasets_geojson %}
-                    var dataset_data = L.geoJson({{ datasets_geojson | tojson }},
+                {% if grids_geojson %}
+                    var grid_properties= {{ grids_geojson.properties | tojson}};
+                    var dataset_data = L.geoJson({{ grids_geojson | tojson }},
                         {
                             style: function (feature) {
+                                var impact = 0.7 * (feature.properties.count - grid_properties.min_count) / (grid_properties.max_count-grid_properties.min_count);
+                                console.log(impact);
+                                {#console.log({p:feature.properties, min:min_grid_count, max:max_grid_count, imp:impact});#}
                                 return {
-                                    color: "#7AB800",
+                                    color: "#ffffff",
                                     fill: true,
-                                    fillColor: "#9aee00",
-                                    opacity: 0.3,
-                                    weight: 2,
+                                    fillColor: "#00A1DE",
+                                    opacity: 0.2+impact,
+                                    fillOpacity: 0.2+impact,
+                                    weight: 1,
                                     clickable: true
                                 };
                             },
@@ -188,7 +192,7 @@
 
                                         layer.setStyle({
                                             color: '#375400',
-                                            fillOpacity: 0.6
+                                            opacity: 0.4,
                                         });
 
                                         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
@@ -220,7 +224,11 @@
                     };
                     datasetInfoControl.update = function (props) {
                         if (props) {
-                            this._div.innerHTML = '<div><strong>' + props.grid_point.replace(',', ', ') + '</strong></div>' + props.center_time;
+                            this._div.innerHTML = '<div><strong>' + grid_properties.grid_name + ' '+
+                                props.grid_point +
+                                '</strong></div>' +
+                                props.count +
+                                ' datasets';
                         } else {
                             this._div.innerHTML = '';
                         }
