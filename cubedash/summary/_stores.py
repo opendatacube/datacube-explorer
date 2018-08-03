@@ -10,7 +10,7 @@ import dateutil.parser
 import structlog
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, and_, func, select
+from sqlalchemy import DDL, and_, event, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
@@ -38,6 +38,11 @@ class ProductSummary:
     last_refresh_age: Optional[timedelta] = None
 
     id_: Optional[int] = None
+
+
+@event.listens_for(Engine, "connect")
+def setup(dbapi_con, connection_record):
+    _schema.load_schema(dbapi_con)
 
 
 class SummaryStore:
