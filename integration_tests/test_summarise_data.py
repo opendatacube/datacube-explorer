@@ -167,7 +167,7 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore):
 
 
 def test_calc_empty(summary_store: SummaryStore):
-    summary_store.init()
+    summary_store.refresh_all_products()
 
     # Should not exist.
     summary = summary_store.get("ls8_fake_product", year=2006, month=None, day=None)
@@ -194,7 +194,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
 
 
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
-    summary_store.init()
+    summary_store.refresh_all_products()
 
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)

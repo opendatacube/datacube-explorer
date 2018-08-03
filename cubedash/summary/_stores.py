@@ -10,7 +10,7 @@ import dateutil.parser
 import structlog
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, and_, event, func, select
+from sqlalchemy import DDL, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
@@ -40,13 +40,10 @@ class ProductSummary:
     id_: Optional[int] = None
 
 
-@event.listens_for(Engine, "connect")
-def setup(dbapi_con, connection_record):
-    _schema.load_schema(dbapi_con)
-
-
 class SummaryStore:
-    def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
+    def __init__(
+        self, index: Index, summariser: Summariser, init_schema=False, log=_LOG
+    ) -> None:
         self.index = index
         self.log = log
         self._update_listeners = []
@@ -54,19 +51,27 @@ class SummaryStore:
         self._engine: Engine = alchemy_engine(index)
         self._summariser = summariser
 
+        if init_schema:
+            _schema.create_schema(self._engine)
+        else:
+            _schema.load_schema(self._engine)
+
     @classmethod
-    def create(cls, index: Index, log=_LOG) -> "SummaryStore":
-        return cls(index, Summariser(alchemy_engine(index)), log=log)
+    def create(cls, index: Index, init_schema=False, log=_LOG) -> "SummaryStore":
+        return cls(
+            index, Summariser(alchemy_engine(index)), check_schema=init_schema, log=log
+        )
 
-    def init(
-        self, init_products=True, refresh_older_than: timedelta = timedelta(days=1)
-    ):
-        _schema.METADATA.create_all(self._engine, checkfirst=True)
-        if init_products:
-            for product in self.index.products.get_all():
-                self.init_product(product, refresh_older_than=refresh_older_than)
+    def close(self):
+        """Close any pooled/open connections. Necessary before forking."""
+        self.index.close()
+        self._engine.dispose()
 
-    def init_product(
+    def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
+        for product in self.index.products.get_all():
+            self.refresh_product(product, refresh_older_than=refresh_older_than)
+
+    def refresh_product(
         self, product: DatasetType, refresh_older_than: timedelta = timedelta(days=1)
     ):
         our_product = self._get_product(product.name)

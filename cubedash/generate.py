@@ -1,6 +1,6 @@
 import multiprocessing
 import sys
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import click
 import structlog
@@ -28,15 +28,15 @@ def generate_report(item):
     config, product_name = item
     log = _LOG.bind(product=product_name)
 
-    store = _get_store(config, product_name, log=log)
+    store = SummaryStore.create(_get_index(config, product_name), log=log)
     try:
         product = store.index.products.get_by_name(product_name)
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
 
-        log.info("generate.product.init")
-        store.init_product(product)
-        log.info("generate.product.init.done")
+        log.info("generate.product.refresh")
+        store.refresh_product(product)
+        log.info("generate.product.refresh.done")
 
         log.info("generate.product")
         updated = store.get_or_update(product.name, None, None, None)
@@ -50,14 +50,13 @@ def generate_report(item):
         store.index.close()
 
 
-def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
+def _get_index(config: LocalConfig, variant: str) -> Index:
     index: Index = index_connect(
         config,
         application_name=f"cubedash.generate.{variant}",
         validate_connection=False,
     )
-    store = SummaryStore.create(index, log=log)
-    return store
+    return index
 
 
 def run_generation(
@@ -70,11 +69,6 @@ def run_generation(
 
     completed = 0
     failures = 0
-
-    echo("Initialising store...", err=True, nl=False)
-    # We don't init products, as we'll do them individually in the workers below.
-    store.init(init_products=False)
-    secho("done", fg="green", err=True)
 
     echo("Generating product summaries...", err=True)
     with multiprocessing.Pool(workers) as pool:
@@ -151,7 +145,8 @@ def cli(
     """
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
-    store = _get_store(config, "setup")
+    index = _get_index(config, "setup")
+    store = SummaryStore.create(index, init_schema=True)
 
     if generate_all_products:
         products = sorted(store.index.products.get_all(), key=lambda p: p.name)

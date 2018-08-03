@@ -21,8 +21,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
     index: Index = index_connect(
         config, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
-    store = SummaryStore.create(index, log=log)
-    return store
+    return SummaryStore.create(index, log=log)
 
 
 @click.command()
@@ -56,13 +55,12 @@ def cli(
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     store = _get_store(config, "setup")
-    store.init(init_products=False)
 
     t = time.time()
     if allow_cache:
         summary = store.get_or_update(product_name, year, month, day)
     else:
-        summary = store.calculate_summary(
+        summary = store._summariser.calculate_summary(
             product_name, _utils.as_time_range(year, month, day)
         )
     t_end = time.time()
