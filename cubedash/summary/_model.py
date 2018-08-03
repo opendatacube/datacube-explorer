@@ -2,10 +2,9 @@ from __future__ import absolute_import
 
 from collections import Counter
 from datetime import datetime
-from typing import Iterable, Dict, Set, Union
+from typing import Iterable, Set, Union
 from typing import Optional, Tuple
 
-import dataclasses
 import shapely
 import shapely.geometry
 import shapely.ops
@@ -25,8 +24,8 @@ _LOG = structlog.get_logger()
 # pylint: disable=invalid-name
 @dataclass(frozen=True, order=True)
 class GridCell(object):
-    x: float
-    y: float
+    x: int
+    y: int
 
 
 @dataclass
