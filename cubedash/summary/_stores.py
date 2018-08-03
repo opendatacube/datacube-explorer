@@ -9,6 +9,7 @@ from typing import Optional
 import dateutil.parser
 import structlog
 from dataclasses import dataclass
+from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import DDL, \
     and_
@@ -304,14 +305,14 @@ class SummaryStore:
         # Don't bother storing empty periods that are outside of the existing range.
         # This doesn't have to be exact (note that someone may update in parallel too).
         if summary.dataset_count == 0 and (year or month):
-            product_extent = self.get(product_name, None, None, None)
-            if (not product_extent) or (not product_extent.time_range):
+            product = self._get_product(product_name)
+            if (not product) or (not product.time_latest):
                 return
 
-            start, end = product_extent.time_range
-            if datetime(year, month or 1, day or 1) < start:
+            timezone = tz.gettz(self._summariser.grouping_time_zone)
+            if datetime(year, month or 1, day or 1, tzinfo=timezone) < product.time_earliest:
                 return
-            if datetime(year, month or 12, day or 28) > end:
+            if datetime(year, month or 12, day or 28, tzinfo=timezone) > product.time_latest:
                 return
 
         self._put(product_name, year, month, day, summary)
