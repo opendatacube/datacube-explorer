@@ -48,6 +48,7 @@ def get_summary(
     return DEFAULT_STORE.get(product_name, year, month, day)
 
 
+@cache.memoize(timeout=60)
 def get_datasets_geojson(
     product_name: str,
     year: Optional[int] = None,
