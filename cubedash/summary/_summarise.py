@@ -63,7 +63,8 @@ class Summariser:
                 func.array_agg(select_by_srid.c.srid).label("srids"),
                 func.sum(select_by_srid.c.size_bytes).label('size_bytes'),
                 func.ST_Union(select_by_srid.c.footprint_geometry, type_=Geometry()).label("footprint_geometry"),
-                func.max(select_by_srid.c.newest_dataset_creation_time).label("newest_dataset_creation_time")
+                func.max(select_by_srid.c.newest_dataset_creation_time).label("newest_dataset_creation_time"),
+                func.now().label("summary_gen_time"),
             ))
         )
 
