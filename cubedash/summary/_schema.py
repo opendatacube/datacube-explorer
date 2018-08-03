@@ -200,7 +200,11 @@ def create(target, connection, **kw):
         on spatial_ref_sys(auth_name, auth_srid);
     """)
 
-    register_composite('cubedash.gridcell', connection, globally=True, factory=GridCellComposite)
+    load_schema(connection)
+
+
+def load_schema(conn):
+    register_composite('cubedash.gridcell', conn, globally=True, factory=GridCellComposite)
 
 
 class GridCellComposite(psycopg2.extras.CompositeCaster):

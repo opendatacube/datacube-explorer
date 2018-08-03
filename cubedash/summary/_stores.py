@@ -26,6 +26,7 @@ from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import DatasetType
 from datacube.model import Range
+from sqlalchemy import event
 
 _LOG = structlog.get_logger()
 
@@ -43,6 +44,11 @@ class ProductSummary:
     last_refresh_age: Optional[timedelta] = None
 
     id_: Optional[int] = None
+
+
+@event.listens_for(Engine, "connect")
+def setup(dbapi_con, connection_record):
+    _schema.load_schema(dbapi_con)
 
 
 class SummaryStore:

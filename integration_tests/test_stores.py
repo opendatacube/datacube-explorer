@@ -64,6 +64,8 @@ def test_add_period_list():
     assert joined.crses == _overview().crses
     assert joined.size_bytes == _overview().size_bytes * 2
 
+    assert sorted(joined.grid_dataset_counts.keys()) == [GridCell(1, 2), GridCell(3, 4), GridCell(4, 5)]
+
 
 def test_add_no_periods(summary_store: SummaryStore):
     """
@@ -132,9 +134,13 @@ def test_put_get_summaries(summary_store: SummaryStore):
 
     assert o is not loaded, "Store should not return the original objects " \
                             "(they may change)"
-    assert o.dataset_count == 4
     assert o.summary_gen_time is not None, "Summary-gen-time should have been added by the server"
     original_gen_time = o.summary_gen_time
+
+    assert loaded.dataset_count == 4
+    assert sum(loaded.grid_dataset_counts.values()) == 4, "Grid counts don't match dataset count"
+    assert sorted(loaded.grid_dataset_counts.keys()) == [GridCell(1, 2), GridCell(3, 4), GridCell(4, 5)], \
+        "Incorrect set of grid cells"
 
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
