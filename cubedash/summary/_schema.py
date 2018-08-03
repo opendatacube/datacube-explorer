@@ -203,6 +203,10 @@ def create(target, connection, **kw):
     load_schema(connection)
 
 
+def create_schema(conn):
+    METADATA.create_all(conn, checkfirst=True)
+
+
 def load_schema(conn):
     register_composite('cubedash.gridcell', conn, globally=True, factory=GridCellComposite)
 

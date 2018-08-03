@@ -31,6 +31,9 @@ SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
 
 # TODO: Proper configuration?
 DEFAULT_STORE = SummaryStore.create(index)
+# Close any initialisation-check connections so we can fork.
+DEFAULT_STORE.close()
+
 # Which product to show by default when loading '/'. Picks the first available.
 DEFAULT_START_PAGE_PRODUCTS = ('ls7_nbar_scene', 'ls5_nbar_scene')
 
