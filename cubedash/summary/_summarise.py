@@ -81,6 +81,7 @@ class Summariser:
                     func.max(select_by_srid.c.newest_dataset_creation_time).label(
                         "newest_dataset_creation_time"
                     ),
+                    func.now().label("summary_gen_time"),
                 )
             )
         )
