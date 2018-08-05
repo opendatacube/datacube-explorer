@@ -23,7 +23,6 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Table,
-    event,
     func,
 )
 from sqlalchemy.dialects import postgresql as postgres
@@ -165,40 +164,31 @@ TIME_OVERVIEW = Table(
 
 _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
-event.listen(
-    METADATA, "before_create", DDL(f"create schema if not exists {CUBEDASH_SCHEMA}")
-)
-event.listen(METADATA, "before_create", DDL(f"create extension if not exists postgis"))
 
+def create_schema(engine: Engine):
+    engine.execute(DDL(f"create extension if not exists postgis"))
+    engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
 
-@event.listens_for(METADATA, "before_create")
-def create(target, connection, **kw):
-    """
-    Create all tables if the cubedash schema doesn't already exist.
-    """
-    if not pg_exists(connection, f"{CUBEDASH_SCHEMA}.gridcell"):
-        connection.execute(
+    if not pg_exists(engine, f"{CUBEDASH_SCHEMA}.gridcell"):
+        engine.execute(
             f"create type {CUBEDASH_SCHEMA}.gridcell " f"as (x smallint, y smallint);"
         )
 
+    load_types(engine)
+
     # Ensure there's an index on the SRS table. (Using default pg naming conventions)
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
-    connection.execute(
+    engine.execute(
         """
         create index if not exists
             spatial_ref_sys_auth_name_auth_srid_idx
         on spatial_ref_sys(auth_name, auth_srid);
     """
     )
-
-    load_schema(connection)
-
-
-def create_schema(engine: Engine):
     METADATA.create_all(engine, checkfirst=True)
 
 
-def load_schema(engine: Engine):
+def load_types(engine: Engine):
     register_composite(
         "cubedash.gridcell",
         engine.raw_connection(),
