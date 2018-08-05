@@ -13,6 +13,7 @@ from sqlalchemy import Enum, event, DDL, \
 from sqlalchemy import func, Table, Column, ForeignKey, String, \
     Integer, SmallInteger, MetaData, Index
 from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.engine import Engine
 from sqlalchemy.types import UserDefinedType
 
 from ._model import GridCell
@@ -203,12 +204,12 @@ def create(target, connection, **kw):
     load_schema(connection)
 
 
-def create_schema(conn):
-    METADATA.create_all(conn, checkfirst=True)
+def create_schema(engine: Engine):
+    METADATA.create_all(engine, checkfirst=True)
 
 
-def load_schema(conn):
-    register_composite('cubedash.gridcell', conn, globally=True, factory=GridCellComposite)
+def load_schema(engine: Engine):
+    register_composite('cubedash.gridcell', engine.raw_connection(), globally=True, factory=GridCellComposite)
 
 
 class GridCellComposite(psycopg2.extras.CompositeCaster):
