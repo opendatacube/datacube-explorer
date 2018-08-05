@@ -63,7 +63,7 @@ class SummaryStore:
     def create(cls, index: Index, init_schema=False, log=_LOG) -> 'SummaryStore':
         return cls(index,
                    Summariser(alchemy_engine(index)),
-                   check_schema=init_schema,
+                   init_schema=init_schema,
                    log=log)
 
     def close(self):
