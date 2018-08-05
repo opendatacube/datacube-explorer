@@ -60,9 +60,7 @@ def cli(
     if allow_cache:
         summary = store.get_or_update(product_name, year, month, day)
     else:
-        summary = store._summariser.calculate_summary(
-            product_name, _utils.as_time_range(year, month, day)
-        )
+        summary = store.update(product_name, year, month, day)
     t_end = time.time()
 
     echo(f"{summary.dataset_count} ", nl=False)
