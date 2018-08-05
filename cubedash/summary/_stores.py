@@ -54,10 +54,16 @@ class SummaryStore:
         self._engine: Engine = alchemy_engine(index)
         self._summariser = summariser
 
+        self._initialised = False
+
         if init_schema:
             _schema.create_schema(self._engine)
-        else:
-            _schema.load_schema(self._engine)
+            self._initialised = True
+
+    def _ensure_initialised(self):
+        if not self._initialised:
+            _schema.load_types(self._engine)
+            self._initialised = True
 
     @classmethod
     def create(cls, index: Index, init_schema=False, log=_LOG) -> 'SummaryStore':
@@ -72,12 +78,14 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
+        self._ensure_initialised()
         for product in self.index.products.get_all():
             self.refresh_product(product, refresh_older_than=refresh_older_than)
 
     def refresh_product(self,
                         product: DatasetType,
                         refresh_older_than: timedelta = timedelta(days=1)):
+        self._ensure_initialised()
         our_product = self._get_product(product.name)
 
         if (our_product is not None and
@@ -118,7 +126,7 @@ class SummaryStore:
 
     def get(self, product_name: Optional[str], year: Optional[int],
             month: Optional[int], day: Optional[int]) -> Optional[TimePeriodOverview]:
-
+        self._ensure_initialised()
         start_day, period = self._start_day(year, month, day)
 
         product = self._get_product(product_name)
@@ -198,6 +206,7 @@ class SummaryStore:
 
     def _put(self, product_name: Optional[str], year: Optional[int],
              month: Optional[int], day: Optional[int], summary: TimePeriodOverview):
+        self._ensure_initialised()
         product = self._product(product_name)
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
@@ -243,6 +252,7 @@ class SummaryStore:
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
+        self._ensure_initialised()
         return self._summariser.get_dataset_footprints(product_name, _utils.as_time_range(year, month, day))
 
     def get_or_update(self,
@@ -269,6 +279,7 @@ class SummaryStore:
                day: Optional[int],
                generate_missing_children=True):
         """Update the given summary and return the new one"""
+        self._ensure_initialised()
         product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get
 
@@ -330,6 +341,7 @@ class SummaryStore:
         """
         List products with summaries available.
         """
+        self._ensure_initialised()
         all_products = self.index.datasets.types.get_all()
         existing_products = sorted(
             (
