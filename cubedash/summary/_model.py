@@ -53,7 +53,9 @@ class TimePeriodOverview:
     summary_gen_time: datetime = None
 
     @classmethod
-    def add_periods(cls, periods: Iterable["TimePeriodOverview"]):
+    def add_periods(
+        cls, periods: Iterable["TimePeriodOverview"], footprint_tolerance=0.05
+    ):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
 
@@ -98,6 +100,9 @@ class TimePeriodOverview:
                 if with_valid_geometries
                 else None
             )
+
+        if footprint_tolerance is not None and geometry_union is not None:
+            geometry_union = geometry_union.simplify(footprint_tolerance)
 
         total_datasets = sum(p.dataset_count for p in periods)
 
