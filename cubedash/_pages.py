@@ -4,12 +4,13 @@ import itertools
 import sys
 import time
 from datetime import datetime
-from typing import Counter, Dict, Optional
+from typing import Dict, Optional, Counter
 
 import flask
 import structlog
 from flask import abort, redirect, url_for
 from flask import request
+from shapely.geometry import MultiPolygon
 from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
@@ -19,6 +20,7 @@ from cubedash._model import get_datasets_geojson
 from cubedash.summary._model import GridCell
 from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
+from datacube.utils.geometry import Geometry, CRS
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
 from ._utils import as_json, alchemy_engine
@@ -48,8 +50,12 @@ def overview_page(product_name: str = None,
     datasets = None if selected_summary.dataset_count > 1000 else get_datasets_geojson(product_name, year, month, day)
 
     start = time.time()
-    grids = get_grid_counts(selected_summary.grid_dataset_counts, product)
-    _LOG.debug('overview.grid_gen', time_sec=time.time()-start)
+    geojson_grids = get_grid_counts(
+        selected_summary.grid_dataset_counts,
+        selected_summary.footprint_geometry,
+        product
+    )
+    _LOG.debug('overview.grid_gen', time_sec=time.time() - start)
 
     return flask.render_template(
         'overview.html',
@@ -57,7 +63,7 @@ def overview_page(product_name: str = None,
         month=month,
         day=day,
 
-        grids_geojson=grids,
+        grids_geojson=geojson_grids,
         datasets_geojson=datasets,
         product=product,
         # Summary for the whole product
@@ -68,14 +74,23 @@ def overview_page(product_name: str = None,
 
 
 def get_grid_counts(
-        grid_count: Counter[GridCell],
+        grid_counts: Counter[GridCell],
+        footprint: MultiPolygon,
         product: DatasetType
 ) -> Optional[Dict]:
     grid_spec = product.grid_spec
     if not grid_spec:
         return None
 
-    low, high = min(grid_count.values()), max(grid_count.values())
+    footprint = Geometry(footprint.__geo_interface__, crs=CRS('epsg:4326'))
+
+    def cell_geometry(grid: GridCell) -> Geometry:
+        """
+        Get the part of the cell geometry that intersects the footprint.
+        """
+        return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent.intersection(footprint)
+
+    low, high = min(grid_counts.values()), max(grid_counts.values())
     return {
         'type': 'FeatureCollection',
         'properties': {
@@ -84,14 +99,13 @@ def get_grid_counts(
             'max_count': high,
         },
         'features': [
-            {
-                'type': 'Feature',
-                'geometry': grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent.__geo_interface__,
-                'properties': {
-                    'grid_point': [grid.x, grid.y],
-                    'count': grid_count[grid]
-                }}
-            for grid in grid_count
+            {'type': 'Feature',
+             'geometry': cell_geometry(grid).__geo_interface__,
+             'properties': {
+                 'grid_point': [grid.x, grid.y],
+                 'count': grid_counts[grid]
+             }
+             } for grid in grid_counts
         ]
     }
 
