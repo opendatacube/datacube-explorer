@@ -178,18 +178,18 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
 
     _expect_values(
-        summary_store.get("ls8_nbar_albers", year=2017, month=5, day=2),
-        dataset_count=3036,
-        footprint_count=3036,
+        summary_store.get_or_update("ls8_nbar_albers", year=2017, month=5, day=2),
+        dataset_count=29,
+        footprint_count=29,
         time_range=Range(
-            begin=datetime(2016, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
-            end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            begin=datetime(2017, 5, 2, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2017, 5, 3, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
-        timeline_period="month",
-        timeline_count=24,
+        newest_creation_time=datetime(2017, 10, 20, 8, 53, 26, 475_609, tzinfo=tzutc()),
+        timeline_period="day",
+        timeline_count=1,
         crses={"EPSG:3577"},
-        size_bytes=1_805_759_242_975,
+        size_bytes=None,
     )
 
 
