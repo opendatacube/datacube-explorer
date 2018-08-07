@@ -138,13 +138,13 @@ def search_page(
 
     # TODO: Add sort option to index API
     datasets = sorted(
-        _model.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
+        _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
         key=lambda d: d.center_time,
     )
 
     if request_wants_json():
         return as_json(
-            dict(datasets=[build_dataset_info(_model.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
     return flask.render_template(
         "search.html",
@@ -177,7 +177,7 @@ def timeline_page(product_name: str):
 def _load_product(product_name, year, month, day):
     product = None
     if product_name:
-        product = _model.index.products.get_by_name(product_name)
+        product = _model.STORE.index.products.get_by_name(product_name)
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
@@ -255,13 +255,13 @@ if app.debug:
         flask.g.datacube_query_time = 0
         flask.g.datacube_query_count = 0
 
-    @event.listens_for(alchemy_engine(_model.index), "before_cursor_execute")
+    @event.listens_for(alchemy_engine(_model.STORE.index), "before_cursor_execute")
     def before_cursor_execute(
         conn, cursor, statement, parameters, context, executemany
     ):
         conn.info.setdefault("query_start_time", []).append(time.time())
 
-    @event.listens_for(alchemy_engine(_model.index), "after_cursor_execute")
+    @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
     def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
         flask.g.datacube_query_time += time.time() - conn.info["query_start_time"].pop(
             -1
