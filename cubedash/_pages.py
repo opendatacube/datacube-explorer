@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Counter, Dict, Optional
 
 import flask
+import shapely
+import shapely.wkb
 import structlog
 from flask import abort, redirect, request, url_for
 from shapely.geometry import MultiPolygon
@@ -55,11 +57,16 @@ def overview_page(
     )
 
     start = time.time()
-    geojson_grids = get_grid_counts(
-        selected_summary.grid_dataset_counts,
-        selected_summary.footprint_geometry,
-        product,
+    geojson_grids = (
+        get_grid_counts(
+            selected_summary.grid_dataset_counts,
+            selected_summary.footprint_geometry,
+            product,
+        )
+        if selected_summary.grid_dataset_counts
+        else None
     )
+
     _LOG.debug("overview.grid_gen", time_sec=time.time() - start)
 
     return flask.render_template(
@@ -93,15 +100,18 @@ def get_grid_counts(
             return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
 
     else:
-        footprint = Geometry(footprint.__geo_interface__, crs=CRS("epsg:4326"))
 
         def cell_geometry(grid: GridCell) -> Geometry:
             """
             Get the part of the cell geometry that intersects the footprint.
             """
-            return grid_spec.tile_geobox(
-                (grid.x, grid.y)
-            ).geographic_extent.intersection(footprint)
+            # TODO: The ODC Geometry __geo_interface__ breaks for some products
+            # (eg, when the inner type is a GeometryCollection?)
+            # So we're now converting to shapely to do it.
+            extent = grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
+            # pylint: disable=protected-access
+            shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
+            return shapely_extent.intersection(footprint)
 
     low, high = min(grid_counts.values()), max(grid_counts.values())
     return {
