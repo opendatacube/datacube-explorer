@@ -84,15 +84,24 @@ def get_grid_counts(
     if not grid_spec:
         return None
 
-    footprint = Geometry(footprint.__geo_interface__, crs=CRS("epsg:4326"))
+    if footprint is None:
 
-    def cell_geometry(grid: GridCell) -> Geometry:
-        """
-        Get the part of the cell geometry that intersects the footprint.
-        """
-        return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent.intersection(
-            footprint
-        )
+        def cell_geometry(grid: GridCell) -> Geometry:
+            """
+            Get the part of the cell geometry that intersects the footprint.
+            """
+            return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
+
+    else:
+        footprint = Geometry(footprint.__geo_interface__, crs=CRS("epsg:4326"))
+
+        def cell_geometry(grid: GridCell) -> Geometry:
+            """
+            Get the part of the cell geometry that intersects the footprint.
+            """
+            return grid_spec.tile_geobox(
+                (grid.x, grid.y)
+            ).geographic_extent.intersection(footprint)
 
     low, high = min(grid_counts.values()), max(grid_counts.values())
     return {
