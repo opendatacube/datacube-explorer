@@ -8,6 +8,7 @@ from typing import Counter, Dict, Optional
 
 import flask
 import shapely
+import shapely.prepared
 import shapely.wkb
 import structlog
 from flask import abort, redirect, request, url_for
@@ -95,23 +96,31 @@ def get_grid_counts(
 
         def cell_geometry(grid: GridCell) -> Geometry:
             """
-            Get the part of the cell geometry that intersects the footprint.
+            Get a whole polygon for a gridcell
             """
             return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
 
     else:
+        footprint_boundary = shapely.prepared.prep(footprint.boundary)
 
         def cell_geometry(grid: GridCell) -> Geometry:
             """
-            Get the part of the cell geometry that intersects the footprint.
+            Get a polygon for the gridcell that's within the footprint.
             """
             # TODO: The ODC Geometry __geo_interface__ breaks for some products
             # (eg, when the inner type is a GeometryCollection?)
             # So we're now converting to shapely to do it.
             extent = grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
+            # TODO: Is there a nicer way to do this?
             # pylint: disable=protected-access
             shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
-            return shapely_extent.intersection(footprint)
+
+            # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
+            # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
+            if footprint_boundary.intersects(shapely_extent):
+                return footprint.intersection(shapely_extent)
+            else:
+                return shapely_extent
 
     low, high = min(grid_counts.values()), max(grid_counts.values())
     return {
