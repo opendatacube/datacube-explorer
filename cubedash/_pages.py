@@ -50,16 +50,23 @@ def overview_page(product_name: str = None,
                   month: int = None,
                   day: int = None):
     product, product_summary, selected_summary = _load_product(product_name, year, month, day)
-    datasets = None if selected_summary.dataset_count > 1000 else get_datasets_geojson(product_name, year, month, day)
 
-    start = time.time()
-    geojson_grids = get_grid_counts(
-        selected_summary.grid_dataset_counts,
-        selected_summary.footprint_geometry,
-        product
-    ) if selected_summary.grid_dataset_counts else None
+    datasets = None
+    geojson_grids = None
 
-    _LOG.debug('overview.grid_gen', time_sec=time.time() - start)
+    if selected_summary and selected_summary.dataset_count:
+        # The per-dataset view is less useful now that we show grids separately.
+        # datasets = None if selected_summary.dataset_count > 1000
+        # else get_datasets_geojson(product_name, year, month, day)
+
+        start = time.time()
+        geojson_grids = get_grid_counts(
+            selected_summary.grid_dataset_counts,
+            selected_summary.footprint_geometry,
+            product
+        ) if selected_summary.grid_dataset_counts else None
+
+        _LOG.debug('overview.grid_gen', time_sec=time.time() - start)
 
     return flask.render_template(
         'overview.html',
