@@ -66,6 +66,40 @@ def test_default_redirect(cubedash_client: FlaskClient):
     assert rv.location.endswith("/ls7_nbar_scene")
 
 
+def test_get_overview(cubedash_client: FlaskClient):
+    client = cubedash_client
+
+    rv: Response = client.get("/wofs_albers")
+    assert b"11 datasets" in rv.data
+    assert b"Last processed <time datetime=2018-05-20T21:25:35.311643+10:00 " in rv.data
+    assert b"Historic Flood Mapping Water Observations from Space" in rv.data
+
+    rv: Response = client.get("/wofs_albers/2017")
+
+    assert b"11 datasets" in rv.data
+    assert b"Last processed <time datetime=2018-05-20T21:25:35.311643+10:00 " in rv.data
+    assert b"Historic Flood Mapping Water Observations from Space" in rv.data
+
+    rv: Response = client.get("/wofs_albers/2017/04")
+    assert b"4 datasets" in rv.data
+    assert b"Last processed <time datetime=2018-05-20T19:36:57.900952+10:00 " in rv.data
+    assert b"Historic Flood Mapping Water Observations from Space" in rv.data
+
+
+@pytest.mark.skip(reason="TODO: fix")
+def test_out_of_date_range(cubedash_client: FlaskClient):
+    """
+    We have generated summaries for this product, but the date is out of the product's date range.
+    """
+    client = cubedash_client
+
+    rv: Response = client.get("/wofs_albers/2010")
+    print(rv.data.decode("utf-8"))
+    # The common error here is to say "No data: not yet generated" rather than "0 datasets"
+    assert b"0 datasets" in rv.data
+    assert b"Historic Flood Mapping Water Observations from Space" in rv.data
+
+
 def test_no_data_pages(cubedash_client: FlaskClient):
     """
     Fetch products that exist but have no summaries generated.
