@@ -122,9 +122,9 @@ class SummaryStore:
     def get(
         self,
         product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
     ) -> Optional[TimePeriodOverview]:
         self._ensure_initialised()
         start_day, period = self._start_day(year, month, day)
@@ -234,18 +234,18 @@ class SummaryStore:
     def has(
         self,
         product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
     def get_dataset_footprints(
         self,
         product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
     ) -> Dict:
         """
         Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
@@ -260,9 +260,9 @@ class SummaryStore:
     def get_or_update(
         self,
         product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
     ):
         """
         Get a cached summary if exists, otherwise generate one
@@ -279,9 +279,9 @@ class SummaryStore:
     def update(
         self,
         product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
         generate_missing_children=True,
     ):
         """Update the given summary and return the new one"""
