@@ -180,8 +180,9 @@ def timesince(dt, default="just now"):
 
 
 def _time(label: str, actual_time: datetime) -> Markup:
+    as_utc = actual_time.astimezone(tz.tzutc())
     return Markup(
-        f"<time datetime={actual_time.isoformat()}"
+        f"<time datetime={as_utc.isoformat()}"
         f' title="{actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z")}">'
         f"{escape(label)}"
         f"</time>"
