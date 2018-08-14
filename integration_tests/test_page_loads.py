@@ -88,6 +88,19 @@ def test_get_overview(cubedash_client: FlaskClient):
     assert b"Historic Flood Mapping Water Observations from Space" in rv.data
 
 
+def test_view_dataset(cubedash_client: FlaskClient):
+
+    # ls7_level1_scene dataset
+    rv: Response = cubedash_client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+    # Label of dataset is header
+    assert b"<h2>LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501</h2>" in rv.data
+
+    # wofs_albers dataset (has no label or location)
+    rv: Response = cubedash_client.get("/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
+    assert b"-20.502 to -19.6" in rv.data
+    assert b"132.0 to 132.924" in rv.data
+
+
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(cubedash_client: FlaskClient):
     """
