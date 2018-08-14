@@ -81,6 +81,8 @@ def _format_query_value(val):
         return _format_datetime(val)
     if val is None:
         return '•'
+    if isinstance(val, float):
+        return round(val, 3)
     return str(val)
 
 
