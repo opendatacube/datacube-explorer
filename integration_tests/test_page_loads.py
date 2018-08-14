@@ -73,22 +73,24 @@ def test_get_overview(cubedash_client: FlaskClient):
 
     rv: Response = client.get('/wofs_albers')
     assert b'11 datasets' in rv.data
-    assert b'Last processed <time datetime=2018-05-20T21:25:35.311643+10:00 ' in rv.data
+    i = rv.data.find(b'Last processed <time')
+    print(rv.data[i:i + 62])
+    assert b'Last processed <time datetime=2018-05-20T11:25:35' in rv.data
     assert b'Historic Flood Mapping Water Observations from Space' in rv.data
 
     rv: Response = client.get('/wofs_albers/2017')
 
     assert b'11 datasets' in rv.data
-    assert b'Last processed <time datetime=2018-05-20T21:25:35.311643+10:00 ' in rv.data
+    assert b'Last processed <time datetime=2018-05-20T11:25:35' in rv.data
     assert b'Historic Flood Mapping Water Observations from Space' in rv.data
 
     rv: Response = client.get('/wofs_albers/2017/04')
     assert b'4 datasets' in rv.data
-    assert b'Last processed <time datetime=2018-05-20T19:36:57.900952+10:00 ' in rv.data
+    assert b'Last processed <time datetime=2018-05-20T09:36:57' in rv.data
     assert b'Historic Flood Mapping Water Observations from Space' in rv.data
 
 
-@pytest.mark.skip(reason="TODO: fix")
+@pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(cubedash_client: FlaskClient):
     """
     We have generated summaries for this product, but the date is out of the product's date range.
