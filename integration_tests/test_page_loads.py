@@ -103,6 +103,17 @@ def test_view_dataset(cubedash_client: FlaskClient):
     assert b'132.0 to 132.924' in rv.data
 
 
+def test_view_product(cubedash_client: FlaskClient):
+    rv: Response = cubedash_client.get("/product/ls7_nbar_scene")
+    assert b'Landsat 7 NBAR 25 metre' in rv.data
+
+
+def test_about_page(cubedash_client: FlaskClient):
+    rv: Response = cubedash_client.get("/about")
+    assert b"wofs_albers" in rv.data
+    assert b'11 total datasets' in rv.data
+
+
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(cubedash_client: FlaskClient):
     """
