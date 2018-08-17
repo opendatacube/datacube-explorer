@@ -52,15 +52,13 @@ def generate_report(item):
 
 def _get_index(config: LocalConfig, variant: str) -> Index:
     index: Index = index_connect(
-        config,
-        application_name=f"cubedash.generate.{variant}",
-        validate_connection=False,
+        config, application_name=f"dashgen.{variant}", validate_connection=False
     )
     return index
 
 
 def run_generation(
-    config: LocalConfig, products: Sequence[DatasetType], store: SummaryStore, workers=3
+    config: LocalConfig, products: Sequence[DatasetType], workers=3
 ) -> Tuple[int, int]:
     echo(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
@@ -153,7 +151,7 @@ def cli(
     else:
         products = list(_load_products(store.index, product_names))
 
-    completed, failures = run_generation(config, products, store=store, workers=jobs)
+    completed, failures = run_generation(config, products, workers=jobs)
     sys.exit(failures)
 
 
