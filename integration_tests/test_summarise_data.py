@@ -9,7 +9,6 @@ from typing import Set, Optional
 
 import pytest
 from dateutil.tz import tzutc
-
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview, SummaryStore
 from datacube.index.hl import Doc2Dataset
@@ -309,8 +308,8 @@ def _expect_values(s: TimePeriodOverview,
                 "wrong timeline entry count"
             )
 
-            assert sum(s.grid_dataset_counts.values()) == s.dataset_count, (
-                "grid count doesn't match dataset count"
+            assert sum(s.region_dataset_counts.values()) == s.dataset_count, (
+                "region dataset count doesn't match total dataset count"
             )
             assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
                 "timeline count doesn't match dataset count"

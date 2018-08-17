@@ -8,18 +8,17 @@ import structlog
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
-from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, null, BigInteger
+from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, null, BigInteger, String
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
 from cubedash._utils import alchemy_engine
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS, PgGridCell
-from cubedash.summary._model import GridCell
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import RangeDocField, PgDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index import Index
-from datacube.model import MetadataType, DatasetType, Dataset
+from datacube.model import MetadataType, DatasetType
 
 _LOG = structlog.get_logger()
 
@@ -83,22 +82,24 @@ def _bounds_polygon(doc, projection_offset):
     )
 
 
-def _grid_point_fields(dt: DatasetType):
+def _region_code_field(dt: DatasetType):
     """
-    Get an sqlalchemy expression to calculte the grid number of a dataset.
+    Get an sqlalchemy expression to calculate the region code (a string)
 
     Eg.
-        On scenes this is the path/row
-        On tiles this is the tile numbers
-
-    Returns as a postgres array of small int.
+        On Landsat scenes this is the path/row (separated by underscore)
+        On tiles this is the tile numbers (separated by underscore: possibly with negative)
+        On Sentinel this is MGRS number
     """
     grid_spec = dt.grid_spec
 
     md_fields = dt.metadata_type.dataset_fields
 
     # If the product has a grid spec, we can calculate the grid number
-    if grid_spec is not None:
+    if 'region_code' in md_fields:
+        field: PgDocField = md_fields['region_code']
+        return field.alchemy_expression
+    elif grid_spec is not None:
         doc = _jsonb_doc_expression(dt.metadata_type)
         projection_offset = _projection_doc_offset(dt.metadata_type)
 
@@ -113,25 +114,24 @@ def _grid_point_fields(dt: DatasetType):
         # todo: look at grid_spec crs. Use it for defaults, conversion.
         size_x, size_y = (grid_spec.tile_size or (1000.0, 1000.0))
         origin_x, origin_y = grid_spec.origin
-        return func.ROW(
-            func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(
-                SmallInteger),
-            func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(
-                SmallInteger),
-        ).cast(PgGridCell)
+        return func.concat(
+            func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(String),
+            '_',
+            func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
+        )
     # Otherwise does the product have a "sat_path/sat_row" fields? Use their values directly.
     elif 'sat_path' in md_fields:
         # Use sat_path/sat_row as grid items
         path_field: RangeDocField = md_fields['sat_path']
         row_field: RangeDocField = md_fields['sat_row']
-
-        return func.ROW(
-            path_field.lower.alchemy_expression.cast(SmallInteger),
-            row_field.greater.alchemy_expression.cast(SmallInteger),
-        ).cast(PgGridCell)
+        return func.concat(
+            path_field.lower.alchemy_expression.cast(String),
+            '_',
+            row_field.greater.alchemy_expression.cast(String)
+        )
     else:
         _LOG.warn(
-            "no_grid_spec",
+            "no_region_code",
             product_name=dt.name,
             metadata_type_name=dt.metadata_type.name
         )
@@ -143,7 +143,7 @@ def _size_bytes_field(dt: DatasetType):
     if 'size_bytes' in md_fields:
         return md_fields['size_bytes'].alchemy_expression
 
-    return _jsonb_doc_expression(dt.metadata_type)[('size_bytes')].astext.cast(BigInteger)
+    return _jsonb_doc_expression(dt.metadata_type)['size_bytes'].astext.cast(BigInteger)
 
 
 def get_dataset_srid_alchemy_expression(md: MetadataType):
@@ -213,7 +213,7 @@ def refresh_product(index: Index, product: DatasetType):
 
 def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
     query = postgres.insert(DATASET_SPATIAL).from_select(
-        ['id', 'dataset_type_ref', 'center_time', 'footprint', 'grid_point', 'size_bytes', 'creation_time'],
+        ['id', 'dataset_type_ref', 'center_time', 'footprint', 'region_code', 'size_bytes', 'creation_time'],
         _select_dataset_extent_query(product)
     ).on_conflict_do_nothing(
         index_elements=['id']
@@ -252,7 +252,7 @@ def _select_dataset_extent_query(dt: DatasetType):
         (
             null() if footrprint_expression is None else footrprint_expression
         ).label('footprint'),
-        _grid_point_fields(dt).label('grid_point'),
+        _region_code_field(dt).label('region_code'),
         _size_bytes_field(dt).label('size_bytes'),
         _dataset_creation_expression(md_type).label('creation_time'),
     ]).where(
@@ -317,8 +317,6 @@ def _as_json(obj):
             # Following the EWKT format: include srid
             prefix = f'SRID={o.srid};' if o.srid else ''
             return prefix + to_shape(o).wkt
-        if isinstance(o, GridCell):
-            return [o.x, o.y]
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):

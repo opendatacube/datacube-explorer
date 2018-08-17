@@ -92,7 +92,7 @@ class Summariser:
         # Initialise all requested days as zero
 
         if not has_data:
-            grid_counts = Counter()
+            region_counts = Counter()
             day_counts = Counter()
         else:
             day_counts = Counter({
@@ -112,14 +112,14 @@ class Summariser:
                     )
                 })
             )
-            grid_counts = Counter(
+            region_counts = Counter(
                 {
                     item: count for item, count in
                     self._engine.execute(
                         select([
-                            DATASET_SPATIAL.c.grid_point.label('grid_point'),
+                            DATASET_SPATIAL.c.region_code.label('region_code'),
                             func.count()
-                        ]).where(where_clause).group_by('grid_point')
+                        ]).where(where_clause).group_by('region_code')
                     )
                 }
             )
@@ -130,7 +130,7 @@ class Summariser:
             time_range=Range(begin_time, end_time),
 
             timeline_dataset_counts=day_counts,
-            grid_dataset_counts=grid_counts,
+            region_dataset_counts=region_counts,
             # TODO: filter invalid from the counts?
             footprint_count=row['dataset_count'] or 0,
         )
@@ -166,7 +166,7 @@ class Summariser:
                             'properties', func.jsonb_build_object(
                                 'id', DATASET_SPATIAL.c.id,
                                 # TODO: dataset label?
-                                'grid_point', DATASET_SPATIAL.c.grid_point.cast(String),
+                                'region_code', DATASET_SPATIAL.c.region_code.cast(String),
                                 'creation_time', DATASET_SPATIAL.c.creation_time,
                                 'center_time', DATASET_SPATIAL.c.center_time,
                             ),

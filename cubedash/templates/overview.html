@@ -80,7 +80,7 @@
                 {% endif %}
 
                 <p>
-                    <a href="{{ url_for('product.product_page', name=product.name) }}" 
+                    <a href="{{ url_for('product.product_page', name=product.name) }}"
                        class="muted">raw metadata</a>
                 </p>
 
@@ -167,20 +167,18 @@
             {% if selected_summary.footprint_count %}
                 msgNoResults.style.display = 'none';
                 {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
-                {% if grids_geojson %}
-                    var grid_properties= {{ grids_geojson.properties | tojson}};
-                    var dataset_data = L.geoJson({{ grids_geojson | tojson }},
+                {% if regions_geojson %}
+                    var region_properties = {{ regions_geojson.properties | tojson}};
+                    var dataset_data = L.geoJson({{ regions_geojson | tojson }},
                         {
                             style: function (feature) {
-                                var impact = 0.7 * (feature.properties.count - grid_properties.min_count) / (grid_properties.max_count-grid_properties.min_count);
-                                console.log(impact);
-                                {#console.log({p:feature.properties, min:min_grid_count, max:max_grid_count, imp:impact});#}
+                                var impact = 0.7 * (feature.properties.count - region_properties.min_count) / (region_properties.max_count - region_properties.min_count);
                                 return {
                                     color: "#ffffff",
                                     fill: true,
                                     fillColor: "#00A1DE",
-                                    opacity: 0.2+impact,
-                                    fillOpacity: 0.2+impact,
+                                    opacity: 0.2 + impact,
+                                    fillOpacity: 0.2 + impact,
                                     weight: 1,
                                     clickable: true
                                 };
@@ -224,8 +222,8 @@
                     };
                     datasetInfoControl.update = function (props) {
                         if (props) {
-                            this._div.innerHTML = '<div><strong>' + grid_properties.grid_name + ' '+
-                                props.grid_point +
+                            this._div.innerHTML = '<div><strong>' + region_properties.region_item_name + ' ' +
+                                props.region_code +
                                 '</strong></div>' +
                                 props.count +
                                 ' datasets';

@@ -5,11 +5,10 @@ import click
 import structlog
 from click import echo, secho
 
-from cubedash import _utils
+
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
-from cubedash.summary._model import GridCell
 from datacube.config import LocalConfig
 from datacube.index import index_connect, Index
 from datacube.ui.click import pass_config, environment_option
@@ -71,12 +70,12 @@ def cli(config: LocalConfig,
         echo(sizeof_fmt(summary.size_bytes))
     echo(f"{round(t_end - t, 2)} seconds")
     echo()
-    print_count_table(summary.grid_dataset_counts)
+    print_count_table(summary.region_dataset_counts)
 
 
-def print_count_table(cs: Counter[GridCell]):
-    xs = [c.x for c, count in cs.items()]
-    ys = [c.y for c, count in cs.items()]
+def print_count_table(cs: Counter[str]):
+    # TODO: this needs update for sentinel region code (which is not "x,y")
+    xs, ys = zip(*(c.split('_') for c, count in cs.items()))
 
     count_range = min(cs.values()), max(cs.values())
     x_range = min(xs), max(xs) + 1
@@ -108,8 +107,7 @@ def print_count_table(cs: Counter[GridCell]):
     for y in range(*y_range):
         echo_head(y)
         for x in range(*x_range):
-            cell = GridCell(x, y)
-            count = cs.get(cell) or 0
+            count = cs.get(f"{x}_{y}") or 0
             echo_cell(count)
         echo()
 
