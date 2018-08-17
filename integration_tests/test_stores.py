@@ -129,9 +129,9 @@ def test_put_get_summaries(summary_store: SummaryStore):
 
     assert loaded.dataset_count == 4
     assert (
-        sum(loaded.grid_dataset_counts.values()) == 4
-    ), "Grid counts don't match dataset count"
-    assert sorted(loaded.grid_dataset_counts.keys()) == [
+        sum(loaded.region_dataset_counts.values()) == 4
+    ), "Region dataset counts don't match total count"
+    assert sorted(loaded.region_dataset_counts.keys()) == [
         "1_2",
         "3_4",
         "4_5",
