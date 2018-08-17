@@ -4,12 +4,8 @@ from datetime import datetime
 
 from dateutil import tz
 from shapely import geometry as geo
-from sqlalchemy import bindparam, select
-from sqlalchemy.dialects import postgresql as postgres
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._model import GridCell
-from cubedash.summary._schema import PgGridCell
 from cubedash.summary._stores import ProductSummary
 from cubedash.summary._summarise import Summariser
 from datacube.model import Range
@@ -176,21 +172,3 @@ def test_generate_raises_error(run_generate):
         f"Command should return an error when unknown products are specified. "
         f"Output: {result.output}"
     )
-
-
-def test_gridcell_type(summary_store: SummaryStore):
-    # This will both serialise and deserialise
-    cell = bindparam("ourcell", type_=PgGridCell)
-    row = summary_store._engine.execute(
-        select([cell]), ourcell=GridCell(3, 4)
-    ).fetchone()
-    [cell] = row
-    assert cell == GridCell(3, 4)
-
-    # Inside an array
-    cell = bindparam("ourcells", type_=postgres.ARRAY(PgGridCell))
-    row = summary_store._engine.execute(
-        select([cell]), ourcells=[GridCell(1, 2), GridCell(3, 4)]
-    ).fetchone()
-    [cell] = row
-    assert cell == [GridCell(1, 2), GridCell(3, 4)]
