@@ -2,11 +2,7 @@ from __future__ import absolute_import
 
 import re
 
-import psycopg2
 from geoalchemy2 import Geometry
-from psycopg2._psycopg import AsIs
-from psycopg2.extensions import register_adapter
-from psycopg2.extras import register_composite
 from sqlalchemy import (
     DDL,
     BigInteger,
@@ -27,35 +23,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
-from sqlalchemy.types import UserDefinedType
-
-from ._model import GridCell
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
 
-
-class PgGridCell(UserDefinedType):
-    """
-    A composite type with smallint x/y
-
-    For landsat path row and tile ids.
-    """
-
-    def get_col_spec(self):
-        return GRIDCELL_COL_SPEC
-
-    @property
-    def python_type(self):
-        return GridCell
-
-
-def adapt_point(point):
-    return AsIs("'(%s, %s)'::%s" % (point.x, point.y, GRIDCELL_COL_SPEC))
-
-
-register_adapter(GridCell, adapt_point)
 
 POSTGIS_METADATA = MetaData(schema="public")
 SPATIAL_REF_SYS = Table(
@@ -84,8 +56,8 @@ DATASET_SPATIAL = Table(
     Column("center_time", DateTime(timezone=True), nullable=False),
     # When was the dataset created? creation_time if it has one, otherwise datacube index time.
     Column("creation_time", DateTime(timezone=True), nullable=False),
-    # Must be nullable as currently satellite_telemetry products have no path/row field in their md type.
-    Column("grid_point", PgGridCell),
+    # Nullable: Some products have no region.
+    Column("region_code", String, comment=""),
     # Size of this dataset in bytes, if the product includes it.
     Column("size_bytes", BigInteger),
     Column("footprint", Geometry(spatial_index=False)),
@@ -138,8 +110,8 @@ TIME_OVERVIEW = Table(
         nullable=False,
     ),
     Column("timeline_dataset_counts", postgres.ARRAY(Integer), nullable=False),
-    Column("grid_dataset_grids", postgres.ARRAY(PgGridCell), nullable=False),
-    Column("grid_dataset_counts", postgres.ARRAY(Integer), nullable=False),
+    Column("regions", postgres.ARRAY(String), nullable=False),
+    Column("region_dataset_counts", postgres.ARRAY(Integer), nullable=False),
     # The most newly created dataset
     Column("newest_dataset_creation_time", DateTime(timezone=True)),
     # When this summary was generated
@@ -169,13 +141,6 @@ def create_schema(engine: Engine):
     engine.execute(DDL(f"create extension if not exists postgis"))
     engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
 
-    if not pg_exists(engine, f"{CUBEDASH_SCHEMA}.gridcell"):
-        engine.execute(
-            f"create type {CUBEDASH_SCHEMA}.gridcell " f"as (x smallint, y smallint);"
-        )
-
-    load_types(engine)
-
     # Ensure there's an index on the SRS table. (Using default pg naming conventions)
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
     engine.execute(
@@ -186,20 +151,6 @@ def create_schema(engine: Engine):
     """
     )
     METADATA.create_all(engine, checkfirst=True)
-
-
-def load_types(engine: Engine):
-    register_composite(
-        "cubedash.gridcell",
-        engine.raw_connection(),
-        globally=True,
-        factory=GridCellComposite,
-    )
-
-
-class GridCellComposite(psycopg2.extras.CompositeCaster):
-    def make(self, values):
-        return GridCell(*values)
 
 
 def pg_exists(conn, name):

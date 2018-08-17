@@ -26,9 +26,7 @@ def _overview():
                 datetime(2017, 1, 1, tzinfo=tz.tzutc()),
             ]
         ),
-        grid_dataset_counts=Counter(
-            [GridCell(1, 2), GridCell(1, 2), GridCell(3, 4), GridCell(4, 5)]
-        ),
+        region_dataset_counts=Counter(["1_2", "1_2", "3_4", "4_5"]),
         timeline_period="day",
         time_range=Range(
             datetime(2017, 1, 2, tzinfo=tz.tzutc()),
@@ -61,17 +59,13 @@ def test_add_period_list():
     joined = TimePeriodOverview.add_periods([_overview(), _overview(), total])
     assert joined.dataset_count == _overview().dataset_count * 2
 
-    assert sum(joined.grid_dataset_counts.values()) == joined.dataset_count
+    assert sum(joined.region_dataset_counts.values()) == joined.dataset_count
     assert sum(joined.timeline_dataset_counts.values()) == joined.dataset_count
 
     assert joined.crses == _overview().crses
     assert joined.size_bytes == _overview().size_bytes * 2
 
-    assert sorted(joined.grid_dataset_counts.keys()) == [
-        GridCell(1, 2),
-        GridCell(3, 4),
-        GridCell(4, 5),
-    ]
+    assert sorted(joined.region_dataset_counts.keys()) == ["1_2", "3_4", "4_5"]
 
 
 def test_add_no_periods(summary_store: SummaryStore):
@@ -142,10 +136,10 @@ def test_put_get_summaries(summary_store: SummaryStore):
         sum(loaded.grid_dataset_counts.values()) == 4
     ), "Grid counts don't match dataset count"
     assert sorted(loaded.grid_dataset_counts.keys()) == [
-        GridCell(1, 2),
-        GridCell(3, 4),
-        GridCell(4, 5),
-    ], "Incorrect set of grid cells"
+        "1_2",
+        "3_4",
+        "4_5",
+    ], "Incorrect set of regions"
 
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())

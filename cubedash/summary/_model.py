@@ -18,20 +18,12 @@ from datacube.model import Dataset, Range
 _LOG = structlog.get_logger()
 
 
-# An acceptable use of x/y names.
-# pylint: disable=invalid-name
-@dataclass(frozen=True, order=True)
-class GridCell(object):
-    x: int
-    y: int
-
-
 @dataclass
 class TimePeriodOverview:
     dataset_count: int
 
     timeline_dataset_counts: Counter
-    grid_dataset_counts: Counter
+    region_dataset_counts: Counter
 
     timeline_period: str
 
@@ -67,9 +59,9 @@ class TimePeriodOverview:
             timeline_counter, period
         )
 
-        grid_counter = Counter()
+        region_counter = Counter()
         for p in periods:
-            grid_counter.update(p.grid_dataset_counts)
+            region_counter.update(p.region_dataset_counts)
 
         with_valid_geometries = [
             p
@@ -110,7 +102,7 @@ class TimePeriodOverview:
             dataset_count=total_datasets,
             timeline_dataset_counts=timeline_counter,
             timeline_period=period,
-            grid_dataset_counts=grid_counter,
+            region_dataset_counts=region_counter,
             time_range=Range(
                 min(r.time_range.begin for r in periods) if periods else None,
                 max(r.time_range.end for r in periods) if periods else None,

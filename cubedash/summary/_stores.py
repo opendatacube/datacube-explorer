@@ -10,14 +10,14 @@ import dateutil.parser
 import structlog
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, and_, func, select
+from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import TimePeriodOverview, _extents, _schema
-from cubedash.summary._schema import DATASET_SPATIAL, PRODUCT, TIME_OVERVIEW, PgGridCell
+from cubedash.summary._schema import DATASET_SPATIAL, PRODUCT, TIME_OVERVIEW
 from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import DatasetType, Range
@@ -51,16 +51,8 @@ class SummaryStore:
         self._engine: Engine = alchemy_engine(index)
         self._summariser = summariser
 
-        self._initialised = False
-
         if init_schema:
             _schema.create_schema(self._engine)
-            self._initialised = True
-
-    def _ensure_initialised(self):
-        if not self._initialised:
-            _schema.load_types(self._engine)
-            self._initialised = True
 
     @classmethod
     def create(cls, index: Index, init_schema=False, log=_LOG) -> "SummaryStore":
@@ -74,14 +66,12 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
-        self._ensure_initialised()
         for product in self.index.products.get_all():
             self.refresh_product(product, refresh_older_than=refresh_older_than)
 
     def refresh_product(
         self, product: DatasetType, refresh_older_than: timedelta = timedelta(days=1)
     ):
-        self._ensure_initialised()
         our_product = self._get_product(product.name)
 
         if (
@@ -126,7 +116,6 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
     ) -> Optional[TimePeriodOverview]:
-        self._ensure_initialised()
         start_day, period = self._start_day(year, month, day)
 
         product = self._get_product(product_name)
@@ -208,7 +197,6 @@ class SummaryStore:
         day: Optional[int],
         summary: TimePeriodOverview,
     ):
-        self._ensure_initialised()
         product = self._product(product_name)
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
@@ -252,7 +240,6 @@ class SummaryStore:
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
-        self._ensure_initialised()
         return self._summariser.get_dataset_footprints(
             product_name, _utils.as_time_range(year, month, day)
         )
@@ -285,7 +272,6 @@ class SummaryStore:
         generate_missing_children=True,
     ):
         """Update the given summary and return the new one"""
-        self._ensure_initialised()
         product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get
 
@@ -349,7 +335,6 @@ class SummaryStore:
         """
         List products with summaries available.
         """
-        self._ensure_initialised()
         all_products = self.index.datasets.types.get_all()
         existing_products = sorted(
             (
@@ -382,9 +367,9 @@ def _summary_from_row(res):
         if res["timeline_dataset_start_days"]
         else None
     )
-    grid_dataset_counts = (
-        Counter(dict(zip(res["grid_dataset_grids"], res["grid_dataset_counts"])))
-        if res["grid_dataset_grids"]
+    region_dataset_counts = (
+        Counter(dict(zip(res["regions"], res["region_dataset_counts"])))
+        if res["regions"]
         else None
     )
 
@@ -392,7 +377,7 @@ def _summary_from_row(res):
         dataset_count=res["dataset_count"],
         # : Counter
         timeline_dataset_counts=timeline_dataset_counts,
-        grid_dataset_counts=grid_dataset_counts,
+        region_dataset_counts=region_dataset_counts,
         timeline_period=res["timeline_period"],
         # : Range
         time_range=Range(res["time_earliest"], res["time_latest"])
@@ -416,10 +401,12 @@ def _summary_from_row(res):
 
 def _summary_to_row(summary: TimePeriodOverview) -> dict:
     counts = summary.timeline_dataset_counts
-    day_counts, day_values, grid_counts, grid_values = [], [], [], []
+    day_counts, day_values, region_counts, region_values = [], [], [], []
     if counts:
         day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
-        grid_values, grid_counts = zip(*sorted(summary.grid_dataset_counts.items()))
+        region_values, region_counts = zip(
+            *sorted(summary.region_dataset_counts.items())
+        )
 
     begin, end = summary.time_range if summary.time_range else (None, None)
     return dict(
@@ -427,8 +414,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         timeline_dataset_start_days=day_values,
         timeline_dataset_counts=day_counts,
         # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
-        grid_dataset_grids=func.cast(grid_values, type_=postgres.ARRAY(PgGridCell)),
-        grid_dataset_counts=grid_counts,
+        regions=func.cast(region_values, type_=postgres.ARRAY(String)),
+        region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
         time_earliest=begin,
         time_latest=end,

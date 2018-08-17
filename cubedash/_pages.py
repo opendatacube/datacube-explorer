@@ -18,11 +18,9 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from cubedash._model import get_datasets_geojson
-from cubedash.summary._model import GridCell
 from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
-from datacube.utils.geometry import CRS, Geometry
+from datacube.utils.geometry import Geometry
 
 from . import _api, _dataset, _filters, _model, _platform, _product
 from . import _utils as utils
@@ -53,7 +51,7 @@ def overview_page(
     )
 
     datasets = None
-    geojson_grids = None
+    regions = None
 
     if selected_summary and selected_summary.dataset_count:
         # The per-dataset view is less useful now that we show grids separately.
@@ -61,24 +59,24 @@ def overview_page(
         # else get_datasets_geojson(product_name, year, month, day)
 
         start = time.time()
-        geojson_grids = (
-            get_grid_counts(
-                selected_summary.grid_dataset_counts,
+        regions = (
+            get_region_counts(
+                selected_summary.region_dataset_counts,
                 selected_summary.footprint_geometry,
                 product,
             )
-            if selected_summary.grid_dataset_counts
+            if selected_summary.region_dataset_counts
             else None
         )
 
-        _LOG.debug("overview.grid_gen", time_sec=time.time() - start)
+        _LOG.debug("overview.region_gen", time_sec=time.time() - start)
 
     return flask.render_template(
         "overview.html",
         year=year,
         month=month,
         day=day,
-        grids_geojson=geojson_grids,
+        regions_geojson=regions,
         datasets_geojson=datasets,
         product=product,
         # Summary for the whole product
@@ -88,32 +86,41 @@ def overview_page(
     )
 
 
-def get_grid_counts(
-    grid_counts: Counter[GridCell], footprint: MultiPolygon, product: DatasetType
+def get_region_counts(
+    region_counts: Counter[str], footprint: MultiPolygon, product: DatasetType
 ) -> Optional[Dict]:
     grid_spec = product.grid_spec
+    # TODO: Geometry for other types of regions (path/row, MGRS)
     if not grid_spec:
         return None
 
+    def from_region_code(code: str):
+        x, y = code.split("_")
+        return int(x), int(y)
+
     if footprint is None:
 
-        def cell_geometry(grid: GridCell) -> Geometry:
+        def region_geometry(region_code: str) -> Geometry:
             """
             Get a whole polygon for a gridcell
             """
-            return grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
+            return grid_spec.tile_geobox(
+                from_region_code(region_code)
+            ).geographic_extent
 
     else:
         footprint_boundary = shapely.prepared.prep(footprint.boundary)
 
-        def cell_geometry(grid: GridCell) -> Geometry:
+        def region_geometry(region_code: str) -> Geometry:
             """
             Get a polygon for the gridcell that's within the footprint.
             """
             # TODO: The ODC Geometry __geo_interface__ breaks for some products
             # (eg, when the inner type is a GeometryCollection?)
             # So we're now converting to shapely to do it.
-            extent = grid_spec.tile_geobox((grid.x, grid.y)).geographic_extent
+            extent = grid_spec.tile_geobox(
+                from_region_code(region_code)
+            ).geographic_extent
             # TODO: Is there a nicer way to do this?
             # pylint: disable=protected-access
             shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
@@ -125,20 +132,20 @@ def get_grid_counts(
             else:
                 return shapely_extent
 
-    low, high = min(grid_counts.values()), max(grid_counts.values())
+    low, high = min(region_counts.values()), max(region_counts.values())
     return {
         "type": "FeatureCollection",
-        "properties": {"grid_name": "Tile", "min_count": low, "max_count": high},
+        "properties": {"region_item_name": "Tile", "min_count": low, "max_count": high},
         "features": [
             {
                 "type": "Feature",
-                "geometry": cell_geometry(grid).__geo_interface__,
+                "geometry": region_geometry(region_code).__geo_interface__,
                 "properties": {
-                    "grid_point": [grid.x, grid.y],
-                    "count": grid_counts[grid],
+                    "region_code": region_code,
+                    "count": region_counts[region_code],
                 },
             }
-            for grid in grid_counts
+            for region_code in region_counts
         ],
     }
 
