@@ -1,5 +1,7 @@
-<div class="header-option" onclick="">
-    <h2 id="year-menu" class="option-title">{{ year or 'All years' }}</h2>
+<div class="header-option" onclick="" style="max-width: 100%">
+    <h2 id="year-menu" class="option-title">
+        {{ year or 'All years' }}
+    </h2>
     <div class="option-menu">
 
         {% set year_range=(range(
