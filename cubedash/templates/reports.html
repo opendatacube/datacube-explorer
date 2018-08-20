@@ -1,57 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Reports</title>
+{% extends "layout/base.html" %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
-<body>
-    <div class="content-wrapper">
-        <div id="logo">
-            <a href="/">
-                <img src="{{ url_for('static', filename='dea-icon.svg') }}"
-                     height="26px" alt=""/>
-                <span class="logo-text"><strong>Digital Earth</strong> Australia</span>
-            </a>
-        </div>
-        <div class="header-wrapper">
-            <header>
-                <div class="header-option primary">
-                    <h2 class="option-title" onclick="">
-                        <strong> products </strong>
-                    </h2>
-                    <div class="option-menu">
-                        {% for row in grouped_products | batch(3) %}
-                            <ul>
-                                {% for group_name, product_summaries in row %}
-                                    <li>
-                                        <h3 class="group-name">{{ group_name }}</h3>
-                                        <ul class="items">
-                                            {% for product_opt, summary in product_summaries if summary %}
-                                                <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
-                                                    <button onclick="addProduct( '{{ product_opt.name }}' )">
-                                                        {{ product_opt.name }}
-                                                    </button>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </li>
-                                {% endfor %}
-                            </ul>
+{% block header %}
+    <header>
+        <div class="header-option primary">
+            <h2 class="option-title" onclick="">
+                <strong> products </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addProduct( '{{ product_opt.name }}' )">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
                         {% endfor %}
-                    </div>
-                </div>
-                <div id="time-picker" style="display: inline-flex">
-                    {% include "reports-time.html" %}
-                </div>
-            </header>
+                    </ul>
+                {% endfor %}
+            </div>
         </div>
-        <div id="product-overviews">
+        <div id="time-picker" style="display: inline-flex">
+            {% include "reports-time.html" %}
         </div>
-    </div>
+    </header>
+{% endblock %}
+
+{% block body_footer %}
     <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
     <script>
         var products = [];
@@ -103,7 +85,7 @@
                 url = getProductUrl();
                 console.log(url);
                 $.get(url, function(data, status) {
-                    document.getElementById("product-overviews").innerHTML = data;
+                    document.getElementById("content").innerHTML = data;
                 });
             }
         }
@@ -115,7 +97,7 @@
                 url = getProductUrl();
                 console.log(url)
                 $.get(url, function(data, status) {
-                    document.getElementById("product-overviews").innerHTML = data;
+                    document.getElementById("content").innerHTML = data;
                 });
                 document.getElementById("year-menu").innerText = year;
             }
@@ -132,7 +114,7 @@
                 url = getProductUrl()
                 console.log(url)
                 $.get(url, function(data, status) {
-                    document.getElementById("product-overviews").innerHTML = data;
+                    document.getElementById("content").innerHTML = data;
                 });
                 document.getElementById("month-menu").innerText = month;
             }
@@ -149,7 +131,7 @@
                 url = getProductUrl()
                 console.log(url)
                 $.get(url, function(data, status) {
-                    document.getElementById("product-overviews").innerHTML = data;
+                    document.getElementById("content").innerHTML = data;
                 });
                 document.getElementById("day-menu").innerText = day;
             }
@@ -159,5 +141,4 @@
             });
         }
     </script>
-</body>
-</html>
+{% endblock %}
