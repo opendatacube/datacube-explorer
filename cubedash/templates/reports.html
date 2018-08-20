@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Reports</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+    <div class="content-wrapper">
+        <div id="logo">
+            <a href="/">
+                <img src="{{ url_for('static', filename='dea-icon.svg') }}"
+                     height="26px" alt=""/>
+                <span class="logo-text"><strong>Digital Earth</strong> Australia</span>
+            </a>
+        </div>
+        <div class="header-wrapper">
+            <header>
+                <div class="header-option primary">
+                    <h2 class="option-title" onclick="">
+                        <strong> products </strong>
+                    </h2>
+                    <div class="option-menu">
+                        {% for row in grouped_products | batch(3) %}
+                            <ul>
+                                {% for group_name, product_summaries in row %}
+                                    <li>
+                                        <h3 class="group-name">{{ group_name }}</h3>
+                                        <ul class="items">
+                                            {% for product_opt, summary in product_summaries if summary %}
+                                                <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                                    <button onclick="addProduct( '{{ product_opt.name }}' )">
+                                                        {{ product_opt.name }}
+                                                    </button>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="time-picker" style="display: inline-flex">
+                    {% include "reports-time.html" %}
+                </div>
+            </header>
+        </div>
+        <div id="product-overviews">
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script>
+        var products = [];
+        var year = null;
+        var month = null;
+        var day = null;
+
+        function getProductUrl() {
+            url = "/reports";
+            if (products.length > 0) {
+                product_list = products[0];
+                for (i = 1; i < products.length; i++) {
+                    product_list += "+" + products[i];
+                }
+                url += "/" + product_list;
+                if (year) {
+                    url += "/" + year;
+                }
+                if (month) {
+                    url += "/" + month;
+                }
+                if (day) {
+                    url += "/" + day;
+                }
+                return url;
+            }
+            return url;
+        }
+
+
+        function getMenuUrl() {
+            url = "/reports/time";
+            if (year) {
+                url += "/" + year;
+            }
+            if (month) {
+                url += "/" + month;
+            }
+            if (day) {
+                url += "/" + day;
+            }
+            return url;
+        }
+
+
+        function addProduct(product_name) {
+            if (!products.includes(product_name)) {
+                products.push(product_name);
+                url = getProductUrl();
+                console.log(url);
+                $.get(url, function(data, status) {
+                    document.getElementById("product-overviews").innerHTML = data;
+                });
+            }
+        }
+
+
+        function setYear(_year) {
+            year = _year;
+            if (products.length > 0) {
+                url = getProductUrl();
+                console.log(url)
+                $.get(url, function(data, status) {
+                    document.getElementById("product-overviews").innerHTML = data;
+                });
+                document.getElementById("year-menu").innerText = year;
+            }
+            menuUrl = getMenuUrl()
+            $.get(menuUrl, function(data, status) {
+                document.getElementById("time-picker").innerHTML = data;
+            });
+        }
+
+
+        function setMonth(_month) {
+            month = _month;
+            if (products.length > 0) {
+                url = getProductUrl()
+                console.log(url)
+                $.get(url, function(data, status) {
+                    document.getElementById("product-overviews").innerHTML = data;
+                });
+                document.getElementById("month-menu").innerText = month;
+            }
+            menuUrl = getMenuUrl()
+            $.get(menuUrl, function(data, status) {
+                document.getElementById("time-picker").innerHTML = data;
+            });
+        }
+
+
+        function setDay(_day) {
+            day = _day;
+            if (products.length > 0) {
+                url = getProductUrl()
+                console.log(url)
+                $.get(url, function(data, status) {
+                    document.getElementById("product-overviews").innerHTML = data;
+                });
+                document.getElementById("day-menu").innerText = day;
+            }
+            menuUrl = getMenuUrl()
+            $.get(menuUrl, function(data, status) {
+                document.getElementById("time-picker").innerHTML = data;
+            });
+        }
+    </script>
+</body>
+</html>
