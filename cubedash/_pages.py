@@ -4,16 +4,19 @@ import itertools
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Optional, Counter
 
+import fiona
 import flask
 import shapely
+import shapely.prepared
 import shapely.wkb
 import structlog
 from flask import abort, redirect, url_for
 from flask import request
 from shapely.geometry import MultiPolygon
-import shapely.prepared
+from shapely.geometry import shape
 from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
@@ -21,7 +24,6 @@ import cubedash
 import datacube
 from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
-from datacube.utils.geometry import Geometry
 from . import _filters, _dataset, _product, _platform, _api, _model
 from . import _utils as utils
 from ._utils import as_json, alchemy_engine
@@ -36,6 +38,7 @@ app.register_blueprint(_platform.bp)
 _LOG = structlog.getLogger()
 
 _HARD_SEARCH_LIMIT = 500
+_WRS_PATH_ROW=Path(__file__).parent / 'data' / 'WRS2_descending' / 'WRS2_descending.shp'
 
 
 # @app.route('/')
@@ -87,42 +90,9 @@ def get_region_counts(
         footprint: MultiPolygon,
         product: DatasetType
 ) -> Optional[Dict]:
-    grid_spec = product.grid_spec
-    # TODO: Geometry for other types of regions (path/row, MGRS)
-    if not grid_spec:
+    region_geometry = _region_geometry_function(product, footprint)
+    if not region_geometry:
         return None
-
-    def from_region_code(code: str):
-        x, y = code.split('_')
-        return int(x), int(y)
-
-    if footprint is None:
-        def region_geometry(region_code: str) -> Geometry:
-            """
-            Get a whole polygon for a gridcell
-            """
-            return grid_spec.tile_geobox(from_region_code(region_code)).geographic_extent
-    else:
-        footprint_boundary = shapely.prepared.prep(footprint.boundary)
-
-        def region_geometry(region_code: str) -> Geometry:
-            """
-            Get a polygon for the gridcell that's within the footprint.
-            """
-            # TODO: The ODC Geometry __geo_interface__ breaks for some products
-            # (eg, when the inner type is a GeometryCollection?)
-            # So we're now converting to shapely to do it.
-            extent = grid_spec.tile_geobox(from_region_code(region_code)).geographic_extent
-            # TODO: Is there a nicer way to do this?
-            # pylint: disable=protected-access
-            shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
-
-            # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
-            # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
-            if footprint_boundary.intersects(shapely_extent):
-                return footprint.intersection(shapely_extent)
-            else:
-                return shapely_extent
 
     low, high = min(region_counts.values()), max(region_counts.values())
     return {
@@ -143,6 +113,69 @@ def get_region_counts(
             } for region_code in region_counts
         ]
     }
+
+
+def _from_xy_region_code(region_code: str):
+    x, y = region_code.split('_')
+    return int(x), int(y)
+
+
+def _region_geometry_function(product, footprint):
+    grid_spec = product.grid_spec
+    md_fields = product.metadata_type.dataset_fields
+    # TODO: Geometry for other types of regions (path/row, MGRS)
+
+    if grid_spec:
+        def region_geometry(region_code: str) -> shapely.geometry.GeometryCollection:
+            """
+            Get a whole polygon for a gridcell
+            """
+            extent = grid_spec.tile_geobox(_from_xy_region_code(region_code)).geographic_extent
+            # TODO: The ODC Geometry __geo_interface__ breaks for some products
+            # (eg, when the inner type is a GeometryCollection?)
+            # So we're now converting to shapely to do it.
+            # TODO: Is there a nicer way to do this?
+            # pylint: disable=protected-access
+            shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
+
+            return shapely_extent
+    elif 'sat_path' in md_fields:
+        path_row_shapes = _get_path_row_shapes()
+
+        def region_geometry(region_code: str) -> shapely.geometry.GeometryCollection:
+            return path_row_shapes[_from_xy_region_code(region_code)]
+    else:
+        _LOG.info('region.geom.unknown')
+        return None
+
+    if footprint is None:
+        return region_geometry
+    else:
+        footprint_boundary = shapely.prepared.prep(footprint.boundary)
+
+        def region_geometry_cut(region_code: str) -> shapely.geometry.GeometryCollection:
+            """
+            Cut the polygon down to the footprint
+            """
+            shapely_extent = region_geometry(region_code)
+
+            # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
+            # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
+            if footprint_boundary.intersects(shapely_extent):
+                return footprint.intersection(shapely_extent)
+            else:
+                return shapely_extent
+        return region_geometry_cut
+
+
+@functools.lru_cache()
+def _get_path_row_shapes():
+    path_row_shapes = {}
+    with fiona.open(str(_WRS_PATH_ROW)) as f:
+        for k, item in f.items():
+            prop = item['properties']
+            path_row_shapes[prop['PATH'], prop['ROW']] = shape(item['geometry'])
+    return path_row_shapes
 
 
 # @app.route('/datasets')
