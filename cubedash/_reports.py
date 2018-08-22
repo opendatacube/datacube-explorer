@@ -24,7 +24,7 @@ def reports_page():
 def report_products_page(
     product_name_list: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product_names = re.split("\+", product_name_list)
+    product_names = re.split(r"\+", product_name_list)
     products = []
     for product_name in product_names:
         product, product_summary, selected_summary = _load_product(
@@ -71,7 +71,7 @@ def differences_time_page(year: int = None, month: int = None):
 def differences(
     product_name_list: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product_names = re.split("\+", product_name_list)
+    product_names = re.split(r"\+", product_name_list)
     product_1, product_summary_1, selected_summary_1 = _load_product(
         product_names[0], year, month, day
     )
