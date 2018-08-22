@@ -1,5 +1,5 @@
 <div class="header-option" onclick="" style="max-width: 100%">
-    <h2 id="year-menu" class="option-title">
+    <h2 id="{{ report_type }}-year-menu" class="option-title">
         {{ year or 'All years' }}
     </h2>
     <div class="option-menu">
@@ -14,7 +14,7 @@
             <ul>
                 {% for year_opt in row %}
                     <li>
-                        <button onclick="setYear( {{ year_opt }} )">
+                        <button onclick="set{{ report_type }}Date('year', {{ year_opt }})">
                             {{ year_opt }}
                         </button>
                     </li>
@@ -30,7 +30,7 @@
 </div>
 {% if year %}
     <div class="header-option" onclick="">
-        <h2 id="month-menu" class="option-title">
+        <h2 id="{{ report_type }}-month-menu" class="option-title">
             {% if month %}
                 {{ month | month_name }}
             {% else %}
@@ -42,7 +42,7 @@
                 <ul>
                     {% for month_opt in row %}
                         <li>
-                            <button onclick="setMonth( {{ month_opt }} )">
+                            <button onclick="set{{ report_type}}Date('month', {{ month_opt }})">
                                 {{ month_opt | month_name }}
                             </button>
                         </li>
@@ -60,7 +60,7 @@
 
 {% if month %}
     <div class="header-option" onclick="">
-        <h2 id="day-menu" class="option-title">
+        <h2 id="{{ report_type }}-day-menu" class="option-title">
             {% if day %}
                 {{ day | day_ordinal }}
             {% else %}
@@ -72,7 +72,7 @@
                 <ul>
                     {% for day_opt in row %}
                         <li>
-                            <button onclick="setDay( {{ day_opt }} )">
+                            <button onclick="set{{ report_type }}Date('day', {{ day_opt }})">
                                 {{ day_opt | day_ordinal }}
                             </button>
                         </li>
