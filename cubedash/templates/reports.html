@@ -1,8 +1,8 @@
-{% extends "layout/base.html" %}
+{% extends "layout/base-reports.html" %}
 
 {% block header %}
     <header>
-        <div class="header-option primary">
+        <div class="header-option primary" style="display: inline-flex">
             <h2 class="option-title" onclick="">
                 <strong> products </strong>
             </h2>
@@ -28,6 +28,67 @@
             </div>
         </div>
         <div id="time-picker" style="display: inline-flex">
+            {% set report_type = '' %}
+            {% include "reports-time.html" %}
+        </div>
+    </header>
+{% endblock %}
+
+{% block diff_header %}
+    <header>
+        <div class="header-option" onclick="" style="max-width: 100%">
+            <h2 class="option-title" onclick="">
+                <strong id="product-one" > product one </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addDiffsProduct('first', '{{ product_opt.name }}')">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="header-option" onclick="" style="max-width: 100%">
+            <h2 class="option-title" onclick="">
+                <strong id="product-two"> product two </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addDiffsProduct('second', '{{ product_opt.name }}')">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="diff-time-picker" style="display: inline-flex">
+            {% set report_type = 'Differences' %}
             {% include "reports-time.html" %}
         </div>
     </header>
@@ -40,6 +101,13 @@
         var year = null;
         var month = null;
         var day = null;
+
+        // Product differences
+        var product_1 = null;
+        var product_2 = null;
+        var diffs_year = null;
+        var diffs_month = null;
+        var diffs_day = null;
 
         function getProductUrl() {
             url = "/reports";
@@ -85,22 +153,33 @@
                 url = getProductUrl();
                 console.log(url);
                 $.get(url, function(data, status) {
-                    document.getElementById("content").innerHTML = data;
+                    document.getElementById("summary-content").innerHTML = data;
                 });
             }
         }
 
+        function setDate(date_type, value) {
+            if (date_type == 'year') {
+                year = value;
+                menu_id = '-year-menu';
+            } else if (date_type == 'month') {
+                month = value;
+                menu_id = '-month-menu';
+            } else if (date_type == 'day') {
+                day = value;
+                menu_id = '-day-menu';
+            } else {
+                return
+            }
 
-        function setYear(_year) {
-            year = _year;
             if (products.length > 0) {
                 url = getProductUrl();
-                console.log(url)
                 $.get(url, function(data, status) {
-                    document.getElementById("content").innerHTML = data;
+                    document.getElementById("summary-content").innerHTML = data;
                 });
-                document.getElementById("year-menu").innerText = year;
             }
+
+            document.getElementById(menu_id).innerText = value;
             menuUrl = getMenuUrl()
             $.get(menuUrl, function(data, status) {
                 document.getElementById("time-picker").innerHTML = data;
@@ -108,36 +187,60 @@
         }
 
 
-        function setMonth(_month) {
-            month = _month;
-            if (products.length > 0) {
-                url = getProductUrl()
-                console.log(url)
-                $.get(url, function(data, status) {
-                    document.getElementById("content").innerHTML = data;
-                });
-                document.getElementById("month-menu").innerText = month;
+        function addDiffsProduct(rank, name) {
+            if (rank == 'first') {
+                product_1 = name;
+                document.getElementById("product-one").innerText = name;
+            } else if (rank == 'second') {
+                product_2 = name;
+                document.getElementById("product-two").innerText = name;
             }
-            menuUrl = getMenuUrl()
-            $.get(menuUrl, function(data, status) {
-                document.getElementById("time-picker").innerHTML = data;
-            });
+            if (product_1 && product_2) {
+                $.get('/reports/differences/' + product_1 + '+' + product_2, function(data, status) {
+                        document.getElementById("diff-content").innerHTML = data;
+                });
+            }
         }
 
-
-        function setDay(_day) {
-            day = _day;
-            if (products.length > 0) {
-                url = getProductUrl()
-                console.log(url)
-                $.get(url, function(data, status) {
-                    document.getElementById("content").innerHTML = data;
-                });
-                document.getElementById("day-menu").innerText = day;
+        function getDiffsMenuUrl() {
+            url = "/reports/differences/time";
+            if (diffs_year) {
+                url += "/" + diffs_year;
             }
-            menuUrl = getMenuUrl()
+            if (diffs_month) {
+                url += "/" + diffs_month;
+            }
+            if (diffs_day) {
+                url += "/" + diffs_day;
+            }
+            return url;
+        }
+
+        function setDifferencesDate(date_type, value) {
+            if (date_type == 'year') {
+                diffs_year = value;
+                menu_id = 'Differences-year-menu';
+            } else if (date_type == 'month') {
+                diffs_month = value;
+                menu_id = 'Differences-month-menu';
+            } else if (date_type == 'day') {
+                diffs_day = value;
+                menu_id = 'Differences-day-menu';
+            } else {
+                return;
+            }
+
+            if (product_1 && product_2) {
+                url = '/reports/differences/' + product_1 + '+' + product_2;
+                $.get(url, function(data, status) {
+                    document.getElementById("diff-content").innerHTML = data;
+                });
+            }
+
+            document.getElementById(menu_id).innerText = value;
+            menuUrl = getDiffsMenuUrl();
             $.get(menuUrl, function(data, status) {
-                document.getElementById("time-picker").innerHTML = data;
+                document.getElementById("diff-time-picker").innerHTML = data;
             });
         }
     </script>
