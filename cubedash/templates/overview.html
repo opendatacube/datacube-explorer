@@ -105,7 +105,6 @@
     <script type="application/javascript">
         (function () {
             var msgNoResults = document.getElementById("msg-no-results");
-
             var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
                 maxZoom: 18,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -115,7 +114,7 @@
                 {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                    ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
                 }
             );
 
@@ -169,16 +168,34 @@
                 {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
                 {% if regions_geojson %}
                     var region_properties = {{ regions_geojson.properties | tojson}};
+                    var getBin = function (v, bin_count) {
+                            let min_v = region_properties.min_count,
+                                max_v = region_properties.max_count,
+                                range = max_v - min_v,
+                                val = v - min_v;
+
+                            if (range < bin_count) {
+                                var padding = bin_count - range;
+                                return padding + val - 1;
+                            } else {
+                                var bin_width = range / bin_count;
+                                return Math.round(val / bin_width) - 1;
+                            }
+                        },
+                        getColor = function (count) {
+                            let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
+                                bin = getBin(count, colorSteps.length);
+                            return colorSteps[bin];
+                        };
                     var dataset_data = L.geoJson({{ regions_geojson | tojson }},
                         {
                             style: function (feature) {
-                                var impact = 0.7 * (feature.properties.count - region_properties.min_count) / (region_properties.max_count - region_properties.min_count);
                                 return {
-                                    color: "#ffffff",
+                                    color: "#f2f2f2",
                                     fill: true,
-                                    fillColor: "#00A1DE",
-                                    opacity: 0.2 + impact,
-                                    fillOpacity: 0.2 + impact,
+                                    fillColor: getColor(feature.properties.count),
+                                    opacity: 0.6,
+                                    fillOpacity: 0.4,
                                     weight: 1,
                                     clickable: true
                                 };
