@@ -40,31 +40,21 @@ def report_products_page(product_name_list: str = None,
     )
 
 
-# @app.route('/reports/time')
-@bp.route('/time')
-@bp.route('/time/<int:year>')
-@bp.route('/time/<int:year>/<int:month>')
-def reports_time_page(year: int = None,
-                      month: int = None):
+# @app.route('/reports/time/report_type')
+@bp.route('time/<report_type>')
+@bp.route('time/<report_type>/<int:year>')
+@bp.route('time/<report_type>/<int:year>/<int:month>')
+@bp.route('time/<report_type>/<int:year>/<int:month>/<int:day>')
+def reports_time_page(report_type='',
+                      year: int = None,
+                      month: int = None,
+                      day: int = None):
     return flask.render_template(
         'reports-time.html',
-        report_type='',
+        report_type=report_type,
         year=year,
-        month=month
-    )
-
-
-# @app.route('/reports/time')
-@bp.route('differences/time')
-@bp.route('differences/time/<int:year>')
-@bp.route('differences/time/<int:year>/<int:month>')
-def differences_time_page(year: int = None,
-                          month: int = None):
-    return flask.render_template(
-        'reports-time.html',
-        report_type='Differences',
-        year=year,
-        month=month
+        month=month,
+        day=day
     )
 
 
