@@ -231,7 +231,7 @@
                     map.addLayer(dataset_data);
 
                     {# Show information for the hovered dataset #}
-                    var datasetInfoControl = L.control();
+                    var datasetInfoControl = L.control({position: "bottomleft"});
                     datasetInfoControl.onAdd = function (map) {
                         this._div = L.DomUtil.create('div', 'dataset-info');
                         this.update();
@@ -273,15 +273,15 @@
             {% endif %}
 
 
-            {% if selected_summary.dataset_counts and (selected_summary.dataset_counts | length > 1) %}
+            {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}
                 var timelineControl = L.control({position: "topright"});
                 timelineControl.onAdd = function (map) {
                     var div = L.DomUtil.create("div", "timeline-control");
                     div.innerHTML = {{
                         chart_timeline(
-                            selected_summary.dataset_counts,
+                            selected_summary.timeline_dataset_counts,
                             product,
-                            period=selected_summary.period
+                            period=selected_summary.timeline_period
                         ) | tojson
                         }};
                     return div;
