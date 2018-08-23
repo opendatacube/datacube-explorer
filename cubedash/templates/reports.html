@@ -28,7 +28,7 @@
             </div>
         </div>
         <div id="time-picker" style="display: inline-flex">
-            {% set report_type = '' %}
+            {% set report_type = 'summaries' %}
             {% include "reports-time.html" %}
         </div>
     </header>
@@ -88,7 +88,7 @@
             </div>
         </div>
         <div id="diff-time-picker" style="display: inline-flex">
-            {% set report_type = 'Differences' %}
+            {% set report_type = 'differences' %}
             {% include "reports-time.html" %}
         </div>
     </header>
@@ -109,7 +109,7 @@
         var diffs_month = null;
         var diffs_day = null;
 
-        function getProductUrl() {
+        function getProductsUrl() {
             url = "/reports";
             if (products.length > 0) {
                 product_list = products[0];
@@ -133,7 +133,7 @@
 
 
         function getMenuUrl() {
-            url = "/reports/time";
+            url = "/reports/time/summaries";
             if (year) {
                 url += "/" + year;
             }
@@ -150,37 +150,50 @@
         function addProduct(product_name) {
             if (!products.includes(product_name)) {
                 products.push(product_name);
-                url = getProductUrl();
-                console.log(url);
+                url = getProductsUrl();
                 $.get(url, function(data, status) {
                     document.getElementById("summary-content").innerHTML = data;
                 });
             }
         }
 
-        function setDate(date_type, value) {
+        function summariesDate(date_type, value) {
             if (date_type == 'year') {
-                year = value;
-                menu_id = '-year-menu';
+                if (value == 'All') {
+                    year = null;
+                    month = null;
+                    day = null;
+                } else {
+                    year = value;
+                }
+                menu_id = 'summaries-year-menu';
             } else if (date_type == 'month') {
-                month = value;
-                menu_id = '-month-menu';
+                if (value == 'All') {
+                    month = null;
+                    day = null;
+                } else {
+                    month = value;
+                }
+                menu_id = 'summaries-month-menu';
             } else if (date_type == 'day') {
-                day = value;
-                menu_id = '-day-menu';
+                if (value == 'All') {
+                    day = null;
+                } else {
+                    day = value;
+                }
+                menu_id = 'summaries-day-menu';
             } else {
-                return
+                return;
             }
 
             if (products.length > 0) {
-                url = getProductUrl();
-                $.get(url, function(data, status) {
+                summaryUrl = getProductsUrl();
+                $.get(summaryUrl, function(data, status) {
                     document.getElementById("summary-content").innerHTML = data;
                 });
             }
 
-            document.getElementById(menu_id).innerText = value;
-            menuUrl = getMenuUrl()
+            menuUrl = getMenuUrl();
             $.get(menuUrl, function(data, status) {
                 document.getElementById("time-picker").innerHTML = data;
             });
@@ -203,7 +216,7 @@
         }
 
         function getDiffsMenuUrl() {
-            url = "/reports/differences/time";
+            url = "/reports/time/differences";
             if (diffs_year) {
                 url += "/" + diffs_year;
             }
@@ -216,16 +229,31 @@
             return url;
         }
 
-        function setDifferencesDate(date_type, value) {
+        function differencesDate(date_type, value) {
             if (date_type == 'year') {
-                diffs_year = value;
-                menu_id = 'Differences-year-menu';
+                if (value == 'All') {
+                    diffs_year = null;
+                    diffs_month = null;
+                    diffs_day = null;
+                } else {
+                    diffs_year = value;
+                }
+                menu_id = 'differences-year-menu';
             } else if (date_type == 'month') {
-                diffs_month = value;
-                menu_id = 'Differences-month-menu';
+                if (value == 'All') {
+                    diffs_month = null;
+                    diffs_day = null;
+                } else {
+                    diffs_month = value;
+                }
+                menu_id = 'differences-month-menu';
             } else if (date_type == 'day') {
-                diffs_day = value;
-                menu_id = 'Differences-day-menu';
+                if (value == 'All') {
+                    diffs_day = null;
+                } else {
+                    diffs_day = value;
+                }
+                menu_id = 'differences-day-menu';
             } else {
                 return;
             }
@@ -237,7 +265,6 @@
                 });
             }
 
-            document.getElementById(menu_id).innerText = value;
             menuUrl = getDiffsMenuUrl();
             $.get(menuUrl, function(data, status) {
                 document.getElementById("diff-time-picker").innerHTML = data;

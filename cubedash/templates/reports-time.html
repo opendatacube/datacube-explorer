@@ -14,7 +14,7 @@
             <ul>
                 {% for year_opt in row %}
                     <li>
-                        <button onclick="set{{ report_type }}Date('year', {{ year_opt }})">
+                        <button onclick="{{ report_type }}Date('year', {{ year_opt }})">
                             {{ year_opt }}
                         </button>
                     </li>
@@ -22,7 +22,7 @@
             </ul>
         {% endfor %}
         <ul>
-            <li class="wildcard">
+            <li class="wildcard" onclick="{{ report_type }}Date('year', 'All')">
                 <strong>All</strong>
             </li>
         </ul>
@@ -42,7 +42,7 @@
                 <ul>
                     {% for month_opt in row %}
                         <li>
-                            <button onclick="set{{ report_type}}Date('month', {{ month_opt }})">
+                            <button onclick="{{ report_type}}Date('month', {{ month_opt }})">
                                 {{ month_opt | month_name }}
                             </button>
                         </li>
@@ -50,7 +50,7 @@
                 </ul>
             {% endfor %}
             <ul>
-                <li class="wildcard">
+                <li class="wildcard" onclick="{{ report_type }}Date('month', 'All')">
                     <strong>All</strong>
                 </li>
             </ul>
@@ -72,7 +72,7 @@
                 <ul>
                     {% for day_opt in row %}
                         <li>
-                            <button onclick="set{{ report_type }}Date('day', {{ day_opt }})">
+                            <button onclick="{{ report_type }}Date('day', {{ day_opt }})">
                                 {{ day_opt | day_ordinal }}
                             </button>
                         </li>
@@ -80,7 +80,7 @@
                 </ul>
             {% endfor %}
             <ul>
-                <li class="wildcard">
+                <li class="wildcard" onclick="{{ report_type }}Date('day', 'All')">
                     <strong>
                         All
                     </strong>
