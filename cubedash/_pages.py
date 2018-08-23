@@ -150,7 +150,7 @@ def _region_geometry_function(product, footprint):
             return path_row_shapes[_from_xy_region_code(region_code)]
 
     else:
-        _LOG.info("region.geom.unknown")
+        _LOG.info("region.geom.unknown", product_name=product.name)
         return None
 
     if footprint is None:
