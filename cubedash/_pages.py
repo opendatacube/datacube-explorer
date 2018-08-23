@@ -125,7 +125,9 @@ def _region_geometry_function(product, footprint):
     md_fields = product.metadata_type.dataset_fields
     # TODO: Geometry for other types of regions (path/row, MGRS)
 
-    if grid_spec:
+    # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
+    # Therefore: only assume there's a grid if tile_size is specified. TODO: Is the product wrong?
+    if grid_spec and grid_spec.tile_size:
 
         def region_geometry(region_code: str) -> shapely.geometry.GeometryCollection:
             """
