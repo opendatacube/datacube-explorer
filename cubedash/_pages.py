@@ -10,7 +10,7 @@ import cubedash
 import datacube
 from datacube.scripts.dataset import build_dataset_info
 
-from . import _api, _dataset, _filters, _model, _platform, _product
+from . import _api, _dataset, _filters, _model, _platform, _product, _reports
 from . import _utils as utils
 from ._utils import as_json
 
@@ -20,6 +20,7 @@ app.register_blueprint(_api.bp)
 app.register_blueprint(_dataset.bp)
 app.register_blueprint(_product.bp)
 app.register_blueprint(_platform.bp)
+app.register_blueprint(_reports.bp)
 
 _LOG = structlog.getLogger()
 
