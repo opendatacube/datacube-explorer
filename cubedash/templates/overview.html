@@ -79,6 +79,17 @@
                     </ul>
                 {% endif %}
 
+                <h4>Coverage</h4>
+                <ul>
+                    <li>
+                        {{ selected_summary.region_dataset_counts | length }} regions.
+                    </li>
+                    <li>{{  selected_summary.footprint_geometry.area }}km<sup>2</sup></li>
+                    <li>
+                        {{  selected_summary.crses | length}} dataset CRS: {{  selected_summary.crses | join(', ') }}
+                    </li>
+                </ul>
+
                 <p>
                     <a href="{{ url_for('product.product_page', name=product.name) }}"
                        class="muted">raw metadata</a>
@@ -251,7 +262,7 @@
 
                     map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
                 {% else %}
-                    var composite_data = L.geoJson({{ selected_summary.footprint_geometry.__geo_interface__ | tojson }},
+                    var composite_data = L.geoJson({{ footprint_wrs84.__geo_interface__ | tojson }},
                         {
                             interactive: false,
                             style: function (feature) {

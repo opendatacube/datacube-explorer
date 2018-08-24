@@ -24,6 +24,9 @@ SPATIAL_REF_SYS = Table(
     Column('proj4text', String(2048)),
 )
 
+# Albers equal area. Allows us to show coverage in m^2 easily.
+FOOTPRINT_SRID = 3577
+
 DATASET_SPATIAL = Table(
     'dataset_spatial',
     METADATA,
@@ -127,7 +130,7 @@ TIME_OVERVIEW = Table(
     ),
 
     Column('footprint_count', Integer, nullable=False),
-    Column('footprint_geometry', Geometry()),
+    Column('footprint_geometry', Geometry(srid=FOOTPRINT_SRID, spatial_index=False)),
     Column('crses', postgres.ARRAY(String)),
 
     # Size of this dataset in bytes, if the product includes it.
