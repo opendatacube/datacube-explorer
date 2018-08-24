@@ -244,7 +244,7 @@
                                 props.count +
                                 ' dataset(s)';
                         } else {
-                            this._div.innerHTML = '';
+                            this._div.innerHTML = '<div>'+regions.features.length+' unique regions</div>';
                         }
                     };
                     map.addControl(datasetInfoControl);
