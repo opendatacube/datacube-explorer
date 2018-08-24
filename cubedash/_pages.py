@@ -68,9 +68,8 @@ def overview_page(
             lambda x, y: pyproj.transform(from_crs, to_crs, x, y),
             selected_summary.footprint_geometry,
         )
-        print(footprint_wrs84.boundary is not None)
         _LOG.info(
-            "size difference",
+            "overview.footprint_size_diff",
             from_len=len(selected_summary.footprint_geometry.wkt),
             to_len=len(footprint_wrs84.wkt),
         )
