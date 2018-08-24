@@ -9,12 +9,14 @@ from typing import Counter, Dict, Optional
 
 import fiona
 import flask
+import pyproj
 import shapely
 import shapely.prepared
 import shapely.wkb
 import structlog
 from flask import abort, redirect, request, url_for
 from shapely.geometry import MultiPolygon, shape
+from shapely.ops import transform
 from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
@@ -57,6 +59,23 @@ def overview_page(
     datasets = None
     regions = None
 
+    start = time.time()
+    footprint_wrs84 = None
+    if selected_summary.footprint_geometry:
+        from_crs = pyproj.Proj(init=selected_summary.footprint_crs)
+        to_crs = pyproj.Proj(init="epsg:4326")
+        footprint_wrs84 = transform(
+            lambda x, y: pyproj.transform(from_crs, to_crs, x, y),
+            selected_summary.footprint_geometry,
+        )
+        print(footprint_wrs84.boundary is not None)
+        _LOG.info(
+            "size difference",
+            from_len=len(selected_summary.footprint_geometry.wkt),
+            to_len=len(footprint_wrs84.wkt),
+        )
+        _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
+
     if selected_summary and selected_summary.dataset_count:
         # The per-dataset view is less useful now that we show grids separately.
         # datasets = None if selected_summary.dataset_count > 1000
@@ -65,9 +84,7 @@ def overview_page(
         start = time.time()
         regions = (
             get_region_counts(
-                selected_summary.region_dataset_counts,
-                selected_summary.footprint_geometry,
-                product,
+                selected_summary.region_dataset_counts, footprint_wrs84, product
             )
             if selected_summary.region_dataset_counts
             else None
@@ -87,6 +104,7 @@ def overview_page(
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
         selected_summary=selected_summary,
+        footprint_wrs84=footprint_wrs84,
     )
 
 

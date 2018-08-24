@@ -389,6 +389,11 @@ def _summary_from_row(res):
             if res["footprint_geometry"] is None
             else geo_shape.to_shape(res["footprint_geometry"])
         ),
+        footprint_crs=(
+            None
+            if res["footprint_geometry"] is None or res["footprint_geometry"].srid == -1
+            else "EPSG:{}".format(res["footprint_geometry"].srid)
+        ),
         size_bytes=res["size_bytes"],
         footprint_count=res["footprint_count"],
         # The most newly created dataset
@@ -423,7 +428,9 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         footprint_geometry=(
             None
             if summary.footprint_geometry is None
-            else geo_shape.from_shape(summary.footprint_geometry)
+            else geo_shape.from_shape(
+                summary.footprint_geometry, summary.footprint_srid
+            )
         ),
         footprint_count=summary.footprint_count,
         generation_time=func.now(),

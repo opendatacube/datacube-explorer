@@ -2,6 +2,7 @@ import time
 from collections import Counter
 from datetime import datetime
 
+import pytest
 from dateutil import tz
 from shapely import geometry as geo
 
@@ -40,6 +41,7 @@ def _overview():
                 (-27.804_641, 113.18267),
             ]
         ),
+        footprint_crs="EPSG:3577",
         footprint_count=3,
         newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
         crses={"epsg:1234"},
@@ -54,6 +56,9 @@ def test_add_period_list():
 
     joined = TimePeriodOverview.add_periods([_overview(), _overview(), total])
     assert joined.dataset_count == _overview().dataset_count * 2
+    assert _overview().footprint_geometry.area == pytest.approx(
+        joined.footprint_geometry.area
+    )
 
     assert sum(joined.region_dataset_counts.values()) == joined.dataset_count
     assert sum(joined.timeline_dataset_counts.values()) == joined.dataset_count
@@ -96,11 +101,11 @@ def test_srid_lookup(summariser: Summariser):
     srid2 = summariser._target_srid()
     assert srid == srid2
 
-    assert summariser._get_srid_name(srid) == "EPSG:4326"
+    assert summariser._get_srid_name(srid) == "EPSG:3577"
 
     # Cached?
     cache_hits = summariser._get_srid_name.cache_info().hits
-    assert summariser._get_srid_name(srid) == "EPSG:4326"
+    assert summariser._get_srid_name(srid) == "EPSG:3577"
     assert summariser._get_srid_name.cache_info().hits > cache_hits
 
 
@@ -127,6 +132,8 @@ def test_put_get_summaries(summary_store: SummaryStore):
     ), "Summary-gen-time should have been added by the server"
     original_gen_time = o.summary_gen_time
 
+    assert o.footprint_geometry.area == pytest.approx(4.857_924_619_872)
+
     assert loaded.dataset_count == 4
     assert (
         sum(loaded.region_dataset_counts.values()) == 4
@@ -136,6 +143,10 @@ def test_put_get_summaries(summary_store: SummaryStore):
         "3_4",
         "4_5",
     ], "Incorrect set of regions"
+    assert o.footprint_crs == loaded.footprint_crs
+    assert loaded.footprint_crs == "EPSG:3577"
+    assert loaded.footprint_srid == 3577
+    assert loaded.footprint_geometry.area == pytest.approx(o.footprint_geometry.area)
 
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())

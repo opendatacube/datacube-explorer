@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash.summary import TimePeriodOverview
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from cubedash.summary._schema import DATASET_SPATIAL, FOOTPRINT_SRID, SPATIAL_REF_SYS
 from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.model import Range
 
@@ -22,13 +22,7 @@ _LOG = structlog.get_logger()
 
 
 class Summariser:
-    def __init__(
-        self,
-        engine,
-        log=_LOG,
-        grouping_time_zone="Australia/Darwin",
-        output_crs_epsg_code=4326,
-    ) -> None:
+    def __init__(self, engine, log=_LOG, grouping_time_zone="Australia/Darwin") -> None:
         self._engine = engine
         self.log = log
         # Group datasets using this timezone when counting them.
@@ -37,7 +31,7 @@ class Summariser:
         # cache
         self._grouping_time_zone_tz = tz.gettz(self.grouping_time_zone)
         # EPSG code for all polygons to be converted to (for footprints).
-        self.output_crs_epsg_code = output_crs_epsg_code
+        self.output_crs_epsg_code = FOOTPRINT_SRID
 
     def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
         """
@@ -93,7 +87,10 @@ class Summariser:
         row = dict(rows[0])
         row["dataset_count"] = row["dataset_count"] or 0
         if row["footprint_geometry"] is not None:
+            row["footprint_crs"] = self._get_srid_name(row["footprint_geometry"].srid)
             row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
+        else:
+            row["footprint_crs"] = None
         row["crses"] = None
         if row["srids"] is not None:
             row["crses"] = {self._get_srid_name(s) for s in row["srids"]}

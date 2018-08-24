@@ -30,6 +30,7 @@ class TimePeriodOverview:
     time_range: Range
 
     footprint_geometry: Union[shapely.geometry.MultiPolygon, shapely.geometry.Polygon]
+    footprint_crs: str
 
     footprint_count: int
 
@@ -46,10 +47,23 @@ class TimePeriodOverview:
 
     @classmethod
     def add_periods(
-        cls, periods: Iterable["TimePeriodOverview"], footprint_tolerance=0.05
+        cls,
+        periods: Iterable["TimePeriodOverview"],
+        # This is in CRS units. Albers, so: 5.5KM
+        footprint_tolerance=0.05,
     ):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
+        crses = set(p.footprint_crs for p in periods)
+
+        if not crses:
+            footprint_crs = None
+        elif len(crses) == 1:
+            [footprint_crs] = crses
+        else:
+            # All generated summaries should be the same, so this can only occur if someone's changes
+            # output crs setting on an existing cubedash instance.
+            raise NotImplementedError("Time summaries use inconsistent CRSes.")
 
         timeline_counter = Counter()
         for p in periods:
@@ -108,6 +122,7 @@ class TimePeriodOverview:
                 max(r.time_range.end for r in periods) if periods else None,
             ),
             footprint_geometry=geometry_union,
+            footprint_crs=footprint_crs,
             footprint_count=sum(p.footprint_count for p in with_valid_geometries),
             newest_dataset_creation_time=max(
                 (
@@ -141,6 +156,17 @@ class TimePeriodOverview:
                 period = "year"
 
         return counter, period
+
+    @property
+    def footprint_srid(self):
+        if self.footprint_crs is None:
+            return None
+        epsg = self.footprint_crs.lower()
+
+        if not epsg.startswith("epsg:"):
+            _LOG.warn("unsupported.to_srid", crs=self.footprint_crs)
+            return None
+        return int(epsg.split(":")[1])
 
 
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
