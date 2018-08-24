@@ -37,7 +37,7 @@
                     >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
 
                     {% if selected_summary.dataset_count != selected_summary.footprint_count %}
-                        ({{ selected_summary.footprint_count or 'No' }} visible)
+                        ({{ selected_summary.footprint_count or 'None' }} visible)
                     {% endif %}
 
                     {% if selected_summary.size_bytes %}
