@@ -59,23 +59,24 @@ def overview_page(
     datasets = None
     regions = None
 
-    start = time.time()
     footprint_wrs84 = None
-    if selected_summary.footprint_geometry:
-        from_crs = pyproj.Proj(init=selected_summary.footprint_crs)
-        to_crs = pyproj.Proj(init="epsg:4326")
-        footprint_wrs84 = transform(
-            lambda x, y: pyproj.transform(from_crs, to_crs, x, y),
-            selected_summary.footprint_geometry,
-        )
-        _LOG.info(
-            "overview.footprint_size_diff",
-            from_len=len(selected_summary.footprint_geometry.wkt),
-            to_len=len(footprint_wrs84.wkt),
-        )
-        _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
 
     if selected_summary and selected_summary.dataset_count:
+        if selected_summary.footprint_geometry:
+            start = time.time()
+            from_crs = pyproj.Proj(init=selected_summary.footprint_crs)
+            to_crs = pyproj.Proj(init="epsg:4326")
+            footprint_wrs84 = transform(
+                lambda x, y: pyproj.transform(from_crs, to_crs, x, y),
+                selected_summary.footprint_geometry,
+            )
+            _LOG.info(
+                "overview.footprint_size_diff",
+                from_len=len(selected_summary.footprint_geometry.wkt),
+                to_len=len(footprint_wrs84.wkt),
+            )
+            _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
+
         # The per-dataset view is less useful now that we show grids separately.
         # datasets = None if selected_summary.dataset_count > 1000
         # else get_datasets_geojson(product_name, year, month, day)
