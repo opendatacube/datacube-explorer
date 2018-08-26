@@ -428,9 +428,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         footprint_geometry=(
             None
             if summary.footprint_geometry is None
-            else geo_shape.from_shape(
-                summary.footprint_geometry, summary.footprint_srid
-            )
+            else geo_shape.from_shape(summary.footprint_geometry)
         ),
         footprint_count=summary.footprint_count,
         generation_time=func.now(),

@@ -125,7 +125,7 @@ TIME_OVERVIEW = Table(
         nullable=False,
     ),
     Column("footprint_count", Integer, nullable=False),
-    Column("footprint_geometry", Geometry()),
+    Column("footprint_geometry", Geometry(srid=FOOTPRINT_SRID, spatial_index=False)),
     Column("crses", postgres.ARRAY(String)),
     # Size of this dataset in bytes, if the product includes it.
     Column("size_bytes", BigInteger),
