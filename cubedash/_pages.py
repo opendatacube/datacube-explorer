@@ -68,8 +68,8 @@ def overview_page(product_name: str = None,
             selected_summary.footprint_geometry
         )
         _LOG.info(
-            'overview.footprint_size_diff', 
-            from_len=len(selected_summary.footprint_geometry.wkt), 
+            'overview.footprint_size_diff',
+            from_len=len(selected_summary.footprint_geometry.wkt),
             to_len=len(footprint_wrs84.wkt),
         )
         _LOG.debug('overview.footprint_proj', time_sec=time.time() - start)
@@ -188,6 +188,7 @@ def _region_geometry_function(product, footprint):
                 return footprint.intersection(shapely_extent)
             else:
                 return shapely_extent
+
         return region_geometry_cut
 
 
