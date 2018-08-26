@@ -66,6 +66,12 @@ def test_add_period_list():
     assert sorted(joined.region_dataset_counts.keys()) == ["1_2", "3_4", "4_5"]
 
 
+def test_srid_calcs():
+    o = _overview()
+    assert o.footprint_crs == 'EPSG:3577'
+    assert o.footprint_srid == 3577
+
+
 def test_add_no_periods(summary_store: SummaryStore):
     """
     All the get/update methods should work on products with no datasets.
