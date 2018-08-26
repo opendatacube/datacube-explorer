@@ -275,6 +275,7 @@ def _expect_values(s: TimePeriodOverview,
         assert s.dataset_count == dataset_count, "wrong dataset count"
         assert s.footprint_count == footprint_count, "wrong footprint count"
         if s.footprint_count is not None and s.footprint_count > 0:
+            assert s.footprint_geometry is not None, "No footprint, despite footprint count"
             assert s.footprint_geometry.area > 0, "Empty footprint"
 
         assert s.time_range == time_range, "wrong dataset time range"
