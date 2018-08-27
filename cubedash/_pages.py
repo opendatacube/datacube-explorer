@@ -24,7 +24,7 @@ import cubedash
 import datacube
 from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
-from . import _filters, _dataset, _product, _platform, _api, _model
+from . import _filters, _dataset, _product, _platform, _api, _model, _reports
 from . import _utils as utils
 from ._utils import as_json, alchemy_engine
 
@@ -37,6 +37,7 @@ app.register_blueprint(_api.bp)
 app.register_blueprint(_dataset.bp)
 app.register_blueprint(_product.bp)
 app.register_blueprint(_platform.bp)
+app.register_blueprint(_reports.bp)
 
 _LOG = structlog.getLogger()
 

@@ -1,0 +1,91 @@
+<div class="header-option" onclick="" style="max-width: 100%">
+    <h2 id="{{ report_type }}-year-menu" class="option-title">
+        {{ year or 'All years' }}
+    </h2>
+    <div class="option-menu">
+
+        {% set year_range=(range(
+            product_summary.time_range.end.year,
+            product_summary.time_range.begin.year - 1,
+            -1
+        ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
+
+        {% for row in year_range | batch(3) %}
+            <ul>
+                {% for year_opt in row %}
+                    <li>
+                        <button onclick="{{ report_type }}Date('year', {{ year_opt }})">
+                            {{ year_opt }}
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+        <ul>
+            <li class="wildcard" onclick="{{ report_type }}Date('year', 'All')">
+                <strong>All</strong>
+            </li>
+        </ul>
+    </div>
+</div>
+{% if year %}
+    <div class="header-option" onclick="">
+        <h2 id="{{ report_type }}-month-menu" class="option-title">
+            {% if month %}
+                {{ month | month_name }}
+            {% else %}
+                All months
+            {% endif %}
+        </h2>
+        <div class="option-menu left">
+            {% for row in range(1, 13) | batch(3) %}
+                <ul>
+                    {% for month_opt in row %}
+                        <li>
+                            <button onclick="{{ report_type}}Date('month', {{ month_opt }})">
+                                {{ month_opt | month_name }}
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+            <ul>
+                <li class="wildcard" onclick="{{ report_type }}Date('month', 'All')">
+                    <strong>All</strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+{% endif %}
+
+{% if month %}
+    <div class="header-option" onclick="">
+        <h2 id="{{ report_type }}-day-menu" class="option-title">
+            {% if day %}
+                {{ day | day_ordinal }}
+            {% else %}
+                All days
+            {% endif %}
+        </h2>
+        <div class="option-menu left">
+            {% for row in (year, month) | days_in_month | batch(3) %}
+                <ul>
+                    {% for day_opt in row %}
+                        <li>
+                            <button onclick="{{ report_type }}Date('day', {{ day_opt }})">
+                                {{ day_opt | day_ordinal }}
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+            <ul>
+                <li class="wildcard" onclick="{{ report_type }}Date('day', 'All')">
+                    <strong>
+                        All
+                    </strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+{% endif %}
