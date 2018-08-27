@@ -414,6 +414,10 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         )
 
     begin, end = summary.time_range if summary.time_range else (None, None)
+
+    if summary.footprint_geometry and summary.footprint_srid is None:
+        raise ValueError("Geometry without srid", summary)
+
     return dict(
         dataset_count=summary.dataset_count,
         timeline_dataset_start_days=day_values,
@@ -428,7 +432,9 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         footprint_geometry=(
             None
             if summary.footprint_geometry is None
-            else geo_shape.from_shape(summary.footprint_geometry)
+            else geo_shape.from_shape(
+                summary.footprint_geometry, summary.footprint_srid
+            )
         ),
         footprint_count=summary.footprint_count,
         generation_time=func.now(),
