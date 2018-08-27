@@ -3,7 +3,7 @@ import logging
 from flask import Blueprint
 
 from datacube.utils.geometry import CRS
-from ._model import get_summary,get_datasets_geojson
+from ._model import get_summary, get_datasets_geojson
 from ._utils import as_json
 
 _LOG = logging.getLogger(__name__)
