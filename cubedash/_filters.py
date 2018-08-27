@@ -11,6 +11,7 @@ from datetime import datetime
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
+from shapely.geometry import MultiPolygon
 
 from datacube.index.fields import Field
 from datacube.model import DatasetType, Range
@@ -71,6 +72,13 @@ def _dataset_geojson(dataset):
             "start_time": dataset.time.begin.isoformat(),
         },
     }
+
+
+@bp.app_template_filter("albers_area")
+def _format_albers_area(shape: MultiPolygon):
+    return Markup(
+        "{}km<sup>2</sup>".format(format(round(shape.area / 1_000_000), ",d"))
+    )
 
 
 @bp.app_template_filter("query_value")
