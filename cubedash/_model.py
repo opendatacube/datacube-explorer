@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import absolute_import
 
 import functools
 import time
@@ -11,13 +12,14 @@ import fiona
 import flask
 import pyproj
 import shapely
+import shapely.geometry
+import shapely.ops
 import shapely.prepared
 import shapely.prepared
 import shapely.wkb
 import shapely.wkb
 import structlog
 from flask_caching import Cache
-from shapely.geometry import MultiPolygon
 from shapely.geometry import MultiPolygon
 from shapely.geometry import shape
 from shapely.ops import transform
@@ -76,7 +78,7 @@ def get_datasets_geojson(
         year,
         month,
         day,
-        # limit=limit
+        limit=limit
     )
 
 
@@ -278,5 +280,4 @@ def _get_path_row_shapes():
             prop = item['properties']
             path_row_shapes[prop['PATH'], prop['ROW']] = shape(item['geometry'])
     return path_row_shapes
-
 

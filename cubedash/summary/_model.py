@@ -12,8 +12,6 @@ import structlog
 from dataclasses import dataclass
 from shapely.geometry.base import BaseGeometry
 
-from cubedash import _utils
-from datacube import utils as dc_utils
 from datacube.model import Dataset
 from datacube.model import Range
 
@@ -165,37 +163,3 @@ def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None
 
-
-def _dataset_created(dataset: Dataset) -> Optional[datetime]:
-    if 'created' in dataset.metadata.fields:
-        return dataset.metadata.created
-
-    value = dataset.metadata.creation_dt
-    if value:
-        try:
-            return _utils.default_utc(dc_utils.parse_time(value))
-        except ValueError:
-            _LOG.warn('invalid_dataset.creation_dt', dataset_id=dataset.id, value=value)
-
-    return None
-
-
-def _datasets_to_feature(datasets: Iterable[Tuple[Dataset, Tuple[BaseGeometry, bool]]]):
-    return {
-        'type': 'FeatureCollection',
-        'features': [_dataset_to_feature(ds_valid) for ds_valid in datasets]
-    }
-
-
-def _dataset_to_feature(ds: Tuple[Dataset, Tuple[BaseGeometry, bool]]):
-    dataset, (shape, valid_extent) = ds
-    return {
-        'type': 'Feature',
-        'geometry': shape.__geo_interface__,
-        'properties': {
-            'id': str(dataset.id),
-            'label': _utils.dataset_label(dataset),
-            'valid_extent': valid_extent,
-            'start_time': dataset.time.begin.isoformat()
-        }
-    }
