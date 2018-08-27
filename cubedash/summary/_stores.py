@@ -409,7 +409,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
     day_counts, day_values, region_counts, region_values = [], [], [], []
     if counts:
         day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
-    if region_counts:
+    if summary.region_dataset_counts:
         region_values, region_counts = zip(
             *sorted(summary.region_dataset_counts.items())
         )
