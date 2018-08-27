@@ -132,7 +132,7 @@ class TimePeriodOverview:
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
-        if len(counter) > 365:
+        if len(counter) > 366:
             if period == 'day':
                 counter = Counter(
                     datetime(date.year, date.month, 1).date()
