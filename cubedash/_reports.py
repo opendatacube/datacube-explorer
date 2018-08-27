@@ -72,12 +72,12 @@ def differences(product_name_list: str = None,
     product_2, product_summary_2, selected_summary_2 = _load_product(product_names[1], year, month, day)
     product = lambda: None
     product.name = product_names[0] + '-' + product_names[1]
-    diff_counts = (selected_summary_1.dataset_counts - selected_summary_2.dataset_counts) + \
-                  (selected_summary_2.dataset_counts - selected_summary_1.dataset_counts)
+    diff_counts = (selected_summary_1.timeline_dataset_counts - selected_summary_2.timeline_dataset_counts) + \
+                  (selected_summary_2.timeline_dataset_counts - selected_summary_1.timeline_dataset_counts)
     selected_summary = lambda: None
-    selected_summary.dataset_counts = diff_counts
+    selected_summary.timeline_dataset_counts = diff_counts
     selected_summary.dataset_count = sum(diff_counts.values())
-    selected_summary.period = selected_summary_1.period
+    selected_summary.timeline_period = selected_summary_1.timeline_period
     products = []
     product_summary = None
     products.append({'product': product, 'product_summary': product_summary, 'selected_summary': selected_summary})
@@ -93,7 +93,7 @@ def differences(product_name_list: str = None,
 def _load_product(product_name, year, month, day):
     product = None
     if product_name:
-        product = _model.index.products.get_by_name(product_name)
+        product = _model.STORE.index.products.get_by_name(product_name)
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
