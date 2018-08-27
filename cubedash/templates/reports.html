@@ -1,0 +1,274 @@
+{% extends "layout/base-reports.html" %}
+
+{% block header %}
+    <header>
+        <div class="header-option primary" style="display: inline-flex">
+            <h2 class="option-title" onclick="">
+                <strong> products </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addProduct( '{{ product_opt.name }}' )">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="time-picker" style="display: inline-flex">
+            {% set report_type = 'summaries' %}
+            {% include "reports-time.html" %}
+        </div>
+    </header>
+{% endblock %}
+
+{% block diff_header %}
+    <header>
+        <div class="header-option" onclick="" style="max-width: 100%">
+            <h2 class="option-title" onclick="">
+                <strong id="product-one" > product one </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addDiffsProduct('first', '{{ product_opt.name }}')">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="header-option" onclick="" style="max-width: 100%">
+            <h2 class="option-title" onclick="">
+                <strong id="product-two"> product two </strong>
+            </h2>
+            <div class="option-menu">
+                {% for row in grouped_products | batch(3) %}
+                    <ul>
+                        {% for group_name, product_summaries in row %}
+                            <li>
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                <ul class="items">
+                                    {% for product_opt, summary in product_summaries if summary %}
+                                        <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
+                                            <button onclick="addDiffsProduct('second', '{{ product_opt.name }}')">
+                                                {{ product_opt.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endfor %}
+            </div>
+        </div>
+        <div id="diff-time-picker" style="display: inline-flex">
+            {% set report_type = 'differences' %}
+            {% include "reports-time.html" %}
+        </div>
+    </header>
+{% endblock %}
+
+{% block body_footer %}
+    <script src="{{ url_for('static', filename='jquery-3.3.1.min.js') }}"></script>
+    <script>
+        var products = [];
+        var year = null;
+        var month = null;
+        var day = null;
+
+        // Product differences
+        var product_1 = null;
+        var product_2 = null;
+        var diffs_year = null;
+        var diffs_month = null;
+        var diffs_day = null;
+
+        function getProductsUrl() {
+            url = "/reports";
+            if (products.length > 0) {
+                product_list = products[0];
+                for (i = 1; i < products.length; i++) {
+                    product_list += "+" + products[i];
+                }
+                url += "/" + product_list;
+                if (year) {
+                    url += "/" + year;
+                }
+                if (month) {
+                    url += "/" + month;
+                }
+                if (day) {
+                    url += "/" + day;
+                }
+                return url;
+            }
+            return url;
+        }
+
+
+        function getMenuUrl() {
+            url = "/reports/time/summaries";
+            if (year) {
+                url += "/" + year;
+            }
+            if (month) {
+                url += "/" + month;
+            }
+            if (day) {
+                url += "/" + day;
+            }
+            return url;
+        }
+
+
+        function addProduct(product_name) {
+            if (!products.includes(product_name)) {
+                products.push(product_name);
+                url = getProductsUrl();
+                $.get(url, function(data, status) {
+                    document.getElementById("summary-content").innerHTML = data;
+                });
+            }
+        }
+
+        function summariesDate(date_type, value) {
+            if (date_type == 'year') {
+                if (value == 'All') {
+                    year = null;
+                    month = null;
+                    day = null;
+                } else {
+                    year = value;
+                }
+                menu_id = 'summaries-year-menu';
+            } else if (date_type == 'month') {
+                if (value == 'All') {
+                    month = null;
+                    day = null;
+                } else {
+                    month = value;
+                }
+                menu_id = 'summaries-month-menu';
+            } else if (date_type == 'day') {
+                if (value == 'All') {
+                    day = null;
+                } else {
+                    day = value;
+                }
+                menu_id = 'summaries-day-menu';
+            } else {
+                return;
+            }
+
+            if (products.length > 0) {
+                summaryUrl = getProductsUrl();
+                $.get(summaryUrl, function(data, status) {
+                    document.getElementById("summary-content").innerHTML = data;
+                });
+            }
+
+            menuUrl = getMenuUrl();
+            $.get(menuUrl, function(data, status) {
+                document.getElementById("time-picker").innerHTML = data;
+            });
+        }
+
+
+        function addDiffsProduct(rank, name) {
+            if (rank == 'first') {
+                product_1 = name;
+                document.getElementById("product-one").innerText = name;
+            } else if (rank == 'second') {
+                product_2 = name;
+                document.getElementById("product-two").innerText = name;
+            }
+            if (product_1 && product_2) {
+                $.get('/reports/differences/' + product_1 + '+' + product_2, function(data, status) {
+                        document.getElementById("diff-content").innerHTML = data;
+                });
+            }
+        }
+
+        function getDiffsMenuUrl() {
+            url = "/reports/time/differences";
+            if (diffs_year) {
+                url += "/" + diffs_year;
+            }
+            if (diffs_month) {
+                url += "/" + diffs_month;
+            }
+            if (diffs_day) {
+                url += "/" + diffs_day;
+            }
+            return url;
+        }
+
+        function differencesDate(date_type, value) {
+            if (date_type == 'year') {
+                if (value == 'All') {
+                    diffs_year = null;
+                    diffs_month = null;
+                    diffs_day = null;
+                } else {
+                    diffs_year = value;
+                }
+                menu_id = 'differences-year-menu';
+            } else if (date_type == 'month') {
+                if (value == 'All') {
+                    diffs_month = null;
+                    diffs_day = null;
+                } else {
+                    diffs_month = value;
+                }
+                menu_id = 'differences-month-menu';
+            } else if (date_type == 'day') {
+                if (value == 'All') {
+                    diffs_day = null;
+                } else {
+                    diffs_day = value;
+                }
+                menu_id = 'differences-day-menu';
+            } else {
+                return;
+            }
+
+            if (product_1 && product_2) {
+                url = '/reports/differences/' + product_1 + '+' + product_2;
+                $.get(url, function(data, status) {
+                    document.getElementById("diff-content").innerHTML = data;
+                });
+            }
+
+            menuUrl = getDiffsMenuUrl();
+            $.get(menuUrl, function(data, status) {
+                document.getElementById("diff-time-picker").innerHTML = data;
+            });
+        }
+    </script>
+{% endblock %}

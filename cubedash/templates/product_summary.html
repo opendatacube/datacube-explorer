@@ -1,0 +1,20 @@
+<div style="display: inline-flex">
+    {% for p in products %}
+    <div class="panel info-panel">
+        <div>
+            {{ p.product.name }}
+        </div>
+        <div>
+            {{ p.selected_summary.dataset_count }} datasets
+        </div>
+
+
+        {% from "layout/macros.html" import chart_timeline %}
+        {% if p.selected_summary.dataset_counts and (p.selected_summary.dataset_counts | length > 1) %}
+        <div>
+            {{ chart_timeline(p.selected_summary.dataset_counts, p.product, period=p.selected_summary.period) }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
