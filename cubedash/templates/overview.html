@@ -41,9 +41,7 @@
                     {% endif %}
 
                 <ul>
-
-
-                {% if selected_summary.size_bytes %}
+                    {% if selected_summary.size_bytes %}
                         <li>{{ selected_summary.size_bytes | printable_data_size }}</li>
                     {% endif %}
 

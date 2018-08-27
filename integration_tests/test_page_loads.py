@@ -122,6 +122,7 @@ def test_out_of_date_range(cubedash_client: FlaskClient):
     client = cubedash_client
 
     rv: Response = client.get('/wofs_albers/2010')
+    assert rv.status_code == 200
     print(rv.data.decode('utf-8'))
     # The common error here is to say "No data: not yet generated" rather than "0 datasets"
     assert b'0 datasets' in rv.data
