@@ -144,7 +144,7 @@ def test_loading_high_low_tid(cubedash_client: FlaskClient):
 
     assert '306 datasets' in html.find('.dataset-count', first=True).text
     # Footprint is not exact due to shapely.simplify()
-    assert re.match(r'2,984,9..km2 \(approx', html.find('.coverage-footprint-area', first=True).text)
+    assert re.match(r'2,984,...km2 \(approx', html.find('.coverage-footprint-area', first=True).text)
 
     assert html.find('.last-processed time', first=True).attrs['datetime'] == '2017-06-08T20:58:07.014314+00:00'
 
