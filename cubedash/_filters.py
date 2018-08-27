@@ -9,16 +9,23 @@ import calendar
 import logging
 from datetime import datetime
 
-from datacube.index.postgres._fields import PgField, IntDocField, DoubleDocField, NumericDocField, \
-    RangeDocField, DateDocField
-
-from datacube.model import Range, DatasetType
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
+
+from datacube.index.fields import Field
+from datacube.model import Range, DatasetType
 from . import _utils as utils
 
-NUMERIC_FIELD_TYPES = (NumericDocField, IntDocField, DoubleDocField)
+# How far to step the number when the user hits up/down.
+NUMERIC_STEP_SIZE = {
+    'numeric-range': 0.001,
+    'double-range': 0.001,
+    'integer-range': 1,
+    'numeric': 0.001,
+    'double': 0.001,
+    'integer': 1,
+}
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('filters', __name__)
@@ -112,31 +119,18 @@ def _searchable_fields(product: DatasetType):
 
 
 @bp.app_template_filter('is_numeric_field')
-def _is_numeric_field(field: PgField):
-    if isinstance(field, RangeDocField):
-        return field.FIELD_CLASS in NUMERIC_FIELD_TYPES
-    else:
-        return isinstance(field, NUMERIC_FIELD_TYPES)
+def _is_numeric_field(field: Field):
+    return field.type_name in NUMERIC_STEP_SIZE
 
 
 @bp.app_template_filter('is_date_field')
-def _is_date_field(field: PgField):
-    if isinstance(field, RangeDocField):
-        return field.FIELD_CLASS is DateDocField
-    else:
-        return isinstance(field, DateDocField)
+def _is_date_field(field: Field):
+    return field.type_name in ('datetime', 'datetime-range')
 
 
 @bp.app_template_filter('field_step_size')
-def _field_step(field: PgField):
-    if isinstance(field, RangeDocField):
-        field = field.FIELD_CLASS
-
-    return {
-        IntDocField: 1,
-        NumericDocField: 0.001,
-        DoubleDocField: 0.001,
-    }.get(field.__class__, 1)
+def _field_step(field: Field):
+    return NUMERIC_STEP_SIZE.get(field.type_name, 1)
 
 
 @bp.app_template_filter('timesince')
@@ -171,6 +165,6 @@ def timesince(dt, default="just now"):
 
 def _time(label: str, actual_time: datetime) -> Markup:
     return Markup(f"<time datetime={actual_time.isoformat()}"
-                  f" title={actual_time.isoformat()}>"
+                  f' title="{actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z")}">'
                   f"{escape(label)}"
                   f"</time>")

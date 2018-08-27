@@ -2,19 +2,15 @@ from __future__ import absolute_import
 
 import flask
 import structlog
-from datetime import timedelta
-
 from flask_caching import Cache
 from pathlib import Path
-
-from cubedash.summary import TimePeriodOverview, FileSummaryStore
-from datacube.index import index_connect
-from datacube.index._api import Index
-from datacube.model import Range, DatasetType
-
-from datetime import datetime
 from typing import Iterable, Tuple
 from typing import Optional
+
+from cubedash.summary import TimePeriodOverview, FileSummaryStore
+from datacube.index import Index
+from datacube.index import index_connect
+from datacube.model import DatasetType
 
 NAME = 'cubedash'
 

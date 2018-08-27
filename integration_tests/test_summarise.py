@@ -9,38 +9,39 @@ from cubedash.summary import FileSummaryStore, TimePeriodOverview
 from datacube.model import Range
 
 
-def test_calc_scene_summary(populated_scene_index, tmpdir):
-    store = FileSummaryStore(populated_scene_index, Path(tmpdir))
+def test_calc_month(summary_store):
 
     # One Month
     _expect_values(
-        store.calculate_summary(
+        summary_store.calculate_summary(
             'ls8_nbar_scene',
             Range(datetime(2017, 4, 1), datetime(2017, 5, 1))
         ),
-        dataset_count=99,
-        footprint_count=99,
+        dataset_count=408,
+        footprint_count=408,
         time_range=Range(
             begin=datetime(2017, 4, 1, 0, 0),
             end=datetime(2017, 5, 1, 0, 0)
         ),
         newest_creation_time=datetime(
-            2017, 7, 4, 11, 17, 6, tzinfo=tzutc()
+            2017, 7, 4, 11, 18, 20, tzinfo=tzutc()
         ),
         timeline_period='day',
         timeline_count=30
     )
 
+
+def test_calc_scene_year(summary_store):
     # One year, storing result.
     _expect_values(
-        store.update(
+        summary_store.update(
             'ls8_nbar_scene',
             year=2017,
             month=None,
             day=None,
         ),
-        dataset_count=1227,
-        footprint_count=1227,
+        dataset_count=1789,
+        footprint_count=1789,
         time_range=Range(
             begin=datetime(2017, 1, 1, 0, 0),
             end=datetime(2018, 1, 1, 0, 0)
@@ -50,16 +51,18 @@ def test_calc_scene_summary(populated_scene_index, tmpdir):
         timeline_count=365
     )
 
+
+def test_calc_scene_all_time(summary_store):
     # All time
     _expect_values(
-        store.update(
+        summary_store.update(
             'ls8_nbar_scene',
             year=None,
             month=None,
             day=None,
         ),
-        dataset_count=2474,
-        footprint_count=2474,
+        dataset_count=3036,
+        footprint_count=3036,
         time_range=Range(
             begin=datetime(2016, 1, 1, 0, 0),
             end=datetime(2018, 1, 1, 0, 0)
@@ -68,6 +71,73 @@ def test_calc_scene_summary(populated_scene_index, tmpdir):
         timeline_period='month',
         timeline_count=24
     )
+
+
+def test_calc_albers_summary_with_storage(summary_store):
+
+    # Should not exist yet.
+    summary = summary_store.get(
+        'ls8_nbar_albers',
+        year=None,
+        month=None,
+        day=None,
+    )
+    assert summary is None
+    summary = summary_store.get(
+        'ls8_nbar_albers',
+        year=2017,
+        month=None,
+        day=None,
+    )
+    assert summary is None
+
+    # Calculate overall summary
+    summary = summary_store.get_or_update(
+        'ls8_nbar_albers',
+        year=2017,
+        month=None,
+        day=None,
+    )
+    _expect_values(
+        summary,
+        dataset_count=918,
+        footprint_count=918,
+        time_range=Range(
+            begin=datetime(2017, 4, 1, 0, 0),
+            end=datetime(2017, 6, 1, 0, 0)
+        ),
+        newest_creation_time=datetime(
+            2017, 10, 25, 23, 9, 2, 486851, tzinfo=tzutc()
+        ),
+        timeline_period='day',
+        # Data spans 61 days in 2017
+        timeline_count=61
+    )
+
+    # get_or_update should now return the cached copy.
+    cached_s = summary_store.get_or_update(
+        'ls8_nbar_albers',
+        year=2017,
+        month=None,
+        day=None,
+    )
+    assert cached_s.summary_gen_time is not None
+    assert cached_s.summary_gen_time == summary.summary_gen_time, \
+        "A new, rather than cached, summary was returned"
+    assert cached_s.dataset_count == summary.dataset_count
+
+
+def test_no_datasets_in_time(summary_store):
+    # No datasets in 2018
+    summary = summary_store.get_or_update(
+        'ls8_nbar_albers',
+        year=2018,
+        month=None,
+        day=None,
+    )
+    assert summary.dataset_count == 0, "There should be no datasets in 2018"
+
+
 
 
 def _expect_values(s: TimePeriodOverview,
@@ -86,80 +156,30 @@ def _expect_values(s: TimePeriodOverview,
         assert s.newest_dataset_creation_time == default_utc(
             newest_creation_time
         ), "wrong newest dataset creation"
-        assert s.period == timeline_period, f"Should be a {timeline_period}, " \
-                                            f"not {s.period} timeline"
-        assert len(s.dataset_counts) == timeline_count, "timeline entry count"
+        assert s.timeline_period == timeline_period, (
+            f"Should be a {timeline_period}, "
+            f"not {s.timeline_period} timeline"
+        )
+        assert len(s.timeline_dataset_counts) == timeline_count, (
+            "wrong timeline entry count"
+        )
+        assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
+            "timeline count doesn't match dataset count"
+        )
+
+        assert s.summary_gen_time is not None, (
+            "Missing summary_gen_time (there's a default)"
+        )
+
     except AssertionError:
         print(f"""Got:
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range: {s.time_range}
         newest: {repr(s.newest_dataset_creation_time)}
-        period: {s.period}
-        period_count: {len(s.dataset_counts)}
+        timeline
+            period: {s.timeline_period}
+            dataset_counts: {len(s.timeline_dataset_counts)}
         """)
         raise
 
-
-def test_calc_albers_summary(populated_albers_index, tmpdir):
-    store = FileSummaryStore(populated_albers_index, Path(tmpdir))
-
-    # Should not exist yet.
-    summary = store.get(
-        'ls8_nbar_scene',
-        year=None,
-        month=None,
-        day=None,
-    )
-    assert summary is None
-    summary = store.get(
-        'ls8_nbar_scene',
-        year=2017,
-        month=None,
-        day=None,
-    )
-    assert summary is None
-
-    # Calculate overall summary
-    summary = store.get_or_update(
-        'ls8_nbar_scene',
-        year=2017,
-        month=None,
-        day=None,
-    )
-    _expect_values(
-        summary,
-        dataset_count=617,
-        footprint_count=617,
-        time_range=Range(
-            begin=datetime(2017, 4, 1, 0, 0),
-            end=datetime(2017, 6, 1, 0, 0)
-        ),
-        newest_creation_time=datetime(
-            2017, 7, 11, 4, 32, 11, tzinfo=tzutc()
-        ),
-        timeline_period='day',
-        # Data spans 61 days in 2017
-        timeline_count=61
-    )
-
-    # get_or_update should now return the cached copy.
-    cached_s = store.get_or_update(
-        'ls8_nbar_scene',
-        year=2017,
-        month=None,
-        day=None,
-    )
-    assert cached_s.summary_gen_time is not None
-    assert cached_s.summary_gen_time == summary.summary_gen_time, \
-        "A new, rather than cached, summary was returned"
-    assert cached_s.dataset_count == summary.dataset_count
-
-    # No datasets in 2018
-    summary = store.get_or_update(
-        'ls8_nbar_scene',
-        year=2018,
-        month=None,
-        day=None,
-    )
-    assert summary.dataset_count == 0, "There should be no datasets in 2018"

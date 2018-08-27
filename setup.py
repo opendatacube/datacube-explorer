@@ -25,6 +25,7 @@ setup(
     install_requires=[
         'cachetools',
         'click',
+        'dataclasses',
         'datacube>=1.5.4',
         'flask',
         'fiona',
