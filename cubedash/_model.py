@@ -10,6 +10,8 @@ import fiona
 import flask
 import pyproj
 import shapely
+import shapely.geometry
+import shapely.ops
 import shapely.prepared
 import shapely.wkb
 import structlog
@@ -68,13 +70,7 @@ def get_datasets_geojson(
     day: Optional[int] = None,
     limit: int = 500,
 ) -> Dict:
-    return STORE.get_dataset_footprints(
-        product_name,
-        year,
-        month,
-        day,
-        # limit=limit
-    )
+    return STORE.get_dataset_footprints(product_name, year, month, day, limit=limit)
 
 
 @cache.memoize(timeout=120)

@@ -19,8 +19,9 @@ from cubedash._utils import alchemy_engine
 from cubedash.summary import TimePeriodOverview, _extents, _schema
 from cubedash.summary._schema import DATASET_SPATIAL, PRODUCT, TIME_OVERVIEW
 from cubedash.summary._summarise import Summariser
+from datacube import utils as dc_utils
 from datacube.index import Index
-from datacube.model import DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range
 
 _LOG = structlog.get_logger()
 
@@ -234,15 +235,30 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        limit: int = 500,
     ) -> Dict:
         """
         Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
-        return self._summariser.get_dataset_footprints(
-            product_name, _utils.as_time_range(year, month, day)
+        if year:
+            time_range = _utils.as_time_range(year, month, day)
+        else:
+            product = self._get_product(product_name)
+            time_range = Range(product.time_earliest, product.time_latest)
+
+        # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
+        # return self._summariser.get_dataset_footprints(
+        #     product_name,
+        #     time_range,
+        #     limit
+        # )
+
+        datasets = self.index.datasets.search(
+            limit=limit, product=product_name, time=time_range
         )
+        return _datasets_to_feature(datasets)
 
     def get_or_update(
         self,
@@ -442,3 +458,39 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses,
     )
+
+
+def _dataset_created(dataset: Dataset) -> Optional[datetime]:
+    if "created" in dataset.metadata.fields:
+        return dataset.metadata.created
+
+    value = dataset.metadata.creation_dt
+    if value:
+        try:
+            return _utils.default_utc(dc_utils.parse_time(value))
+        except ValueError:
+            _LOG.warn("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
+
+    return None
+
+
+def _datasets_to_feature(datasets: Iterable[Dataset]):
+    return {
+        "type": "FeatureCollection",
+        "features": [_dataset_to_feature(ds_valid) for ds_valid in datasets],
+    }
+
+
+def _dataset_to_feature(dataset: Dataset):
+    shape, valid_extent = _utils.dataset_shape(dataset)
+    return {
+        "type": "Feature",
+        "geometry": shape.__geo_interface__,
+        "properties": {
+            "id": str(dataset.id),
+            "label": _utils.dataset_label(dataset),
+            "valid_extent": valid_extent,
+            "start_time": dataset.time.begin.isoformat(),
+            "creation_time": _dataset_created(dataset),
+        },
+    }
