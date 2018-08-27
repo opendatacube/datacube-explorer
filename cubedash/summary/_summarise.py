@@ -96,14 +96,11 @@ class Summariser:
         log.debug("counter.calc")
 
         # Initialise all requested days as zero
-
-        if not has_data:
-            region_counts = Counter()
-            day_counts = Counter()
-        else:
-            day_counts = Counter({
-                d.date(): 0 for d in pd.date_range(begin_time, end_time, closed='left')
-            })
+        day_counts = Counter({
+            d.date(): 0 for d in pd.date_range(begin_time, end_time, closed='left')
+        })
+        region_counts = Counter()
+        if has_data:
             day_counts.update(
                 Counter({
                     day.date(): count for day, count in
