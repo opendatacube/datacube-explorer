@@ -84,10 +84,14 @@
                     <li>
                         {{ selected_summary.region_dataset_counts | length }} regions.
                     </li>
-                    <li>{{  selected_summary.footprint_geometry.area }}km<sup>2</sup></li>
-                    <li>
-                        {{  selected_summary.crses | length}} dataset CRS: {{  selected_summary.crses | join(', ') }}
-                    </li>
+                    {% if selected_summary.footprint_geometry %}
+                        <li>{{ selected_summary.footprint_geometry.area }}km<sup>2</sup></li>
+                    {% endif %}
+                    {% if selected_summary.crses %}
+                        <li>
+                            {{ selected_summary.crses | length}} dataset CRS: {{  selected_summary.crses | join(', ') }}
+                        </li>
+                    {% endif %}
                 </ul>
 
                 <p>
