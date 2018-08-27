@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from cubedash import _model
 from cubedash.summary import SummaryStore
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
+from requests_html import HTML
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
 
@@ -46,6 +48,11 @@ def populate_index(module_dea_index):
         module_dea_index,
         'wofs_albers',
         TEST_DATA_DIR / 'wofs-albers-sample.yaml.gz'
+    )
+    _populate_from_dump(
+        module_dea_index,
+        'high_tide_comp_20p',
+        TEST_DATA_DIR / 'high_tide_comp_20p.yaml.gz'
     )
     return module_dea_index
 
@@ -127,6 +134,19 @@ def test_out_of_date_range(cubedash_client: FlaskClient):
     # The common error here is to say "No data: not yet generated" rather than "0 datasets"
     assert b'0 datasets' in rv.data
     assert b'Historic Flood Mapping Water Observations from Space' in rv.data
+
+
+def test_loading_high_low_tid(cubedash_client: FlaskClient):
+    rv: Response = cubedash_client.get("/high_tide_comp_20p/2008")
+    html = HTML(html=rv.data.decode('utf-8'))
+
+    assert html.search('High Tide 20 percentage composites for entire coastline') is not None
+
+    assert '306 datasets' in html.find('.dataset-count', first=True).text
+    # Footprint is not exact due to shapely.simplify()
+    assert re.match(r'2,984,9..km2 \(approx', html.find('.coverage-footprint-area', first=True).text)
+
+    assert html.find('.last-processed time', first=True).attrs['datetime'] == '2017-06-08T20:58:07.014314+00:00'
 
 
 def test_no_data_pages(cubedash_client: FlaskClient):

@@ -6,6 +6,7 @@ import versioneer
 tests_require = [
     'pylint',
     'digitalearthau',
+    'requests-html'
 ]
 
 extras_require = {
