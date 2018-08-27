@@ -199,9 +199,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                         SPATIAL_REF_SYS.c.auth_name == 'EPSG'
                     ).where(
                         SPATIAL_REF_SYS.c.auth_srid == (
-                                '283' + func.abs(
-                            doc[(projection_offset + ['zone'])].astext.cast(Integer)
-                        )
+                            '283' + func.abs(doc[(projection_offset + ['zone'])].astext.cast(Integer))
                         ).cast(Integer)
                     ).as_scalar()
                 )
@@ -262,7 +260,7 @@ def _select_dataset_extent_query(dt: DatasetType):
         DATASET.c.id,
         DATASET.c.dataset_type_ref,
         (
-                func.lower(time) + (func.upper(time) - func.lower(time)) / 2
+            func.lower(time) + (func.upper(time) - func.lower(time)) / 2
         ).label('center_time'),
         (
             null() if footrprint_expression is None else footrprint_expression
@@ -283,6 +281,7 @@ def _default_crs(dt: DatasetType) -> Optional[str]:
         return None
 
     return storage.get('crs')
+
 
 def _dataset_creation_expression(md: MetadataType) -> Optional[datetime]:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
