@@ -48,11 +48,13 @@
                     {% endif %}
 
                     {% if selected_summary.footprint_geometry %}
-                        <li>{{ selected_summary.footprint_geometry | albers_area}}</li>
+                        <li>{{ selected_summary.footprint_geometry | albers_area}} (approx.)</li>
                     {% endif %}
-                    <li>
-                        {{ selected_summary.region_dataset_counts | length }} unique regions
-                    </li>
+                    {% if selected_summary.region_dataset_counts %}
+                        <li>
+                            {{ selected_summary.region_dataset_counts | length }} unique regions
+                        </li>
+                    {% endif %}
                     {% if selected_summary.crses %}
                         <li>
                             <span title="{{  selected_summary.crses | sort | join(', ') }}">{{ selected_summary.crses | length}} dataset CRS</span>
