@@ -49,8 +49,9 @@ class TimePeriodOverview:
     def add_periods(
         cls,
         periods: Iterable["TimePeriodOverview"],
-        # This is in CRS units. Albers, so: 5.5KM
-        footprint_tolerance=0.05,
+        # This is in CRS units. Albers, so 1KM.
+        # Lower value will have a more accurate footprint and much larger page load times.
+        footprint_tolerance=1000.0,
     ):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
