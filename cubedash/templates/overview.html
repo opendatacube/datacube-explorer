@@ -33,7 +33,7 @@
                         {{ year }}
                         </h3>
                     {% endif %}
-                    <a href="{{ url_for('search_page', **product_args) }}" class="muted"
+                    <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
                     >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
 
                     {% if selected_summary.dataset_count != selected_summary.footprint_count %}
@@ -42,25 +42,30 @@
 
                 <ul>
                     {% if selected_summary.size_bytes %}
-                        <li>{{ selected_summary.size_bytes | printable_data_size }}</li>
+                        <li class="coverage-filesize">{{ selected_summary.size_bytes | printable_data_size }}</li>
                     {% endif %}
 
                     {% if selected_summary.footprint_geometry %}
-                        <li>{{ selected_summary.footprint_geometry | albers_area}} (approx.)</li>
+                        <li class="coverage-footprint-area">{{ selected_summary.footprint_geometry | albers_area}} (approx.)</li>
                     {% endif %}
                     {% if selected_summary.region_dataset_counts %}
-                        <li>
+                        <li class="coverage-region-count">
                             {{ selected_summary.region_dataset_counts | length }} unique regions
                         </li>
                     {% endif %}
                     {% if selected_summary.crses %}
-                        <li>
-                            <span title="{{  selected_summary.crses | sort | join(', ') }}">{{ selected_summary.crses | length}} dataset CRS</span>
+                        <li class="coverage-crs-count" title="{{  selected_summary.crses | join(', ') }}">
+                            {{ selected_summary.crses | length}}
+                            dataset CRS{% if selected_summary.crses | length == 1 %}:
+                            {{ selected_summary.crses|join(',') }}
+                            {% endif %}
                         </li>
                     {% endif %}
 
                     {% if selected_summary.newest_dataset_creation_time %}
-                        <li>Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}</li>
+                        <li class="last-processed">
+                            Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}
+                        </li>
                     {% endif %}
                 </ul>
 

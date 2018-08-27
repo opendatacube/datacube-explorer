@@ -33,7 +33,7 @@ from datacube.model import DatasetType, MetadataType
 _LOG = structlog.get_logger()
 
 
-def get_dataset_extent_alchemy_expression(md: MetadataType):
+def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
     """
     Build an SQLaLchemy expression to get the extent for a dataset.
 
@@ -64,7 +64,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType):
             # Otherwise construct a polygon from the four corner points.
             else_=_bounds_polygon(doc, projection_offset),
         ),
-        get_dataset_srid_alchemy_expression(md),
+        get_dataset_srid_alchemy_expression(md, default_crs),
         type_=Geometry,
     )
 
@@ -160,7 +160,7 @@ def _size_bytes_field(dt: DatasetType):
     return _jsonb_doc_expression(dt.metadata_type)["size_bytes"].astext.cast(BigInteger)
 
 
-def get_dataset_srid_alchemy_expression(md: MetadataType):
+def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = None):
     doc = md.dataset_fields["metadata_doc"].alchemy_expression
 
     if "grid_spatial" not in md.definition["dataset"]:
@@ -172,6 +172,23 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
     # Most have a spatial_reference field we can use directly.
     spatial_reference_offset = projection_offset + ["spatial_reference"]
     spatial_ref = doc[spatial_reference_offset].astext
+
+    # When datasets have no CRS, optionally use this as default.
+    default_crs_expression = None
+    if default_crs:
+        if not default_crs.lower().startswith("epsg:"):
+            raise NotImplementedError(
+                "CRS expected in form of 'EPSG:1234'. Got: %r" % default_crs
+            )
+
+        auth_name, auth_srid = default_crs.split(":")
+        default_crs_expression = (
+            select([SPATIAL_REF_SYS.c.srid])
+            .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
+            .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
+            .as_scalar()
+        )
+
     return func.coalesce(
         case(
             [
@@ -190,7 +207,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
                     .as_scalar(),
                 )
             ],
-            else_=None,
+            else_=default_crs_expression,
         ),
         # Some older datasets have datum/zone fields instead.
         # The only remaining ones in DEA are 'GDA94'.
@@ -213,7 +230,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType):
                 )
             ],
             else_=None,
-        )
+        ),
         # TODO: third option: CRS as text/WKT
     )
 
@@ -261,7 +278,9 @@ def _select_dataset_extent_query(dt: DatasetType):
     md_type = dt.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
-    footrprint_expression = get_dataset_extent_alchemy_expression(md_type)
+    footrprint_expression = get_dataset_extent_alchemy_expression(
+        md_type, default_crs=_default_crs(dt)
+    )
     product_ref = bindparam("product_ref", dt.id, type_=SmallInteger)
 
     # "expr == None" is valid in sqlalchemy:
@@ -286,6 +305,14 @@ def _select_dataset_extent_query(dt: DatasetType):
         .where(DATASET.c.dataset_type_ref == product_ref)
         .where(DATASET.c.archived == None)
     )
+
+
+def _default_crs(dt: DatasetType) -> Optional[str]:
+    storage = dt.definition.get("storage")
+    if not storage:
+        return None
+
+    return storage.get("crs")
 
 
 def _dataset_creation_expression(md: MetadataType) -> Optional[datetime]:
