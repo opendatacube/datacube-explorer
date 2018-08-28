@@ -2,7 +2,7 @@ import functools
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Tuple
 
 import dateutil.parser
 import structlog
@@ -419,8 +419,8 @@ def _summary_from_row(res):
 
 
 def _summary_to_row(summary: TimePeriodOverview) -> dict:
-    day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
-    region_values, region_counts = zip(*sorted(summary.region_dataset_counts.items()))
+    day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
+    region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
 
     begin, end = summary.time_range if summary.time_range else (None, None)
 
@@ -450,6 +450,24 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses,
     )
+
+
+def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
+    """
+    Split counter into a keys sequence and a values sequence.
+
+    (Both sorted by key)
+
+    >>> tuple(_counter_key_vals(Counter(['a', 'a', 'b'])))
+    (('a', 'b'), (2, 1))
+    >>> tuple(_counter_key_vals(Counter(['a'])))
+    (('a',), (1,))
+    >>> # Important! zip(*) doesn't do this.
+    >>> tuple(_counter_key_vals(Counter()))
+    ((), ())
+    """
+    items = sorted(counts.items())
+    return tuple(k for k, v in items), tuple(v for k, v in items)
 
 
 def _dataset_created(dataset: Dataset) -> Optional[datetime]:
