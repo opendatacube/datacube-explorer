@@ -4,32 +4,20 @@ import itertools
 import sys
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Optional, Counter
 
-import fiona
 import flask
-import shapely
-import shapely.prepared
-import shapely.wkb
 import structlog
 from flask import abort, redirect, url_for
 from flask import request
-from shapely.geometry import MultiPolygon
-from shapely.geometry import shape
 from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model, _reports
 from . import _utils as utils
 from ._utils import as_json, alchemy_engine
-
-import pyproj
-from shapely.ops import transform
 
 app = _model.app
 app.register_blueprint(_filters.bp)
