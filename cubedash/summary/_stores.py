@@ -333,12 +333,12 @@ class SummaryStore:
 
             timezone = tz.gettz(self._summariser.grouping_time_zone)
             if (
-                datetime(year, month or 1, day or 1, tzinfo=timezone)
+                datetime(year, month or 12, day or 28, tzinfo=timezone)
                 < product.time_earliest
             ):
                 return
             if (
-                datetime(year, month or 12, day or 28, tzinfo=timezone)
+                datetime(year, month or 1, day or 1, tzinfo=timezone)
                 > product.time_latest
             ):
                 return
