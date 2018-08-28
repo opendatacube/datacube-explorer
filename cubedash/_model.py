@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import absolute_import
 
 import functools
 import time
@@ -15,8 +13,6 @@ import shapely
 import shapely.geometry
 import shapely.ops
 import shapely.prepared
-import shapely.prepared
-import shapely.wkb
 import shapely.wkb
 import structlog
 from flask_caching import Cache
@@ -292,4 +288,3 @@ def _get_path_row_shapes():
             prop = item['properties']
             path_row_shapes[prop['PATH'], prop['ROW']] = shape(item['geometry'])
     return path_row_shapes
-

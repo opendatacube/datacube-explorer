@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import functools
 from collections import Counter
 from datetime import date, timedelta
@@ -7,7 +5,6 @@ from datetime import datetime
 from typing import Dict, Optional
 from typing import Iterable
 
-import dateutil.parser
 import dateutil.parser
 import structlog
 from dataclasses import dataclass

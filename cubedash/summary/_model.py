@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-
 from collections import Counter
 from datetime import datetime
 from typing import Iterable, Set, Union
-from typing import Optional, Tuple
+from typing import Tuple
 
 import shapely
 import shapely.geometry
@@ -162,4 +160,3 @@ class TimePeriodOverview:
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None
-
