@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -136,6 +137,7 @@ def test_out_of_date_range(cubedash_client: FlaskClient):
 
 def test_loading_high_low_tid(cubedash_client: FlaskClient):
     rv: Response = cubedash_client.get("/high_tide_comp_20p/2008")
+    assert rv.status_code == 200
     html = HTML(html=rv.data.decode("utf-8"))
 
     assert (
@@ -153,6 +155,105 @@ def test_loading_high_low_tid(cubedash_client: FlaskClient):
         html.find(".last-processed time", first=True).attrs["datetime"]
         == "2017-06-08T20:58:07.014314+00:00"
     )
+
+
+def test_api_returns_high_tide_comp_datasets(cubedash_client: FlaskClient):
+    """
+    These are slightly fun to handle as they are a small number with a huge time range.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/datasets/high_tide_comp_20p")
+    assert (
+        len(geojson["features"]) == 306
+    ), "Not all high tide datasets returned as geojson"
+
+    # Check that they're not just using the center time.
+    # Within the time range, but not the center_time.
+    # Range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
+    # year
+    geojson = _get_geojson(cubedash_client, "/api/datasets/high_tide_comp_20p/2000")
+    assert (
+        len(geojson["features"]) == 306
+    ), "Expected high tide datasets within whole dataset range"
+    # month
+    geojson = _get_geojson(cubedash_client, "/api/datasets/high_tide_comp_20p/2009/5")
+    assert (
+        len(geojson["features"]) == 306
+    ), "Expected high tide datasets within whole dataset range"
+    # day
+    geojson = _get_geojson(
+        cubedash_client, "/api/datasets/high_tide_comp_20p/2016/10/1"
+    )
+    assert (
+        len(geojson["features"]) == 306
+    ), "Expected high tide datasets within whole dataset range"
+
+    # Completely out of the test dataset time range. No results.
+    geojson = _get_geojson(cubedash_client, "/api/datasets/high_tide_comp_20p/2018")
+    assert (
+        len(geojson["features"]) == 0
+    ), "Expected no high tide datasets in in this year"
+
+
+def test_api_returns_scenes_as_geojson(cubedash_client: FlaskClient):
+    """
+    L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/datasets/ls8_level1_scene")
+    assert len(geojson["features"]) == 7, "Unexpected scene polygon count"
+
+
+def test_api_returns_tiles_as_geojson(cubedash_client: FlaskClient):
+    """
+    Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/datasets/ls7_nbart_albers")
+    assert len(geojson["features"]) == 4, "Unepected albers polygon count"
+
+
+def test_api_returns_high_tide_comp_regions(cubedash_client: FlaskClient):
+    """
+    High tide doesn't have anything we can use as regions.
+
+    It should be empty (no regions supported) rather than throw an exception.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/regions/high_tide_comp_20p")
+    assert geojson == None
+
+
+def test_api_returns_scene_regions(cubedash_client: FlaskClient):
+    """
+    L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/regions/ls8_level1_scene")
+    assert len(geojson["features"]) == 7, "Unexpected scene region count"
+
+
+def test_api_returns_tiles_regions(cubedash_client: FlaskClient):
+    """
+    Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/regions/ls7_nbart_albers")
+    assert len(geojson["features"]) == 4, "Unexpected albers region count"
+
+
+def test_api_returns_limited_tile_regions(cubedash_client: FlaskClient):
+    """
+    Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
+    """
+    geojson = _get_geojson(cubedash_client, "/api/regions/wofs_albers/2017/04")
+    assert len(geojson["features"]) == 4, "Unexpected wofs albers region month count"
+    geojson = _get_geojson(cubedash_client, "/api/regions/wofs_albers/2017/04/20")
+    print(json.dumps(geojson, indent=4))
+    assert len(geojson["features"]) == 1, "Unexpected wofs albers region day count"
+    geojson = _get_geojson(cubedash_client, "/api/regions/wofs_albers/2017/04/6")
+    assert geojson is None, "Unexpected wofs albers region count"
+
+
+def _get_geojson(cubedash_client, url):
+    rv: Response = cubedash_client.get(url)
+    assert rv.status_code == 200
+    response_geojson = json.loads(rv.data)
+    return response_geojson
 
 
 def test_no_data_pages(cubedash_client: FlaskClient):

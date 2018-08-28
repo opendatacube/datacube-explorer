@@ -240,11 +240,9 @@ class SummaryStore:
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
+        params = {}
         if year:
-            time_range = _utils.as_time_range(year, month, day)
-        else:
-            product = self._get_product(product_name)
-            time_range = Range(product.time_earliest, product.time_latest)
+            params["time"] = _utils.as_time_range(year, month, day)
 
         # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
         # return self._summariser.get_dataset_footprints(
@@ -254,7 +252,7 @@ class SummaryStore:
         # )
 
         datasets = self.index.datasets.search(
-            limit=limit, product=product_name, time=time_range
+            limit=limit, product=product_name, **params
         )
         return _datasets_to_feature(datasets)
 
