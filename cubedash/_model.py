@@ -124,7 +124,15 @@ def get_footprint_geojson(
     if period is None:
         return None
 
-    return _get_footprint(period)
+    return dict(
+        type='Feature',
+        geometry=_get_footprint(period).__geo_interface__,
+        properties=dict(
+            dataset_count=period.footprint_count,
+            product_name=product_name,
+            time_spec=[year, month, day],
+        )
+    )
 
 
 @cache.memoize(timeout=60)
