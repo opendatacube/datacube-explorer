@@ -2,8 +2,8 @@
 {% set active_page = "overview" %}
 {% block title %}{{ product.name }}{% endblock %}
 
-{% set show_individual_datasets = selected_summary.dataset_count < 500 %}
-{% set have_data = selected_summary.dataset_count > 0 %}
+{% set have_data = selected_summary and selected_summary.dataset_count > 0 %}
+{% set show_individual_datasets = have_data and selected_summary.dataset_count < 500 %}
 
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
