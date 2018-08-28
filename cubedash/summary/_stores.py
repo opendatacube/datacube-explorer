@@ -419,14 +419,8 @@ def _summary_from_row(res):
 
 
 def _summary_to_row(summary: TimePeriodOverview) -> dict:
-    counts = summary.timeline_dataset_counts
-    day_counts, day_values, region_counts, region_values = [], [], [], []
-    if counts:
-        day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
-    if summary.region_dataset_counts:
-        region_values, region_counts = zip(
-            *sorted(summary.region_dataset_counts.items())
-        )
+    day_values, day_counts = zip(*sorted(summary.timeline_dataset_counts.items()))
+    region_values, region_counts = zip(*sorted(summary.region_dataset_counts.items()))
 
     begin, end = summary.time_range if summary.time_range else (None, None)
 
