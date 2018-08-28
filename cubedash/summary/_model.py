@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, Optional, Set, Tuple, Union
+from typing import Iterable, Set, Tuple, Union
 
 import shapely
 import shapely.geometry

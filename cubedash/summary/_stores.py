@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import functools
 from collections import Counter
 from dataclasses import dataclass
