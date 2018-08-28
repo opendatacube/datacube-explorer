@@ -62,7 +62,7 @@ def overview_page(
         # Which data to preload with the page?
         regions_geojson=None,  # _model.get_regions_geojson(product_name, year, month, day),
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
-        footprint_wrs84=_model.get_footprint_geojson(product_name, year, month, day),
+        footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
         # Summary for the whole product
         product_summary=product_summary,

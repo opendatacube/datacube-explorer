@@ -127,10 +127,10 @@
     <script type="application/javascript">
         (function () {
             var msgNoResults = document.getElementById("msg-no-results");
-            var osm_mono = L.tileLayer('//{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            });
+            {% if selected_summary.footprint_count %}
+                msgNoResults.style.display = 'none';
+            {% endif %}
+
             var osm_carto_light = L.tileLayer(
                 "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
                 {
@@ -183,115 +183,178 @@
 
             L.control.zoom({position: "bottomright"}).addTo(map);
 
+            let getBin = function (v, bin_count) {
+                    let min_v = our_data.regions.data.properties.min_count,
+                        max_v = our_data.regions.data.properties.max_count,
+                        range = max_v - min_v,
+                        val = v - min_v;
 
-            {# Is there anything to show? #}
-            {% if selected_summary.footprint_count %}
-                msgNoResults.style.display = 'none';
-                {# We either have many polygons (one per dataset), or a single polygon of the combined footprint #}
-                {% if regions_geojson %}
-                    let regions = {{ regions_geojson | tojson}};
-                    var getBin = function (v, bin_count) {
-                            let min_v = regions.properties.min_count,
-                                max_v = regions.properties.max_count,
-                                range = max_v - min_v,
-                                val = v - min_v;
+                    if (range < bin_count) {
+                        var padding = bin_count - range;
+                        return padding + val - 1;
+                    } else {
+                        var bin_width = range / bin_count;
+                        return Math.round(val / bin_width) - 1;
+                    }
+                },
+                getColor = function (count) {
+                    let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
+                        bin = getBin(count, colorSteps.length);
+                    return colorSteps[bin];
+                };
 
-                            if (range < bin_count) {
-                                var padding = bin_count - range;
-                                return padding + val - 1;
-                            } else {
-                                var bin_width = range / bin_count;
-                                return Math.round(val / bin_width) - 1;
-                            }
-                        },
-                        getColor = function (count) {
-                            let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-                                bin = getBin(count, colorSteps.length);
-                            return colorSteps[bin];
-                        };
-                    var dataset_data = L.geoJson(regions,
-                        {
+            let we_have_data = {{ 'true' if selected_summary.footprint_count > 0 else 'false' }},
+                our_data = {
+                    datasets: {
+                        url: '{{ url_for('api.datasets_geojson', **product_args) }}',
+                        data: null,
+                        geojson_layer: L.geoJson(null, {
                             style: function (feature) {
                                 return {
-                                    color: "#f2f2f2",
+                                    color: "#7AB800",
                                     fill: true,
-                                    fillColor: getColor(feature.properties.count),
-                                    opacity: 0.6,
-                                    fillOpacity: 0.4,
-                                    weight: 1,
-                                    clickable: false
+                                    fillColor: "#9aee00",
+                                    opacity: 0.3,
+                                    weight: 2,
+                                    clickable: true
                                 };
                             },
                             onEachFeature: function (feature, layer) {
+                                var that = our_data.datasets;
                                 layer.on({
                                     mouseover: function (e) {
                                         var layer = e.target;
 
                                         layer.setStyle({
                                             color: '#375400',
+                                            fillOpacity: 0.6
                                         });
 
                                         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                                             layer.bringToFront();
                                         }
 
-                                        datasetInfoControl.update(layer.feature.properties);
+                                        var props = layer.feature.properties,
+                                            template = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
+                                        datasetInfoControl.update(template);
                                     }
                                     ,
                                     mouseout: function (e) {
-                                        dataset_data.resetStyle(e.target);
-                                        datasetInfoControl.update();
+                                        that.geojson_layer.resetStyle(e.target);
+                                        var show_count = that.data.features.length;
+                                        datasetInfoControl.update('Sample of '+show_count+' datasets');
                                     },
                                     click: function (e) {
-                                        {#var props = e.target.feature.properties;#}
-                                        {#window.location.href = '/dataset/' + props.id;#}
+                                        var props = e.target.feature.properties;
+                                        window.location.href = '/dataset/' + props.id;
                                     }
                                 });
                             }
-                        });
-                    map.addLayer(dataset_data);
+                        }),
+                    },
+                    regions: {
+                        url: '{{ url_for('api.regions_geojson', **product_args) }}',
+                        data: null,
+                        geojson_layer: L.geoJson(null,
+                            {
+                                style: function (feature) {
+                                    return {
+                                        color: "#f2f2f2",
+                                        fill: true,
+                                        fillColor: getColor(feature.properties.count),
+                                        opacity: 0.6,
+                                        fillOpacity: 0.4,
+                                        weight: 1,
+                                        clickable: false
+                                    };
+                                },
+                                onEachFeature: function (feature, layer) {
+                                    var that = our_data.regions;
+                                    layer.on({
+                                        mouseover: function (e) {
+                                            var layer = e.target;
 
-                    {# Show information for the hovered dataset #}
-                    var datasetInfoControl = L.control({position: "bottomleft"});
-                    datasetInfoControl.onAdd = function (map) {
-                        this._div = L.DomUtil.create('div', 'dataset-info');
-                        this.update();
-                        return this._div;
-                    };
-                    datasetInfoControl.update = function (props) {
-                        if (props) {
-                            this._div.innerHTML = '<div><strong>' + regions.properties.region_item_name + ' ' +
-                                props.region_code +
-                                '</strong></div>' +
-                                props.count +
-                                ' dataset(s)';
-                        } else {
-                            this._div.innerHTML = '<div>'+regions.features.length+' unique regions</div>';
-                        }
-                    };
-                    map.addControl(datasetInfoControl);
+                                            layer.setStyle({
+                                                color: '#375400',
+                                            });
 
-                    map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
-                {% else %}
-                    var composite_data = L.geoJson({{ footprint_wrs84.__geo_interface__ | tojson }},
-                        {
-                            interactive: false,
-                            style: function (feature) {
-                                return {
-                                    color: "#00A1DE",
-                                    fill: true,
-                                    fillColor: "#8FCAE7",
-                                    opacity: 0.3,
-                                    weight: 2,
-                                    clickable: false
-                                };
+                                            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                                layer.bringToFront();
+                                            }
+                                            let props = layer.feature.properties,
+                                                data = that.data,
+                                                template = '<div><strong>' + data.properties.region_item_name + ' ' +
+                                                    props.region_code +
+                                                    '</strong></div>' +
+                                                    props.count +
+                                                    ' dataset(s)';
+                                            datasetInfoControl.update(template);
+                                        }
+                                        ,
+                                        mouseout: function (e) {
+                                            that.geojson_layer.resetStyle(e.target);
+                                            datasetInfoControl.update();
+                                        },
+                                        click: function (e) {
+                                            {#var props = e.target.feature.properties;#}
+                                            {#window.location.href = '/dataset/' + props.id;#}
+                                        }
+                                    });
+                                }
+                            })
+                    },
+                    footprint: {
+                        url: '{{ url_for('api.footprint_geojson', **product_args) }}',
+                        data: {{ footprint_geojson | tojson }},
+                        geojson_layer: L.geoJson(null,
+                            {
+                                interactive: false,
+                                style: function (feature) {
+                                    return {
+                                        color: "#00A1DE",
+                                        fill: true,
+                                        fillColor: "#8FCAE7",
+                                        opacity: 0.3,
+                                        weight: 2,
+                                        clickable: false
+                                    };
+                                }
                             }
-                        }
-                    );
-                    map.addLayer(composite_data);
-                    map.fitBounds(composite_data.getBounds(), {animate: false, maxZoom: 6});
-                {% endif %}
-            {% endif %}
+                        )
+                    }
+                },
+                our_active_data = null;
+
+            {# Show information for the hovered item #}
+            var datasetInfoControl = L.control({position: "bottomleft"});
+            datasetInfoControl.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'dataset-info');
+                this.update();
+                return this._div;
+            };
+            datasetInfoControl.update = function (template) {
+                if (template) {
+                    this._div.innerHTML = template;
+                } else {
+                    this._div.innerHTML = '';
+                }
+            };
+            map.addControl(datasetInfoControl);
+
+            function set_active_layer(new_layer) {
+                if (our_active_data) {
+                    map.removeLayer(our_active_data.geojson_layer);
+                }
+                map.addLayer(new_layer.geojson_layer);
+                our_active_data = new_layer;
+            }
+
+            // Default to footprint
+            if (we_have_data) {
+                our_data.footprint.geojson_layer.addData(our_data.footprint.data);
+                set_active_layer(our_data.footprint);
+                map.fitBounds(our_active_data.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
+            }
 
 
             {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}
@@ -310,7 +373,41 @@
                 map.addControl(timelineControl);
             {% endif %}
 
+
+            function report_error(msg) {
+                // TODO: message box?
+                document.getElementById('quiet-page-errors').innerText += msg +'<br/>';
+            }
+
+            function request_data(data_spec) {
+                var request = new XMLHttpRequest();
+                request.open('GET', data_spec.url, true);
+                request.onload = function () {
+                    if (request.status >= 200 && request.status < 400) {
+                        data_spec.data = JSON.parse(request.responseText);
+                        data_spec.geojson_layer.addData(data_spec.data);
+                    } else {
+                        // We reached our target server, but it returned an error
+                        report_error('Error fetching ' + data_spec.url);
+                    }
+                };
+                request.onerror = function () {
+                    // There was a connection error of some sort
+                    report_error('Error fetching ' + data_spec.url)
+                };
+                request.send();
+            }
+
+            // Load in background
+            request_data(our_data.regions);
+            request_data(our_data.datasets);
+
+
             window.MAP = map;
+            window.SET_ACTIVE_LAYER = function (name) {
+                let new_layer = our_data[name];
+                set_active_layer(new_layer);
+            };
         })();
     </script>
 {% endblock %}
