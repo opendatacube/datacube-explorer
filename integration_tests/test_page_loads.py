@@ -1,3 +1,6 @@
+"""
+Tests that load pages and check the contained text.
+"""
 import json
 import re
 from pathlib import Path
@@ -80,19 +83,21 @@ def test_default_redirect(cubedash_client: FlaskClient):
 def test_get_overview(cubedash_client: FlaskClient):
     html = _get_html(cubedash_client, '/wofs_albers')
     check_dataset_count(html, 11)
-    assert_last_processed_time(html, '2018-05-20T11:25:35')
+    check_last_processed(html, '2018-05-20T11:25:35')
     assert 'Historic Flood Mapping Water Observations from Space' in html.text
+    check_area('61,...km2', html)
 
     html = _get_html(cubedash_client, '/wofs_albers/2017')
 
     check_dataset_count(html, 11)
-    assert_last_processed_time(html, '2018-05-20T11:25:35')
+    check_last_processed(html, '2018-05-20T11:25:35')
     assert 'Historic Flood Mapping Water Observations from Space' in html.text
 
     html = _get_html(cubedash_client, '/wofs_albers/2017/04')
     check_dataset_count(html, 4)
-    assert_last_processed_time(html, '2018-05-20T09:36:57')
+    check_last_processed(html, '2018-05-20T09:36:57')
     assert 'Historic Flood Mapping Water Observations from Space' in html.text
+    check_area('30,...km2', html)
 
 
 def test_view_dataset(cubedash_client: FlaskClient):
@@ -137,12 +142,16 @@ def test_loading_high_low_tide_comp(cubedash_client: FlaskClient):
 
     check_dataset_count(html, 306)
     # Footprint is not exact due to shapely.simplify()
-    assert re.match(r'2,984,...km2 \(approx', html.find('.coverage-footprint-area', first=True).text)
+    check_area('2,984,...km2', html)
 
     assert html.find('.last-processed time', first=True).attrs['datetime'] == '2017-06-08T20:58:07.014314+00:00'
 
 
-def assert_last_processed_time(html, time):
+def check_area(area_pattern, html):
+    assert re.match(area_pattern + ' \(approx', html.find('.coverage-footprint-area', first=True).text)
+
+
+def check_last_processed(html, time):
     __tracebackhide__ = True
     assert html.find('.last-processed time', first=True).attrs['datetime'].startswith(time)
 
@@ -244,6 +253,17 @@ def _get_html(cubedash_client, url) -> HTML:
     assert rv.status_code == 200
     html = HTML(html=rv.data.decode('utf-8'))
     return html
+
+
+def test_undisplayable_product(cubedash_client: FlaskClient):
+    """
+    Telemetry products have no footprint available at all.
+    """
+    html = _get_html(cubedash_client, '/ls7_satellite_telemetry_data')
+    check_dataset_count(html, 4)
+    assert '36.6GiB' in html.find('.coverage-filesize', first=True).text
+    assert '(None displayable)' in html.text
+    assert 'No CRSes defined' in html.text
 
 
 def test_no_data_pages(cubedash_client: FlaskClient):
