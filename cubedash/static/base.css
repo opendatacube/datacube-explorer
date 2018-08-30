@@ -28,7 +28,7 @@ body { font-family: Helvetica, Arial, sans-serif; background: linear-gradient(to
 a { color: #2b2b2b; }
 
 .panel.highlight > h2 { color: #fff; }
-.panel.odd > h2 { color: #1d81a7; }
+.panel.odd > h2 { color: #317893; }
 
 h4 { color: #4f4f4f; }
 
@@ -80,7 +80,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .query-param > .key { color: #737373; }
 .query-param .value > .query-param { margin-left: 15px; }
 
-button { margin: 5px 0; background-color: #1d81a7; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
+button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
 button:hover { background-color: #008fc5; }
 
 label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
@@ -94,9 +94,9 @@ label.disabled { color: #ccc; }
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
-.chart-timeline-bar { width: 2px; display: inline-block; background-color: #1d81a7; }
-.chart-timeline-bar.new-year { background-color: #1a7091; }
-.chart-timeline-bar:hover { background-color: #16607c; }
+.chart-timeline-bar { width: 2px; display: inline-block; background-color: #317893; }
+.chart-timeline-bar.new-year { background-color: #2b6980; }
+.chart-timeline-bar:hover { background-color: #24596d; }
 
 .chart-timeline-years { font-size: 0; white-space: nowrap; }
 
