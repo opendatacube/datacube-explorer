@@ -71,7 +71,9 @@
             {% endif %}
 
             <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
-            >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
+            >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }}
+                dataset{% if selected_summary.dataset_count != 1 %}s{% endif %}
+            </a>
 
             {% if selected_summary.dataset_count != selected_summary.footprint_count %}
                 ({{ selected_summary.footprint_count or 'None' }} displayable)
@@ -306,7 +308,7 @@
                                         }
                                         let props = layer.feature.properties,
                                             template = '<div><strong>' + (props.label || props.region_code)+ ' </strong></div>' +
-                                                props.count + ' dataset(s)';
+                                                props.count + ' dataset' +(props.count === 1 ? '' : 's');
                                         datasetInfoControl.update(template);
                                     }
                                     ,
