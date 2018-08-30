@@ -27,19 +27,28 @@
         <div class="panel info-panel">
             {% if have_data %}
                 <div>
-                    <label>
+                    {# Show regions if available, otherwise a plain footprint #}
+                    {% if product_region_info %}
+                        <label>
                         <input type="radio"
                                name="map_display_view"
                                value="regions"
                                {% if regions_geojson %}checked="checked"{% endif %}
-                               title="Show regions">Regions</label>
-
-                        <label class="{% if not show_individual_datasets %}disabled{% endif %}">
-                            <input type="radio"
-                                   name="map_display_view"
-                                   value="datasets"
-                                   {% if not show_individual_datasets %}disabled="disabled"{% endif %}
-                                   title="Show individual datasets">Datasets</label>
+                               title="Show regions">{{ product_region_info.units_label }}</label>
+                    {% else %}
+                        <label>
+                        <input type="radio"
+                               name="map_display_view"
+                               value="footprint"
+                               {% if footprint_geojson %}checked="checked"{% endif %}
+                               title="Show footprint">Footprint</label>
+                    {% endif %}
+                    <label class="{% if not show_individual_datasets %}disabled{% endif %}">
+                        <input type="radio"
+                               name="map_display_view"
+                               value="datasets"
+                               {% if not show_individual_datasets %}disabled="disabled"{% endif %}
+                               title="Show individual datasets">Datasets</label>
                 </div>
             {% endif %}
             <h3>
@@ -80,15 +89,25 @@
                         <span class="coverage-footprint-area">{{ selected_summary.footprint_geometry | albers_area }} (approx.)</span>
                     </li>
                 {% endif %}
-                {% if selected_summary.region_dataset_counts %}
+                {% if product_region_info %}
                     <li>
-                        <span class="coverage-region-count">{{ selected_summary.region_dataset_counts | length }} unique regions</span>
+                        <span class="coverage-region-count" title="{{ product_region_info.description }}">
+                            {{ selected_summary.region_dataset_counts | length }} unique {{ product_region_info.units_label }}
+                        </span>
+                    </li>
+                {% else %}
+                    <li>
+                        <span class="coverage-region-missing" title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
+                            No configured regions
+                            <!-- User can hover to see slightly longer explanation -->
+                            <i class="fa fa-info-circle"></i>
+                        </span>
                     </li>
                 {% endif %}
                 {% if selected_summary.crses %}
                     <li class="coverage-crs-count" title="{{ selected_summary.crses | join(', ') }}">
                         {% if selected_summary.crses | length == 1 %}
-                            Entirely CRS {{ selected_summary.crses|join(',') }}
+                            Entirely {{ selected_summary.crses|join(',') }}
                         {% else %}
                             {{ selected_summary.crses | length }} CRS
                             <!-- User can hover to see list of CRSes in title text -->
@@ -282,12 +301,8 @@
                                             layer.bringToFront();
                                         }
                                         let props = layer.feature.properties,
-                                            data = that.data,
-                                            template = '<div><strong>' + data.properties.region_item_name + ' ' +
-                                                props.region_code +
-                                                '</strong></div>' +
-                                                props.count +
-                                                ' dataset(s)';
+                                            template = '<div><strong>' + (props.label || props.region_code)+ ' </strong></div>' +
+                                                props.count + ' dataset(s)';
                                         datasetInfoControl.update(template);
                                     }
                                     ,
@@ -314,8 +329,8 @@
                             style: function (feature) {
                                 return {
                                     color: "#00A1DE",
-                                    fill: false,
-                                    {#fillColor: "#8FCAE7",#}
+                                    fill: {% if product_region_info %}false{% else %}true{% endif %},
+                                    fillColor: "#8FCAE7",
                                     opacity: 0.3,
                                     weight: 2,
                                     clickable: false
@@ -415,9 +430,6 @@
                 {% if regions_geojson %}
                     SPATIAL_VIEWS.regions.data = {{ regions_geojson | tojson }};
                     SPATIAL_VIEWS.regions.geojson_layer.addData(SPATIAL_VIEWS.regions.data);
-                    getViewToggle(SPATIAL_VIEWS.regions).addEventListener('click', function() {
-                        toggleview(SPATIAL_VIEWS.regions);
-                    });
                     toggleview(SPATIAL_VIEWS.regions);
                 {% endif %}
                 map.fitBounds(SPATIAL_VIEWS.footprint.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
@@ -429,6 +441,19 @@
                         toggleview(SPATIAL_VIEWS.datasets);
                     });
                 {% endif %}
+
+                // This is really messy. It's expected to be temporary...
+                [SPATIAL_VIEWS.datasets, SPATIAL_VIEWS.regions, SPATIAL_VIEWS.footprint].forEach(function(view) {
+                    const t = getViewToggle(view);
+                    if (t) {
+                        t.addEventListener('click', function() {
+                            toggleview(view);
+                        });
+                    }
+                });
+                getViewToggle(SPATIAL_VIEWS.regions).addEventListener('click', function() {
+                    toggleview(SPATIAL_VIEWS.regions);
+                });
             {% endif %}
 
             window.MAP = map;

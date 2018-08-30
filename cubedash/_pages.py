@@ -14,6 +14,7 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
+from cubedash.summary import RegionInfo
 from datacube.scripts.dataset import build_dataset_info
 from . import _filters, _dataset, _product, _platform, _api, _model, _reports
 from . import _utils as utils
@@ -55,6 +56,8 @@ def overview_page(product_name: str = None,
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
 
         product=product,
+        product_region_info=RegionInfo.for_product(product),
+
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.

@@ -1,16 +1,23 @@
+import functools
 import json
 import sys
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
+import fiona
+import shapely.wkb
 import structlog
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
+from shapely.geometry import GeometryCollection
+from shapely.geometry import shape
 from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, null, BigInteger, String
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+from sqlalchemy.sql import ColumnElement
 
 from cubedash._utils import alchemy_engine
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
@@ -21,6 +28,8 @@ from datacube.index import Index
 from datacube.model import MetadataType, DatasetType
 
 _LOG = structlog.get_logger()
+
+_WRS_PATH_ROW = Path(__file__).parent.parent / 'data' / 'WRS2_descending' / 'WRS2_descending.shp'
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
@@ -80,62 +89,6 @@ def _bounds_polygon(doc, projection_offset):
             ))
         ), type_=Geometry
     )
-
-
-def _region_code_field(dt: DatasetType):
-    """
-    Get an sqlalchemy expression to calculate the region code (a string)
-
-    Eg.
-        On Landsat scenes this is the path/row (separated by underscore)
-        On tiles this is the tile numbers (separated by underscore: possibly with negative)
-        On Sentinel this is MGRS number
-    """
-    grid_spec = dt.grid_spec
-
-    md_fields = dt.metadata_type.dataset_fields
-
-    # If the product has a grid spec, we can calculate the grid number
-    if 'region_code' in md_fields:
-        field: PgDocField = md_fields['region_code']
-        return field.alchemy_expression
-    elif grid_spec is not None:
-        doc = _jsonb_doc_expression(dt.metadata_type)
-        projection_offset = _projection_doc_offset(dt.metadata_type)
-
-        # Calculate tile refs
-
-        geo_ref_points_offset = projection_offset + ['geo_ref_points']
-        center_point = func.ST_Centroid(func.ST_Collect(
-            _gis_point(doc, geo_ref_points_offset + ['ll']),
-            _gis_point(doc, geo_ref_points_offset + ['ur']),
-        ))
-
-        # todo: look at grid_spec crs. Use it for defaults, conversion.
-        size_x, size_y = (grid_spec.tile_size or (1000.0, 1000.0))
-        origin_x, origin_y = grid_spec.origin
-        return func.concat(
-            func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(String),
-            '_',
-            func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
-        )
-    # Otherwise does the product have a "sat_path/sat_row" fields? Use their values directly.
-    elif 'sat_path' in md_fields:
-        # Use sat_path/sat_row as grid items
-        path_field: RangeDocField = md_fields['sat_path']
-        row_field: RangeDocField = md_fields['sat_row']
-        return func.concat(
-            path_field.lower.alchemy_expression.cast(String),
-            '_',
-            row_field.greater.alchemy_expression.cast(String)
-        )
-    else:
-        _LOG.warn(
-            "no_region_code",
-            product_name=dt.name,
-            metadata_type_name=dt.metadata_type.name
-        )
-        return null()
 
 
 def _size_bytes_field(dt: DatasetType):
@@ -357,6 +310,165 @@ def print_sample_dataset(*product_names: str):
                 _select_dataset_extent_query(product).limit(1)
             ).fetchone()
             print(_as_json(dict(res)))
+
+
+class RegionInfo:
+    def __init__(self, product: DatasetType) -> None:
+        self.product = product
+
+    # Treated as an "id" in view code. What kind of region?
+    name: str = 'region'
+    # A human-readable description displayed on a UI.
+    description: str = 'Regions'
+    # Used when printing counts "1 region", "5 regions".
+    unit_label: str = 'region'
+    units_label: str = 'regions'
+
+    @classmethod
+    def for_product(cls, dt: DatasetType):
+        grid_spec = dt.grid_spec
+
+        # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
+        # Therefore: only assume there's a grid if tile_size is specified.
+        if grid_spec is not None and grid_spec.tile_size:
+            return GridRegionInfo(dt)
+        elif 'sat_path' in dt.metadata_type.dataset_fields:
+            return SceneRegionInfo(dt)
+        # TODO: Geometry for other types of regions (eg. MGRS, or manual 'region_code' fields)
+        return None
+
+    def alchemy_expression(self) -> ColumnElement:
+        raise NotImplementedError('alchemy expression', self.__class__.name)
+
+    def geographic_extent(self, region_code: str) -> GeometryCollection:
+        """
+        Shape
+        """
+        raise NotImplementedError('alchemy expression', self.__class__.name)
+
+    def region_label(self, region_code: str) -> str:
+        """
+        Convert the region_code into something human-readable.
+        """
+        return region_code
+
+
+class GridRegionInfo(RegionInfo):
+    name = 'tiled'
+    description = "Tiled product"
+    unit_label = 'tile'
+    units_label = 'tiles'
+
+    def alchemy_expression(self):
+        dt = self.product
+        grid_spec = self.product.grid_spec
+
+        doc = _jsonb_doc_expression(dt.metadata_type)
+        projection_offset = _projection_doc_offset(dt.metadata_type)
+
+        # Calculate tile refs
+        geo_ref_points_offset = projection_offset + ['geo_ref_points']
+        center_point = func.ST_Centroid(func.ST_Collect(
+            _gis_point(doc, geo_ref_points_offset + ['ll']),
+            _gis_point(doc, geo_ref_points_offset + ['ur']),
+        ))
+
+        # todo: look at grid_spec crs. Use it for defaults, conversion.
+        size_x, size_y = (grid_spec.tile_size or (1000.0, 1000.0))
+        origin_x, origin_y = grid_spec.origin
+        return func.concat(
+            func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(String),
+            '_',
+            func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
+        )
+
+    def geographic_extent(self, region_code: str) -> GeometryCollection:
+        """
+        Get a whole polygon for a gridcell
+        """
+        extent = self.product.grid_spec.tile_geobox(_from_xy_region_code(region_code)).geographic_extent
+        # TODO: The ODC Geometry __geo_interface__ breaks for some products
+        # (eg, when the inner type is a GeometryCollection?)
+        # So we're now converting to shapely to do it.
+        # TODO: Is there a nicer way to do this?
+        # pylint: disable=protected-access
+        return shapely.wkb.loads(extent._geom.ExportToWkb())
+
+    def region_label(self, region_code: str) -> str:
+        return "Tile %+d, %+d" % _from_xy_region_code(region_code)
+
+
+def _from_xy_region_code(region_code: str):
+    """
+    >>> _from_xy_region_code('95_3')
+    (95, 3)
+    >>> _from_xy_region_code('95_-3')
+    (95, -3)
+    """
+    x, y = region_code.split('_')
+    return int(x), int(y)
+
+
+class SceneRegionInfo(RegionInfo):
+    name = 'scenes'
+    description = "Landsat WRS scene-based product"
+    unit_label = 'scene'
+    units_label = 'scenes'
+
+    def __init__(self, product: DatasetType) -> None:
+        super().__init__(product)
+        self.path_row_shapes = _get_path_row_shapes()
+
+    def alchemy_expression(self):
+        """
+        Use sat_path/sat_row as grid items
+        """
+        md_fields = self.product.metadata_type.dataset_fields
+        path_field: RangeDocField = md_fields['sat_path']
+        row_field: RangeDocField = md_fields['sat_row']
+        return func.concat(
+            path_field.lower.alchemy_expression.cast(String),
+            '_',
+            row_field.greater.alchemy_expression.cast(String)
+        )
+
+    def geographic_extent(self, region_code: str) -> GeometryCollection:
+        return self.path_row_shapes[_from_xy_region_code(region_code)]
+
+    def region_label(self, region_code: str) -> str:
+        x, y = _from_xy_region_code(region_code)
+        return f"Path {x}, Row {y}"
+
+
+def _region_code_field(dt: DatasetType):
+    """
+    Get an sqlalchemy expression to calculate the region code (a string)
+
+    Eg.
+        On Landsat scenes this is the path/row (separated by underscore)
+        On tiles this is the tile numbers (separated by underscore: possibly with negative)
+        On Sentinel this is MGRS number
+    """
+    region_info = RegionInfo.for_product(dt)
+    if region_info:
+        return region_info.alchemy_expression()
+    else:
+        _LOG.warn(
+            "no_region_code",
+            product_name=dt.name,
+            metadata_type_name=dt.metadata_type.name
+        )
+        return null()
+
+
+@functools.lru_cache()
+def _get_path_row_shapes():
+    path_row_shapes = {}
+    with fiona.open(str(_WRS_PATH_ROW)) as f:
+        for k, item in f.items():
+            prop = item['properties']
+            path_row_shapes[prop['PATH'], prop['ROW']] = shape(item['geometry'])
+    return path_row_shapes
 
 
 if __name__ == '__main__':

@@ -1,12 +1,9 @@
-
-import functools
 import time
 from pathlib import Path
 from typing import Dict, Optional, Counter
 from typing import Iterable, Tuple
 
 import dateutil.parser
-import fiona
 import flask
 import pyproj
 import shapely
@@ -17,10 +14,10 @@ import shapely.wkb
 import structlog
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
-from shapely.geometry import shape
 from shapely.ops import transform
 
 from cubedash.summary import TimePeriodOverview, SummaryStore
+from cubedash.summary._extents import RegionInfo
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
@@ -44,8 +41,6 @@ SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
 DEFAULT_START_PAGE_PRODUCTS = ('ls7_nbar_scene', 'ls5_nbar_scene')
 
 _LOG = structlog.get_logger()
-
-_WRS_PATH_ROW = Path(__file__).parent / 'data' / 'WRS2_descending' / 'WRS2_descending.shp'
 
 
 @cache.memoize(timeout=60)
@@ -149,11 +144,11 @@ def get_regions_geojson(
     if product is None:
         raise RuntimeError("Unknown product despite having a summary?", product_name)
 
-    # The per-dataset view is less useful now that we show grids separately.
-    # datasets = None if selected_summary.dataset_count > 1000
-    # else get_datasets_geojson(product_name, year, month, day)
-
     if not period.region_dataset_counts:
+        return None
+
+    region_info = RegionInfo.for_product(product)
+    if not region_info:
         return None
 
     footprint_wrs84 = _get_footprint(period)
@@ -162,10 +157,9 @@ def get_regions_geojson(
     regions = _get_regions_geojson(
         period.region_dataset_counts,
         footprint_wrs84,
-        product
+        region_info,
     )
     _LOG.debug('overview.region_gen', time_sec=time.time() - start)
-
     return regions
 
 
@@ -196,9 +190,9 @@ def _get_footprint(period: TimePeriodOverview):
 def _get_regions_geojson(
         region_counts: Counter[str],
         footprint: MultiPolygon,
-        product: DatasetType
+        region_info: RegionInfo
 ) -> Optional[Dict]:
-    region_geometry = _region_geometry_function(product, footprint)
+    region_geometry = _region_geometry_function(region_info, footprint)
     if not region_geometry:
         return None
 
@@ -206,7 +200,8 @@ def _get_regions_geojson(
     return {
         'type': 'FeatureCollection',
         'properties': {
-            'region_item_name': 'Tile',
+            'region_type': region_info.name,
+            'region_unit_label': region_info.unit_label,
             'min_count': low,
             'max_count': high,
         },
@@ -216,6 +211,7 @@ def _get_regions_geojson(
                 'geometry': region_geometry(region_code).__geo_interface__,
                 'properties': {
                     'region_code': region_code,
+                    'label': region_info.region_label(region_code),
                     'count': region_counts[region_code]
                 }
             } for region_code in region_counts
@@ -223,44 +219,11 @@ def _get_regions_geojson(
     }
 
 
-def _from_xy_region_code(region_code: str):
-    x, y = region_code.split('_')
-    return int(x), int(y)
-
-
-def _region_geometry_function(product, footprint):
-    grid_spec = product.grid_spec
-    md_fields = product.metadata_type.dataset_fields
-    # TODO: Geometry for other types of regions (path/row, MGRS)
-
-    # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
-    # Therefore: only assume there's a grid if tile_size is specified. TODO: Is the product wrong?
-    if grid_spec and grid_spec.tile_size:
-
-        def region_geometry(region_code: str) -> shapely.geometry.GeometryCollection:
-            """
-            Get a whole polygon for a gridcell
-            """
-            extent = grid_spec.tile_geobox(_from_xy_region_code(region_code)).geographic_extent
-            # TODO: The ODC Geometry __geo_interface__ breaks for some products
-            # (eg, when the inner type is a GeometryCollection?)
-            # So we're now converting to shapely to do it.
-            # TODO: Is there a nicer way to do this?
-            # pylint: disable=protected-access
-            shapely_extent = shapely.wkb.loads(extent._geom.ExportToWkb())
-
-            return shapely_extent
-    elif 'sat_path' in md_fields:
-        path_row_shapes = _get_path_row_shapes()
-
-        def region_geometry(region_code: str) -> shapely.geometry.GeometryCollection:
-            return path_row_shapes[_from_xy_region_code(region_code)]
-    else:
-        _LOG.info('region.geom.unknown', product_name=product.name)
-        return None
+def _region_geometry_function(region_info: RegionInfo, footprint):
+    region_shape = region_info.geographic_extent
 
     if footprint is None:
-        return region_geometry
+        return region_shape
     else:
         footprint_boundary = shapely.prepared.prep(footprint.boundary)
 
@@ -268,7 +231,7 @@ def _region_geometry_function(product, footprint):
             """
             Cut the polygon down to the footprint
             """
-            shapely_extent = region_geometry(region_code)
+            shapely_extent = region_shape(region_code)
 
             # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
             # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
@@ -278,13 +241,3 @@ def _region_geometry_function(product, footprint):
                 return shapely_extent
 
         return region_geometry_cut
-
-
-@functools.lru_cache()
-def _get_path_row_shapes():
-    path_row_shapes = {}
-    with fiona.open(str(_WRS_PATH_ROW)) as f:
-        for k, item in f.items():
-            prop = item['properties']
-            path_row_shapes[prop['PATH'], prop['ROW']] = shape(item['geometry'])
-    return path_row_shapes
