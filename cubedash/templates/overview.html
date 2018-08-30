@@ -74,7 +74,7 @@
             >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }} datasets</a>
 
             {% if selected_summary.dataset_count != selected_summary.footprint_count %}
-                ({{ selected_summary.footprint_count or 'None' }} visible)
+                ({{ selected_summary.footprint_count or 'None' }} displayable)
             {% endif %}
 
             <ul>
@@ -105,9 +105,13 @@
                     </li>
                 {% endif %}
                 {% if selected_summary.crses %}
-                    <li class="coverage-crs-count" title="{{ selected_summary.crses | join(', ') }}">
+                    <li class="coverage-crs-count" title="Datasets contain: {{ selected_summary.crses | join(', ') }}">
                         {% if selected_summary.crses | length == 1 %}
-                            Entirely {{ selected_summary.crses|join(',') }}
+                            {% if None in selected_summary.crses %}
+                                    No CRSes defined
+                                {% else %}
+                                    Entirely {{ selected_summary.crses|join(',') }}
+                                {% endif %}
                         {% else %}
                             {{ selected_summary.crses | length }} CRS
                             <!-- User can hover to see list of CRSes in title text -->
