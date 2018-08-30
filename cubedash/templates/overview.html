@@ -265,8 +265,7 @@
                                 ,
                                 mouseout: function (e) {
                                     that.geojson_layer.resetStyle(e.target);
-                                    let show_count = that.data.features.length;
-                                    datasetInfoControl.update('Sample of ' + show_count + ' datasets');
+                                    datasetInfoControl.update();
                                 },
                                 click: function (e) {
                                     let props = e.target.feature.properties;
