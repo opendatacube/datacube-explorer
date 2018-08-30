@@ -29,22 +29,17 @@
                 <div>
                     <label>
                         <input type="radio"
-                               name="map_display_selection"
-                               value="footprint"
-                               title="Show footprint"
-                               checked="checked"/>Footprint</label>
-                    <label>
-                        <input type="radio"
-                               name="map_display_selection"
+                               name="map_display_view"
                                value="regions"
+                               {% if regions_geojson %}checked="checked"{% endif %}
                                title="Show regions">Regions</label>
-                    {% if show_individual_datasets %}
-                        <label>
+
+                        <label class="{% if not show_individual_datasets %}disabled{% endif %}">
                             <input type="radio"
-                                   name="map_display_selection"
+                                   name="map_display_view"
                                    value="datasets"
+                                   {% if not show_individual_datasets %}disabled="disabled"{% endif %}
                                    title="Show individual datasets">Datasets</label>
-                    {% endif %}
                 </div>
             {% endif %}
             <h3>
@@ -147,8 +142,7 @@
             {% endif %}
         </div>
 
-
-
+        </div>
     {% endif %}
 </div>
 {% endblock %}
@@ -161,178 +155,180 @@
     {% from "layout/macros.html" import chart_timeline %}
     <script type="application/javascript">
         (function () {
-            let msgNoResults = document.getElementById("msg-no-results");
+            'use strict';
+
+            const msgNoResults = document.getElementById("msg-no-results");
             {% if selected_summary.footprint_count %}
                 msgNoResults.style.display = 'none';
             {% endif %}
 
-            let osm_carto_light = L.tileLayer(
-                "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
-                {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
-                }
-            );
-
-            let map = L.map("map", {
+            const map = L.map("map", {
                 zoom: 3,
                 center: [-26.2756326, 134.9387844],
-                layers: [osm_carto_light],
+                layers: [
+                    L.tileLayer(
+                        "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+                        {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                                ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                        }
+                    )
+                ],
                 zoomControl: false,
                 attributionControl: false,
                 scrollWheelZoom: false
             });
             L.control.zoom({position: "bottomright"}).addTo(map);
 
-            let getBin = function (v, bin_count) {
-                    let min_v = our_data.regions.data.properties.min_count,
-                        max_v = our_data.regions.data.properties.max_count,
-                        range = max_v - min_v,
-                        val = v - min_v;
+            function getBin(v, bin_count) {
+                let min_v = SPATIAL_VIEWS.regions.data.properties.min_count,
+                    max_v = SPATIAL_VIEWS.regions.data.properties.max_count,
+                    range = max_v - min_v,
+                    val = v - min_v;
 
-                    if (range < bin_count) {
-                        var padding = bin_count - range;
-                        return padding + val - 1;
-                    } else {
-                        var bin_width = range / bin_count;
-                        return Math.round(val / bin_width) - 1;
-                    }
+                if (range < bin_count) {
+                    const padding = bin_count - range;
+                    return padding + val - 1;
+                } else {
+                    const bin_width = range / bin_count;
+                    return  Math.floor(val / bin_width);
+                }
+            }
+
+            function getColor(count) {
+                let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
+                    bin = getBin(count, colorSteps.length-1);
+                return colorSteps[bin];
+            }
+
+            const SPATIAL_VIEWS = {
+                datasets: {
+                    name: 'datasets',
+                    url: '{{ url_for('api.datasets_geojson', **product_args) }}',
+                    data: null,
+                    geojson_layer: L.geoJson(null, {
+                        style: function (feature) {
+                            return {
+                                color: "#7AB800",
+                                fill: true,
+                                fillColor: "#9aee00",
+                                opacity: 0.3,
+                                weight: 2,
+                                clickable: true
+                            };
+                        },
+                        onEachFeature: function (feature, layer) {
+                            const that = SPATIAL_VIEWS.datasets;
+                            layer.on({
+                                mouseover: function (e) {
+                                    const layer = e.target;
+
+                                    layer.setStyle({
+                                        color: '#375400',
+                                        fillOpacity: 0.6
+                                    });
+
+                                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                        layer.bringToFront();
+                                    }
+
+                                    const props = layer.feature.properties,
+                                        template = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
+                                    datasetInfoControl.update(template);
+                                }
+                                ,
+                                mouseout: function (e) {
+                                    that.geojson_layer.resetStyle(e.target);
+                                    let show_count = that.data.features.length;
+                                    datasetInfoControl.update('Sample of ' + show_count + ' datasets');
+                                },
+                                click: function (e) {
+                                    let props = e.target.feature.properties;
+                                    window.location.href = '/dataset/' + props.id;
+                                }
+                            });
+                        }
+                    }),
                 },
-                getColor = function (count) {
-                    let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-                        bin = getBin(count, colorSteps.length);
-                    return colorSteps[bin];
-                };
-
-            let we_have_data = {{ 'true' if have_data else 'false' }},
-                our_data = {
-                    datasets: {
-                        name: 'datasets',
-                        url: '{{ url_for('api.datasets_geojson', **product_args) }}',
-                        data: null,
-                        geojson_layer: L.geoJson(null, {
+                regions: {
+                    name: 'regions',
+                    url: '{{ url_for('api.regions_geojson', **product_args) }}',
+                    data: null,
+                    geojson_layer: L.geoJson(null,
+                        {
                             style: function (feature) {
                                 return {
-                                    color: "#7AB800",
+                                    color: "#f2f2f2",
                                     fill: true,
-                                    fillColor: "#9aee00",
-                                    opacity: 0.3,
-                                    weight: 2,
-                                    clickable: true
+                                    fillColor: getColor(feature.properties.count),
+                                    opacity: 0.6,
+                                    fillOpacity: 0.4,
+                                    weight: 1,
+                                    clickable: false
                                 };
                             },
                             onEachFeature: function (feature, layer) {
-                                var that = our_data.datasets;
+                                const that = SPATIAL_VIEWS.regions;
                                 layer.on({
                                     mouseover: function (e) {
-                                        var layer = e.target;
+                                        const layer = e.target;
 
                                         layer.setStyle({
                                             color: '#375400',
-                                            fillOpacity: 0.6
                                         });
 
                                         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                                             layer.bringToFront();
                                         }
-
-                                        var props = layer.feature.properties,
-                                            template = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
+                                        let props = layer.feature.properties,
+                                            data = that.data,
+                                            template = '<div><strong>' + data.properties.region_item_name + ' ' +
+                                                props.region_code +
+                                                '</strong></div>' +
+                                                props.count +
+                                                ' dataset(s)';
                                         datasetInfoControl.update(template);
                                     }
                                     ,
                                     mouseout: function (e) {
                                         that.geojson_layer.resetStyle(e.target);
-                                        var show_count = that.data.features.length;
-                                        datasetInfoControl.update('Sample of ' + show_count + ' datasets');
+                                        datasetInfoControl.update();
                                     },
                                     click: function (e) {
-                                        var props = e.target.feature.properties;
-                                        window.location.href = '/dataset/' + props.id;
+                                        {#TODO: View list of datasets in region #}
+                                        {#var props = e.target.feature.properties;#}
+                                        {#window.location.href = '/dataset/' + props.id;#}
                                     }
                                 });
                             }
-                        }),
-                    },
-                    regions: {
-                        name: 'regions',
-                        url: '{{ url_for('api.regions_geojson', **product_args) }}',
-                        data: null,
-                        geojson_layer: L.geoJson(null,
-                            {
-                                style: function (feature) {
-                                    return {
-                                        color: "#f2f2f2",
-                                        fill: true,
-                                        fillColor: getColor(feature.properties.count),
-                                        opacity: 0.6,
-                                        fillOpacity: 0.4,
-                                        weight: 1,
-                                        clickable: false
-                                    };
-                                },
-                                onEachFeature: function (feature, layer) {
-                                    var that = our_data.regions;
-                                    layer.on({
-                                        mouseover: function (e) {
-                                            var layer = e.target;
-
-                                            layer.setStyle({
-                                                color: '#375400',
-                                            });
-
-                                            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                                                layer.bringToFront();
-                                            }
-                                            let props = layer.feature.properties,
-                                                data = that.data,
-                                                template = '<div><strong>' + data.properties.region_item_name + ' ' +
-                                                    props.region_code +
-                                                    '</strong></div>' +
-                                                    props.count +
-                                                    ' dataset(s)';
-                                            datasetInfoControl.update(template);
-                                        }
-                                        ,
-                                        mouseout: function (e) {
-                                            that.geojson_layer.resetStyle(e.target);
-                                            datasetInfoControl.update();
-                                        },
-                                        click: function (e) {
-                                            {#TODO: View list of datasets in region #}
-                                            {#var props = e.target.feature.properties;#}
-                                            {#window.location.href = '/dataset/' + props.id;#}
-                                        }
-                                    });
-                                }
-                            })
-                    },
-                    footprint: {
-                        name: 'footprint',
-                        url: '{{ url_for('api.footprint_geojson', **product_args) }}',
-                        data: null,
-                        geojson_layer: L.geoJson(null,
-                            {
-                                interactive: false,
-                                style: function (feature) {
-                                    return {
-                                        color: "#00A1DE",
-                                        fill: true,
-                                        fillColor: "#8FCAE7",
-                                        opacity: 0.3,
-                                        weight: 2,
-                                        clickable: false
-                                    };
-                                }
-                            }
-                        )
-                    }
+                        })
                 },
-                our_active_data = null;
+                footprint: {
+                    name: 'footprint',
+                    url: '{{ url_for('api.footprint_geojson', **product_args) }}',
+                    data: null,
+                    geojson_layer: L.geoJson(null,
+                        {
+                            interactive: false,
+                            style: function (feature) {
+                                return {
+                                    color: "#00A1DE",
+                                    fill: false,
+                                    {#fillColor: "#8FCAE7",#}
+                                    opacity: 0.3,
+                                    weight: 2,
+                                    clickable: false
+                                };
+                            }
+                        }
+                    )
+                }
+            };
+            let selectedView = null;
 
             {# Show information for the hovered item #}
-            var datasetInfoControl = L.control({position: "bottomleft"});
+            const datasetInfoControl = L.control({position: "bottomleft"});
             datasetInfoControl.onAdd = function (map) {
                 this._div = L.DomUtil.create('div', 'dataset-info');
                 this.update();
@@ -347,18 +343,21 @@
             };
             map.addControl(datasetInfoControl);
 
-            function set_active_layer(new_layer) {
-                if (our_active_data) {
-                    map.removeLayer(our_active_data.geojson_layer);
+            function toggleview(view) {
+                let v = getViewToggle(view);
+                map.removeLayer(SPATIAL_VIEWS.footprint.geojson_layer);
+                map.removeLayer(SPATIAL_VIEWS.regions.geojson_layer);
+                map.removeLayer(SPATIAL_VIEWS.datasets.geojson_layer);
+                map.addLayer(view.geojson_layer);
+                if (v.value === 'regions') {
+                    map.addLayer(SPATIAL_VIEWS.footprint.geojson_layer);
                 }
-                map.addLayer(new_layer.geojson_layer);
-                our_active_data = new_layer;
             }
 
             {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}
-                var timelineControl = L.control({position: "topright"});
+                const timelineControl = L.control({position: "topright"});
                 timelineControl.onAdd = function (map) {
-                    var div = L.DomUtil.create("div", "timeline-control");
+                    const div = L.DomUtil.create("div", "timeline-control");
                     div.innerHTML = {{
                         chart_timeline(
                             selected_summary.timeline_dataset_counts,
@@ -372,18 +371,18 @@
             {% endif %}
 
 
-            function report_error(msg) {
+            function showError(msg) {
                 // TODO: message box?
                 document.getElementById('quiet-page-errors').innerHTML += msg + '<br/>';
             }
 
-            function getOptBox(data_spec) {
-                return document.querySelector('input[name="map_display_selection"][value="' + data_spec.name + '"]')
+            function getViewToggle(view) {
+                return document.querySelector('input[name="map_display_view"][value="' + view.name + '"]')
             }
 
-            function request_data(data_spec) {
-                var optionBox = getOptBox(data_spec),
-                    request = new XMLHttpRequest();
+            function requestData(data_spec) {
+                const optionBox = getViewToggle(data_spec),
+                      request = new XMLHttpRequest();
 
                 optionBox.disabled = true;
                 request.open('GET', data_spec.url, true);
@@ -396,37 +395,43 @@
                         }
                     } else {
                         // We reached our target server, but it returned an error
-                        report_error('Error fetching ' + data_spec.name);
+                        showError('Error fetching ' + data_spec.name);
                     }
                 };
                 request.onerror = function () {
                     // There was a connection error of some sort
-                    report_error('Error fetching ' + data_spec.name)
+                    showError('Error fetching ' + data_spec.name)
                 };
                 request.send();
             }
 
-
             // Default to footprint
-            if (we_have_data) {
-                our_data.footprint.data = {{ footprint_geojson | tojson }};
-                our_data.footprint.geojson_layer.addData(our_data.footprint.data);
-                set_active_layer(our_data.footprint);
-                map.fitBounds(our_active_data.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
-            }
-            // Load others in background
-            request_data(our_data.regions);
-            {% if show_individual_datasets %}
-                request_data(our_data.datasets);
+            {% if have_data %}
+                {% if footprint_geojson %}
+                    SPATIAL_VIEWS.footprint.data = {{ footprint_geojson | tojson }};
+                    SPATIAL_VIEWS.footprint.geojson_layer.addData(SPATIAL_VIEWS.footprint.data);
+                    map.addLayer(SPATIAL_VIEWS.footprint.geojson_layer);
+                {% endif %}
+                {% if regions_geojson %}
+                    SPATIAL_VIEWS.regions.data = {{ regions_geojson | tojson }};
+                    SPATIAL_VIEWS.regions.geojson_layer.addData(SPATIAL_VIEWS.regions.data);
+                    getViewToggle(SPATIAL_VIEWS.regions).addEventListener('click', function() {
+                        toggleview(SPATIAL_VIEWS.regions);
+                    });
+                    toggleview(SPATIAL_VIEWS.regions);
+                {% endif %}
+                map.fitBounds(SPATIAL_VIEWS.footprint.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
+
+                {% if show_individual_datasets %}
+                    // Load in background
+                    requestData(SPATIAL_VIEWS.datasets);
+                    getViewToggle(SPATIAL_VIEWS.datasets).addEventListener('click', function() {
+                        toggleview(SPATIAL_VIEWS.datasets);
+                    });
+                {% endif %}
             {% endif %}
 
             window.MAP = map;
-
-            document.querySelectorAll('input[name="map_display_selection"]').forEach(function (v) {
-                v.addEventListener('click', function (l) {
-                    set_active_layer(our_data[v.value]);
-                });
-            });
 
         })();
     </script>

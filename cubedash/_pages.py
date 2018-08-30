@@ -50,7 +50,7 @@ def overview_page(product_name: str = None,
         day=day,
 
         # Which data to preload with the page?
-        regions_geojson=None,  # _model.get_regions_geojson(product_name, year, month, day),
+        regions_geojson=_model.get_regions_geojson(product_name, year, month, day),
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
 

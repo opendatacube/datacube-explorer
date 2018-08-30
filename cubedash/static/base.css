@@ -84,6 +84,7 @@ button { margin: 5px 0; background-color: #1d81a7; border: 0; color: #efefef; pa
 button:hover { background-color: #008fc5; }
 
 label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
+label.disabled { color: #ccc; }
 
 .form-footer { margin: 1em 0; }
 .form-footer > label { padding: 8px; display: block; }
