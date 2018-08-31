@@ -6,7 +6,7 @@ import flask
 from flask import Blueprint
 
 from . import _utils as utils
-from ._model import index
+from . import _model
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('dataset', __name__, url_prefix='/dataset')
@@ -14,6 +14,7 @@ bp = Blueprint('dataset', __name__, url_prefix='/dataset')
 
 @bp.route('/<uuid:id_>')
 def dataset_page(id_):
+    index = _model.STORE.index
     dataset = index.datasets.get(id_, include_sources=True)
 
     source_datasets = {type_: index.datasets.get(dataset_d['id'])

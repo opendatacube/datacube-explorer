@@ -64,3 +64,6 @@ target/
 # Mac OS X
 .DS_Store
 
+# Environment-specific templates
+*.env.html
+

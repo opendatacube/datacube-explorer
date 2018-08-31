@@ -8,7 +8,7 @@ $panel2_color: lighten($content_background, 6%)
 // The four colors in the dea style guide. Use sparingly (highlights).
 
 $emphasis_strong: darken(#00A1DE, 5%)
-$emphasis_weak: desaturate($emphasis_strong, 30%)
+$emphasis_weak: desaturate($emphasis_strong, 50%)
 
 $emphasis_light: #8FCAE7
 
@@ -47,9 +47,9 @@ $header_stripe2: #7fd0eb
 
     .product-description
         display: block
-        
+
 body
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+    font-family: Helvetica, Arial, sans-serif
     background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)
 
     min-height: calc(100vh - 50px)
@@ -294,6 +294,9 @@ label
     letter-spacing: 1px
     font-size: 10px
     color: #333
+
+    &.disabled
+        color: #ccc
 
 .form-footer
     margin: 1em 0

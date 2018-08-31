@@ -1,3 +1,3 @@
-
-from ._summarise import TimePeriodOverview
-from ._stores import FileSummaryStore, SummaryStore
+from ._model import TimePeriodOverview
+from ._stores import SummaryStore
+from ._extents import RegionInfo

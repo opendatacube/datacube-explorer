@@ -6,6 +6,7 @@
     <title>{% block title %}{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     {% block head %}{% endblock %}
 </head>
@@ -41,11 +42,15 @@
         Updated {{ last_updated_time | timesince }}
     {% endif %}
     {% block footer %}{% endblock %}
+    {% include 'include-footer.env.html' ignore missing %}
+    <div id="quiet-page-errors"></div>
 </footer>
 
 <script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
-
+<!-- Environment includes -->
+{% include 'include-global.env.html' ignore missing %}
+<!-- End Environment includes -->
 {% block body_footer %}{% endblock %}
 <script>
     // If there's a map on the page, add layer attribution in the footer.

@@ -12,6 +12,7 @@ from datetime import datetime
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
+from shapely.geometry import MultiPolygon
 
 from datacube.index.fields import Field
 from datacube.model import Range, DatasetType
@@ -46,6 +47,15 @@ def _dataset_label(dataset):
     return label
 
 
+@bp.app_template_filter('printable_data_size')
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
 @bp.app_template_filter('dataset_geojson')
 def _dataset_geojson(dataset):
     shape, valid_extent = utils.dataset_shape(dataset)
@@ -64,6 +74,11 @@ def _dataset_geojson(dataset):
     }
 
 
+@bp.app_template_filter('albers_area')
+def _format_albers_area(shape: MultiPolygon):
+    return Markup('{}km<sup>2</sup>'.format(format(round(shape.area / 1000_000), ',d')))
+
+
 @bp.app_template_filter('query_value')
 def _format_query_value(val):
     if isinstance(val, Range):
@@ -72,6 +87,8 @@ def _format_query_value(val):
         return _format_datetime(val)
     if val is None:
         return '•'
+    if isinstance(val, float):
+        return round(val, 3)
     return str(val)
 
 
@@ -164,7 +181,8 @@ def timesince(dt, default="just now"):
 
 
 def _time(label: str, actual_time: datetime) -> Markup:
-    return Markup(f"<time datetime={actual_time.isoformat()}"
+    as_utc = actual_time.astimezone(tz.tzutc())
+    return Markup(f"<time datetime={as_utc.isoformat()}"
                   f' title="{actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z")}">'
                   f"{escape(label)}"
                   f"</time>")
