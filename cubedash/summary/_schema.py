@@ -29,10 +29,10 @@ METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
 
 
-POSTGIS_METADATA = MetaData(schema="public")
+# This is a materialised view of the postgis spatial_ref_sys for lookups. See creation of mv_spatial_ref_sys below.
 SPATIAL_REF_SYS = Table(
-    "spatial_ref_sys",
-    POSTGIS_METADATA,
+    "mv_spatial_ref_sys",
+    METADATA,
     Column("srid", Integer, primary_key=True),
     Column("auth_name", String(255)),
     Column("auth_srid", Integer),
@@ -141,18 +141,34 @@ _PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
 
 
 def create_schema(engine: Engine):
-    engine.execute(DDL(f"create extension if not exists postgis"))
     engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
+    engine.execute(DDL(f"create extension if not exists postgis"))
 
-    # Ensure there's an index on the SRS table. (Using default pg naming conventions)
-    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
+    # We want an index on the spatial_ref_sys table to do authority name/code lookups.
+    # But in RDS environments we cannot add indexes to it.
+    # So we create our own copy as a materialised view (it's a very small table).
     engine.execute(
-        """
-        create index if not exists
-            spatial_ref_sys_auth_name_auth_srid_idx
-        on spatial_ref_sys(auth_name, auth_srid);
+        f"""
+    create materialized view if not exists {CUBEDASH_SCHEMA}.mv_spatial_ref_sys
+        as select * from spatial_ref_sys;
     """
     )
+    # The normal primary key.
+    engine.execute(
+        f"""
+        create unique index if not exists mv_spatial_ref_sys_srid_idx on 
+            {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srid);
+        """
+    )
+    # For case insensitive auth name/code lookups.
+    # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
+    engine.execute(
+        f"""
+        create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on 
+            {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
+    """
+    )
+
     METADATA.create_all(engine, checkfirst=True)
 
 

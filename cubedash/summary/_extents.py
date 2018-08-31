@@ -168,7 +168,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                 (
                     doc[(projection_offset + ["datum"])].astext == "GDA94",
                     select([SPATIAL_REF_SYS.c.srid])
-                    .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
+                    .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
                     .where(
                         SPATIAL_REF_SYS.c.auth_srid
                         == (
