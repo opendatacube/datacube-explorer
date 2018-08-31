@@ -17,7 +17,7 @@ setup(
     name='dea-dashboard',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    python_requires='>=3.5.2',
+    python_requires='>=3.6',
 
     url='https://github.com/data-cube/dea-dashboard',
     author='Geoscience Australia',
@@ -27,7 +27,7 @@ setup(
         'cachetools',
         'click',
         'dataclasses',
-        'datacube>=1.5.4',
+        'datacube>=1.6',
         'flask',
         'fiona',
         'pyorbital',
