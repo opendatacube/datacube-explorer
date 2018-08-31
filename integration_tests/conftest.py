@@ -1,70 +1,35 @@
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from cubedash import logs
-from cubedash.summary import FileSummaryStore
+from cubedash import generate, logs
+from cubedash.summary import SummaryStore
 from datacube.index import Index
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
 from digitalearthau.testing import factories
 
 pytest_plugins = "digitalearthau.testing.plugin"
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
-
-# Use session-scoped databases, as it takes a while to populate with
+# Use module-scoped databases, as it takes a while to populate with
 # our data, and we're treating it as read-only in tests.
 # -> Note: Since we're reusing the default config unchanged, we can't use the
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
-session_db = factories.db_fixture("local_config", scope="session")
-session_index = factories.index_fixture("session_db", scope="session")
-session_dea_index = factories.dea_index_fixture("session_index", scope="session")
-
-
-@pytest.fixture(scope="session")
-def populated_index(session_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's session-scoped as it's expensive to populate.
-    """
-    _populate_from_dump(
-        session_dea_index,
-        "ls8_nbar_scene",
-        TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
-    )
-    _populate_from_dump(
-        session_dea_index,
-        "ls8_nbar_albers",
-        TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
-    )
-    return session_dea_index
+module_db = factories.db_fixture("local_config", scope="module")
+module_index = factories.index_fixture("module_db", scope="module")
+module_dea_index = factories.dea_index_fixture("module_index", scope="module")
 
 
 @pytest.fixture(scope="function")
-def summary_store(populated_index: Index, tmppath: Path):
-    return FileSummaryStore(populated_index, tmppath)
+def summary_store(module_dea_index: Index) -> SummaryStore:
+    SummaryStore.create(module_dea_index, init_schema=False).drop_all()
+    store = SummaryStore.create(module_dea_index, init_schema=True)
+    return store
 
 
-def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
-    ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
-    dataset_count = 0
-
-    create_dataset = Doc2Dataset(session_dea_index)
-
-    for _, doc in read_documents(dump_path):
-        label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
-        dataset, err = create_dataset(doc, f"file://example.com/test_dataset/{label}")
-        assert dataset is not None, err
-        created = session_dea_index.datasets.add(dataset)
-
-        assert created.type.name == ls8_nbar_scene.name
-        dataset_count += 1
-
-    print(f"Populated {dataset_count} of {expected_type}")
-    return dataset_count
+@pytest.fixture(scope="function")
+def summariser(summary_store: SummaryStore):
+    return summary_store._summariser
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -75,3 +40,31 @@ def init_logs(pytestconfig):
 @pytest.fixture
 def tmppath(tmpdir):
     return Path(str(tmpdir))
+
+
+@pytest.fixture
+def clirunner(global_integration_cli_args):
+    def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
+        exe_opts = list(global_integration_cli_args)
+        exe_opts.extend(opts)
+
+        runner = CliRunner()
+        result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
+        if expect_success:
+            assert 0 == result.exit_code, "Error for %r. output: %r" % (
+                opts,
+                result.output,
+            )
+        return result
+
+    return _run_cli
+
+
+@pytest.fixture()
+def run_generate(clirunner, summary_store):
+    def do(*only_products, expect_success=True):
+        products = only_products or ["--all"]
+        res = clirunner(generate.cli, products, expect_success=expect_success)
+        return res
+
+    return do

@@ -3,7 +3,7 @@
 
 @media (max-width: 600px) { .option-description { display: none; }
   .product-description { display: block; } }
-body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
+body { font-family: Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
 
 #logo { padding-right: 25px; position: absolute; top: 15px; right: 0; }
 #logo img { vertical-align: middle; padding-right: 2px; }
@@ -28,7 +28,7 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background: 
 a { color: #2b2b2b; }
 
 .panel.highlight > h2 { color: #fff; }
-.panel.odd > h2 { color: #1d81a7; }
+.panel.odd > h2 { color: #317893; }
 
 h4 { color: #4f4f4f; }
 
@@ -80,10 +80,11 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .query-param > .key { color: #737373; }
 .query-param .value > .query-param { margin-left: 15px; }
 
-button { margin: 5px 0; background-color: #1d81a7; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
+button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
 button:hover { background-color: #008fc5; }
 
 label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
+label.disabled { color: #ccc; }
 
 .form-footer { margin: 1em 0; }
 .form-footer > label { padding: 8px; display: block; }
@@ -93,9 +94,9 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
-.chart-timeline-bar { width: 2px; display: inline-block; background-color: #1d81a7; }
-.chart-timeline-bar.new-year { background-color: #1a7091; }
-.chart-timeline-bar:hover { background-color: #16607c; }
+.chart-timeline-bar { width: 2px; display: inline-block; background-color: #317893; }
+.chart-timeline-bar.new-year { background-color: #2b6980; }
+.chart-timeline-bar:hover { background-color: #24596d; }
 
 .chart-timeline-years { font-size: 0; white-space: nowrap; }
 
@@ -145,8 +146,8 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="1"] > [data-field-span="1"] { width: 100%; }
 .grid-form [data-row-span="2"] > [data-field-span="1"] { width: 50%; }
 .grid-form [data-row-span="2"] > [data-field-span="2"] { width: 100%; }
-.grid-form [data-row-span="3"] > [data-field-span="1"] { width: 33.33333%; }
-.grid-form [data-row-span="3"] > [data-field-span="2"] { width: 66.66667%; }
+.grid-form [data-row-span="3"] > [data-field-span="1"] { width: 33.3333333333%; }
+.grid-form [data-row-span="3"] > [data-field-span="2"] { width: 66.6666666667%; }
 .grid-form [data-row-span="3"] > [data-field-span="3"] { width: 100%; }
 .grid-form [data-row-span="4"] > [data-field-span="1"] { width: 25%; }
 .grid-form [data-row-span="4"] > [data-field-span="2"] { width: 50%; }
@@ -157,18 +158,18 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="5"] > [data-field-span="3"] { width: 60%; }
 .grid-form [data-row-span="5"] > [data-field-span="4"] { width: 80%; }
 .grid-form [data-row-span="5"] > [data-field-span="5"] { width: 100%; }
-.grid-form [data-row-span="6"] > [data-field-span="1"] { width: 16.66667%; }
-.grid-form [data-row-span="6"] > [data-field-span="2"] { width: 33.33333%; }
+.grid-form [data-row-span="6"] > [data-field-span="1"] { width: 16.6666666667%; }
+.grid-form [data-row-span="6"] > [data-field-span="2"] { width: 33.3333333333%; }
 .grid-form [data-row-span="6"] > [data-field-span="3"] { width: 50%; }
-.grid-form [data-row-span="6"] > [data-field-span="4"] { width: 66.66667%; }
-.grid-form [data-row-span="6"] > [data-field-span="5"] { width: 83.33333%; }
+.grid-form [data-row-span="6"] > [data-field-span="4"] { width: 66.6666666667%; }
+.grid-form [data-row-span="6"] > [data-field-span="5"] { width: 83.3333333333%; }
 .grid-form [data-row-span="6"] > [data-field-span="6"] { width: 100%; }
-.grid-form [data-row-span="7"] > [data-field-span="1"] { width: 14.28571%; }
-.grid-form [data-row-span="7"] > [data-field-span="2"] { width: 28.57143%; }
-.grid-form [data-row-span="7"] > [data-field-span="3"] { width: 42.85714%; }
-.grid-form [data-row-span="7"] > [data-field-span="4"] { width: 57.14286%; }
-.grid-form [data-row-span="7"] > [data-field-span="5"] { width: 71.42857%; }
-.grid-form [data-row-span="7"] > [data-field-span="6"] { width: 85.71429%; }
+.grid-form [data-row-span="7"] > [data-field-span="1"] { width: 14.2857142857%; }
+.grid-form [data-row-span="7"] > [data-field-span="2"] { width: 28.5714285714%; }
+.grid-form [data-row-span="7"] > [data-field-span="3"] { width: 42.8571428571%; }
+.grid-form [data-row-span="7"] > [data-field-span="4"] { width: 57.1428571429%; }
+.grid-form [data-row-span="7"] > [data-field-span="5"] { width: 71.4285714286%; }
+.grid-form [data-row-span="7"] > [data-field-span="6"] { width: 85.7142857143%; }
 .grid-form [data-row-span="7"] > [data-field-span="7"] { width: 100%; }
 .grid-form [data-row-span="8"] > [data-field-span="1"] { width: 12.5%; }
 .grid-form [data-row-span="8"] > [data-field-span="2"] { width: 25%; }
@@ -178,14 +179,14 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="8"] > [data-field-span="6"] { width: 75%; }
 .grid-form [data-row-span="8"] > [data-field-span="7"] { width: 87.5%; }
 .grid-form [data-row-span="8"] > [data-field-span="8"] { width: 100%; }
-.grid-form [data-row-span="9"] > [data-field-span="1"] { width: 11.11111%; }
-.grid-form [data-row-span="9"] > [data-field-span="2"] { width: 22.22222%; }
-.grid-form [data-row-span="9"] > [data-field-span="3"] { width: 33.33333%; }
-.grid-form [data-row-span="9"] > [data-field-span="4"] { width: 44.44444%; }
-.grid-form [data-row-span="9"] > [data-field-span="5"] { width: 55.55556%; }
-.grid-form [data-row-span="9"] > [data-field-span="6"] { width: 66.66667%; }
-.grid-form [data-row-span="9"] > [data-field-span="7"] { width: 77.77778%; }
-.grid-form [data-row-span="9"] > [data-field-span="8"] { width: 88.88889%; }
+.grid-form [data-row-span="9"] > [data-field-span="1"] { width: 11.1111111111%; }
+.grid-form [data-row-span="9"] > [data-field-span="2"] { width: 22.2222222222%; }
+.grid-form [data-row-span="9"] > [data-field-span="3"] { width: 33.3333333333%; }
+.grid-form [data-row-span="9"] > [data-field-span="4"] { width: 44.4444444444%; }
+.grid-form [data-row-span="9"] > [data-field-span="5"] { width: 55.5555555556%; }
+.grid-form [data-row-span="9"] > [data-field-span="6"] { width: 66.6666666667%; }
+.grid-form [data-row-span="9"] > [data-field-span="7"] { width: 77.7777777778%; }
+.grid-form [data-row-span="9"] > [data-field-span="8"] { width: 88.8888888889%; }
 .grid-form [data-row-span="9"] > [data-field-span="9"] { width: 100%; }
 .grid-form [data-row-span="10"] > [data-field-span="1"] { width: 10%; }
 .grid-form [data-row-span="10"] > [data-field-span="2"] { width: 20%; }
@@ -197,28 +198,28 @@ label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: 
 .grid-form [data-row-span="10"] > [data-field-span="8"] { width: 80%; }
 .grid-form [data-row-span="10"] > [data-field-span="9"] { width: 90%; }
 .grid-form [data-row-span="10"] > [data-field-span="10"] { width: 100%; }
-.grid-form [data-row-span="11"] > [data-field-span="1"] { width: 9.09091%; }
-.grid-form [data-row-span="11"] > [data-field-span="2"] { width: 18.18182%; }
-.grid-form [data-row-span="11"] > [data-field-span="3"] { width: 27.27273%; }
-.grid-form [data-row-span="11"] > [data-field-span="4"] { width: 36.36364%; }
-.grid-form [data-row-span="11"] > [data-field-span="5"] { width: 45.45455%; }
-.grid-form [data-row-span="11"] > [data-field-span="6"] { width: 54.54545%; }
-.grid-form [data-row-span="11"] > [data-field-span="7"] { width: 63.63636%; }
-.grid-form [data-row-span="11"] > [data-field-span="8"] { width: 72.72727%; }
-.grid-form [data-row-span="11"] > [data-field-span="9"] { width: 81.81818%; }
-.grid-form [data-row-span="11"] > [data-field-span="10"] { width: 90.90909%; }
+.grid-form [data-row-span="11"] > [data-field-span="1"] { width: 9.0909090909%; }
+.grid-form [data-row-span="11"] > [data-field-span="2"] { width: 18.1818181818%; }
+.grid-form [data-row-span="11"] > [data-field-span="3"] { width: 27.2727272727%; }
+.grid-form [data-row-span="11"] > [data-field-span="4"] { width: 36.3636363636%; }
+.grid-form [data-row-span="11"] > [data-field-span="5"] { width: 45.4545454545%; }
+.grid-form [data-row-span="11"] > [data-field-span="6"] { width: 54.5454545455%; }
+.grid-form [data-row-span="11"] > [data-field-span="7"] { width: 63.6363636364%; }
+.grid-form [data-row-span="11"] > [data-field-span="8"] { width: 72.7272727273%; }
+.grid-form [data-row-span="11"] > [data-field-span="9"] { width: 81.8181818182%; }
+.grid-form [data-row-span="11"] > [data-field-span="10"] { width: 90.9090909091%; }
 .grid-form [data-row-span="11"] > [data-field-span="11"] { width: 100%; }
-.grid-form [data-row-span="12"] > [data-field-span="1"] { width: 8.33333%; }
-.grid-form [data-row-span="12"] > [data-field-span="2"] { width: 16.66667%; }
+.grid-form [data-row-span="12"] > [data-field-span="1"] { width: 8.3333333333%; }
+.grid-form [data-row-span="12"] > [data-field-span="2"] { width: 16.6666666667%; }
 .grid-form [data-row-span="12"] > [data-field-span="3"] { width: 25%; }
-.grid-form [data-row-span="12"] > [data-field-span="4"] { width: 33.33333%; }
-.grid-form [data-row-span="12"] > [data-field-span="5"] { width: 41.66667%; }
+.grid-form [data-row-span="12"] > [data-field-span="4"] { width: 33.3333333333%; }
+.grid-form [data-row-span="12"] > [data-field-span="5"] { width: 41.6666666667%; }
 .grid-form [data-row-span="12"] > [data-field-span="6"] { width: 50%; }
-.grid-form [data-row-span="12"] > [data-field-span="7"] { width: 58.33333%; }
-.grid-form [data-row-span="12"] > [data-field-span="8"] { width: 66.66667%; }
+.grid-form [data-row-span="12"] > [data-field-span="7"] { width: 58.3333333333%; }
+.grid-form [data-row-span="12"] > [data-field-span="8"] { width: 66.6666666667%; }
 .grid-form [data-row-span="12"] > [data-field-span="9"] { width: 75%; }
-.grid-form [data-row-span="12"] > [data-field-span="10"] { width: 83.33333%; }
-.grid-form [data-row-span="12"] > [data-field-span="11"] { width: 91.66667%; }
+.grid-form [data-row-span="12"] > [data-field-span="10"] { width: 83.3333333333%; }
+.grid-form [data-row-span="12"] > [data-field-span="11"] { width: 91.6666666667%; }
 .grid-form [data-row-span="12"] > [data-field-span="12"] { width: 100%; }
 .grid-form [data-row-span].disabled { display: none; }
 

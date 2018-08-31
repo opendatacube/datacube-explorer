@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 import versioneer
 
-tests_require = ["pylint", "digitalearthau"]
+tests_require = ["pylint", "digitalearthau", "requests-html"]
 
 extras_require = {"test": tests_require}
 
@@ -12,7 +12,7 @@ setup(
     name="dea-dashboard",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    python_requires=">=3.5.2",
+    python_requires=">=3.6",
     url="https://github.com/data-cube/dea-dashboard",
     author="Geoscience Australia",
     packages=find_packages(),
@@ -20,11 +20,12 @@ setup(
         "cachetools",
         "click",
         "dataclasses",
-        "datacube>=1.5.4",
+        "datacube>=1.6",
         "flask",
         "fiona",
         "pyorbital",
         "geographiclib",
+        "geoalchemy2",
         "simplekml",
         "structlog",
         "Flask-Caching",

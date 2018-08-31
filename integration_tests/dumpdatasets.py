@@ -10,7 +10,7 @@ import click
 import yaml
 
 from datacube import Datacube
-from datacube.model import Range
+from datacube.model import Dataset, Range
 
 
 def _sample(iterable, sample_count):
@@ -30,7 +30,9 @@ def _sample(iterable, sample_count):
     return result
 
 
-def dump_datasets(dc: Datacube, path: Path, dataset_sample_fraction=0.3, **query):
+def dump_datasets(
+    dc: Datacube, path: Path, dataset_sample_fraction=0.3, include_sources=True, **query
+):
     total_count = dc.index.datasets.count(**query)
 
     if path.exists():
@@ -47,10 +49,7 @@ def dump_datasets(dc: Datacube, path: Path, dataset_sample_fraction=0.3, **query
     ) as progress:
         with gzip.open(path, "w") as f:
             yaml.dump_all(
-                (
-                    dc.index.datasets.get(d.id, include_sources=True).metadata_doc
-                    for d in progress
-                ),
+                (_get_dumpable_doc(dc, d, include_sources) for d in progress),
                 stream=f,
                 encoding="utf-8",
                 indent=4,
@@ -58,28 +57,46 @@ def dump_datasets(dc: Datacube, path: Path, dataset_sample_fraction=0.3, **query
             )
 
 
+def _get_dumpable_doc(dc: Datacube, d: Dataset, include_sources=True):
+    if include_sources:
+        return dc.index.datasets.get(d.id, include_sources=include_sources).metadata_doc
+    else:
+        # Empty doc means "there are no sources", so we can load it easily.
+        d.metadata.sources = {}
+        return d.metadata_doc
+
+
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 if __name__ == "__main__":
-    with Datacube() as dc:
+    with Datacube(env="clone") as dc:
+
         dump_datasets(
             dc,
-            TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
-            dataset_sample_fraction=0.1,
-            product="ls8_nbar_albers",
-            time=Range(datetime(2017, 4, 15), datetime(2017, 5, 15)),
+            TEST_DATA_DIR / "high_tide_comp_20p.yaml.gz",
+            dataset_sample_fraction=1,
+            include_sources=False,
+            product="high_tide_comp_20p",
+            time=Range(datetime(1980, 4, 15), datetime(2018, 5, 15)),
         )
-        dump_datasets(
-            dc,
-            TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
-            dataset_sample_fraction=0.1,
-            product="ls8_nbar_scene",
-            time=Range(datetime(2016, 1, 1), datetime(2018, 1, 1)),
-        )
-        # Huuge amount of lineage.
-        dump_datasets(
-            dc,
-            TEST_DATA_DIR / "low-tide-comp-20p.yaml.gz",
-            dataset_sample_fraction=0.1,
-            product="low_tide_comp_20p",
-        )
+        # dump_datasets(
+        #     dc,
+        #     TEST_DATA_DIR / 'wofs-albers-sample2.yaml.gz',
+        #     dataset_sample_fraction=0.01,
+        #     product='wofs_albers',
+        #     time=Range(datetime(2017, 4, 15), datetime(2017, 5, 15)),
+        # )
+        # dump_datasets(
+        #     dc,
+        #     TEST_DATA_DIR / 'ls8-nbar-scene-sample-2017.yaml.gz',
+        #     dataset_sample_fraction=0.1,
+        #     product='ls8_nbar_scene',
+        #     time=Range(datetime(2016, 1, 1), datetime(2018, 1, 1)),
+        # )
+        # # Huuge amount of lineage.
+        # dump_datasets(
+        #     dc,
+        #     TEST_DATA_DIR / 'low-tide-comp-20p.yaml.gz',
+        #     dataset_sample_fraction=0.1,
+        #     product='low_tide_comp_20p',
+        # )

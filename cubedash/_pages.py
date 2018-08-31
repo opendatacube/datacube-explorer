@@ -1,18 +1,24 @@
+import functools
+import inspect
 import itertools
+import sys
+import time
 from datetime import datetime
 
 import flask
 import structlog
 from flask import abort, redirect, request, url_for
+from sqlalchemy import event
 from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
+from cubedash.summary import RegionInfo
 from datacube.scripts.dataset import build_dataset_info
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports
 from . import _utils as utils
-from ._utils import as_json
+from ._utils import alchemy_engine, as_json
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -44,7 +50,12 @@ def overview_page(
         year=year,
         month=month,
         day=day,
+        # Which data to preload with the page?
+        regions_geojson=_model.get_regions_geojson(product_name, year, month, day),
+        datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
+        footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
+        product_region_info=RegionInfo.for_product(product),
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
@@ -63,7 +74,7 @@ def search_page(
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
     )
-    time = utils.as_time_range(year, month, day)
+    time_range = utils.as_time_range(year, month, day)
 
     args = MultiDict(flask.request.args)
     query = utils.query_to_search(args, product=product)
@@ -71,20 +82,20 @@ def search_page(
     # Always add time range, selected product to query
     if product_name:
         query["product"] = product_name
-    if time:
-        query["time"] = time
+    if time_range:
+        query["time"] = time_range
 
     _LOG.info("query", query=query)
 
     # TODO: Add sort option to index API
     datasets = sorted(
-        _model.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
+        _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
         key=lambda d: d.center_time,
     )
 
     if request_wants_json():
         return as_json(
-            dict(datasets=[build_dataset_info(_model.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
     return flask.render_template(
         "search.html",
@@ -117,7 +128,7 @@ def timeline_page(product_name: str):
 def _load_product(product_name, year, month, day):
     product = None
     if product_name:
-        product = _model.index.products.get_by_name(product_name)
+        product = _model.STORE.index.products.get_by_name(product_name)
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
@@ -184,3 +195,78 @@ def default_redirect():
         default_product = available_product_names[0]
 
     return flask.redirect(flask.url_for("overview_page", product_name=default_product))
+
+
+# Add server timings to http headers.
+if app.debug:
+
+    @app.before_request
+    def time_start():
+        flask.g.start_render = time.time()
+        flask.g.datacube_query_time = 0
+        flask.g.datacube_query_count = 0
+
+    @event.listens_for(alchemy_engine(_model.STORE.index), "before_cursor_execute")
+    def before_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ):
+        conn.info.setdefault("query_start_time", []).append(time.time())
+
+    @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
+    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        flask.g.datacube_query_time += time.time() - conn.info["query_start_time"].pop(
+            -1
+        )
+        flask.g.datacube_query_count += 1
+        # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
+
+    @app.after_request
+    def time_end(response: flask.Response):
+        render_time = time.time() - flask.g.start_render
+        response.headers.add_header(
+            "Server-Timing",
+            f"app;dur={render_time*1000},"
+            f'odcquery;dur={flask.g.datacube_query_time*1000};desc="ODC query time",'
+            f"odcquerycount_{flask.g.datacube_query_count};"
+            f'desc="{flask.g.datacube_query_count} ODC queries"',
+        )
+        return response
+
+    def decorate_all_methods(cls, decorator):
+        """
+        Decorate all public methods of the class with the given decorator.
+        """
+        for name, clasification, clz, attr in inspect.classify_class_attrs(cls):
+            if clasification == "method" and not name.startswith("_"):
+                setattr(cls, name, decorator(attr))
+        return cls
+
+    def print_datacube_query_times():
+        from click import style
+
+        def with_timings(function):
+            """
+            Decorate the given function with a stderr print of timing
+            """
+
+            @functools.wraps(function)
+            def decorator(*args, **kwargs):
+                start_time = time.time()
+                ret = function(*args, **kwargs)
+                duration_secs = time.time() - start_time
+                print(
+                    f"== Index Call == {style(function.__name__, bold=True)}: "
+                    f"{duration_secs*1000}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                return ret
+
+            return decorator
+
+        # Print call time for all db layer calls.
+        import datacube.drivers.postgres._api as api
+
+        decorate_all_methods(api.PostgresDbAPI, with_timings)
+
+    print_datacube_query_times()

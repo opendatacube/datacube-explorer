@@ -9,6 +9,8 @@ cache:
   - $HOME/.cache/pip
 addons:
   postgresql: '9.6'
+  services:
+    - postgresql
   apt:
     packages:
     - libhdf5-serial-dev
@@ -19,6 +21,7 @@ addons:
     - libblas-dev
     - liblapack-dev
     - gfortran
+    - postgresql-9.6-postgis-2.3
 before_install:
 - createdb dea_integration
 - cp .travis/honeypot.conf ~/.datacube.conf

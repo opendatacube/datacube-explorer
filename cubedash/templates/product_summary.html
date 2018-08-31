@@ -10,9 +10,9 @@
 
 
         {% from "layout/macros.html" import chart_timeline %}
-        {% if p.selected_summary.dataset_counts and (p.selected_summary.dataset_counts | length > 1) %}
+        {% if p.selected_summary.timeline_dataset_counts and (p.selected_summary.timeline_dataset_counts | length > 1) %}
         <div>
-            {{ chart_timeline(p.selected_summary.dataset_counts, p.product, period=p.selected_summary.period) }}
+            {{ chart_timeline(p.selected_summary.timeline_dataset_counts, p.product, period=p.selected_summary.period) }}
         </div>
         {% endif %}
     </div>
