@@ -64,6 +64,9 @@
                 </span>
             </div>
         {% endfor %}
+        {% if source_dataset_overflow %}
+            <span title="Too many to display">... {{ source_dataset_overflow }} more</span>
+        {% endif %}
         <div class="tree-node">
             → <strong>{{ dataset | printable_dataset }}</strong>
             {% for d_dataset in derived_datasets %}
@@ -75,6 +78,9 @@
                     </span>
                 </div>
             {% endfor %}
+            {% if derived_dataset_overflow %}
+                <span title="Too many to display">... {{ derived_dataset_overflow}} more</span>
+            {% endif %}
         </div>
 
     </div>
