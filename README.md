@@ -1,6 +1,7 @@
 # DEA Operations Dashboard [![Build Status](https://travis-ci.org/data-cube/dea-dashboard.svg?branch=develop)](https://travis-ci.org/data-cube/dea-dashboard)
 
- 
+![Dashboard Screenshot](deployment/screenshot.png)
+
 ## Developer Setup
 
 
@@ -65,16 +66,16 @@ Create one of the following `*.env.html` files:
 
 - Global include: for `<script>` and other tags at the bottom of every page.
 
-    cubedash/templates/include-global.env.html
+      cubedash/templates/include-global.env.html
 
 - Footer text include. For human text such as Copyright statements.
   
-    echo "Server <strong>staging-1.test</strong>" > cubedash/templates/include-footer.env.html
+      echo "Server <strong>staging-1.test</strong>" > cubedash/templates/include-footer.env.html
 
 (`*.env.html` is the naming convention used for environment-specific templates: they are ignored by 
 Git)
 
-### Can I used it at NCI?
+### Can I use it at NCI?
 
 A dashboard install is available from VDI on the NCI:
 
@@ -88,7 +89,6 @@ Then open the given link in your VDI web browser.
 
 The css is compiled from Sass. Run `make` to rebuild them after a change,
 or use your editor to watch for changes (PyCharm will prompt to do so).
-
 
 ### How to run integration tests
     
