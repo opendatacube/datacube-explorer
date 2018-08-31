@@ -89,3 +89,28 @@ Then open the given link in your VDI web browser.
 The css is compiled from Sass. Run `make` to rebuild them after a change,
 or use your editor to watch for changes (PyCharm will prompt to do so).
 
+
+### How to run integration tests
+    
+The integration tests run against a real postgres database, which is dropped and 
+recreated between each test method:
+
+    pytest integration_tests
+
+#### Simple test setup
+
+Set up a database on localhost that doesn't prompt for a password locally (eg. add credentials to `~/.pgpass`)
+
+Then: `createdb dea_integration`
+
+And the tests should be runnable with no configuration: `pytest integration_tests`
+
+#### Custom test configuration
+
+Add a `.datacube_integration.conf` file to your home directory in the same format as 
+[datacube config files](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config).
+
+(You might already have one if you run datacube's integration tests)
+
+__Warning__ This test "datacube" will be dropped and recreated while running tests, so don't use 
+it for anything else.
