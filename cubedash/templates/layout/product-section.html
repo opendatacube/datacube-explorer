@@ -52,10 +52,10 @@
                 <div class="option-menu">
 
                     {% set year_range=(range(
-                        product_summary.time_range.end.year,
-                        product_summary.time_range.begin.year - 1,
+                        product_summary.time_latest.year,
+                        product_summary.time_earliest.year - 1,
                         -1
-                    ) if (product_summary and product_summary.time_range) else range(current_time.year, 1985, -1)) %}
+                    ) if (product_summary and product_summary.time_earliest) else range(current_time.year, 1985, -1)) %}
 
                     {% for row in year_range | batch(3) %}
                         <ul>
