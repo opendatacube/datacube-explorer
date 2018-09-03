@@ -25,6 +25,7 @@
             {{ product.definition.description }}
         </div>
         <div class="panel info-panel">
+
             {% if have_data %}
                 <div>
                     {# Show regions if available, otherwise a plain footprint #}
@@ -51,6 +52,7 @@
                                title="Show individual datasets">Datasets</label>
                 </div>
             {% endif %}
+
             <h3>
                 {% if not day %}Across{% endif %}
                 {% if year %}
@@ -149,16 +151,24 @@
                 </ul>
             {% endif %}
 
+            {# These fields are enforced by dataset-type-schema.yaml #}
+{#            {% if product.definition.storage %}#}
+{#                <h4>Storage</h4>#}
+{#                {{ query_param_list(product.definition.storage, show_dicts=true) }}#}
+{#            {% endif %}#}
+
+
             {% if product_summary.source_products %}
-                <h4>Sourced from</h4>
+                <h4>Source product{% if product_summary.source_products | length > 1 %}s{% endif %}</h4>
                 <ul>
                     {% for product_name in product_summary.source_products %}
                         <li><a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">{{ product_name }}</a></li>
                     {% endfor %}
                 </ul>
             {% endif %}
+
             {% if product_summary.derived_products %}
-                <h4>Derived Products</h4>
+                <h4>Derived product{% if product_summary.derived_products | length > 1 %}s{% endif %}</h4>
                 <ul>
                     {% for product_name in product_summary.derived_products %}
                         <li>
@@ -166,12 +176,6 @@
                         </li>
                     {% endfor %}
                 </ul>
-            {% endif %}
-
-            {# These fields are enforced by dataset-type-schema.yaml #}
-            {% if product.definition.storage %}
-                <h4>Storage</h4>
-                {{ query_param_list(product.definition.storage, show_dicts=true) }}
             {% endif %}
 
             <p>
