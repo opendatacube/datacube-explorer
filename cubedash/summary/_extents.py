@@ -188,7 +188,7 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
     _LOG.debug(
         'spatial_insert_query.start',
         product_name=product.name,
-        query_sql=as_sql(query),
+        # query_sql=as_sql(query),
     )
     inserted = engine.execute(query).rowcount
     _LOG.debug(
