@@ -39,8 +39,8 @@ class ProductSummary:
     time_earliest: Optional[datetime]
     time_latest: Optional[datetime]
 
-    source_products: Optional[List[str]] = None
-    derived_products: Optional[List[str]] = None
+    source_products: List[str]
+    derived_products: List[str]
 
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
