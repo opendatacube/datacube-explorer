@@ -162,7 +162,12 @@
                 <h4>Source product{% if product_summary.source_products | length > 1 %}s{% endif %}</h4>
                 <ul>
                     {% for product_name in product_summary.source_products %}
-                        <li><a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">{{ product_name }}</a></li>
+                        <li>
+                            <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
+                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                                {{ product_name }}
+                            </a>
+                        </li>
                     {% endfor %}
                 </ul>
             {% endif %}
@@ -172,7 +177,10 @@
                 <ul>
                     {% for product_name in product_summary.derived_products %}
                         <li>
-                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">{{ product_name }}</a>
+                            <i class="fa fa-level-down" aria-hidden="true"></i>
+                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                                {{ product_name }}
+                            </a>
                         </li>
                     {% endfor %}
                 </ul>
