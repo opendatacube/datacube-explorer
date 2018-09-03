@@ -81,7 +81,8 @@ def test_add_no_periods(summary_store: SummaryStore):
             'test_empty_product',
             0,
             None,
-            None
+            None,
+            [], []
         )
     )
     summary_store.get_or_update('test_empty_product', 2015, 7, 4)
@@ -130,7 +131,8 @@ def test_put_get_summaries(summary_store: SummaryStore):
             product_name,
             4321,
             datetime(2017, 1, 1),
-            datetime(2017, 4, 1)
+            datetime(2017, 4, 1),
+            [], []
         )
     )
 
