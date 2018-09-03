@@ -88,6 +88,8 @@ PRODUCT = Table(
         server_default=func.now(),
         comment="Last refresh of this product in the dataset_spatial table",
     ),
+    Column("source_product_refs", postgres.ARRAY(SmallInteger)),
+    Column("derived_product_refs", postgres.ARRAY(SmallInteger)),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
 )

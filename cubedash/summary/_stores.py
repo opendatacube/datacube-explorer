@@ -2,7 +2,7 @@ import functools
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import dateutil.parser
 import structlog
@@ -31,6 +31,9 @@ class ProductSummary:
     # Null when dataset_count == 0
     time_earliest: Optional[datetime]
     time_latest: Optional[datetime]
+
+    source_products: Optional[List[str]] = None
+    derived_products: Optional[List[str]] = None
 
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
@@ -71,7 +74,7 @@ class SummaryStore:
     def refresh_product(
         self, product: DatasetType, refresh_older_than: timedelta = timedelta(days=1)
     ):
-        our_product = self._get_product(product.name)
+        our_product = self.get_product_summary(product.name)
 
         if (
             our_product is not None
@@ -95,10 +98,70 @@ class SummaryStore:
                 )
             ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
         ).fetchone()
+
+        # Sample about 1000 datasets
+        sample_percentage = min(1000 / total_count, 1) * 100.0
+        source_products = self._get_linked_products(
+            product, kind="source", sample_percentage=sample_percentage
+        )
+        derived_products = self._get_linked_products(
+            product, kind="derived", sample_percentage=sample_percentage
+        )
+
         self._set_product_extent(
-            ProductSummary(product.name, total_count, earliest, latest)
+            ProductSummary(
+                product.name,
+                total_count,
+                earliest,
+                latest,
+                source_products=list(source_products),
+                derived_products=list(derived_products),
+            )
         )
         return added_count
+
+    def _get_linked_products(self, product, kind="source", sample_percentage=0.05):
+        """
+        Find products with upstream or downstream datasets from this product.
+
+        It only samples a percentage of this product's datasets, due to slow speed. (But 1 dataset
+        would be enough for most products)
+        """
+        if kind not in ("source", "derived"):
+            raise ValueError("Unexpected kind of link: %r" % kind)
+        if not 0.0 < sample_percentage <= 100.0:
+            raise ValueError(
+                "Sample percentage out of range 0>s>=100. Got %r" % sample_percentage
+            )
+
+        from_ref, to_ref = "source_dataset_ref", "dataset_ref"
+        if kind == "derived":
+            to_ref, from_ref = from_ref, to_ref
+
+        linked_product_names, = self._engine.execute(
+            f"""
+            with datasets as (
+                select id from agdc.dataset tablesample system (%(sample_percentage)s) where dataset_type_ref=%(product_id)s and archived is null
+            ), 
+            linked_datasets as (
+                select distinct {from_ref} as linked_dataset_ref from agdc.dataset_source inner join datasets d on d.id = {to_ref}
+            ),
+            linked_products as (
+                select distinct dataset_type_ref from agdc.dataset inner join linked_datasets on id = linked_dataset_ref where archived is null
+            ) 
+            select array_agg(name order by name) from agdc.dataset_type inner join linked_products sp on id = dataset_type_ref;
+        """,
+            product_id=product.id,
+            sample_percentage=sample_percentage,
+        ).fetchone()
+
+        _LOG.info(
+            f"product.links.{kind}",
+            product=product.name,
+            linked=linked_product_names,
+            sample_percentage=round(sample_percentage, 2),
+        )
+        return linked_product_names
 
     def drop_all(self):
         """
@@ -117,7 +180,7 @@ class SummaryStore:
     ) -> Optional[TimePeriodOverview]:
         start_day, period = self._start_day(year, month, day)
 
-        product = self._get_product(product_name)
+        product = self.get_product_summary(product_name)
         if not product:
             return None
 
@@ -157,26 +220,49 @@ class SummaryStore:
                     PRODUCT.c.time_latest,
                     (func.now() - PRODUCT.c.last_refresh).label("last_refresh_age"),
                     PRODUCT.c.id.label("id_"),
+                    PRODUCT.c.source_product_refs,
+                    PRODUCT.c.derived_product_refs,
                 ]
             ).where(PRODUCT.c.name == name)
         ).fetchone()
         if not row:
             raise ValueError("Unknown product %r (initialised?)" % name)
 
-        return ProductSummary(name=name, **row)
+        row = dict(row)
+        source_products = [
+            self.index.products.get(id_).name for id_ in row.pop("source_product_refs")
+        ]
+        derived_products = [
+            self.index.products.get(id_).name for id_ in row.pop("derived_product_refs")
+        ]
 
-    def _get_product(self, name: str) -> Optional[ProductSummary]:
+        return ProductSummary(
+            name=name,
+            source_products=source_products,
+            derived_products=derived_products,
+            **row,
+        )
+
+    def get_product_summary(self, name: str) -> Optional[ProductSummary]:
         try:
             return self._product(name)
         except ValueError:
             return None
 
     def _set_product_extent(self, product: ProductSummary):
-
+        source_product_ids = [
+            self.index.products.get_by_name(name).id for name in product.source_products
+        ]
+        derived_product_ids = [
+            self.index.products.get_by_name(name).id
+            for name in product.derived_products
+        ]
         fields = dict(
             dataset_count=product.dataset_count,
             time_earliest=product.time_earliest,
             time_latest=product.time_latest,
+            source_product_refs=source_product_ids,
+            derived_product_refs=derived_product_ids,
             # Deliberately do all age calculations with the DB clock rather than local.
             last_refresh=func.now(),
         )
@@ -325,7 +411,7 @@ class SummaryStore:
         # Don't bother storing empty periods that are outside of the existing range.
         # This doesn't have to be exact (note that someone may update in parallel too).
         if summary.dataset_count == 0 and (year or month):
-            product = self._get_product(product_name)
+            product = self.get_product_summary(product_name)
             if (not product) or (not product.time_latest):
                 return
 

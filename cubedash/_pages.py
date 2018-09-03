@@ -4,6 +4,7 @@ import itertools
 import sys
 import time
 from datetime import datetime
+from typing import Tuple
 
 import flask
 import structlog
@@ -13,7 +14,9 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from cubedash.summary import RegionInfo
+from cubedash.summary import RegionInfo, TimePeriodOverview
+from cubedash.summary._stores import ProductSummary
+from datacube.model import DatasetType
 from datacube.scripts.dataset import build_dataset_info
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports
@@ -125,18 +128,18 @@ def timeline_page(product_name: str):
     return redirect(url_for("overview_page", product_name=product_name))
 
 
-def _load_product(product_name, year, month, day):
+def _load_product(
+    product_name, year, month, day
+) -> Tuple[DatasetType, ProductSummary, TimePeriodOverview]:
     product = None
     if product_name:
         product = _model.STORE.index.products.get_by_name(product_name)
         if not product:
             abort(404, "Unknown product %r" % product_name)
 
-    # Entire summary for the product.
-    product_summary = _model.get_summary(product_name)
-    selected_summary = _model.get_summary(product_name, year, month, day)
-
-    return product, product_summary, selected_summary
+    product_summary = _model.get_product_summary(product_name)
+    time_summary = _model.get_time_summary(product_name, year, month, day)
+    return product, product_summary, time_summary
 
 
 def request_wants_json():
@@ -173,7 +176,6 @@ def inject_globals():
     )
 
     return dict(
-        products=product_summaries,
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,

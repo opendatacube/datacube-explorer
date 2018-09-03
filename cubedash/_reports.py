@@ -106,7 +106,7 @@ def _load_product(product_name, year, month, day):
             abort(404, "Unknown product %r" % product_name)
 
     # Entire summary for the product.
-    product_summary = _model.get_summary(product_name)
-    selected_summary = _model.get_summary(product_name, year, month, day)
+    product_summary = _model.get_time_summary(product_name)
+    selected_summary = _model.get_time_summary(product_name, year, month, day)
 
     return product, product_summary, selected_summary

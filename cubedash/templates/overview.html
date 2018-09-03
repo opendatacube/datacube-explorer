@@ -129,12 +129,6 @@
             {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
 
 
-            {# These fields are enforced by dataset-type-schema.yaml #}
-            {% if product.definition.storage %}
-                <h4>Storage</h4>
-                {{ query_param_list(product.definition.storage, show_dicts=true) }}
-            {% endif %}
-
             {% if product.definition.measurements %}
                 <h4>Measurements</h4>
                 <ul>
@@ -155,6 +149,30 @@
                 </ul>
             {% endif %}
 
+            {% if product_summary.source_products %}
+                <h4>Sourced from</h4>
+                <ul>
+                    {% for product_name in product_summary.source_products %}
+                        <li><a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">{{ product_name }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if product_summary.derived_products %}
+                <h4>Derived Products</h4>
+                <ul>
+                    {% for product_name in product_summary.derived_products %}
+                        <li>
+                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">{{ product_name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {# These fields are enforced by dataset-type-schema.yaml #}
+            {% if product.definition.storage %}
+                <h4>Storage</h4>
+                {{ query_param_list(product.definition.storage, show_dicts=true) }}
+            {% endif %}
 
             <p>
                 <a href="{{ url_for('product.product_page', name=product.name) }}"
