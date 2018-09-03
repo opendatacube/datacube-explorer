@@ -80,7 +80,7 @@ def test_add_no_periods(summary_store: SummaryStore):
     All the get/update methods should work on products with no datasets.
     """
     summary_store._set_product_extent(
-        ProductSummary("test_empty_product", 0, None, None)
+        ProductSummary("test_empty_product", 0, None, None, [], [])
     )
     summary_store.get_or_update("test_empty_product", 2015, 7, 4)
     summary_store.get_or_update("test_empty_product", 2015, 7, None)
@@ -124,7 +124,9 @@ def test_put_get_summaries(summary_store: SummaryStore):
 
     product_name = "some_product"
     summary_store._set_product_extent(
-        ProductSummary(product_name, 4321, datetime(2017, 1, 1), datetime(2017, 4, 1))
+        ProductSummary(
+            product_name, 4321, datetime(2017, 1, 1), datetime(2017, 4, 1), [], []
+        )
     )
 
     summary_store._put(product_name, 2017, None, None, o)
