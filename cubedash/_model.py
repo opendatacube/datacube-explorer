@@ -18,6 +18,7 @@ from shapely.ops import transform
 
 from cubedash.summary import TimePeriodOverview, SummaryStore
 from cubedash.summary._extents import RegionInfo
+from cubedash.summary._stores import ProductSummary
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
@@ -44,7 +45,7 @@ _LOG = structlog.get_logger()
 
 
 @cache.memoize(timeout=60)
-def get_summary(
+def get_time_summary(
         product_name: str,
         year: Optional[int] = None,
         month: Optional[int] = None,
@@ -54,6 +55,10 @@ def get_summary(
         return STORE.get_or_update(product_name, year, month, day)
 
     return STORE.get(product_name, year, month, day)
+
+
+def get_product_summary(product_name: str) -> ProductSummary:
+    return STORE.get_product_summary(product_name)
 
 
 @cache.memoize(timeout=60)
@@ -87,13 +92,13 @@ def get_last_updated():
 
 
 @cache.memoize(timeout=120)
-def get_products_with_summaries() -> Iterable[Tuple[DatasetType, TimePeriodOverview]]:
+def get_products_with_summaries() -> Iterable[Tuple[DatasetType, ProductSummary]]:
     """
     The list of products that we have generated reports for.
     """
     index_products = {p.name: p for p in STORE.index.products.get_all()}
     products = [
-        (index_products[product_name], get_summary(product_name))
+        (index_products[product_name], get_product_summary(product_name))
         for product_name in STORE.list_complete_products()
     ]
     if not products:
@@ -111,7 +116,7 @@ def get_footprint_geojson(
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None) -> Optional[Dict]:
-    period = get_summary(product_name, year, month, day)
+    period = get_time_summary(product_name, year, month, day)
     if period is None:
         return None
 
@@ -136,7 +141,7 @@ def get_regions_geojson(
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None) -> Optional[Dict]:
-    period = get_summary(product_name, year, month, day)
+    period = get_time_summary(product_name, year, month, day)
     if period is None:
         return None
 

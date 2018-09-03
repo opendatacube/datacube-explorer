@@ -141,6 +141,24 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     )
 
 
+def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
+    run_generate()
+
+    albers = summary_store.get_product_summary('ls8_nbar_albers')
+    scene = summary_store.get_product_summary('ls8_nbar_scene')
+    telem = summary_store.get_product_summary('ls8_satellite_telemetry_data')
+
+    print(repr([albers, scene, telem]))
+    assert albers.source_products == ['ls8_nbar_scene']
+    assert albers.derived_products == []
+
+    assert scene.source_products == ['ls8_level1_scene']
+    assert scene.derived_products == ['ls8_nbar_albers']
+
+    assert telem.source_products == []
+    assert telem.derived_products == ['ls8_level1_scene']
+
+
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate('ls8_nbar_albers')
 
