@@ -72,7 +72,10 @@ class SummaryStore:
             self.refresh_product(product, refresh_older_than=refresh_older_than)
 
     def refresh_product(
-        self, product: DatasetType, refresh_older_than: timedelta = timedelta(days=1)
+        self,
+        product: DatasetType,
+        refresh_older_than: timedelta = timedelta(days=1),
+        dataset_sample_size: int = 1000,
     ):
         our_product = self.get_product_summary(product.name)
 
@@ -99,14 +102,16 @@ class SummaryStore:
             ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
         ).fetchone()
 
-        # Sample about 1000 datasets
-        sample_percentage = min(1000 / total_count, 1) * 100.0
-        source_products = self._get_linked_products(
-            product, kind="source", sample_percentage=sample_percentage
-        )
-        derived_products = self._get_linked_products(
-            product, kind="derived", sample_percentage=sample_percentage
-        )
+        source_products = []
+        derived_products = []
+        if total_count:
+            sample_percentage = min(dataset_sample_size / total_count, 1) * 100.0
+            source_products = self._get_linked_products(
+                product, kind="source", sample_percentage=sample_percentage
+            )
+            derived_products = self._get_linked_products(
+                product, kind="derived", sample_percentage=sample_percentage
+            )
 
         self._set_product_extent(
             ProductSummary(
@@ -114,8 +119,8 @@ class SummaryStore:
                 total_count,
                 earliest,
                 latest,
-                source_products=list(source_products),
-                derived_products=list(derived_products),
+                source_products=source_products,
+                derived_products=derived_products,
             )
         )
         return added_count
@@ -161,7 +166,7 @@ class SummaryStore:
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2),
         )
-        return linked_product_names or []
+        return list(linked_product_names or [])
 
     def drop_all(self):
         """
