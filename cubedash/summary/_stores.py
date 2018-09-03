@@ -153,7 +153,7 @@ class SummaryStore:
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2)
         )
-        return linked_product_names
+        return linked_product_names or []
 
     def drop_all(self):
         """
