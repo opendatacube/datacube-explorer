@@ -57,9 +57,9 @@
         {% for classifier, s_dataset in source_datasets.items() %}
             <div>
                 <span title="Source '{{ classifier }}'">
-                    🡑 <a
-                        href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
-                    {{ s_dataset | printable_dataset }}
+                    <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
+                    <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
+                        {{ s_dataset | printable_dataset }}
                     </a>
                 </span>
             </div>
@@ -68,11 +68,15 @@
             <span title="Too many to display">... {{ source_dataset_overflow }} more</span>
         {% endif %}
         <div class="tree-node">
-            → <strong>{{ dataset | printable_dataset }}</strong>
+            <strong class="active-tree-node">
+                <i class="fa fa-caret-right" aria-hidden="true"></i>
+                {{ dataset | printable_dataset }}
+            </strong>
             {% for d_dataset in derived_datasets %}
                 <div class="tree-node">
                     <span title="Derived {{ d_dataset.type.name }}">
-                        ⤷ <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
+                        <i class="fa fa-level-down" aria-hidden="true"></i>
+                        <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
                             {{ d_dataset | printable_dataset }}
                         </a>
                     </span>
