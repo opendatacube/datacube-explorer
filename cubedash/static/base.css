@@ -82,6 +82,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 
 button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
 button:hover { background-color: #008fc5; }
+button.small { margin: 0; font-size: 12px; background-color: #545454; }
 
 label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
 label.disabled { color: #ccc; }
@@ -115,6 +116,8 @@ label.disabled { color: #ccc; }
 .raw-metadata .property > .key { font-weight: bold; }
 
 .dataset-info { background-color: #f0f0f0; margin: 10px; padding: 15px; }
+
+.recenter-map { margin: 0; padding: 0; }
 
 .grid-form *, .grid-form *:before, .grid-form *:after { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }
 .grid-form input[type="text"], .grid-form input[type="email"], .grid-form input[type="number"], .grid-form input[type="password"], .grid-form input[type="search"], .grid-form input[type="tel"], .grid-form input[type="url"], .grid-form input[type="color"], .grid-form input[type="date"], .grid-form input[type="datetime"], .grid-form input[type="datetime-local"], .grid-form input[type="month"], .grid-form input[type="time"], .grid-form input[type="week"], .grid-form textarea, .grid-form select { font-size: 18px; padding: 0; margin: 0; width: 100%; }
