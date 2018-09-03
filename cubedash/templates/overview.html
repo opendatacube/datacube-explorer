@@ -363,7 +363,37 @@
                     )
                 }
             };
-            let selectedView = null;
+
+
+            const recenterMapControl = L.control({position: "bottomright"});
+            recenterMapControl.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'recenter-map');
+                this._map = map;
+                this._map.on("moveend", function() {
+                    recenterMapControl.setDirty();
+                });
+                this._button = L.DomUtil.create('button', 'small');
+                this._button.innerText = 'Recenter';
+                this._button.addEventListener('click', function() {
+                    recenterMapControl.recenter();
+                });
+                this._isDirty = false;
+                return this._div;
+            };
+            recenterMapControl.setDirty= function() {
+                if (!this._isDirty) {
+                    this._isDirty = true;
+                    this._div.appendChild(this._button);
+                }
+            };
+            recenterMapControl.recenter = function () {
+                if (SPATIAL_VIEWS.footprint) {
+                    this._map.fitBounds(SPATIAL_VIEWS.footprint.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
+                    this._div.removeChild(this._button);
+                    this._isDirty = false;
+                }
+            };
+            map.addControl(recenterMapControl);
 
             {# Show information for the hovered item #}
             const datasetInfoControl = L.control({position: "bottomleft"});
@@ -455,7 +485,7 @@
                     SPATIAL_VIEWS.regions.geojson_layer.addData(SPATIAL_VIEWS.regions.data);
                     toggleview(SPATIAL_VIEWS.regions);
                 {% endif %}
-                map.fitBounds(SPATIAL_VIEWS.footprint.geojson_layer.getBounds(), {animate: false, maxZoom: 6});
+                recenterMapControl.recenter()
 
                 {% if show_individual_datasets %}
                     // Load in background
