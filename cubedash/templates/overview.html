@@ -44,7 +44,8 @@
                                {% if footprint_geojson %}checked="checked"{% endif %}
                                title="Show footprint">Footprint</label>
                     {% endif %}
-                    <label class="{% if not show_individual_datasets %}disabled{% endif %}">
+                    <label class="{% if not show_individual_datasets %}disabled{% endif %}"
+                           {% if not show_individual_datasets %}title="Too many datasets to display individually"{% endif %}">
                         <input type="radio"
                                name="map_display_view"
                                value="datasets"
