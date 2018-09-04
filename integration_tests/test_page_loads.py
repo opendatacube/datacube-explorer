@@ -101,24 +101,19 @@ def test_get_overview(client: FlaskClient):
     check_area("30,...km2", html)
 
 
-def test_get_overview_empty(client: FlaskClient):
-    html = _get_html(client, "/wofs_albers")
-    check_dataset_count(html, 11)
-    check_last_processed(html, "2018-05-20T11:25:35")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
-    check_area("61,...km2", html)
+def test_get_overview_product_links(client: FlaskClient):
+    """
+    Are the source and derived product lists being displayed?
+    """
+    html = _get_html(client, "/ls7_nbar_scene/2017")
 
-    html = _get_html(client, "/wofs_albers/2017")
+    product_links = html.find(".source-product a")
+    assert [l.text for l in product_links] == ["ls7_level1_scene"]
+    assert [l.attrs["href"] for l in product_links] == ["/ls7_level1_scene/2017"]
 
-    check_dataset_count(html, 11)
-    check_last_processed(html, "2018-05-20T11:25:35")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
-
-    html = _get_html(client, "/wofs_albers/2017/04")
-    check_dataset_count(html, 4)
-    check_last_processed(html, "2018-05-20T09:36:57")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
-    check_area("30,...km2", html)
+    product_links = html.find(".derived-product a")
+    assert [l.text for l in product_links] == ["ls7_pq_legacy_scene"]
+    assert [l.attrs["href"] for l in product_links] == ["/ls7_pq_legacy_scene/2017"]
 
 
 def test_view_dataset(client: FlaskClient):
