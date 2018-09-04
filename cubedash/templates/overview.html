@@ -96,7 +96,7 @@
                 {% if product_region_info %}
                     <li>
                         <span class="coverage-region-count" title="{{ product_region_info.description }}">
-                            {{ selected_summary.region_dataset_counts | length }} unique {{ product_region_info.units_label }}
+                            {{ (selected_summary.region_dataset_counts or []) | length }} unique {{ product_region_info.units_label }}
                         </span>
                     </li>
                 {% else %}

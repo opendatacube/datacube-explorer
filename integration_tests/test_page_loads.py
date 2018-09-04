@@ -71,7 +71,7 @@ def unpopulated_client(summary_store: SummaryStore) -> FlaskClient:
 
 
 @pytest.fixture(scope='function')
-def client(unpopulated_client: SummaryStore) -> FlaskClient:
+def client(unpopulated_client: FlaskClient) -> FlaskClient:
     for product in _model.STORE.index.products.get_all():
         _model.STORE.get_or_update(product.name)
     return unpopulated_client
@@ -129,6 +129,14 @@ def test_get_day_overviews(client: FlaskClient):
     # Empty day
     html = _get_html(client, '/ls7_nbar_scene/2017/4/22')
     check_dataset_count(html, 0)
+
+
+def test_uninitialised_overview(unpopulated_client: FlaskClient, summary_store: SummaryStore):
+    # Populate one product, so they don't get the usage error message ("run cubedash generate")
+    # Then load an unpopulated product.
+    summary_store.get_or_update('ls7_nbar_albers')
+    html = _get_html(unpopulated_client, '/ls7_nbar_scene/2017')
+    assert html.find('.coverage-region-count', first=True).text == '0 unique scenes'
 
 
 def test_view_dataset(client: FlaskClient):
