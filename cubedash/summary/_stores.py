@@ -254,6 +254,11 @@ class SummaryStore:
         except ValueError:
             return None
 
+    @property
+    def grouping_timezone(self):
+        """Timezone used for day/month/year grouping."""
+        return tz.gettz(self._summariser.grouping_time_zone)
+
     def _set_product_extent(self, product: ProductSummary):
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
@@ -333,7 +338,9 @@ class SummaryStore:
         """
         params = {}
         if year:
-            params["time"] = _utils.as_time_range(year, month, day)
+            params["time"] = _utils.as_time_range(
+                year, month, day, tzinfo=self.grouping_timezone
+            )
 
         # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
         # return self._summariser.get_dataset_footprints(

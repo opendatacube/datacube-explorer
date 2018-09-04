@@ -77,7 +77,9 @@ def search_page(
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
     )
-    time_range = utils.as_time_range(year, month, day)
+    time_range = utils.as_time_range(
+        year, month, day, tzinfo=_model.STORE.grouping_timezone
+    )
 
     args = MultiDict(flask.request.args)
     query = utils.query_to_search(args, product=product)

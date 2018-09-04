@@ -112,18 +112,24 @@ def _next_month(date: datetime):
 
 
 def as_time_range(
-    year: Optional[int] = None, month: Optional[int] = None, day: Optional[int] = None
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    day: Optional[int] = None,
+    tzinfo=None,
 ) -> Optional[Range]:
     if year and month and day:
         start = datetime(year, month, day)
-        return Range(start, start + timedelta(days=1))
-    if year and month:
+        end = start + timedelta(days=1)
+    elif year and month:
         start = datetime(year, month, 1)
-        return Range(start, _next_month(start))
-    if year:
+        end = _next_month(start)
+    elif year:
         start = datetime(year, 1, 1)
-        return Range(start, datetime(year + 1, 1, 1))
-    return None
+        end = datetime(year + 1, 1, 1)
+    else:
+        return None
+
+    return Range(start.replace(tzinfo=tzinfo), end.replace(tzinfo=tzinfo))
 
 
 def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
