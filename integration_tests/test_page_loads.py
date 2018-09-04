@@ -116,6 +116,19 @@ def test_get_overview_product_links(client: FlaskClient):
     assert [l.attrs["href"] for l in product_links] == ["/ls7_pq_legacy_scene/2017"]
 
 
+def test_get_day_overviews(client: FlaskClient):
+    # Individual days are computed on-the-fly rather than from summaries, so can
+    # have their own issues.
+
+    # With a dataset
+    html = _get_html(client, "/ls7_nbar_scene/2017/4/20")
+    check_dataset_count(html, 1)
+
+    # Empty day
+    html = _get_html(client, "/ls7_nbar_scene/2017/4/22")
+    check_dataset_count(html, 0)
+
+
 def test_view_dataset(client: FlaskClient):
     # ls7_level1_scene dataset
     rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
@@ -185,7 +198,7 @@ def check_last_processed(html, time):
 
 def check_dataset_count(html, count: int):
     __tracebackhide__ = True
-    assert f"{count} datasets" in html.find(".dataset-count", first=True).text
+    assert f"{count} dataset" in html.find(".dataset-count", first=True).text
 
 
 def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
