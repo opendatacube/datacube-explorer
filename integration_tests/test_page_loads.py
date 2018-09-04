@@ -62,6 +62,7 @@ def populate_index(module_dea_index):
 
 @pytest.fixture(scope="function")
 def unpopulated_client(summary_store: SummaryStore) -> FlaskClient:
+    _model.cache.clear()
     _model.STORE = summary_store
     _model.STORE.refresh_all_products()
     cubedash.app.config["TESTING"] = True
