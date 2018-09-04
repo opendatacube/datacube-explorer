@@ -36,8 +36,8 @@
     <div id="content">{% block content %}{% endblock %}</div>
 </div>
 <footer>
-    Open Data Cube v{{ datacube_version }},
-    Dash v{{ app_version }}, <span id="map-attribution-text"></span><br/>
+    Open Data Cube v<span id="datacube-version">{{ datacube_version }}</span>,
+    Dash v<span id="app-version">{{ app_version }}</span>, <span id="map-attribution-text"></span><br/>
     {% if last_updated_time %}
         Updated {{ last_updated_time | timesince }}
     {% endif %}
