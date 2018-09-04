@@ -126,6 +126,21 @@
 
             </ul>
 
+        {% if product_summary.source_products %}
+            <h4 class="tag">Sources</h4>
+            <ul>
+                {% for product_name in product_summary.source_products %}
+                    <li >
+                        <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
+
+                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                            {{ product_name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
             <h4>Fields ({{ product.metadata_type.name }})</h4>
 
             {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
@@ -158,22 +173,8 @@
 {#            {% endif %}#}
 
 
-            <h4>Provenance</h4>
+            <h4>Derived</h4>
             <ul>
-            {% if product_summary.source_products %}
-
-
-                    {% for product_name in product_summary.source_products %}
-                        <li>
-                            <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
-                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
-                                {{ product_name }}
-                            </a>
-                        </li>
-                    {% endfor %}
-
-            {% endif %}
-
             {% if product_summary.derived_products %}
 
                     {% for product_name in product_summary.derived_products %}
