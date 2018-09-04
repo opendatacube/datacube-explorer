@@ -76,7 +76,7 @@ class Summariser:
 
         assert len(rows) == 1
         row = dict(rows[0])
-        row['dataset_count'] = row['dataset_count'] or 0
+        row['dataset_count'] = int(row['dataset_count']) if row['dataset_count'] else 0
         if row['footprint_geometry'] is not None:
             row['footprint_crs'] = self._get_srid_name(row['footprint_geometry'].srid)
             row['footprint_geometry'] = geo_shape.to_shape(row['footprint_geometry'])
