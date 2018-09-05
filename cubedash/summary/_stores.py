@@ -10,8 +10,7 @@ import structlog
 from dataclasses import dataclass
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, \
-    and_, String
+from sqlalchemy import DDL, and_, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -23,6 +22,7 @@ from cubedash.summary import _schema
 from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT
 from cubedash.summary._summarise import Summariser
 from datacube import utils as dc_utils
+
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
@@ -435,6 +435,22 @@ class SummaryStore:
     def get_last_updated(self) -> Optional[datetime]:
         """Time of last update, if known"""
         return None
+
+    def find_datasets_for_region(self,
+                                 product_name: str,
+                                 region_code: str,
+                                 year: int,
+                                 month: int,
+                                 day: int,
+                                 limit: int) -> Iterable[Dataset]:
+
+        time_range = _utils.as_time_range(
+            year,
+            month,
+            day,
+            tzinfo=self.grouping_timezone,
+        )
+        return _extents.datasets_by_region(self._engine, self.index, product_name, region_code, time_range, limit)
 
 
 def _safe_read_date(d):

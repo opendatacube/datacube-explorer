@@ -8,6 +8,27 @@
     'day': day
 } %}
 
+{% set additional_page_args=additional_page_args or {} %}
+
+{% set product_date_name %}
+    {% if year %}
+        {% if month %}
+            {% if day %}{{ day }}{% endif %}
+            {{ month | month_name }}
+        {% endif %}
+        {{ year }}
+    {% endif %}
+{% endset %}
+
+{% set back_to_product_overview %}
+    <div style="">
+        <a href="{{ url_for('overview_page', **product_args) }}">
+            <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+            {{ product_date_name }} Overview
+        </a>
+    </div>
+{% endset %}
+
 {% block title %}{{ product.name }}{% endblock %}
 
 {% block header %}
@@ -32,7 +53,7 @@
                                 <ul class="items">
                                     {% for product_opt, summary in product_summaries if summary %}
                                         <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
-                                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name) }}"
+                                            <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name, **additional_page_args) }}"
                                                title="{{ product_opt.definition.description }}"
                                                class="{% if product_opt.name == product.name %}active{% endif %}">
                                                 {{ product_opt.name }}
@@ -61,7 +82,7 @@
                         <ul>
                             {% for year_opt in row %}
                                 <li>
-                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt) }}"
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt, **additional_page_args) }}"
                                        class="{% if (year_opt) == year %}active{% endif %}">
                                         {{ year_opt }}
                                     </a>
@@ -71,7 +92,7 @@
                     {% endfor %}
                     <ul>
                         <li class="wildcard">
-                            <a href="{{ url_for(nav_endpoint, product_name=product.name) }}"
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name, **additional_page_args) }}"
                                class="{% if not year %}active{% endif %}">All</a>
                         </li>
                     </ul>
@@ -93,11 +114,12 @@
                             {% for month_opt in row %}
                                 <li>
                                     <a href="{{ url_for(
-                                request.url_rule.endpoint,
-                                product_name=product.name,
-                                year=year,
-                                month=month_opt
-                                ) }}"
+                                        request.url_rule.endpoint,
+                                        product_name=product.name,
+                                        year=year,
+                                        month=month_opt,
+                                        **additional_page_args
+                                       ) }}"
                                        class="{% if (month_opt) == month %}active{% endif %}">
                                         {{ month_opt | month_name }}
                                     </a>
@@ -107,7 +129,7 @@
                     {% endfor %}
                     <ul>
                         <li class="wildcard">
-                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year) }}"
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, **additional_page_args) }}"
                                class="{% if not month %}active{% endif %}">All</a>
                         </li>
                     </ul>
@@ -134,7 +156,8 @@
                                         product_name=product.name,
                                         year=year,
                                         month=month,
-                                        day=day_opt
+                                        day=day_opt,
+                                        **additional_page_args
                                         ) }}"
                                        class="{% if (day_opt) == day %}active{% endif %}">
                                         {{ day_opt | day_ordinal }}
@@ -145,7 +168,7 @@
                     {% endfor %}
                     <ul>
                         <li class="wildcard">
-                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month) }}"
+                            <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month, **additional_page_args) }}"
                                class="{% if not day %}active{% endif %}">
                                 All
                             </a>

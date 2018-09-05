@@ -122,6 +122,49 @@ def search_page(product_name: str = None,
     )
 
 
+@app.route('/region/<product_name>/<region_code>')
+@app.route('/region/<product_name>/<region_code>/<int:year>')
+@app.route('/region/<product_name>/<region_code>/<int:year>/<int:month>')
+@app.route('/region/<product_name>/<region_code>/<int:year>/<int:month>/<int:day>')
+def region_page(product_name: str = None,
+                region_code: str = None,
+                year: int = None,
+                month: int = None,
+                day: int = None):
+    product, product_summary, selected_summary = _load_product(product_name, year, month, day)
+
+    datasets = list(_model.STORE.find_datasets_for_region(
+        product_name, region_code, year, month, day,
+        limit=_HARD_SEARCH_LIMIT
+    ))
+
+    if len(datasets) == 1 and 'feelinglucky' in flask.request.args:
+        return flask.redirect(url_for('dataset.dataset_page', id_=datasets[0].id))
+
+    if request_wants_json():
+        return as_json(dict(
+            datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets],
+        ))
+    return flask.render_template(
+        'region.html',
+        year=year,
+        month=month,
+        day=day,
+        region_code=region_code,
+
+        product=product,
+        product_region_info=RegionInfo.for_product(product),
+
+        # Summary for the whole product
+        product_summary=product_summary,
+        # Summary for the users' currently selected filters.
+        selected_summary=selected_summary,
+
+        datasets=datasets,
+        result_limit=_HARD_SEARCH_LIMIT
+    )
+
+
 @app.route('/<product_name>/spatial')
 def spatial_page(product_name: str):
     """Legacy redirect to maintain old bookmarks"""

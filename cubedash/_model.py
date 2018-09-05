@@ -33,7 +33,7 @@ cache = Cache(
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
 # (hence validate=False).
-STORE = SummaryStore.create(index_connect(application_name=NAME, validate_connection=False))
+STORE: SummaryStore = SummaryStore.create(index_connect(application_name=NAME, validate_connection=False))
 
 # Pre-computed summaries of products (to avoid doing them on page load).
 SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
