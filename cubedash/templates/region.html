@@ -1,0 +1,37 @@
+{% extends "layout/product-section.html" %}
+{% set additional_page_args={'region_code': region_code} %}
+{% set active_page = "datasets" %}
+
+{% block title %}{{ super() }} search{% endblock %}
+
+{% block content %}
+    <div class="panel relative">
+        {{ back_to_product_overview }}
+        <h3>{{ product_region_info.unit_label | capitalize }}: {{ product_region_info.region_label(region_code) }}</h3>
+    </div>
+    <div class="panel odd">
+        {% if datasets %}
+            <table class="data-table">
+                <thead>
+                <th>Time</th>
+                <th>Label</th>
+                </thead>
+                {% for dataset in datasets %}
+                    <tr class="search-result">
+                        <td>{{ dataset.center_time | printable_time }}</td>
+                        <td>
+                            <a href='{{ url_for('dataset.dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+            </table>
+            <p>
+                {{ datasets | length }} result{% if datasets | length > 1 %}s{% endif %}
+                {% if datasets|length == result_limit %}<strong>(limit)</strong>{% endif %}
+            </p>
+        {% else %}
+            <h3>No results.</h3>
+        {% endif %}
+    </div>
+{% endblock %}

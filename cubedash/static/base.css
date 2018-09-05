@@ -80,7 +80,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .query-param > .key { color: #737373; }
 .query-param .value > .query-param { margin-left: 15px; }
 
-button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: 18px; }
+button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: inherit; }
 button:hover { background-color: #008fc5; }
 button.small { margin: 0; font-size: 12px; background-color: #545454; }
 

@@ -4,7 +4,7 @@ Tests that load pages and check the contained text.
 import json
 import re
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 
 import pytest
 from dateutil import tz
@@ -260,6 +260,22 @@ def test_api_returns_scene_regions(client: FlaskClient):
     assert len(geojson['features']) == 7, "Unexpected scene region count"
 
 
+def test_region_page(client: FlaskClient):
+    """
+    Load a list of scenes for a given region.
+    """
+    html = _get_html(client, '/region/ls7_nbar_scene/96_82')
+    search_results = html.find('.search-result a')
+    assert len(search_results) == 1
+    result = search_results[0]
+    assert result.text == 'LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502'
+
+    # If "I'm feeling lucky", and only one result, redirect straight to it.
+    response: Response = client.get('/region/ls7_nbar_scene/96_82?feelinglucky')
+    assert response.status_code == 302
+    assert response.location == '/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c'
+
+
 def test_api_returns_tiles_regions(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
@@ -281,17 +297,22 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     assert geojson is None, "Unexpected wofs albers region count"
 
 
-def _get_geojson(client, url) -> Dict:
+def _get_geojson(client: FlaskClient, url: str) -> Dict:
     rv: Response = client.get(url)
     assert rv.status_code == 200
     response_geojson = json.loads(rv.data)
     return response_geojson
 
 
-def _get_html(client, url) -> HTML:
-    rv: Response = client.get(url)
-    assert rv.status_code == 200
-    html = HTML(html=rv.data.decode('utf-8'))
+def _get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
+    response: Response = client.get(url)
+    assert response.status_code == 200
+    html = HTML(html=response.data.decode('utf-8'))
+    return html, response
+
+
+def _get_html(client: FlaskClient, url: str, follow_redirects=False) -> HTML:
+    html, _ = _get_html_response(client, url, follow_redirects)
     return html
 
 
