@@ -5,7 +5,6 @@
 
 {% block content %}
     <div class="panel relative">
-        {{ back_to_product_overview }}
         <form action="{{ url_for('search_page', product_name=product.name) }}"
               method="get"
               class="grid-form">
@@ -97,10 +96,14 @@
                 {% endfor %}
             </select>
         </p>
-
     </div>
     <div class="panel odd">
         {% if datasets %}
+            <p>
+                {% if datasets|length == result_limit %}First{% endif %}
+                {{ datasets | length }} results
+                {% if datasets|length == result_limit %}<strong>(query limit)</strong>{% endif %}
+            </p>
             <table class="data-table">
                 <thead>
                 <th>Time</th>
@@ -116,13 +119,11 @@
                 {% endfor %}
 
             </table>
-            <p>
-                {{ datasets | length }} results
-                {% if datasets|length == result_limit %}<strong>(limit)</strong>{% endif %}
-            </p>
         {% else %}
             <h3>No results.</h3>
         {% endif %}
+
+        {{ back_to_product_overview }}
     </div>
 {% endblock %}
 

@@ -11,12 +11,7 @@ from cubedash.summary import SummaryStore, TimePeriodOverview
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
-from datacube.ui.click import (
-    config_option,
-    environment_option,
-    log_queries_option,
-    pass_config,
-)
+from datacube.ui.click import config_option, environment_option, pass_config
 
 _LOG = structlog.get_logger()
 
@@ -147,7 +142,7 @@ def cli(
     store = SummaryStore.create(index, init_schema=True)
 
     if generate_all_products:
-        products = sorted(store.index.products.get_all(), key=lambda p: p.name)
+        products = sorted(store.all_dataset_types(), key=lambda p: p.name)
     else:
         products = list(_load_products(store.index, product_names))
 
