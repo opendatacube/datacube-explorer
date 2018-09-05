@@ -23,8 +23,21 @@ from datacube.index import index_connect
 from datacube.model import DatasetType
 
 NAME = 'cubedash'
+BASE_DIR = Path(__file__).parent.parent
 
 app = flask.Flask(NAME)
+
+# Optional environment settings file or variable
+app.config.from_pyfile(BASE_DIR / 'settings.env.py', silent=True)
+app.config.from_envvar('CUBEDASH_SETTINGS', silent=True)
+
+if 'SENTRY_CONFIG' in app.config:
+    # pylint: disable=import-error
+    from raven.contrib.flask import Sentry
+    from ._version import get_versions
+    app.config['SENTRY_CONFIG']['release'] = get_versions()['version']
+    SENTRY = Sentry(app)
+
 cache = Cache(
     app=app,
     config={'CACHE_TYPE': 'simple'}
@@ -35,11 +48,8 @@ cache = Cache(
 # (hence validate=False).
 STORE: SummaryStore = SummaryStore.create(index_connect(application_name=NAME, validate_connection=False))
 
-# Pre-computed summaries of products (to avoid doing them on page load).
-SUMMARIES_DIR = Path(__file__).parent.parent / 'product-summaries'
-
 # Which product to show by default when loading '/'. Picks the first available.
-DEFAULT_START_PAGE_PRODUCTS = ('ls7_nbar_scene', 'ls5_nbar_scene')
+DEFAULT_START_PAGE_PRODUCTS = app.config.get('CUBEDASH_DEFAULT_PRODUCTS') or ('ls7_nbar_scene', 'ls5_nbar_scene')
 
 _LOG = structlog.get_logger()
 
@@ -81,7 +91,7 @@ def get_datasets_geojson(
 @cache.memoize(timeout=120)
 def get_last_updated():
     # Drop a text file in to override the "updated time": for example, when we know it's an old clone of our DB.
-    path = SUMMARIES_DIR / 'generated.txt'
+    path = BASE_DIR / 'generated.txt'
     if path.exists():
         date_text = path.read_text()
         try:
