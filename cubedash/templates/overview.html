@@ -342,7 +342,12 @@
                                     },
                                     click: function (e) {
                                         let props = e.target.feature.properties,
+                                            url_pattern = {{ url_for('region_page', region_code='__REGION_CODE__', **product_args) | tojson}};
+
+                                        // If only one, jump straight to that dataset.
+                                        if (props.count === 1) {
                                             url_pattern = {{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) | tojson}};
+                                        }
                                         window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
                                     }
                                 });
