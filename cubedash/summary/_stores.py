@@ -74,7 +74,7 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
-        for product in self.index.products.get_all():
+        for product in self.all_dataset_types():
             self.refresh_product(product, refresh_older_than=refresh_older_than)
 
     def refresh_product(self,
@@ -203,6 +203,25 @@ class SummaryStore:
 
         return date(year or 1900, month or 1, day or 1), period
 
+    # These are cached to avoid repeated unnecessary DB queries.
+    @functools.lru_cache()
+    def all_dataset_types(self) -> Iterable[DatasetType]:
+        return tuple(self.index.products.get_all())
+
+    @functools.lru_cache()
+    def get_dataset_type(self, name) -> DatasetType:
+        for d in self.all_dataset_types():
+            if d.name == name:
+                return d
+        raise KeyError('Unknown dataset type %r' % name)
+
+    @functools.lru_cache()
+    def _dataset_type_by_id(self, id_) -> DatasetType:
+        for d in self.all_dataset_types():
+            if d.id == id_:
+                return d
+        raise KeyError('Unknown dataset type id %r' % id_)
+
     @functools.lru_cache()
     def _product(self, name: str) -> ProductSummary:
         row = self._engine.execute(
@@ -220,8 +239,8 @@ class SummaryStore:
             raise ValueError("Unknown product %r (initialised?)" % name)
 
         row = dict(row)
-        source_products = [self.index.products.get(id_).name for id_ in row.pop('source_product_refs')]
-        derived_products = [self.index.products.get(id_).name for id_ in row.pop('derived_product_refs')]
+        source_products = [self._dataset_type_by_id(id_).name for id_ in row.pop('source_product_refs')]
+        derived_products = [self._dataset_type_by_id(id_).name for id_ in row.pop('derived_product_refs')]
 
         return ProductSummary(
             name=name,
@@ -393,7 +412,7 @@ class SummaryStore:
         else:
             summary = TimePeriodOverview.add_periods(
                 get_child(product.name, None, None, None)
-                for product in self.index.products.get_all()
+                for product in self.all_dataset_types()
             )
 
         self._do_put(product_name, year, month, day, summary)
@@ -423,7 +442,7 @@ class SummaryStore:
         """
         List products with summaries available.
         """
-        all_products = self.index.datasets.types.get_all()
+        all_products = self.all_dataset_types()
         existing_products = sorted(
             (
                 product.name for product in all_products

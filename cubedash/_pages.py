@@ -180,8 +180,9 @@ def timeline_page(product_name: str):
 def _load_product(product_name, year, month, day) -> Tuple[DatasetType, ProductSummary, TimePeriodOverview]:
     product = None
     if product_name:
-        product = _model.STORE.index.products.get_by_name(product_name)
-        if not product:
+        try:
+            product = _model.STORE.get_dataset_type(product_name)
+        except KeyError:
             abort(404, "Unknown product %r" % product_name)
 
     product_summary = _model.get_product_summary(product_name)
