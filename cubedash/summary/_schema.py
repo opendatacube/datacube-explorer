@@ -70,6 +70,12 @@ DATASET_SPATIAL = Table(
         "dataset_type_ref",
         "center_time",
     ),
+    # Faster region pages. Could be removed if faster summary generation is desired...
+    Index(
+        "dataset_spatial_dataset_type_ref_region_code_idx",
+        "dataset_type_ref",
+        "region_code",
+    ),
 )
 
 # Note that we deliberately don't foreign-key to datacube tables:
