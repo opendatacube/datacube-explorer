@@ -294,7 +294,7 @@ def test_region_page(client: FlaskClient):
     # If "I'm feeling lucky", and only one result, redirect straight to it.
     response: Response = client.get("/region/ls7_nbar_scene/96_82?feelinglucky")
     assert response.status_code == 302
-    assert response.location == "/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
+    assert response.location.endswith("/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c")
 
 
 def test_api_returns_tiles_regions(client: FlaskClient):
@@ -332,8 +332,8 @@ def _get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
     return html, response
 
 
-def _get_html(client: FlaskClient, url: str, follow_redirects=False) -> HTML:
-    html, _ = _get_html_response(client, url, follow_redirects)
+def _get_html(client: FlaskClient, url: str) -> HTML:
+    html, _ = _get_html_response(client, url)
     return html
 
 
