@@ -413,6 +413,14 @@ class RegionInfo:
         """
         raise NotImplementedError("alchemy expression", self.__class__.name)
 
+    def geojson_extent(self, region_code):
+        extent = self.geographic_extent(region_code)
+        return {
+            "type": "Feature",
+            "geometry": extent.__geo_interface__,
+            "properties": {"region_code": region_code},
+        }
+
     def region_label(self, region_code: str) -> str:
         """
         Convert the region_code into something human-readable.
