@@ -56,8 +56,11 @@
 
             <h3>
                 {% if not day %}Across{% endif %}
-                {{ product_args_label }}
-                {% if not year %}lifetime{% endif %}
+                {% if year %}
+                    {{ product_args_label }}
+                {% else %}
+                    lifetime
+                {% endif %}
             </h3>
 
             {% if selected_summary.newest_dataset_creation_time %}
