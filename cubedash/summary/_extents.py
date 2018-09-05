@@ -39,9 +39,10 @@ from datacube.model import DatasetType, MetadataType
 
 _LOG = structlog.get_logger()
 
-_WRS_PATH_ROW = (
-    Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp"
-)
+_WRS_PATH_ROW = [
+    Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp",
+    Path(__file__).parent.parent / "data" / "WRS2_ascending" / "WRS2_acsending.shp",
+]
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
@@ -532,10 +533,13 @@ def _region_code_field(dt: DatasetType):
 @functools.lru_cache()
 def _get_path_row_shapes():
     path_row_shapes = {}
-    with fiona.open(str(_WRS_PATH_ROW)) as f:
-        for k, item in f.items():
-            prop = item["properties"]
-            path_row_shapes[prop["PATH"], prop["ROW"]] = shape(item["geometry"])
+    for shape_file in _WRS_PATH_ROW:
+        with fiona.open(str(shape_file)) as f:
+            for k, item in f.items():
+                prop = item["properties"]
+                key = prop["PATH"], prop["ROW"]
+                assert key not in path_row_shapes
+                path_row_shapes[key] = shape(item["geometry"])
     return path_row_shapes
 
 
