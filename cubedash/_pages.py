@@ -33,7 +33,7 @@ app.register_blueprint(_reports.bp)
 
 _LOG = structlog.getLogger()
 
-_HARD_SEARCH_LIMIT = 500
+_HARD_SEARCH_LIMIT = app.config.get('CUBEDASH_HARD_SEARCH_LIMIT', 500)
 
 
 # @app.route('/')
@@ -251,7 +251,7 @@ def default_redirect():
 
 
 # Add server timings to http headers.
-if app.debug:
+if app.debug or app.config.get('CUBEDASH_SHOW_PERF_TIMES', False):
     @app.before_request
     def time_start():
         flask.g.start_render = time.time()
