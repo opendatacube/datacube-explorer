@@ -28,6 +28,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
 
+import datacube.drivers.postgres._api as postgres_api
 from cubedash._utils import alchemy_engine
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
@@ -345,6 +346,34 @@ def print_sample_dataset(*product_names: str):
                 .fetchone()
             )
             print(_as_json(dict(res)))
+
+
+# This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
+# When region_code is integrated into core (as is being discussed) this can be replaced.
+# pylint: disable=protected-access
+def datasets_by_region(engine, index, product_name, region_code, time_range, limit):
+    product = index.products.get_by_name(product_name)
+    query = (
+        select(postgres_api._DATASET_SELECT_FIELDS)
+        .select_from(
+            DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
+        )
+        .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
+        .where(
+            DATASET_SPATIAL.c.dataset_type_ref
+            == bindparam("dataset_type_ref", product.id)
+        )
+    )
+    if time_range:
+        query = query.where(
+            DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
+        ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
+    query = query.order_by(DATASET_SPATIAL.c.center_time).limit(limit)
+
+    return (
+        index.datasets._make(res, full_info=True)
+        for res in engine.execute(query).fetchall()
+    )
 
 
 class RegionInfo:

@@ -459,6 +459,23 @@ class SummaryStore:
         """Time of last update, if known"""
         return None
 
+    def find_datasets_for_region(
+        self,
+        product_name: str,
+        region_code: str,
+        year: int,
+        month: int,
+        day: int,
+        limit: int,
+    ) -> Iterable[Dataset]:
+
+        time_range = _utils.as_time_range(
+            year, month, day, tzinfo=self.grouping_timezone
+        )
+        return _extents.datasets_by_region(
+            self._engine, self.index, product_name, region_code, time_range, limit
+        )
+
 
 def _safe_read_date(d):
     if d:
