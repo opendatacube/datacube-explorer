@@ -103,7 +103,7 @@ def get_products_with_summaries() -> Iterable[Tuple[DatasetType, ProductSummary]
     """
     The list of products that we have generated reports for.
     """
-    index_products = {p.name: p for p in STORE.index.products.get_all()}
+    index_products = {p.name: p for p in STORE.all_dataset_types()}
     products = [
         (index_products[product_name], get_product_summary(product_name))
         for product_name in STORE.list_complete_products()
@@ -154,9 +154,7 @@ def get_regions_geojson(
     if period is None:
         return None
 
-    product = STORE.index.products.get_by_name(product_name)
-    if product is None:
-        raise RuntimeError("Unknown product despite having a summary?", product_name)
+    product = STORE.get_dataset_type(product_name)
 
     if not period.region_dataset_counts:
         return None
