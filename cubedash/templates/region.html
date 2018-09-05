@@ -6,8 +6,15 @@
 
 {% block content %}
     <div class="panel relative">
-        {{ back_to_product_overview }}
-        <h3>{{ product_region_info.unit_label | capitalize }}: {{ product_region_info.region_label(region_code) }}</h3>
+        <h3>{{ product_region_info.region_label(region_code) }}</h3>
+        {% if datasets %}
+            <p>
+                {{ datasets | length }} dataset{% if datasets | length > 1 %}s{% endif %}
+                {% if datasets|length == result_limit %}<strong>(query limit)</strong>{% endif %}
+            </p>
+        {% else %}
+            <p>No datasets.</p>
+        {% endif %}
     </div>
     <div class="panel odd">
         {% if datasets %}
@@ -24,14 +31,8 @@
                         </td>
                     </tr>
                 {% endfor %}
-
             </table>
-            <p>
-                {{ datasets | length }} result{% if datasets | length > 1 %}s{% endif %}
-                {% if datasets|length == result_limit %}<strong>(limit)</strong>{% endif %}
-            </p>
-        {% else %}
-            <h3>No results.</h3>
         {% endif %}
+        {{ back_to_product_overview }}
     </div>
 {% endblock %}
