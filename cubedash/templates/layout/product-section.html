@@ -10,21 +10,23 @@
 
 {% set additional_page_args=additional_page_args or {} %}
 
-{% set product_date_name %}
+{% set product_args_label %}
     {% if year %}
         {% if month %}
             {% if day %}{{ day }}{% endif %}
             {{ month | month_name }}
         {% endif %}
         {{ year }}
+    {% else %}
+        {{ product.name }}
     {% endif %}
 {% endset %}
 
 {% set back_to_product_overview %}
-    <div style="">
+    <div>
+        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
         <a href="{{ url_for('overview_page', **product_args) }}">
-            <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
-            {{ product_date_name }} Overview
+            Return to {{ product_args_label }} overview
         </a>
     </div>
 {% endset %}
