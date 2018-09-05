@@ -4,8 +4,29 @@
 
 {% block title %}{{ super() }} search{% endblock %}
 
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        #region-map {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 200px;
+            width: 75%;
+        }
+
+        .map-container {
+            padding-right: 75%;
+            min-height: calc(200px - 60px);
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-    <div class="panel relative">
+    <div class="panel relative map-container">
+
+        <div id="region-map"></div>
+
         <h3>{{ product_region_info.region_label(region_code) }}</h3>
         {% if datasets %}
             <p>
@@ -35,4 +56,49 @@
         {% endif %}
         {{ back_to_product_overview }}
     </div>
+{% endblock %}
+
+
+{% block body_footer %}
+    {{ super() }}
+
+    <script type="application/javascript">
+
+        const osm_carto_light = L.tileLayer(
+            "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+            {
+                maxZoom: 7,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+            }
+        );
+
+        const dataset_data = L.geoJson({{ product_region_info.geojson_extent(region_code)| tojson }},
+            {
+                interactive: false,
+                style: function (feature) {
+                    return {
+                        color: "#1d81a7",
+                        fill: true,
+                        fillColor: "#1d81a7",
+                        opacity: 0.8,
+                        weight: 2,
+                        clickable: false
+                    };
+                }
+            });
+        const map = L.map("region-map", {
+            zoom: 3,
+            center: [-26.2756326, 134.9387844],
+            layers: [osm_carto_light, dataset_data],
+            zoomControl: false,
+            attributionControl: false,
+            scrollWheelZoom: false
+        });
+        L.control.zoom({position: "bottomright"}).addTo(map);
+        map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+
+        window.MAP = map;
+    </script>
+
 {% endblock %}
