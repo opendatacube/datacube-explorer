@@ -28,7 +28,6 @@ CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
 
-
 # This is a materialised view of the postgis spatial_ref_sys for lookups. See creation of mv_spatial_ref_sys below.
 SPATIAL_REF_SYS = Table(
     "mv_spatial_ref_sys",
@@ -75,6 +74,7 @@ DATASET_SPATIAL = Table(
         "dataset_spatial_dataset_type_ref_region_code_idx",
         "dataset_type_ref",
         "region_code",
+        postgresql_ops={"region_code": "text_pattern_ops"},
     ),
 )
 

@@ -369,7 +369,9 @@ def datasets_by_region(engine, index, product_name, region_code, time_range, lim
         query = query.where(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-    query = query.order_by(DATASET_SPATIAL.c.center_time).limit(limit)
+    query = query.order_by(DATASET_SPATIAL.c.center_time).limit(
+        bindparam("limit", limit)
+    )
 
     return (
         index.datasets._make(res, full_info=True)
