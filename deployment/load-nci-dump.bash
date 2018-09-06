@@ -95,23 +95,17 @@ echo "
 db_database: ${dbname}
 " > datacube.conf
 
-log_info "Restarting deadash (with updated dataset information)"
-sudo systemctl restart deadash
-
 log_info "Summary gen"
-# We randomise the product list to more evenly space large/small products between workers
-<"${summary_dir}/all-products.txt" sort -R | parallel --line-buffer -m -j4 /opt/conda/bin/python -m cubedash.generate --summaries-dir "${summary_dir}" || true
 
+/opt/conda/bin/python -m cubedash.generate -v --all -j 4 || true
 
-if [ ! -e "${summary_dir}/timeline.json" ];
+echo "Testing a summary"
+if ! python -m cubedash.summary.show ls8_nbar_scene;
 then
-	log_info "Summary gen failure: no overall summary"
+	log_info "Summary gen seems to have failed"
 	exit 1
 fi
 
-log_info "Switching to new summaries"
-# Switch to new summaries
-ln -snf "${summary_dir}" product-summaries
 
 log_info "Restarting deadash (with updated summaries)"
 sudo systemctl restart deadash
@@ -130,11 +124,6 @@ do
 	echo "Dropping ${database}";
 	dropdb "${database}";
 done;
-
-
-log_info "Taring old summaries"
-cd "${archive_dir}"
-find .  -maxdepth 1 -iname '2???????' -mtime +4 -exec tar --remove-files -czf {}.tar.gz {} \;
 
 
 log_info "All Done $(date) ${summary_dir}"
