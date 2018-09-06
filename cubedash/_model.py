@@ -30,14 +30,6 @@ app = flask.Flask(NAME)
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 
-if "SENTRY_CONFIG" in app.config:
-    # pylint: disable=import-error
-    from raven.contrib.flask import Sentry
-    from ._version import get_versions
-
-    app.config["SENTRY_CONFIG"]["release"] = get_versions()["version"]
-    SENTRY = Sentry(app)
-
 cache = Cache(app=app, config={"CACHE_TYPE": "simple"})
 
 # Thread and multiprocess safe.
@@ -251,3 +243,34 @@ def _region_geometry_function(region_info: RegionInfo, footprint):
                 return shapely_extent
 
         return region_geometry_cut
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    args = {}
+    if "sentry_event_id" in flask.g:
+        args["sentry_event_id"] = flask.g.sentry_event_id
+
+    return flask.render_template("500.html", **args)
+
+
+# Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
+if "SENTRY_CONFIG" in app.config:
+    # pylint: disable=import-error
+    from raven.contrib.flask import Sentry
+    from ._version import get_versions
+
+    app.config["SENTRY_CONFIG"]["release"] = get_versions()["version"]
+    SENTRY = Sentry(app)
+
+    @app.context_processor
+    def inject_sentry_info():
+        # For Javascript error reporting. See the base template (base.html) and 500.html
+        sentry_args = {"release": SENTRY.client.release}
+        if SENTRY.client.environment:
+            sentry_args["environment"] = SENTRY.client.environment
+
+        return dict(
+            sentry_public_dsn=SENTRY.client.get_public_dsn("https"),
+            sentry_public_args=sentry_args,
+        )

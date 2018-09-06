@@ -48,6 +48,17 @@
 
 <script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+
+{% if sentry_public_dsn %}
+    <script src="https://cdn.ravenjs.com/3.26.4/raven.min.js" crossorigin="anonymous"></script>
+    <script>
+        Raven.config(
+            {{ sentry_public_dsn | tojson }},
+            {{ sentry_public_args | tojson}},
+        ).install();
+    </script>
+{% endif %}
+
 <!-- Environment includes -->
 {% include 'include-global.env.html' ignore missing %}
 <!-- End Environment includes -->
