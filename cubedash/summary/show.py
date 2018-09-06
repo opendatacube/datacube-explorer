@@ -8,7 +8,7 @@ from click import echo, secho
 
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
-from cubedash.summary import SummaryStore
+from cubedash.summary import SummaryStore, RegionInfo
 from datacube.config import LocalConfig
 from datacube.index import index_connect, Index
 from datacube.ui.click import pass_config, environment_option
@@ -54,6 +54,8 @@ def cli(config: LocalConfig,
     )
 
     store = _get_store(config, 'setup')
+    dataset_type = store.get_dataset_type(product_name)
+    region_info = RegionInfo.for_product(dataset_type)
 
     t = time.time()
     if allow_cache:
@@ -70,12 +72,15 @@ def cli(config: LocalConfig,
         echo(sizeof_fmt(summary.size_bytes))
     echo(f"{round(t_end - t, 2)} seconds")
     echo()
-    print_count_table(summary.region_dataset_counts)
+
+    if region_info is not None:
+        echo(region_info.description)
+        print_count_table(summary.region_dataset_counts)
 
 
 def print_count_table(cs: Counter[str]):
-    # TODO: this needs update for sentinel region code (which is not "x,y")
-    xs, ys = zip(*(c.split('_') for c, count in cs.items()))
+    # TODO: this needs update for sentinel region code (which is not "x_y")
+    xs, ys = zip(*(tuple(map(int, c.split('_'))) for c, count in cs.items()))
 
     count_range = min(cs.values()), max(cs.values())
     x_range = min(xs), max(xs) + 1
