@@ -10,13 +10,17 @@
 
     <div class="panels">
     <div class="map-panel relative">
-        <div id="msg-no-results" class="message-box">
-            {% if selected_summary %}
-                <span>No displayable datasets for period</span>
-            {% else %}
-                <span>No data: not yet generated</span>
-            {% endif %}
-        </div>
+        {% if not selected_summary.footprint_count %}
+            <div id="msg-no-results" class="message-box">
+                {% if selected_summary %}
+                    <span>
+                        No {% if selected_summary.dataset_count %}displayable{% endif %}
+                        datasets for period</span>
+                {% else %}
+                    <span>No data: not yet generated</span>
+                {% endif %}
+            </div>
+        {% endif %}
         <div id="map"></div>
     </div>
     {% if product %}
@@ -209,11 +213,6 @@
     <script type="application/javascript">
         (function () {
             'use strict';
-
-            const msgNoResults = document.getElementById("msg-no-results");
-            {% if selected_summary.footprint_count %}
-                msgNoResults.style.display = 'none';
-            {% endif %}
 
             const map = L.map("map", {
                 zoom: 3,
