@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Server error</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body>
+<div class="panel">
+    <h4>Internal error</h4>
+
+    This has been logged.
+</div>
+</body>
+{% if sentry_event_id %}
+    <script src="https://cdn.ravenjs.com/3.26.4/raven.min.js" crossorigin="anonymous"></script>
+    <script>
+        Raven.showReportDialog({
+            eventId: '{{ sentry_event_id }}',
+            dsn: '{{ sentry_public_dsn }}'
+        });
+    </script>
+{% endif %}
+</html>
