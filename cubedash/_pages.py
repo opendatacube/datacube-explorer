@@ -133,6 +133,10 @@ def region_page(product_name: str = None,
                 day: int = None):
     product, product_summary, selected_summary = _load_product(product_name, year, month, day)
 
+    region_info = RegionInfo.for_product(product)
+    if not region_info:
+        abort(404, f"Product {product_name} has no region specification.")
+
     datasets = list(_model.STORE.find_datasets_for_region(
         product_name, region_code, year, month, day,
         limit=_HARD_SEARCH_LIMIT
@@ -145,6 +149,7 @@ def region_page(product_name: str = None,
         return as_json(dict(
             datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets],
         ))
+
     return flask.render_template(
         'region.html',
         year=year,
@@ -153,7 +158,7 @@ def region_page(product_name: str = None,
         region_code=region_code,
 
         product=product,
-        product_region_info=RegionInfo.for_product(product),
+        product_region_info=region_info,
 
         # Summary for the whole product
         product_summary=product_summary,
@@ -227,7 +232,7 @@ def inject_globals():
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        last_updated_time=_model.get_last_updated()
+        last_updated_time=_model.get_last_updated(),
     )
 
 
