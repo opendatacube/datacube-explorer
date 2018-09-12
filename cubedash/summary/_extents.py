@@ -475,7 +475,10 @@ class SceneRegionInfo(RegionInfo):
         )
 
     def geographic_extent(self, region_code: str) -> GeometryCollection:
-        return self.path_row_shapes[_from_xy_region_code(region_code)]
+        extent = self.path_row_shapes.get(_from_xy_region_code(region_code))
+        if not extent:
+            raise KeyError(f"No extent for {self.product.name} region code {region_code!r}")
+        return extent
 
     def region_label(self, region_code: str) -> str:
         x, y = _from_xy_region_code(region_code)
