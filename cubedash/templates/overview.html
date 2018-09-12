@@ -225,14 +225,14 @@
                 '{{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) }}',
                 '{{ url_for('api.regions_geojson', **product_args) }}',
                 '{{ url_for('api.datasets_geojson', **product_args)}}',
-                '{{ url_for('api.footprint_geojson', **product_args) }}',
+                '{{ url_for('api.footprint_geojson', **product_args) }}'
             );
             const map = initPage(
                 {% if footprint_geojson %}true{% else %}false{% endif %},
                 {% if show_individual_datasets %}true{% else %}false{% endif %},
                 routes,
                 regionsGeoJSON,
-                footprintGeoJSON,
+                footprintGeoJSON
             );
 
             {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}

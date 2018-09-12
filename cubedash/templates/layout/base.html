@@ -54,7 +54,7 @@
     <script>
         Raven.config(
             {{ sentry_public_dsn | tojson }},
-            {{ sentry_public_args | tojson}},
+            {{ sentry_public_args | tojson}}
         ).install();
     </script>
 {% endif %}
