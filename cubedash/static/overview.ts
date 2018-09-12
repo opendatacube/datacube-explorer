@@ -3,20 +3,20 @@
 
 class DataLayer {
     constructor(public name: string,
-                public data_url: string,
+                public dataURL: string,
                 public layer: L.GeoJSON,
                 public data: GeoJSON.FeatureCollection | null = null,
-                public show_alongside: DataLayer[] = []) {
+                public showAlongside: DataLayer[] = []) {
     }
 }
 
 class TimeSummaryRoutes {
     constructor(
-        public region_search_pattern: string,
-        public region_view_pattern: string,
-        public geojson_regions_url: string,
-        public geojson_datasets_url: string,
-        public geojson_footprint_url: string,
+        public regionSearchURLPattern: string,
+        public regionViewURLPattern: string,
+        public geojsonRegionsURL: string,
+        public geojsonDatasetsURL: string,
+        public geojsonFootprintURL: string,
     ) {
     }
 }
@@ -82,9 +82,9 @@ class DatasetInfoControl extends L.Control {
 }
 
 class FootprintLayer extends L.GeoJSON {
-    constructor(footprint_data: GeoJSON.Feature,
+    constructor(footprintData: GeoJSON.Feature,
                 showAlone = false) {
-        super(footprint_data, {
+        super(footprintData, {
             interactive: false,
             style: function (feature) {
                 return {
@@ -102,7 +102,7 @@ class FootprintLayer extends L.GeoJSON {
 
 
 class RegionsLayer extends L.GeoJSON {
-    constructor(region_data: GeoJSON.Feature,
+    constructor(regionData: GeoJSON.Feature,
                 control: DatasetInfoControl,
                 routes: TimeSummaryRoutes) {
 
@@ -131,13 +131,13 @@ class RegionsLayer extends L.GeoJSON {
         }
 
         // @ts-ignore (https://github.com/DefinitelyTyped/DefinitelyTyped/issues/9257)
-        super(region_data, {
+        super(regionData, {
             style: function (feature: GeoJSON.Feature) {
-                if (!region_data.properties) {
+                if (!regionData.properties) {
                     throw Error("Invalid data: no properties")
                 }
-                const min_v = region_data.properties.min_count,
-                    max_v = region_data.properties.max_count,
+                const min_v = regionData.properties.min_count,
+                    max_v = regionData.properties.max_count,
                     count = feature.properties.count,
                     color = getColor(count, min_v, max_v);
                 return {
@@ -173,11 +173,11 @@ class RegionsLayer extends L.GeoJSON {
                     },
                     click: (e) => {
                         let props = e.target.feature.properties,
-                            url_pattern = routes.region_search_pattern;
+                            url_pattern = routes.regionSearchURLPattern;
 
                         // If only one, jump straight to that dataset.
                         if (props.count === 1) {
-                            url_pattern = routes.region_view_pattern;
+                            url_pattern = routes.regionViewURLPattern;
                         }
                         window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
                     }
@@ -261,7 +261,7 @@ class OverviewMap extends L.Map {
                 } else {
                     requestData(
                         dataLayer.name,
-                        dataLayer.data_url,
+                        dataLayer.dataURL,
                         (enabled) => (optBox.disabled = !enabled),
                         dataLayer.layer
                     );
@@ -280,42 +280,42 @@ class OverviewMap extends L.Map {
     };
 
     public changeActive(d: DataLayer) {
-        for (const d2 of this.dataLayers)
-            if (d2 !== d)
-                this.removeLayer(d2.layer);
+        for (const otherD of this.dataLayers)
+            if (otherD !== d)
+                this.removeLayer(otherD.layer);
         this.addLayer(d.layer);
-        for (const paired of d.show_alongside)
-            this.addLayer(paired.layer);
+        for (const pairedD of d.showAlongside)
+            this.addLayer(pairedD.layer);
     };
 }
 
-function initPage(has_displayable_data: boolean,
-                  show_individual_datasets: boolean,
+function initPage(hasDisplayableData: boolean,
+                  showIndividualDatasets: boolean,
                   routes: TimeSummaryRoutes,
-                  region_data: GeoJSON.FeatureCollection,
-                  footprint_data: GeoJSON.FeatureCollection) {
+                  regionData: GeoJSON.FeatureCollection,
+                  footprintData: GeoJSON.FeatureCollection) {
 
     const layers = [];
     let activeLayer = null;
     const infoControl = new DatasetInfoControl();
 
-    if (has_displayable_data) {
+    if (hasDisplayableData) {
         const footprint = new DataLayer(
             'footprint',
-            routes.geojson_footprint_url,
-            new FootprintLayer(footprint_data, !region_data),
-            footprint_data
+            routes.geojsonFootprintURL,
+            new FootprintLayer(footprintData, !regionData),
+            footprintData
         );
 
-        if (region_data) {
+        if (regionData) {
             layers.push(
-                new DataLayer('regions', routes.geojson_regions_url,
+                new DataLayer('regions', routes.geojsonRegionsURL,
                     new RegionsLayer(
-                        region_data,
+                        regionData,
                         infoControl,
                         routes,
                     ),
-                    region_data,
+                    regionData,
                     [footprint])
             )
         } else {
@@ -323,17 +323,17 @@ function initPage(has_displayable_data: boolean,
         }
         activeLayer = layers[0];
 
-        if (show_individual_datasets) {
+        if (showIndividualDatasets) {
             layers.push(new DataLayer(
                 'datasets',
-                routes.geojson_datasets_url,
+                routes.geojsonDatasetsURL,
                 new DatasetsLayer(infoControl)
             ));
         }
     }
 
     const map = new OverviewMap(layers, activeLayer);
-    if (has_displayable_data) {
+    if (hasDisplayableData) {
         infoControl.addTo(map);
     }
     return map;
