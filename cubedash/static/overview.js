@@ -15,24 +15,24 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 var DataLayer = /** @class */ (function () {
-    function DataLayer(name, data_url, layer, data, show_alongside) {
+    function DataLayer(name, dataURL, layer, data, showAlongside) {
         if (data === void 0) { data = null; }
-        if (show_alongside === void 0) { show_alongside = []; }
+        if (showAlongside === void 0) { showAlongside = []; }
         this.name = name;
-        this.data_url = data_url;
+        this.dataURL = dataURL;
         this.layer = layer;
         this.data = data;
-        this.show_alongside = show_alongside;
+        this.showAlongside = showAlongside;
     }
     return DataLayer;
 }());
 var TimeSummaryRoutes = /** @class */ (function () {
-    function TimeSummaryRoutes(region_search_pattern, region_view_pattern, geojson_regions_url, geojson_datasets_url, geojson_footprint_url) {
-        this.region_search_pattern = region_search_pattern;
-        this.region_view_pattern = region_view_pattern;
-        this.geojson_regions_url = geojson_regions_url;
-        this.geojson_datasets_url = geojson_datasets_url;
-        this.geojson_footprint_url = geojson_footprint_url;
+    function TimeSummaryRoutes(regionSearchURLPattern, regionViewURLPattern, geojsonRegionsURL, geojsonDatasetsURL, geojsonFootprintURL) {
+        this.regionSearchURLPattern = regionSearchURLPattern;
+        this.regionViewURLPattern = regionViewURLPattern;
+        this.geojsonRegionsURL = geojsonRegionsURL;
+        this.geojsonDatasetsURL = geojsonDatasetsURL;
+        this.geojsonFootprintURL = geojsonFootprintURL;
     }
     return TimeSummaryRoutes;
 }());
@@ -100,9 +100,9 @@ var DatasetInfoControl = /** @class */ (function (_super) {
 }(L.Control));
 var FootprintLayer = /** @class */ (function (_super) {
     __extends(FootprintLayer, _super);
-    function FootprintLayer(footprint_data, showAlone) {
+    function FootprintLayer(footprintData, showAlone) {
         if (showAlone === void 0) { showAlone = false; }
-        return _super.call(this, footprint_data, {
+        return _super.call(this, footprintData, {
             interactive: false,
             style: function (feature) {
                 return {
@@ -120,7 +120,7 @@ var FootprintLayer = /** @class */ (function (_super) {
 }(L.GeoJSON));
 var RegionsLayer = /** @class */ (function (_super) {
     __extends(RegionsLayer, _super);
-    function RegionsLayer(region_data, control, routes) {
+    function RegionsLayer(regionData, control, routes) {
         var _this = this;
         function getBin(v, bin_count, min_v, max_v) {
             var range = max_v - min_v, val = v - min_v;
@@ -138,12 +138,12 @@ var RegionsLayer = /** @class */ (function (_super) {
             return colorSteps[bin];
         }
         // @ts-ignore (https://github.com/DefinitelyTyped/DefinitelyTyped/issues/9257)
-        _this = _super.call(this, region_data, {
+        _this = _super.call(this, regionData, {
             style: function (feature) {
-                if (!region_data.properties) {
+                if (!regionData.properties) {
                     throw Error("Invalid data: no properties");
                 }
-                var min_v = region_data.properties.min_count, max_v = region_data.properties.max_count, count = feature.properties.count, color = getColor(count, min_v, max_v);
+                var min_v = regionData.properties.min_count, max_v = regionData.properties.max_count, count = feature.properties.count, color = getColor(count, min_v, max_v);
                 return {
                     color: "#f2f2f2",
                     fill: true,
@@ -169,10 +169,10 @@ var RegionsLayer = /** @class */ (function (_super) {
                         control.update();
                     },
                     click: function (e) {
-                        var props = e.target.feature.properties, url_pattern = routes.region_search_pattern;
+                        var props = e.target.feature.properties, url_pattern = routes.regionSearchURLPattern;
                         // If only one, jump straight to that dataset.
                         if (props.count === 1) {
-                            url_pattern = routes.region_view_pattern;
+                            url_pattern = routes.regionViewURLPattern;
                         }
                         window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
                     }
@@ -251,7 +251,7 @@ var OverviewMap = /** @class */ (function (_super) {
                     optBox.disabled = false;
                 }
                 else {
-                    requestData(dataLayer.name, dataLayer.data_url, function (enabled) { return (optBox.disabled = !enabled); }, dataLayer.layer);
+                    requestData(dataLayer.name, dataLayer.dataURL, function (enabled) { return (optBox.disabled = !enabled); }, dataLayer.layer);
                 }
                 optBox.addEventListener('click', function () {
                     _this.changeActive(dataLayer);
@@ -271,38 +271,38 @@ var OverviewMap = /** @class */ (function (_super) {
     ;
     OverviewMap.prototype.changeActive = function (d) {
         for (var _i = 0, _a = this.dataLayers; _i < _a.length; _i++) {
-            var d2 = _a[_i];
-            if (d2 !== d)
-                this.removeLayer(d2.layer);
+            var otherD = _a[_i];
+            if (otherD !== d)
+                this.removeLayer(otherD.layer);
         }
         this.addLayer(d.layer);
-        for (var _b = 0, _c = d.show_alongside; _b < _c.length; _b++) {
-            var paired = _c[_b];
-            this.addLayer(paired.layer);
+        for (var _b = 0, _c = d.showAlongside; _b < _c.length; _b++) {
+            var pairedD = _c[_b];
+            this.addLayer(pairedD.layer);
         }
     };
     ;
     return OverviewMap;
 }(L.Map));
-function initPage(has_displayable_data, show_individual_datasets, routes, region_data, footprint_data) {
+function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData, footprintData) {
     var layers = [];
     var activeLayer = null;
     var infoControl = new DatasetInfoControl();
-    if (has_displayable_data) {
-        var footprint = new DataLayer('footprint', routes.geojson_footprint_url, new FootprintLayer(footprint_data, !region_data), footprint_data);
-        if (region_data) {
-            layers.push(new DataLayer('regions', routes.geojson_regions_url, new RegionsLayer(region_data, infoControl, routes), region_data, [footprint]));
+    if (hasDisplayableData) {
+        var footprint = new DataLayer('footprint', routes.geojsonFootprintURL, new FootprintLayer(footprintData, !regionData), footprintData);
+        if (regionData) {
+            layers.push(new DataLayer('regions', routes.geojsonRegionsURL, new RegionsLayer(regionData, infoControl, routes), regionData, [footprint]));
         }
         else {
             layers.push(footprint);
         }
         activeLayer = layers[0];
-        if (show_individual_datasets) {
-            layers.push(new DataLayer('datasets', routes.geojson_datasets_url, new DatasetsLayer(infoControl)));
+        if (showIndividualDatasets) {
+            layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(infoControl)));
         }
     }
     var map = new OverviewMap(layers, activeLayer);
-    if (has_displayable_data) {
+    if (hasDisplayableData) {
         infoControl.addTo(map);
     }
     return map;
