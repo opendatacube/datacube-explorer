@@ -3,205 +3,208 @@
 {% block title %}{{ product.name }}{% endblock %}
 
 {% set have_data = selected_summary and selected_summary.dataset_count > 0 %}
+{% set have_displayable_data = selected_summary and selected_summary.footprint_count > 0 %}
 {% set show_individual_datasets = have_data and selected_summary.dataset_count < 500 %}
 
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
     <div class="panels">
-    <div class="map-panel relative">
-        {% if not selected_summary.footprint_count %}
-            <div id="msg-no-results" class="message-box">
-                {% if selected_summary %}
-                    <span>
+        <div class="map-panel relative">
+            {% if not selected_summary.footprint_count %}
+                <div id="msg-no-results" class="message-box">
+                    {% if selected_summary %}
+                        <span>
                         No {% if selected_summary.dataset_count %}displayable{% endif %}
-                        datasets for period</span>
-                {% else %}
-                    <span>No data: not yet generated</span>
-                {% endif %}
-            </div>
-        {% endif %}
-        <div id="map"></div>
-    </div>
-    {% if product %}
-        <div>
-        <div class="panel highlight product-description">
-            {{ product.definition.description }}
-        </div>
-        <div class="panel info-panel">
-
-            {% if have_data %}
-                <div>
-                    {# Show regions if available, otherwise a plain footprint #}
-                    {% if product_region_info %}
-                        <label>
-                        <input type="radio"
-                               name="map_display_view"
-                               value="regions"
-                               {% if regions_geojson %}checked="checked"{% endif %}
-                               title="Show regions">{{ product_region_info.units_label }}</label>
+                            datasets for period</span>
                     {% else %}
-                        <label>
-                        <input type="radio"
-                               name="map_display_view"
-                               value="footprint"
-                               {% if footprint_geojson %}checked="checked"{% endif %}
-                               title="Show footprint">Footprint</label>
+                        <span>No data: not yet generated</span>
                     {% endif %}
-                    <label class="{% if not show_individual_datasets %}disabled{% endif %}"
-                           {% if not show_individual_datasets %}title="Too many datasets to display individually"{% endif %}">
-                        <input type="radio"
-                               name="map_display_view"
-                               value="datasets"
-                               {% if not show_individual_datasets %}disabled="disabled"{% endif %}
-                               title="Show individual datasets">Datasets</label>
                 </div>
             {% endif %}
-
-            <h3>
-                {% if not day %}Across{% endif %}
-                {% if year %}
-                    {{ product_args_label }}
-                {% else %}
-                    lifetime
-                {% endif %}
-            </h3>
-
-            {% if selected_summary.newest_dataset_creation_time %}
-                <div class="last-processed muted">
-                    Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}
+            <div id="map"></div>
+        </div>
+        {% if product %}
+            <div>
+                <div class="panel highlight product-description">
+                    {{ product.definition.description }}
                 </div>
-            {% endif %}
+                <div class="panel info-panel">
 
-            <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
-            >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }}
-                dataset{% if selected_summary.dataset_count != 1 %}s{% endif %}
-            </a>
+                    {% if have_displayable_data %}
+                        <div>
+                            {# Show regions if available, otherwise a plain footprint #}
+                            {% if product_region_info %}
+                                <label>
+                                    <input type="radio"
+                                           name="map_display_view"
+                                           value="regions"
+                                           {% if regions_geojson %}checked="checked"{% endif %}
+                                           title="Show regions">{{ product_region_info.units_label }}</label>
+                            {% else %}
+                                <label>
+                                    <input type="radio"
+                                           name="map_display_view"
+                                           value="footprint"
+                                           {% if footprint_geojson %}checked="checked"{% endif %}
+                                           title="Show footprint">Footprint</label>
+                            {% endif %}
+                            <label class="{% if not show_individual_datasets %}disabled{% endif %}"
+                                   {% if not show_individual_datasets %}title="Too many datasets to display individually"{% endif %}">
+                            <input type="radio"
+                                   name="map_display_view"
+                                   value="datasets"
+                                   {% if not show_individual_datasets %}disabled="disabled"{% endif %}
+                                   title="Show individual datasets">Datasets</label>
+                        </div>
+                    {% endif %}
 
-            {% if selected_summary.dataset_count != selected_summary.footprint_count %}
-                ({{ selected_summary.footprint_count or 'None' }} displayable)
-            {% endif %}
+                    <h3>
+                        {% if not day %}Across{% endif %}
+                        {% if year %}
+                            {{ product_args_label }}
+                        {% else %}
+                            lifetime
+                        {% endif %}
+                    </h3>
 
-            <ul>
-                {% if selected_summary.size_bytes %}
-                    <li><span
-                            class="coverage-filesize">{{ selected_summary.size_bytes | printable_data_size }}</span>
-                    </li>
-                {% endif %}
+                    {% if selected_summary.newest_dataset_creation_time %}
+                        <div class="last-processed muted">
+                            Last processed {{ selected_summary.newest_dataset_creation_time | timesince }}
+                        </div>
+                    {% endif %}
 
-                {% if selected_summary.footprint_geometry %}
-                    <li>
-                        <span class="coverage-footprint-area">{{ selected_summary.footprint_geometry | albers_area }} (approx.)</span>
-                    </li>
-                {% endif %}
-                {% if product_region_info %}
-                    <li>
+                    <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
+                    >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }}
+                        dataset{% if selected_summary.dataset_count != 1 %}s{% endif %}
+                    </a>
+
+                    {% if selected_summary.dataset_count != selected_summary.footprint_count %}
+                        ({{ selected_summary.footprint_count or 'None' }} displayable)
+                    {% endif %}
+
+                    <ul>
+                        {% if selected_summary.size_bytes %}
+                            <li><span
+                                    class="coverage-filesize">{{ selected_summary.size_bytes | printable_data_size }}</span>
+                            </li>
+                        {% endif %}
+
+                        {% if selected_summary.footprint_geometry %}
+                            <li>
+                                <span class="coverage-footprint-area">{{ selected_summary.footprint_geometry | albers_area }} (approx.)</span>
+                            </li>
+                        {% endif %}
+                        {% if product_region_info %}
+                            <li>
                         <span class="coverage-region-count" title="{{ product_region_info.description }}">
                             {{ (selected_summary.region_dataset_counts or []) | length }} unique {{ product_region_info.units_label }}
                         </span>
-                    </li>
-                {% else %}
-                    <li>
-                        <span class="coverage-region-missing" title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
+                            </li>
+                        {% else %}
+                            <li>
+                        <span class="coverage-region-missing"
+                              title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
                             No configured regions
                             <!-- User can hover to see slightly longer explanation -->
                             <i class="fa fa-info-circle"></i>
                         </span>
-                    </li>
-                {% endif %}
-                {% if selected_summary.crses %}
-                    <li class="coverage-crs-count" title="Datasets contain: {{ selected_summary.crses | join(', ') }}">
-                        {% if selected_summary.crses | length == 1 %}
-                            {% if None in selected_summary.crses %}
-                                    No CRSes defined
-                                {% else %}
-                                    Entirely {{ selected_summary.crses|join(',') }}
-                                {% endif %}
-                        {% else %}
-                            {{ selected_summary.crses | length }} CRS
-                            <!-- User can hover to see list of CRSes in title text -->
-                            <i class="fa fa-info-circle"></i>
+                            </li>
                         {% endif %}
-                    </li>
-                {% endif %}
+                        {% if selected_summary.crses %}
+                            <li class="coverage-crs-count"
+                                title="Datasets contain: {{ selected_summary.crses | join(', ') }}">
+                                {% if selected_summary.crses | length == 1 %}
+                                    {% if None in selected_summary.crses %}
+                                        No CRSes defined
+                                    {% else %}
+                                        Entirely {{ selected_summary.crses|join(',') }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ selected_summary.crses | length }} CRS
+                                    <!-- User can hover to see list of CRSes in title text -->
+                                    <i class="fa fa-info-circle"></i>
+                                {% endif %}
+                            </li>
+                        {% endif %}
 
-            </ul>
+                    </ul>
 
-        {% if product_summary.source_products %}
-            <h4>Sources</h4>
-            <ul>
-                {% for product_name in product_summary.source_products %}
-                    <li class="source-product">
-                        <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
+                    {% if product_summary.source_products %}
+                        <h4>Sources</h4>
+                        <ul>
+                            {% for product_name in product_summary.source_products %}
+                                <li class="source-product">
+                                    <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
 
-                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
-                            {{ product_name }}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                                        {{ product_name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    <h4>Fields ({{ product.metadata_type.name }})</h4>
+
+                    {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
+
+
+                    {% if product.definition.measurements %}
+                        <h4>Measurements</h4>
+                        <ul>
+                            {% for measurement in product.definition.measurements %}
+                                <li>
+                                    <div>
+                                        {% for a in measurement.aliases %}<span class="muted">{{ a }}</span>
+                                            / {% endfor %}
+                                        <span class="muted">{{ measurement.name }}</span>
+                                    </div>
+                                    {#                            <div>#}
+                                    {#                                type {{ measurement.dtype }};#}
+                                    {#                                units {{ measurement.units }};#}
+                                    {#                                nodata {{ measurement.nodata }}#}
+                                    {#                            </div>#}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {# These fields are enforced by dataset-type-schema.yaml #}
+                    {#            {% if product.definition.storage %}#}
+                    {#                <h4>Storage</h4>#}
+                    {#                {{ query_param_list(product.definition.storage, show_dicts=true) }}#}
+                    {#            {% endif %}#}
+
+
+                    <h4>Derived</h4>
+                    <ul>
+                        {% if product_summary.derived_products %}
+                            {% for product_name in product_summary.derived_products %}
+                                <li class="derived-product">
+                                    <i class="fa fa-level-down" aria-hidden="true"></i>
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                                        {{ product_name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+
+                    <p>
+                        <a href="{{ url_for('product.product_page', name=product.name) }}"
+                           class="muted">raw metadata</a>
+                    </p>
+
+                    {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}
+                    {% if selected_summary.newest_dataset_creation_time %}
+                        <!-- Summarised {{ selected_summary.summary_gen_time | timesince }} -->
+                    {% endif %}
+                </div>
+
+            </div>
         {% endif %}
-
-            <h4>Fields ({{ product.metadata_type.name }})</h4>
-
-            {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
-
-
-            {% if product.definition.measurements %}
-                <h4>Measurements</h4>
-                <ul>
-                    {% for measurement in product.definition.measurements %}
-                        <li>
-                            <div>
-                                {% for a in measurement.aliases %}<span class="muted">{{ a }}</span>
-                                    / {% endfor %}
-                                <span class="muted">{{ measurement.name }}</span>
-                            </div>
-                            {#                            <div>#}
-                            {#                                type {{ measurement.dtype }};#}
-                            {#                                units {{ measurement.units }};#}
-                            {#                                nodata {{ measurement.nodata }}#}
-                            {#                            </div>#}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-
-            {# These fields are enforced by dataset-type-schema.yaml #}
-{#            {% if product.definition.storage %}#}
-{#                <h4>Storage</h4>#}
-{#                {{ query_param_list(product.definition.storage, show_dicts=true) }}#}
-{#            {% endif %}#}
-
-
-            <h4>Derived</h4>
-            <ul>
-            {% if product_summary.derived_products %}
-                {% for product_name in product_summary.derived_products %}
-                    <li class="derived-product">
-                        <i class="fa fa-level-down" aria-hidden="true"></i>
-                        <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
-                            {{ product_name }}
-                        </a>
-                    </li>
-                {% endfor %}
-            {% endif %}
-        </ul>
-
-            <p>
-                <a href="{{ url_for('product.product_page', name=product.name) }}"
-                   class="muted">raw metadata</a>
-            </p>
-
-            {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}
-            {% if selected_summary.newest_dataset_creation_time %}
-                <!-- Summarised {{ selected_summary.summary_gen_time | timesince }} -->
-            {% endif %}
-        </div>
-
-        </div>
-    {% endif %}
-</div>
+    </div>
 {% endblock %}
 
 
@@ -210,234 +213,27 @@
     {{ super() }}
 
     {% from "layout/macros.html" import chart_timeline %}
+    <script src="{{ url_for('static', filename='overview.js') }}"></script>
     <script type="application/javascript">
         (function () {
             'use strict';
+            const footprint_geojson = {{ footprint_geojson | tojson }},
+                  regions_geojson = {{ regions_geojson | tojson }};
 
-            const map = L.map("map", {
-                zoom: 3,
-                center: [-26.2756326, 134.9387844],
-                layers: [
-                    L.tileLayer(
-                        "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
-                        {
-                            maxZoom: 19,
-                            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                                ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
-                        }
-                    )
-                ],
-                zoomControl: false,
-                attributionControl: false,
-                scrollWheelZoom: false
-            });
-            L.control.zoom({position: "bottomright"}).addTo(map);
-
-            function getBin(v, bin_count) {
-                let min_v = SPATIAL_VIEWS.regions.data.properties.min_count,
-                    max_v = SPATIAL_VIEWS.regions.data.properties.max_count,
-                    range = max_v - min_v,
-                    val = v - min_v;
-
-                if (range < bin_count) {
-                    const padding = bin_count - range;
-                    return padding + val - 1;
-                } else {
-                    const bin_width = range / bin_count;
-                    return  Math.floor(val / bin_width);
-                }
-            }
-
-            function getColor(count) {
-                let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'],
-                    bin = getBin(count, colorSteps.length-1);
-                return colorSteps[bin];
-            }
-
-            const SPATIAL_VIEWS = {
-                datasets: {
-                    name: 'datasets',
-                    url: '{{ url_for('api.datasets_geojson', **product_args) }}',
-                    data: null,
-                    geojson_layer: L.geoJson(null, {
-                        style: function (feature) {
-                            return {
-                                color: "#7AB800",
-                                fill: true,
-                                fillColor: "#9aee00",
-                                opacity: 0.3,
-                                weight: 2,
-                                clickable: true
-                            };
-                        },
-                        onEachFeature: function (feature, layer) {
-                            const that = SPATIAL_VIEWS.datasets;
-                            layer.on({
-                                mouseover: function (e) {
-                                    const layer = e.target;
-
-                                    layer.setStyle({
-                                        color: '#375400',
-                                        fillOpacity: 0.6
-                                    });
-
-                                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                                        layer.bringToFront();
-                                    }
-
-                                    const props = layer.feature.properties,
-                                        template = '<div><strong>' + props.label + '</strong></div>' + props.start_time;
-                                    datasetInfoControl.update(template);
-                                }
-                                ,
-                                mouseout: function (e) {
-                                    that.geojson_layer.resetStyle(e.target);
-                                    datasetInfoControl.update();
-                                },
-                                click: function (e) {
-                                    let props = e.target.feature.properties;
-                                    window.location.href = '/dataset/' + props.id;
-                                }
-                            });
-                        }
-                    }),
-                },
-                regions: {
-                    name: 'regions',
-                    url: '{{ url_for('api.regions_geojson', **product_args) }}',
-                    data: null,
-                    geojson_layer: L.geoJson(null,
-                        {
-                            style: function (feature) {
-                                return {
-                                    color: "#f2f2f2",
-                                    fill: true,
-                                    fillColor: getColor(feature.properties.count),
-                                    opacity: 0.6,
-                                    fillOpacity: 0.4,
-                                    weight: 1,
-                                    clickable: true
-                                };
-                            },
-                            onEachFeature: function (feature, layer) {
-                                const that = SPATIAL_VIEWS.regions;
-                                layer.on({
-                                    mouseover: function (e) {
-                                        const layer = e.target;
-
-                                        layer.setStyle({
-                                            color: '#375400',
-                                        });
-
-                                        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-                                            layer.bringToFront();
-                                        }
-                                        let props = layer.feature.properties,
-                                            template = '<div><strong>' + (props.label || props.region_code)+ ' </strong></div>' +
-                                                props.count + ' dataset' +(props.count === 1 ? '' : 's');
-                                        datasetInfoControl.update(template);
-                                    }
-                                    ,
-                                    mouseout: function (e) {
-                                        that.geojson_layer.resetStyle(e.target);
-                                        datasetInfoControl.update();
-                                    },
-                                    click: function (e) {
-                                        let props = e.target.feature.properties,
-                                            url_pattern = {{ url_for('region_page', region_code='__REGION_CODE__', **product_args) | tojson}};
-
-                                        // If only one, jump straight to that dataset.
-                                        if (props.count === 1) {
-                                            url_pattern = {{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) | tojson}};
-                                        }
-                                        window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
-                                    }
-                                });
-                            }
-                        })
-                },
-                footprint: {
-                    name: 'footprint',
-                    url: '{{ url_for('api.footprint_geojson', **product_args) }}',
-                    data: null,
-                    geojson_layer: L.geoJson(null,
-                        {
-                            interactive: false,
-                            style: function (feature) {
-                                return {
-                                    color: "#00A1DE",
-                                    fill: {% if product_region_info %}false{% else %}true{% endif %},
-                                    fillColor: "#8FCAE7",
-                                    opacity: 0.3,
-                                    weight: 2,
-                                    clickable: false
-                                };
-                            }
-                        }
-                    )
-                }
-            };
-
-
-            const recenterMapControl = L.control({position: "bottomright"});
-            recenterMapControl.recenter = function () {
-                if (SPATIAL_VIEWS.footprint) {
-                    this._map.fitBounds(SPATIAL_VIEWS.footprint.geojson_layer.getBounds(), {
-                        animate: false,
-                        maxZoom: 6
-                    });
-                    this._div.removeChild(this._button);
-                    this._isDirty = false;
-                }
-            };
-            recenterMapControl.setDirty = function () {
-                if (!this._isDirty) {
-                    this._isDirty = true;
-                    this._div.appendChild(this._button);
-                }
-            };
-            recenterMapControl.onAdd = function (map) {
-                this._div = L.DomUtil.create('div', 'recenter-map');
-                this._map = map;
-                this._map.on("moveend", function () {
-                    recenterMapControl.setDirty();
-                });
-                this._button = L.DomUtil.create('button', 'small');
-                this._button.innerText = 'Recenter';
-                this._button.addEventListener('click', function () {
-                    recenterMapControl.recenter();
-                });
-                this._isDirty = false;
-                return this._div;
-            };
-            map.addControl(recenterMapControl);
-
-            {# Show information for the hovered item #}
-            const datasetInfoControl = L.control({position: "bottomleft"});
-            datasetInfoControl.onAdd = function (map) {
-                this._div = L.DomUtil.create('div', 'dataset-info');
-                this.update();
-                return this._div;
-            };
-            datasetInfoControl.update = function (template) {
-                if (template) {
-                    this._div.innerHTML = template;
-                } else {
-                    this._div.innerHTML = '';
-                }
-            };
-            map.addControl(datasetInfoControl);
-
-            function toggleview(view) {
-                let v = getViewToggle(view);
-                map.removeLayer(SPATIAL_VIEWS.footprint.geojson_layer);
-                map.removeLayer(SPATIAL_VIEWS.regions.geojson_layer);
-                map.removeLayer(SPATIAL_VIEWS.datasets.geojson_layer);
-                map.addLayer(view.geojson_layer);
-                if (v.value === 'regions') {
-                    map.addLayer(SPATIAL_VIEWS.footprint.geojson_layer);
-                }
-            }
+            const routes = new TimeSummaryRoutes(
+                '{{ url_for('region_page', region_code='__REGION_CODE__', **product_args)}}',
+                '{{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) }}',
+                '{{ url_for('api.regions_geojson', **product_args) }}',
+                '{{ url_for('api.datasets_geojson', **product_args)}}',
+                '{{ url_for('api.footprint_geojson', **product_args) }}',
+            );
+            const map = initPage(
+                {% if footprint_geojson %}true{% else %}false{% endif %},
+                {% if show_individual_datasets %}true{% else %}false{% endif %},
+                routes,
+                regions_geojson,
+                footprint_geojson,
+            );
 
             {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}
                 const timelineControl = L.control({position: "topright"});
@@ -454,77 +250,6 @@
                 };
                 map.addControl(timelineControl);
             {% endif %}
-
-
-            function showError(msg) {
-                // TODO: message box?
-                document.getElementById('quiet-page-errors').innerHTML += msg + '<br/>';
-            }
-
-            function getViewToggle(view) {
-                return document.querySelector('input[name="map_display_view"][value="' + view.name + '"]')
-            }
-
-            function requestData(data_spec) {
-                const optionBox = getViewToggle(data_spec),
-                      request = new XMLHttpRequest();
-
-                optionBox.disabled = true;
-                request.open('GET', data_spec.url, true);
-                request.onload = function () {
-                    if (request.status >= 200 && request.status < 400) {
-                        data_spec.data = JSON.parse(request.responseText);
-                        if (data_spec.data && data_spec.data.features.length > 0) {
-                            data_spec.geojson_layer.addData(data_spec.data);
-                            optionBox.disabled = false;
-                        }
-                    } else {
-                        // We reached our target server, but it returned an error
-                        showError('Error fetching ' + data_spec.name);
-                    }
-                };
-                request.onerror = function () {
-                    // There was a connection error of some sort
-                    showError('Error fetching ' + data_spec.name)
-                };
-                request.send();
-            }
-
-            // Default to footprint
-            {% if have_data %}
-                {% if footprint_geojson %}
-                    SPATIAL_VIEWS.footprint.data = {{ footprint_geojson | tojson }};
-                    SPATIAL_VIEWS.footprint.geojson_layer.addData(SPATIAL_VIEWS.footprint.data);
-                    map.addLayer(SPATIAL_VIEWS.footprint.geojson_layer);
-                {% endif %}
-                {% if regions_geojson %}
-                    SPATIAL_VIEWS.regions.data = {{ regions_geojson | tojson }};
-                    SPATIAL_VIEWS.regions.geojson_layer.addData(SPATIAL_VIEWS.regions.data);
-                    toggleview(SPATIAL_VIEWS.regions);
-                {% endif %}
-                recenterMapControl.recenter();
-
-                {% if show_individual_datasets %}
-                    // Load in background
-                    requestData(SPATIAL_VIEWS.datasets);
-                    getViewToggle(SPATIAL_VIEWS.datasets).addEventListener('click', function() {
-                        toggleview(SPATIAL_VIEWS.datasets);
-                    });
-                {% endif %}
-
-                // This is really messy. It's expected to be temporary...
-                [SPATIAL_VIEWS.datasets, SPATIAL_VIEWS.regions, SPATIAL_VIEWS.footprint].forEach(function(view) {
-                    const t = getViewToggle(view);
-                    if (t) {
-                        t.addEventListener('click', function() {
-                            toggleview(view);
-                        });
-                    }
-                });
-            {% endif %}
-
-            window.MAP = map;
-
         })();
     </script>
 {% endblock %}
