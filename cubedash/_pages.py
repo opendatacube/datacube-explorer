@@ -33,7 +33,7 @@ app.register_blueprint(_reports.bp)
 
 _LOG = structlog.getLogger()
 
-_HARD_SEARCH_LIMIT = app.config.get('CUBEDASH_HARD_SEARCH_LIMIT', 500)
+_HARD_SEARCH_LIMIT = app.config.get('CUBEDASH_HARD_SEARCH_LIMIT', 150)
 
 
 # @app.route('/')
