@@ -3,7 +3,7 @@ import inspect
 import itertools
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 import flask
@@ -16,7 +16,7 @@ import cubedash
 import datacube
 from cubedash.summary import RegionInfo, TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
-from datacube.model import DatasetType
+from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports
@@ -87,6 +87,16 @@ def search_page(
     # Always add time range, selected product to query
     if product_name:
         query["product"] = product_name
+
+    if "time" in query:
+        # If they left one end of the range open, fill it in with the product bounds.
+        search_time = query["time"]
+        assert isinstance(search_time, Range)
+        query["time"] = Range(
+            search_time.begin or product_summary.time_earliest,
+            search_time.end or product_summary.time_latest + timedelta(days=1),
+        )
+    # The URL time range always trumps args.
     if time_range:
         query["time"] = time_range
 
@@ -102,6 +112,14 @@ def search_page(
         return as_json(
             dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
+
+    # For display on the page (and future searches).
+    if "time" not in query:
+        query["time"] = Range(
+            product_summary.time_earliest,
+            product_summary.time_latest + timedelta(days=1),
+        )
+
     return flask.render_template(
         "search.html",
         year=year,
