@@ -41,7 +41,8 @@
                             </div>
                         </div>
                     {% elif field | is_date_field %}
-                        <div data-row-span="3">
+                        <div data-row-span="3"
+                            {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
                                 <label for="search-{{ key }}-before">
                                     {{ product.metadata_type.dataset_fields[key].description }} From
@@ -49,6 +50,7 @@
                                 <input type="date"
                                        id="search-{{ key }}-before"
                                        name="{{ key }}-begin"
+                                       {% if key not in query_params %}disabled="disabled"{% endif %}
                                        value="{{ query_params[key] and
                                         query_params[key].begin.strftime('%Y-%m-%d') or '' }}"/>
                             </div>
@@ -59,6 +61,7 @@
                                 <input type="date"
                                        id="search-{{ key }}-after"
                                        name="{{ key }}-end"
+                                       {% if key not in query_params %}disabled="disabled"{% endif %}
                                        value="{{ query_params[key] and
                                         query_params[key].end.strftime('%Y-%m-%d') or '' }}"/>
                             </div>
