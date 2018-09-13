@@ -101,7 +101,7 @@
         {% if datasets %}
             <p>
                 {% if datasets|length == result_limit %}First{% endif %}
-                {{ datasets | length }} results
+                {{ datasets | length }} result{% if datasets | length > 1 %}s{% endif %}
                 {% if datasets|length == result_limit %}<strong>(query limit)</strong>{% endif %}
             </p>
             <table class="data-table">
