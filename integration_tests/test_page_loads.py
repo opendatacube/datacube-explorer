@@ -297,6 +297,26 @@ def test_region_page(client: FlaskClient):
     assert response.location.endswith("/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c")
 
 
+def test_search_page(client: FlaskClient):
+    html = _get_html(client, "/datasets/ls7_nbar_scene")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 4
+
+    html = _get_html(client, "/datasets/ls7_nbar_scene/2017/05")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 3
+
+
+def test_search_time_completion(client: FlaskClient):
+    # They only specified a begin time, so the end time should be filled in with the product extent.
+    html = _get_html(client, "/datasets/ls7_nbar_scene?time-begin=1999-05-28")
+    assert html.find("#search-time-before", first=True).attrs["value"] == "1999-05-28"
+    # One day after the product extent end (range is exclusive)
+    assert html.find("#search-time-after", first=True).attrs["value"] == "2017-05-04"
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 4
+
+
 def test_api_returns_tiles_regions(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
