@@ -65,7 +65,7 @@ footer { padding: 10px 20px; text-align: right; color: #a6a6a6; font-size: 0.8em
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
 .panel.highlight a { color: #999; }
-.panel h2, .panel h3, .panel h4, .panel p { margin: 15px 0 5px; }
+.panel h2, .panel h3, .panel h4, .panel p { margin: 15px 0; }
 .panel h2:first-child, .panel h3:first-child, .panel h4:first-child, .panel p:first-child { margin-top: 0; }
 .panel h2:last-child, .panel h3:last-child, .panel h4:last-child, .panel p:last-child { margin-bottom: 0; }
 
