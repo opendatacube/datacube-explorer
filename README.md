@@ -75,16 +75,6 @@ Create one of the following `*.env.html` files:
 (`*.env.html` is the naming convention used for environment-specific templates: they are ignored by 
 Git)
 
-### Can I use it at NCI?
-
-A dashboard install is available from VDI on the NCI:
-
-    module use /g/data/v10/public/modules/modulefiles
-    module load agdc-py3-prod
-    /g/data/v10/public/run-dash.sh
-
-Then open the given link in your VDI web browser.
-
 ### Stylesheets aren't updating
 
 The css is compiled from Sass. Run `make` to rebuild them after a change,
