@@ -75,12 +75,31 @@ Create one of the following `*.env.html` files:
 (`*.env.html` is the naming convention used for environment-specific templates: they are ignored by 
 Git)
 
-### Stylesheets aren't updating
+### How can I configure it?
+
+Add a file to the current directory called `settings.env.py`
+
+You can alter default [Flask settings](http://flask.pocoo.org/docs/1.0/config/),
+as well as some cubedash-specific settings:
+
+    # Default product to display (picks first available)
+    CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
+    
+    # Maximum search results
+    CUBEDASH_HARD_SEARCH_LIMIT = 100
+    
+    # Include load performance metrics in http response.
+    CUBEDASH_SHOW_PERF_TIMES = False
+    
+[Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
+See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
+
+### Why aren't stylesheets updating?
 
 The css is compiled from Sass. Run `make` to rebuild them after a change,
 or use your editor to watch for changes (PyCharm will prompt to do so).
 
-### How to run integration tests
+### How do I run the integration tests?
     
 The integration tests run against a real postgres database, which is dropped and 
 recreated between each test method:
@@ -102,5 +121,5 @@ Add a `.datacube_integration.conf` file to your home directory in the same forma
 
 (You might already have one if you run datacube's integration tests)
 
-__Warning__ This test "datacube" will be dropped and recreated while running tests, so don't use 
-it for anything else.
+__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal 
+development db.
