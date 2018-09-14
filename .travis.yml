@@ -37,6 +37,8 @@ install:
 - pip freeze
 script:
 - ./check-code.sh integration_tests
+after_success:
+- coveralls
 notifications:
     slack:
         on_success: change
