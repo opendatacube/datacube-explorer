@@ -177,9 +177,9 @@
                     {#            {% endif %}#}
 
 
-                    <h4>Derived</h4>
-                    <ul>
-                        {% if product_summary.derived_products %}
+                    {% if product_summary.derived_products %}
+                        <h4>Derived</h4>
+                        <ul>
                             {% for product_name in product_summary.derived_products %}
                                 <li class="derived-product">
                                     <i class="fa fa-level-down" aria-hidden="true"></i>
@@ -188,8 +188,8 @@
                                     </a>
                                 </li>
                             {% endfor %}
-                        {% endif %}
-                    </ul>
+                        </ul>
+                    {% endif %}
 
                     <p>
                         <a href="{{ url_for('product.product_page', name=product.name) }}"
