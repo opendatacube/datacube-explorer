@@ -412,7 +412,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
 
 
 def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
-    [albers] = _extents.get_sample_dataset("ls8_nbar_albers", index=module_dea_index)
+    [albers] = _extents.get_sample_dataset("ls7_nbar_scene", index=module_dea_index)
     assert albers["id"] is not None
     assert albers["dataset_type_ref"] is not None
     assert albers["center_time"] is not None
