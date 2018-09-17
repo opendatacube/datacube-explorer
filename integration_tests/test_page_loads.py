@@ -7,13 +7,14 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import pytest
+from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 
 import cubedash
 from cubedash import _model
-from cubedash.summary import SummaryStore
+from cubedash.summary import SummaryStore, show
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from requests_html import HTML
@@ -374,3 +375,13 @@ def test_missing_dataset(client: FlaskClient):
 def test_invalid_product(client: FlaskClient):
     rv: Response = client.get('/fake_test_product/2017')
     assert rv.status_code == 404
+
+
+def test_show_summary_cli(clirunner, client: FlaskClient):
+    # ls7_nbar_scene / 2017 / 05
+    res: Result = clirunner(show.cli, ['ls7_nbar_scene', '2017', '5'])
+    print(res.output)
+    assert 'Landsat WRS scene-based product' in res.output
+    assert '3 ls7_nbar_scene datasets for 2017 5' in res.output
+    assert '727.4MiB' in res.output
+    assert '96  97  98  99 100 101 102 103 104 105' in res.output, "No list of paths displayed"
