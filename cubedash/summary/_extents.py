@@ -4,7 +4,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Iterable, Optional
 
 import fiona
 import shapely.wkb
@@ -336,7 +336,7 @@ def _as_json(obj):
     return json.dumps(obj, indent=4, default=fallback)
 
 
-def print_sample_dataset(*product_names: str):
+def get_sample_dataset(*product_names: str) -> Iterable[Dict]:
     with Datacube(env="clone") as dc:
         index = dc.index
         for product_name in product_names:
@@ -346,7 +346,7 @@ def print_sample_dataset(*product_names: str):
                 .execute(_select_dataset_extent_query(product).limit(1))
                 .fetchone()
             )
-            print(_as_json(dict(res)))
+            yield dict(res)
 
 
 # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
@@ -559,4 +559,8 @@ def _get_path_row_shapes():
 
 
 if __name__ == "__main__":
-    print_sample_dataset(*(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"]))
+    print(
+        _as_json(
+            get_sample_dataset(*(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"]))
+        )
+    )

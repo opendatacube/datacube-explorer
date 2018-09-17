@@ -15,7 +15,7 @@ from requests_html import HTML
 
 import cubedash
 from cubedash import _model, _monitoring
-from cubedash.summary import SummaryStore, show
+from cubedash.summary import SummaryStore, _extents, show
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 
@@ -429,3 +429,15 @@ def test_with_timings(client: FlaskClient):
     # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
     _, val = count_header[0].split(";")[0].split("_")
     assert int(val) > 0, "At least one query was run, presumably?"
+
+
+def test_extent_debugging_method():
+    [albers] = _extents.get_sample_dataset("ls8_nbar_albers")
+    assert albers["id"] is not None
+    assert albers["dataset_type_ref"] is not None
+    assert albers["center_time"] is not None
+    assert albers["footprint"] is not None
+
+    # Can it be serialised without type errors? (for printing)
+    output_json = _extents._as_json(albers)
+    assert str(albers["id"]) in output_json
