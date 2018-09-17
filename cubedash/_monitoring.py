@@ -37,10 +37,11 @@ def init_app_monitoring():
 
     @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
     def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-        flask.g.datacube_query_time += time.time() - conn.info["query_start_time"].pop(
-            -1
-        )
-        flask.g.datacube_query_count += 1
+        if flask.has_app_context():
+            flask.g.datacube_query_time += time.time() - conn.info[
+                "query_start_time"
+            ].pop(-1)
+            flask.g.datacube_query_count += 1
         # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
 
     @_model.app.after_request
