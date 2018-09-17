@@ -13,7 +13,7 @@ from flask import Response
 from flask.testing import FlaskClient
 
 import cubedash
-from cubedash import _model
+from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, show
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
@@ -385,3 +385,18 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     assert '3 ls7_nbar_scene datasets for 2017 5' in res.output
     assert '727.4MiB' in res.output
     assert '96  97  98  99 100 101 102 103 104 105' in res.output, "No list of paths displayed"
+
+
+def test_with_timings(client: FlaskClient):
+    _monitoring.init_app_monitoring()
+    # ls7_level1_scene dataset
+    rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+    assert 'Server-Timing' in rv.headers
+
+    count_header = [f for f in rv.headers['Server-Timing'].split(',') if f.startswith('odcquerycount_')]
+    assert count_header, f"No query count server timing header found in {rv.headers['Server-Timing']}"
+
+    # Example header:
+    # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
+    _, val = count_header[0].split(';')[0].split('_')
+    assert int(val) > 0, "At least one query was run, presumably?"
