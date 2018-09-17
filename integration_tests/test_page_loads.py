@@ -16,6 +16,7 @@ import cubedash
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, show
 from cubedash.summary import _extents
+from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from requests_html import HTML
@@ -403,8 +404,8 @@ def test_with_timings(client: FlaskClient):
     assert int(val) > 0, "At least one query was run, presumably?"
 
 
-def test_extent_debugging_method():
-    [albers] = _extents.get_sample_dataset('ls8_nbar_albers')
+def test_extent_debugging_method(module_dea_index: Index):
+    [albers] = _extents.get_sample_dataset('ls8_nbar_albers', index=module_dea_index)
     assert albers['id'] is not None
     assert albers['dataset_type_ref'] is not None
     assert albers['center_time'] is not None
