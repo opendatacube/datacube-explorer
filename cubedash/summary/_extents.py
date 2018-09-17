@@ -311,7 +311,8 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
             res = alchemy_engine(index).execute(
                 _select_dataset_extent_query(product).limit(1)
             ).fetchone()
-            yield dict(res)
+            if res:
+                yield dict(res)
 
 
 # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
