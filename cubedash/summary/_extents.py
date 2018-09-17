@@ -336,8 +336,8 @@ def _as_json(obj):
     return json.dumps(obj, indent=4, default=fallback)
 
 
-def get_sample_dataset(*product_names: str) -> Iterable[Dict]:
-    with Datacube(env="clone") as dc:
+def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
+    with Datacube(index=index) as dc:
         index = dc.index
         for product_name in product_names:
             product = index.products.get_by_name(product_name)
