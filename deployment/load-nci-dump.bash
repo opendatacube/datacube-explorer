@@ -17,6 +17,7 @@ summary_dir="${archive_dir}/${dump_id}"
 dbname="nci_${dump_id}"
 
 log_file="${summary_dir}/restore-$(date +'%dT%H%M').log"
+python=/opt/conda/bin/python
 
 echo "======================="
 echo "Loading dump: ${dump_id}"
@@ -52,7 +53,7 @@ if psql ${psql_args} -lqtA | grep -q "^$dbname|";
 then 
 	log_info "DB exists"
 else
-	if [ ! -e ${dump_file} ];
+	if [ ! -e "${dump_file}" ];
 	then
 		# Fetch new one
 		log_info "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
@@ -93,22 +94,26 @@ psql ${psql_args} "${dbname}" -X -c 'copy (select name from agdc.dataset_type or
 echo "
 [datacube]
 db_database: ${dbname}
-" > datacube.conf
+" > new-datacube.conf
 
 log_info "Summary gen"
 
-/opt/conda/bin/python -m cubedash.generate -v --all -j 4 || true
+$python -m cubedash.generate -C new-datacube.conf -v --all -j 4 || true
+
+psql ${psql_args} "${dbname}" -X -c 'cluster cubedash.dataset_spatial using "dataset_spatial_dataset_type_ref_center_time_idx";'
+psql ${psql_args} "${dbname}" -X -c 'create index tix_region_center ON cubedash.dataset_spatial (dataset_type_ref, region_code text_pattern_ops, center_time);'
 
 echo "Testing a summary"
-if ! python -m cubedash.summary.show ls8_nbar_scene;
+if ! $python -m cubedash.summary.show -C new-datacube.conf ls8_nbar_scene;
 then
 	log_info "Summary gen seems to have failed"
 	exit 1
 fi
 
-
 log_info "Restarting deadash (with updated summaries)"
+mv new-datacube.conf datacube.conf
 sudo systemctl restart deadash
+
 
 log_info "Warming caching"
 # Not strictly necessary, but users will see the new data sooner
