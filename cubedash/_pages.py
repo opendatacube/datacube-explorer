@@ -92,10 +92,11 @@ def search_page(
         # If they left one end of the range open, fill it in with the product bounds.
         search_time = query["time"]
         assert isinstance(search_time, Range)
-        query["time"] = Range(
-            search_time.begin or product_summary.time_earliest,
-            search_time.end or product_summary.time_latest + timedelta(days=1),
-        )
+        if product_summary:
+            query["time"] = Range(
+                search_time.begin or product_summary.time_earliest,
+                search_time.end or product_summary.time_latest + timedelta(days=1),
+            )
     # The URL time range always trumps args.
     if time_range:
         query["time"] = time_range
@@ -114,7 +115,7 @@ def search_page(
         )
 
     # For display on the page (and future searches).
-    if "time" not in query:
+    if "time" not in query and product_summary:
         query["time"] = Range(
             product_summary.time_earliest,
             product_summary.time_latest + timedelta(days=1),
