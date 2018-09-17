@@ -13,7 +13,7 @@ from flask import Response
 from flask.testing import FlaskClient
 
 import cubedash
-from cubedash import _model, _monitoring
+from cubedash import _model, _monitoring, _pages
 from cubedash.summary import SummaryStore, show
 from cubedash.summary import _extents
 from datacube.index import Index
@@ -66,12 +66,17 @@ def populate_index(module_dea_index):
 
 
 @pytest.fixture(scope='function')
-def unpopulated_client(summary_store: SummaryStore) -> FlaskClient:
+def empty_client(summary_store: SummaryStore) -> FlaskClient:
     _model.cache.clear()
     _model.STORE = summary_store
-    _model.STORE.refresh_all_products()
     cubedash.app.config['TESTING'] = True
     return cubedash.app.test_client()
+
+
+@pytest.fixture(scope='function')
+def unpopulated_client(empty_client: FlaskClient, summary_store: SummaryStore) -> FlaskClient:
+    _model.STORE.refresh_all_products()
+    return empty_client
 
 
 @pytest.fixture(scope='function')
@@ -141,6 +146,17 @@ def test_uninitialised_overview(unpopulated_client: FlaskClient, summary_store: 
     summary_store.get_or_update('ls7_nbar_albers')
     html = _get_html(unpopulated_client, '/ls7_nbar_scene/2017')
     assert html.find('.coverage-region-count', first=True).text == '0 unique scenes'
+
+
+def test_uninitialised_search_page(empty_client: FlaskClient, summary_store: SummaryStore):
+    # Populate one product, so they don't get the usage error message ("run cubedash generate")
+    summary_store.refresh_product(summary_store.index.products.get_by_name('ls7_nbar_albers'))
+    summary_store.get_or_update('ls7_nbar_albers')
+
+    # Then load a completely uninitialised product.
+    html = _get_html(empty_client, '/datasets/ls7_nbar_scene')
+    search_results = html.find('.search-result a')
+    assert len(search_results) == 4
 
 
 def test_view_dataset(client: FlaskClient):
