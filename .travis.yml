@@ -36,7 +36,7 @@ install:
 - travis_retry pip install .[test] --upgrade
 - pip freeze
 script:
-- ./check-code.sh integration_tests
+- ./check-code.sh integration_tests --cov cubedash
 after_success:
 - coveralls
 notifications:

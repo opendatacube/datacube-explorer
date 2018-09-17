@@ -6,5 +6,5 @@ set -x
 
 pylint -j 2 --reports no cubedash
 
-python -m pytest -r sx --cov cubedash --durations=5 "$@"
+python -m pytest -r sx --durations=5 "$@"
 
