@@ -14,6 +14,8 @@ _INITIALISED = False
 
 # Add server timings to http headers.
 def init_app_monitoring():
+    # This affects global flask app settings.
+    # pylint: disable=global-statement
     global _INITIALISED
 
     if _INITIALISED:
