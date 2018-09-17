@@ -10,7 +10,7 @@ from cubedash.logs import init_logging
 from cubedash.summary import RegionInfo, SummaryStore
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
-from datacube.ui.click import environment_option, pass_config
+from datacube.ui.click import config_option, environment_option, pass_config
 
 _LOG = structlog.get_logger()
 
@@ -24,6 +24,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
 
 @click.command()
 @environment_option
+@config_option
 @pass_config
 @click.option("-v", "--verbose", is_flag=True)
 @click.option(
