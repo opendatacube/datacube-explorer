@@ -389,6 +389,18 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     assert '96  97  98  99 100 101 102 103 104 105' in res.output, "No list of paths displayed"
 
 
+def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
+    [albers] = _extents.get_sample_dataset('ls8_nbar_albers', index=module_dea_index)
+    assert albers['id'] is not None
+    assert albers['dataset_type_ref'] is not None
+    assert albers['center_time'] is not None
+    assert albers['footprint'] is not None
+
+    # Can it be serialised without type errors? (for printing)
+    output_json = _extents._as_json(albers)
+    assert str(albers['id']) in output_json
+
+
 def test_with_timings(client: FlaskClient):
     _monitoring.init_app_monitoring()
     # ls7_level1_scene dataset
@@ -403,14 +415,3 @@ def test_with_timings(client: FlaskClient):
     _, val = count_header[0].split(';')[0].split('_')
     assert int(val) > 0, "At least one query was run, presumably?"
 
-
-def test_extent_debugging_method(module_dea_index: Index):
-    [albers] = _extents.get_sample_dataset('ls8_nbar_albers', index=module_dea_index)
-    assert albers['id'] is not None
-    assert albers['dataset_type_ref'] is not None
-    assert albers['center_time'] is not None
-    assert albers['footprint'] is not None
-
-    # Can it be serialised without type errors? (for printing)
-    output_json = _extents._as_json(albers)
-    assert str(albers['id']) in output_json
