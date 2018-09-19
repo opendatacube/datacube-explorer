@@ -4,16 +4,14 @@ import logging
 
 import flask
 from flask import Blueprint
-from jinja2 import Markup
 
-from datacube.model import Dataset
 from . import _utils as utils
 from . import _model
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('dataset', __name__, url_prefix='/dataset')
 
-PROVENANCE_DISPLAY_LIMIT = 50
+PROVENANCE_DISPLAY_LIMIT = _model.app.config.get('CUBEDASH_PROVENANCE_DISPLAY_LIMIT', 25)
 
 
 @bp.route('/<uuid:id_>')
@@ -33,7 +31,6 @@ def dataset_page(id_):
 
     archived_location_times = index.datasets.get_archived_location_times(id_)
 
-    # simple_sources = {classifier: dataset_link(d) for classifier, d in dataset.sources.items()}
     dataset.metadata.sources = {}
     ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
 
@@ -53,7 +50,3 @@ def dataset_page(id_):
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
     )
-
-
-def dataset_link(d: Dataset):
-    return Markup(f'<a href="{flask.url_for("dataset.dataset_page", id_=d.id)}">{d.id}</a>')
