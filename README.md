@@ -23,8 +23,7 @@ Now install the dashboard dependencies:
     # These two should come from conda if you're using it, not pypi
     conda install fiona shapely
     
-    # Install dependencies
-    python ./setup.py develop
+    pip install -e .
 
 ### Summary generation
 
@@ -37,13 +36,13 @@ We're using `nohup .. &` to run in the background.)
 
 ### Run
 
-Then run the app using a typical python wsgi server, for example:
+Run using any typical python wsgi server, for example:
 
     pip install gunicorn
-    gunicorn -b '127.0.0.1:8080' -w 5 --timeout 300 cubedash:app
+    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
 
 Convenience scripts are available for running in development with hot-reload (`./run-dev.sh`)
-or gunicorn (`./run.sh`).
+or gunicorn (`./run.sh`). Install the optional deployment dependencies for the latter: `pip install -e .[deployment]`
 
 Products will begin appearing one-by-one as the summaries are generated in the background.
 If impatient, you can manually navigate to a product using `/<product_name`. (Eg `/ls5_nbar_albers`) 

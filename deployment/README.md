@@ -48,7 +48,7 @@ Install its extra dependencies
     # TODO: conda-specific package list? 
     conda install fiona shapely
     # Install all other dependencies
-    /opt/conda/bin/python ./setup.py develop
+    /opt/conda/bin/pip install -e .[deployment]
 
 ## nginx
 
