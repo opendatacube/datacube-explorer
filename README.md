@@ -84,6 +84,8 @@ as well as some cubedash-specific settings:
     
     # Maximum search results
     CUBEDASH_HARD_SEARCH_LIMIT = 100
+    # Maximum number of source/derived datasets to show
+    CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
     
     # Include load performance metrics in http response.
     CUBEDASH_SHOW_PERF_TIMES = False
