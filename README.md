@@ -101,7 +101,7 @@ or use your editor to watch for changes (PyCharm will prompt to do so).
 The integration tests run against a real postgres database, which is dropped and 
 recreated between each test method:
 
-    pytest integration_tests
+Install the test dependencies: `pip install -e .[test]`
 
 #### Simple test setup
 
@@ -111,12 +111,14 @@ Then: `createdb dea_integration`
 
 And the tests should be runnable with no configuration: `pytest integration_tests`
 
-#### Custom test configuration
+#### Custom test configuration (using other hosts, postgres servers)
 
 Add a `.datacube_integration.conf` file to your home directory in the same format as 
 [datacube config files](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config).
 
 (You might already have one if you run datacube's integration tests)
+
+Then run pytest: `pytest integration_tests`
 
 __Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal 
 development db.
