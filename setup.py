@@ -10,7 +10,17 @@ tests_require = [
 ]
 
 extras_require = {
-    'test': tests_require
+    'test': tests_require,
+    # These are all optional but nice to have on a real deployment
+    'deployment': [
+        # Performance
+        'ciso8601',
+        'bottleneck',
+        # The default run.sh and docs use gunicorn+meinheld
+        'gunicorn',
+        'setproctitle',
+        'meinheld',
+    ],
 }
 
 setup(
@@ -36,9 +46,7 @@ setup(
         'simplekml',
         'structlog',
         'Flask-Caching',
-        'gunicorn',
         'jinja2',
-        'meinheld',
         'python-dateutil',
         'shapely',
     ],
