@@ -4,11 +4,7 @@
 
 ## Developer Setup
 
-
-*Note*: Example server deployment directions are in the [deployment folder](deployment/README.md). 
-But it will run from any typical Python WSGI server. 
-
-These directions are for running from a local folder in development.
+These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
 
 Firstly, install Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
 is recommended.
@@ -53,11 +49,13 @@ If impatient, you can manually navigate to a product using `/<product_name`. (Eg
 
 ### Can I use a different datacube environment?
 
-If you don't want to use your default configured [datacube environment](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config) 
-(as reported by `datacube system check`), you can set environment variable 
-before running the server:
+Set ODC's environment variable before running the server:
 
     export DATACUBE_ENVIRONMENT=staging
+
+You can always see which environment/settings will be used by running `datacube system check`.
+
+See the ODC documentation for config and [datacube environments](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config) 
 
 ### Can I add custom scripts or text to the page (such as analytics)?
 
@@ -74,7 +72,7 @@ Create one of the following `*.env.html` files:
 (`*.env.html` is the naming convention used for environment-specific templates: they are ignored by 
 Git)
 
-### How can I configure it?
+### How can I configure the deployment?
 
 Add a file to the current directory called `settings.env.py`
 
@@ -95,7 +93,7 @@ See [their documentation](https://docs.sentry.io/clients/python/integrations/fla
 
 ### Why aren't stylesheets updating?
 
-The css is compiled from Sass. Run `make` to rebuild them after a change,
+The CSS is compiled from [Sass](https://sass-lang.com/). Run `make` to rebuild them after a change,
 or use your editor to watch for changes (PyCharm will prompt to do so).
 
 ### How do I run the integration tests?
