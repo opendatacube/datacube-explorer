@@ -179,6 +179,26 @@ def create_schema(engine: Engine):
 
     METADATA.create_all(engine, checkfirst=True)
 
+    # Useful reporting.
+    engine.execute(
+        f"""
+    create materialized view if not exists {CUBEDASH_SCHEMA}.dataset_spatial_quality as (
+        select 
+            dataset_type_ref,
+            count(*),
+            count(*) filter (where footprint is null) as missing_footprint,
+            sum(pg_column_size(footprint)) filter (where footprint is not null) as footprint_size,
+            stddev(pg_column_size(footprint)) filter (where footprint is not null) as footprint_stddev,
+            count(*) filter (where footprint is not null and ST_IsValid(footprint)) as valid_footprint,
+            count(*) filter (where ST_SRID(footprint) is null) as missing_srid,
+            count(*) filter (where size_bytes is not null) as has_file_size, 
+            count(*) filter (where region_code is not null) as has_region
+        from {CUBEDASH_SCHEMA}.dataset_spatial 
+        group by dataset_type_ref
+    ) with no data;
+    """
+    )
+
 
 def pg_exists(conn, name):
     """
