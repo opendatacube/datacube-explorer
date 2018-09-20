@@ -1,11 +1,22 @@
+import json
+import re
 from pathlib import Path
+from typing import Dict, Tuple
 
 import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
+from dateutil import tz
+from flask import Response
+from flask.testing import FlaskClient
+from requests_html import HTML
 
-from cubedash import generate, logs
-from cubedash.summary import SummaryStore
+import cubedash
+from cubedash import _model, _monitoring, _pages, generate, logs
+from cubedash.summary import SummaryStore, _extents, show
 from datacube.index import Index
+from datacube.index.hl import Doc2Dataset
+from datacube.model import Dataset
+from datacube.utils import read_documents
 from digitalearthau.testing import factories
 
 pytest_plugins = "digitalearthau.testing.plugin"
@@ -68,3 +79,53 @@ def run_generate(clirunner, summary_store):
         return res
 
     return do
+
+
+@pytest.fixture(scope="module")
+def dataset_loader(module_dea_index):
+    def _populate_from_dump(expected_type: str, dump_path: Path):
+        ls8_nbar_scene = module_dea_index.products.get_by_name(expected_type)
+        dataset_count = 0
+
+        create_dataset = Doc2Dataset(module_dea_index)
+
+        for _, doc in read_documents(dump_path):
+            label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
+            # type: Tuple[Dataset, str]
+            dataset, err = create_dataset(
+                doc, f"file://example.com/test_dataset/{label}"
+            )
+            assert dataset is not None, err
+            assert dataset.type.name == expected_type
+            created = module_dea_index.datasets.add(dataset)
+
+            assert created.type.name == ls8_nbar_scene.name
+            dataset_count += 1
+
+        print(f"Populated {dataset_count} of {expected_type}")
+        return dataset_count
+
+    return _populate_from_dump
+
+
+@pytest.fixture(scope="function")
+def empty_client(summary_store: SummaryStore) -> FlaskClient:
+    _model.cache.clear()
+    _model.STORE = summary_store
+    cubedash.app.config["TESTING"] = True
+    return cubedash.app.test_client()
+
+
+@pytest.fixture(scope="function")
+def unpopulated_client(
+    empty_client: FlaskClient, summary_store: SummaryStore
+) -> FlaskClient:
+    _model.STORE.refresh_all_products()
+    return empty_client
+
+
+@pytest.fixture(scope="function")
+def client(unpopulated_client: FlaskClient) -> FlaskClient:
+    for product in _model.STORE.index.products.get_all():
+        _model.STORE.get_or_update(product.name)
+    return unpopulated_client
