@@ -31,19 +31,20 @@ def _sample(iterable, sample_count):
     return result
 
 
-def dump_datasets(dc: Datacube, path: Path, dataset_sample_fraction=0.3, include_sources=True, **query):
+def dump_datasets(dc: Datacube, path: Path, dataset_sample_fraction=None, dataset_sample_count=None, include_sources=True, **query):
     total_count = dc.index.datasets.count(**query)
 
     if path.exists():
         raise ValueError(f"Path exists: {path}")
 
     product_name = query.get('product') or 'datasets'
-    sample_count = int(total_count * dataset_sample_fraction)
-    msg = f'Dumping {sample_count} of {total_count} {product_name} (with their sources)'
+    if dataset_sample_fraction:
+        dataset_sample_count = int(total_count * dataset_sample_fraction)
+    msg = f'Dumping {dataset_sample_count} of {total_count} {product_name} (with their sources)'
 
     with click.progressbar(
-            _sample(dc.index.datasets.search(**query), sample_count),
-            length=sample_count,
+            _sample(dc.index.datasets.search(**query), dataset_sample_count),
+            length=dataset_sample_count,
             label=msg) as progress:
         with gzip.open(path, 'w') as f:
             yaml.dump_all(
@@ -69,6 +70,14 @@ TEST_DATA_DIR = Path(__file__).parent / 'data'
 if __name__ == '__main__':
     with Datacube(env='clone') as dc:
 
+        dump_datasets(
+            dc,
+            TEST_DATA_DIR / 's2a_ard_granule.yaml.gz',
+            dataset_sample_count=8,
+            include_sources=True,
+            product='s2a_ard_granule',
+            limit=8,
+        )
         dump_datasets(
             dc,
             TEST_DATA_DIR / 'high_tide_comp_20p.yaml.gz',
