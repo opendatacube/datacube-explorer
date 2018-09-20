@@ -192,18 +192,6 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             ],
             else_=None,
         ),
-        case(
-            [
-                (
-                    # Fallback: An exact string match on WKT. Yuck!
-                    spatial_ref.op("~")(r"^(GEOGCS|PROJCS)"),
-                    select([SPATIAL_REF_SYS.c.srid])
-                    .where(func.lower(SPATIAL_REF_SYS.c.srtext) == spatial_ref)
-                    .as_scalar(),
-                )
-            ],
-            else_=None,
-        ),
         # Some older datasets have datum/zone fields instead.
         # The only remaining ones in DEA are 'GDA94'.
         case(
