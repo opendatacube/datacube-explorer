@@ -181,6 +181,11 @@ def create_schema(engine: Engine):
         create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on 
             {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
     """)
+    # Fallback to match the whole WKT text.
+    engine.execute(f"""
+            create unique index if not exists mv_spatial_ref_sys_srtext on 
+                {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srtext);
+        """)
 
     METADATA.create_all(engine, checkfirst=True)
 

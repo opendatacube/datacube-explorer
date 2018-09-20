@@ -14,7 +14,7 @@ from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
 from shapely.geometry import GeometryCollection
 from shapely.geometry import shape
-from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, null, BigInteger, String
+from sqlalchemy import func, case, select, bindparam, Integer, SmallInteger, null, BigInteger, String, literal
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
@@ -127,7 +127,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             SPATIAL_REF_SYS.c.auth_srid == int(auth_srid)
         ).as_scalar()
 
-    return func.coalesce(
+    expression = func.coalesce(
         case(
             [
                 (
@@ -142,7 +142,37 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                     ).as_scalar()
                 )
             ],
-            else_=default_crs_expression
+            else_=None
+        ),
+        case(
+            [
+                (
+                    # Plain WKT that ends in an authority code.
+                    # Extract the authority name and code using regexp. Yuck!
+                    # Eg: ".... AUTHORITY["EPSG","32756"]]"
+                    spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
+                    select([SPATIAL_REF_SYS.c.srid]).where(
+                        func.lower(SPATIAL_REF_SYS.c.auth_name) ==
+                        func.lower(func.substring(spatial_ref, r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$'))
+                    ).where(
+                        SPATIAL_REF_SYS.c.auth_srid ==
+                        func.substring(spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$').cast(Integer)
+                    ).as_scalar()
+                )
+            ],
+            else_=None
+        ),
+        case(
+            [
+                (
+                    # Fallback: An exact string match on WKT. Yuck!
+                    spatial_ref.op("~")(r"^(GEOGCS|PROJCS)"),
+                    select([SPATIAL_REF_SYS.c.srid]).where(
+                        func.lower(SPATIAL_REF_SYS.c.srtext) == spatial_ref
+                    ).as_scalar()
+                )
+            ],
+            else_=None
         ),
         # Some older datasets have datum/zone fields instead.
         # The only remaining ones in DEA are 'GDA94'.
@@ -161,9 +191,11 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             ],
             else_=None
         ),
-
-        # TODO: third option: CRS as text/WKT
+        default_crs_expression,
+        # TODO: Handle arbitrary WKT strings (?)
     )
+    # print(as_sql(expression))
+    return expression
 
 
 def _gis_point(doc, doc_offset):
@@ -301,18 +333,6 @@ def _as_json(obj):
         return repr(o)
 
     return json.dumps(obj, indent=4, default=fallback)
-
-
-def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
-    with Datacube(index=index) as dc:
-        index = dc.index
-        for product_name in product_names:
-            product = index.products.get_by_name(product_name)
-            res = alchemy_engine(index).execute(
-                _select_dataset_extent_query(product).limit(1)
-            ).fetchone()
-            if res:
-                yield dict(res)
 
 
 # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
@@ -520,7 +540,46 @@ def _get_path_row_shapes():
     return path_row_shapes
 
 
+def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
+    with Datacube(index=index) as dc:
+        index = dc.index
+        for product_name in product_names:
+            product = index.products.get_by_name(product_name)
+            res = alchemy_engine(index).execute(
+                _select_dataset_extent_query(product).limit(1)
+            ).fetchone()
+            if res:
+                yield dict(res)
+
+
+def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:
+    with Datacube(index=index) as dc:
+        index = dc.index
+        for product_name in product_names:
+            product = index.products.get_by_name(product_name)
+
+            # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
+            # pylint: disable=singleton-comparison
+            res = alchemy_engine(index).execute(
+                select([
+                    literal(product.name).label("product"),
+                    get_dataset_srid_alchemy_expression(product.metadata_type).label("crs"),
+                ]).where(
+                    DATASET.c.dataset_type_ref == product.id
+                ).where(
+                    DATASET.c.archived == None
+                ).limit(1)
+            ).fetchone()
+            if res:
+                yield dict(res)
+
+
 if __name__ == '__main__':
-    print(_as_json(get_sample_dataset(
+    print("CRSes")
+    print(_as_json(list(get_mapped_crses(
         *(sys.argv[1:] or ['ls8_nbar_scene', 'ls8_nbar_albers'])
-    )))
+    ))))
+    print("Extents")
+    print(_as_json(list(get_sample_dataset(
+        *(sys.argv[1:] or ['ls8_nbar_scene', 'ls8_nbar_albers'])
+    ))))
