@@ -331,15 +331,19 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
 
 
 def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
-    [albers] = _extents.get_sample_dataset('ls7_nbar_scene', index=module_dea_index)
-    assert albers['id'] is not None
-    assert albers['dataset_type_ref'] is not None
-    assert albers['center_time'] is not None
-    assert albers['footprint'] is not None
+    [cols] = _extents.get_sample_dataset('ls7_nbar_scene', index=module_dea_index)
+    assert cols['id'] is not None
+    assert cols['dataset_type_ref'] is not None
+    assert cols['center_time'] is not None
+    assert cols['footprint'] is not None
 
     # Can it be serialised without type errors? (for printing)
-    output_json = _extents._as_json(albers)
-    assert str(albers['id']) in output_json
+    output_json = _extents._as_json(cols)
+    assert str(cols['id']) in output_json
+
+    [cols] = _extents.get_mapped_crses('ls7_nbar_scene', index=module_dea_index)
+    assert cols['product'] == 'ls7_nbar_scene'
+    assert cols['crs'] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 
 
 def test_with_timings(client: FlaskClient):

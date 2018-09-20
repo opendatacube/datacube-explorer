@@ -563,11 +563,9 @@ def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]
 
 
 if __name__ == '__main__':
-    print("CRSes")
     print(_as_json(list(get_mapped_crses(
         *(sys.argv[1:] or ['ls8_nbar_scene', 'ls8_nbar_albers'])
     ))))
-    print("Extents")
     print(_as_json(list(get_sample_dataset(
         *(sys.argv[1:] or ['ls8_nbar_scene', 'ls8_nbar_albers'])
     ))))
