@@ -621,7 +621,6 @@ def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]
 
 
 if __name__ == "__main__":
-    print("CRSes")
     print(
         _as_json(
             list(
@@ -631,7 +630,6 @@ if __name__ == "__main__":
             )
         )
     )
-    print("Extents")
     print(
         _as_json(
             list(
