@@ -122,6 +122,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 @click.option('-l', '--event-log-file',
               help="Output jsonl logs to file",
               type=click.Path(writable=True, dir_okay=True))
+@click.option('--refresh-stats/--no-refresh-stats', is_flag=True)
 @click.argument('product_names',
                 nargs=-1)
 def cli(config: LocalConfig,
@@ -129,6 +130,7 @@ def cli(config: LocalConfig,
         jobs: int,
         product_names: List[str],
         event_log_file: str,
+        refresh_stats: bool,
         verbose: bool):
     """
     Generate summary files for the given products
@@ -151,6 +153,8 @@ def cli(config: LocalConfig,
         products,
         workers=jobs,
     )
+    if refresh_stats:
+        store.refresh_stats()
     sys.exit(failures)
 
 

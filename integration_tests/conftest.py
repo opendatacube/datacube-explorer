@@ -43,6 +43,7 @@ module_dea_index = factories.dea_index_fixture('module_index', scope='module')
 @pytest.fixture(scope='function')
 def summary_store(module_dea_index: Index) -> SummaryStore:
     SummaryStore.create(module_dea_index, init_schema=False).drop_all()
+    module_dea_index.close()
     store = SummaryStore.create(module_dea_index, init_schema=True)
     return store
 

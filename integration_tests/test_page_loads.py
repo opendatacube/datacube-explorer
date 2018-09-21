@@ -359,4 +359,3 @@ def test_with_timings(client: FlaskClient):
     # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
     _, val = count_header[0].split(';')[0].split('_')
     assert int(val) > 0, "At least one query was run, presumably?"
-

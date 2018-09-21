@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import re
 
 from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, Date, BigInteger, PrimaryKeyConstraint
+from sqlalchemy import DateTime, Date, BigInteger, PrimaryKeyConstraint, Numeric
 from sqlalchemy import Enum, DDL, CheckConstraint
 from sqlalchemy import func, Table, Column, ForeignKey, String, Integer, SmallInteger, MetaData, Index
 from sqlalchemy.dialects import postgresql as postgres
@@ -12,16 +12,6 @@ from sqlalchemy.engine import Engine
 CUBEDASH_SCHEMA = 'cubedash'
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 GRIDCELL_COL_SPEC = f'{CUBEDASH_SCHEMA}.gridcell'
-
-# This is a materialised view of the postgis spatial_ref_sys for lookups. See creation of mv_spatial_ref_sys below.
-SPATIAL_REF_SYS = Table(
-    'mv_spatial_ref_sys', METADATA,
-    Column('srid', Integer, primary_key=True),
-    Column('auth_name', String(255)),
-    Column('auth_srid', Integer),
-    Column('srtext', String(2048)),
-    Column('proj4text', String(2048)),
-)
 
 # Albers equal area. Allows us to show coverage in m^2 easily.
 FOOTPRINT_SRID = 3577
@@ -156,7 +146,29 @@ TIME_OVERVIEW = Table(
     ),
 )
 
-_PG_GRIDCELL_STRING = re.compile(r"\(([^)]+),([^)]+)\)")
+
+_REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
+# This is a materialised view of the postgis spatial_ref_sys for lookups. See creation of mv_spatial_ref_sys below.
+SPATIAL_REF_SYS = Table(
+    'mv_spatial_ref_sys', _REF_TABLE_METADATA,
+    Column('srid', Integer, primary_key=True),
+    Column('auth_name', String(255)),
+    Column('auth_srid', Integer),
+    Column('srtext', String(2048)),
+    Column('proj4text', String(2048)),
+)
+
+SPATIAL_QUALITY_STATS = Table(
+    'mv_dataset_spatial_quality', _REF_TABLE_METADATA,
+    Column('dataset_type_ref', SmallInteger, primary_key=True),
+    Column('count', Integer),
+    Column('missing_footprint', Integer),
+    Column('footprint_size', Integer),
+    Column('footprint_stddev', Numeric),
+    Column('missing_srid', Integer),
+    Column('has_file_size', Integer),
+    Column('has_region', Integer),
+)
 
 
 def create_schema(engine: Engine):
@@ -186,20 +198,34 @@ def create_schema(engine: Engine):
 
     # Useful reporting.
     engine.execute(f"""
-    create materialized view if not exists {CUBEDASH_SCHEMA}.dataset_spatial_quality as (
+    create materialized view if not exists {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality as (
         select 
             dataset_type_ref,
-            count(*),
+            count(*) as count,
             count(*) filter (where footprint is null) as missing_footprint,
             sum(pg_column_size(footprint)) filter (where footprint is not null) as footprint_size,
             stddev(pg_column_size(footprint)) filter (where footprint is not null) as footprint_stddev,
-            count(*) filter (where footprint is not null and ST_IsValid(footprint)) as valid_footprint,
             count(*) filter (where ST_SRID(footprint) is null) as missing_srid,
             count(*) filter (where size_bytes is not null) as has_file_size, 
             count(*) filter (where region_code is not null) as has_region
         from {CUBEDASH_SCHEMA}.dataset_spatial 
         group by dataset_type_ref
     ) with no data;
+    """)
+
+    engine.execute(f"""
+    create unique index if not exists mv_dataset_spatial_quality_dataset_type_ref
+        on {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality(dataset_type_ref);
+    """)
+
+
+def refresh_supporting_views(conn, concurrently=False):
+    args = 'concurrently' if concurrently else ''
+    conn.execute(f"""
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_spatial_ref_sys; 
+    """)
+    conn.execute(f"""
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality; 
     """)
 
 

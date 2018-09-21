@@ -9,6 +9,7 @@ import calendar
 import logging
 from datetime import datetime
 
+import flask
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
@@ -27,6 +28,8 @@ NUMERIC_STEP_SIZE = {
     'double': 0.001,
     'integer': 1,
 }
+
+CROSS_SYMBOL = Markup('<i class="fa fa-times bad" aria-label="x"></i>')
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('filters', __name__)
@@ -49,11 +52,23 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter('printable_data_size')
 def sizeof_fmt(num, suffix='B'):
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+@bp.app_template_filter('percent')
+def percent_fmt(val, total, show_zero=False):
+    if val is None:
+        return ''
+    if val == 0 and not show_zero:
+        return ''
+    if val == total:
+        return CROSS_SYMBOL
+    o = 100 * (val / total)
+    return '{:.2f}%'.format(o)
 
 
 @bp.app_template_filter('dataset_geojson')
@@ -72,6 +87,12 @@ def _dataset_geojson(dataset):
             'start_time': dataset.time.begin.isoformat()
         }
     }
+
+
+@bp.app_template_filter('product_link')
+def _product_link(product_name):
+    url = flask.url_for('overview_page', product_name=product_name)
+    return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
 
 
 @bp.app_template_filter('albers_area')

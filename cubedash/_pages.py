@@ -10,7 +10,7 @@ from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from cubedash import _monitoring
+from cubedash import _monitoring, _audit
 from cubedash.summary import RegionInfo, TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
@@ -26,6 +26,7 @@ app.register_blueprint(_dataset.bp)
 app.register_blueprint(_product.bp)
 app.register_blueprint(_platform.bp)
 app.register_blueprint(_reports.bp)
+app.register_blueprint(_audit.bp)
 
 _LOG = structlog.getLogger()
 

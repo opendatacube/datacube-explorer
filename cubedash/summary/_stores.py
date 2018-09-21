@@ -19,7 +19,8 @@ from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import _extents, TimePeriodOverview
 from cubedash.summary import _schema
-from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT
+from cubedash.summary._schema import refresh_supporting_views
+from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, SPATIAL_QUALITY_STATS
 from cubedash.summary._summarise import Summariser
 from datacube import utils as dc_utils
 
@@ -76,6 +77,7 @@ class SummaryStore:
     def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
         for product in self.all_dataset_types():
             self.refresh_product(product, refresh_older_than=refresh_older_than)
+        self.refresh_stats()
 
     def refresh_product(self,
                         product: DatasetType,
@@ -120,6 +122,9 @@ class SummaryStore:
             )
         )
         return added_count
+
+    def refresh_stats(self):
+        refresh_supporting_views(self._engine)
 
     def _get_linked_products(self, product, kind='source', sample_percentage=0.05):
         """
@@ -248,6 +253,14 @@ class SummaryStore:
             derived_products=derived_products,
             **row
         )
+
+    def get_quality_stats(self) -> Iterable[Dict]:
+        stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))
+        for row in stats:
+            d = dict(row)
+            d['product'] = self._dataset_type_by_id(row['dataset_type_ref'])
+            d['avg_footprint_bytes'] = row['footprint_size'] / row['count'] if row['footprint_size'] else 0
+            yield d
 
     def get_product_summary(self, name: str) -> Optional[ProductSummary]:
         try:
