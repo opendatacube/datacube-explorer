@@ -22,7 +22,7 @@ def get_geojson(client: FlaskClient, url: str) -> Dict:
 
 def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
     response: Response = client.get(url)
-    assert response.status_code == 200
+    assert response.status_code == 200, response.data.decode("utf-8")
     html = HTML(html=response.data.decode("utf-8"))
     return html, response
 

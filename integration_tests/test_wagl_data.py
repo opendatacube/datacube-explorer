@@ -5,12 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from dateutil import tz
 from dateutil.tz import tzutc
+from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
 from datacube.model import Range
-from integration_tests.asserts import expect_values
+from integration_tests.asserts import expect_values, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -63,3 +63,23 @@ def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
         crses={"EPSG:32753"},
         size_bytes=3_442_177_050,
     )
+
+
+def test_product_audit(unpopulated_client: FlaskClient, run_generate):
+    run_generate()
+    client = unpopulated_client
+
+    res = get_html(client, "/product-audit/?timings")
+    # print(res.html)
+
+    largest_footprint_size = res.find(".footprint-size .search-result")
+    assert len(largest_footprint_size) == 10
+    largest_product_footprint = (
+        largest_footprint_size[0].find(".product-name", first=True).text
+    )
+
+    assert largest_product_footprint == "wofs_summary"
+    largest_val = largest_footprint_size[0].find(".size-value", first=True).text
+    assert largest_val == "32.2KiB"
+
+    assert len(res.find(".unavailable-metadata .search-result")) == 10

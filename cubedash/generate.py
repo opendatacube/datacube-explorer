@@ -124,6 +124,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     help="Output jsonl logs to file",
     type=click.Path(writable=True, dir_okay=True),
 )
+@click.option("--refresh-stats/--no-refresh-stats", is_flag=True)
 @click.argument("product_names", nargs=-1)
 def cli(
     config: LocalConfig,
@@ -131,6 +132,7 @@ def cli(
     jobs: int,
     product_names: List[str],
     event_log_file: str,
+    refresh_stats: bool,
     verbose: bool,
 ):
     """
@@ -147,6 +149,8 @@ def cli(
         products = list(_load_products(store.index, product_names))
 
     completed, failures = run_generation(config, products, workers=jobs)
+    if refresh_stats:
+        store.refresh_stats()
     sys.exit(failures)
 
 
