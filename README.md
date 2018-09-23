@@ -76,8 +76,9 @@ Git)
 
 Add a file to the current directory called `settings.env.py`
 
-You can alter default [Flask settings](http://flask.pocoo.org/docs/1.0/config/),
-as well as some cubedash-specific settings:
+You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
+[Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings 
+(default "CACHE_TYPE: simple"), as well as some cubedash-specific settings:
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
@@ -89,7 +90,7 @@ as well as some cubedash-specific settings:
     
     # Include load performance metrics in http response.
     CUBEDASH_SHOW_PERF_TIMES = False
-    
+
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
 

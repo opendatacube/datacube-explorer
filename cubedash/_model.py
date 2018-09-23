@@ -30,7 +30,8 @@ app = flask.Flask(NAME)
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 
-cache = Cache(app=app, config={"CACHE_TYPE": "simple"})
+app.config.setdefault("CACHE_TYPE", "simple")
+cache = Cache(app=app, config=app.config)
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
