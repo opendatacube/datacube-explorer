@@ -12,12 +12,14 @@
         .panel {
             line-height: 1.8em;
         }
-    .bad{
-        color: #cc9424;
-    }
-    .data-table tr:hover {
-        background-color: #f0f0f0;
-    }
+
+        .bad {
+            color: #cc9424;
+        }
+
+        .data-table tr:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -34,7 +36,7 @@
     </div>
     <div class="panel odd">
         {% if products_missing %}
-            <p>No summaries:</p>
+            <p>Missing summaries:</p>
             <ul>
                 {% for name in products_missing %}
                     <li>{{ name | product_link }}</li>
@@ -50,7 +52,7 @@
                 <th>Product</th>
                 <th class="missing">Missing footprint</th>
                 <th class="missing">Missing CRS</th>
-                <th class="feature">Missing Regions</th>
+                <th class="feature" title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">Missing Regions</th>
                 <th class="feature">Missing Dataset Size</th>
                 </thead>
                 {% for stat in spatial_quality_stats | sort(attribute='product.name') %}
@@ -89,7 +91,7 @@
                 </thead>
                 {% for stat in spatial_quality_stats | sort(attribute='avg_footprint_bytes', reverse=True) | batch(10) | first %}
                     <tr class="search-result">
-                        <td>{{ stat.product.name | product_link}}</td>
+                        <td>{{ stat.product.name | product_link }}</td>
 
                         {% if stat.footprint_size %}
                             {% set avg_footprint_size=stat.footprint_size / stat.count %}
@@ -104,8 +106,8 @@
             </table>
         {% endif %}
     </div>
-    {% if product_timings_iter %}
-        <div class="panel">
+    <div class="panel" id="query-timings">
+        {% if product_timings_iter %}
             <h2>Slowest day queries</h2>
             <ul>
                 {% for timing in product_timings_iter %}
@@ -120,8 +122,10 @@
                     </span>
                     </li>
                 {% endfor %}
-                <ul>
-        </div>
-    {% endif %}
+            </ul>
+        {% else %}
+            <a href="{{ url_for('audit.product_audit_page', timings=True) }}#query-timings">Show query timings (very slow)</a>
+        {% endif %}
+    </div>
 {% endblock %}
 
