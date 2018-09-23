@@ -78,4 +78,5 @@ def product_audit_page():
         products_summarised=summarised_products,
         products_missing=unsummarised_product_names,
         spatial_quality_stats=list(store.get_quality_stats()),
+        **extra,
     )
