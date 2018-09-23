@@ -122,7 +122,12 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 @click.option('-l', '--event-log-file',
               help="Output jsonl logs to file",
               type=click.Path(writable=True, dir_okay=True))
-@click.option('--refresh-stats/--no-refresh-stats', is_flag=True)
+@click.option('--refresh-stats/--no-refresh-stats',
+              is_flag=True,
+              default=True)
+@click.option('--force-concurrently',
+              is_flag=True,
+              default=False)
 @click.argument('product_names',
                 nargs=-1)
 def cli(config: LocalConfig,
@@ -131,6 +136,7 @@ def cli(config: LocalConfig,
         product_names: List[str],
         event_log_file: str,
         refresh_stats: bool,
+        force_concurrently: bool,
         verbose: bool):
     """
     Generate summary files for the given products
@@ -154,7 +160,10 @@ def cli(config: LocalConfig,
         workers=jobs,
     )
     if refresh_stats:
-        store.refresh_stats()
+        echo("Refreshing statistics...", nl=False)
+        store.refresh_stats(concurrently=force_concurrently)
+        secho("done", color='green')
+        _LOG.info('stats.refresh', )
     sys.exit(failures)
 
 
