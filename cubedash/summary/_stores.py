@@ -123,8 +123,8 @@ class SummaryStore:
         )
         return added_count
 
-    def refresh_stats(self):
-        refresh_supporting_views(self._engine)
+    def refresh_stats(self, concurrently=False):
+        refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _get_linked_products(self, product, kind='source', sample_percentage=0.05):
         """
