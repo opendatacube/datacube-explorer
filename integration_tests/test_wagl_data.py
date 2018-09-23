@@ -74,12 +74,12 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
     # print(res.html)
 
     largest_footprint_size = res.find('.footprint-size .search-result')
-    assert len(largest_footprint_size) == 10
+    assert len(largest_footprint_size) == 2
+
     largest_product_footprint = largest_footprint_size[0].find('.product-name', first=True).text
-
-    assert largest_product_footprint == 'wofs_summary'
     largest_val = largest_footprint_size[0].find('.size-value', first=True).text
-    assert largest_val == '32.2KiB'
+    # They're both the same :/
+    assert largest_product_footprint in ('s2a_ard_granule', 's2a_level1c_granule')
+    assert largest_val == '181.6B'
 
-    assert len(res.find('.unavailable-metadata .search-result')) == 10
-
+    assert len(res.find('.unavailable-metadata .search-result')) == 2
