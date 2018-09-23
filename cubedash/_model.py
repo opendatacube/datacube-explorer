@@ -31,9 +31,10 @@ app = flask.Flask(NAME)
 app.config.from_pyfile(BASE_DIR / 'settings.env.py', silent=True)
 app.config.from_envvar('CUBEDASH_SETTINGS', silent=True)
 
+app.config.setdefault('CACHE_TYPE', 'simple')
 cache = Cache(
     app=app,
-    config={'CACHE_TYPE': 'simple'}
+    config=app.config,
 )
 
 # Thread and multiprocess safe.
