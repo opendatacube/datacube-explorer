@@ -9,8 +9,8 @@ import flask
 from dataclasses import dataclass
 from flask import Blueprint
 
-from cubedash._model import STORE, cache
 from datacube.model import Range
+from . import _model
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('audit', __name__, url_prefix='/product-audit')
@@ -30,30 +30,31 @@ def product_timings() -> Iterable[ProductTiming]:
     Useful for finding missing time indexes..
     """
     done = 0
-    for product_name in STORE.list_complete_products():
+    store = _model.STORE
+    for product_name in store.list_complete_products():
 
-        p = STORE.get_product_summary( product_name)
+        p = store.get_product_summary(product_name)
 
         if not p:
-            _LOG.info("product_no_summarised", product_name= product_name)
+            _LOG.info("product_no_summarised", product_name=product_name)
             continue
         if not p.dataset_count or not p.time_earliest:
-            yield ProductTiming( product_name, dataset_count=0)
+            yield ProductTiming(product_name, dataset_count=0)
             continue
         done += 1
         middle_period = p.time_earliest + (p.time_latest - p.time_earliest) / 2
         day = middle_period.replace(hour=0, minute=0, second=0)
 
         start = time.time()
-        dataset_count = STORE.index.datasets.count(
-            product= product_name,
+        dataset_count = store.index.datasets.count(
+            product=product_name,
             time=Range(day, day + timedelta(days=1))
         )
         end = time.time()
         yield ProductTiming(product_name, dataset_count, end - start, day)
 
 
-@cache.memoize()
+@_model.cache.memoize()
 def cached_product_timings():
     return sorted(
         list(product_timings()),
@@ -64,8 +65,9 @@ def cached_product_timings():
 
 @bp.route('/')
 def product_audit_page():
-    all_products = set(p.name for p in STORE.index.products.get_all())
-    summarised_products = set(STORE.list_complete_products())
+    store = _model.STORE
+    all_products = set(p.name for p in store.index.products.get_all())
+    summarised_products = set(store.list_complete_products())
     unsummarised_product_names = all_products - summarised_products
 
     extra = {}
@@ -77,5 +79,5 @@ def product_audit_page():
         products_all=all_products,
         products_summarised=summarised_products,
         products_missing=unsummarised_product_names,
-        spatial_quality_stats=list(STORE.get_quality_stats()),
+        spatial_quality_stats=list(store.get_quality_stats()),
     )
