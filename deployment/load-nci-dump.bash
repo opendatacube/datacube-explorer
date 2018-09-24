@@ -100,8 +100,10 @@ log_info "Summary gen"
 
 $python -m cubedash.generate -C /etc/datacube.conf -C new-dump.conf -v --all -j 4 || true
 
+echo "Clustering $(date)"
 psql ${psql_args} "${dbname}" -X -c 'cluster cubedash.dataset_spatial using "dataset_spatial_dataset_type_ref_center_time_idx";'
 psql ${psql_args} "${dbname}" -X -c 'create index tix_region_center ON cubedash.dataset_spatial (dataset_type_ref, region_code text_pattern_ops, center_time);'
+echo "Done $(date)"
 
 echo "Testing a summary"
 if ! $python -m cubedash.summary.show -C /etc/datacube.conf -C new-dump.conf ls8_nbar_scene;
@@ -113,6 +115,7 @@ fi
 log_info "Restarting deadash (with updated summaries)"
 mv new-dump.conf datacube.conf
 sudo systemctl restart deadash
+cp -v "${summary_dir}/generated.txt" "${app_dir}/generated.txt"
 
 
 log_info "Warming caching"
