@@ -248,12 +248,21 @@ def inject_globals():
         reverse=True,
     )
 
+    last_updated = _model.get_last_updated()
+    # If there's no global data refresh time, show the time the current product was summarised.
+    if not last_updated and "product_name" in flask.request.view_args:
+        product_summary = _model.STORE.get_product_summary(
+            flask.request.view_args["product_name"]
+        )
+        if product_summary:
+            last_updated = datetime.now() - product_summary.last_refresh_age
+
     return dict(
         grouped_products=grouped_product_summarise,
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        last_updated_time=_model.get_last_updated(),
+        last_updated_time=last_updated,
     )
 
 
