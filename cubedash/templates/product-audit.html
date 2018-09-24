@@ -108,16 +108,17 @@
     </div>
     <div class="panel" id="query-timings">
         {% if product_timings_iter %}
-            <h2>Slowest day queries</h2>
+            <h2>Day query speed</h2>
+            <p>Extremely slow queries usually indicate a misconfigured index for the product.</p>
             <ul>
                 {% for timing in product_timings_iter %}
                     <li>
                         <strong>{{ timing.name | product_link }}</strong>
                         <span {% if timing.time_seconds and timing.time_seconds > 0.8 %}class="bad"{% endif %}>
                         {% if timing.time_seconds %}
-                            {{ timing.time_seconds | round(2) }}ms
+                            {{ (timing.time_seconds * 1000) | int }}ms
                         {% else %}
-                            None
+                            (empty product)
                         {% endif %}
                     </span>
                     </li>
