@@ -35,7 +35,7 @@
             </ul>
         {% endif %}
     </div>
-    <div class="panel">
+    <div class="panel" id="missing-metadata">
         {% if spatial_quality_stats %}
             <table class="data-table unavailable-metadata">
                 <thead>
@@ -74,7 +74,7 @@
             <span class="primary-error">Spatial quality view not populated</span>
         {% endif %}
     </div>
-    <div class="panel">
+    <div class="panel" id="largest-footprint-size">
         {% if spatial_quality_stats %}
             <h2>Largest footprint size</h2>
             Measured from binary storage. JSON/Metadata representation is much larger.
@@ -123,7 +123,7 @@
     {% else %}
         <div class="panel odd">
             <a href="{{ url_for('audit.product_audit_page', timings=True) }}#query-timings">
-                Measure query timings (very slow)
+                View query timings (very slow)
             </a>
         </div>
     {% endif %}
