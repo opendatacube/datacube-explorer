@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 import flask
-from flask import Blueprint
+from flask import Blueprint, Response
 
 from datacube.model import Range
 
@@ -80,3 +80,13 @@ def product_audit_page():
         spatial_quality_stats=list(store.get_quality_stats()),
         **extra,
     )
+
+
+@bp.route("/day-times.txt")
+def get_timings():
+    def respond():
+        yield "product\tcount\ttime_ms\n"
+        for f in product_timings():
+            yield f'"{f.name}"\t{f.dataset_count}\t{int(f.time_seconds*1000)}\n'
+
+    return Response(respond(), mimetype="text/plain")
