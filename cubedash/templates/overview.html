@@ -1,6 +1,5 @@
 {% extends "layout/product-section.html" %}
 {% set active_page = "overview" %}
-{% block title %}{{ product.name }}{% endblock %}
 
 {% set have_data = selected_summary and selected_summary.dataset_count > 0 %}
 {% set have_displayable_data = selected_summary and selected_summary.footprint_count > 0 %}
