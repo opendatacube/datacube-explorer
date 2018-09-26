@@ -33,13 +33,13 @@ def populate_index(dataset_loader, module_dea_index):
         TEST_DATA_DIR / 'wofs-albers-sample.yaml.gz'
     )
     assert loaded == 11
-    
+
     loaded = dataset_loader(
         'high_tide_comp_20p',
         TEST_DATA_DIR / 'high_tide_comp_20p.yaml.gz'
     )
     assert loaded == 306
-    
+
     return module_dea_index
 
 
@@ -279,7 +279,6 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     assert geojson is None, "Unexpected wofs albers region count"
 
 
-
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
@@ -359,3 +358,8 @@ def test_with_timings(client: FlaskClient):
     # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
     _, val = count_header[0].split(';')[0].split('_')
     assert int(val) > 0, "At least one query was run, presumably?"
+
+
+def test_plain_product_list(client: FlaskClient):
+    rv: Response = client.get('/products.txt')
+    assert 'ls7_nbar_scene\n' in rv.data.decode('utf-8')
