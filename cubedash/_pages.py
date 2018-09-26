@@ -4,7 +4,7 @@ from typing import Tuple
 
 import flask
 import structlog
-from flask import abort, redirect, url_for
+from flask import abort, redirect, url_for, Response
 from flask import request
 from werkzeug.datastructures import MultiDict
 
@@ -280,4 +280,13 @@ def default_redirect():
             'overview_page',
             product_name=default_product
         )
+    )
+
+
+@app.route('/products.txt')
+def product_list_text():
+    # This is useful for bash scripts when we want to loop products :)
+    return Response(
+        '\n'.join(_model.STORE.list_complete_products()),
+        content_type="text/plain"
     )
