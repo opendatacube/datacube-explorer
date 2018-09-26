@@ -88,5 +88,5 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
 
     res: Response = client.get("/product-audit/day-times.txt")
     plain_timing_results = res.data.decode("utf-8")
-    assert "s2_ard_granule" in plain_timing_results
-    assert len(plain_timing_results.splitlines(keepends=False)) == 2
+    print(plain_timing_results)
+    assert '"s2a_ard_granule"\t8\t' in plain_timing_results

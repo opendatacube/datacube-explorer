@@ -87,6 +87,7 @@ def get_timings():
     def respond():
         yield "product\tcount\ttime_ms\n"
         for f in product_timings():
-            yield f'"{f.name}"\t{f.dataset_count}\t{int(f.time_seconds*1000)}\n'
+            time_ms = int(f.time_seconds * 1000) if f.time_seconds else ""
+            yield f'"{f.name}"\t{f.dataset_count}\t{time_ms}\n'
 
     return Response(respond(), mimetype="text/plain")
