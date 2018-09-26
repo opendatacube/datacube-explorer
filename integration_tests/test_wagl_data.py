@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from dateutil.tz import tzutc
+from flask import Response
 from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
@@ -84,3 +85,8 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
     assert largest_val == "181.6B"
 
     assert len(res.find(".unavailable-metadata .search-result")) == 2
+
+    res: Response = client.get("/product-audit/day-times.txt")
+    plain_timing_results = res.data.decode("utf-8")
+    assert "s2_ard_granule" in plain_timing_results
+    assert len(plain_timing_results.splitlines(keepends=False)) == 2
