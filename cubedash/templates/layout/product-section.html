@@ -31,7 +31,13 @@
     </div>
 {% endset %}
 
-{% block title %}{{ product.name }} {{ product_args_label }}{% endblock %}
+{% block title -%}
+    {{ product.name }} {% if year -%}
+        for {% if month -%}
+            {%- if day -%}{{ day }} {% endif -%}
+            {{ month | month_name }} {% endif -%}
+    {{ year }} {% endif -%}
+{% endblock %}
 
 {% block header %}
     <header>
