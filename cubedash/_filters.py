@@ -29,7 +29,7 @@ NUMERIC_STEP_SIZE = {
     'integer': 1,
 }
 
-CROSS_SYMBOL = Markup('<i class="fa fa-times bad" aria-label="x"></i>')
+CROSS_SYMBOL = Markup('<i class="fa fa-times" aria-label="x"></i>')
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('filters', __name__)
