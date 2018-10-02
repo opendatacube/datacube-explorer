@@ -11,7 +11,9 @@ body { font-family: Helvetica, Arial, sans-serif; background: linear-gradient(to
 
 .logo-text { display: inline-block; }
 
-.content-wrapper { position: relative; padding: 60px 0 30px; }
+.content-wrapper { position: relative; padding: 90px 0 30px; }
+
+header { margin-top: -30px; }
 
 #content { clear: right; position: relative; width: auto; background-color: #e0e0e0; }
 

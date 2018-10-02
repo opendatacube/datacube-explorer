@@ -5,10 +5,6 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .sub-header {
-            line-height: 1.4em;
-        }
-
         .bad {
             color: #cc9424;
         }
@@ -24,20 +20,18 @@
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h2>Product Audit</h2>
+        <h1>Product Audit</h1>
         <div class="sub-header">{{ products_summarised|length }} products with summaries.
-            {{ (products_missing | length) or 'None' }} without{% if products_missing %}:{% else %}.{% endif %}</div>
-        {% if products_missing %}
-            <ul>
-                {% for name in products_missing %}
-                    <li>{{ name | product_link }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+            {{ (products_missing | length) or 'None' }} without{% if products_missing %}:{% else %}.{% endif %}
+            {% for name in products_missing %}
+                {{ name | product_link }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </div>
     </div>
-    <div class="panel" id="missing-metadata">
+    <div class="panel">
+        <h2>Metadata</h2>
         {% if spatial_quality_stats %}
-            <table class="data-table unavailable-metadata">
+            <table class="data-table unavailable-metadata" id="missing-metadata">
                 <thead>
                 <th>Product</th>
                 <th class="missing">Missing footprint</th>
