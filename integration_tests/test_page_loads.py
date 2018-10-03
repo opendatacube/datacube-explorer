@@ -54,19 +54,19 @@ def test_get_overview(client: FlaskClient):
     html = get_html(client, "/wofs_albers")
     check_dataset_count(html, 11)
     check_last_processed(html, "2018-05-20T11:25:35")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
+    assert "wofs_albers whole collection" in _h1_text(html)
     check_area("61,...km2", html)
 
     html = get_html(client, "/wofs_albers/2017")
 
     check_dataset_count(html, 11)
     check_last_processed(html, "2018-05-20T11:25:35")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
+    assert "wofs_albers across 2017" in _h1_text(html)
 
     html = get_html(client, "/wofs_albers/2017/04")
     check_dataset_count(html, 4)
     check_last_processed(html, "2018-05-20T09:36:57")
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
+    assert "wofs_albers across April 2017" in _h1_text(html)
     check_area("30,...km2", html)
 
 
@@ -92,6 +92,7 @@ def test_get_day_overviews(client: FlaskClient):
     # With a dataset
     html = get_html(client, "/ls7_nbar_scene/2017/4/20")
     check_dataset_count(html, 1)
+    assert "ls7_nbar_scene on 20th April 2017" in _h1_text(html)
 
     # Empty day
     html = get_html(client, "/ls7_nbar_scene/2017/4/22")
@@ -128,15 +129,16 @@ def test_view_dataset(client: FlaskClient):
     html = get_html(client, "/dataset/57848615-2421-4d25-bfef-73f57de0574d")
 
     # Label of dataset is header
-    assert (
-        "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501"
-        in html.find("h1", first=True).text
-    )
+    assert "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501" in _h1_text(html)
 
     # wofs_albers dataset (has no label or location)
     rv: Response = client.get("/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
     assert b"-20.502 to -19.6" in rv.data
     assert b"132.0 to 132.924" in rv.data
+
+
+def _h1_text(html):
+    return html.find("h1", first=True).text
 
 
 def test_view_product(client: FlaskClient):
