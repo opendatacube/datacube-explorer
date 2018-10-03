@@ -203,7 +203,10 @@ def as_rich_json(o):
 def as_json(o):
     return flask.Response(
         rapidjson.dumps(
-            o, datetime_mode=rapidjson.DM_ISO8601, uuid_mode=rapidjson.UM_CANONICAL
+            o,
+            datetime_mode=rapidjson.DM_ISO8601,
+            uuid_mode=rapidjson.UM_CANONICAL,
+            number_mode=rapidjson.NM_NATIVE,
         ),
         content_type="application/json",
     )
