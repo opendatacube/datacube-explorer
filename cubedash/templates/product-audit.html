@@ -20,7 +20,10 @@
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h1>Product Audit</h1>
+        <h1>Product Audit
+            {%- if sentry_public_dsn and sentry_public_args.environment %}: {{ sentry_public_args.environment }}
+            {%- endif -%}
+        </h1>
         <div class="sub-header">{{ products_summarised|length }} products with summaries.
             {{ (products_missing | length) or 'None' }} without{% if products_missing %}:{% else %}.{% endif %}
             {% for name in products_missing %}
