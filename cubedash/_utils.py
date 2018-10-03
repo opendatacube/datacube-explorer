@@ -207,6 +207,7 @@ def as_json(o):
             o,
             datetime_mode=rapidjson.DM_ISO8601,
             uuid_mode=rapidjson.UM_CANONICAL,
+            number_mode=rapidjson.NM_NATIVE,
         ),
         content_type='application/json',
     )
