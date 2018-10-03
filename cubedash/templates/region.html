@@ -2,7 +2,7 @@
 {% set additional_page_args={'region_code': region_code} %}
 {% set active_page = "datasets" %}
 
-{% block title %}{{ super() }} search{% endblock %}
+{% block title %}{{ super() }} region{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -12,7 +12,7 @@
             right: 0;
             top: 0;
             height: 200px;
-            width: 75%;
+            width: 66%;
         }
 
         .map-container {
@@ -26,8 +26,7 @@
     <div class="panel relative map-container">
 
         <div id="region-map"></div>
-
-        <h3>{{ product_region_info.region_label(region_code) }}</h3>
+        <h1><strong>{{ product_region_info.region_label(region_code) }}</strong> {{ product_args_label }}</h1>
         {% if datasets %}
             <p>
                 {{ datasets | length }} dataset{% if datasets | length > 1 %}s{% endif %}
