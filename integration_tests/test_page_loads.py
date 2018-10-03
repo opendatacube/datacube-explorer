@@ -125,9 +125,13 @@ def test_uninitialised_search_page(
 
 def test_view_dataset(client: FlaskClient):
     # ls7_level1_scene dataset
-    rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+    html = get_html(client, "/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+
     # Label of dataset is header
-    assert b"<h2>LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501</h2>" in rv.data
+    assert (
+        "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501"
+        in html.find("h1", first=True).text
+    )
 
     # wofs_albers dataset (has no label or location)
     rv: Response = client.get("/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
