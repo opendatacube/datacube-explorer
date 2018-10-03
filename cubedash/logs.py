@@ -1,9 +1,9 @@
 import datetime
-import json
 import pathlib
 import sys
 import uuid
 
+import rapidjson
 import structlog
 
 
@@ -21,7 +21,14 @@ def init_logging(output_file=None, verbose=False):
     # Note that we can't use functools.partial: it JSONRendering will pass its
     # own 'default' property that overrides our own.
     def lenient_json_dump(obj, *args, **kwargs):
-        return json.dumps(obj, default=lenient_json_fallback, sort_keys=True)
+        return rapidjson.dumps(
+            obj,
+            datetime_mode=rapidjson.DM_ISO8601,
+            uuid_mode=rapidjson.UM_CANONICAL,
+            number_mode=rapidjson.NM_NATIVE,
+            sort_keys=True,
+            default=lenient_json_fallback,
+        )
 
     # Direct structlog into standard logging.
     processors = [
