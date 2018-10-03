@@ -216,8 +216,8 @@
     <script type="application/javascript">
         (function () {
             'use strict';
-            const footprintGeoJSON = {{ footprint_geojson | tojson }},
-                  regionsGeoJSON = {{ regions_geojson | tojson }};
+            const footprintGeoJSON = {{ footprint_geojson | torapidjson }},
+                  regionsGeoJSON = {{ regions_geojson | torapidjson }};
 
             const routes = new TimeSummaryRoutes(
                 '{{ url_for('region_page', region_code='__REGION_CODE__', **product_args)}}',
@@ -243,7 +243,7 @@
                             selected_summary.timeline_dataset_counts,
                             product,
                             period=selected_summary.timeline_period
-                        ) | tojson
+                        ) | torapidjson
                         }};
                     return div;
                 };

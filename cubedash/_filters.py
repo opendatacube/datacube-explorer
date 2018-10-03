@@ -8,7 +8,7 @@ from __future__ import division
 import calendar
 import logging
 from datetime import datetime
-
+import rapidjson
 import flask
 from dateutil import tz
 from flask import Blueprint
@@ -48,6 +48,11 @@ def _dataset_label(dataset):
         return Markup("<del>{}</del>".format(escape(label)))
 
     return label
+
+
+@bp.app_template_filter('torapidjson')
+def _fast_tojson(obj):
+    return Markup(rapidjson.dumps(obj))
 
 
 @bp.app_template_filter('printable_data_size')
