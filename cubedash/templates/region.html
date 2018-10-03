@@ -73,7 +73,7 @@
             }
         );
 
-        const dataset_data = L.geoJson({{ product_region_info.geojson_extent(region_code)| tojson }},
+        const dataset_data = L.geoJson({{ product_region_info.geojson_extent(region_code)| torapidjson }},
             {
                 interactive: false,
                 style: function (feature) {

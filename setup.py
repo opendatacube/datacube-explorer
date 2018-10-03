@@ -38,6 +38,7 @@ setup(
         "pyorbital",
         "geographiclib",
         "geoalchemy2",
+        "python-rapidjson",
         "simplekml",
         "structlog",
         "Flask-Caching",

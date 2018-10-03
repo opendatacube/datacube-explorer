@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 
 import flask
+import rapidjson
 from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
@@ -48,6 +49,11 @@ def _dataset_label(dataset):
         return Markup("<del>{}</del>".format(escape(label)))
 
     return label
+
+
+@bp.app_template_filter("torapidjson")
+def _fast_tojson(obj):
+    return Markup(rapidjson.dumps(obj))
 
 
 @bp.app_template_filter("printable_data_size")
