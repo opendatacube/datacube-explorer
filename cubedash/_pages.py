@@ -17,7 +17,7 @@ from datacube.scripts.dataset import build_dataset_info
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports
 from . import _utils as utils
-from ._utils import as_json
+from ._utils import as_rich_json
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -111,7 +111,7 @@ def search_page(
     )
 
     if request_wants_json():
-        return as_json(
+        return as_rich_json(
             dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
 
@@ -167,7 +167,7 @@ def region_page(
         return flask.redirect(url_for("dataset.dataset_page", id_=datasets[0].id))
 
     if request_wants_json():
-        return as_json(
+        return as_rich_json(
             dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
 
