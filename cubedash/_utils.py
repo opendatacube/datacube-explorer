@@ -11,13 +11,15 @@ from collections import defaultdict
 import collections
 import functools
 import pathlib
+
+import flask
 import shapely.geometry
 import shapely.validation
 import structlog
 from datetime import datetime, timedelta
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
-from flask import jsonify
+import rapidjson
 from shapely.geometry import Polygon
 from typing import Tuple, Optional
 
@@ -188,8 +190,26 @@ def now_utc() -> datetime:
     return default_utc(datetime.utcnow())
 
 
+def as_rich_json(o):
+    """
+    Use datacube's method of simplifying objects before serialising to json
+
+    (Primarily useful for serialising datacube models reliably)
+
+    Much slower than as_json()
+    """
+    return as_json(jsonify_document(o))
+
+
 def as_json(o):
-    return jsonify(jsonify_document(o))
+    return flask.Response(
+        rapidjson.dumps(
+            o,
+            datetime_mode=rapidjson.DM_ISO8601,
+            uuid_mode=rapidjson.UM_CANONICAL,
+        ),
+        content_type='application/json',
+    )
 
 
 def get_ordered_metadata(metadata_doc):
