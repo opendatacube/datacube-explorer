@@ -106,8 +106,12 @@ def _dataset_created(dataset: Dataset):
 
 
 @bp.app_template_filter('dataset_day_link')
-def _dataset_day_link(dataset: Dataset):
+def _dataset_day_link(dataset: Dataset, timezone=None):
     t = dataset.center_time
+    if t is None:
+        return '(unknown time)'
+    if timezone:
+        t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for('overview_page', product_name=dataset.type.name, year=t.year, month=t.month, day=t.day)
     return Markup(f"<a href='{url}' class='overview-day-link'>"
                   f"{t.day}{_get_ordinal_suffix(t.day)} "
