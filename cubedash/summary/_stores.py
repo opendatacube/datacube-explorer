@@ -80,7 +80,7 @@ class SummaryStore:
 
     def refresh_product(self,
                         product: DatasetType,
-                        refresh_older_than: timedelta = timedelta(days=1),
+                        refresh_older_than: timedelta = timedelta(hours=23),
                         dataset_sample_size: int = 1000):
         our_product = self.get_product_summary(product.name)
 
@@ -89,7 +89,7 @@ class SummaryStore:
             _LOG.debug(
                 'init.product.skip.too_recent',
                 product_name=product.name,
-                age=our_product.last_refresh_age
+                age=str(our_product.last_refresh_age)
             )
             return None
 
@@ -148,7 +148,7 @@ class SummaryStore:
 
         linked_product_names, = self._engine.execute(f"""
             with datasets as (
-                select id from agdc.dataset ${sample_sql} where dataset_type_ref=%(product_id)s and archived is null
+                select id from agdc.dataset {sample_sql} where dataset_type_ref=%(product_id)s and archived is null
             ), 
             linked_datasets as (
                 select distinct {from_ref} as linked_dataset_ref from agdc.dataset_source inner join datasets d on d.id = {to_ref}
