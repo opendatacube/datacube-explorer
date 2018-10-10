@@ -22,7 +22,6 @@ from cubedash.summary import _schema
 from cubedash.summary._schema import refresh_supporting_views
 from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, SPATIAL_QUALITY_STATS
 from cubedash.summary._summarise import Summariser
-from datacube import utils as dc_utils
 
 from datacube.index import Index
 from datacube.model import Dataset
@@ -142,9 +141,14 @@ class SummaryStore:
         if kind == 'derived':
             to_ref, from_ref = from_ref, to_ref
 
+        # Avoid tablesample (full table scan) when we're getting all of the product anyway.
+        sample_sql = ""
+        if sample_percentage < 100:
+            sample_sql = "tablesample system (%(sample_percentage)s)"
+
         linked_product_names, = self._engine.execute(f"""
             with datasets as (
-                select id from agdc.dataset tablesample system (%(sample_percentage)s) where dataset_type_ref=%(product_id)s and archived is null
+                select id from agdc.dataset ${sample_sql} where dataset_type_ref=%(product_id)s and archived is null
             ), 
             linked_datasets as (
                 select distinct {from_ref} as linked_dataset_ref from agdc.dataset_source inner join datasets d on d.id = {to_ref}
@@ -584,20 +588,6 @@ def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
     """
     items = sorted(counts.items())
     return tuple(k for k, v in items), tuple(v for k, v in items)
-
-
-def _dataset_created(dataset: Dataset) -> Optional[datetime]:
-    if 'created' in dataset.metadata.fields:
-        return dataset.metadata.created
-
-    value = dataset.metadata.creation_dt
-    if value:
-        try:
-            return _utils.default_utc(dc_utils.parse_time(value))
-        except ValueError:
-            _LOG.warn('invalid_dataset.creation_dt', dataset_id=dataset.id, value=value)
-
-    return None
 
 
 def _datasets_to_feature(datasets: Iterable[Dataset]):
