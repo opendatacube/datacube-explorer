@@ -262,6 +262,7 @@ def inject_globals():
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
+        grouping_timezone=_model.STORE.grouping_timezone,
         last_updated_time=last_updated,
     )
 
