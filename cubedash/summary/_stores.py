@@ -644,6 +644,6 @@ def _dataset_to_feature(dataset: Dataset):
             "label": _utils.dataset_label(dataset),
             "valid_extent": valid_extent,
             "start_time": dataset.time.begin.isoformat(),
-            "creation_time": _dataset_created(dataset),
+            "creation_time": _utils.dataset_created(dataset),
         },
     }

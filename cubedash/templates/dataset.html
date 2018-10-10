@@ -33,19 +33,22 @@
     <div class="panel highlight">
         <h1><strong>{{ dataset | printable_dataset }}</strong></h1>
         <div class="sub-header">
-            Indexed by <strong>{{ dataset.indexed_by }}</strong>
-            {{ dataset.indexed_time | timesince }}
-            {% if dataset.archived_time %}
-                <div>
-                    Archived
-                    <span title="{{ dataset.archived_time }}">
-                    {{ dataset.archived_time | timesince }}
-                    </span>
-                </div>
-            {% endif %}
+            <span>
+                Indexed by <strong>{{ dataset.indexed_by }}</strong>
+                {{ dataset.indexed_time | timesince }},
+                created {{ dataset | dataset_created | timesince }}
+                {% if dataset.archived_time %}
+                    <div>
+                        Archived
+                        <span title="{{ dataset.archived_time }}">
+                        {{ dataset.archived_time | timesince }}
+                        </span>
+                    </div>
+                {% endif %}
+            </span>
         </div>
         <div class="sub-header">
-            {{ dataset.type.name | product_link }} ({{ dataset.type.metadata_type.name }})
+            {{ dataset.type.name | product_link }} of {{ dataset | dataset_day_link }} ({{ dataset.type.metadata_type.name }})
         </div>
     </div>
 
