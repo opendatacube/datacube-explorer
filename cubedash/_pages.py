@@ -235,7 +235,7 @@ def inject_globals():
 
     # Group by product type
     def key(t):
-        return t[0].fields.get('product_type')
+        return t[0].fields.get('product_type') or 'misc.'
 
     grouped_product_summarise = sorted(
         (
