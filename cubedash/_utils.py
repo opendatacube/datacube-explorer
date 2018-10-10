@@ -18,6 +18,7 @@ import shapely.validation
 import structlog
 from datetime import datetime, timedelta
 from dateutil import tz
+from datacube import utils as dc_utils
 from dateutil.relativedelta import relativedelta
 import rapidjson
 from shapely.geometry import Polygon
@@ -188,6 +189,20 @@ def default_utc(d: datetime) -> datetime:
 
 def now_utc() -> datetime:
     return default_utc(datetime.utcnow())
+
+
+def dataset_created(dataset: Dataset) -> Optional[datetime]:
+    if 'created' in dataset.metadata.fields:
+        return dataset.metadata.created
+
+    value = dataset.metadata.creation_dt
+    if value:
+        try:
+            return default_utc(dc_utils.parse_time(value))
+        except ValueError:
+            _LOG.warn('invalid_dataset.creation_dt', dataset_id=dataset.id, value=value)
+
+    return None
 
 
 def as_rich_json(o):

@@ -16,7 +16,7 @@ from jinja2 import Markup, escape
 from shapely.geometry import MultiPolygon
 
 from datacube.index.fields import Field
-from datacube.model import Range, DatasetType
+from datacube.model import Range, DatasetType, Dataset
 from . import _utils as utils
 
 # How far to step the number when the user hits up/down.
@@ -98,6 +98,21 @@ def _dataset_geojson(dataset):
 def _product_link(product_name):
     url = flask.url_for('overview_page', product_name=product_name)
     return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
+
+
+@bp.app_template_filter('dataset_created')
+def _dataset_created(dataset: Dataset):
+    return utils.dataset_created(dataset)
+
+
+@bp.app_template_filter('dataset_day_link')
+def _dataset_day_link(dataset: Dataset):
+    t = dataset.center_time
+    url = flask.url_for('overview_page', product_name=dataset.type.name, year=t.year, month=t.month, day=t.day)
+    return Markup(f"<a href='{url}' class='overview-day-link'>"
+                  f"{t.day}{_get_ordinal_suffix(t.day)} "
+                  f"{t.strftime('%B %Y')}"
+                  f"</a>")
 
 
 @bp.app_template_filter('albers_area')
@@ -184,6 +199,8 @@ def timesince(dt, default="just now"):
 
     http://flask.pocoo.org/snippets/33/
     """
+    if dt is None:
+        return 'an unrecorded time ago'
 
     now = datetime.utcnow().replace(tzinfo=tz.tzutc())
     diff = now - utils.default_utc(dt)
@@ -199,7 +216,6 @@ def timesince(dt, default="just now"):
     )
 
     for period, singular, plural in periods:
-
         if period:
             return _time("%d %s ago" % (period, singular if period == 1 else plural), dt)
 
