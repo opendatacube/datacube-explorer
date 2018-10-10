@@ -48,7 +48,8 @@
             </span>
         </div>
         <div class="sub-header">
-            {{ dataset.type.name | product_link }} of {{ dataset | dataset_day_link }} ({{ dataset.type.metadata_type.name }})
+            {{ dataset.type.name | product_link }} of {{ dataset | dataset_day_link(grouping_timezone) }}
+            ({{ dataset.type.metadata_type.name }})
         </div>
     </div>
 
