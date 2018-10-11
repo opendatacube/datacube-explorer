@@ -12,7 +12,7 @@ RUN mkdir /code/product-summaries
 
 ADD . .
 
-RUN python3 ./setup.py develop
+RUN pip3 install .[deployment]
 
-CMD gunicorn -b '0.0.0.0:8080' -w 1 --timeout 60 cubedash:app
+CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
 
