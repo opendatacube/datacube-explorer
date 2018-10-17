@@ -68,3 +68,5 @@ target/
 *.env.html
 settings.env.py
 
+node_modules
+
