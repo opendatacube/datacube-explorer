@@ -67,7 +67,7 @@
                     {% endif %}
 
                     <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
-                    >{{ selected_summary.dataset_count if selected_summary else 'Unknown number of' }}
+                    >{{ '{:,d}'.format(selected_summary.dataset_count) if selected_summary else 'Unknown number of' }}
                         dataset{% if selected_summary.dataset_count != 1 %}s{% endif %}
                     </a>
 
