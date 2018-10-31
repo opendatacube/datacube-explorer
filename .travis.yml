@@ -16,7 +16,11 @@ addons:
   services:
     - postgresql
   apt:
+      sources:
+      - sourceline: ppa:nextgis/ppa
       packages:
+          - gdal-bin
+          - gdal-data
           - libhdf5-serial-dev
           - libnetcdf-dev
           - libproj-dev
@@ -35,6 +39,13 @@ before_install:
 
 - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
 - export C_INCLUDE_PATH="/usr/include/gdal"
+
+# The following is a temporary fix for broken gdal shared libraries due to upgrade of GDAL to 2.4.0.
+# This may require removing if more recent versions fixes this issue or alternative isolation
+# approaches between postgis and GDAL could be implemented instead
+- sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
+- sudo /sbin/ldconfig
+
 - travis_retry pip install --upgrade pip
 - travis_retry pip install --progress-bar off coveralls codecov
 - travis_retry pip install --progress-bar off --requirement requirements-test.txt
