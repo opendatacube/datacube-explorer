@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from pprint import pprint
 
+import jsonschema
 import pytest
 from click.testing import Result
 from dateutil import tz
@@ -23,6 +24,7 @@ from integration_tests.asserts import (
 )
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
+
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -423,3 +425,125 @@ def test_with_timings(client: FlaskClient):
 def test_plain_product_list(client: FlaskClient):
     rv: Response = client.get("/products.txt")
     assert "ls7_nbar_scene\n" in rv.data.decode("utf-8")
+
+
+@pytest.fixture
+def stac_settings():
+    """
+    Set STAC blueprint global attributes
+    """
+    import cubedash._stac
+
+    cubedash._stac.MAX_DATASETS = 20
+    cubedash._stac.DATASETS_PER_REQUEST = 4
+
+
+def test_stac_search(client: FlaskClient, stac_settings):
+    from cubedash._stac import MAX_DATASETS, DATASETS_PER_REQUEST
+
+    # Test with GET and without product
+    limit = DATASETS_PER_REQUEST // 2
+    get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
+    get_url += (
+        "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21" + "&limit=" + str(limit)
+    )
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == limit
+    dataset_count = limit
+
+    # Test the links and paging and when paging stop
+    next_links = [
+        link["href"] for link in geojson.get("links", []) if link["rel"] == "next"
+    ]
+    while next_links:
+        geojson = get_geojson(client, next_links[0])
+        assert len(geojson.get("features")) == limit
+        dataset_count += limit
+        next_links = [
+            link["href"] for link in geojson.get("links", []) if link["rel"] == "next"
+        ]
+    assert dataset_count == MAX_DATASETS
+
+    # Test limit with value greater than DATASETS_PER_REQUEST
+    get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
+    get_url += "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21"
+    get_url += "&limit=" + str(DATASETS_PER_REQUEST + 2)
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == DATASETS_PER_REQUEST
+
+    # Test without limit
+    get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
+    get_url += "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21"
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == DATASETS_PER_REQUEST
+
+    # Test outside the box
+    get_url = "/stac/search?" + "&bbox=" + "[20,-5,25,10]"
+    get_url += "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21"
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == 0
+
+    # Test a query that return one dataset
+    get_url = (
+        "/stac/search?"
+        + "product="
+        + "ls7_nbar_scene"
+        + "&bbox="
+        + "[114, -33, 153, -10]"
+    )
+    get_url += "&time=" + "2017-04-20"
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == 1
+
+    # Test a query that return no datasets
+    get_url = (
+        "/stac/search?"
+        + "product="
+        + "ls7_nbar_scene"
+        + "&bbox="
+        + "[114, -33, 153, -10]"
+    )
+    get_url += "&time=" + "2017-04-22"
+    geojson = get_geojson(client, get_url)
+    assert len(geojson.get("features")) == 0
+
+    # Test POST, product, and assets
+    rv: Response = client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "wofs_albers",
+                "bbox": [114, -33, 153, -10],
+                "time": "2017-04-16T01:12:16/2017-05-10T00:24:21",
+                "limit": DATASETS_PER_REQUEST,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    geodata = json.loads(rv.data)
+    assert len(geodata.get("features")) == DATASETS_PER_REQUEST
+    assert "water" in geodata["features"][0]["assets"]
+    assert len(geodata["features"][0]["assets"]) == 1
+
+    # Test high_tide_comp_20p with POST and assets
+    rv: Response = client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "high_tide_comp_20p",
+                "bbox": [114, -40, 147, -32],
+                "time": "2000-01-01T00:00:00/2016-10-31T00:00:00",
+                "limit": 5,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    geodata = json.loads(rv.data)
+    bands = ["blue", "green", "nir", "red", "swir1", "swir2"]
+    for band in bands:
+        assert band in geodata["features"][0]["assets"]
+
+    # Validate stac items with jsonschema
+    with open(Path(__file__).parent / "schemas" / "stac_item.json", "r") as fp:
+        schema = json.load(fp)
+    jsonschema.validate(geodata["features"][0], schema)
