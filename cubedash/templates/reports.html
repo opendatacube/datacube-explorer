@@ -109,33 +109,10 @@
         var diffs_month = null;
         var diffs_day = null;
 
-        function getProductsUrl() {
-            url = "/reports";
-            if (products.length > 0) {
-                product_list = products[0];
-                for (i = 1; i < products.length; i++) {
-                    product_list += "+" + products[i];
-                }
-                url += "/" + product_list;
-                if (year) {
-                    url += "/" + year;
-                }
-                if (month) {
-                    url += "/" + month;
-                }
-                if (day) {
-                    url += "/" + day;
-                }
-                return url;
-            }
-            return url;
-        }
-
-
-        function getMenuUrl() {
-            url = "/reports/time/summaries";
+        function dateStr(year, month, day) {
+            url = "";
             if (year) {
-                url += "/" + year;
+                    url += "/" + year;
             }
             if (month) {
                 url += "/" + month;
@@ -146,6 +123,18 @@
             return url;
         }
 
+        function getProductsUrl() {
+            url = "/reports";
+            if (products.length > 0) {
+                product_list = products[0];
+                for (i = 1; i < products.length; i++) {
+                    product_list += "+" + products[i];
+                }
+                url += "/" + product_list + dateStr(year, month, day);
+                return url;
+            }
+            return url;
+        }
 
         function addProduct(product_name) {
             if (!products.includes(product_name)) {
@@ -193,7 +182,7 @@
                 });
             }
 
-            menuUrl = getMenuUrl();
+            menuUrl = "/reports/time/summaries" + dateStr(year, month, day);
             $.get(menuUrl, function(data, status) {
                 document.getElementById("time-picker").innerHTML = data;
             });
@@ -213,20 +202,6 @@
                         document.getElementById("diff-content").innerHTML = data;
                 });
             }
-        }
-
-        function getDiffsMenuUrl() {
-            url = "/reports/time/differences";
-            if (diffs_year) {
-                url += "/" + diffs_year;
-            }
-            if (diffs_month) {
-                url += "/" + diffs_month;
-            }
-            if (diffs_day) {
-                url += "/" + diffs_day;
-            }
-            return url;
         }
 
         function differencesDate(date_type, value) {
@@ -260,12 +235,13 @@
 
             if (product_1 && product_2) {
                 url = '/reports/differences/' + product_1 + '+' + product_2;
+                url += dateStr(diffs_year, diffs_month, diffs_day);
                 $.get(url, function(data, status) {
                     document.getElementById("diff-content").innerHTML = data;
                 });
             }
 
-            menuUrl = getDiffsMenuUrl();
+            menuUrl = "/reports/time/differences" + dateStr(diffs_year, diffs_month, diffs_day);
             $.get(menuUrl, function(data, status) {
                 document.getElementById("diff-time-picker").innerHTML = data;
             });
