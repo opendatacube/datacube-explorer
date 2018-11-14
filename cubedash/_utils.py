@@ -119,6 +119,16 @@ def as_time_range(
     day: Optional[int] = None,
     tzinfo=None,
 ) -> Optional[Range]:
+    """
+    >>> as_time_range(2018)
+    Range(begin=datetime.datetime(2018, 1, 1, 0, 0), end=datetime.datetime(2019, 1, 1, 0, 0))
+    >>> as_time_range(2018, 2)
+    Range(begin=datetime.datetime(2018, 2, 1, 0, 0), end=datetime.datetime(2018, 3, 1, 0, 0))
+    >>> as_time_range(2018, 8, 3)
+    Range(begin=datetime.datetime(2018, 8, 3, 0, 0), end=datetime.datetime(2018, 8, 4, 0, 0))
+    >>> # Unbounded:
+    >>> as_time_range()
+    """
     if year and month and day:
         start = datetime(year, month, day)
         end = start + timedelta(days=1)
