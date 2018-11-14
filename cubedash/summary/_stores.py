@@ -439,20 +439,23 @@ class SummaryStore:
         return summary
 
     def _do_put(self, product_name, year, month, day, summary):
-
+        log = _LOG.bind(product_name=product_name, time=(year, month, day), summary=summary)
         # Don't bother storing empty periods that are outside of the existing range.
         # This doesn't have to be exact (note that someone may update in parallel too).
         if summary.dataset_count == 0 and (year or month):
             product = self.get_product_summary(product_name)
             if (not product) or (not product.time_latest):
+                log.debug("product.empty")
                 return
 
             timezone = tz.gettz(self._summariser.grouping_time_zone)
             if datetime(year, month or 12, day or 28, tzinfo=timezone) < product.time_earliest:
+                log.debug("product.skip.before_range")
                 return
             if datetime(year, month or 1, day or 1, tzinfo=timezone) > product.time_latest:
+                log.debug("product.skip.after_range")
                 return
-
+        log.debug("product.put")
         self._put(product_name, year, month, day, summary)
 
     def list_complete_products(self) -> Iterable[str]:
