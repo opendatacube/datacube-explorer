@@ -8,3 +8,5 @@ pylint -j 2 --reports no cubedash
 
 python -m pytest -r sx --durations=5 "$@"
 
+stylelint $(find . -iname '*.html') $(find . -iname '*.sass')
+

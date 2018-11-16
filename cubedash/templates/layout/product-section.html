@@ -37,7 +37,7 @@
 {%- endblock %}
 
 {% block header %}
-    <header>
+    <header id="product-headers">
         {# Go to current page with different product/year/month options#}
         {% set nav_endpoint=request.url_rule.endpoint %}
 
@@ -60,7 +60,7 @@
                                         <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
                                             <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name, **additional_page_args) }}"
                                                title="{{ product_opt.definition.description }}"
-                                               class="{% if product_opt.name == product.name %}active{% endif %}">
+                                               class="option-menu-link {% if product_opt.name == product.name %}active{% endif %}">
                                                 {{ product_opt.name }}
                                             </a>
                                         </li>
@@ -88,7 +88,7 @@
                             {% for year_opt in row %}
                                 <li>
                                     <a href="{{ url_for(request.url_rule.endpoint, product_name=product.name, year=year_opt, **additional_page_args) }}"
-                                       class="{% if (year_opt) == year %}active{% endif %}">
+                                       class="option-menu-link {% if (year_opt) == year %}active{% endif %}">
                                         {{ year_opt }}
                                     </a>
                                 </li>
@@ -98,7 +98,7 @@
                     <ul>
                         <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name, **additional_page_args) }}"
-                               class="{% if not year %}active{% endif %}">All</a>
+                               class="option-menu-link {% if not year %}active{% endif %}">All</a>
                         </li>
                     </ul>
                 </div>
@@ -125,7 +125,7 @@
                                         month=month_opt,
                                         **additional_page_args
                                        ) }}"
-                                       class="{% if (month_opt) == month %}active{% endif %}">
+                                       class="option-menu-link {% if (month_opt) == month %}active{% endif %}">
                                         {{ month_opt | month_name }}
                                     </a>
                                 </li>
@@ -135,7 +135,7 @@
                     <ul>
                         <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, **additional_page_args) }}"
-                               class="{% if not month %}active{% endif %}">All</a>
+                               class="option-menu-link {% if not month %}active{% endif %}">All</a>
                         </li>
                     </ul>
                 </div>
@@ -164,7 +164,7 @@
                                         day=day_opt,
                                         **additional_page_args
                                         ) }}"
-                                       class="{% if (day_opt) == day %}active{% endif %}">
+                                       class="option-menu-link {% if (day_opt) == day %}active{% endif %}">
                                         {{ day_opt | day_ordinal }}
                                     </a>
                                 </li>
@@ -174,7 +174,7 @@
                     <ul>
                         <li class="wildcard">
                             <a href="{{ url_for(nav_endpoint, product_name=product.name, year=year, month=month, **additional_page_args) }}"
-                               class="{% if not day %}active{% endif %}">
+                               class="option-menu-link {% if not day %}active{% endif %}">
                                 All
                             </a>
                         </li>
