@@ -25,7 +25,7 @@ Now install the dashboard dependencies:
 
 Cache some product summaries:
 
-    nohup python -m cubedash.generate --all &>> summary-gen.log &
+    nohup cubedash-gen --all &>> summary-gen.log &
 
 (This can take a while the first time, depending on your datacube size. 
 We're using `nohup .. &` to run in the background.)
