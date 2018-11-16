@@ -53,4 +53,9 @@ setup(
     ],
     tests_require=tests_require,
     extras_require=extras_require,
+    entry_points={
+        'console_scripts': [
+            'cubedash-gen = cubedash.generate:cli',
+        ],
+    }
 )
