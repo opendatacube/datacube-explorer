@@ -1,4 +1,4 @@
-# DEA Operations Dashboard [![Build Status](https://travis-ci.org/opendatacube/dea-dashboard.svg?branch=develop)](https://travis-ci.org/opendatacubee/dea-dashboard) [![Coverage Status](https://coveralls.io/repos/github/opendatacube/dea-dashboard/badge.svg?branch=develop)](https://coveralls.io/github/opendatacube/dea-dashboard?branch=develop)
+# DEA Operations Dashboard [![Build Status](https://travis-ci.org/opendatacube/dea-dashboard.svg?branch=develop)](https://travis-ci.org/opendatacube/dea-dashboard) [![Coverage Status](https://coveralls.io/repos/github/opendatacube/dea-dashboard/badge.svg?branch=develop)](https://coveralls.io/github/opendatacube/dea-dashboard?branch=develop)
 
 ![Dashboard Screenshot](deployment/screenshot.png)
 
