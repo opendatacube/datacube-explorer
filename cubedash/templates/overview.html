@@ -148,9 +148,10 @@
                             {% for measurement in product.definition.measurements %}
                                 <li>
                                     <div>
-                                        {% for a in measurement.aliases %}<span class="muted">{{ a }}</span>
-                                            / {% endfor %}
-                                        <span class="muted">{{ measurement.name }}</span>
+                                        <span>{{ measurement.name }}</span>
+                                        {%- for a in measurement.aliases %}
+                                            / <span class="muted">{{ a }}</span>
+                                        {%- endfor %}
                                     </div>
                                     {#                            <div>#}
                                     {#                                type {{ measurement.dtype }};#}
