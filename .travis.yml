@@ -1,9 +1,13 @@
-language: python
+dist: trusty
+sudo: false  # Use the new travis docker based infrastructure
+# We always want to be able to reach a tagged version in `git describe`
 git:
   depth: 99999
+
+language: python
 python:
 - '3.6'
-sudo: false
+
 cache:
   directories:
   - $HOME/.cache/pip
@@ -12,27 +16,32 @@ addons:
   services:
     - postgresql
   apt:
-    packages:
-    - libhdf5-serial-dev
-    - libnetcdf-dev
-    - libproj-dev
-    - libgdal1-dev
-    - libudunits2-dev
-    - libblas-dev
-    - liblapack-dev
-    - gfortran
-    - postgresql-9.6-postgis-2.3
+      packages:
+          - libhdf5-serial-dev
+          - libnetcdf-dev
+          - libproj-dev
+          - libgdal1-dev
+          - libudunits2-dev
+          - libblas-dev
+          - liblapack-dev
+          - gfortran
+          - postgresql-9.6-postgis-2.3
+          - libudunits2-0
 before_install:
+# Database for the integration tests.
 - createdb dea_integration
+# Tests should never use the default datacube config, so add a "honeypot" that fails.
 - cp .travis/honeypot.conf ~/.datacube.conf
-install:
+
 - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
 - export C_INCLUDE_PATH="/usr/include/gdal"
 - travis_retry pip install --upgrade pip
-- travis_retry pip install pytest pytest-cov mock pep8 pylint==1.7 coveralls gdal==1.10.0 compliance-checker
+- travis_retry pip install --progress-bar off coveralls codecov
+- travis_retry pip install --progress-bar off --requirement requirements-test.txt
 - travis_retry pip install -e git+https://github.com/opendatacube/datacube-core.git#egg=datacube
 - travis_retry pip install -e git+https://github.com/GeoscienceAustralia/eo-datasets.git#egg=eodatasets
 - travis_retry pip install -e git+https://github.com/GeoscienceAustralia/digitalearthau.git#egg=digitalearthau
+install:
 - travis_retry pip install .[test] --upgrade
 - pip freeze
 script:
