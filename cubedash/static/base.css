@@ -5,6 +5,8 @@
   .product-description { display: block; } }
 body { font-family: Helvetica, Arial, sans-serif; background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px); min-height: calc(100vh - 50px); color: #212121; font-size: 0.86em; margin: 0 auto; padding: 0 15px; max-width: 1024px; }
 
+html { scrollbar-color: #95d3f4 #d4dadc; }
+
 a { color: #2b2b2b; }
 
 .content-wrapper { position: relative; padding: 90px 0 0; }
@@ -33,7 +35,7 @@ h4 { color: #4f4f4f; }
 
 ul:last-child, ol:last-child { margin-bottom: 0; }
 
-.message-box { position: absolute; left: calc(50% - 100px); top: 25%; width: 200px; text-align: center; z-index: 9999; background: #545454; padding: 13px 15px; color: #fff; }
+.message-box { position: absolute; left: calc(50% - 100px); top: 25%; width: 200px; text-align: center; z-index: 9999; background: #616161; padding: 13px 15px; color: #fff; }
 .message-box a { color: #00b3f8; }
 
 .panel { padding: 20px 20px; line-height: 1.7em; background: #fafafa; }
@@ -42,16 +44,15 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 .panel h1:first-child, .panel h2:first-child, .panel h3:first-child, .panel h4:first-child, .panel p:first-child { margin-top: 0; }
 .panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child, .panel p:last-child { margin-bottom: 0; }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
-.panel.odd > h2 { color: #317893; }
-.panel.highlight { background: #545454; color: #efefef; border-bottom: 0; }
+.panel.highlight { background: #616161; color: #efefef; border-bottom: 0; }
 .panel.highlight > h1 { color: #efefef; }
 .panel.highlight a { color: #999; }
 
-.header-option { background-color: #545454; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
+.header-option { background-color: #616161; position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; }
 .header-option .option-title { font-size: 1em; font-weight: normal; }
 .header-option .group-name { margin: 0; padding: 20px 20px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
 @media (min-width: 800px) { .header-option .group-name { padding: 30px 30px; } }
-.header-option.primary { background-color: #474747; }
+.header-option.primary { background-color: #545454; }
 .header-option > .option-title { padding: 10px 20px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
 @media (min-width: 800px) { .header-option > .option-title { padding: 15px 30px; } }
 .header-option > .option-title::after { content: " ▾"; }
@@ -79,12 +80,12 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 .query-param-list { width: auto; display: grid; }
 
 @media (min-width: 800px) { .query-param-list.wide { grid-template-columns: 1fr 1fr; } }
-.query-param > .key { color: #737373; }
+.query-param > .value { color: #737373; }
 .query-param .value > .query-param { margin-left: 15px; }
 
-button { margin: 5px 0; background-color: #317893; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: inherit; }
+button { margin: 5px 0; background-color: #0a8abb; border: 0; color: #efefef; padding: 8px; cursor: pointer; font-size: inherit; }
 button:hover { background-color: #008fc5; }
-button.small { margin: 0; font-size: 12px; background-color: #545454; }
+button.small { margin: 0; font-size: 12px; background-color: #616161; }
 
 label { text-transform: uppercase; letter-spacing: 1px; font-size: 10px; color: #333; }
 label.disabled { color: #ccc; }
@@ -97,9 +98,9 @@ label.disabled { color: #ccc; }
 
 .chart-timeline-bars { font-size: 0; height: 50px; white-space: nowrap; }
 
-.chart-timeline-bar { width: 2px; display: inline-block; background-color: #317893; }
-.chart-timeline-bar.new-year { background-color: #2b6980; }
-.chart-timeline-bar:hover { background-color: #24596d; }
+.chart-timeline-bar { width: 2px; display: inline-block; background-color: #0a8abb; }
+.chart-timeline-bar.new-year { background-color: #0978a2; }
+.chart-timeline-bar:hover { background-color: #07668a; }
 
 .chart-timeline-years { font-size: 0; white-space: nowrap; }
 
