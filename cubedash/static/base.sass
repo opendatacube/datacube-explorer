@@ -8,15 +8,15 @@ $panel2_color: lighten($content_background, 6%)
 // The four colors in the dea style guide. Use sparingly (highlights).
 
 $emphasis_strong: darken(#00A1DE, 5%)
-$emphasis_weak: desaturate($emphasis_strong, 50%)
+$emphasis_weak: desaturate($emphasis_strong, 10%)
 
 $emphasis_light: #8FCAE7
 
 $highlight_alt: #7AB800
 $highlight_alt2: #EEAF30
 
-$header_highlight: lighten($bold_highlight, 15%)
-$header_highlight_strong: lighten($bold_highlight, 20%)
+$header_highlight: lighten($bold_highlight, 20%)
+$header_highlight_strong: lighten($bold_highlight, 25%)
 
 $muted_text: lighten($bold_highlight, 32%)
 
@@ -56,6 +56,9 @@ body
     margin: 0 auto
     padding: 0 15px
     max-width: 1024px
+
+html
+    scrollbar-color: #95d3f4 #d4dadc
 
 a
     color: #2b2b2b
@@ -158,9 +161,6 @@ ul:last-child, ol:last-child
     &.odd
         background-color: $panel2_color
         border-bottom: 0
-
-        > h2
-            color: $emphasis_weak
 
     &.highlight
         background: $header_highlight_strong
@@ -285,7 +285,7 @@ ul:last-child, ol:last-child
         grid-template-columns: 1fr 1fr
 
 .query-param
-    > .key
+    > .value
         color: $muted_text
 
     .value > .query-param
