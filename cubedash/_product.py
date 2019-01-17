@@ -19,6 +19,6 @@ def product_page(name):
         abort(404, "Unknown product %r" % name)
     ordered_metadata = utils.get_ordered_metadata(product.definition)
 
-    return flask.render_template(
+    return utils.render(
         "product.html", product=product, product_metadata=ordered_metadata
     )

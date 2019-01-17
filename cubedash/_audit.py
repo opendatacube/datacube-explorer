@@ -12,6 +12,7 @@ from flask import Blueprint, Response
 from datacube.model import Range
 
 from . import _model
+from . import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("audit", __name__, url_prefix="/product-audit")
@@ -72,7 +73,7 @@ def product_audit_page():
     if "timings" in flask.request.args:
         extra["product_timings_iter"] = cached_product_timings()
 
-    return flask.render_template(
+    return utils.render(
         "product-audit.html",
         products_all=all_products,
         products_summarised=summarised_products,

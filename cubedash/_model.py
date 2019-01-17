@@ -12,6 +12,7 @@ import shapely.prepared
 import shapely.wkb
 import structlog
 from flask_caching import Cache
+from flask_themes import setup_themes
 from shapely.geometry import MultiPolygon
 from shapely.ops import transform
 
@@ -29,9 +30,12 @@ app = flask.Flask(NAME)
 # Optional environment settings file or variable
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
+app.config.setdefault("DEFAULT_THEME", "odc")
 
 app.config.setdefault("CACHE_TYPE", "simple")
 cache = Cache(app=app, config=app.config)
+
+setup_themes(app)
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking

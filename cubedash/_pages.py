@@ -5,6 +5,7 @@ from typing import Tuple
 import flask
 import structlog
 from flask import Response, abort, redirect, request, url_for
+from flask_themes import render_theme_template
 from werkzeug.datastructures import MultiDict
 
 import cubedash
@@ -48,8 +49,7 @@ def overview_page(
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
     )
-
-    return flask.render_template(
+    return utils.render(
         "overview.html",
         year=year,
         month=month,
@@ -122,7 +122,7 @@ def search_page(
             product_summary.time_latest + timedelta(days=1),
         )
 
-    return flask.render_template(
+    return utils.render(
         "search.html",
         year=year,
         month=month,
@@ -171,7 +171,7 @@ def region_page(
             dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
 
-    return flask.render_template(
+    return utils.render(
         "region.html",
         year=year,
         month=month,
@@ -225,7 +225,7 @@ def request_wants_json():
 
 @app.route("/about")
 def about_page():
-    return flask.render_template("about.html")
+    return utils.render("about.html")
 
 
 @app.context_processor
