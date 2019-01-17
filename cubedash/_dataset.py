@@ -39,7 +39,7 @@ def dataset_page(id_):
         derived_dataset_overflow = len(derived_datasets) - PROVENANCE_DISPLAY_LIMIT
         derived_datasets = derived_datasets[:PROVENANCE_DISPLAY_LIMIT]
 
-    return flask.render_template(
+    return utils.render(
         'dataset.html',
         dataset=dataset,
         dataset_metadata=ordered_metadata,

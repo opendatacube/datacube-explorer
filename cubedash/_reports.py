@@ -3,6 +3,7 @@ import flask
 from flask import Blueprint, abort
 import re
 from . import _model
+from cubedash import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('reports', __name__, url_prefix='/reports')
@@ -31,7 +32,7 @@ def report_products_page(product_name_list: str = None,
         product, product_summary, selected_summary = _load_product(product_name, year, month, day)
         products.append({'product': product, 'product_summary': product_summary, 'selected_summary': selected_summary})
 
-    return flask.render_template(
+    return utils.render(
         'product_summary.html',
         year=year,
         month=month,
@@ -49,7 +50,7 @@ def reports_time_page(report_type='',
                       year: int = None,
                       month: int = None,
                       day: int = None):
-    return flask.render_template(
+    return utils.render(
         'reports-time.html',
         report_type=report_type,
         year=year,
@@ -89,7 +90,7 @@ def differences(product_name_list: str = None,
     products = []
     product_summary = None
     products.append({'product': product, 'product_summary': product_summary, 'selected_summary': selected_summary})
-    return flask.render_template(
+    return utils.render(
         'product_summary.html',
         year=year,
         month=month,
