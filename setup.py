@@ -39,6 +39,7 @@ setup(
         'dataclasses',
         'datacube>=1.6',
         'flask',
+        'flask_themes @ git+https://git@github.com/maxcountryman/flask-themes@master',
         'fiona',
         'pyorbital',
         'geographiclib',

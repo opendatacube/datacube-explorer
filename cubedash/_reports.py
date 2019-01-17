@@ -3,6 +3,7 @@ import flask
 from flask import Blueprint, abort
 import re
 from . import _model
+from cubedash import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('reports', __name__, url_prefix='/reports')
@@ -31,7 +32,7 @@ def report_products_page(product_name_list: str = None,
         product, product_summary, selected_summary = _load_product(product_name, year, month, day)
         products.append({'product': product, 'product_summary': product_summary, 'selected_summary': selected_summary})
 
-    return flask.render_template(
+    return utils.render(
         'product_summary.html',
         year=year,
         month=month,
@@ -49,7 +50,7 @@ def reports_time_page(report_type='',
                       year: int = None,
                       month: int = None,
                       day: int = None):
-    return flask.render_template(
+    return utils.render(
         'reports-time.html',
         report_type=report_type,
         year=year,
@@ -70,18 +71,26 @@ def differences(product_name_list: str = None,
     product_names = re.split(r'\+', product_name_list)
     product_1, product_summary_1, selected_summary_1 = _load_product(product_names[0], year, month, day)
     product_2, product_summary_2, selected_summary_2 = _load_product(product_names[1], year, month, day)
+    # import ipdb; ipdb.set_trace()
     product = lambda: None
     product.name = product_names[0] + '-' + product_names[1]
-    diff_counts = (selected_summary_1.timeline_dataset_counts - selected_summary_2.timeline_dataset_counts) + \
-                  (selected_summary_2.timeline_dataset_counts - selected_summary_1.timeline_dataset_counts)
+    if selected_summary_1 and selected_summary_2:
+        diff_counts = (selected_summary_1.timeline_dataset_counts - selected_summary_2.timeline_dataset_counts) + \
+                      (selected_summary_2.timeline_dataset_counts - selected_summary_1.timeline_dataset_counts)
+    elif selected_summary_1 and not selected_summary_2:
+        diff_counts = selected_summary_1.timeline_dataset_counts
+    elif selected_summary_2 and not selected_summary_1:
+        diff_counts = selected_summary_2.timeline_dataset_counts
+    else:
+        diff_counts = None
     selected_summary = lambda: None
     selected_summary.timeline_dataset_counts = diff_counts
-    selected_summary.dataset_count = sum(diff_counts.values())
-    selected_summary.timeline_period = selected_summary_1.timeline_period
+    selected_summary.dataset_count = sum(diff_counts.values()) if diff_counts else 0
+    selected_summary.timeline_period = selected_summary_1.timeline_period if selected_summary_1 else None
     products = []
     product_summary = None
     products.append({'product': product, 'product_summary': product_summary, 'selected_summary': selected_summary})
-    return flask.render_template(
+    return utils.render(
         'product_summary.html',
         year=year,
         month=month,

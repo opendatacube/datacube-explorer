@@ -1,0 +1,8 @@
+{
+    "application": "cubedash",
+    "identifier": "odc",
+    "name": "odc",
+    "author": "Geoscience Australia",
+    "license": "Apache 2",
+    "description": "Open Data Cube Theme"
+}
