@@ -19,6 +19,7 @@ import shapely.validation
 import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
+from flask_themes import render_theme_template
 from shapely.geometry import Polygon
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
@@ -39,6 +40,13 @@ DEFAULT_PLATFORM_END_DATE = {
 }
 
 _LOG = structlog.get_logger()
+
+
+def render(template, **context):
+    theme = flask.current_app.config.get(
+        "THEME", flask.current_app.config["DEFAULT_THEME"]
+    )
+    return render_theme_template(theme, template, **context)
 
 
 def group_field_names(request: dict) -> dict:

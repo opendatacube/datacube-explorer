@@ -4,6 +4,8 @@ import re
 import flask
 from flask import Blueprint, abort
 
+from cubedash import _utils as utils
+
 from . import _model
 
 _LOG = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def report_products_page(
             }
         )
 
-    return flask.render_template(
+    return utils.render(
         "product_summary.html", year=year, month=month, day=day, products=products
     )
 
@@ -51,7 +53,7 @@ def report_products_page(
 def reports_time_page(
     report_type="", year: int = None, month: int = None, day: int = None
 ):
-    return flask.render_template(
+    return utils.render(
         "reports-time.html", report_type=report_type, year=year, month=month, day=day
     )
 
@@ -103,7 +105,7 @@ def differences(
             "selected_summary": selected_summary,
         }
     )
-    return flask.render_template(
+    return utils.render(
         "product_summary.html", year=year, month=month, day=day, products=products
     )
 
