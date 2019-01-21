@@ -35,7 +35,6 @@ from datacube.model import Range, DatasetType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
-
 _TARGET_CRS = 'EPSG:4326'
 
 DEFAULT_PLATFORM_END_DATE = {
@@ -46,9 +45,13 @@ DEFAULT_PLATFORM_END_DATE = {
 
 _LOG = structlog.get_logger()
 
+
 def render(template, **context):
-    theme = flask.current_app.config.get('THEME', flask.current_app.config['DEFAULT_THEME'])
-    return render_theme_template(theme, template, **context)
+    return render_theme_template(
+        flask.current_app.config['CUBEDASH_THEME'],
+        template,
+        **context,
+    )
 
 
 def group_field_names(request: dict) -> dict:
