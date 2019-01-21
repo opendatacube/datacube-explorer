@@ -43,10 +43,9 @@ _LOG = structlog.get_logger()
 
 
 def render(template, **context):
-    theme = flask.current_app.config.get(
-        "THEME", flask.current_app.config["DEFAULT_THEME"]
+    return render_theme_template(
+        flask.current_app.config["CUBEDASH_THEME"], template, **context
     )
-    return render_theme_template(theme, template, **context)
 
 
 def group_field_names(request: dict) -> dict:
