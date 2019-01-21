@@ -90,6 +90,9 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     # Include load performance metrics in http response.
     CUBEDASH_SHOW_PERF_TIMES = False
+    
+    # Which theme to use (in the cubedash/themes folder)
+    CUBEDASH_THEME = 'odc'
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
