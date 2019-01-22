@@ -25,7 +25,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     python_requires=">=3.6",
-    url="https://github.com/data-cube/dea-dashboard",
+    url="https://github.com/opendatacube/datacube-explorer",
     author="Geoscience Australia",
     packages=find_packages(),
     install_requires=[
