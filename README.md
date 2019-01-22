@@ -1,6 +1,6 @@
-# DEA Operations Dashboard [![Build Status](https://travis-ci.org/opendatacube/dea-dashboard.svg?branch=develop)](https://travis-ci.org/opendatacube/dea-dashboard) [![Coverage Status](https://coveralls.io/repos/github/opendatacube/dea-dashboard/badge.svg?branch=develop)](https://coveralls.io/github/opendatacube/dea-dashboard?branch=develop)
+# Data Cube Explorer [![Build Status](https://travis-ci.org/opendatacube/datacube-explorer.svg?branch=develop)](https://travis-ci.org/opendatacube/datacube-explorer) [![Coverage Status](https://coveralls.io/repos/github/opendatacube/datacube-explorer/badge.svg?branch=develop)](https://coveralls.io/github/opendatacube/datacube-explorer?branch=develop)
 
-![Dashboard Screenshot](deployment/screenshot.png)
+![Explorer Screenshot](deployment/screenshot.png)
 
 ## Developer Setup
 
@@ -14,7 +14,7 @@ to the correct instance.
 
 ### Dependencies
 
-Now install the dashboard dependencies:
+Now install the explorer dependencies:
 
     # These two should come from conda if you're using it, not pypi
     conda install fiona shapely
