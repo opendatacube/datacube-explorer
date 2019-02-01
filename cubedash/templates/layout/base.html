@@ -89,6 +89,31 @@
             updateAttribution();
         }
     })();
+
+
+    // Click to open header menus.
+    document.querySelectorAll('.header-option').forEach(function (el, i) {
+        el.querySelector('.option-title').addEventListener("click", function (event) {
+            if (this.parentNode.classList.contains("is-open")) {
+                // Close header
+                this.parentNode.classList.remove('is-open');
+                this.setAttribute('aria-expanded', "false");
+            } else {
+                // Open header
+
+                // Close anything already open.
+                document.querySelectorAll('.header-option.is-open').forEach(function (el) {
+                    el.classList.remove('is-open');
+                    el.querySelector('.option-title').setAttribute('aria-expanded', "false");
+                });
+                this.parentNode.classList.add('is-open');
+                this.setAttribute('aria-expanded', "true");
+            }
+            event.preventDefault();
+            return false;
+        });
+    });
+
 </script>
 </body>
 </html>
