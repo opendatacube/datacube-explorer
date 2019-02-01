@@ -172,7 +172,6 @@ ul:last-child, ol:last-child
             color: #999
 
 .header-option
-    background-color: $header_highlight_strong
     position: relative
     border-collapse: collapse
     max-width: 60%
@@ -180,6 +179,23 @@ ul:last-child, ol:last-child
     $active_color: darken($emphasis_strong, 5%)
 
     vertical-align: bottom
+
+    background-color: $header_highlight_strong
+    .option-title:hover
+        background-color: darken($header_highlight_strong, 2%)
+
+    &.primary
+        background-color: $header_highlight
+        .option-title:hover
+            background-color: darken($header_highlight, 2%)
+
+    &.is-open
+        background-color: $active_color
+        .option-title:hover
+            background-color: darken($active_color, 2%)
+        .option-menu
+            background-color: $active_color
+            display: table
 
     .option-title
         font-size: 1em
@@ -192,8 +208,6 @@ ul:last-child, ol:last-child
         text-transform: lowercase
         font-variant: small-caps
 
-    &.primary
-        background-color: $header_highlight
 
     > .option-title
         @include wide_padding
@@ -249,12 +263,6 @@ ul:last-child, ol:last-child
             & > li
                 display: table-cell
 
-
-    &:hover
-        background-color: $active_color
-        .option-menu
-            background-color: $active_color
-            display: table
 
     // The "All" menu items
     .wildcard
@@ -401,7 +409,7 @@ label
 .logo-text
     display: inline-block
 
-@import "gridforms/gridforms"
+@import gridforms/gridforms.sass
 
 // Minor tweak of gridforms defaults
 // Lighten borders
