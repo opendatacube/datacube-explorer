@@ -10,14 +10,28 @@ class DataLayer {
     }
 }
 
-class TimeSummaryRoutes {
+class ApplicationRoutes {
     constructor(
         public regionSearchURLPattern: string,
         public regionViewURLPattern: string,
+        public datasetURLPattern: string,
+
         public geojsonRegionsURL: string,
         public geojsonDatasetsURL: string,
         public geojsonFootprintURL: string,
     ) {
+    }
+
+    public getRegionSearchURL(regionCode) {
+        return this.regionSearchURLPattern.replace('__REGION_CODE__', regionCode);
+    }
+
+    public getRegionViewURL(regionCode) {
+        return this.regionViewURLPattern.replace('__REGION_CODE__', regionCode);
+    }
+
+    public getDatasetViewURL(datasetId) {
+        return this.datasetURLPattern.replace('__DATASET_ID__', datasetId);
     }
 }
 
@@ -104,7 +118,7 @@ class FootprintLayer extends L.GeoJSON {
 class RegionsLayer extends L.GeoJSON {
     constructor(regionData: GeoJSON.Feature,
                 control: DatasetInfoControl,
-                routes: TimeSummaryRoutes) {
+                routes: ApplicationRoutes) {
 
         function getBin(v: number,
                         bin_count: number,
@@ -172,14 +186,13 @@ class RegionsLayer extends L.GeoJSON {
                         control.update();
                     },
                     click: (e) => {
-                        let props = e.target.feature.properties,
-                            url_pattern = routes.regionSearchURLPattern;
-
+                        let props = e.target.feature.properties;
                         // If only one, jump straight to that dataset.
                         if (props.count === 1) {
-                            url_pattern = routes.regionViewURLPattern;
+                            window.location.href = routes.getRegionViewURL(props.region_code);
+                        } else {
+                            window.location.href = routes.getRegionSearchURL(props.region_code)
                         }
-                        window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
                     }
                 });
             }
@@ -189,7 +202,8 @@ class RegionsLayer extends L.GeoJSON {
 
 
 class DatasetsLayer extends L.GeoJSON {
-    constructor(infoControl: DatasetInfoControl) {
+    constructor(infoControl: DatasetInfoControl,
+                routes: ApplicationRoutes) {
         super(undefined, {
             style: function (feature) {
                 return {
@@ -221,7 +235,7 @@ class DatasetsLayer extends L.GeoJSON {
                     },
                     click: function (e) {
                         let props = e.target.feature.properties;
-                        window.location.href = '/dataset/' + props.id;
+                        window.location.href = routes.getDatasetViewURL(props.id);
                     }
                 });
             }
@@ -291,7 +305,7 @@ class OverviewMap extends L.Map {
 
 function initPage(hasDisplayableData: boolean,
                   showIndividualDatasets: boolean,
-                  routes: TimeSummaryRoutes,
+                  routes: ApplicationRoutes,
                   regionData: GeoJSON.FeatureCollection,
                   footprintData: GeoJSON.FeatureCollection) {
 
@@ -327,7 +341,7 @@ function initPage(hasDisplayableData: boolean,
             layers.push(new DataLayer(
                 'datasets',
                 routes.geojsonDatasetsURL,
-                new DatasetsLayer(infoControl)
+                new DatasetsLayer(infoControl, routes)
             ));
         }
     }
