@@ -1,4 +1,3 @@
-"use strict";
 /// <reference path="../../node_modules/@types/leaflet/index.d.ts"/>
 /// <reference path="../../node_modules/@types/geojson/index.d.ts"/>
 var __extends = (this && this.__extends) || (function () {
@@ -7,7 +6,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    }
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -26,15 +25,25 @@ var DataLayer = /** @class */ (function () {
     }
     return DataLayer;
 }());
-var TimeSummaryRoutes = /** @class */ (function () {
-    function TimeSummaryRoutes(regionSearchURLPattern, regionViewURLPattern, geojsonRegionsURL, geojsonDatasetsURL, geojsonFootprintURL) {
+var ApplicationRoutes = /** @class */ (function () {
+    function ApplicationRoutes(regionSearchURLPattern, regionViewURLPattern, datasetURLPattern, geojsonRegionsURL, geojsonDatasetsURL, geojsonFootprintURL) {
         this.regionSearchURLPattern = regionSearchURLPattern;
         this.regionViewURLPattern = regionViewURLPattern;
+        this.datasetURLPattern = datasetURLPattern;
         this.geojsonRegionsURL = geojsonRegionsURL;
         this.geojsonDatasetsURL = geojsonDatasetsURL;
         this.geojsonFootprintURL = geojsonFootprintURL;
     }
-    return TimeSummaryRoutes;
+    ApplicationRoutes.prototype.getRegionSearchURL = function (regionCode) {
+        return this.regionSearchURLPattern.replace('__REGION_CODE__', regionCode);
+    };
+    ApplicationRoutes.prototype.getRegionViewURL = function (regionCode) {
+        return this.regionViewURLPattern.replace('__REGION_CODE__', regionCode);
+    };
+    ApplicationRoutes.prototype.getDatasetViewURL = function (datasetId) {
+        return this.datasetURLPattern.replace('__DATASET_ID__', datasetId);
+    };
+    return ApplicationRoutes;
 }());
 var RecenterMapControl = /** @class */ (function (_super) {
     __extends(RecenterMapControl, _super);
@@ -169,12 +178,14 @@ var RegionsLayer = /** @class */ (function (_super) {
                         control.update();
                     },
                     click: function (e) {
-                        var props = e.target.feature.properties, url_pattern = routes.regionSearchURLPattern;
+                        var props = e.target.feature.properties;
                         // If only one, jump straight to that dataset.
                         if (props.count === 1) {
-                            url_pattern = routes.regionViewURLPattern;
+                            window.location.href = routes.getRegionViewURL(props.region_code);
                         }
-                        window.location.href = url_pattern.replace('__REGION_CODE__', props.region_code);
+                        else {
+                            window.location.href = routes.getRegionSearchURL(props.region_code);
+                        }
                     }
                 });
             }
@@ -185,7 +196,7 @@ var RegionsLayer = /** @class */ (function (_super) {
 }(L.GeoJSON));
 var DatasetsLayer = /** @class */ (function (_super) {
     __extends(DatasetsLayer, _super);
-    function DatasetsLayer(infoControl) {
+    function DatasetsLayer(infoControl, routes) {
         var _this = _super.call(this, undefined, {
             style: function (feature) {
                 return {
@@ -214,7 +225,7 @@ var DatasetsLayer = /** @class */ (function (_super) {
                     },
                     click: function (e) {
                         var props = e.target.feature.properties;
-                        window.location.href = '/dataset/' + props.id;
+                        window.location.href = routes.getDatasetViewURL(props.id);
                     }
                 });
             }
@@ -298,7 +309,7 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
         }
         activeLayer = layers[0];
         if (showIndividualDatasets) {
-            layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(infoControl)));
+            layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(infoControl, routes)));
         }
     }
     var map = new OverviewMap(layers, activeLayer);
@@ -341,4 +352,3 @@ function requestData(name, url, setEnabled, dataLayer) {
     };
     request.send();
 }
-//# sourceMappingURL=overview.js.map

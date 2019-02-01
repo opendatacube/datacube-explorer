@@ -213,9 +213,10 @@
             const footprintGeoJSON = {{ footprint_geojson | torapidjson }},
                   regionsGeoJSON = {{ regions_geojson | torapidjson }};
 
-            const routes = new TimeSummaryRoutes(
+            const routes = new ApplicationRoutes(
                 '{{ url_for('region_page', region_code='__REGION_CODE__', **product_args)}}',
                 '{{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) }}',
+                '{{ url_for('dataset.dataset_page', id_='__DATASET_ID__') }}',
                 '{{ url_for('api.regions_geojson', **product_args) }}',
                 '{{ url_for('api.datasets_geojson', **product_args)}}',
                 '{{ url_for('api.footprint_geojson', **product_args) }}'
