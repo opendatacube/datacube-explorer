@@ -90,24 +90,49 @@
         }
     })();
 
+    // Polyfill element.closest() for IE11: https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
+    if (!Element.prototype.matches) {
+        Element.prototype.matches = Element.prototype.msMatchesSelector ||
+            Element.prototype.webkitMatchesSelector;
+    }
+    if (!Element.prototype.closest) {
+        Element.prototype.closest = function (s) {
+            var el = this;
+
+            do {
+                if (el.matches(s)) return el;
+                el = el.parentElement || el.parentNode;
+            } while (el !== null && el.nodeType === 1);
+            return null;
+        };
+    }
+
+    // When clicking elsewhere on page, close any open menus.
+    function outsideClickListener(event) {
+        if (event.target.closest('.header-option') === null) {
+            // Close anything already open.
+            document.querySelectorAll('.header-option.is-open').forEach(closeMenu);
+        }
+    }
+
+    function closeMenu(headerOption) {
+        headerOption.classList.remove('is-open');
+        headerOption.querySelector('.option-title').setAttribute('aria-expanded', "false");
+        document.removeEventListener('click', outsideClickListener);
+    }
 
     // Click to open header menus.
     document.querySelectorAll('.header-option').forEach(function (el, i) {
         el.querySelector('.option-title').addEventListener("click", function (event) {
             if (this.parentNode.classList.contains("is-open")) {
-                // Close header
-                this.parentNode.classList.remove('is-open');
-                this.setAttribute('aria-expanded', "false");
+                closeMenu(this.parentNode);
             } else {
+                // Close any open ones.
+                document.querySelectorAll('.header-option.is-open').forEach(closeMenu);
                 // Open header
-
-                // Close anything already open.
-                document.querySelectorAll('.header-option.is-open').forEach(function (el) {
-                    el.classList.remove('is-open');
-                    el.querySelector('.option-title').setAttribute('aria-expanded', "false");
-                });
                 this.parentNode.classList.add('is-open');
                 this.setAttribute('aria-expanded', "true");
+                document.addEventListener('click', outsideClickListener)
             }
             event.preventDefault();
             return false;
