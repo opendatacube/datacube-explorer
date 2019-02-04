@@ -63,15 +63,17 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 
 .header-option { position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; background-color: #616161; }
 
-.header-option .option-title:hover { background-color: #5c5c5c; }
+.header-option .option-title:hover { background-color: #6e6e6e; }
+
+.header-option .option-title:hover::after { color: #fff; }
 
 .header-option.primary { background-color: #545454; }
 
-.header-option.primary .option-title:hover { background-color: #4f4f4f; }
+.header-option.primary .option-title:hover { background-color: #6e6e6e; }
 
 .header-option.is-open { background-color: #007cab; }
 
-.header-option.is-open .option-title:hover { background-color: #0075a1; }
+.header-option.is-open .option-title:hover { background-color: #007cab; color: #fff; }
 
 .header-option.is-open .option-menu { background-color: #007cab; display: table; }
 

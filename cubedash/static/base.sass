@@ -182,17 +182,20 @@ ul:last-child, ol:last-child
 
     background-color: $header_highlight_strong
     .option-title:hover
-        background-color: darken($header_highlight_strong, 2%)
+        background-color: lighten($header_highlight_strong, 5%)
+        &::after
+            color: #fff
 
     &.primary
         background-color: $header_highlight
         .option-title:hover
-            background-color: darken($header_highlight, 2%)
+            background-color: lighten($header_highlight, 10%)
 
     &.is-open
         background-color: $active_color
         .option-title:hover
-            background-color: darken($active_color, 2%)
+            background-color: $active_color
+            color: #fff
         .option-menu
             background-color: $active_color
             display: table
