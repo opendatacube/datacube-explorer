@@ -3,7 +3,7 @@ import logging
 from flask import Blueprint
 
 from . import _model
-from ._utils import as_json
+from ._utils import as_geojson
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
@@ -16,7 +16,7 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 def datasets_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_json(_model.get_datasets_geojson(product_name, year, month, day))
+    return as_geojson(_model.get_datasets_geojson(product_name, year, month, day))
 
 
 @bp.route("/footprint/<product_name>")
@@ -26,7 +26,7 @@ def datasets_geojson(
 def footprint_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_json(_model.get_footprint_geojson(product_name, year, month, day))
+    return as_geojson(_model.get_footprint_geojson(product_name, year, month, day))
 
 
 @bp.route("/regions/<product_name>")
@@ -36,4 +36,4 @@ def footprint_geojson(
 def regions_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_json(_model.get_regions_geojson(product_name, year, month, day))
+    return as_geojson(_model.get_regions_geojson(product_name, year, month, day))
