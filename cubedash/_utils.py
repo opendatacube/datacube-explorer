@@ -235,7 +235,7 @@ def as_rich_json(o):
     return as_json(jsonify_document(o))
 
 
-def as_json(o):
+def as_json(o, content_type='application/json'):
     return flask.Response(
         rapidjson.dumps(
             o,
@@ -243,7 +243,14 @@ def as_json(o):
             uuid_mode=rapidjson.UM_CANONICAL,
             number_mode=rapidjson.NM_NATIVE,
         ),
-        content_type='application/json',
+        content_type=content_type,
+    )
+
+
+def as_geojson(o):
+    return as_json(
+        o,
+        content_type='application/geo+json',
     )
 
 
