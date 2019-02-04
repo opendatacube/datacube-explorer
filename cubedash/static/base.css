@@ -27,8 +27,6 @@ footer { padding: 20px 20px; text-align: right; color: #a6a6a6; font-size: 0.7em
 @media (min-width: 800px) { .panels { display: flex; }
   .info-panel { width: 250px; border-top: 7px #7fd0eb solid; } }
 
-.panels { box-shadow: 0 -2px 0 0 #fff; }
-
 .info-panel ul { list-style-type: none; padding: 0; margin: 0; }
 
 h1 { line-height: 30px; font-size: 20px; font-weight: normal; color: #333; }
@@ -63,23 +61,21 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 
 .header-option { position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; background-color: #616161; }
 
-.header-option .option-title:hover { background-color: #6e6e6e; }
-
-.header-option .option-title:hover::after { color: #fff; }
-
 .header-option.primary { background-color: #545454; }
 
 .header-option.primary .option-title:hover { background-color: #6e6e6e; }
 
-.header-option.is-open { background-color: #007cab; }
+.header-option.is-open { background-color: #008fc5; }
 
-.header-option.is-open .option-title:hover { background-color: #007cab; color: #fff; }
+.header-option.is-open .option-title:hover { background-color: #008fc5; color: #fff; }
 
-.header-option.is-open .option-menu { background-color: #007cab; display: table; }
+.header-option.is-open .option-menu { background-color: #008fc5; display: table; }
 
-.header-option .option-title { font-size: 1em; font-weight: normal; }
+.header-option .option-title { font-size: 1em; font-weight: normal; border-bottom: 2px solid transparent; }
 
-.header-option .group-name { margin: 0; padding: 20px 20px; font-size: 0.8em; color: #212121; text-transform: lowercase; font-variant: small-caps; }
+.header-option .option-title:hover { background-color: #6e6e6e; border-bottom: 2px solid #fff; }
+
+.header-option .group-name { margin: 0; padding: 20px 20px; font-size: 0.8em; color: #212121; text-transform: lowercase; }
 
 @media (min-width: 800px) { .header-option .group-name { padding: 30px 30px; } }
 
@@ -97,9 +93,9 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 
 @media (min-width: 800px) { .header-option a.option-menu-link { padding: 15px 30px; } }
 
-.header-option a.option-menu-link.active { background-color: #008fc5; }
+.header-option a.option-menu-link.active { background-color: #00a1de; }
 
-.header-option a.option-menu-link:hover { background-color: #00a1de; color: #fff; }
+.header-option a.option-menu-link:hover { background-color: #00b3f8; text-decoration: underline; color: #fff; }
 
 .header-option .option-menu { display: none; position: absolute; top: calc(100% - 2px); left: 0; z-index: 10000; }
 
