@@ -109,9 +109,9 @@
 
     // When clicking elsewhere on page, close any open menus.
     function outsideClickListener(event) {
+        // If it's not part of a header menu
         if (event.target.closest('.header-option') === null) {
-            // Close anything already open.
-            document.querySelectorAll('.header-option.is-open').forEach(closeMenu);
+            closeAllMenus();
         }
     }
 
@@ -121,23 +121,32 @@
         document.removeEventListener('click', outsideClickListener);
     }
 
+    function closeAllMenus() {
+        Array.prototype.forEach.call(
+            document.querySelectorAll('.header-option.is-open'),
+            closeMenu
+        )
+    }
+
     // Click to open header menus.
-    document.querySelectorAll('.header-option').forEach(function (el, i) {
-        el.querySelector('.option-title').addEventListener("click", function (event) {
-            if (this.parentNode.classList.contains("is-open")) {
-                closeMenu(this.parentNode);
-            } else {
-                // Close any open ones.
-                document.querySelectorAll('.header-option.is-open').forEach(closeMenu);
-                // Open header
-                this.parentNode.classList.add('is-open');
-                this.setAttribute('aria-expanded', "true");
-                document.addEventListener('click', outsideClickListener)
-            }
-            event.preventDefault();
-            return false;
-        });
-    });
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.header-option'),
+        function (el, i) {
+            el.querySelector('.option-title').addEventListener("click", function (event) {
+                if (this.parentNode.classList.contains("is-open")) {
+                    closeMenu(this.parentNode);
+                } else {
+                    closeAllMenus();
+                    // Open header
+                    this.parentNode.classList.add('is-open');
+                    this.setAttribute('aria-expanded', "true");
+                    document.addEventListener('click', outsideClickListener)
+                }
+                event.preventDefault();
+                return false;
+            });
+        }
+    );
 
 </script>
 </body>
