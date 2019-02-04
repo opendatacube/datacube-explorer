@@ -107,8 +107,6 @@ footer
         width: 250px
         border-top: 7px $header_stripe2 solid
 
-.panels
-    box-shadow: 0 -2px 0 0 #fff
 
 .info-panel
     ul
@@ -176,15 +174,11 @@ ul:last-child, ol:last-child
     border-collapse: collapse
     max-width: 60%
 
-    $active_color: darken($emphasis_strong, 5%)
+    $active_color: $emphasis_strong
 
     vertical-align: bottom
 
     background-color: $header_highlight_strong
-    .option-title:hover
-        background-color: lighten($header_highlight_strong, 5%)
-        &::after
-            color: #fff
 
     &.primary
         background-color: $header_highlight
@@ -193,9 +187,10 @@ ul:last-child, ol:last-child
 
     &.is-open
         background-color: $active_color
-        .option-title:hover
-            background-color: $active_color
-            color: #fff
+        .option-title
+            &:hover
+                background-color: $active_color
+                color: #fff
         .option-menu
             background-color: $active_color
             display: table
@@ -203,13 +198,17 @@ ul:last-child, ol:last-child
     .option-title
         font-size: 1em
         font-weight: normal
+        border-bottom: 2px solid transparent
+        &:hover
+            background-color: lighten($header_highlight_strong, 5%)
+            border-bottom: 2px solid #fff
+
     .group-name
         margin: 0
         @include square_padding
         font-size: 0.8em
         color: $bold_highlight
         text-transform: lowercase
-        font-variant: small-caps
 
 
     > .option-title
@@ -243,6 +242,7 @@ ul:last-child, ol:last-child
 
         &:hover
             background-color: lighten($active_color, 10%)
+            text-decoration: underline
             color: #fff
 
     .option-menu
