@@ -99,8 +99,11 @@ def get_last_updated():
     return STORE.get_last_updated()
 
 
+ProductWithSummary = Tuple[DatasetType, ProductSummary]
+
+
 @cache.memoize(timeout=120)
-def get_products_with_summaries() -> Iterable[Tuple[DatasetType, ProductSummary]]:
+def get_products_with_summaries() -> Iterable[ProductWithSummary]:
     """
     The list of products that we have generated reports for.
     """

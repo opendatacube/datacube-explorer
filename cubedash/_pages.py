@@ -1,17 +1,17 @@
 import itertools
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Tuple, List
 
 import flask
 import structlog
 from flask import abort, redirect, url_for, Response
 from flask import request
 from werkzeug.datastructures import MultiDict
-from flask_themes import render_theme_template
 
 import cubedash
 import datacube
 from cubedash import _monitoring, _audit
+from cubedash._model import ProductWithSummary
 from cubedash.summary import RegionInfo, TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
@@ -233,9 +233,13 @@ def about_page():
 def inject_globals():
     product_summaries = _model.get_products_with_summaries()
 
+    # Which field should we use when grouping products in the top menu?
+    group_by_field = app.config.get('CUBEDASH_PRODUCT_GROUP_BY_FIELD', 'product_type')
+    group_field_size = app.config.get('CUBEDASH_PRODUCT_GROUP_SIZE', 5)
+
     # Group by product type
     def key(t):
-        return t[0].fields.get('product_type') or 'misc.'
+        return t[0].fields.get(group_by_field) or t[0].name
 
     grouped_product_summarise = sorted(
         (
@@ -246,6 +250,7 @@ def inject_globals():
         # Show largest groups first
         key=lambda k: len(k[1]), reverse=True
     )
+    grouped_product_summarise = _merge_singular_groups(grouped_product_summarise, group_field_size)
 
     last_updated = _model.get_last_updated()
     # If there's no global data refresh time, show the time the current product was summarised.
@@ -262,6 +267,29 @@ def inject_globals():
         grouping_timezone=_model.STORE.grouping_timezone,
         last_updated_time=last_updated,
     )
+
+
+def _merge_singular_groups(
+        grouped_product_summarise: List[Tuple[str, List[ProductWithSummary]]],
+        remainder_group_size=5,
+) -> List[Tuple[str, List[ProductWithSummary]]]:
+    """
+    Remove groups with only one member, and place them at the end in batches.
+    """
+    lonely = []
+    for group, items in reversed(grouped_product_summarise):
+        if len(items) > 1:
+            break
+        lonely.extend(items)
+        grouped_product_summarise = grouped_product_summarise[:-1]
+    lonely = sorted(lonely, key=lambda p: p[1].name)
+    while lonely:
+        # Empty group name ('').
+        grouped_product_summarise.append(('', lonely[:remainder_group_size]))
+        if len(lonely) < remainder_group_size:
+            break
+        lonely = lonely[remainder_group_size:]
+    return grouped_product_summarise
 
 
 @app.route('/')
