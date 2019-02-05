@@ -83,6 +83,11 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
     
+    # Which field should we use when grouping products in the top menu?
+    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
+    # Ungrouped products will grouped together in this size.
+    CUBEDASH_PRODUCT_GROUP_SIZE = 5
+    
     # Maximum search results
     CUBEDASH_HARD_SEARCH_LIMIT = 100
     # Maximum number of source/derived datasets to show
