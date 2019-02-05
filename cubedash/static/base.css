@@ -67,21 +67,21 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 
 .header-option.is-open { background-color: #008fc5; }
 
-.header-option.is-open .option-title:hover { background-color: #008fc5; color: #fff; border-bottom: 1px solid transparent; }
+.header-option.is-open .option-title:hover { background-color: #008fc5; color: #fff; border-bottom: 0px solid transparent; }
 
 .header-option.is-open .option-menu { background-color: #008fc5; display: table; }
 
-.header-option .option-title { font-size: 1em; font-weight: normal; border-bottom: 1px solid transparent; }
+.header-option .option-title { font-size: 1em; font-weight: normal; border-bottom: 0px solid transparent; }
 
-.header-option .option-title:hover { background-color: #6e6e6e; border-bottom: 1px solid #8FCAE7; }
+.header-option .option-title:hover { background-color: #6e6e6e; border-bottom: 0px solid #8FCAE7; }
 
 .header-option .group-name { margin: 0; padding: 20px 20px 20px; font-size: 0.8em; color: #212121; text-transform: lowercase; }
 
 @media (min-width: 800px) { .header-option .group-name { padding: 30px 30px 30px; } }
 
-.header-option > .option-title { padding: 10px 20px 9px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
+.header-option > .option-title { padding: 10px 20px 10px; margin: 0; line-height: 1.75em; flex: 1 1; cursor: pointer; }
 
-@media (min-width: 800px) { .header-option > .option-title { padding: 15px 30px 14px; } }
+@media (min-width: 800px) { .header-option > .option-title { padding: 15px 30px 15px; } }
 
 .header-option > .option-title::after { content: ' ▾'; }
 
