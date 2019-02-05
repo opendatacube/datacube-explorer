@@ -24,14 +24,14 @@ $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
-@mixin box_padding($vscale:1, $footer_subtract:0px)
+@mixin box_padding($vscale:1)
     @media (min-width: 800px)
-        padding: (15px*$vscale) 30px (15px * $vscale - $footer_subtract)
+        padding: 15px*$vscale 30px
 
-    padding: (10px*$vscale) 20px (10px * $vscale - $footer_subtract)
+    padding: 10px*$vscale 20px
 
-@mixin wide_padding($footer_subtract:0px)
-    @include box_padding(1, $footer_subtract:$footer_subtract)
+@mixin wide_padding
+    @include box_padding(1)
 
 @mixin square_padding
     @include box_padding(2)
@@ -182,20 +182,21 @@ ul:last-child, ol:last-child
     $hover_footer_size: 0px
     $hover_footer_color: $emphasis_light
 
+    &:hover
+        background-color: lighten($header_highlight_strong, 5%)
     &.primary
         background-color: $header_highlight
-
-        .option-title:hover
+        &:hover
             background-color: lighten($header_highlight, 10%)
 
     &.is-open
         background-color: $menu_background
+        &:hover
+            background-color: $menu_background
 
         .option-title
             &:hover
-                background-color: $menu_background
                 color: #fff
-                border-bottom: $hover_footer_size solid transparent
 
         .option-menu
             background-color: $menu_background
@@ -204,11 +205,7 @@ ul:last-child, ol:last-child
     .option-title
         font-size: 1em
         font-weight: normal
-        border-bottom: $hover_footer_size solid transparent
 
-        &:hover
-            background-color: lighten($header_highlight_strong, 5%)
-            border-bottom: $hover_footer_size solid $hover_footer_color
 
     .group-name
         margin: 0
@@ -219,7 +216,7 @@ ul:last-child, ol:last-child
 
 
     > .option-title
-        @include wide_padding($footer_subtract:$hover_footer_size)
+        @include wide_padding
         margin: 0
         line-height: 1.75em
         flex: 1 1
