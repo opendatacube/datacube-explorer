@@ -24,14 +24,15 @@ $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
-@mixin box_padding($vscale:1)
+@mixin box_padding($vscale:1, $footer_subtract:0px)
     @media (min-width: 800px)
-        padding: 15px*$vscale 30px
+        padding: (15px*$vscale) 30px (15px * $vscale - $footer_subtract)
 
-    padding: 10px*$vscale 20px
+    padding: (10px*$vscale) 20px (10px * $vscale - $footer_subtract)
 
-@mixin wide_padding
-    @include box_padding
+@mixin wide_padding($footer_subtract:0px)
+    @include box_padding(1, $footer_subtract:$footer_subtract)
+
 @mixin square_padding
     @include box_padding(2)
 
@@ -173,35 +174,41 @@ ul:last-child, ol:last-child
     position: relative
     border-collapse: collapse
     max-width: 60%
-
-    $active_color: $emphasis_strong
-
     vertical-align: bottom
 
     background-color: $header_highlight_strong
 
+    $menu_background: $emphasis_strong
+    $hover_footer_size: 1px
+    $hover_footer_color: $emphasis_light
+
     &.primary
         background-color: $header_highlight
+
         .option-title:hover
             background-color: lighten($header_highlight, 10%)
 
     &.is-open
-        background-color: $active_color
+        background-color: $menu_background
+
         .option-title
             &:hover
-                background-color: $active_color
+                background-color: $menu_background
                 color: #fff
+                border-bottom: $hover_footer_size solid transparent
+
         .option-menu
-            background-color: $active_color
+            background-color: $menu_background
             display: table
 
     .option-title
         font-size: 1em
         font-weight: normal
-        border-bottom: 2px solid transparent
+        border-bottom: $hover_footer_size solid transparent
+
         &:hover
             background-color: lighten($header_highlight_strong, 5%)
-            border-bottom: 2px solid #fff
+            border-bottom: $hover_footer_size solid $hover_footer_color
 
     .group-name
         margin: 0
@@ -212,7 +219,7 @@ ul:last-child, ol:last-child
 
 
     > .option-title
-        @include wide_padding
+        @include wide_padding($footer_subtract:$hover_footer_size)
         margin: 0
         line-height: 1.75em
         flex: 1 1
@@ -238,17 +245,17 @@ ul:last-child, ol:last-child
         font-weight: bold
 
         &.active
-            background-color: lighten($active_color, 5%)
+            background-color: lighten($menu_background, 5%)
 
         &:hover
-            background-color: lighten($active_color, 10%)
+            background-color: lighten($menu_background, 10%)
             text-decoration: underline
             color: #fff
 
     .option-menu
         display: none
         position: absolute
-        top: calc(100% - 2px)
+        top: 100%
         left: 0
 
         li.empty
@@ -402,9 +409,11 @@ label
     position: absolute
     top: 15px
     right: 0
+
     img
         vertical-align: middle
         padding-right: 2px
+
     > a
         text-decoration: none
         color: #fff
