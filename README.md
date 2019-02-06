@@ -85,7 +85,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     # Which field should we use when grouping products in the top menu?
     CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
-    # Ungrouped products will grouped together in this size.
+    # Ungrouped products will be grouped together in this size.
     CUBEDASH_PRODUCT_GROUP_SIZE = 5
     
     # Maximum search results

@@ -24,17 +24,21 @@ $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
-@mixin box_padding($vscale:1)
+@mixin box_padding($scale_top:1, $scale_bottom:1)
     @media (min-width: 800px)
-        padding: 15px*$vscale 30px
+        padding: 15px*$scale_top 30px 15px*$scale_bottom
 
-    padding: 10px*$vscale 20px
+    padding: 10px*$scale_top 20px 10px*$scale_bottom
 
 @mixin wide_padding
     @include box_padding(1)
 
 @mixin square_padding
-    @include box_padding(2)
+    @include box_padding(2, 2)
+
+@mixin header_padding
+    // Place a header closer to its contents below.
+    @include box_padding(2, 1)
 
 // On small screens, move the description to the info panel.
 .product-description
@@ -209,7 +213,7 @@ ul:last-child, ol:last-child
 
     .group-name
         margin: 0
-        @include square_padding
+        @include header_padding
         font-size: 0.8em
         color: $bold_highlight
         text-transform: lowercase
@@ -270,7 +274,8 @@ ul:last-child, ol:last-child
             & > li
                 display: table-cell
 
-
+        > .footer
+            @include wide_padding
     // The "All" menu items
     .wildcard
         font-weight: bold

@@ -231,13 +231,36 @@ def about_page():
 
 @app.context_processor
 def inject_globals():
-    product_summaries = _model.get_products_with_summaries()
+    last_updated = _model.get_last_updated()
+    # If there's no global data refresh time, show the time the current product was summarised.
+    if not last_updated and 'product_name' in flask.request.view_args:
+        product_summary = _model.STORE.get_product_summary(flask.request.view_args['product_name'])
+        if product_summary:
+            last_updated = datetime.now() - product_summary.last_refresh_age
 
+    return dict(
+        grouped_products=_get_grouped_products(),
+        current_time=datetime.utcnow(),
+        datacube_version=datacube.__version__,
+        app_version=cubedash.__version__,
+        grouping_timezone=_model.STORE.grouping_timezone,
+        last_updated_time=last_updated,
+    )
+
+
+def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
+    """
+    We group products using the configured grouping field (default "product_type").
+
+    Anything left ungrouped will be placed at the end in groups of
+    configurable max size.
+    """
+    product_summaries = _model.get_products_with_summaries()
     # Which field should we use when grouping products in the top menu?
     group_by_field = app.config.get('CUBEDASH_PRODUCT_GROUP_BY_FIELD', 'product_type')
     group_field_size = app.config.get('CUBEDASH_PRODUCT_GROUP_SIZE', 5)
 
-    # Group by product type
+    # Group using the configured key, or fall back to the product name.
     def key(t):
         return t[0].fields.get(group_by_field) or t[0].name
 
@@ -250,23 +273,7 @@ def inject_globals():
         # Show largest groups first
         key=lambda k: len(k[1]), reverse=True
     )
-    grouped_product_summarise = _merge_singular_groups(grouped_product_summarise, group_field_size)
-
-    last_updated = _model.get_last_updated()
-    # If there's no global data refresh time, show the time the current product was summarised.
-    if not last_updated and 'product_name' in flask.request.view_args:
-        product_summary = _model.STORE.get_product_summary(flask.request.view_args['product_name'])
-        if product_summary:
-            last_updated = datetime.now() - product_summary.last_refresh_age
-
-    return dict(
-        grouped_products=grouped_product_summarise,
-        current_time=datetime.utcnow(),
-        datacube_version=datacube.__version__,
-        app_version=cubedash.__version__,
-        grouping_timezone=_model.STORE.grouping_timezone,
-        last_updated_time=last_updated,
-    )
+    return _merge_singular_groups(grouped_product_summarise, group_field_size)
 
 
 def _merge_singular_groups(
@@ -276,20 +283,38 @@ def _merge_singular_groups(
     """
     Remove groups with only one member, and place them at the end in batches.
     """
-    lonely = []
+    lonely_products = []
     for group, items in reversed(grouped_product_summarise):
         if len(items) > 1:
             break
-        lonely.extend(items)
+        lonely_products.extend(items)
         grouped_product_summarise = grouped_product_summarise[:-1]
-    lonely = sorted(lonely, key=lambda p: p[1].name)
-    while lonely:
-        # Empty group name ('').
-        grouped_product_summarise.append(('', lonely[:remainder_group_size]))
-        if len(lonely) < remainder_group_size:
-            break
-        lonely = lonely[remainder_group_size:]
+    lonely_products = sorted(lonely_products, key=lambda p: p[1].name)
+    for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
+        grouped_product_summarise.append(
+            ('Products' if i == 0 else '',
+             lonely_group)
+        )
     return grouped_product_summarise
+
+
+def chunks(l: List, n: int):
+    """
+    Split list into chunks of size n.
+
+    >>> list(chunks([1, 2, 3, 4, 5, 6, 7, 8, 9], 3))
+    [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    >>> list(chunks([1, 2, 3, 4, 5, 6, 7, 8], 3))
+    [[1, 2, 3], [4, 5, 6], [7, 8]]
+    >>> list(chunks([1, 2, 3], 3))
+    [[1, 2, 3]]
+    >>> list(chunks([1, 2, 3], 4))
+    [[1, 2, 3]]
+    >>> list(chunks([], 3))
+    []
+    """
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 
 @app.route('/')
