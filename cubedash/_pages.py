@@ -289,18 +289,21 @@ def _merge_singular_groups(
             break
         lonely_products.extend(items)
         grouped_product_summarise = grouped_product_summarise[:-1]
+
+    there_are_groups = len(grouped_product_summarise) > 0
+
     lonely_products = sorted(lonely_products, key=lambda p: p[1].name)
     for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
-        grouped_product_summarise.append(
-            ('Products' if i == 0 else '',
-             lonely_group)
-        )
+        group_name = ''
+        if i == 0:
+            group_name = 'Other Products' if there_are_groups else 'Products'
+        grouped_product_summarise.append((group_name, lonely_group))
     return grouped_product_summarise
 
 
 def chunks(l: List, n: int):
     """
-    Split list into chunks of size n.
+    Split list into chunks of max size n.
 
     >>> list(chunks([1, 2, 3, 4, 5, 6, 7, 8, 9], 3))
     [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
