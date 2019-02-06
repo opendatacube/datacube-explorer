@@ -10,7 +10,7 @@ from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 
-from cubedash import _monitoring
+from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
 from datacube.index import Index
 from integration_tests.asserts import (
@@ -68,6 +68,25 @@ def test_get_overview(client: FlaskClient):
     check_last_processed(html, "2018-05-20T09:36:57")
     assert "wofs_albers across April 2017" in _h1_text(html)
     check_area("30,...km2", html)
+
+
+def test_all_products_are_shown(client: FlaskClient):
+    """
+    After all the complicated grouping logic, there should still be one header link for each product.
+    """
+    html = get_html(client, "/ls7_nbar_scene")
+
+    # We use a sorted array instead of a Set to detect duplicates too.
+    found_product_names = sorted(
+        [
+            a.text.strip()
+            for a in html.find(".product-selection-header .option-menu-link")
+        ]
+    )
+    indexed_product_names = sorted(p.name for p in _model.STORE.all_dataset_types())
+    assert (
+        found_product_names == indexed_product_names
+    ), "Product shown in menu don't match the indexed products"
 
 
 def test_get_overview_product_links(client: FlaskClient):
