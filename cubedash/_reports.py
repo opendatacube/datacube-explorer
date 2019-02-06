@@ -15,7 +15,7 @@ bp = Blueprint("reports", __name__, url_prefix="/reports")
 # @app.route('/reports')
 @bp.route("/")
 def reports_page():
-    return flask.render_template("reports.html")
+    return utils.render("reports.html")
 
 
 # @app.route('/reports')

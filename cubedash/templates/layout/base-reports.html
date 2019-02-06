@@ -1,97 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>{% block title %}{% endblock %}</title>
-    <meta name="viewport" content="initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-4.6.3/css/font-awesome.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    {% block head %}{% endblock %}
-</head>
-<body>
-<!--[if IE]>
-<div class='message-box'>
-    <p>
-        Your version of Internet Explorer is unsupported (requires 11+).
-    </p>
-    <p>
-        <a href="http://www.mozilla.com/firefox">Firefox</a> or Chrome are recommended.
-    </p>
-</div>
-<![endif]-->
+{% extends "layout/base.html" %}
+{% block title %}Reports{% endblock %}
 
-<div class="content-wrapper">
-    <div id="logo">
-        <a href="/">
-            <img src="{{ url_for('static', filename='dea-icon.svg') }}"
-                 height="26px" alt=""/>
-            <span class="logo-text"><strong>Digital Earth</strong> Australia</span>
-        </a>
-    </div>
-    <div class="content">
-        <h3> <strong>Product Summaries </h3>
-        <div class="panel">
-            {% block header %}{% endblock %}
-            <div id="summary-content" >
-                {% block summary_content %}{% endblock %}
-            </div>
+{% block content %}
+
+    <h3><strong>Product Summaries</strong></h3>
+    <div class="panel">
+        {% block report_header %}{% endblock %}
+        <div id="summary-content">
+            {% block summary_content %}{% endblock %}
         </div>
     </div>
-    <div class="content">
-        <h3> <strong>Product differences<strong> </h3>
-        <div class="panel">
-            {% block diff_header %}{% endblock %}
-            <div id="diff-content">
-                {% block diff_content %}{% endblock %}
-            </div>
+
+    <h3><strong>Product differences</strong></h3>
+    <div class="panel">
+        {% block diff_header %}{% endblock %}
+        <div id="diff-content">
+            {% block diff_content %}{% endblock %}
         </div>
     </div>
-</div>
-<footer>
-    Open Data Cube v{{ datacube_version }},
-    Dash v{{ app_version }}, <span id="map-attribution-text"></span><br/>
-    {% if last_updated_time %}
-        Updated {{ last_updated_time | timesince }}
-    {% endif %}
-    {% block footer %}{% endblock %}
-</footer>
 
-<script src="{{ url_for('static', filename='leaflet-1.3.1/leaflet.js') }}"></script>
-<script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
-
-{% block body_footer %}{% endblock %}
-<script>
-    // If there's a map on the page, add layer attribution in the footer.
-    (function () {
-        var map = window.MAP;
-        if (map) {
-            var attributionEl = document.getElementById('map-attribution-text');
-
-            function updateAttribution(e) {
-                var attributions = Object.keys(map._layers).map(function (name) {
-                    var layer = map._layers[name];
-                    if (layer.getAttribution) {
-                        return layer.getAttribution();
-                    }
-                    return null;
-                });
-                var isDefined = function (a) {
-                    return a !== null;
-                };
-                var attributionText = new DOMParser().parseFromString(
-                    attributions.filter(isDefined).join(', '),
-                    'text/html'
-                ).body.textContent;
-                attributionEl.innerHTML = attributionText || "";
-            }
-
-            map.on("layeradd", updateAttribution);
-            map.on("layerremove", updateAttribution);
-            updateAttribution();
-        }
-    })();
-</script>
-</body>
-</html>
+{% endblock %}
