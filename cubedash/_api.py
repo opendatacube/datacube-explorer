@@ -1,6 +1,6 @@
 import logging
 
-from flask import Blueprint
+from flask import Blueprint, abort
 
 from . import _model
 from ._utils import as_geojson
@@ -36,4 +36,7 @@ def footprint_geojson(
 def regions_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_geojson(_model.get_regions_geojson(product_name, year, month, day))
+    regions = _model.get_regions_geojson(product_name, year, month, day)
+    if regions is None:
+        abort(404, f"{product_name} does not have regions")
+    return as_geojson(regions)
