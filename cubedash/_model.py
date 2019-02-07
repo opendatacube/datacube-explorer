@@ -152,19 +152,21 @@ def get_regions_geojson(
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None) -> Optional[Dict]:
-    period = get_time_summary(product_name, year, month, day)
-    if period is None:
-        return None
 
     product = STORE.get_dataset_type(product_name)
-
-    if not period.region_dataset_counts:
-        return None
 
     region_info = RegionInfo.for_product(product)
     if not region_info:
         return None
 
+    product_summary = STORE.get_product_summary(product.name)
+    if not product_summary:
+        # Valid product, but no summary generated.
+        return None
+    period = get_time_summary(product_name, year, month, day)
+    if not period:
+        # Valid product, but no summary generated.
+        return None
     footprint_wrs84 = _get_footprint(period)
 
     start = time.time()
@@ -208,9 +210,14 @@ def _get_regions_geojson(
 ) -> Optional[Dict]:
     region_geometry = _region_geometry_function(region_info, footprint)
     if not region_geometry:
+        # Regions are unsupported for product
         return None
 
-    low, high = min(region_counts.values()), max(region_counts.values())
+    if region_counts:
+        low, high = min(region_counts.values()), max(region_counts.values())
+    else:
+        low, high = 0, 0
+
     return {
         'type': 'FeatureCollection',
         'properties': {
@@ -228,7 +235,7 @@ def _get_regions_geojson(
                     'label': region_info.region_label(region_code),
                     'count': region_counts[region_code]
                 }
-            } for region_code in region_counts
+            } for region_code in (region_counts or [])
         ]
     }
 

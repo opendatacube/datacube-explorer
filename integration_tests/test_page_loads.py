@@ -3,6 +3,7 @@ Tests that load pages and check the contained text.
 """
 import json
 from pathlib import Path
+from pprint import pprint
 
 import pytest
 from click.testing import Result
@@ -228,8 +229,9 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient):
 
     It should be empty (no regions supported) rather than throw an exception.
     """
-    geojson = get_geojson(client, '/api/regions/high_tide_comp_20p')
-    assert geojson == None
+
+    rv: Response = client.get('/api/regions/high_tide_comp_20p')
+    assert rv.status_code == 404, "High tide comp does not support regions: it should return not-exist code."
 
 
 def test_api_returns_scene_regions(client: FlaskClient):
@@ -294,7 +296,7 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     print(json.dumps(geojson, indent=4))
     assert len(geojson['features']) == 1, "Unexpected wofs albers region day count"
     geojson = get_geojson(client, '/api/regions/wofs_albers/2017/04/6')
-    assert geojson is None, "Unexpected wofs albers region count"
+    assert len(geojson['features']) == 0, "Unexpected wofs albers region count"
 
 
 def test_undisplayable_product(client: FlaskClient):
