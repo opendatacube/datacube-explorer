@@ -1,6 +1,8 @@
 import json
 import re
 from datetime import datetime
+from pathlib import Path
+from pprint import pprint
 from typing import Dict, Tuple, Set, Optional
 
 from dateutil.tz import tzutc
@@ -11,13 +13,26 @@ from requests_html import HTML
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 from datacube.model import Range
+from datacube.utils import validate_document
+
+# GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
+_FEATURE_COLLECTION_SCHEMA_PATH = Path(__file__).parent / 'schemas' / 'FeatureCollection.json'
+_FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open('r'))
 
 
 def get_geojson(client: FlaskClient, url: str) -> Dict:
     rv: Response = client.get(url)
     assert rv.status_code == 200
-    response_geojson = json.loads(rv.data)
-    return response_geojson
+    assert rv.is_json, "Expected json content type in response"
+    data = rv.json
+    assert data is not None, "Empty response from server"
+    pprint(data)
+    validate_document(
+        data,
+        _FEATURE_COLLECTION_SCHEMA,
+        schema_folder=_FEATURE_COLLECTION_SCHEMA_PATH.parent,
+    )
+    return rv.json
 
 
 def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
@@ -47,14 +62,14 @@ def check_dataset_count(html, count: int):
 
 
 def expect_values(s: TimePeriodOverview,
-                   dataset_count: int,
-                   footprint_count: int,
-                   time_range: Range,
-                   newest_creation_time: datetime,
-                   timeline_period: str,
-                   timeline_count: int,
-                   crses: Set[str],
-                   size_bytes: Optional[int]):
+                  dataset_count: int,
+                  footprint_count: int,
+                  time_range: Range,
+                  newest_creation_time: datetime,
+                  timeline_period: str,
+                  timeline_count: int,
+                  crses: Set[str],
+                  size_bytes: Optional[int]):
     __tracebackhide__ = True
 
     was_timeline_error = False
