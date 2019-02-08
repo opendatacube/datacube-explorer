@@ -1,13 +1,17 @@
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from typing import Iterable, Set, Tuple, Union
 
+import pyproj
 import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
+from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
+from shapely.ops import transform
 
 from datacube.model import Dataset, Range
 
@@ -136,6 +140,17 @@ class TimePeriodOverview:
             ),
             size_bytes=sum(p.size_bytes for p in periods if p.size_bytes is not None),
         )
+
+    @property
+    def footprint_wrs84(self) -> MultiPolygon:
+        tranform_wrs84 = partial(
+            pyproj.transform,
+            pyproj.Proj(init=self.footprint_crs),
+            pyproj.Proj(init="epsg:4326"),
+        )
+        # It's possible to get self-intersection after transformation, presumably due to
+        # rounding, so we buffer 0.
+        return transform(tranform_wrs84, self.footprint_geometry).buffer(0)
 
     @staticmethod
     def _group_counter_if_needed(counter, period):

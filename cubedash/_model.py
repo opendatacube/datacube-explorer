@@ -176,21 +176,14 @@ def get_regions_geojson(
     return regions
 
 
-def _get_footprint(period: TimePeriodOverview):
+def _get_footprint(period: TimePeriodOverview) -> Optional[MultiPolygon]:
     if not period or not period.dataset_count:
         return None
 
     if not period.footprint_geometry:
         return None
     start = time.time()
-    tranform_wrs84 = partial(
-        pyproj.transform,
-        pyproj.Proj(init=period.footprint_crs),
-        pyproj.Proj(init="epsg:4326"),
-    )
-    # It's possible to get self-intersection after transformation, presumably due to
-    # rounding, so we buffer 0.
-    footprint_wrs84 = transform(tranform_wrs84, period.footprint_geometry).buffer(0)
+    footprint_wrs84 = period.footprint_wrs84
     _LOG.info(
         "overview.footprint_size_diff",
         from_len=len(period.footprint_geometry.wkt),
