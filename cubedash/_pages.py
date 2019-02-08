@@ -16,7 +16,7 @@ from cubedash.summary import RegionInfo, TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
-from . import _filters, _dataset, _product, _platform, _api, _model, _reports, _stac
+from . import _filters, _dataset, _product, _platform, _api, _model, _reports, _stac_api as _stac
 from . import _utils as utils
 from ._utils import as_rich_json
 
