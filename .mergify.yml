@@ -7,6 +7,7 @@ rules:
       required_status_checks:
         strict: true
         contexts:
+          - WIP
           - continuous-integration/travis-ci
           - coverage/coveralls
     merge_strategy:
