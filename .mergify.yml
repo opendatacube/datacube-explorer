@@ -1,15 +1,14 @@
-rules:
-  default:
-    protection:
-      enforce_admins: true
-      required_pull_request_reviews:
-        required_approving_review_count: 1
-      required_status_checks:
+pull_request_rules:
+  - name: default
+    conditions:
+      - label=ready-to-be-merged
+      - label!=no-mergify
+      - '#approved-reviews-by>=1'
+      - status-success=WIP
+      - status-success=continuous-integration/travis-ci/pr
+      - status-success=coverage/coveralls
+    actions:
+      merge:
+        method: rebase
+        rebase_fallback: merge
         strict: true
-        contexts:
-          - WIP
-          - continuous-integration/travis-ci
-          - coverage/coveralls
-    merge_strategy:
-      method: rebase
-    enabling_label: ready-to-be-merged
