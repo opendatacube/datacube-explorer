@@ -21,18 +21,13 @@ _FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open('r')
 
 
 def get_geojson(client: FlaskClient, url: str) -> Dict:
-    rv: Response = client.get(url)
-    assert rv.status_code == 200
-    assert rv.is_json, "Expected json content type in response"
-    data = rv.json
-    assert data is not None, "Empty response from server"
-    pprint(data)
+    data = get_json(client, url)
     validate_document(
         data,
         _FEATURE_COLLECTION_SCHEMA,
         schema_folder=_FEATURE_COLLECTION_SCHEMA_PATH.parent,
     )
-    return rv.json
+    return data
 
 
 def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
@@ -40,6 +35,16 @@ def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
     assert response.status_code == 200, response.data.decode('utf-8')
     html = HTML(html=response.data.decode('utf-8'))
     return html, response
+
+
+def get_json(client: FlaskClient, url: str) -> Dict:
+    rv: Response = client.get(url)
+    assert rv.status_code == 200
+    assert rv.is_json, "Expected json content type in response"
+    data = rv.json
+    assert data is not None, "Empty response from server"
+    pprint(data)
+    return data
 
 
 def get_html(client: FlaskClient, url: str) -> HTML:

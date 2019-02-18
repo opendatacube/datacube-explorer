@@ -16,7 +16,7 @@ from cubedash.summary import SummaryStore, show
 from cubedash.summary import _extents
 from datacube.index import Index
 from integration_tests.asserts import get_html, check_dataset_count, \
-    check_last_processed, check_area, get_geojson
+    check_last_processed, check_area, get_geojson, get_json
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
 
@@ -102,6 +102,39 @@ def test_all_products_are_shown(client: FlaskClient):
     found_product_names = sorted([a.text.strip() for a in html.find('.product-selection-header .option-menu-link')])
     indexed_product_names = sorted(p.name for p in _model.STORE.all_dataset_types())
     assert found_product_names == indexed_product_names, "Product shown in menu don't match the indexed products"
+
+
+def test_stac_collections(client: FlaskClient):
+    response = get_json(client, '/stac')
+
+    assert response.get('id'), "No id for stac endpoint"
+
+    # TODO: Values of these will probably come from user configuration?
+    assert 'title' in response
+    assert 'description' in response
+
+    # A child link to each "collection" (product)
+    child_links = [l for l in response['links'] if l['rel'] == 'child']
+    other_links = [l for l in response['links'] if l['rel'] != 'child']
+
+    # a "self" link.
+    assert len(other_links) == 1
+    assert other_links[0]['rel'] == 'self'
+
+    found_products = set()
+    for child_link in child_links:
+        product_name = child_link['title']
+        href = child_link['href']
+
+        print(f"Loading collection page for {product_name}: {repr(href)}")
+        collection_data = get_json(client, href)
+        assert collection_data['id'] == product_name
+        # TODO: assert items, properties, etc.
+        found_products.add(product_name)
+
+    # We should have seen all products in the index
+    expected_products = set(dt.name for dt in _model.STORE.all_dataset_types())
+    assert found_products == expected_products
 
 
 def test_get_overview_product_links(client: FlaskClient):
