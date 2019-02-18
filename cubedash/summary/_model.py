@@ -1,8 +1,9 @@
+import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import Iterable, Set, Tuple, Union
+from typing import Iterable, Optional, Set, Tuple, Union
 
 import pyproj
 import shapely
@@ -44,6 +45,12 @@ class TimePeriodOverview:
 
     # When this summary was generated. Set on the server.
     summary_gen_time: datetime = None
+
+    def __str__(self):
+        return (
+            f"{self.timeline_period}:{self.time_range.begin} "
+            f"({self.dataset_count} datasets)"
+        )
 
     @classmethod
     def add_periods(
@@ -142,7 +149,13 @@ class TimePeriodOverview:
         )
 
     @property
-    def footprint_wrs84(self) -> MultiPolygon:
+    def footprint_wrs84(self) -> Optional[MultiPolygon]:
+        if not self.footprint_geometry:
+            return None
+        if not self.footprint_crs:
+            warnings.warn(f"Geometry without a crs for {self}")
+            return None
+
         tranform_wrs84 = partial(
             pyproj.transform,
             pyproj.Proj(init=self.footprint_crs),

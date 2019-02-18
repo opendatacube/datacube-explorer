@@ -1,19 +1,23 @@
 import logging
+import warnings
 from collections import OrderedDict
+from datetime import datetime
+from pprint import pprint
 from typing import Dict, Iterable, List
 
+import ciso8601
 from dateutil import tz
 from flask import abort, request, url_for
 
 from cubedash import _utils
 from cubedash.summary._stores import ProductSummary
-from datacube.model import Dataset, DatasetType
+from datacube.model import Dataset, DatasetType, Range
 from datacube.utils.uris import pick_uri, uri_resolve
 
 from . import _model, _stac
 from . import _utils as utils
 
-_PAGE_SIZE = 10
+_PAGE_SIZE = 50
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,10 +42,11 @@ def root():
                 *(
                     dict(
                         rel="child",
+                        title=product.name,
+                        description=product.definition.get("description"),
                         href=url_for(
                             "stac.collection", product_name=product.name, _external=True
                         ),
-                        title=product.metadata_doc.get("description"),
                     )
                     for product, product_summary in _model.get_products_with_summaries()
                 ),
@@ -57,17 +62,24 @@ def collection(product_name: str):
     dataset_type = _model.STORE.get_dataset_type(product_name)
     all_time_summary = _model.get_time_summary(product_name)
 
-    begin, end = _time_range_utc(summary)
+    summary_props = {}
+    if summary and summary.time_earliest:
+        begin, end = _utc(summary.time_earliest), _utc(summary.time_latest)
+        extent = {"temporal": [begin, end]}
+        footprint = all_time_summary.footprint_wrs84
+        if footprint:
+            extent["spatial"] = footprint.bounds
+
+        summary_props["extent"] = extent
     return utils.as_json(
         dict(
             **_STAC_DEFAULTS,
             id=summary.name,
-            title=dataset_type.metadata_doc.get("description"),
+            title=summary.name,
+            description=dataset_type.definition.get("description"),
             properties=dict(_build_properties(dataset_type)),
             providers=[],
-            extent=dict(
-                spatial=all_time_summary.footprint_wrs84.bounds, temporal=[begin, end]
-            ),
+            **summary_props,
             links=[
                 dict(
                     rel="items",
@@ -78,6 +90,55 @@ def collection(product_name: str):
             ],
         )
     )
+
+
+# @bp.route('/search', methods=['GET', 'POST'])
+def stac_search():
+    if request.method == "GET":
+        bbox = request.args.get("bbox")
+        time_ = request.args.get("time")
+        product = request.args.get("product")
+        limit = request.args.get("limit")
+        from_dts = request.args.get("from")
+    else:
+        req_data = request.get_json()
+        bbox = req_data.get("bbox")
+        time_ = req_data.get("time")
+        product = req_data.get("product")
+        limit = req_data.get("limit")
+        from_dts = req_data.get("from")
+
+    if not limit or (limit > _PAGE_SIZE):
+        limit = _PAGE_SIZE
+
+    return _as_feature_collection(
+        load_datasets(bbox, product, time_, limit), None, limit=limit
+    )
+
+
+def load_datasets(bbox, product, time, limit) -> Iterable[Dataset]:
+    """
+    Parse the query parameters and load and return the matching datasets. bbox is assumed to be
+    [minimum longitude, minimum latitude, maximum longitude, maximum latitude]
+    """
+
+    query = dict()
+    if product:
+        query["product"] = product
+
+    if time:
+        time_period = time.split("/")
+        query["time"] = Range(
+            ciso8601.parse_datetime(time_period[0]),
+            ciso8601.parse_datetime(time_period[1]),
+        )
+
+    if bbox:
+        # bbox is in GeoJSON CRS (WGS84)
+        query["lon"] = Range(bbox[0], bbox[2])
+        query["lat"] = Range(bbox[1], bbox[3])
+
+    return _model.STORE.index.datasets.search(limit=limit, **query)
 
 
 @bp.route("/collections/<product_name>/items")
@@ -91,14 +152,24 @@ def item_list(product_name: str):
         product=product_name, limit=_PAGE_SIZE
     )
     all_time_summary = _model.get_time_summary(product_name)
+
+    # We maybe shouldn't include "found" as it prevents some future optimisation?
+    total_count = all_time_summary.dataset_count
+
+    return _as_feature_collection(datasets, total_count)
+
+
+def _as_feature_collection(datasets, total_count, limit=_PAGE_SIZE):
+    extras = {}
+    if total_count:
+        extras["found"] = total_count
     return utils.as_json(
         dict(
             meta=dict(
                 page=1,
-                limit=_PAGE_SIZE,
+                limit=limit,
                 # returned=?
-                # We maybe shouldn't include "found" as it prevents some future optimisation?
-                found=all_time_summary.dataset_count,
+                **extras,
             ),
             type="FeatureCollection",
             features=(stac_item(d) for d in datasets),
@@ -145,6 +216,10 @@ def stac_item(ds: Dataset):
     shape, valid_extent = _utils.dataset_shape(ds)
     base_uri = pick_remote_uri(ds) or ds.local_uri
 
+    if not shape:
+        warnings.warn(f"shapeless dataset of type {ds.type.name}")
+        return None
+
     # Band order needs to be stable.
     bands = enumerate(sorted(ds.measurements.items()))
     # Find all bands without paths. Create base_path asset with all of those eo:bands
@@ -160,6 +235,8 @@ def stac_item(ds: Dataset):
                 "properties",
                 {
                     "datetime": ds.center_time,
+                    # TODO: correct?
+                    "collection": ds.type.name,
                     # 'provider': CFG['contact']['name'],
                     # 'license': CFG['license']['name'],
                     # 'copyright': CFG['license']['copyright'],
@@ -171,14 +248,14 @@ def stac_item(ds: Dataset):
                 "links",
                 [
                     {
+                        "rel": "self",
                         "href": url_for(
                             "stac.item", product_name=ds.type.name, dataset_id=ds.id
                         ),
-                        "rel": "self",
                     },
                     {
-                        "href": url_for("stac.collection", product_name=ds.type.name),
                         "rel": "parent",
+                        "href": url_for("stac.collection", product_name=ds.type.name),
                     },
                 ],
             ),
@@ -208,8 +285,8 @@ def stac_item(ds: Dataset):
     # If the dataset has a real start/end time, add it.
     time = ds.time
     if time.begin < time.end:
-        item["properties"]["dtr:start_datetime"] = time.begin
-        item["properties"]["dtr:end_datetime"] = time.end
+        item["properties"]["dtr:start_datetime"] = _utc(time.begin)
+        item["properties"]["dtr:end_datetime"] = _utc(time.end)
 
     return item
 
@@ -226,6 +303,29 @@ def field_bands(value: List[Dict]):
     return "eo:bands", [dict(name=v["name"]) for v in value]
 
 
+def field_path_row(value):
+    # eo:row	"135"
+    # eo:column	"044"
+    pass
+
+
+# Properties:
+# collection	"landsat-8-l1"
+# eo:gsd	15
+# eo:platform	"landsat-8"
+# eo:instrument	"OLI_TIRS"
+# eo:off_nadir	0
+# datetime	"2019-02-12T19:26:08.449265+00:00"
+# eo:sun_azimuth	-172.29462212
+# eo:sun_elevation	-6.62176054
+# eo:cloud_cover	-1
+# eo:row	"135"
+# eo:column	"044"
+# landsat:product_id	"LC08_L1GT_044135_20190212_20190212_01_RT"
+# landsat:scene_id	"LC80441352019043LGN00"
+# landsat:processing_level	"L1GT"
+# landsat:tier	"RT"
+
 _STAC_PROPERTY_MAP = {
     "platform": field_platform,
     "instrument": field_instrument,
@@ -235,13 +335,14 @@ _STAC_PROPERTY_MAP = {
 
 def _build_properties(dt: DatasetType):
     for key, val in dt.metadata.fields.items():
+        if val is None:
+            continue
         converter = _STAC_PROPERTY_MAP.get(key)
         if converter:
             yield converter(val)
 
 
-def _time_range_utc(summary: ProductSummary):
-    return (
-        summary.time_earliest.astimezone(tz.tzutc()),
-        summary.time_latest.astimezone(tz.tzutc()),
-    )
+def _utc(d: datetime):
+    if d is None:
+        return None
+    return d.astimezone(tz.tzutc())
