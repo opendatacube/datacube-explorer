@@ -42,6 +42,14 @@ def populate_index(dataset_loader, module_dea_index):
     )
     assert loaded == 306
 
+    # These have very large footprints, as they were unioned from many almost-identical
+    # polygons and not simplified. They will trip up postgis if used naively.
+    # (postgis gist index has max record size of 8k per entry)
+    loaded = dataset_loader(
+        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
+    )
+    assert loaded == 20
+
     return module_dea_index
 
 
@@ -117,6 +125,12 @@ def test_get_day_overviews(client: FlaskClient):
     # Empty day
     html = get_html(client, "/ls7_nbar_scene/2017/4/22")
     check_dataset_count(html, 0)
+
+
+def test_summary_product(client: FlaskClient):
+    # These datasets have gigantic footprints that can trip up postgis.
+    html = get_html(client, "/pq_count_summary")
+    check_dataset_count(html, 20)
 
 
 def test_uninitialised_overview(
