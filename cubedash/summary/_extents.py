@@ -225,7 +225,18 @@ def _select_dataset_extent_query(dt: DatasetType):
     md_type = dt.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
-    footrprint_expression = get_dataset_extent_alchemy_expression(md_type, default_crs=_default_crs(dt))
+    footprint_expression = get_dataset_extent_alchemy_expression(
+        md_type,
+        default_crs=_default_crs(dt)
+    )
+
+    # Some time-series-derived products have seemingly-rectangular but *huge* footprints
+    # (because they union many almost-indistinguishable footprints)
+    # If they specify a resolution, we can simplify the geometry based on it.
+    if footprint_expression is not None and dt.grid_spec and dt.grid_spec.resolution:
+        resolution = min(abs(r) for r in dt.grid_spec.resolution)
+        footprint_expression = func.ST_SimplifyPreserveTopology(footprint_expression, resolution/4)
+
     product_ref = bindparam('product_ref', dt.id, type_=SmallInteger)
 
     # "expr == None" is valid in sqlalchemy:
@@ -238,7 +249,7 @@ def _select_dataset_extent_query(dt: DatasetType):
             func.lower(time) + (func.upper(time) - func.lower(time)) / 2
         ).label('center_time'),
         (
-            null() if footrprint_expression is None else footrprint_expression
+            null() if footprint_expression is None else footprint_expression
         ).label('footprint'),
         _region_code_field(dt).label('region_code'),
         _size_bytes_field(dt).label('size_bytes'),
