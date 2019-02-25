@@ -1,4 +1,5 @@
 import time
+from functools import partial
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
@@ -181,13 +182,15 @@ def _get_footprint(period: TimePeriodOverview):
 
     if not period.footprint_geometry:
         return None
-
     start = time.time()
-    from_crs = pyproj.Proj(init=period.footprint_crs)
-    to_crs = pyproj.Proj(init="epsg:4326")
-    footprint_wrs84 = transform(
-        lambda x, y: pyproj.transform(from_crs, to_crs, x, y), period.footprint_geometry
+    tranform_wrs84 = partial(
+        pyproj.transform,
+        pyproj.Proj(init=period.footprint_crs),
+        pyproj.Proj(init="epsg:4326"),
     )
+    # It's possible to get self-intersection after transformation, presumably due to
+    # rounding, so we buffer 0.
+    footprint_wrs84 = transform(tranform_wrs84, period.footprint_geometry).buffer(0)
     _LOG.info(
         "overview.footprint_size_diff",
         from_len=len(period.footprint_geometry.wkt),
