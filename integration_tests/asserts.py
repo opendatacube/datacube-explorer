@@ -48,7 +48,7 @@ def get_html(client: FlaskClient, url: str) -> HTML:
 
 
 def check_area(area_pattern, html):
-    assert re.match(area_pattern + ' \(approx', html.find('.coverage-footprint-area', first=True).text)
+    assert re.match(area_pattern + r' \(approx', html.find('.coverage-footprint-area', first=True).text)
 
 
 def check_last_processed(html, time):
