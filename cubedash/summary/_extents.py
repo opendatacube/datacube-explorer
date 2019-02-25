@@ -284,14 +284,18 @@ def _select_dataset_extent_query(dt: DatasetType):
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
     time = md_type.dataset_fields["time"].alchemy_expression
+
+    # Matches the logic in Dataset.center_time
+    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+        "center_time"
+    )
+
     return (
         select(
             [
                 DATASET.c.id,
                 DATASET.c.dataset_type_ref,
-                (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
-                    "center_time"
-                ),
+                center_time,
                 (
                     null() if footprint_expression is None else footprint_expression
                 ).label("footprint"),
@@ -302,6 +306,7 @@ def _select_dataset_extent_query(dt: DatasetType):
         )
         .where(DATASET.c.dataset_type_ref == product_ref)
         .where(DATASET.c.archived == None)
+        .order_by(center_time)
     )
 
 
