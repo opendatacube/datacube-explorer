@@ -1,6 +1,7 @@
+import json
 import logging
 
-from flask import Blueprint, abort
+from flask import Blueprint, abort, request
 
 from . import _model
 from ._utils import as_geojson
@@ -16,7 +17,19 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 def datasets_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_geojson(_model.get_datasets_geojson(product_name, year, month, day))
+    bbox = None
+
+    if "bbox" in request.args:
+        bbox = json.loads(request.args["bbox"])
+
+    limit = request.args.get("limit", default=50, type=int)
+    limit = min(limit, 600)
+
+    return as_geojson(
+        _model.get_datasets_geojson(
+            product_name, year, month, day, bbox=bbox, limit=limit
+        )
+    )
 
 
 @bp.route("/footprint/<product_name>")

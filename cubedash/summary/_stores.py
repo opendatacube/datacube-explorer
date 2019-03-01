@@ -373,6 +373,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        bbox: Tuple[float, float, float, float] = None,
         limit: int = 500,
     ) -> Dict:
         """
@@ -380,23 +381,24 @@ class SummaryStore:
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
-        params = {}
+        time = None
         if year:
-            params["time"] = _utils.as_time_range(
-                year, month, day, tzinfo=self.grouping_timezone
+            time = _utils.as_time_range(year, month, day, tzinfo=self.grouping_timezone)
+
+        features = list(
+            self._summariser.get_dataset_items(
+                product_name, time=time, bbox=bbox, limit=limit + 1
             )
+        )
+
+        there_are_more = len(features) == limit + 1
 
         # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
-        # return self._summariser.get_dataset_footprints(
-        #     product_name,
-        #     time_range,
-        #     limit
-        # )
-
-        datasets = self.index.datasets.search(
-            limit=limit, product=product_name, **params
+        return dict(
+            type="FeatureCollection",
+            features=[f.as_stac_item() for f in features[:limit]],
+            there_are_more=there_are_more,
         )
-        return _datasets_to_feature(datasets)
 
     def get_or_update(
         self,

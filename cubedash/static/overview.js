@@ -168,7 +168,7 @@ var RegionsLayer = /** @class */ (function (_super) {
                     mouseover: function (e) {
                         var layer = e.target;
                         layer.setStyle({
-                            color: '#375400',
+                            color: '#375400'
                         });
                         var props = layer.feature.properties, template = "<div>\n                                            <strong>" + (props.label || props.region_code) + "</strong>\n                                        </div>\n                                        " + props.count + " dataset" + (props.count === 1 ? '' : 's');
                         control.update(template);
@@ -214,9 +214,9 @@ var DatasetsLayer = /** @class */ (function (_super) {
                         var layer = e.target;
                         layer.setStyle({
                             color: '#375400',
-                            fillOpacity: 0.6,
+                            fillOpacity: 0.6
                         });
-                        var props = layer.feature.properties, template = "<div><strong>" + props.label + "</strong></div>" + props.start_time;
+                        var props = layer.feature.properties, template = "<div>\n                                            <strong>\n                                                " + (props.label || props['cubedash:region_code']) + "\n                                            </strong>\n                                            <div>" + props['datetime'] + "</div>\n                                        </div>";
                         infoControl.update(template);
                     },
                     mouseout: function (e) {
@@ -224,8 +224,8 @@ var DatasetsLayer = /** @class */ (function (_super) {
                         infoControl.update();
                     },
                     click: function (e) {
-                        var props = e.target.feature.properties;
-                        window.location.href = routes.getDatasetViewURL(props.id);
+                        var feature = e.target.feature;
+                        window.location.href = routes.getDatasetViewURL(feature.id);
                     }
                 });
             }
@@ -352,3 +352,4 @@ function requestData(name, url, setEnabled, dataLayer) {
     };
     request.send();
 }
+//# sourceMappingURL=overview.js.map

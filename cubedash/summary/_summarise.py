@@ -1,7 +1,11 @@
 from __future__ import absolute_import
 
+import re
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, Generator, Sequence, Tuple
+from uuid import UUID
 
 import pandas as pd
 import structlog
@@ -19,6 +23,50 @@ from datacube.drivers.postgres._schema import DATASET_TYPE
 from datacube.model import Range
 
 _LOG = structlog.get_logger()
+
+_BOX2D_PATTERN = re.compile(
+    r"BOX\(([-0-9.]+)\s+([-0-9.]+)\s*,\s*([-0-9.]+)\s+([-0-9.]+)\)"
+)
+
+
+@dataclass
+class DatasetItem:
+    id: UUID
+    bbox: object
+    product_name: str
+    geom_geojson: Dict
+    region_code: str
+    creation_time: datetime
+    center_time: datetime
+
+    def as_stac_item(self):
+        return dict(
+            id=self.id,
+            type="Feature",
+            bbox=self.bbox,
+            geometry=self.geom_geojson,
+            properties={
+                "datetime": self.center_time,
+                "odc:product": self.product_name,
+                "odc:creation-time": self.creation_time,
+                "cubedash:region_code": self.region_code,
+            },
+        )
+
+
+def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
+    """
+    Parse Postgis's box2d to a geojson/stac bbox tuple.
+
+    >>> _box2d_to_bbox(
+    ...     "BOX(134.806923200497 -17.7694714883835,135.769692610214 -16.8412669214876)"
+    ... )
+    (134.806923200497, -17.7694714883835, 135.769692610214, -16.8412669214876)
+    """
+    m = _BOX2D_PATTERN.match(pg_box2d)
+    # We know there's exactly four groups, but type checker doesn't...
+    # noinspection PyTypeChecker
+    return tuple(float(m) for m in m.groups())
 
 
 class Summariser:
@@ -166,47 +214,68 @@ class Summariser:
         )
         return summary
 
-    def get_dataset_footprints(self, product_name: str, time: Range):
-        begin_time, end_time, where_clause = self._where(product_name, time)
-        return self._get_datasets_geojson(where_clause)
+    def get_dataset_items(
+        self, product_name: str, time: Range, bbox: Sequence[float], limit: int
+    ) -> Generator[DatasetItem, None, None]:
+        geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
 
-    def _get_datasets_geojson(self, where_clause):
-        return self._engine.execute(
-            select(
-                [
-                    func.jsonb_build_object(
-                        "type",
-                        "FeatureCollection",
-                        "features",
-                        func.jsonb_agg(
-                            func.jsonb_build_object(
-                                # TODO: move ID to outer id field?
-                                "type",
-                                "Feature",
-                                "geometry",
-                                func.ST_AsGeoJSON(
-                                    func.ST_Transform(
-                                        DATASET_SPATIAL.c.footprint, self._target_srid()
-                                    )
-                                ).cast(postgres.JSONB),
-                                "properties",
-                                func.jsonb_build_object(
-                                    "id",
-                                    DATASET_SPATIAL.c.id,
-                                    # TODO: dataset label?
-                                    "region_code",
-                                    DATASET_SPATIAL.c.region_code.cast(String),
-                                    "creation_time",
-                                    DATASET_SPATIAL.c.creation_time,
-                                    "center_time",
-                                    DATASET_SPATIAL.c.center_time,
-                                ),
-                            )
-                        ),
-                    ).label("datasets_geojson")
-                ]
-            ).where(where_clause)
-        ).fetchone()["datasets_geojson"]
+        columns = [
+            DATASET_SPATIAL.c.id,
+            func.ST_AsGeoJSON(geom).cast(postgres.JSONB).label("geom_geojson"),
+            func.Box2D(geom).label("bbox"),
+            # TODO: dataset label?
+            DATASET_SPATIAL.c.region_code.label("region_code"),
+            DATASET_SPATIAL.c.creation_time,
+            DATASET_SPATIAL.c.center_time,
+            DATASET_SPATIAL.c.dataset_type_ref,
+        ]
+
+        query = select(columns)
+
+        if time:
+            begin_time = self._with_default_tz(time.begin)
+            end_time = self._with_default_tz(time.end)
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                    DATASET_SPATIAL.c.center_time
+                )
+            )
+            query = query.where(where_clause)
+
+        if bbox:
+            query = query.where(
+                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                    func.ST_MakeEnvelope(*bbox)
+                )
+            )
+
+        if product_name:
+            query = query.where(
+                DATASET_SPATIAL.c.dataset_type_ref
+                == select([DATASET_TYPE.c.id]).where(
+                    DATASET_TYPE.c.name == product_name
+                )
+            )
+
+        products = self.product_map()
+        for r in self._engine.execute(query.limit(limit)):
+            yield DatasetItem(
+                id=r.id,
+                bbox=_box2d_to_bbox(r.bbox),
+                product_name=products[r.dataset_type_ref],
+                geom_geojson=r.geom_geojson,
+                region_code=r.region_code,
+                creation_time=r.creation_time,
+                center_time=r.center_time,
+            )
+
+    @lru_cache(1)
+    def product_map(self):
+        return dict(
+            self._engine.execute(
+                select([DATASET_TYPE.c.id, DATASET_TYPE.c.name])
+            ).fetchall()
+        )
 
     def _with_default_tz(self, d: datetime) -> datetime:
         if d.tzinfo is None:
