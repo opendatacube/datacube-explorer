@@ -351,7 +351,10 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         )
         # A zero distance may be used to “tidy” a polygon.
         clean = geom.buffer(0.0)
-        assert clean.geom_type == "Polygon"
+        assert clean.geom_type in (
+            "Polygon",
+            "MultiPolygon",
+        ), f"got {clean.geom_type} for cleaned {ds.id}"
         assert clean.is_valid
         return clean, False
 
