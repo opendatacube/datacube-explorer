@@ -149,10 +149,11 @@ def load_datasets(bbox, product, time, limit) -> Iterable[Dataset]:
     return _model.STORE.index.datasets.search(limit=limit, **query)
 
 
-
 @bp.route('/collections/<product_name>/items')
 def items(product_name: str):
-    return item_list(product_name)
+    return utils.as_geojson(
+        _model.get_datasets_geojson(product_name=product_name)
+    )
 
 
 def item_list(product_name: str):

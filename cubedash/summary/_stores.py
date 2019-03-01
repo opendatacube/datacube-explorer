@@ -1,28 +1,28 @@
-import functools
 from collections import Counter
-from datetime import date, timedelta
-from datetime import datetime
-from typing import Dict, Optional, Tuple, List
-from typing import Iterable
 
 import dateutil.parser
+import functools
 import structlog
 from dataclasses import dataclass
+from datetime import date, timedelta
+from datetime import datetime
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import DDL, and_, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+from typing import Dict, Optional, Tuple, List
+from typing import Iterable
 
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import _extents, TimePeriodOverview
 from cubedash.summary import _schema
+from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, \
+    SPATIAL_QUALITY_STATS
 from cubedash.summary._schema import refresh_supporting_views
-from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, SPATIAL_QUALITY_STATS
 from cubedash.summary._summarise import Summariser
-
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
@@ -349,30 +349,37 @@ class SummaryStore:
                                year: Optional[int] = None,
                                month: Optional[int] = None,
                                day: Optional[int] = None,
+                               bbox: Tuple[float, float, float, float] = None,
                                limit: int = 500) -> Dict:
         """
         Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
 
         Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
         """
-        params = {}
+        time = None
         if year:
-            params['time'] = _utils.as_time_range(
+            time = _utils.as_time_range(
                 year,
                 month,
                 day,
                 tzinfo=self.grouping_timezone,
             )
 
-        # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
-        # return self._summariser.get_dataset_footprints(
-        #     product_name,
-        #     time_range,
-        #     limit
-        # )
+        features = list(self._summariser.get_dataset_items(
+            product_name,
+            time=time,
+            bbox=bbox,
+            limit=limit + 1,
+        ))
 
-        datasets = self.index.datasets.search(limit=limit, product=product_name, **params)
-        return _datasets_to_feature(datasets)
+        there_are_more = len(features) == limit + 1
+
+        # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
+        return dict(
+            type='FeatureCollection',
+            features=[f.as_stac_item() for f in features[:limit]],
+            there_are_more=there_are_more
+        )
 
     def get_or_update(self,
                       product_name: Optional[str],

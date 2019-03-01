@@ -1,14 +1,8 @@
 import time
 
-from functools import partial
-from pathlib import Path
-from typing import Dict, Optional, Counter
-from typing import Iterable, Tuple
-
 import dateutil.parser
 import flask
 import flask_themes
-import pyproj
 import shapely
 import shapely.geometry
 import shapely.ops
@@ -16,8 +10,10 @@ import shapely.prepared
 import shapely.wkb
 import structlog
 from flask_caching import Cache
+from pathlib import Path
 from shapely.geometry import MultiPolygon
-from shapely.ops import transform
+from typing import Dict, Optional, Counter
+from typing import Iterable, Tuple
 
 from cubedash.summary import TimePeriodOverview, SummaryStore
 from cubedash.summary._extents import RegionInfo
@@ -77,6 +73,7 @@ def get_datasets_geojson(
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        bbox: Optional[Tuple[float, float, float, float]] = None,
         limit: int = 500
 ) -> Dict:
     return STORE.get_dataset_footprints(
@@ -84,6 +81,7 @@ def get_datasets_geojson(
         year,
         month,
         day,
+        bbox=bbox,
         limit=limit
     )
 
