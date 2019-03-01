@@ -51,7 +51,7 @@ def get_html(client: FlaskClient, url: str) -> HTML:
 
 def check_area(area_pattern, html):
     assert re.match(
-        area_pattern + " \(approx",
+        area_pattern + r" \(approx",
         html.find(".coverage-footprint-area", first=True).text,
     )
 
@@ -65,7 +65,11 @@ def check_last_processed(html, time):
 
 def check_dataset_count(html, count: int):
     __tracebackhide__ = True
-    assert f"{count} dataset" in html.find(".dataset-count", first=True).text
+    actual = html.find(".dataset-count", first=True).text
+    expected = "{:,d}".format(count)
+    assert (
+        f"{expected} dataset" in actual
+    ), f"Incorrect dataset count: found {actual} instead of {expected}"
 
 
 def expect_values(

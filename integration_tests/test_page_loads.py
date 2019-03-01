@@ -44,6 +44,14 @@ def populate_index(dataset_loader, module_dea_index):
     )
     assert loaded == 306
 
+    # These have very large footprints, as they were unioned from many almost-identical
+    # polygons and not simplified. They will trip up postgis if used naively.
+    # (postgis gist index has max record size of 8k per entry)
+    loaded = dataset_loader(
+        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
+    )
+    assert loaded == 20
+
     return module_dea_index
 
 
@@ -71,6 +79,19 @@ def test_get_overview(client: FlaskClient):
     check_last_processed(html, "2018-05-20T09:36:57")
     assert "wofs_albers across April 2017" in _h1_text(html)
     check_area("30,...km2", html)
+
+
+def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
+    # This all-time overview has a valid footprint that becomes invalid
+    # when reprojected to wrs84 by shapely.
+    from .data_wofs_summary import wofs_time_summary
+
+    _model.STORE._do_put("wofs_summary", None, None, None, wofs_time_summary)
+    html = get_html(client, "/wofs_summary")
+    check_dataset_count(html, 1244)
+
+    d = get_geojson(client, "/api/regions/wofs_summary")
+    assert len(d["features"]) == 1244
 
 
 def test_all_products_are_shown(client: FlaskClient):
@@ -119,6 +140,12 @@ def test_get_day_overviews(client: FlaskClient):
     # Empty day
     html = get_html(client, "/ls7_nbar_scene/2017/4/22")
     check_dataset_count(html, 0)
+
+
+def test_summary_product(client: FlaskClient):
+    # These datasets have gigantic footprints that can trip up postgis.
+    html = get_html(client, "/pq_count_summary")
+    check_dataset_count(html, 20)
 
 
 def test_uninitialised_overview(
