@@ -2,7 +2,7 @@ import functools
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 import dateutil.parser
 import structlog
@@ -22,7 +22,7 @@ from cubedash.summary._schema import (
     TIME_OVERVIEW,
     refresh_supporting_views,
 )
-from cubedash.summary._summarise import Summariser
+from cubedash.summary._summarise import DatasetItem, Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 
@@ -370,34 +370,12 @@ class SummaryStore:
     def get_dataset_footprints(
         self,
         product_name: Optional[str],
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        day: Optional[int] = None,
+        time: Optional[Tuple[datetime, datetime]],
         bbox: Tuple[float, float, float, float] = None,
         limit: int = 500,
-    ) -> Dict:
-        """
-        Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
-
-        Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
-        """
-        time = None
-        if year:
-            time = _utils.as_time_range(year, month, day, tzinfo=self.grouping_timezone)
-
-        features = list(
-            self._summariser.get_dataset_items(
-                product_name, time=time, bbox=bbox, limit=limit + 1
-            )
-        )
-
-        there_are_more = len(features) == limit + 1
-
-        # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
-        return dict(
-            type="FeatureCollection",
-            features=[f.as_stac_item() for f in features[:limit]],
-            there_are_more=there_are_more,
+    ) -> Iterator[DatasetItem]:
+        return self._summariser.get_dataset_items(
+            product_name, time=time, bbox=bbox, limit=limit + 1
         )
 
     def get_or_update(

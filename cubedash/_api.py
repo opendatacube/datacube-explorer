@@ -3,6 +3,8 @@ import logging
 
 from flask import Blueprint, abort, request
 
+from cubedash import _utils
+
 from . import _model
 from ._utils import as_geojson
 
@@ -25,10 +27,9 @@ def datasets_geojson(
     limit = request.args.get("limit", default=50, type=int)
     limit = min(limit, 600)
 
+    time = _utils.as_time_range(year, month, day)
     return as_geojson(
-        _model.get_datasets_geojson(
-            product_name, year, month, day, bbox=bbox, limit=limit
-        )
+        _model.get_datasets_geojson(product_name, time=time, bbox=bbox, limit=limit)
     )
 
 

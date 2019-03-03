@@ -4,7 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Generator, Sequence, Tuple
+from typing import Dict, Generator, Optional, Sequence, Tuple
 from uuid import UUID
 
 import pandas as pd
@@ -215,7 +215,11 @@ class Summariser:
         return summary
 
     def get_dataset_items(
-        self, product_name: str, time: Range, bbox: Sequence[float], limit: int
+        self,
+        product_name: Optional[str],
+        time: Optional[Tuple[datetime, datetime]],
+        bbox: Optional[Sequence[float]],
+        limit: int,
     ) -> Generator[DatasetItem, None, None]:
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
 
@@ -233,8 +237,8 @@ class Summariser:
         query = select(columns)
 
         if time:
-            begin_time = self._with_default_tz(time.begin)
-            end_time = self._with_default_tz(time.end)
+            begin_time = self._with_default_tz(time[0])
+            end_time = self._with_default_tz(time[1])
             where_clause = and_(
                 func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
                     DATASET_SPATIAL.c.center_time
