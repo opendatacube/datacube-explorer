@@ -14,7 +14,7 @@ from sqlalchemy import and_, bindparam, Integer, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from typing import Sequence, Dict, Generator, Tuple
+from typing import Sequence, Dict, Generator, Tuple, Optional
 from uuid import UUID
 
 from cubedash.summary import TimePeriodOverview
@@ -195,9 +195,9 @@ class Summariser:
         return summary
 
     def get_dataset_items(self,
-                          product_name: str,
-                          time: Range,
-                          bbox: Sequence[float],
+                          product_name: Optional[str],
+                          time: Optional[Tuple[datetime, datetime]],
+                          bbox: Optional[Sequence[float]],
                           limit: int) -> Generator[DatasetItem, None, None]:
         geom = func.ST_Transform(
             DATASET_SPATIAL.c.footprint,
@@ -218,8 +218,8 @@ class Summariser:
         query = select(columns)
 
         if time:
-            begin_time = self._with_default_tz(time.begin)
-            end_time = self._with_default_tz(time.end)
+            begin_time = self._with_default_tz(time[0])
+            end_time = self._with_default_tz(time[1])
             where_clause = and_(
                 func.tstzrange(begin_time, end_time, '[]', type_=TSTZRANGE, ).contains(
                     DATASET_SPATIAL.c.center_time),

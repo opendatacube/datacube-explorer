@@ -12,7 +12,7 @@ from sqlalchemy import DDL, and_, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Iterator
 from typing import Iterable
 
 from cubedash import _utils
@@ -22,7 +22,7 @@ from cubedash.summary import _schema
 from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, \
     SPATIAL_QUALITY_STATS
 from cubedash.summary._schema import refresh_supporting_views
-from cubedash.summary._summarise import Summariser
+from cubedash.summary._summarise import Summariser, DatasetItem
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
@@ -346,39 +346,14 @@ class SummaryStore:
 
     def get_dataset_footprints(self,
                                product_name: Optional[str],
-                               year: Optional[int] = None,
-                               month: Optional[int] = None,
-                               day: Optional[int] = None,
+                               time: Optional[Tuple[datetime, datetime]],
                                bbox: Tuple[float, float, float, float] = None,
-                               limit: int = 500) -> Dict:
-        """
-        Return a GeoJSON FeatureCollection of each dataset footprint in the time range.
-
-        Each Dataset is a separate GeoJSON Feature (with embedded properties for id and tile/grid).
-        """
-        time = None
-        if year:
-            time = _utils.as_time_range(
-                year,
-                month,
-                day,
-                tzinfo=self.grouping_timezone,
-            )
-
-        features = list(self._summariser.get_dataset_items(
+                               limit: int = 500) -> Iterator[DatasetItem]:
+        return self._summariser.get_dataset_items(
             product_name,
             time=time,
             bbox=bbox,
             limit=limit + 1,
-        ))
-
-        there_are_more = len(features) == limit + 1
-
-        # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
-        return dict(
-            type='FeatureCollection',
-            features=[f.as_stac_item() for f in features[:limit]],
-            there_are_more=there_are_more
         )
 
     def get_or_update(self,
