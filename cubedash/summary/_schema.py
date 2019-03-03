@@ -62,6 +62,13 @@ DATASET_SPATIAL = Table(
     ),
 )
 
+DATASET_SPATIAL.indexes.add(
+    Index(
+        "dataset_spatial_footprint_wrs86_idx",
+        func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
+    )
+)
+
 # Note that we deliberately don't foreign-key to datacube tables:
 # - We don't want to add an external dependency on datacube core (breaking, eg, product deletion scripts)
 # - they may be in a separate database.
