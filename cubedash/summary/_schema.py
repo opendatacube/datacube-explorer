@@ -72,6 +72,7 @@ DATASET_SPATIAL.indexes.add(
     Index(
         "dataset_spatial_footprint_wrs86_idx",
         func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326),
+        postgresql_using="gist",
     )
 )
 
