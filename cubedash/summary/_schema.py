@@ -65,8 +65,9 @@ DATASET_SPATIAL = Table(
 DATASET_SPATIAL.indexes.add(
     Index(
         "dataset_spatial_footprint_wrs86_idx",
-        func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
-    )
+        func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326),
+        postgresql_using='gist',
+    ),
 )
 
 # Note that we deliberately don't foreign-key to datacube tables:
