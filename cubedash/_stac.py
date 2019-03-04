@@ -1,27 +1,29 @@
-import itertools
-from collections import OrderedDict
-
-import flask
-import json
 import logging
-from datetime import datetime, timedelta, time as dt_time
-from flask import Blueprint, request, abort, url_for
-from functools import reduce
-from typing import Tuple
-from urllib.parse import urlparse
 
-from cubedash import _utils
+from collections import OrderedDict
+import flask
+from flask import Blueprint, request, abort, url_for
+from typing import Tuple
+
 from datacube.model import Range
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS, Geometry
-from . import _model
+from cubedash import _utils
+
+from urllib.parse import urlparse
+from datetime import datetime, timedelta, time as dt_time, timezone
+import json
+import itertools
+from functools import reduce
+
 from . import _utils as utils
+from . import _model
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('stac', __name__, url_prefix='/stac')
 
-MAX_DATASETS = 100
-DATASETS_PER_REQUEST = 20
+DATASET_LIMIT = 100
+DEFAULT_PAGE_SIZE = 20
 
 
 @bp.route('/')
@@ -36,14 +38,14 @@ def stac_search():
         bbox = json.loads(bbox)
         time_ = request.args.get('time')
         product = request.args.get('product')
-        limit = request.args.get('limit', default=DATASETS_PER_REQUEST, type=int)
+        limit = request.args.get('limit', default=DEFAULT_PAGE_SIZE, type=int)
         from_dts = request.args.get('from', default=0, type=int)
     else:
         req_data = request.get_json()
         bbox = req_data.get('bbox')
         time_ = req_data.get('time')
         product = req_data.get('product')
-        limit = req_data.get('limit') or DATASETS_PER_REQUEST
+        limit = req_data.get('limit') or DEFAULT_PAGE_SIZE
         from_dts = req_data.get('from') or 0
 
     # bbox and time are compulsory
@@ -52,14 +54,15 @@ def stac_search():
     if not time_:
         abort(400, "time must be specified")
 
-    if from_dts >= MAX_DATASETS:
+    if from_dts >= DATASET_LIMIT:
         abort(
             400,
-            "Server paging limit reached (first {} only)".format(MAX_DATASETS)
+            "Server paging limit reached (first {} only)".format(DATASET_LIMIT)
         )
-
-    # from_dts must be lower than limit
-    limit = DATASETS_PER_REQUEST if not limit else min(limit, DATASETS_PER_REQUEST)
+    # If the request goes past MAX_DATASETS, shrink the limit to match it.
+    if (from_dts + limit) > DATASET_LIMIT:
+        limit = (DATASET_LIMIT - from_dts)
+        # TODO: mention in the reply that we've hit a limit?
 
     if len(bbox) != 4:
         abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
@@ -92,7 +95,7 @@ def search_datasets_stac(
     stac_datasets = stac_datasets_validated(load_datasets(bbox, product, time))
 
     from_dts_ = from_dts or 0
-    to_dts = min(MAX_DATASETS, from_dts_ + limit)
+    to_dts = from_dts_ + limit
     stac_datasets_ = list(itertools.islice(stac_datasets, from_dts_, to_dts))
 
     result = dict()
@@ -105,7 +108,7 @@ def search_datasets_stac(
 
     # Check whether stac_datasets has more datasets and we don't want to process
     # more than MAX_DATASETS
-    if _generator_not_empty(stac_datasets) and to_dts < MAX_DATASETS:
+    if _generator_not_empty(stac_datasets) and to_dts < DATASET_LIMIT:
         url_next = url_for('.stac_search') + '?'
         if product:
             url_next += 'product=' + product
