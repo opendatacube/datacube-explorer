@@ -92,9 +92,6 @@ def search_datasets_stac(
     stac_items_selected = list(itertools.islice(stac_items_all, offset, end_offset))
 
     result = dict(type="FeatureCollection", features=stac_items_selected)
-    res_bbox = _compute_bbox(stac_items_selected)
-    if res_bbox:
-        result["bbox"] = res_bbox
 
     # Check whether stac_datasets has more datasets and we don't want to process
     # more than DATASET_LIMIT
@@ -281,23 +278,3 @@ def valid_coord_to_geojson(valid_coord, crs):
 
     geo = Geometry(valid_coord, crs)
     return geo.to_crs(CRS("epsg:4326")).__geo_interface__
-
-
-def _compute_bbox(stac_items):
-    """
-    Given extent validated stac items, compute the bounding box
-    """
-
-    if stac_items:
-        return reduce(
-            lambda x, y: dict(
-                bbox=[
-                    min(x["bbox"][0], y["bbox"][0]),
-                    min(x["bbox"][1], y["bbox"][1]),
-                    max(x["bbox"][2], y["bbox"][2]),
-                    max(x["bbox"][3], y["bbox"][3]),
-                ]
-            ),
-            stac_items,
-        )["bbox"]
-    return None
