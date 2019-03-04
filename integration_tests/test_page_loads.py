@@ -495,15 +495,15 @@ def stac_settings():
     """
     import cubedash._stac
 
-    cubedash._stac.MAX_DATASETS = 20
-    cubedash._stac.DATASETS_PER_REQUEST = 4
+    cubedash._stac.DATASET_LIMIT = 20
+    cubedash._stac.DEFAULT_PAGE_SIZE = 4
 
 
 def test_stac_search(client: FlaskClient, stac_settings):
-    from cubedash._stac import MAX_DATASETS, DATASETS_PER_REQUEST
+    from cubedash._stac import DATASET_LIMIT, DEFAULT_PAGE_SIZE
 
     # Test with GET and without product
-    limit = DATASETS_PER_REQUEST // 2
+    limit = DEFAULT_PAGE_SIZE // 2
     get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
     get_url += (
         "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21" + "&limit=" + str(limit)
@@ -523,20 +523,20 @@ def test_stac_search(client: FlaskClient, stac_settings):
         next_links = [
             link["href"] for link in geojson.get("links", []) if link["rel"] == "next"
         ]
-    assert dataset_count == MAX_DATASETS
+    assert dataset_count == DATASET_LIMIT
 
-    # Test limit with value greater than DATASETS_PER_REQUEST
+    # Limit with value greater than MAX_DATASETS should be truncated.
     get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
     get_url += "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21"
-    get_url += "&limit=" + str(DATASETS_PER_REQUEST + 2)
+    get_url += "&limit=" + str(DATASET_LIMIT + 2)
     geojson = get_geojson(client, get_url)
-    assert len(geojson.get("features")) == DATASETS_PER_REQUEST
+    assert len(geojson.get("features")) == DATASET_LIMIT
 
-    # Test without limit
+    # Without limit, use default page size
     get_url = "/stac/search?" + "&bbox=" + "[114, -33, 153, -10]"
     get_url += "&time=" + "2017-04-16T01:12:16/2017-05-10T00:24:21"
     geojson = get_geojson(client, get_url)
-    assert len(geojson.get("features")) == DATASETS_PER_REQUEST
+    assert len(geojson.get("features")) == DEFAULT_PAGE_SIZE
 
     # Test outside the box
     get_url = "/stac/search?" + "&bbox=" + "[20,-5,25,10]"
@@ -576,13 +576,13 @@ def test_stac_search(client: FlaskClient, stac_settings):
                 "product": "wofs_albers",
                 "bbox": [114, -33, 153, -10],
                 "time": "2017-04-16T01:12:16/2017-05-10T00:24:21",
-                "limit": DATASETS_PER_REQUEST,
+                "limit": DEFAULT_PAGE_SIZE,
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     geodata = json.loads(rv.data)
-    assert len(geodata.get("features")) == DATASETS_PER_REQUEST
+    assert len(geodata.get("features")) == DEFAULT_PAGE_SIZE
     assert "water" in geodata["features"][0]["assets"]
     assert len(geodata["features"][0]["assets"]) == 1
 
