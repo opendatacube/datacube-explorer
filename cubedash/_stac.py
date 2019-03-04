@@ -1,23 +1,20 @@
-import logging
-
+import itertools
 from collections import OrderedDict
-import flask
-from flask import Blueprint, request, abort, url_for
-from typing import Tuple
 
-from datacube.model import Range
+import flask
+import json
+import logging
+from datetime import datetime, timedelta, time as dt_time
+from flask import Blueprint, request, abort, url_for
+from functools import reduce
+from typing import Tuple, Iterable
+from urllib.parse import urlparse
+
+from datacube.model import Range, Dataset
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS, Geometry
-from cubedash import _utils
-
-from urllib.parse import urlparse
-from datetime import datetime, timedelta, time as dt_time, timezone
-import json
-import itertools
-from functools import reduce
-
-from . import _utils as utils
 from . import _model
+from . import _utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('stac', __name__, url_prefix='/stac')
@@ -39,14 +36,14 @@ def stac_search():
         time_ = request.args.get('time')
         product = request.args.get('product')
         limit = request.args.get('limit', default=DEFAULT_PAGE_SIZE, type=int)
-        from_dts = request.args.get('from', default=0, type=int)
+        offset = request.args.get('offset', default=0, type=int)
     else:
         req_data = request.get_json()
         bbox = req_data.get('bbox')
         time_ = req_data.get('time')
         product = req_data.get('product')
         limit = req_data.get('limit') or DEFAULT_PAGE_SIZE
-        from_dts = req_data.get('from') or 0
+        offset = req_data.get('offset') or 0
 
     # bbox and time are compulsory
     if not bbox:
@@ -54,14 +51,14 @@ def stac_search():
     if not time_:
         abort(400, "time must be specified")
 
-    if from_dts >= DATASET_LIMIT:
+    if offset >= DATASET_LIMIT:
         abort(
             400,
             "Server paging limit reached (first {} only)".format(DATASET_LIMIT)
         )
     # If the request goes past MAX_DATASETS, shrink the limit to match it.
-    if (from_dts + limit) > DATASET_LIMIT:
-        limit = (DATASET_LIMIT - from_dts)
+    if (offset + limit) > DATASET_LIMIT:
+        limit = (DATASET_LIMIT - offset)
         # TODO: mention in the reply that we've hit a limit?
 
     if len(bbox) != 4:
@@ -69,13 +66,13 @@ def stac_search():
 
     time_ = _parse_time_range(time_)
 
-    return utils.as_json(
+    return _utils.as_json(
         search_datasets_stac(
             product=product,
             bbox=bbox,
             time=time_,
             limit=limit,
-            from_dts=from_dts,
+            offset=offset,
         )
     )
 
@@ -85,37 +82,39 @@ def search_datasets_stac(
         bbox: Tuple[float, float, float, float],
         time: Tuple[datetime, datetime],
         limit: int,
-        from_dts: int,
+        offset: int,
 ):
     """
     Returns a GeoJson FeatureCollection corresponding to given parameters for
     a set of datasets returned by datacube.
     """
 
-    stac_datasets = stac_datasets_validated(load_datasets(bbox, product, time))
+    offset = offset or 0
+    end_offset = offset + limit
 
-    from_dts_ = from_dts or 0
-    to_dts = from_dts_ + limit
-    stac_datasets_ = list(itertools.islice(stac_datasets, from_dts_, to_dts))
+    stac_items_all = stac_datasets_validated(load_datasets(bbox, product, time))
 
-    result = dict()
-    result["type"] = "FeatureCollection"
-    res_bbox = _compute_bbox(stac_datasets_)
+    stac_items_selected = list(itertools.islice(stac_items_all, offset, end_offset))
+
+    result = dict(
+        type="FeatureCollection",
+        features=stac_items_selected
+    )
+    res_bbox = _compute_bbox(stac_items_selected)
     if res_bbox:
         result["bbox"] = res_bbox
 
-    result["features"] = stac_datasets_
-
     # Check whether stac_datasets has more datasets and we don't want to process
-    # more than MAX_DATASETS
-    if _generator_not_empty(stac_datasets) and to_dts < DATASET_LIMIT:
-        url_next = url_for('.stac_search') + '?'
-        if product:
-            url_next += 'product=' + product
-        url_next += '&bbox=' + '[{},{},{},{}]'.format(*bbox) + \
-                    '&time=' + _unparse_time_range(time)
-        url_next += '&limit=' + str(limit)
-        url_next += '&from=' + str(to_dts)
+    # more than DATASET_LIMIT
+    if _generator_not_empty(stac_items_all) and end_offset < DATASET_LIMIT:
+        url_next = url_for(
+            '.stac_search',
+            product=product,
+            bbox='[{},{},{},{}]'.format(*bbox),
+            time=_unparse_time_range(time),
+            limit=limit,
+            offset=end_offset,
+        )
         result['links'] = [{'href': url_next, 'rel': 'next'}]
     return result
 
@@ -133,7 +132,7 @@ def load_datasets(
         bbox: Tuple[float, float, float, float],
         product: str,
         time: Tuple[datetime, datetime],
-):
+) -> Iterable[Dataset]:
     """
     Parse the query parameters and load and return the matching datasets. bbox is assumed to be
     [minimum longitude, minimum latitude, maximum longitude, maximum latitude]
