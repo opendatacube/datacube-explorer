@@ -1,9 +1,11 @@
+import flask
 import json
 import logging
 
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
+from cubedash._stac import _unparse_time_range
 from . import _model
 from ._utils import as_geojson
 
@@ -30,6 +32,15 @@ def datasets_geojson(
     limit = min(limit, 600)
 
     time = _utils.as_time_range(year, month, day)
+    flask.redirect(
+        flask.url_for(
+            'stac.search',
+            product_name=product_name,
+            time=_unparse_time_range(time),
+            bbox=bbox,
+            limit=limit
+        )
+    )
     return as_geojson(
         _model.get_datasets_geojson(
             product_name,

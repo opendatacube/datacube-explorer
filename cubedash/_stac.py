@@ -1,22 +1,21 @@
-import logging
-
+import itertools
 from collections import OrderedDict
-import flask
-from flask import Blueprint, request, abort, url_for
 
+import flask
+import json
+import logging
+from datetime import datetime, timedelta, time as dt_time
+from flask import Blueprint, request, abort, url_for
+from functools import reduce
+from typing import Tuple
+from urllib.parse import urlparse
+
+from cubedash import _utils
 from datacube.model import Range
 from datacube.utils import parse_time
 from datacube.utils.geometry import CRS, Geometry
-from cubedash import _utils
-
-from urllib.parse import urlparse
-import datetime
-import json
-import itertools
-from functools import reduce
-
-from . import _utils as utils
 from . import _model
+from . import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('stac', __name__, url_prefix='/stac')
@@ -34,17 +33,18 @@ def root():
 def stac_search():
     if request.method == 'GET':
         bbox = request.args.get('bbox')
+        bbox = json.loads(bbox)
         time_ = request.args.get('time')
         product = request.args.get('product')
-        limit = request.args.get('limit')
-        from_dts = request.args.get('from')
+        limit = request.args.get('limit', default=DATASETS_PER_REQUEST, type=int)
+        from_dts = request.args.get('from', default=0, type=int)
     else:
         req_data = request.get_json()
         bbox = req_data.get('bbox')
         time_ = req_data.get('time')
         product = req_data.get('product')
-        limit = req_data.get('limit')
-        from_dts = req_data.get('from')
+        limit = req_data.get('limit') or DATASETS_PER_REQUEST
+        from_dts = req_data.get('from') or 0
 
     # bbox and time are compulsory
     if not bbox:
@@ -52,23 +52,38 @@ def stac_search():
     if not time_:
         abort(400, "time must be specified")
 
-    # Verify and cast data types of request data
-    bbox = json.loads(bbox) if isinstance(bbox, str) else bbox
-    time_ = time_ if isinstance(time_, str) else json.dumps(time_)
-    limit = int(limit) if isinstance(limit, str) else limit
-    if from_dts and isinstance(from_dts, str):
-        from_dts = int(from_dts)
+    if from_dts >= MAX_DATASETS:
+        abort(
+            400,
+            "Server paging limit reached (first {} only)".format(MAX_DATASETS)
+        )
 
     # from_dts must be lower than limit
     limit = DATASETS_PER_REQUEST if not limit else min(limit, DATASETS_PER_REQUEST)
 
-    if from_dts and from_dts >= MAX_DATASETS:
-        abort(400, "The parameter from must be lower than (MAX) {}".format(MAX_DATASETS))
+    if len(bbox) != 4:
+        abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
 
-    return utils.as_json(search_datasets_stac(product, bbox, time_, limit, from_dts))
+    time_ = _parse_time_range(time_)
+
+    return utils.as_json(
+        search_datasets_stac(
+            product=product,
+            bbox=bbox,
+            time=time_,
+            limit=limit,
+            from_dts=from_dts,
+        )
+    )
 
 
-def search_datasets_stac(product, bbox, time, limit, from_dts):
+def search_datasets_stac(
+        product: str,
+        bbox: Tuple[float, float, float, float],
+        time: Tuple[datetime, datetime],
+        limit: int,
+        from_dts: int,
+):
     """
     Returns a GeoJson FeatureCollection corresponding to given parameters for
     a set of datasets returned by datacube.
@@ -94,7 +109,8 @@ def search_datasets_stac(product, bbox, time, limit, from_dts):
         url_next = url_for('.stac_search') + '?'
         if product:
             url_next += 'product=' + product
-        url_next += '&bbox=' + '[{},{},{},{}]'.format(*bbox) + '&time=' + time
+        url_next += '&bbox=' + '[{},{},{},{}]'.format(*bbox) + \
+                    '&time=' + _unparse_time_range(time)
         url_next += '&limit=' + str(limit)
         url_next += '&from=' + str(to_dts)
         result['links'] = [{'href': url_next, 'rel': 'next'}]
@@ -110,7 +126,11 @@ def _generator_not_empty(items):
     return len(list(itertools.islice(items, 1))) == 1
 
 
-def load_datasets(bbox, product, time):
+def load_datasets(
+        bbox: Tuple[float, float, float, float],
+        product: str,
+        time: Tuple[datetime, datetime],
+):
     """
     Parse the query parameters and load and return the matching datasets. bbox is assumed to be
     [minimum longitude, minimum latitude, maximum longitude, maximum latitude]
@@ -120,24 +140,45 @@ def load_datasets(bbox, product, time):
     if product:
         query['product'] = product
 
-    # Need to further parse time, we assume date as a range anf if time is present its a timestamp
-    time_period = time.split('/')
-    if len(time_period) == 2:
-        query['time'] = Range(parse_time(time_period[0]), parse_time(time_period[1]))
-    elif len(time_period) == 1:
-        t = parse_time(time_period[0])
-        if t.time() == datetime.time():
-            query['time'] = Range(t, t + datetime.timedelta(days=1))
-        else:
-            query['time'] = t
-    else:
-        return []
+    query['time'] = Range(*time)
 
     # bbox is in GeoJSON CRS (WGS84)
     query['lon'] = Range(bbox[0], bbox[2])
     query['lat'] = Range(bbox[1], bbox[3])
 
     return _model.STORE.index.datasets.search(**query)
+
+
+def _parse_time_range(time: str) -> Tuple[datetime, datetime]:
+    """
+     >>> _parse_time_range('1986-04-16T01:12:16/2097-05-10T00:24:21')
+     (datetime.datetime(1986, 4, 16, 1, 12, 16), datetime.datetime(2097, 5, 10, 0, 24, 21))
+     >>> _parse_time_range('1986-04-16T01:12:16')
+    (datetime.datetime(1986, 4, 16, 1, 12, 16), datetime.datetime(1986, 4, 16, 1, 12, 17))
+    >>> _parse_time_range('1986-04-16')
+    (datetime.datetime(1986, 4, 16, 0, 0, 0), datetime.datetime(1986, 4, 17, 0, 0, 0))
+    """
+    time_period = time.split('/')
+    if len(time_period) == 2:
+        return parse_time(time_period[0]), parse_time(time_period[1])
+    elif len(time_period) == 1:
+        t: datetime = parse_time(time_period[0])
+        if t.time() == dt_time():
+            return t, t + timedelta(days=1)
+        else:
+            return t, t + timedelta(minutes=1)
+
+
+def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
+    """
+    >>> _unparse_time_range((
+    ...     datetime(1986, 4, 16, 1, 12, 16),
+    ...     datetime(2097, 5, 10, 0, 24, 21)
+    ... ))
+    '1986-04-16T01:12:16/2097-05-10T00:24:21'
+    """
+    start_time, end_time = time
+    return f"{start_time.isoformat()}/{end_time.isoformat()}"
 
 
 def stac_datasets_validated(datasets):
@@ -187,14 +228,9 @@ def stac_dataset(dataset):
 
         geodata = valid_coord_to_geojson({'type': 'Polygon', 'coordinates': points}, dataset.crs)
 
-    # Convert the date to add time zone.
-    center_dt = dataset.center_time
-    center_dt = center_dt.replace(microsecond=0)
-    time_zone = center_dt.tzinfo
-    if not time_zone:
-        center_dt = center_dt.replace(tzinfo=datetime.timezone.utc).isoformat()
-    else:
-        center_dt = center_dt.isoformat()
+    center_dt = _utils.default_utc(
+        dataset.center_time.replace(microsecond=0)
+    )
 
     # parent? We will have an empty parent for now
     stac_item = OrderedDict([
@@ -203,7 +239,7 @@ def stac_dataset(dataset):
         ('bbox', bbox),
         ('geometry', geodata),
         ('properties', {
-            'datetime': center_dt,
+            'datetime': center_dt.isoformat(),
             'product_type': metadata_doc['product_type']
         }),
         ('links', [
