@@ -1,7 +1,6 @@
 import flask
 import json
 import logging
-
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
@@ -28,25 +27,16 @@ def datasets_geojson(
     if 'bbox' in request.args:
         bbox = json.loads(request.args['bbox'])
 
-    limit = request.args.get('limit', default=50, type=int)
-    limit = min(limit, 600)
+    limit = request.args.get('limit', type=int)
 
-    time = _utils.as_time_range(year, month, day)
-    flask.redirect(
+    time = _utils.as_time_range(year, month, day, tzinfo=_model.STORE.grouping_timezone)
+    return flask.redirect(
         flask.url_for(
             'stac.search',
             product_name=product_name,
             time=_unparse_time_range(time),
             bbox=bbox,
             limit=limit
-        )
-    )
-    return as_geojson(
-        _model.get_datasets_geojson(
-            product_name,
-            time=time,
-            bbox=bbox,
-            limit=limit,
         )
     )
 

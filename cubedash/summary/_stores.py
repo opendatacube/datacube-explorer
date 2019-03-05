@@ -2,27 +2,34 @@ from collections import Counter
 
 import dateutil.parser
 import functools
+import re
 import structlog
 from dataclasses import dataclass
 from datetime import date, timedelta
 from datetime import datetime
+from dateutil import tz
 from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import DDL, and_, String
+from sqlalchemy import DDL
+from sqlalchemy import and_, String
 from sqlalchemy import func, select
 from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
-from typing import Dict, Optional, Tuple, List, Iterator
+from sqlalchemy.sql import Select
+from typing import Dict, Generator, Tuple, Optional
 from typing import Iterable
+from typing import List
+from uuid import UUID
 
 from cubedash import _utils
-from cubedash._utils import alchemy_engine
+from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import _extents, TimePeriodOverview
 from cubedash.summary import _schema
 from cubedash.summary._schema import DATASET_SPATIAL, TIME_OVERVIEW, PRODUCT, \
     SPATIAL_QUALITY_STATS
 from cubedash.summary._schema import refresh_supporting_views
-from cubedash.summary._summarise import Summariser, DatasetItem
+from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset
 from datacube.model import DatasetType
@@ -49,13 +56,25 @@ class ProductSummary:
     id_: Optional[int] = None
 
 
+@dataclass
+class DatasetItem:
+    id: UUID
+    bbox: object
+    product_name: str
+    geom_geojson: Dict
+    region_code: str
+    creation_time: datetime
+    center_time: datetime
+    full_dataset: Optional[Dataset] = None
+
+
 class SummaryStore:
     def __init__(self, index: Index, summariser: Summariser, init_schema=False, log=_LOG) -> None:
         self.index = index
         self.log = log
         self._update_listeners = []
 
-        self._engine: Engine = alchemy_engine(index)
+        self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
         if init_schema:
@@ -64,7 +83,7 @@ class SummaryStore:
     @classmethod
     def create(cls, index: Index, init_schema=False, log=_LOG) -> 'SummaryStore':
         return cls(index,
-                   Summariser(alchemy_engine(index)),
+                   Summariser(_utils.alchemy_engine(index)),
                    init_schema=init_schema,
                    log=log)
 
@@ -348,13 +367,93 @@ class SummaryStore:
                                product_name: Optional[str],
                                time: Optional[Tuple[datetime, datetime]],
                                bbox: Tuple[float, float, float, float] = None,
-                               limit: int = 500) -> Iterator[DatasetItem]:
-        return self._summariser.get_dataset_items(
-            product_name,
-            time=time,
-            bbox=bbox,
-            limit=limit + 1,
+                               limit: int = 500,
+                               offset: int = 0,
+                               full_dataset: bool = False) -> Generator[DatasetItem, None, None]:
+        geom = func.ST_Transform(
+            DATASET_SPATIAL.c.footprint,
+            4326,
         )
+
+        columns = [
+            func.ST_AsGeoJSON(geom).cast(postgres.JSONB).label('geom_geojson'),
+            func.Box2D(geom).label('bbox'),
+            # TODO: dataset label?
+            DATASET_SPATIAL.c.region_code.label('region_code'),
+            DATASET_SPATIAL.c.creation_time,
+            DATASET_SPATIAL.c.center_time,
+        ]
+
+        # If fetching the whole dataset, we need to join the ODC dataset table.
+        if full_dataset:
+            query: Select = select((
+                *columns, *_utils.DATASET_SELECT_FIELDS
+            )).select_from(
+                DATASET_SPATIAL.join(
+                    ODC_DATASET,
+                    onclause=ODC_DATASET.c.id == DATASET_SPATIAL.c.id
+                )
+            )
+        # Otherwise query purely from the spatial table.
+        else:
+            query: Select = select(
+                (
+                    *columns,
+                    DATASET_SPATIAL.c.id,
+                    DATASET_SPATIAL.c.dataset_type_ref,
+                )
+            ).select_from(
+                DATASET_SPATIAL
+            )
+
+        if time:
+            begin_time = _utils.default_utc(time[0])
+            end_time = _utils.default_utc(time[1])
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, '[]',
+                               type_=TSTZRANGE, ).contains(
+                    DATASET_SPATIAL.c.center_time),
+            )
+            query = query.where(where_clause)
+
+        if bbox:
+            query = query.where(
+                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                    func.ST_MakeEnvelope(*bbox))
+            )
+
+        if product_name:
+            query = query.where(
+                DATASET_SPATIAL.c.dataset_type_ref == select(
+                    [ODC_DATASET_TYPE.c.id]).where(
+                    ODC_DATASET_TYPE.c.name == product_name)
+            )
+
+        query = query.order_by(
+            # We must ensure an order, as users request can request in pages.
+            DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id
+        ).limit(
+            limit
+        ).offset(
+            # TODO: Offset/limit isn't particularly efficient for paging...
+            offset
+        )
+
+        for r in self._engine.execute(query):
+            dataset_type = self.index.products.get(r.dataset_type_ref)
+            d = None
+            if full_dataset:
+                d = _utils.make_dataset_from_select_fields(self.index, r)
+            yield DatasetItem(
+                id=r.id,
+                bbox=_box2d_to_bbox(r.bbox),
+                product_name=dataset_type.name,
+                geom_geojson=r.geom_geojson,
+                region_code=r.region_code,
+                creation_time=r.creation_time,
+                center_time=r.center_time,
+                full_dataset=d,
+            )
 
     def get_or_update(self,
                       product_name: Optional[str],
@@ -595,3 +694,23 @@ def _dataset_to_feature(dataset: Dataset):
             'creation_time': _utils.dataset_created(dataset),
         }
     }
+
+
+_BOX2D_PATTERN = re.compile(
+    r"BOX\(([-0-9.]+)\s+([-0-9.]+)\s*,\s*([-0-9.]+)\s+([-0-9.]+)\)"
+)
+
+
+def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
+    """
+    Parse Postgis's box2d to a geojson/stac bbox tuple.
+
+    >>> _box2d_to_bbox(
+    ...     "BOX(134.806923200497 -17.7694714883835,135.769692610214 -16.8412669214876)"
+    ... )
+    (134.806923200497, -17.7694714883835, 135.769692610214, -16.8412669214876)
+    """
+    m = _BOX2D_PATTERN.match(pg_box2d)
+    # We know there's exactly four groups, but type checker doesn't...
+    # noinspection PyTypeChecker
+    return tuple(float(m) for m in m.groups())
