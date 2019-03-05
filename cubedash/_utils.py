@@ -35,6 +35,7 @@ from datacube.model import Range, DatasetType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 from datacube.drivers.postgres import _api as pgapi
+import datacube.drivers.postgres._schema
 
 _TARGET_CRS = 'EPSG:4326'
 
@@ -347,6 +348,5 @@ def make_dataset_from_select_fields(index, row):
 
 # pylint: disable=protected-access
 DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
-from datacube.drivers.postgres._schema import \
-    DATASET_TYPE as ODC_DATASET_TYPE, \
-    DATASET as ODC_DATASET
+ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
+ODC_DATASET = datacube.drivers.postgres._schema.DATASET

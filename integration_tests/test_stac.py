@@ -48,7 +48,7 @@ def stac_client(populated_index, client: FlaskClient):
     """
     Get a client with populated data and standard settings
     """
-    cubedash._stac.DATASET_LIMIT = OUR_DATASET_LIMIT
+    cubedash._stac.PAGE_SIZE_LIMIT = OUR_DATASET_LIMIT
     cubedash._stac.DEFAULT_PAGE_SIZE = OUR_PAGE_SIZE
     return client
 

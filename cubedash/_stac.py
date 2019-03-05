@@ -15,7 +15,7 @@ from ._utils import default_utc as utc
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('stac', __name__)
 
-DATASET_LIMIT = 100
+PAGE_SIZE_LIMIT = 1000
 DEFAULT_PAGE_SIZE = 20
 
 _STAC_DEFAULTS = dict(
@@ -23,9 +23,9 @@ _STAC_DEFAULTS = dict(
 )
 
 # TODO: move to config
-endpoint_id = 'dea'
-endpoint_title = ""
-endpoint_description = ""
+ENDPOINT_ID = 'dea'
+ENDPOINT_TITLE = ""
+ENDPOINT_DESCRIPTION = ""
 
 
 @bp.route('/stac')
@@ -36,9 +36,9 @@ def root():
     return _utils.as_json(
         dict(
             **_STAC_DEFAULTS,
-            id=endpoint_id,
-            title=endpoint_title,
-            description=endpoint_description,
+            id=ENDPOINT_ID,
+            title=ENDPOINT_TITLE,
+            description=ENDPOINT_DESCRIPTION,
             links=[
                 *(
                     dict(
@@ -66,46 +66,38 @@ def root():
 def stac_search():
     if request.method == 'GET':
         bbox = request.args.get('bbox')
-        bbox = json.loads(bbox)
-        time_ = request.args.get('time')
+        if bbox:
+            bbox = json.loads(bbox)
+        time = request.args.get('time')
         product_name = request.args.get('product')
         limit = request.args.get('limit', default=DEFAULT_PAGE_SIZE, type=int)
         offset = request.args.get('offset', default=0, type=int)
     else:
         req_data = request.get_json()
         bbox = req_data.get('bbox')
-        time_ = req_data.get('time')
+        time = req_data.get('time')
         product_name = req_data.get('product')
         limit = req_data.get('limit') or DEFAULT_PAGE_SIZE
         offset = req_data.get('offset') or 0
 
-    # bbox and time are compulsory
-    if not bbox:
-        abort(400, "bbox must be specified")
-    if not time_:
-        abort(400, "time must be specified")
-
-    if offset >= DATASET_LIMIT:
+    if limit > PAGE_SIZE_LIMIT:
         abort(
             400,
-            "Server paging limit reached (first {} only)".format(DATASET_LIMIT)
+            f"Max page size is {PAGE_SIZE_LIMIT}. "
+            f"Use the next links instead of a large limit."
         )
-    # If the request goes past MAX_DATASETS, shrink the limit to match it.
-    if (offset + limit) > DATASET_LIMIT:
-        limit = (DATASET_LIMIT - offset)
-        # TODO: mention in the reply that we've hit a limit?
 
-    if len(bbox) != 4:
+    if bbox is not None and len(bbox) != 4:
         abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
 
-    time_ = _parse_time_range(time_)
+    time = _parse_time_range(time)
 
     def next_page_url(next_offset):
         return url_for(
             '.stac_search',
             product=product_name,
-            bbox='[{},{},{},{}]'.format(*bbox),
-            time=_unparse_time_range(time_),
+            bbox='[{},{},{},{}]'.format(*bbox) if bbox else None,
+            time=_unparse_time_range(time) if time else None,
             limit=limit,
             offset=next_offset,
         )
@@ -114,7 +106,7 @@ def stac_search():
         search_stac_items(
             product_name=product_name,
             bbox=bbox,
-            time=time_,
+            time=time,
             limit=limit,
             offset=offset,
             get_next_url=next_page_url,
@@ -135,8 +127,6 @@ def search_stac_items(
     a set of datasets returned by datacube.
     """
     offset = offset or 0
-    end_offset = offset + limit
-
     items = list(_model.STORE.search_items(
         product_name=product_name,
         time=time,
@@ -158,8 +148,8 @@ def search_stac_items(
 
     there_are_more = len(items) == limit + 1
 
-    if there_are_more and end_offset < DATASET_LIMIT:
-        result['links'].append(dict(rel='next', href=get_next_url(end_offset)))
+    if there_are_more:
+        result['links'].append(dict(rel='next', href=get_next_url(offset + limit)))
 
     return result
 
@@ -213,7 +203,7 @@ def collection_items(product_name: str):
 
     feature_collection = search_stac_items(
         product_name=product_name,
-        limit=DATASET_LIMIT,
+        limit=PAGE_SIZE_LIMIT,
         get_next_url=next_url,
     )
 
@@ -298,7 +288,7 @@ def as_stac_item(dataset: DatasetItem):
     """
     ds = dataset.full_dataset
     item_doc = dict(
-        id=dataset.id,
+        id=dataset.dataset_id,
         type='Feature',
         bbox=dataset.bbox,
         geometry=dataset.geom_geojson,
@@ -315,7 +305,7 @@ def as_stac_item(dataset: DatasetItem):
                 'href': url_for(
                     '.item',
                     product_name=dataset.product_name,
-                    dataset_id=dataset.id,
+                    dataset_id=dataset.dataset_id,
                 ),
             },
             {

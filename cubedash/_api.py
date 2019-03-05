@@ -29,14 +29,17 @@ def datasets_geojson(
 
     limit = request.args.get('limit', type=int)
 
-    time = _utils.as_time_range(year, month, day, tzinfo=_model.STORE.grouping_timezone)
+    time = _utils.as_time_range(
+        year, month, day,
+        tzinfo=_model.STORE.grouping_timezone
+    )
     return flask.redirect(
         flask.url_for(
-            'stac.search',
+            'stac.stac_search',
             product_name=product_name,
             time=_unparse_time_range(time),
             bbox=bbox,
-            limit=limit
+            limit=limit,
         )
     )
 
