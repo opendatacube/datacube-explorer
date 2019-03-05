@@ -3,7 +3,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Generator, Iterable, List, Optional, Tuple
+from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 import dateutil.parser
@@ -387,15 +387,39 @@ class SummaryStore:
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
-    def get_dataset_footprints(
+    def get_item(self, ids: UUID, full_dataset: bool = True) -> Optional[DatasetItem]:
+        """
+        Get a DatasetItem record for the given dataset UUID if it exists.
+        """
+        items = list(self.search_items(dataset_ids=[ids], full_dataset=full_dataset))
+        if not items:
+            return None
+        if len(items) > 1:
+            raise RuntimeError(
+                "Something is wrong: Multiple dataset results for a single UUID"
+            )
+
+        [item] = items
+        return item
+
+    def search_items(
         self,
-        product_name: Optional[str],
-        time: Optional[Tuple[datetime, datetime]],
+        product_name: Optional[str] = None,
+        time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
         limit: int = 500,
         offset: int = 0,
         full_dataset: bool = False,
+        dataset_ids: Sequence[UUID] = None,
     ) -> Generator[DatasetItem, None, None]:
+        """
+        Search datasets using Cubedash's spatial table
+
+        Returned as DatasetItem records, with optional embedded full Datasets
+        (if full_dataset==True)
+
+        Returned results are always sorted by (center_time, id)
+        """
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
 
         columns = [
@@ -446,6 +470,9 @@ class SummaryStore:
                     ODC_DATASET_TYPE.c.name == product_name
                 )
             )
+
+        if dataset_ids:
+            query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
 
         query = (
             query.order_by(
