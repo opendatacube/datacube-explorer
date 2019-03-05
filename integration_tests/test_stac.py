@@ -7,11 +7,13 @@ from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from pathlib import Path
+from pprint import pprint
 from typing import Dict, Optional
 
 import cubedash._stac
+from cubedash import _model
 from datacube.utils import validate_document
-from integration_tests.asserts import get_geojson
+from integration_tests.asserts import get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz('Australia/Darwin')
 
@@ -32,6 +34,12 @@ _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open('r'))
 def get_items(client: FlaskClient, url: str) -> Dict:
     data = get_geojson(client, url)
     # TODO: validate schema
+    return data
+
+
+def get_item(client: FlaskClient, url: str) -> Dict:
+    data = get_json(client, url)
+    _validate_item(data)
     return data
 
 
@@ -145,10 +153,11 @@ def test_stac_search_by_post(stac_client: FlaskClient):
         headers={'Content-Type': 'application/json',
                  'Accept': 'application/json'}
     )
-    geodata = json.loads(rv.data)
-    assert len(geodata.get('features')) == OUR_PAGE_SIZE
-    assert 'water' in geodata['features'][0]['assets']
-    assert len(geodata['features'][0]['assets']) == 1
+    assert rv.status_code == 200
+    doc = rv.json
+    assert len(doc.get('features')) == OUR_PAGE_SIZE
+    assert 'water' in doc['features'][0]['assets']
+    assert doc['features'][0]['assets']['water'].get('href')
 
     # Test high_tide_comp_20p with POST and assets
     rv: Response = stac_client.post(
@@ -162,14 +171,98 @@ def test_stac_search_by_post(stac_client: FlaskClient):
         headers={'Content-Type': 'application/json',
                  'Accept': 'application/json'}
     )
-    geodata = json.loads(rv.data)
+    assert rv.status_code == 200
+    doc = rv.json
     bands = ['blue', 'green', 'nir', 'red', 'swir1', 'swir2']
-    first_item = geodata['features'][0]
+    first_item = doc['features'][0]
     for band in bands:
         assert band in first_item['assets']
 
     # Validate stac item with jsonschema
     _validate_item(first_item)
+
+
+def test_stac_collections(stac_client: FlaskClient):
+    response = get_json(stac_client, '/stac')
+
+    assert response.get('id'), "No id for stac endpoint"
+
+    # TODO: Values of these will probably come from user configuration?
+    assert 'title' in response
+    assert 'description' in response
+
+    # A child link to each "collection" (product)
+    child_links = [l for l in response['links'] if l['rel'] == 'child']
+    other_links = [l for l in response['links'] if l['rel'] != 'child']
+
+    # a "self" link.
+    assert len(other_links) == 1
+    assert other_links[0]['rel'] == 'self'
+
+    found_products = set()
+    for child_link in child_links:
+        product_name = child_link['title']
+        href = child_link['href']
+
+        print(f"Loading collection page for {product_name}: {repr(href)}")
+        collection_data = get_json(stac_client, href)
+        assert collection_data['id'] == product_name
+        # TODO: assert items, properties, etc.
+        found_products.add(product_name)
+
+    # We should have seen all products in the index
+    expected_products = set(dt.name for dt in _model.STORE.all_dataset_types())
+    assert found_products == expected_products
+
+
+def test_stac_item(stac_client: FlaskClient):
+    # Load one stac dataset from the test data.
+    response = get_item(
+        stac_client,
+        '/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d'
+    )
+    # Our item document can still be improved. This is ensuring changes are deliberate.
+    pprint(response)
+    assert response == {
+        'id': '87676cf2-ef18-47b5-ba30-53a99539428d',
+        'type': 'Feature',
+        'bbox': [120.527607997473, -30.8500455408006,
+                 121.510624611368, -29.9068405072815],
+        'properties': {
+            'cubedash:region_code': '-11_-34',
+            'datetime': '2017-04-19T11:45:56+10:00',
+            'odc:creation-time': '2018-05-20T17:57:51.178223+10:00',
+            'odc:product': 'wofs_albers'
+        },
+        'geometry': {
+            'coordinates': [[[121.423986912228, -30.8500455408006],
+                             [120.527607997473, -30.7845058528312],
+                             [120.767242829485, -29.9068405072815],
+                             [121.510624611368, -29.9607854960497],
+                             [121.423986912228, -30.8500455408006]]],
+            'type': 'Polygon',
+        },
+        'assets': {
+            'odc:location': {
+                'href': 'file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d'
+            },
+            # TODO: The measurement has a blank path, which in ODC means it is loaded from the base location.
+            # This should probably be replaced with an "eo:bands" definition.
+            'water': {
+                'href': 'file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d'
+            }
+        },
+        'links': [
+            {
+                'rel': 'self',
+                'href': '/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d',
+            },
+            {
+                'rel': 'parent',
+                'href': '/collections/wofs_albers',
+            }
+        ]
+    }
 
 
 def _validate_item(item: Dict):

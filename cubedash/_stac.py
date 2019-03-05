@@ -1,29 +1,68 @@
-import itertools
-
 import json
 import logging
 from datetime import datetime, timedelta, time as dt_time
 from flask import Blueprint, request, abort, url_for
-from typing import Tuple
+from typing import Tuple, List, Dict, Callable, Optional, Iterable
 
 from cubedash.summary._stores import DatasetItem
+from datacube.model import Dataset, DatasetType
 from datacube.utils import parse_time
+from datacube.utils.uris import uri_resolve
 from . import _model
 from . import _utils
+from ._utils import default_utc as utc
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('stac', __name__, url_prefix='/stac')
+bp = Blueprint('stac', __name__)
 
 DATASET_LIMIT = 100
 DEFAULT_PAGE_SIZE = 20
 
+_STAC_DEFAULTS = dict(
+    stac_version="0.6.0",
+)
 
-@bp.route('/')
+# TODO: move to config
+endpoint_id = 'dea'
+endpoint_title = ""
+endpoint_description = ""
+
+
+@bp.route('/stac')
 def root():
-    return abort(404, "Only /stac/search is currently supported")
+    """
+    Links to product catalogs.
+    """
+    return _utils.as_json(
+        dict(
+            **_STAC_DEFAULTS,
+            id=endpoint_id,
+            title=endpoint_title,
+            description=endpoint_description,
+            links=[
+                *(
+                    dict(
+                        rel="child",
+                        title=product.name,
+                        description=product.definition.get('description'),
+                        href=url_for(
+                            '.collection',
+                            product_name=product.name,
+                            _external=True
+                        ),
+                    )
+                    for product, product_summary in _model.get_products_with_summaries()
+                ),
+                dict(
+                    rel="self",
+                    href=request.url
+                )
+            ]
+        )
+    )
 
 
-@bp.route('/search', methods=['GET', 'POST'])
+@bp.route('/stac/search', methods=['GET', 'POST'])
 def stac_search():
     if request.method == 'GET':
         bbox = request.args.get('bbox')
@@ -61,23 +100,35 @@ def stac_search():
 
     time_ = _parse_time_range(time_)
 
+    def next_page_url(next_offset):
+        return url_for(
+            '.stac_search',
+            product=product_name,
+            bbox='[{},{},{},{}]'.format(*bbox),
+            time=_unparse_time_range(time_),
+            limit=limit,
+            offset=next_offset,
+        )
+
     return _utils.as_json(
-        search_datasets_stac(
+        search_stac_items(
             product_name=product_name,
             bbox=bbox,
             time=time_,
             limit=limit,
             offset=offset,
+            get_next_url=next_page_url,
         )
     )
 
 
-def search_datasets_stac(
-        product_name: str,
-        bbox: Tuple[float, float, float, float],
-        time: Tuple[datetime, datetime],
-        limit: int,
-        offset: int,
+def search_stac_items(
+        get_next_url: Callable[[int], str],
+        limit: int = DEFAULT_PAGE_SIZE,
+        offset: int = 0,
+        product_name: Optional[str] = None,
+        bbox: Optional[Tuple[float, float, float, float]] = None,
+        time: Optional[Tuple[datetime, datetime]] = None,
 ):
     """
     Returns a GeoJson FeatureCollection corresponding to given parameters for
@@ -86,7 +137,7 @@ def search_datasets_stac(
     offset = offset or 0
     end_offset = offset + limit
 
-    items = list(_model.STORE.get_dataset_footprints(
+    items = list(_model.STORE.search_items(
         product_name=product_name,
         time=time,
         bbox=bbox,
@@ -108,19 +159,105 @@ def search_datasets_stac(
     there_are_more = len(items) == limit + 1
 
     if there_are_more and end_offset < DATASET_LIMIT:
-        result['links'].append(dict(
-            rel='next',
-            href=url_for(
-                '.stac_search',
-                product=product_name,
-                bbox='[{},{},{},{}]'.format(*bbox),
-                time=_unparse_time_range(time),
-                limit=limit,
-                offset=end_offset,
-            )
-        ))
+        result['links'].append(dict(rel='next', href=get_next_url(end_offset)))
 
     return result
+
+
+@bp.route('/collections/<product_name>')
+def collection(product_name: str):
+    summary = _model.get_product_summary(product_name)
+    dataset_type = _model.STORE.get_dataset_type(product_name)
+    all_time_summary = _model.get_time_summary(product_name)
+
+    summary_props = {}
+    if summary and summary.time_earliest:
+        begin, end = utc(summary.time_earliest), utc(summary.time_latest)
+        extent = {'temporal': [begin, end]}
+        footprint = all_time_summary.footprint_wrs84
+        if footprint:
+            extent['spatial'] = footprint.bounds
+
+        summary_props['extent'] = extent
+    return _utils.as_json(
+        dict(
+            **_STAC_DEFAULTS,
+            id=summary.name,
+            title=summary.name,
+            description=dataset_type.definition.get('description'),
+            properties=dict(_build_properties(dataset_type)),
+            providers=[],
+            **summary_props,
+            links=[
+                dict(
+                    rel='items',
+                    href=url_for(
+                        '.collection_items',
+                        product_name=product_name,
+                        _external=True,
+                    )
+                )
+            ]
+        )
+    )
+
+
+@bp.route('/collections/<product_name>/items')
+def collection_items(product_name: str):
+    def next_url(offset):
+        return url_for('.collection_items', product_name=product_name, offset=offset)
+
+    all_time_summary = _model.get_time_summary(product_name)
+    if not all_time_summary:
+        abort(404, "Product not yet summarised")
+
+    feature_collection = search_stac_items(
+        product_name=product_name,
+        limit=DATASET_LIMIT,
+        get_next_url=next_url,
+    )
+
+    # Maybe we shouldn't include "found" as it prevents some future optimisation?
+    feature_collection['meta']['found'] = all_time_summary.dataset_count
+
+    return _utils.as_json(feature_collection)
+
+
+@bp.route('/collections/<product_name>/items/<dataset_id>')
+def item(product_name, dataset_id):
+    dataset = _model.STORE.get_item(dataset_id)
+    if not dataset:
+        abort(404, "No such dataset")
+
+    actual_product_name = dataset.product_name
+    if product_name != actual_product_name:
+        # We're not doing a redirect as we don't want people to rely on wrong urls
+        # (and we're jerks)
+        actual_url = url_for(
+            '.item',
+            product_name=product_name,
+            dataset_id=dataset_id,
+            _external=True
+        )
+        abort(
+            404,
+            f"No such dataset in collection.\n"
+            f"Perhaps you meant collection {actual_product_name}: {actual_url})"
+        )
+
+    return _utils.as_json(
+        as_stac_item(dataset)
+    )
+
+
+def pick_remote_uri(uris: Iterable[str]):
+    # Return first uri with a remote path (newer paths come first)
+    for uri in uris:
+        scheme, *_ = uri.split(':')
+        if scheme in ('https', 'http', 'ftp', 's3', 'gfs'):
+            return uri
+
+    return None
 
 
 def _parse_time_range(time: str) -> Tuple[datetime, datetime]:
@@ -159,7 +296,8 @@ def as_stac_item(dataset: DatasetItem):
     """
     Returns a dict corresponding to a stac item
     """
-    item = dict(
+    ds = dataset.full_dataset
+    item_doc = dict(
         id=dataset.id,
         type='Feature',
         bbox=dataset.bbox,
@@ -170,14 +308,107 @@ def as_stac_item(dataset: DatasetItem):
             'odc:creation-time': dataset.creation_time,
             'cubedash:region_code': dataset.region_code,
         },
-        links=[],
+        assets=_stac_item_assets(ds),
+        links=[
+            {
+                'rel': 'self',
+                'href': url_for(
+                    '.item',
+                    product_name=dataset.product_name,
+                    dataset_id=dataset.id,
+                ),
+            },
+            {
+                'rel': 'parent',
+                'href': url_for(
+                    '.collection',
+                    product_name=dataset.product_name,
+                ),
+            }
+        ]
     )
 
-    if dataset.full_dataset:
-        item['assets'] = {
-            band_name: dict(
-                href=band_data['path']
-            ) for band_name, band_data in dataset.full_dataset.measurements.items()
-        }
+    # If the dataset has a real start/end time, add it.
+    time = ds.time
+    if time.begin < time.end:
+        # datetime range extension propeosal (dtr):
+        # https://github.com/radiantearth/stac-spec/tree/master/extensions/datetime-range
+        item_doc['properties']['dtr:start_datetime'] = utc(time.begin)
+        item_doc['properties']['dtr:end_datetime'] = utc(time.end)
 
-    return item
+    return item_doc
+
+
+def _stac_item_assets(ds):
+    base_uri = pick_remote_uri(ds.uris) or ds.local_uri
+
+    def measurement_to_asset(name: str, data: Dict) -> Dict:
+        return {'href': uri_resolve(base_uri, data.get('path'))}
+
+    # TODO: measurements should actually map to "eo:bands", right?
+    assets = {
+        name: measurement_to_asset(name, data)
+        for name, data in ds.measurements.items()
+    }
+
+    # Add an "odc:location" field with our base uri if we have one.
+    if ds.uris:
+        locs = {
+            'href': ds.uris[0]
+        }
+        remaining = ds.uris[1:]
+        if remaining:
+            locs['odc:secondary_hrefs'] = remaining
+        assets[f'odc:location'] = locs
+    return assets
+
+
+def field_platform(value):
+    return "eo:platform", value.lower().replace("_", "-")
+
+
+def field_instrument(value):
+    return "eo:instrument", value
+
+
+def field_bands(value: List[Dict]):
+    return "eo:bands", [dict(name=v['name']) for v in value]
+
+
+def field_path_row(value):
+    # eo:row	"135"
+    # eo:column	"044"
+    pass
+
+
+# Other Property examples:
+# collection	"landsat-8-l1"
+# eo:gsd	15
+# eo:platform	"landsat-8"
+# eo:instrument	"OLI_TIRS"
+# eo:off_nadir	0
+# datetime	"2019-02-12T19:26:08.449265+00:00"
+# eo:sun_azimuth	-172.29462212
+# eo:sun_elevation	-6.62176054
+# eo:cloud_cover	-1
+# eo:row	"135"
+# eo:column	"044"
+# landsat:product_id	"LC08_L1GT_044135_20190212_20190212_01_RT"
+# landsat:scene_id	"LC80441352019043LGN00"
+# landsat:processing_level	"L1GT"
+# landsat:tier	"RT"
+
+_STAC_PROPERTY_MAP = {
+    "platform": field_platform,
+    "instrument": field_instrument,
+    "measurements": field_bands,
+}
+
+
+def _build_properties(dt: DatasetType):
+    for key, val in dt.metadata.fields.items():
+        if val is None:
+            continue
+        converter = _STAC_PROPERTY_MAP.get(key)
+        if converter:
+            yield converter(val)
