@@ -5,13 +5,13 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 
-import jsonschema
 import pytest
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 
 import cubedash._stac
+from datacube.utils import validate_document
 from integration_tests.asserts import get_geojson
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
@@ -167,11 +167,16 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     )
     geodata = json.loads(rv.data)
     bands = ["blue", "green", "nir", "red", "swir1", "swir2"]
+    first_item = geodata["features"][0]
     for band in bands:
-        assert band in geodata["features"][0]["assets"]
+        assert band in first_item["assets"]
 
-    # Validate stac items with jsonschema
-    jsonschema.validate(geodata["features"][0], _ITEM_SCHEMA)
+    # Validate stac item with jsonschema
+    _validate_item(first_item)
+
+
+def _validate_item(item: Dict):
+    validate_document(item, _ITEM_SCHEMA, schema_folder=_ITEM_SCHEMA_PATH.parent)
 
 
 def _get_next_href(geojson: Dict) -> Optional[str]:

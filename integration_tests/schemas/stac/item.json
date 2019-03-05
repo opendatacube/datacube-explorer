@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-06/schema#",
-  "id": "item.json#",
+  "$id": "item.json#",
   "title": "STAC Item",
   "type": "object",
   "description": "This object represents the metadata for an item in a SpatioTemporal Asset Catalog.",
@@ -16,7 +16,7 @@
         {
           "oneOf": [
             {
-              "$ref": "https://raw.githubusercontent.com/radiantearth/stac-spec/master/item-spec/json-schema/geojson.json#/definitions/feature"
+              "$ref": "geojson.json#/definitions/feature"
             }
           ]
         },
@@ -25,8 +25,11 @@
           "required": [
             "id",
             "type",
+            "geometry",
             "links",
-            "assets"
+            "assets",
+            "bbox",
+            "properties"
           ],
           "properties": {
             "id": {
