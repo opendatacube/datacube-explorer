@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
@@ -68,25 +67,6 @@ def get_time_summary(
 
 def get_product_summary(product_name: str) -> ProductSummary:
     return STORE.get_product_summary(product_name)
-
-
-@cache.memoize(timeout=60)
-def get_datasets_geojson(
-    product_name: str,
-    time: Optional[Tuple[datetime, datetime]],
-    bbox: Optional[Tuple[float, float, float, float]] = None,
-    limit: int = 500,
-) -> Dict:
-    features = list(
-        STORE.get_dataset_footprints(
-            product_name, time=time, bbox=bbox, limit=limit + 1
-        )
-    )
-
-    # Our table. Faster, but doesn't yet have some fields (labels etc). TODO
-    return dict(
-        type="FeatureCollection", features=[f.as_stac_item() for f in features[:limit]]
-    )
 
 
 @cache.memoize(timeout=120)

@@ -25,6 +25,9 @@ from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
 from datacube import utils as dc_utils
+from datacube.drivers.postgres import _api as pgapi
+from datacube.drivers.postgres._schema import DATASET as ODC_DATASET
+from datacube.drivers.postgres._schema import DATASET_TYPE as ODC_DATASET_TYPE
 from datacube.index import Index
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
@@ -188,13 +191,6 @@ def _field_parser(field: Field):
     except AttributeError:
         parser = lambda a: a
     return parser
-
-
-def alchemy_engine(index: Index) -> Engine:
-    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
-    # We could create our own from config, but there's no api for getting the ODC config for the index either.
-    # pylint: disable=protected-access
-    return index.datasets._db._engine
 
 
 def default_utc(d: datetime) -> datetime:
@@ -363,3 +359,25 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     return geom, True
+
+
+###############
+# These functions are bad and access non-public parts of datacube.
+# They are kept here in one place for easy criticism.
+#
+
+
+def alchemy_engine(index: Index) -> Engine:
+    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+    # We could create our own from config, but there's no api for getting the ODC config for the index either.
+    # pylint: disable=protected-access
+    return index.datasets._db._engine
+
+
+def make_dataset_from_select_fields(index, row):
+    # pylint: disable=protected-access
+    return index.datasets._make(row)
+
+
+# pylint: disable=protected-access
+DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
