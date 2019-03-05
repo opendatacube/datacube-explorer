@@ -128,6 +128,9 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 @click.option('--force-concurrently',
               is_flag=True,
               default=False)
+@click.option('--init-database/--no-init-database',
+              default=True,
+              help="Prepare the database for use by datacube explorer")
 @click.argument('product_names',
                 nargs=-1)
 def cli(config: LocalConfig,
@@ -137,7 +140,8 @@ def cli(config: LocalConfig,
         event_log_file: str,
         refresh_stats: bool,
         force_concurrently: bool,
-        verbose: bool):
+        verbose: bool,
+        init_database: bool):
     """
     Generate summary files for the given products
     """
@@ -147,7 +151,7 @@ def cli(config: LocalConfig,
     )
 
     index = _get_index(config, 'setup')
-    store = SummaryStore.create(index, init_schema=True)
+    store = SummaryStore.create(index, init_schema=init_database)
 
     if generate_all_products:
         products = sorted(store.all_dataset_types(), key=lambda p: p.name)
