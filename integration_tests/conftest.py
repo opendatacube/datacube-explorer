@@ -1,18 +1,13 @@
-import json
-import re
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Tuple
 
 import pytest
-from click.testing import CliRunner, Result
-from dateutil import tz
-from flask import Response
+from click.testing import CliRunner
 from flask.testing import FlaskClient
-from requests_html import HTML
 
 import cubedash
-from cubedash import _model, _monitoring, _pages, generate, logs
-from cubedash.summary import SummaryStore, _extents, show
+from cubedash import _model, generate, logs
+from cubedash.summary import SummaryStore
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
@@ -29,6 +24,8 @@ pytest_plugins = "digitalearthau.testing.plugin"
 module_db = factories.db_fixture("local_config", scope="module")
 module_index = factories.index_fixture("module_db", scope="module")
 module_dea_index = factories.dea_index_fixture("module_index", scope="module")
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="function")
@@ -130,3 +127,29 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
     for product in _model.STORE.index.products.get_all():
         _model.STORE.get_or_update(product.name)
     return unpopulated_client
+
+
+@pytest.fixture(scope="module")
+def populated_index(dataset_loader, module_dea_index):
+    """
+    Index populated with example datasets. Assumes our tests wont modify the data!
+
+    It's module-scoped as it's expensive to populate.
+    """
+    loaded = dataset_loader("wofs_albers", TEST_DATA_DIR / "wofs-albers-sample.yaml.gz")
+    assert loaded == 11
+
+    loaded = dataset_loader(
+        "high_tide_comp_20p", TEST_DATA_DIR / "high_tide_comp_20p.yaml.gz"
+    )
+    assert loaded == 306
+
+    # These have very large footprints, as they were unioned from many almost-identical
+    # polygons and not simplified. They will trip up postgis if used naively.
+    # (postgis gist index has max record size of 8k per entry)
+    loaded = dataset_loader(
+        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
+    )
+    assert loaded == 20
+
+    return module_dea_index
