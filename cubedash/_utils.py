@@ -24,10 +24,9 @@ from shapely.geometry import Polygon
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
+import datacube.drivers.postgres._schema
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
-from datacube.drivers.postgres._schema import DATASET as ODC_DATASET
-from datacube.drivers.postgres._schema import DATASET_TYPE as ODC_DATASET_TYPE
 from datacube.index import Index
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
@@ -381,3 +380,5 @@ def make_dataset_from_select_fields(index, row):
 
 # pylint: disable=protected-access
 DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
+ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
+ODC_DATASET = datacube.drivers.postgres._schema.DATASET

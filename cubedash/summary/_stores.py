@@ -9,7 +9,6 @@ from uuid import UUID
 import dateutil.parser
 import structlog
 from dateutil import tz
-from dateutil.tz import tz
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
@@ -54,7 +53,7 @@ class ProductSummary:
 
 @dataclass
 class DatasetItem:
-    id: UUID
+    dataset_id: UUID
     bbox: object
     product_name: str
     geom_geojson: Dict
@@ -447,12 +446,13 @@ class SummaryStore:
             ).select_from(DATASET_SPATIAL)
 
         if time:
-            begin_time = _utils.default_utc(time[0])
-            end_time = _utils.default_utc(time[1])
             where_clause = and_(
-                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
-                    DATASET_SPATIAL.c.center_time
-                )
+                func.tstzrange(
+                    _utils.default_utc(time[0]),
+                    _utils.default_utc(time[1]),
+                    "[]",
+                    type_=TSTZRANGE,
+                ).contains(DATASET_SPATIAL.c.center_time)
             )
             query = query.where(where_clause)
 
@@ -488,19 +488,19 @@ class SummaryStore:
         )
 
         for r in self._engine.execute(query):
-            dataset_type = self.index.products.get(r.dataset_type_ref)
-            d = None
-            if full_dataset:
-                d = _utils.make_dataset_from_select_fields(self.index, r)
             yield DatasetItem(
-                id=r.id,
-                bbox=_box2d_to_bbox(r.bbox),
-                product_name=dataset_type.name,
+                dataset_id=r.id,
+                bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
+                product_name=self.index.products.get(r.dataset_type_ref).name,
                 geom_geojson=r.geom_geojson,
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
-                full_dataset=d,
+                full_dataset=(
+                    _utils.make_dataset_from_select_fields(self.index, r)
+                    if full_dataset
+                    else None
+                ),
             )
 
     def get_or_update(
