@@ -64,7 +64,7 @@ class DatasetItem:
     region_code: str
     creation_time: datetime
     center_time: datetime
-    full_dataset: Optional[Dataset] = None
+    odc_dataset: Optional[Dataset] = None
 
     def as_geojson(self):
         return dict(
@@ -392,14 +392,14 @@ class SummaryStore:
         return item
 
     def search_items(
-            self,
+            self, *,
             product_name: Optional[str] = None,
             time: Optional[Tuple[datetime, datetime]] = None,
             bbox: Tuple[float, float, float, float] = None,
             limit: int = 500,
             offset: int = 0,
             full_dataset: bool = False,
-            dataset_ids: Sequence[UUID] = None
+            dataset_ids: Sequence[UUID] = None,
     ) -> Generator[DatasetItem, None, None]:
         """
         Search datasets using Cubedash's spatial table
@@ -496,7 +496,7 @@ class SummaryStore:
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
-                full_dataset=(
+                odc_dataset=(
                     _utils.make_dataset_from_select_fields(self.index, r)
                     if full_dataset else None
                 ),

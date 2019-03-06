@@ -286,7 +286,7 @@ def as_stac_item(dataset: DatasetItem):
     """
     Returns a dict corresponding to a stac item
     """
-    ds = dataset.full_dataset
+    ds = dataset.odc_dataset
     item_doc = dict(
         id=dataset.dataset_id,
         type='Feature',
