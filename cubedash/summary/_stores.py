@@ -60,7 +60,7 @@ class DatasetItem:
     region_code: str
     creation_time: datetime
     center_time: datetime
-    full_dataset: Optional[Dataset] = None
+    odc_dataset: Optional[Dataset] = None
 
     def as_geojson(self):
         return dict(
@@ -417,6 +417,7 @@ class SummaryStore:
 
     def search_items(
         self,
+        *,
         product_name: Optional[str] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
@@ -510,7 +511,7 @@ class SummaryStore:
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
-                full_dataset=(
+                odc_dataset=(
                     _utils.make_dataset_from_select_fields(self.index, r)
                     if full_dataset
                     else None
