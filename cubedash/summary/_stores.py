@@ -62,6 +62,20 @@ class DatasetItem:
     center_time: datetime
     full_dataset: Optional[Dataset] = None
 
+    def as_geojson(self):
+        return dict(
+            id=self.dataset_id,
+            type="Feature",
+            bbox=self.bbox,
+            geometry=self.geom_geojson,
+            properties={
+                "datetime": self.center_time,
+                "odc:product": self.product_name,
+                "odc:creation-time": self.creation_time,
+                "cubedash:region_code": self.region_code,
+            },
+        )
+
 
 class SummaryStore:
     def __init__(
