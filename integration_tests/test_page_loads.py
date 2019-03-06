@@ -189,22 +189,29 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p')
     assert len(geojson['features']) == 306, "Not all high tide datasets returned as geojson"
 
-    # Check that they're not just using the center time.
-    # Within the time range, but not the center_time.
-    # Range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
+    # Search and time summary is only based on center time.
+    # These searches are within the dataset time range, but not the center_time.
+    # Dataset range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
     # year
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2000')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
     # month
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2009/5')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
     # day
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2016/10/1')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6/1')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
 
-    # Completely out of the test dataset time range. No results.
+    # Out of the test dataset time range. No results.
+
+    # Completely outside of range
     geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2018')
     assert len(geojson['features']) == 0, "Expected no high tide datasets in in this year"
+    # One day before/after (is time zone handling correct?)
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6/2')
+    assert len(geojson['features']) == 0, "Expected no result one-day-after center time"
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/5/31')
+    assert len(geojson['features']) == 0, "Expected no result one-day-after center time"
 
 
 def test_api_returns_scenes_as_geojson(client: FlaskClient):
