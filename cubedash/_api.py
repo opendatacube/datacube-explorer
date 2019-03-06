@@ -37,7 +37,7 @@ def datasets_geojson(
         flask.url_for(
             'stac.stac_search',
             product_name=product_name,
-            time=_unparse_time_range(time),
+            time=_unparse_time_range(time) if time else None,
             bbox=bbox,
             limit=limit,
         )
