@@ -3,13 +3,16 @@ Tests that hit the stac api
 """
 import json
 from pathlib import Path
-from pprint import pprint
-from typing import Dict, Generator, Iterable, Optional, Tuple
+from pprint import pformat, pprint
+from textwrap import indent
+from typing import Dict, Generator, Iterable, Optional
 
 import pytest
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
+from shapely.geometry import shape as shapely_shape
+from shapely.validation import explain_validity
 
 import cubedash._stac
 from cubedash import _model
@@ -37,7 +40,7 @@ def get_items(client: FlaskClient, url: str) -> Dict:
         data = get_geojson(client, url)
         assert_collection(data)
     except AssertionError as e:
-        e.args += (f"Requested {repr(url)}",)
+        _add_context(e, f"Requested {repr(url)}")
         raise
     return data
 
@@ -47,7 +50,7 @@ def get_item(client: FlaskClient, url: str) -> Dict:
         data = get_json(client, url)
         validate_item(data)
     except AssertionError as e:
-        e.args += (f"Requested {repr(url)}",)
+        _add_context(e, f"Requested {repr(url)}")
         raise
     return data
 
@@ -99,7 +102,7 @@ def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
         try:
             validate_item(item)
         except AssertionError as e:
-            e.args += (f"Invalid item {i}, id {id_}",)
+            _add_context(e, f"Invalid item {i}, id {id_}")
             raise
 
         # Assert there's no duplicates
@@ -289,11 +292,11 @@ def test_stac_item(stac_client: FlaskClient):
         "geometry": {
             "coordinates": [
                 [
-                    [121.423_986_912_228, -30.850_045_540_800_6],
-                    [120.527_607_997_473, -30.784_505_852_831_2],
-                    [120.767_242_829_485, -29.906_840_507_281_5],
-                    [121.510_624_611_368, -29.960_785_496_049_7],
-                    [121.423_986_912_228, -30.850_045_540_800_6],
+                    [121.423_986_912_228_29, -30.850_045_540_800_554],
+                    [120.527_607_997_473_03, -30.784_505_852_831_213],
+                    [120.767_242_829_485_23, -29.906_840_507_281_49],
+                    [121.510_624_611_367_8, -29.960_785_496_049_67],
+                    [121.423_986_912_228_29, -30.850_045_540_800_554],
                 ]
             ],
             "type": "Polygon",
@@ -326,6 +329,20 @@ def assert_collection(collection: Dict):
 def validate_item(item: Dict):
     validate_document(item, _ITEM_SCHEMA, schema_folder=_ITEM_SCHEMA_PATH.parent)
 
+    # Should be a valid polygon
+    assert "geometry" in item, "Item has no geometry"
+    assert item["geometry"], "Item has blank geometry"
+    try:
+        shape = shapely_shape(item["geometry"])
+        assert shape.is_valid, f"Item has invalid geometry: {explain_validity(shape)}"
+        assert shape.geom_type in (
+            "Polygon",
+            "MultiPolygon",
+        ), "Unexpected type of shape"
+    except AssertionError as e:
+        _add_context(e, f"Failing shape:\n{pformat(item['geometry'])}")
+        raise
+
 
 def _get_next_href(geojson: Dict) -> Optional[str]:
     hrefs = [link["href"] for link in geojson.get("links", []) if link["rel"] == "next"]
@@ -335,3 +352,33 @@ def _get_next_href(geojson: Dict) -> Optional[str]:
     assert len(hrefs) == 1, "Multiple next links found: " + ",".join(hrefs)
     [href] = hrefs
     return href
+
+
+def _add_context(e: AssertionError, context_message: str):
+    """
+    Append to an assertion error message some extra information.
+
+    (Such as the url being tested, or the specific item that's failing)
+
+    This is mildly dodgy, but catching and raising new exceptions makes much less
+    readable output, and they are extra information, not different errors)
+    """
+    args = list(e.args)
+    separator = "\n\n==== Context ===="
+
+    full_error = e.args[0]
+
+    # Indent the message with a bullet "-" prefix
+    context_message = indent(context_message, " " * 3)
+    context_message = "-" + context_message[2:]
+
+    if separator in full_error:
+        # If there's already context, place the new message at the beginning.
+        # (as unwinding happens backwards.)
+        original, existing_context = full_error.split(separator)
+        full_error = f"{original}{separator}\n{context_message}{existing_context}"
+    else:
+        full_error = f"{full_error}{separator}\n{context_message}"
+
+    args[0] = full_error
+    e.args = tuple(args)
