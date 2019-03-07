@@ -4,7 +4,7 @@ Tests that hit the stac api
 import json
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, Optional
+from typing import Dict, Generator, Iterable, Optional, Tuple
 
 import pytest
 from dateutil import tz
@@ -34,13 +34,13 @@ _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open("r"))
 
 def get_items(client: FlaskClient, url: str) -> Dict:
     data = get_geojson(client, url)
-    # TODO: validate schema
+    assert_collection(data)
     return data
 
 
 def get_item(client: FlaskClient, url: str) -> Dict:
     data = get_json(client, url)
-    _validate_item(data)
+    validate_item(data)
     return data
 
 
@@ -54,43 +54,73 @@ def stac_client(populated_index, client: FlaskClient):
     return client
 
 
-def test_stac_search_all_pages(stac_client: FlaskClient):
-    # Search all products
-    limit = OUR_PAGE_SIZE // 2
-    geojson = get_items(
-        stac_client,
-        (
-            f"/stac/search?"
-            f"&bbox=[114, -33, 153, -10]"
-            f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
-            f"&limit={limit}"
-        ),
-    )
-    assert len(geojson.get("features")) == limit
-    dataset_count = limit
+def test_stac_loading_all_pages(stac_client: FlaskClient):
+    # An unconstrained search returning every dataset.
+    # It should return every dataset in order with no duplicates.
+    all_items = list(_iter_items_across_pages(stac_client, f"/stac/search"))
+    assert len(all_items) == 66, "Expected 66 datasets across all pages"
+    validate_item_list_order(all_items)
 
-    # Keep loading "next" pages and we should hit the DATASET_LIMIT.
-    next_page_url = _get_next_href(geojson)
-    while next_page_url:
-        geojson = get_items(stac_client, next_page_url)
-        assert len(geojson.get("features")) == limit
-        dataset_count += limit
-        next_page_url = _get_next_href(geojson)
-    assert dataset_count == OUR_DATASET_LIMIT
+    # A constrained search within a bounding box.
+    # It should return matching datasets in order with no duplicates.
+    all_items = list(
+        _iter_items_across_pages(
+            stac_client,
+            (
+                f"/stac/search?"
+                f"&bbox=[114, -33, 153, -10]"
+                f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            ),
+        )
+    )
+    assert len(all_items) == 66, "Expected 66 datasets across all pages"
+    validate_item_list_order(all_items)
+
+
+def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
+    """
+    Check that a list of items:
+    - has no duplicates,
+    - is ordered (center time: our default)
+    - each item individually is valid.
+    """
+    seen_ids = set()
+    last_item = None
+    for i, item in enumerate(items):
+        validate_item(item)
+
+        id_ = item["id"]
+
+        # Assert there's no duplicates
+        assert (
+            id_ not in seen_ids
+        ), f"Duplicate dataset item (record {i}) of search results: {id_}"
+        seen_ids.add(id_)
+
+        # Assert they are all ordered (including across pages!)
+        if last_item and expect_ordered:
+            # TODO: this is actually a (date, id) sort, but our test data has no duplicate dates.
+            assert last_item["properties"]["datetime"] < item["properties"]["datetime"]
+
+
+def _iter_items_across_pages(
+    client: FlaskClient, url: str
+) -> Generator[Dict, None, None]:
+    """
+    Keep loading "next" pages and yield every stac Item in order
+    """
+    while url is not None:
+        items = get_items(client, url)
+        yield from items["features"]
+        url = _get_next_href(items)
 
 
 def test_stac_search_limits(stac_client: FlaskClient):
-    # Limit with value greater than DATASET_LIMIT should be truncated.
-    geojson = get_items(
-        stac_client,
-        (
-            f"/stac/search?"
-            f"&bbox=[114, -33, 153, -10]"
-            f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
-            f"&limit={OUR_DATASET_LIMIT + 2}"
-        ),
-    )
-    assert len(geojson.get("features")) == OUR_DATASET_LIMIT
+    # Tell user with error if they request too much.
+    large_limit = OUR_DATASET_LIMIT + 1
+    rv: Response = stac_client.get((f"/stac/search?" f"&limit={large_limit}"))
+    assert rv.status_code == 400
+    assert b"Max page size" in rv.data
 
     # Without limit, it should use the default page size
     geojson = get_items(
@@ -182,7 +212,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
         assert band in first_item["assets"]
 
     # Validate stac item with jsonschema
-    _validate_item(first_item)
+    validate_item(first_item)
 
 
 def test_stac_collections(stac_client: FlaskClient):
@@ -273,7 +303,12 @@ def test_stac_item(stac_client: FlaskClient):
     }
 
 
-def _validate_item(item: Dict):
+def assert_collection(collection: Dict):
+    assert "features" in collection, "No features in collection"
+    validate_item_list_order(collection["features"])
+
+
+def validate_item(item: Dict):
     validate_document(item, _ITEM_SCHEMA, schema_folder=_ITEM_SCHEMA_PATH.parent)
 
 
