@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 import versioneer
 
-tests_require = ["pylint", "digitalearthau", "requests-html"]
+tests_require = ["pylint", "digitalearthau", "requests-html", "jsonschema > 3"]
 
 extras_require = {
     "test": tests_require,
