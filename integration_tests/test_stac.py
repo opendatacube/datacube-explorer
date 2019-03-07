@@ -33,14 +33,22 @@ _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open("r"))
 
 
 def get_items(client: FlaskClient, url: str) -> Dict:
-    data = get_geojson(client, url)
-    assert_collection(data)
+    try:
+        data = get_geojson(client, url)
+        assert_collection(data)
+    except AssertionError as e:
+        e.args += (f"Requested {repr(url)}",)
+        raise
     return data
 
 
 def get_item(client: FlaskClient, url: str) -> Dict:
-    data = get_json(client, url)
-    validate_item(data)
+    try:
+        data = get_json(client, url)
+        validate_item(data)
+    except AssertionError as e:
+        e.args += (f"Requested {repr(url)}",)
+        raise
     return data
 
 
@@ -87,9 +95,12 @@ def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
     seen_ids = set()
     last_item = None
     for i, item in enumerate(items):
-        validate_item(item)
-
         id_ = item["id"]
+        try:
+            validate_item(item)
+        except AssertionError as e:
+            e.args += (f"Invalid item {i}, id {id_}",)
+            raise
 
         # Assert there's no duplicates
         assert (
@@ -100,7 +111,11 @@ def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
         # Assert they are all ordered (including across pages!)
         if last_item and expect_ordered:
             # TODO: this is actually a (date, id) sort, but our test data has no duplicate dates.
-            assert last_item["properties"]["datetime"] < item["properties"]["datetime"]
+            prev_dt = last_item["properties"]["datetime"]
+            this_dt = item["properties"]["datetime"]
+            assert (
+                prev_dt < this_dt
+            ), f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
 
 
 def _iter_items_across_pages(
