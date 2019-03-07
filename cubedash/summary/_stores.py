@@ -9,6 +9,8 @@ from datetime import date, timedelta
 from datetime import datetime
 from dateutil import tz
 from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import DDL
 from sqlalchemy import and_, String
 from sqlalchemy import func, select
@@ -60,11 +62,17 @@ class DatasetItem:
     dataset_id: UUID
     bbox: object
     product_name: str
-    geom_geojson: Dict
+    geometry: BaseGeometry
     region_code: str
     creation_time: datetime
     center_time: datetime
     odc_dataset: Optional[Dataset] = None
+
+    @property
+    def geom_geojson(self) -> Optional[Dict]:
+        if self.geometry is None:
+            return None
+        return self.geometry.__geo_interface__
 
     def as_geojson(self):
         return dict(
@@ -400,6 +408,7 @@ class SummaryStore:
             offset: int = 0,
             full_dataset: bool = False,
             dataset_ids: Sequence[UUID] = None,
+            require_geometry=True,
     ) -> Generator[DatasetItem, None, None]:
         """
         Search datasets using Cubedash's spatial table
@@ -415,7 +424,7 @@ class SummaryStore:
         )
 
         columns = [
-            func.ST_AsGeoJSON(geom).cast(postgres.JSONB).label('geom_geojson'),
+            geom.label('geometry'),
             func.Box2D(geom).label('bbox'),
             # TODO: dataset label?
             DATASET_SPATIAL.c.region_code.label('region_code'),
@@ -477,6 +486,11 @@ class SummaryStore:
         if dataset_ids:
             query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
 
+        if require_geometry:
+            query = query.where(
+                DATASET_SPATIAL.c.footprint != None
+            )
+
         query = query.order_by(
             # We must ensure an order, as users request can request in pages.
             DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id
@@ -488,11 +502,21 @@ class SummaryStore:
         )
 
         for r in self._engine.execute(query):
+            shape = None
+            if r.geometry is not None:
+                shape = to_shape(r.geometry)
+                # These shapes are valid in the db, but can become invalid on
+                # reprojection.
+                # (Eg. 32baf68c-7d91-4e13-8860-206ac69147b0)
+                # (tests fail without this)
+                if not shape.is_valid:
+                    shape = shape.buffer(0)
+
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
                 product_name=self.index.products.get(r.dataset_type_ref).name,
-                geom_geojson=r.geom_geojson,
+                geometry=shape,
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
