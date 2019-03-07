@@ -35,7 +35,7 @@ _LOG = structlog.getLogger()
 _HARD_SEARCH_LIMIT = app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
 
 # Add server timings to http headers.
-if app.debug or app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
+if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
     _monitoring.init_app_monitoring()
 
 
