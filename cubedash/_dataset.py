@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import logging
 
 import flask
-from flask import Blueprint
+from flask import Blueprint, abort
 
 from . import _model
 from . import _utils as utils
@@ -22,6 +22,9 @@ def dataset_page(id_):
 
     index = _model.STORE.index
     dataset = index.datasets.get(id_, include_sources=True)
+
+    if dataset is None:
+        abort(404, f"No dataset found with id {id_}")
 
     source_list = list(dataset.metadata.sources.items())
     if len(source_list) > PROVENANCE_DISPLAY_LIMIT:
