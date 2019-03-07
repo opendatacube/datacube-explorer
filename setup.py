@@ -6,7 +6,8 @@ import versioneer
 tests_require = [
     'pylint',
     'digitalearthau',
-    'requests-html'
+    'requests-html',
+    'jsonschema > 3',
 ]
 
 extras_require = {
