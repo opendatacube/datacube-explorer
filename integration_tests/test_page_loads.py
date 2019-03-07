@@ -142,6 +142,11 @@ def test_view_dataset(client: FlaskClient):
     assert b'-20.502 to -19.6' in rv.data
     assert b'132.0 to 132.924' in rv.data
 
+    # No dataset found: should return 404, not a server error.
+    rv: Response = client.get("/dataset/de071517-af92-4dd7-bf91-12b4e7c9a435")
+    assert rv.status_code == 404
+    assert b"No dataset found" in rv.data
+
 
 def _h1_text(html):
     return html.find('h1', first=True).text
