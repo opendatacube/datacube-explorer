@@ -40,7 +40,7 @@ def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
 def get_json(client: FlaskClient, url: str) -> Dict:
     rv: Response = client.get(url)
     try:
-        assert rv.status_code == 200
+        assert rv.status_code == 200, rv.data
         assert rv.is_json, "Expected json content type in response"
         data = rv.json
         assert data is not None, "Empty response from server"
