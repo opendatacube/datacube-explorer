@@ -90,7 +90,8 @@ def stac_search():
     if bbox is not None and len(bbox) != 4:
         abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
 
-    time = _parse_time_range(time)
+    if time is not None:
+        time = _parse_time_range(time)
 
     def next_page_url(next_offset):
         return url_for(
