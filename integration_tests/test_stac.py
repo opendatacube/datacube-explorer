@@ -363,10 +363,10 @@ def _add_context(e: AssertionError, context_message: str):
     This is mildly dodgy, but catching and raising new exceptions makes much less
     readable output, and they are extra information, not different errors)
     """
-    args = list(e.args)
+    args = list(e.args) or [""]
     separator = "\n\n==== Context ===="
 
-    full_error = e.args[0]
+    full_error = args[0]
 
     # Indent the message with a bullet "-" prefix
     context_message = indent(context_message, " " * 3)
