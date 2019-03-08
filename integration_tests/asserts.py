@@ -3,8 +3,10 @@ import re
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
+from textwrap import indent
 from typing import Dict, Optional, Set, Tuple
 
+import jsonschema
 from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
@@ -13,7 +15,7 @@ from requests_html import HTML
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 from datacube.model import Range
-from datacube.utils import validate_document
+from datacube.utils import InvalidDocException, validate_document
 
 # GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
 _FEATURE_COLLECTION_SCHEMA_PATH = (
@@ -165,3 +167,60 @@ def expect_values(
             for day, count in s.timeline_dataset_counts.items():
                 print(f"\t{repr(day)}: {count}")
         raise
+
+
+class debug_help:
+    """
+    Add a message to be included if an assertion/validation
+    error is thrown within this block of code.
+
+    (for instance: which dataset was being tested in the list)
+
+    This makes test failures a lot less obtuse!
+    """
+
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            return
+        if issubclass(exc_type, (AssertionError, InvalidDocException)):
+            _add_context(exc_val, self.msg)
+
+
+def _add_context(e: AssertionError, context_message: str):
+    """
+    Append some extra information to an assertion error message .
+
+    (Such as the url being tested, or the specific item that's failing)
+
+    This is mildly distasteful, but catching and raising new exceptions
+    makes misleading and very verbose output.
+
+    We are adding extra information, not a different error.
+    """
+    args = list(e.args) or [""]
+    separator = "\n\n==== Context ===="
+
+    full_error = args[0]
+    if isinstance(full_error, jsonschema.ValidationError):
+        full_error = str(full_error)
+
+    # Indent the message with a bullet "-" prefix
+    context_message = indent(context_message, " " * 3)
+    context_message = "-" + context_message[2:]
+
+    if separator in full_error:
+        # If there's already debug_help, place the new message at the beginning.
+        # (as unwinding happens backwards.)
+        original, existing_context = full_error.split(separator)
+        full_error = f"{original}{separator}\n{context_message}{existing_context}"
+    else:
+        full_error = f"{full_error}{separator}\n{context_message}"
+
+    args[0] = full_error
+    e.args = tuple(args)
