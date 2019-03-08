@@ -3,13 +3,13 @@ import logging
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, Optional, Tuple
 
 from flask import Blueprint, abort, request, url_for
 
 from cubedash.summary._stores import DatasetItem
-from datacube.model import Dataset, DatasetType
-from datacube.utils import parse_time
+from datacube.model import Range
+from datacube.utils import DocReader, parse_time
 from datacube.utils.uris import uri_resolve
 
 from . import _model, _utils
@@ -171,7 +171,7 @@ def collection(product_name: str):
             id=summary.name,
             title=summary.name,
             description=dataset_type.definition.get("description"),
-            properties=dict(_build_properties(dataset_type)),
+            properties=dict(_build_properties(dataset_type.metadata)),
             providers=[],
             **summary_props,
             links=[
@@ -281,6 +281,7 @@ def as_stac_item(dataset: DatasetItem):
         geometry=dataset.geom_geojson,
         properties={
             "datetime": dataset.center_time,
+            **dict(_build_properties(dataset.odc_dataset.metadata)),
             "odc:product": dataset.product_name,
             "odc:creation-time": dataset.creation_time,
             "cubedash:region_code": dataset.region_code,
@@ -334,22 +335,39 @@ def _stac_item_assets(ds):
     return assets
 
 
-def field_platform(value):
-    return "eo:platform", value.lower().replace("_", "-")
+def field_platform(key, value):
+    yield "eo:platform", value.lower().replace("_", "-")
 
 
-def field_instrument(value):
-    return "eo:instrument", value
+def field_instrument(key, value):
+    yield "eo:instrument", value
 
 
-def field_bands(value: List[Dict]):
-    return "eo:bands", [dict(name=v["name"]) for v in value]
+def field_bands(key, value: Dict):
+    yield "eo:bands", [dict(name=k, **v) for k, v in value.items()]
 
 
-def field_path_row(value):
-    # eo:row	"135"
-    # eo:column	"044"
-    pass
+def field_path_row(key, value):
+    # Path/Row fields are ranges in datacube but 99% of the time
+    # they are a single value
+    # (they are ranges in telemetry products)
+    # Stac doesn't accept a range here, so we'll skip it in those products,
+    # but we can handle the 99% case when lower==higher.
+    if key == "sat_path":
+        kind = "column"
+    elif key == "sat_row":
+        kind = "row"
+    else:
+        raise ValueError(f"Path/row kind {repr(key)}")
+
+    # If there's only one value in the range, return it.
+    if isinstance(value, Range):
+        if value.end is None or value.begin == value.end:
+            # Standard stac
+            yield f"eo:{kind}", str(value.begin)
+        else:
+            # Our questionable output. Only present in telemetry products?
+            yield f"odc:{key}", f"{value.begin}/{value.end}"
 
 
 # Other Property examples:
@@ -372,14 +390,16 @@ def field_path_row(value):
 _STAC_PROPERTY_MAP = {
     "platform": field_platform,
     "instrument": field_instrument,
-    "measurements": field_bands,
+    # "measurements": field_bands,
+    "sat_path": field_path_row,
+    "sat_row": field_path_row,
 }
 
 
-def _build_properties(dt: DatasetType):
-    for key, val in dt.metadata.fields.items():
+def _build_properties(d: DocReader):
+    for key, val in d.fields.items():
         if val is None:
             continue
         converter = _STAC_PROPERTY_MAP.get(key)
         if converter:
-            yield converter(val)
+            yield from converter(key, val)
