@@ -1,4 +1,5 @@
 import functools
+import math
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -523,7 +524,11 @@ class SummaryStore:
                 # (Eg. 32baf68c-7d91-4e13-8860-206ac69147b0)
                 # (tests fail without this)
                 if not shape.is_valid:
-                    shape = shape.buffer(0)
+                    newshape = shape.buffer(0)
+                    assert math.isclose(
+                        shape.area, newshape.area, abs_tol=0.0001
+                    ), f"{shape.area} != {newshape.area}"
+                    shape = newshape
 
             yield DatasetItem(
                 dataset_id=r.id,
