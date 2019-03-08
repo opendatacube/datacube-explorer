@@ -3,6 +3,7 @@ Tests that hit the stac api
 """
 import json
 import pytest
+from boltons.iterutils import research
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -10,13 +11,12 @@ from pathlib import Path
 from pprint import pprint, pformat
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
-from textwrap import indent
 from typing import Dict, Optional, Generator, Iterable
 
 import cubedash._stac
 from cubedash import _model
 from datacube.utils import validate_document
-from integration_tests.asserts import get_geojson, get_json
+from integration_tests.asserts import get_geojson, get_json, debug_help
 
 DEFAULT_TZ = tz.gettz('Australia/Darwin')
 
@@ -35,22 +35,16 @@ _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open('r'))
 
 
 def get_items(client: FlaskClient, url: str) -> Dict:
-    try:
+    with debug_help(f"Requested {repr(url)}"):
         data = get_geojson(client, url)
         assert_collection(data)
-    except AssertionError as e:
-        _add_context(e, f"Requested {repr(url)}", )
-        raise
     return data
 
 
 def get_item(client: FlaskClient, url: str) -> Dict:
-    try:
+    with debug_help(f"Requested {repr(url)}"):
         data = get_json(client, url)
         validate_item(data)
-    except AssertionError as e:
-        _add_context(e, f"Requested {repr(url)}", )
-        raise
     return data
 
 
@@ -96,11 +90,8 @@ def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
     last_item = None
     for i, item in enumerate(items):
         id_ = item['id']
-        try:
+        with debug_help(f"Invalid item {i}, id {repr(str(id_))}", ):
             validate_item(item)
-        except AssertionError as e:
-            _add_context(e, f"Invalid item {i}, id {id_}", )
-            raise
 
         # Assert there's no duplicates
         assert id_ not in seen_ids, (
@@ -332,15 +323,19 @@ def validate_item(item: Dict):
     # Should be a valid polygon
     assert 'geometry' in item, "Item has no geometry"
     assert item['geometry'], "Item has blank geometry"
-    try:
+    with debug_help(f"Failing shape:\n{pformat(item['geometry'])}"):
         shape = shapely_shape(item['geometry'])
         assert shape.is_valid, f"Item has invalid geometry: {explain_validity(shape)}"
         assert shape.geom_type in ('Polygon', 'MultiPolygon'), (
             "Unexpected type of shape"
         )
-    except AssertionError as e:
-        _add_context(e, f"Failing shape:\n{pformat(item['geometry'])}")
-        raise
+
+    # href should never be blank if present
+    # -> The jsonschema enforces href as required, but it's not checking for emptiness.
+    #    (and we've had empty ones in previous prototypes)
+    for offset, value in research(item, lambda p, k, v: k == 'href'):
+        viewable_offset = "→".join(map(repr, offset))
+        assert value.strip(), f"href has empty value: {repr(viewable_offset)}"
 
 
 def _get_next_href(geojson: Dict) -> Optional[str]:
@@ -352,32 +347,3 @@ def _get_next_href(geojson: Dict) -> Optional[str]:
     [href] = hrefs
     return href
 
-
-def _add_context(e: AssertionError, context_message: str):
-    """
-    Append to an assertion error message some extra information.
-
-    (Such as the url being tested, or the specific item that's failing)
-
-    This is mildly dodgy, but catching and raising new exceptions makes much less
-    readable output, and they are extra information, not different errors)
-    """
-    args = list(e.args) or ['']
-    separator = '\n\n==== Context ===='
-
-    full_error = args[0]
-
-    # Indent the message with a bullet "-" prefix
-    context_message = indent(context_message, " " * 3)
-    context_message = '-' + context_message[2:]
-
-    if separator in full_error:
-        # If there's already context, place the new message at the beginning.
-        # (as unwinding happens backwards.)
-        original, existing_context = full_error.split(separator)
-        full_error = f"{original}{separator}\n{context_message}{existing_context}"
-    else:
-        full_error = f"{full_error}{separator}\n{context_message}"
-
-    args[0] = full_error
-    e.args = tuple(args)

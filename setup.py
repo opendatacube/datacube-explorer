@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 tests_require = [
+    'boltons',
     'pylint',
     'digitalearthau',
     'requests-html',
