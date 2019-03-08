@@ -10,6 +10,7 @@ from uuid import UUID
 import dateutil.parser
 import structlog
 from dateutil import tz
+from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
 from shapely.geometry.base import BaseGeometry
@@ -516,25 +517,11 @@ class SummaryStore:
         )
 
         for r in self._engine.execute(query):
-            shape = None
-            if r.geometry is not None:
-                shape = to_shape(r.geometry)
-                # These shapes are valid in the db, but can become invalid on
-                # reprojection.
-                # (Eg. 32baf68c-7d91-4e13-8860-206ac69147b0)
-                # (tests fail without this)
-                if not shape.is_valid:
-                    newshape = shape.buffer(0)
-                    assert math.isclose(
-                        shape.area, newshape.area, abs_tol=0.0001
-                    ), f"{shape.area} != {newshape.area}"
-                    shape = newshape
-
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
                 product_name=self.index.products.get(r.dataset_type_ref).name,
-                geometry=shape,
+                geometry=_get_shape(r.geometry),
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
@@ -819,3 +806,26 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     # We know there's exactly four groups, but type checker doesn't...
     # noinspection PyTypeChecker
     return tuple(float(m) for m in m.groups())
+
+
+def _get_shape(geometry: Optional[WKBElement]) -> Optional[BaseGeometry]:
+    """
+    Our shapes are valid in the db, but can become invalid on
+    reprojection. We buffer if needed.
+
+    Eg invalid. 32baf68c-7d91-4e13-8860-206ac69147b0
+
+    (the tests reproduce this error)
+    """
+    if geometry is None:
+        return None
+
+    shape = to_shape(geometry)
+
+    if not shape.is_valid:
+        newshape = shape.buffer(0)
+        assert math.isclose(
+            shape.area, newshape.area, abs_tol=0.0001
+        ), f"{shape.area} != {newshape.area}"
+        shape = newshape
+    return shape
