@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
@@ -8,7 +9,7 @@ from typing import Callable, Dict, Iterable, Optional, Tuple
 from flask import Blueprint, abort, request, url_for
 
 from cubedash.summary._stores import DatasetItem
-from datacube.model import Range
+from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from datacube.utils.uris import uri_resolve
 
@@ -227,13 +228,13 @@ def item(product_name, dataset_id):
     return _utils.as_json(as_stac_item(dataset))
 
 
-def pick_remote_uri(uris: Iterable[str]):
+def pick_remote_uri_index(uris: Iterable[str]) -> Optional[int]:
+
     # Return first uri with a remote path (newer paths come first)
-    for uri in uris:
+    for i, uri in enumerate(uris):
         scheme, *_ = uri.split(":")
         if scheme in ("https", "http", "ftp", "s3", "gfs"):
-            return uri
-
+            return i
     return None
 
 
@@ -286,7 +287,7 @@ def as_stac_item(dataset: DatasetItem):
             "odc:creation-time": dataset.creation_time,
             "cubedash:region_code": dataset.region_code,
         },
-        assets=_stac_item_assets(ds),
+        assets=dict(_stac_item_assets(ds)),
         links=[
             {
                 "rel": "self",
@@ -314,25 +315,51 @@ def as_stac_item(dataset: DatasetItem):
     return item_doc
 
 
-def _stac_item_assets(ds):
-    base_uri = pick_remote_uri(ds.uris) or ds.local_uri
+def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
+    # The main uri is what we use for expanding all relative paths.
+    main_uri = None
+    uris = list(ds.uris)
+    if uris:
+        # If one of the uris is a remote uri, make it the main one.
+        main_uri = uris.pop(pick_remote_uri_index(ds.uris) or 0)
 
-    def measurement_to_asset(name: str, data: Dict) -> Dict:
-        return {"href": uri_resolve(base_uri, data.get("path"))}
+    # Group measurements that have the same path, they should be listed as one asset.
+    assets_by_path = defaultdict(dict)
 
-    # TODO: measurements should actually map to "eo:bands", right?
-    assets = {
-        name: measurement_to_asset(name, data) for name, data in ds.measurements.items()
-    }
+    for name, data in ds.measurements.items():
+        path = uri_resolve(main_uri, data.get("path") or None)
+        if not path:
+            continue
 
-    # Add an "odc:location" field with our base uri if we have one.
-    if ds.uris:
-        locs = {"href": ds.uris[0]}
-        remaining = ds.uris[1:]
-        if remaining:
-            locs["odc:secondary_hrefs"] = remaining
-        assets[f"odc:location"] = locs
-    return assets
+        asset = assets_by_path.get(path)
+        if asset:
+            asset["eo:bands"].append(name)
+        else:
+            assets_by_path[path] = {"eo:bands": [name], "href": path}
+
+    # Ensure there's an asset for the main uri/location.
+    if main_uri:
+        base_asset = assets_by_path.get(main_uri)
+        if not base_asset:
+            base_asset = {"href": main_uri}
+            assets_by_path[main_uri] = base_asset
+
+        base_asset["odc:secondary_hrefs"] = uris
+
+    # Now how do we name our assets?
+    for asset in assets_by_path.values():
+        # If there's one band, name it by that.
+        bands = asset.get("eo:bands")
+        if bands and len(bands) == 1:
+            asset_name, = bands
+        elif asset["href"] == main_uri:
+            asset_name = "location"
+        else:
+            # Otherwise extract the "stem" from the filename.
+            _, _, filename = asset["href"].rpartition("/")
+            asset_name, _, _ = filename.partition(".")
+
+        yield asset_name, asset
 
 
 def field_platform(key, value):
