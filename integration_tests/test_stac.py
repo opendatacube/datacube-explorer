@@ -278,18 +278,20 @@ def test_stac_item(stac_client: FlaskClient):
         'bbox': [120.527607997473, -30.8500455408006,
                  121.510624611368, -29.9068405072815],
         'properties': {
-            'cubedash:region_code': '-11_-34',
             'datetime': '2017-04-19T11:45:56+10:00',
+            'eo:platform': 'landsat-8',
+            'eo:instrument': 'OLI_TIRS',
+            'cubedash:region_code': '-11_-34',
             'odc:creation-time': '2018-05-20T17:57:51.178223+10:00',
-            'odc:product': 'wofs_albers'
+            'odc:product': 'wofs_albers',
         },
         'geometry': {
+            'type': 'Polygon',
             'coordinates': [[[121.42398691222829, -30.850045540800554],
                              [120.52760799747303, -30.784505852831213],
                              [120.76724282948523, -29.90684050728149],
                              [121.5106246113678, -29.96078549604967],
                              [121.42398691222829, -30.850045540800554]]],
-            'type': 'Polygon',
         },
         'assets': {
             'water': {
