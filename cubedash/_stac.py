@@ -318,6 +318,14 @@ def as_stac_item(dataset: DatasetItem):
                     '.collection',
                     product_name=dataset.product_name,
                 ),
+            },
+            {
+                'rel': 'alternative',
+                "type": "text/html",
+                'href': url_for(
+                    'dataset.dataset_page',
+                    id_=dataset.dataset_id,
+                ),
             }
         ]
     )
