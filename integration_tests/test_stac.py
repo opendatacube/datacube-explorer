@@ -311,6 +311,11 @@ def test_stac_item(stac_client: FlaskClient):
                 "href": "/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d",
             },
             {"rel": "parent", "href": "/collections/wofs_albers"},
+            {
+                "rel": "alternative",
+                "type": "text/html",
+                "href": "/dataset/87676cf2-ef18-47b5-ba30-53a99539428d",
+            },
         ],
     }
 
