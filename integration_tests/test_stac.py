@@ -63,7 +63,9 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
     all_items = list(_iter_items_across_pages(stac_client, f"/stac/search"))
-    assert len(all_items) == 66, "Expected 66 datasets across all pages"
+    assert len(all_items) == 393, (
+        "Expected all 393 test datasets to be returned " "from a search"
+    )
     validate_item_list_order(all_items)
 
     # A constrained search within a bounding box.
