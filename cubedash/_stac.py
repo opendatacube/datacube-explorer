@@ -71,14 +71,14 @@ def stac_search():
         time = request.args.get('time')
         product_name = request.args.get('product')
         limit = request.args.get('limit', default=DEFAULT_PAGE_SIZE, type=int)
-        offset = request.args.get('offset', default=0, type=int)
+        offset = request.args.get('_o', default=0, type=int)
     else:
         req_data = request.get_json()
         bbox = req_data.get('bbox')
         time = req_data.get('time')
         product_name = req_data.get('product')
         limit = req_data.get('limit') or DEFAULT_PAGE_SIZE
-        offset = req_data.get('offset') or 0
+        offset = req_data.get('_o') or 0
 
     if limit > PAGE_SIZE_LIMIT:
         abort(
@@ -100,7 +100,7 @@ def stac_search():
             bbox='[{},{},{},{}]'.format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             limit=limit,
-            offset=next_offset,
+            _o=next_offset,
         )
 
     return _utils.as_json(
@@ -196,7 +196,7 @@ def collection(product_name: str):
 @bp.route('/collections/<product_name>/items')
 def collection_items(product_name: str):
     def next_url(offset):
-        return url_for('.collection_items', product_name=product_name, offset=offset)
+        return url_for('.collection_items', product_name=product_name, _o=offset)
 
     all_time_summary = _model.get_time_summary(product_name)
     if not all_time_summary:
