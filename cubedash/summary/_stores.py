@@ -598,7 +598,9 @@ class SummaryStore:
 
     def _do_put(self, product_name, year, month, day, summary):
         log = _LOG.bind(
-            product_name=product_name, time=(year, month, day), summary=summary
+            product_name=product_name,
+            time=(year, month, day),
+            summary_count=summary.dataset_count,
         )
         # Don't bother storing empty periods that are outside of the existing range.
         # This doesn't have to be exact (note that someone may update in parallel too).
