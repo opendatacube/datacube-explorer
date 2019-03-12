@@ -191,7 +191,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
             'product': 'wofs_albers',
             'bbox': [114, -33, 153, -10],
             'time': '2017-04-16T01:12:16/2017-05-10T00:24:21',
-            'limit': (OUR_PAGE_SIZE),
+            'limit': OUR_PAGE_SIZE,
         }),
         headers={'Content-Type': 'application/json',
                  'Accept': 'application/json'}
@@ -216,13 +216,18 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     )
     assert rv.status_code == 200
     doc = rv.json
-    bands = ['blue', 'green', 'nir', 'red', 'swir1', 'swir2']
-    first_item = doc['features'][0]
-    for band in bands:
-        assert band in first_item['assets']
 
-    # Validate stac item with jsonschema
-    validate_item(first_item)
+    # Features should in include all bands.
+    bands = ('blue', 'green', 'nir', 'red', 'swir1', 'swir2')
+    for feature in doc['features']:
+        with debug_help(f"feature {feature['id']}"):
+            assert len(feature['assets']) == 1, "Expected only one"
+            (name, asset), = feature['assets'].items()
+            assert name == 'location'
+            assert tuple(sorted(asset['eo:bands'])) == bands
+
+            # Validate stac item with jsonschema
+            validate_item(feature)
 
 
 def test_stac_collections(stac_client: FlaskClient):
@@ -286,13 +291,11 @@ def test_stac_item(stac_client: FlaskClient):
             'type': 'Polygon',
         },
         'assets': {
-            'odc:location': {
-                'href': 'file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d'
-            },
-            # TODO: The measurement has a blank path, which in ODC means it is loaded from the base location.
-            # This should probably be replaced with an "eo:bands" definition.
             'water': {
-                'href': 'file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d'
+                'href': 'file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d',
+                'odc:secondary_hrefs': [],
+                # TODO: we're supposed to map bands to integers in stac.
+                'eo:bands': ['water'],
             }
         },
         'links': [
