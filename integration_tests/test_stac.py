@@ -282,12 +282,15 @@ def test_stac_item(stac_client: FlaskClient):
             -29.906_840_507_281_5,
         ],
         "properties": {
-            "cubedash:region_code": "-11_-34",
             "datetime": "2017-04-19T11:45:56+10:00",
+            "eo:platform": "landsat-8",
+            "eo:instrument": "OLI_TIRS",
+            "cubedash:region_code": "-11_-34",
             "odc:creation-time": "2018-05-20T17:57:51.178223+10:00",
             "odc:product": "wofs_albers",
         },
         "geometry": {
+            "type": "Polygon",
             "coordinates": [
                 [
                     [121.423_986_912_228_29, -30.850_045_540_800_554],
@@ -297,7 +300,6 @@ def test_stac_item(stac_client: FlaskClient):
                     [121.423_986_912_228_29, -30.850_045_540_800_554],
                 ]
             ],
-            "type": "Polygon",
         },
         "assets": {
             "water": {
