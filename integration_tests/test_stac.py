@@ -62,38 +62,36 @@ def stac_client(populated_index, client: FlaskClient):
 def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
-    all_items = list(_iter_items_across_pages(stac_client, f"/stac/search"))
-    assert len(all_items) == 393, (
-        "Expected all 393 test datasets to be returned " "from a search"
-    )
-    validate_item_list_order(all_items)
+    all_items = _iter_items_across_pages(stac_client, f"/stac/search")
+    validate_items(all_items, expect_count=393)
 
     # A constrained search within a bounding box.
     # It should return matching datasets in order with no duplicates.
-    all_items = list(
-        _iter_items_across_pages(
-            stac_client,
-            (
-                f"/stac/search?"
-                f"&bbox=[114, -33, 153, -10]"
-                f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
-            ),
-        )
+    all_items = _iter_items_across_pages(
+        stac_client,
+        (
+            f"/stac/search?"
+            f"&bbox=[114, -33, 153, -10]"
+            f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+        ),
     )
-    assert len(all_items) == 66, "Expected 66 datasets across all pages"
-    validate_item_list_order(all_items)
+    validate_items(all_items, expect_count=66)
 
 
-def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
+def validate_items(
+    items: Iterable[Dict], expect_ordered=True, expect_count: int = None
+):
     """
-    Check that a list of items:
+    Check that a series of stac Items:
     - has no duplicates,
     - is ordered (center time: our default)
-    - each item individually is valid.
+    - are all valid individually.
+    - (optionally) has a specific count
     """
     seen_ids = set()
     last_item = None
-    for i, item in enumerate(items):
+    i = 0
+    for item in items:
         id_ = item["id"]
         with debug_help(f"Invalid item {i}, id {repr(str(id_))}"):
             validate_item(item)
@@ -112,6 +110,13 @@ def validate_item_list_order(items: Iterable[Dict], expect_ordered=True):
             assert (
                 prev_dt < this_dt
             ), f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
+        i += 1
+
+    # Note that the above block stops most paging infinite loops quickly
+    # ("already seen this dataset id")
+    # So we perform this length check in the same method and afterwards.
+    if expect_count is not None:
+        assert i == expect_count, f"Expected {expect_count} items"
 
 
 def _iter_items_across_pages(
@@ -305,13 +310,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     }
 
     item_links = scene_collection["links"][0]["href"]
-    all_items = list(_iter_items_across_pages(stac_client, item_links))
-    assert len(all_items) == 306, (
-        "Expected all 306 test high_tide_comp_20p "
-        "datasets to be returned from a collection item "
-        "list"
-    )
-    validate_item_list_order(all_items)
+    validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
 def test_stac_item(stac_client: FlaskClient):
@@ -376,7 +375,7 @@ def test_stac_item(stac_client: FlaskClient):
 
 def assert_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
-    validate_item_list_order(collection["features"])
+    validate_items(collection["features"])
 
 
 def validate_item(item: Dict):
