@@ -197,7 +197,10 @@ def collection_items(product_name: str):
         abort(404, "Product not yet summarised")
 
     feature_collection = search_stac_items(
-        product_name=product_name, limit=PAGE_SIZE_LIMIT, get_next_url=next_url
+        product_name=product_name,
+        limit=PAGE_SIZE_LIMIT,
+        get_next_url=next_url,
+        offset=request.args.get("_o", default=0, type=int),
     )
 
     # Maybe we shouldn't include "found" as it prevents some future optimisation?
