@@ -522,7 +522,7 @@ def _region_code_field(dt: DatasetType):
     if region_info:
         return region_info.alchemy_expression()
     else:
-        _LOG.warn(
+        _LOG.debug(
             "no_region_code",
             product_name=dt.name,
             metadata_type_name=dt.metadata_type.name
