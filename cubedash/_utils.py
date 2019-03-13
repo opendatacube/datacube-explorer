@@ -34,6 +34,8 @@ from datacube.model import Dataset
 from datacube.model import Range, DatasetType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
+from datacube.drivers.postgres import _api as pgapi
+import datacube.drivers.postgres._schema
 
 _TARGET_CRS = 'EPSG:4326'
 
@@ -193,13 +195,6 @@ def _field_parser(field: Field):
     return parser
 
 
-def alchemy_engine(index: Index) -> Engine:
-    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
-    # We could create our own from config, but there's no api for getting the ODC config for the index either.
-    # pylint: disable=protected-access
-    return index.datasets._db._engine
-
-
 def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
         return d.replace(tzinfo=tz.tzutc())
@@ -319,7 +314,8 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         )
         # A zero distance may be used to “tidy” a polygon.
         clean = geom.buffer(0.0)
-        assert clean.geom_type == 'Polygon'
+        assert clean.geom_type in ('Polygon', 'MultiPolygon'), \
+            F"got {clean.geom_type} for cleaned {ds.id}"
         assert clean.is_valid
         return clean, False
 
@@ -331,3 +327,26 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     return geom, True
+
+
+###############
+# These functions are bad and access non-public parts of datacube.
+# They are kept here in one place for easy criticism.
+#
+
+def alchemy_engine(index: Index) -> Engine:
+    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+    # We could create our own from config, but there's no api for getting the ODC config for the index either.
+    # pylint: disable=protected-access
+    return index.datasets._db._engine
+
+
+def make_dataset_from_select_fields(index, row):
+    # pylint: disable=protected-access
+    return index.datasets._make(row)
+
+
+# pylint: disable=protected-access
+DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
+ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
+ODC_DATASET = datacube.drivers.postgres._schema.DATASET

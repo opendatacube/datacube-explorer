@@ -226,7 +226,12 @@ class DatasetsLayer extends L.GeoJSON {
                         });
 
                         const props = layer.feature.properties,
-                            template = `<div><strong>${props.label}</strong></div>${props.start_time}`;
+                            template = `<div>
+                                            <strong>
+                                                ${props.label || props['cubedash:region_code'] || ''}
+                                            </strong>
+                                            <div>${props['datetime']}</div>
+                                        </div>`;
                         infoControl.update(template);
                     },
                     mouseout: (e) => {
@@ -234,8 +239,8 @@ class DatasetsLayer extends L.GeoJSON {
                         infoControl.update();
                     },
                     click: function (e) {
-                        let props = e.target.feature.properties;
-                        window.location.href = routes.getDatasetViewURL(props.id);
+                        let feature = e.target.feature;
+                        window.location.href = routes.getDatasetViewURL(feature.id);
                     }
                 });
             }

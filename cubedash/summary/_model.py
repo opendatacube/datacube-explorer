@@ -1,6 +1,9 @@
 from collections import Counter
+
+import warnings
 from datetime import datetime
-from typing import Iterable, Set, Union
+from functools import partial
+from typing import Iterable, Set, Union, Optional
 from typing import Tuple
 
 import shapely
@@ -8,6 +11,9 @@ import shapely.geometry
 import shapely.ops
 import structlog
 from dataclasses import dataclass
+import pyproj
+from shapely.geometry import MultiPolygon
+from shapely.ops import transform
 from shapely.geometry.base import BaseGeometry
 
 from datacube.model import Dataset
@@ -42,6 +48,10 @@ class TimePeriodOverview:
 
     # When this summary was generated. Set on the server.
     summary_gen_time: datetime = None
+
+    def __str__(self):
+        return f"{self.timeline_period}:{self.time_range.begin} " \
+            f"({self.dataset_count} datasets)"
 
     @classmethod
     def add_periods(cls,
@@ -126,6 +136,23 @@ class TimePeriodOverview:
             ),
             size_bytes=sum(p.size_bytes for p in periods if p.size_bytes is not None),
         )
+
+    @property
+    def footprint_wrs84(self) -> Optional[MultiPolygon]:
+        if not self.footprint_geometry:
+            return None
+        if not self.footprint_crs:
+            warnings.warn(f"Geometry without a crs for {self}")
+            return None
+
+        tranform_wrs84 = partial(
+            pyproj.transform,
+            pyproj.Proj(init=self.footprint_crs),
+            pyproj.Proj(init='epsg:4326')
+        )
+        # It's possible to get self-intersection after transformation, presumably due to
+        # rounding, so we buffer 0.
+        return transform(tranform_wrs84, self.footprint_geometry).buffer(0)
 
     @staticmethod
     def _group_counter_if_needed(counter, period):

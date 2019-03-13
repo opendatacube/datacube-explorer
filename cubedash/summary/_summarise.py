@@ -1,16 +1,15 @@
 from __future__ import absolute_import
 
 from collections import Counter
-from datetime import datetime
 
 import pandas as pd
 import structlog
 from cachetools.func import lru_cache
+from datetime import datetime
 from dateutil import tz
 from geoalchemy2 import shape as geo_shape, Geometry
-from sqlalchemy import and_, bindparam, Integer, String
+from sqlalchemy import and_, bindparam, Integer
 from sqlalchemy import func, select
-from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash.summary import TimePeriodOverview
@@ -144,40 +143,6 @@ class Summariser:
             footprints_missing=summary.dataset_count - summary.footprint_count
         )
         return summary
-
-    def get_dataset_footprints(self,
-                               product_name: str,
-                               time: Range):
-        begin_time, end_time, where_clause = self._where(product_name, time)
-        return self._get_datasets_geojson(where_clause)
-
-    def _get_datasets_geojson(self, where_clause):
-        return self._engine.execute(
-            select([
-                func.jsonb_build_object(
-                    'type', 'FeatureCollection',
-                    'features',
-                    func.jsonb_agg(
-                        func.jsonb_build_object(
-                            # TODO: move ID to outer id field?
-                            'type', 'Feature',
-                            'geometry', func.ST_AsGeoJSON(
-                                func.ST_Transform(
-                                    DATASET_SPATIAL.c.footprint,
-                                    self._target_srid(),
-                                )).cast(postgres.JSONB),
-                            'properties', func.jsonb_build_object(
-                                'id', DATASET_SPATIAL.c.id,
-                                # TODO: dataset label?
-                                'region_code', DATASET_SPATIAL.c.region_code.cast(String),
-                                'creation_time', DATASET_SPATIAL.c.creation_time,
-                                'center_time', DATASET_SPATIAL.c.center_time,
-                            ),
-                        )
-                    )
-                ).label('datasets_geojson')
-            ]).where(where_clause)
-        ).fetchone()['datasets_geojson']
 
     def _with_default_tz(self, d: datetime) -> datetime:
         if d.tzinfo is None:

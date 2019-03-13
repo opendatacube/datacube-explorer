@@ -98,6 +98,15 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     # Which theme to use (in the cubedash/themes folder)
     CUBEDASH_THEME = 'odc'
+    
+    # Customise '/stac' endpoint information
+    STAC_ENDPOINT_ID = 'my-odc-explorer'
+    STAC_ENDPOINT_TITLE = 'My ODC Explorer'
+    STAC_ENDPOINT_DESCRIPTION = 'Optional Longer description of this endpoint'
+    
+    STAC_DEFAULT_PAGE_SIZE = 20
+    STAC_PAGE_SIZE_LIMIT = 1000
+
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  

@@ -7,49 +7,23 @@ from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from pathlib import Path
 
 from cubedash import _monitoring, _model
 from cubedash.summary import SummaryStore, show
 from cubedash.summary import _extents
 from datacube.index import Index
 from integration_tests.asserts import get_html, check_dataset_count, \
-    check_last_processed, check_area, get_geojson
-
-TEST_DATA_DIR = Path(__file__).parent / 'data'
+    check_last_processed, check_area, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz('Australia/Darwin')
 
 
 @pytest.fixture(scope='module', autouse=True)
-def populate_index(dataset_loader, module_dea_index):
+def auto_populate_index(populated_index):
     """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
+    Auto-populate the index for all tests in this file.
     """
-    loaded = dataset_loader(
-        'wofs_albers',
-        TEST_DATA_DIR / 'wofs-albers-sample.yaml.gz'
-    )
-    assert loaded == 11
-
-    loaded = dataset_loader(
-        'high_tide_comp_20p',
-        TEST_DATA_DIR / 'high_tide_comp_20p.yaml.gz'
-    )
-    assert loaded == 306
-
-    # These have very large footprints, as they were unioned from many almost-identical
-    # polygons and not simplified. They will trip up postgis if used naively.
-    # (postgis gist index has max record size of 8k per entry)
-    loaded = dataset_loader(
-        'pq_count_summary',
-        TEST_DATA_DIR / 'pq_count_summary.yaml.gz'
-    )
-    assert loaded == 20
-
-    return module_dea_index
+    return populated_index
 
 
 def test_default_redirect(client: FlaskClient):
@@ -168,6 +142,11 @@ def test_view_dataset(client: FlaskClient):
     assert b'-20.502 to -19.6' in rv.data
     assert b'132.0 to 132.924' in rv.data
 
+    # No dataset found: should return 404, not a server error.
+    rv: Response = client.get("/dataset/de071517-af92-4dd7-bf91-12b4e7c9a435")
+    assert rv.status_code == 404
+    assert b"No dataset found" in rv.data
+
 
 def _h1_text(html):
     return html.find('h1', first=True).text
@@ -215,22 +194,29 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p')
     assert len(geojson['features']) == 306, "Not all high tide datasets returned as geojson"
 
-    # Check that they're not just using the center time.
-    # Within the time range, but not the center_time.
-    # Range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
+    # Search and time summary is only based on center time.
+    # These searches are within the dataset time range, but not the center_time.
+    # Dataset range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
     # year
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2000')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
     # month
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2009/5')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
     # day
-    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2016/10/1')
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6/1')
     assert len(geojson['features']) == 306, "Expected high tide datasets within whole dataset range"
 
-    # Completely out of the test dataset time range. No results.
+    # Out of the test dataset time range. No results.
+
+    # Completely outside of range
     geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2018')
     assert len(geojson['features']) == 0, "Expected no high tide datasets in in this year"
+    # One day before/after (is time zone handling correct?)
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/6/2')
+    assert len(geojson['features']) == 0, "Expected no result one-day-after center time"
+    geojson = get_geojson(client, '/api/datasets/high_tide_comp_20p/2008/5/31')
+    assert len(geojson['features']) == 0, "Expected no result one-day-after center time"
 
 
 def test_api_returns_scenes_as_geojson(client: FlaskClient):
@@ -409,3 +395,4 @@ def test_with_timings(client: FlaskClient):
 def test_plain_product_list(client: FlaskClient):
     rv: Response = client.get('/products.txt')
     assert 'ls7_nbar_scene\n' in rv.data.decode('utf-8')
+
