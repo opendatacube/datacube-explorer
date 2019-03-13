@@ -4,6 +4,7 @@ import flask
 import json
 import logging
 from datetime import datetime, timedelta, time as dt_time
+from dateutil.tz import tz
 from flask import request, abort
 from typing import Tuple, Dict, Callable, Optional, Iterable
 
@@ -13,7 +14,7 @@ from datacube.utils import parse_time, DocReader
 from datacube.utils.uris import uri_resolve
 from . import _model
 from . import _utils
-from ._utils import default_utc as utc
+
 
 _LOG = logging.getLogger(__name__)
 bp = flask.Blueprint('stac', __name__)
@@ -44,6 +45,12 @@ def _endpoint_params() -> Dict:
     if description:
         o['description'] = description
     return o
+
+
+def utc(d: datetime):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    return d.astimezone(tz.tzutc())
 
 
 @bp.route('/stac')
@@ -311,10 +318,10 @@ def as_stac_item(dataset: DatasetItem):
         bbox=dataset.bbox,
         geometry=dataset.geom_geojson,
         properties={
-            'datetime': dataset.center_time,
+            'datetime': utc(dataset.center_time),
             **dict(_build_properties(dataset.odc_dataset.metadata)),
             'odc:product': dataset.product_name,
-            'odc:creation-time': dataset.creation_time,
+            'odc:creation-time': utc(dataset.creation_time),
             'cubedash:region_code': dataset.region_code,
         },
         assets=dict(_stac_item_assets(ds)),
