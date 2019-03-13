@@ -17,8 +17,8 @@ from ._utils import default_utc as utc
 _LOG = logging.getLogger(__name__)
 bp = Blueprint('stac', __name__)
 
-PAGE_SIZE_LIMIT = 1000
-DEFAULT_PAGE_SIZE = 20
+PAGE_SIZE_LIMIT = _model.app.config.get('STAC_PAGE_SIZE_LIMIT', 1000)
+DEFAULT_PAGE_SIZE = _model.app.config.get('STAC_DEFAULT_PAGE_SIZE', 20)
 
 _STAC_DEFAULTS = dict(
     stac_version="0.6.0",
