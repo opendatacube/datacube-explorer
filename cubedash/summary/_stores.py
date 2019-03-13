@@ -410,6 +410,7 @@ class SummaryStore:
             full_dataset: bool = False,
             dataset_ids: Sequence[UUID] = None,
             require_geometry=True,
+            ordered=True,
     ) -> Generator[DatasetItem, None, None]:
         """
         Search datasets using Cubedash's spatial table
@@ -456,7 +457,7 @@ class SummaryStore:
             )
 
         if time:
-            where_clause = and_(
+            query = query.where(
                 func.tstzrange(
                     _utils.default_utc(time[0]),
                     _utils.default_utc(time[1]),
@@ -464,9 +465,8 @@ class SummaryStore:
                     type_=TSTZRANGE,
                 ).contains(
                     DATASET_SPATIAL.c.center_time
-                ),
+                )
             )
-            query = query.where(where_clause)
 
         if bbox:
             query = query.where(
@@ -492,10 +492,13 @@ class SummaryStore:
                 DATASET_SPATIAL.c.footprint != None
             )
 
-        query = query.order_by(
-            # We must ensure an order, as users request can request in pages.
-            DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id
-        ).limit(
+        if ordered:
+            query = query.order_by(
+                DATASET_SPATIAL.c.center_time,
+                DATASET_SPATIAL.c.id,
+            )
+
+        query = query.limit(
             limit
         ).offset(
             # TODO: Offset/limit isn't particularly efficient for paging...
@@ -782,14 +785,14 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     return tuple(float(m) for m in m.groups())
 
 
-def _get_shape(geometry: Optional[WKBElement]) -> Optional[BaseGeometry]:
+def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
     """
     Our shapes are valid in the db, but can become invalid on
     reprojection. We buffer if needed.
 
     Eg invalid. 32baf68c-7d91-4e13-8860-206ac69147b0
 
-    (the tests reproduce this error)
+    (the tests reproduce this error.... but it may be machine/environment dependent?)
     """
     if geometry is None:
         return None
