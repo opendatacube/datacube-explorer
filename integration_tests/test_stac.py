@@ -264,6 +264,56 @@ def test_stac_collections(stac_client: FlaskClient):
     assert found_products == expected_products
 
 
+def test_stac_collection_items(stac_client: FlaskClient):
+    """
+    Follow the links to the "high_tide_comp_20p" collection and ensure it includes
+    all of our tests data.
+    """
+
+    collections = get_json(stac_client, "/stac")
+    for link in collections["links"]:
+        if link["rel"] == "child" and link["title"] == "high_tide_comp_20p":
+            collection_href = link["href"]
+            break
+    else:
+        assert False, "high_tide_comp_20p not found in collection list"
+
+    scene_collection = get_json(stac_client, collection_href)
+    pprint(scene_collection)
+    assert scene_collection == {
+        "stac_version": "0.6.0",
+        "id": "high_tide_comp_20p",
+        "title": "high_tide_comp_20p",
+        "properties": {},
+        "description": "High Tide 20 percentage composites for entire coastline",
+        "extent": {
+            "spatial": [
+                112.223_058_990_767_51,
+                -43.829_196_553_065_4,
+                153.985_054_424_922_77,
+                -10.237_104_814_250_783,
+            ],
+            "temporal": ["2008-06-01T11:00:00+10:00", "2008-06-01T11:00:00+10:00"],
+        },
+        "links": [
+            {
+                "href": "http://localhost/collections/high_tide_comp_20p/items",
+                "rel": "items",
+            }
+        ],
+        "providers": [],
+    }
+
+    item_links = scene_collection["links"][0]["href"]
+    all_items = list(_iter_items_across_pages(stac_client, item_links))
+    assert len(all_items) == 306, (
+        "Expected all 306 test high_tide_comp_20p "
+        "datasets to be returned from a collection item "
+        "list"
+    )
+    validate_item_list_order(all_items)
+
+
 def test_stac_item(stac_client: FlaskClient):
     # Load one stac dataset from the test data.
     response = get_item(
