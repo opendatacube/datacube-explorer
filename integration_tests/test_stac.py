@@ -1,6 +1,7 @@
 """
 Tests that hit the stac api
 """
+
 import json
 import pytest
 from boltons.iterutils import research
@@ -26,10 +27,9 @@ OUR_PAGE_SIZE = 4
 
 _SCHEMA_DIR = Path(__file__).parent / 'schemas' / 'stac'
 
-# https://raw.githubusercontent.com/radiantearth/stac-spec/master/item-spec/json-schema/item.json
+# Run `./update.sh` in the schema dir to check for newer versions of these.
 _ITEM_SCHEMA_PATH = _SCHEMA_DIR / 'item.json'
 _ITEM_SCHEMA = json.load(_ITEM_SCHEMA_PATH.open('r'))
-# https://raw.githubusercontent.com/radiantearth/stac-spec/master/catalog-spec/json-schema/catalog.json
 _CATALOG_SCHEMA_PATH = _SCHEMA_DIR / 'catalog.json'
 _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open('r'))
 
