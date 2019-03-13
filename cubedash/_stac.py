@@ -24,10 +24,17 @@ _STAC_DEFAULTS = dict(
     stac_version="0.6.0",
 )
 
-# TODO: move to config
-ENDPOINT_ID = 'dea'
-ENDPOINT_TITLE = ""
-ENDPOINT_DESCRIPTION = ""
+
+def _endpoint_params() -> Dict:
+    config = _model.app.config
+    o = dict(
+        id=config.get('STAC_ENDPOINT_ID', 'odc-explorer'),
+        title=config.get('STAC_ENDPOINT_TITLE', 'Default ODC Explorer instance'),
+    )
+    description = config.get('STAC_ENDPOINT_DESCRIPTION')
+    if description:
+        o['description'] = description
+    return o
 
 
 @bp.route('/stac')
@@ -38,9 +45,7 @@ def root():
     return _utils.as_json(
         dict(
             **_STAC_DEFAULTS,
-            id=ENDPOINT_ID,
-            title=ENDPOINT_TITLE,
-            description=ENDPOINT_DESCRIPTION,
+            **_endpoint_params(),
             links=[
                 *(
                     dict(
