@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
-from typing import Callable, Dict, Iterable, Optional, Tuple
+from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 
 import flask
 from dateutil.tz import tz
@@ -55,7 +55,7 @@ def utc(d: datetime):
 @bp.route("/stac")
 def root():
     """
-    Links to product catalogs.
+    The root stac page links to each collection (product) catalog
     """
     return _utils.as_json(
         dict(
@@ -81,6 +81,9 @@ def root():
 
 @bp.route("/stac/search", methods=["GET", "POST"])
 def stac_search():
+    """
+    Search api for stac items.
+    """
     if request.method == "GET":
         bbox = request.args.get("bbox")
         if bbox:
@@ -120,7 +123,7 @@ def stac_search():
             _o=next_offset,
         )
 
-    return _utils.as_json(
+    return _utils.as_geojson(
         search_stac_items(
             product_name=product_name,
             bbox=bbox,
@@ -139,10 +142,11 @@ def search_stac_items(
     product_name: Optional[str] = None,
     bbox: Optional[Tuple[float, float, float, float]] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
-):
+) -> Dict:
     """
-    Returns a GeoJson FeatureCollection corresponding to given parameters for
-    a set of datasets returned by datacube.
+    Perform a search, returning a FeatureCollection of stac Item results.
+
+    :param get_next_url: A function that calculates a page url for the given offset.
     """
     offset = offset or 0
     items = list(
@@ -173,6 +177,9 @@ def search_stac_items(
 
 @bp.route("/collections/<product_name>")
 def collection(product_name: str):
+    """
+    Overview of a WFS Collection (a datacube product)
+    """
     summary = _model.get_product_summary(product_name)
     dataset_type = _model.STORE.get_dataset_type(product_name)
     all_time_summary = _model.get_time_summary(product_name)
@@ -186,7 +193,7 @@ def collection(product_name: str):
             extent["spatial"] = footprint.bounds
 
         summary_props["extent"] = extent
-    return _utils.as_json(
+    return _utils.as_geojson(
         dict(
             **_STAC_DEFAULTS,
             id=summary.name,
@@ -209,6 +216,12 @@ def collection(product_name: str):
 
 @bp.route("/collections/<product_name>/items")
 def collection_items(product_name: str):
+    """
+    A geojson FeatureCollection of all items in a collection/product.
+
+    (with paging)
+    """
+
     def next_url(offset):
         return url_for(".collection_items", product_name=product_name, _o=offset)
 
@@ -226,7 +239,7 @@ def collection_items(product_name: str):
     # Maybe we shouldn't include "found" as it prevents some future optimisation?
     feature_collection["meta"]["found"] = all_time_summary.dataset_count
 
-    return _utils.as_json(feature_collection)
+    return _utils.as_geojson(feature_collection)
 
 
 @bp.route("/collections/<product_name>/items/<dataset_id>")
@@ -238,7 +251,7 @@ def item(product_name, dataset_id):
     actual_product_name = dataset.product_name
     if product_name != actual_product_name:
         # We're not doing a redirect as we don't want people to rely on wrong urls
-        # (and we're jerks)
+        # (and we're unkind)
         actual_url = url_for(
             ".item", product_name=product_name, dataset_id=dataset_id, _external=True
         )
@@ -248,12 +261,13 @@ def item(product_name, dataset_id):
             f"Perhaps you meant collection {actual_product_name}: {actual_url})",
         )
 
-    return _utils.as_json(as_stac_item(dataset))
+    return _utils.as_geojson(as_stac_item(dataset))
 
 
-def pick_remote_uri_index(uris: Iterable[str]) -> Optional[int]:
-
-    # Return first uri with a remote path (newer paths come first)
+def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
+    """
+    Return the offset of the first uri with a remote path, if any.
+    """
     for i, uri in enumerate(uris):
         scheme, *_ = uri.split(":")
         if scheme in ("https", "http", "ftp", "s3", "gfs"):
@@ -295,7 +309,7 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
 
 def as_stac_item(dataset: DatasetItem):
     """
-    Returns a dict corresponding to a stac item
+    Get a dict corresponding to a stac item
     """
     ds = dataset.odc_dataset
     item_doc = dict(
@@ -344,12 +358,17 @@ def as_stac_item(dataset: DatasetItem):
 
 
 def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
+    """
+    A list of assets is the list of files for the dataset.
+
+    We group bands/measurements together if they're in the same file (eg. .nc)
+    """
     # The main uri is what we use for expanding all relative paths.
     main_uri = None
     uris = list(ds.uris)
     if uris:
         # If one of the uris is a remote uri, make it the main one.
-        main_uri = uris.pop(pick_remote_uri_index(ds.uris) or 0)
+        main_uri = uris.pop(_pick_remote_uri(ds.uris) or 0)
 
     # Group measurements that have the same path, they should be listed as one asset.
     assets_by_path = defaultdict(dict)
