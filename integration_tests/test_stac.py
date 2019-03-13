@@ -297,7 +297,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
                 153.985_054_424_922_77,
                 -10.237_104_814_250_783,
             ],
-            "temporal": ["2008-06-01T11:00:00+10:00", "2008-06-01T11:00:00+10:00"],
+            "temporal": ["2008-06-01T00:00:00+00:00", "2008-06-01T00:00:00+00:00"],
         },
         "links": [
             {
@@ -331,11 +331,11 @@ def test_stac_item(stac_client: FlaskClient):
         # 'bbox': [120.527607997473, -30.8500455408006,
         #          121.510624611368, -29.9068405072815],
         "properties": {
-            "datetime": "2017-04-19T11:45:56+10:00",
+            "datetime": "2017-04-19T01:45:56+00:00",
             "eo:platform": "landsat-8",
             "eo:instrument": "OLI_TIRS",
             "cubedash:region_code": "-11_-34",
-            "odc:creation-time": "2018-05-20T17:57:51.178223+10:00",
+            "odc:creation-time": "2018-05-20T07:57:51.178223+00:00",
             "odc:product": "wofs_albers",
         },
         # 'geometry': {
