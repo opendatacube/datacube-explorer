@@ -1,9 +1,10 @@
 from collections import defaultdict
 
+import flask
 import json
 import logging
 from datetime import datetime, timedelta, time as dt_time
-from flask import Blueprint, request, abort, url_for
+from flask import request, abort
 from typing import Tuple, Dict, Callable, Optional, Iterable
 
 from cubedash.summary._stores import DatasetItem
@@ -15,14 +16,22 @@ from . import _utils
 from ._utils import default_utc as utc
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint('stac', __name__)
+bp = flask.Blueprint('stac', __name__)
 
 PAGE_SIZE_LIMIT = _model.app.config.get('STAC_PAGE_SIZE_LIMIT', 1000)
 DEFAULT_PAGE_SIZE = _model.app.config.get('STAC_DEFAULT_PAGE_SIZE', 20)
+# Should we force all URLs to include the full hostname?
+FORCE_ABSOLUTE_LINKS = _model.app.config.get('STAC_ABSOLUTE_HREFS', True)
 
 _STAC_DEFAULTS = dict(
     stac_version="0.6.0",
 )
+
+
+def url_for(*args, **kwargs):
+    if FORCE_ABSOLUTE_LINKS:
+        kwargs['_external'] = True
+    return flask.url_for(*args, **kwargs)
 
 
 def _endpoint_params() -> Dict:

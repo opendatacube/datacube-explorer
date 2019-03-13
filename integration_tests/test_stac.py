@@ -322,7 +322,7 @@ def test_stac_item(stac_client: FlaskClient):
     # Load one stac dataset from the test data.
     response = get_item(
         stac_client,
-        '/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d'
+        'http://localhost/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d'
     )
     # Our item document can still be improved. This is ensuring changes are deliberate.
     pprint(response)
@@ -363,16 +363,16 @@ def test_stac_item(stac_client: FlaskClient):
         'links': [
             {
                 'rel': 'self',
-                'href': '/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d',
+                'href': 'http://localhost/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d',
             },
             {
                 'rel': 'parent',
-                'href': '/collections/wofs_albers',
+                'href': 'http://localhost/collections/wofs_albers',
             },
             {
                 'rel': 'alternative',
                 'type': 'text/html',
-                'href': '/dataset/87676cf2-ef18-47b5-ba30-53a99539428d',
+                'href': 'http://localhost/dataset/87676cf2-ef18-47b5-ba30-53a99539428d',
             },
         ]
     }
