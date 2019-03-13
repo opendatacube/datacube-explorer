@@ -239,11 +239,10 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 def test_stac_collections(stac_client: FlaskClient):
     response = get_json(stac_client, "/stac")
 
-    assert response.get("id"), "No id for stac endpoint"
-
-    # TODO: Values of these will probably come from user configuration?
-    assert "title" in response
-    assert "description" in response
+    assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
+    assert (
+        response["title"] == "Default ODC Explorer instance"
+    ), "Expected default unconfigured endpoint title"
 
     # A child link to each "collection" (product)
     child_links = [l for l in response["links"] if l["rel"] == "child"]
