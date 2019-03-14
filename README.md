@@ -131,7 +131,7 @@ See [their documentation](https://docs.sentry.io/clients/python/integrations/fla
 
 ### Why aren't stylesheets updating?
 
-The CSS is compiled from [Sass](https://sass-lang.com/). Run `make` to rebuild them after a change,
+The CSS is compiled from [Sass](https://sass-lang.com/). Run `make style` to rebuild them after a change,
 or use your editor to watch for changes (PyCharm will prompt to do so).
 
 ### How do I run the integration tests?

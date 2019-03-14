@@ -21,8 +21,11 @@ lint:
 weblint:
 	stylelint $(find . -iname '*.html') $(find . -iname '*.sass')
 
-style: base.css
-	sass -t compact --no-cache cubedash/static/$@ $<
+.PHONY: style
+style: cubedash/static/base.css
+
+cubedash/static/base.css: cubedash/static/base.sass
+	sass -t compact --no-cache $< $@
 
 .PHONY: test
 test:
