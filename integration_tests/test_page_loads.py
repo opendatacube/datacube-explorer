@@ -18,7 +18,6 @@ from integration_tests.asserts import (
     check_last_processed,
     get_geojson,
     get_html,
-    get_json,
 )
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")

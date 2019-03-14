@@ -1,6 +1,6 @@
 import multiprocessing
 import sys
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import click
 import structlog

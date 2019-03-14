@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-import re
-
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     DDL,

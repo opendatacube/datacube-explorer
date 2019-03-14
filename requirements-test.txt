@@ -5,6 +5,7 @@ astroid==2.0.4
 attrs==19.1.0
 beautifulsoup4==4.6.3
 billiard==3.5.0.4
+black==18.9b0
 boltons==18.0.1
 bs4==0.0.1
 cachetools==3.0.0
@@ -29,6 +30,7 @@ dask==0.20.2
 dataclasses==0.6
 DAWG==0.7.8
 docopt==0.6.2
+docutils==0.14
 editdistance==0.5.2
 fake-useragent==0.1.11
 Fiona==1.8.2
@@ -39,7 +41,7 @@ GeoAlchemy2==0.5.0
 geographiclib==1.49
 idna==2.7
 isodate==0.6.0
-isort==4.3.4
+isort==4.3.15
 itsdangerous==1.1.0
 Jinja2==2.10
 jsonschema==3.0.1
@@ -59,11 +61,12 @@ parse==1.9.0
 pbr==3.1.1
 pendulum==2.0.4
 pep8==1.7.1
-pluggy==0.6.0
+pluggy==0.9.0
 psycopg2==2.7.6.1
 py==1.5.2
 pydash==4.7.4
 pyee==5.0.0
+pyflakes==2.1.1
 pygeoif==0.7
 pylint==1.7.0
 pyorbital==1.5.0
@@ -72,8 +75,9 @@ pyPEG2==2.15.2
 pyppeteer==0.0.25
 pyproj==1.9.5.1
 pyquery==1.4.0
-pytest==3.3.0
-pytest-cov==2.6.0
+pytest==4.3.1
+pytest-cov==2.6.1
+pytest-isort==0.3.1
 python-dateutil==2.7.5
 python-rapidjson==0.6.3
 pytz==2018.7
@@ -82,7 +86,7 @@ PyYAML==3.13
 rasterio==1.0.10
 redis==3.0.1
 regex==2017.7.28
-requests==2.20.1
+requests==2.21.0
 requests-html==0.9.0
 scipy==1.1.0
 Shapely==1.6.4.post2

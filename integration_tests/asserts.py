@@ -146,7 +146,7 @@ def expect_values(
             ), "timeline count doesn't match dataset count"
         was_timeline_error = False
 
-    except AssertionError as a:
+    except AssertionError:
         print(
             f"""Got:
         dataset_count {s.dataset_count}

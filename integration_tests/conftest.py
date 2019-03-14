@@ -14,8 +14,6 @@ from datacube.model import Dataset
 from datacube.utils import read_documents
 from digitalearthau.testing import factories
 
-pytest_plugins = "digitalearthau.testing.plugin"
-
 # Use module-scoped databases, as it takes a while to populate with
 # our data, and we're treating it as read-only in tests.
 # -> Note: Since we're reusing the default config unchanged, we can't use the

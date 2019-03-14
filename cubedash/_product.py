@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import logging
 
-import flask
 from flask import Blueprint, abort
 
 from cubedash import _model

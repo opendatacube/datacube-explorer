@@ -1,7 +1,6 @@
 import logging
 import re
 
-import flask
 from flask import Blueprint, abort
 
 from cubedash import _utils as utils

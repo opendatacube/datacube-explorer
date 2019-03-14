@@ -10,7 +10,7 @@ Firstly, install Data Cube. Use of a [Data Cube conda environment](https://datac
 is recommended.
 
 Test that you can run `datacube system check`, and that it's connecting
-to the correct instance. 
+to the correct datacube instance.
 
 ### Dependencies
 
@@ -32,16 +32,33 @@ We're using `nohup .. &` to run in the background.)
 
 ### Run
 
-Run using any typical python wsgi server, for example:
+Explorer can be run using any typical python wsgi server, for example:
 
     pip install gunicorn
     gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
 
-Convenience scripts are available for running in development with hot-reload (`./run-dev.sh`)
-or gunicorn (`./run.sh`). Install the optional deployment dependencies for the latter: `pip install -e .[deployment]`
+Convenience scripts are available for running in development with hot-reload
+(`./run-dev.sh`) or gunicorn (`./run.sh`). Install the optional deployment
+dependencies for the latter: `pip install -e .[deployment]`
 
-Products will begin appearing one-by-one as the summaries are generated in the background.
-If impatient, you can manually navigate to a product using `/<product_name`. (Eg `/ls5_nbar_albers`) 
+Products will begin appearing one-by-one as the summaries are generated in the
+background.  If impatient, you can manually navigate to a product using
+`/<product_name`. (Eg `/ls5_nbar_albers`)
+
+### Code Style
+
+All code is formatted using [black](https://github.com/ambv/black), and checked
+with [pyflakes](https://github.com/PyCQA/pyflakes).
+
+They are included when installing the test dependencies:
+
+    pip install -e .[test]
+
+Run `make lint` to check your changes, and `make format` to format your code
+automatically before commit.
+
+(You may want to configure your editor to run black automatically on save, or a
+pre-commit hook within Git. See the black page for directions)
 
 
 ## FAQ
@@ -110,6 +127,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
+
 
 ### Why aren't stylesheets updating?
 

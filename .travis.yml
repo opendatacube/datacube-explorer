@@ -32,33 +32,37 @@ addons:
           - postgresql-9.6-postgis-2.3
           - libudunits2-0
 before_install:
-# Database for the integration tests.
-- createdb dea_integration
-# Tests should never use the default datacube config, so add a "honeypot" that fails.
-- cp .travis/honeypot.conf ~/.datacube.conf
+  # Database for the integration tests.
+  - createdb dea_integration
+  # Tests should never use the default datacube config, so add a "honeypot" that fails.
+  - cp .travis/honeypot.conf ~/.datacube.conf
 
-- export CPLUS_INCLUDE_PATH="/usr/include/gdal"
-- export C_INCLUDE_PATH="/usr/include/gdal"
+  - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
+  - export C_INCLUDE_PATH="/usr/include/gdal"
 
-# The following is a temporary fix for broken gdal shared libraries due to upgrade of GDAL to 2.4.0.
-# This may require removing if more recent versions fixes this issue or alternative isolation
-# approaches between postgis and GDAL could be implemented instead
-- sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
-- sudo /sbin/ldconfig
+  # The following is a temporary fix for broken gdal shared libraries due to upgrade of GDAL to 2.4.0.
+  # This may require removing if more recent versions fixes this issue or alternative isolation
+  # approaches between postgis and GDAL could be implemented instead
+  - sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
+  - sudo /sbin/ldconfig
 
+install:
 - travis_retry pip install --upgrade pip
-- travis_retry pip install --progress-bar off coveralls codecov
 - travis_retry pip install --progress-bar off --requirement requirements-test.txt
 - travis_retry pip install -e git+https://github.com/opendatacube/datacube-core.git#egg=datacube
 - travis_retry pip install -e git+https://github.com/GeoscienceAustralia/eo-datasets.git#egg=eodatasets
 - travis_retry pip install -e git+https://github.com/GeoscienceAustralia/digitalearthau.git#egg=digitalearthau
-install:
-- travis_retry pip install .[test] --upgrade
+- make install
 - pip freeze
+
 script:
-- ./check-code.sh integration_tests --cov cubedash
+- make lint
+- make test
+
 after_success:
+- ls -lha
 - coveralls
+
 notifications:
     slack:
         on_success: change
