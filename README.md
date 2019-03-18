@@ -55,11 +55,33 @@ They are included when installing the test dependencies:
     pip install -e .[test]
 
 Run `make lint` to check your changes, and `make format` to format your code
-automatically before commit.
+automatically.
 
-(You may want to configure your editor to run black automatically on save, or a
-pre-commit hook within Git. See the black page for directions)
+You may want to configure your editor to run black automatically on file save
+(see the Black page for directions), or install the pre-commit hook within Git:
 
+### Pre-commit setup
+
+A [pre-commit](https://pre-commit.com/) config is provided to automatically format
+and check your code changes. This allows you to immediately catch and fix
+issues before you raise a failing pull request (which run the same checks under
+Travis).
+
+If you don't use Conda, install pre-commit from pip:
+
+    pip install pre-commit
+
+If you do use Conda, install from conda-forge (*required* because the pip
+version uses virtualenvs which are incompatible with Conda's environments)
+
+    conda install pre_commit
+
+Now install the pre-commit hook to the current repository:
+
+    pre-commit install
+
+Your code will now be formatted and validated before each commit. You can also
+invoke it manually by running `pre-commit run`
 
 ## FAQ
 

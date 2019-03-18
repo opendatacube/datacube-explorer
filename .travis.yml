@@ -1,3 +1,4 @@
+---
 dist: trusty
 sudo: false  # Use the new travis docker based infrastructure
 # We always want to be able to reach a tagged version in `git describe`
@@ -14,37 +15,37 @@ cache:
 addons:
   postgresql: '9.6'
   services:
-    - postgresql
+  - postgresql
   apt:
-      sources:
-      - sourceline: ppa:nextgis/ppa
-      packages:
-          - gdal-bin
-          - gdal-data
-          - libhdf5-serial-dev
-          - libnetcdf-dev
-          - libproj-dev
-          - libgdal1-dev
-          - libudunits2-dev
-          - libblas-dev
-          - liblapack-dev
-          - gfortran
-          - postgresql-9.6-postgis-2.3
-          - libudunits2-0
+    sources:
+    - sourceline: ppa:nextgis/ppa
+    packages:
+    - gdal-bin
+    - gdal-data
+    - libhdf5-serial-dev
+    - libnetcdf-dev
+    - libproj-dev
+    - libgdal1-dev
+    - libudunits2-dev
+    - libblas-dev
+    - liblapack-dev
+    - gfortran
+    - postgresql-9.6-postgis-2.3
+    - libudunits2-0
 before_install:
   # Database for the integration tests.
-  - createdb dea_integration
+- createdb dea_integration
   # Tests should never use the default datacube config, so add a "honeypot" that fails.
-  - cp .travis/honeypot.conf ~/.datacube.conf
+- cp .travis/honeypot.conf ~/.datacube.conf
 
-  - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
-  - export C_INCLUDE_PATH="/usr/include/gdal"
+- export CPLUS_INCLUDE_PATH="/usr/include/gdal"
+- export C_INCLUDE_PATH="/usr/include/gdal"
 
   # The following is a temporary fix for broken gdal shared libraries due to upgrade of GDAL to 2.4.0.
   # This may require removing if more recent versions fixes this issue or alternative isolation
   # approaches between postgis and GDAL could be implemented instead
-  - sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
-  - sudo /sbin/ldconfig
+- sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
+- sudo /sbin/ldconfig
 
 install:
 - travis_retry pip install --upgrade pip
@@ -64,9 +65,9 @@ after_success:
 - coveralls
 
 notifications:
-    slack:
-        on_success: change
-        on_failure: always
-        on_pull_requests: false
-        rooms:
-            secure: XuckJxUiZGuprePxfosIwa+Q1MZXo+bsSmBeKGGK0Ep7EBn4GxbLsJ2XZACPqoPRePH5qHseg1FuHtXx1u0AcnEZ9wX9RHd3mx7TiY2fbE8TWN+vjOvfCxU/qraQxmdPrXja7Y7+OFxjhOKtVb6t2jHlQPpaXUq5Xo/L+73+Tr6IQuQctYCjEiJDtYNJqi8akMT29L9qmPWcYPcXyVpj0KMa8Db1YOkgal/OXqi/Uv5ZijXRERejDcudcaKk1pTL2aV/JUqXjaneEQoJL4dGBOYiWbS+Ye27XDyryHT2caFeH5cJ4KFn/T+3X49DtbjIZqR5pACQeKaAWm5iOKMP+GfonQxh6+4GUqgssn6d9/QWs0GsVtJcN/Rbq/kVMjX7anS5pJfUhiV63hfWIYzTXt1cuNXpupuVyOJLUZCcRyyKkFFLBXJcFPQ07UWofxj8ipa+SWvY24411VpvnANGqfuOTj/ZTQrM8SVVuPITjOn8AUX34ZqcHGajIlkcJKl0vEZZOExsdhgeZYRs24CZ4u4/EcGjJy9GgiXim5gBJbzPF7fDWjQ1oyIrLtdSvi2H/zX9vaKhsgbeRiLY6X3xdEq3APCWzswK+d5lzgfRjd9RxDC5yH8a22l4mhcHQQ9XqmC52AcUZv/QDHeN5qyKL07y09xxAwOqlQYmjP5XyVg=
+  slack:
+    on_success: change
+    on_failure: always
+    on_pull_requests: false
+    rooms:
+      secure: XuckJxUiZGuprePxfosIwa+Q1MZXo+bsSmBeKGGK0Ep7EBn4GxbLsJ2XZACPqoPRePH5qHseg1FuHtXx1u0AcnEZ9wX9RHd3mx7TiY2fbE8TWN+vjOvfCxU/qraQxmdPrXja7Y7+OFxjhOKtVb6t2jHlQPpaXUq5Xo/L+73+Tr6IQuQctYCjEiJDtYNJqi8akMT29L9qmPWcYPcXyVpj0KMa8Db1YOkgal/OXqi/Uv5ZijXRERejDcudcaKk1pTL2aV/JUqXjaneEQoJL4dGBOYiWbS+Ye27XDyryHT2caFeH5cJ4KFn/T+3X49DtbjIZqR5pACQeKaAWm5iOKMP+GfonQxh6+4GUqgssn6d9/QWs0GsVtJcN/Rbq/kVMjX7anS5pJfUhiV63hfWIYzTXt1cuNXpupuVyOJLUZCcRyyKkFFLBXJcFPQ07UWofxj8ipa+SWvY24411VpvnANGqfuOTj/ZTQrM8SVVuPITjOn8AUX34ZqcHGajIlkcJKl0vEZZOExsdhgeZYRs24CZ4u4/EcGjJy9GgiXim5gBJbzPF7fDWjQ1oyIrLtdSvi2H/zX9vaKhsgbeRiLY6X3xdEq3APCWzswK+d5lzgfRjd9RxDC5yH8a22l4mhcHQQ9XqmC52AcUZv/QDHeN5qyKL07y09xxAwOqlQYmjP5XyVg=

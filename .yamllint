@@ -1,0 +1,14 @@
+---
+extends: default
+
+rules:
+  # Property-indent errors are very noisy as tools all make different choices.
+  # Until a good yaml auto-indenter appears, we'll relax this rule.
+  # (we still enforce that they're indented consistently within a file)
+  indentation:
+    indent-sequences: consistent
+  # URLs and base64 strings break this a lot, and multi-line URLs aren't
+  # clearer. Not worth it.
+  line-length: disable
+  # The default formatting output
+  comments-indentation: disable
