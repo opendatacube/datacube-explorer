@@ -11,6 +11,8 @@ tests_require = [
     "flake8",
     "isort[requirements]",
     "jsonschema > 3",
+    "pytest",
+    "pytest-cov",
     "requests-html",
 ]
 
