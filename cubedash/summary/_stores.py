@@ -203,15 +203,24 @@ class SummaryStore:
         linked_product_names, = self._engine.execute(
             f"""
             with datasets as (
-                select id from agdc.dataset {sample_sql} where dataset_type_ref=%(product_id)s and archived is null
-            ), 
+                select id from agdc.dataset {sample_sql}
+                where dataset_type_ref=%(product_id)s
+                and archived is null
+            ),
             linked_datasets as (
-                select distinct {from_ref} as linked_dataset_ref from agdc.dataset_source inner join datasets d on d.id = {to_ref}
+                select distinct {from_ref} as linked_dataset_ref
+                from agdc.dataset_source
+                inner join datasets d on d.id = {to_ref}
             ),
             linked_products as (
-                select distinct dataset_type_ref from agdc.dataset inner join linked_datasets on id = linked_dataset_ref where archived is null
-            ) 
-            select array_agg(name order by name) from agdc.dataset_type inner join linked_products sp on id = dataset_type_ref;
+                select distinct dataset_type_ref
+                from agdc.dataset
+                inner join linked_datasets on id = linked_dataset_ref
+                where archived is null
+            )
+            select array_agg(name order by name)
+            from agdc.dataset_type
+            inner join linked_products sp on id = dataset_type_ref;
         """,
             product_id=product.id,
             sample_percentage=sample_percentage,

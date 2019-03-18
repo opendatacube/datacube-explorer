@@ -34,7 +34,8 @@ DATASET_SPATIAL = Table(
     "dataset_spatial",
     METADATA,
     # Note that we deliberately don't foreign-key to datacube tables:
-    # - We don't want to add an external dependency on datacube core (breaking, eg, product deletion scripts)
+    # - We don't want to add an external dependency on datacube core
+    #   (breaking, eg, product deletion scripts)
     # - they may be in a separate database.
     Column("id", postgres.UUID(as_uuid=True), primary_key=True, comment="Dataset ID"),
     Column(
@@ -44,7 +45,8 @@ DATASET_SPATIAL = Table(
         nullable=False,
     ),
     Column("center_time", DateTime(timezone=True), nullable=False),
-    # When was the dataset created? creation_time if it has one, otherwise datacube index time.
+    # When was the dataset created?
+    # Creation_time if it has one, otherwise datacube index time.
     Column("creation_time", DateTime(timezone=True), nullable=False),
     # Nullable: Some products have no region.
     Column("region_code", String, comment=""),
@@ -75,7 +77,8 @@ DATASET_SPATIAL.indexes.add(
 )
 
 # Note that we deliberately don't foreign-key to datacube tables:
-# - We don't want to add an external dependency on datacube core (breaking, eg, product deletion scripts)
+# - We don't want to add an external dependency on datacube core
+#   (breaking, eg, product deletion scripts)
 # - they may be in a separate database.
 PRODUCT = Table(
     "product",
@@ -141,9 +144,9 @@ TIME_OVERVIEW = Table(
     ),
 )
 
-
 _REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
-# This is a materialised view of the postgis spatial_ref_sys for lookups. See creation of mv_spatial_ref_sys below.
+# This is a materialised view of the postgis spatial_ref_sys for lookups.
+# See creation of mv_spatial_ref_sys below.
 SPATIAL_REF_SYS = Table(
     "mv_spatial_ref_sys",
     _REF_TABLE_METADATA,
@@ -184,7 +187,7 @@ def create_schema(engine: Engine):
     # The normal primary key.
     engine.execute(
         f"""
-        create unique index if not exists mv_spatial_ref_sys_srid_idx on 
+        create unique index if not exists mv_spatial_ref_sys_srid_idx on
             {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srid);
         """
     )
@@ -192,7 +195,7 @@ def create_schema(engine: Engine):
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
     engine.execute(
         f"""
-        create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on 
+        create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on
             {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
     """
     )
@@ -203,16 +206,16 @@ def create_schema(engine: Engine):
     engine.execute(
         f"""
     create materialized view if not exists {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality as (
-        select 
+        select
             dataset_type_ref,
             count(*) as count,
             count(*) filter (where footprint is null) as missing_footprint,
             sum(pg_column_size(footprint)) filter (where footprint is not null) as footprint_size,
             stddev(pg_column_size(footprint)) filter (where footprint is not null) as footprint_stddev,
             count(*) filter (where ST_SRID(footprint) is null) as missing_srid,
-            count(*) filter (where size_bytes is not null) as has_file_size, 
+            count(*) filter (where size_bytes is not null) as has_file_size,
             count(*) filter (where region_code is not null) as has_region
-        from {CUBEDASH_SCHEMA}.dataset_spatial 
+        from {CUBEDASH_SCHEMA}.dataset_spatial
         group by dataset_type_ref
     ) with no data;
     """
@@ -230,12 +233,12 @@ def refresh_supporting_views(conn, concurrently=False):
     args = "concurrently" if concurrently else ""
     conn.execute(
         f"""
-    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_spatial_ref_sys; 
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_spatial_ref_sys;
     """
     )
     conn.execute(
         f"""
-    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality; 
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
     """
     )
 

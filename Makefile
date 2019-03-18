@@ -14,7 +14,7 @@ format:
 .PHONY: lint
 lint:
 	python setup.py check -rms
-	pyflakes cubedash/ integration_tests/
+	flake8 cubedash/ integration_tests/
 	black --check cubedash integration_tests
 
 .PHONY: weblint

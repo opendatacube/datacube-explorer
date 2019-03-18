@@ -18,7 +18,7 @@ from shapely.validation import explain_validity
 import cubedash._stac
 from cubedash import _model
 from datacube.utils import validate_document
-from integration_tests.asserts import debug_help, get_geojson, get_json
+from integration_tests.asserts import DebugContext, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -36,14 +36,14 @@ _CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open("r"))
 
 
 def get_items(client: FlaskClient, url: str) -> Dict:
-    with debug_help(f"Requested {repr(url)}"):
+    with DebugContext(f"Requested {repr(url)}"):
         data = get_geojson(client, url)
         assert_collection(data)
     return data
 
 
 def get_item(client: FlaskClient, url: str) -> Dict:
-    with debug_help(f"Requested {repr(url)}"):
+    with DebugContext(f"Requested {repr(url)}"):
         data = get_json(client, url)
         validate_item(data)
     return data
@@ -93,7 +93,7 @@ def validate_items(
     i = 0
     for item in items:
         id_ = item["id"]
-        with debug_help(f"Invalid item {i}, id {repr(str(id_))}"):
+        with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
             validate_item(item)
 
         # Assert there's no duplicates
@@ -226,7 +226,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     # Features should in include all bands.
     bands = ("blue", "green", "nir", "red", "swir1", "swir2")
     for feature in doc["features"]:
-        with debug_help(f"feature {feature['id']}"):
+        with DebugContext(f"feature {feature['id']}"):
             assert len(feature["assets"]) == 1, "Expected only one"
             (name, asset), = feature["assets"].items()
             assert name == "location"
@@ -380,7 +380,7 @@ def validate_item(item: Dict):
     # Should be a valid polygon
     assert "geometry" in item, "Item has no geometry"
     assert item["geometry"], "Item has blank geometry"
-    with debug_help(f"Failing shape:\n{pformat(item['geometry'])}"):
+    with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
         shape = shapely_shape(item["geometry"])
         assert shape.is_valid, f"Item has invalid geometry: {explain_validity(shape)}"
         assert shape.geom_type in (
