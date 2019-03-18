@@ -188,8 +188,12 @@ def _field_parser(field: Field):
     try:
         parser = field.parse_value
     except AttributeError:
-        parser = lambda a: a
+        parser = _unchanged_value
     return parser
+
+
+def _unchanged_value(a):
+    return a
 
 
 def default_utc(d: datetime) -> datetime:

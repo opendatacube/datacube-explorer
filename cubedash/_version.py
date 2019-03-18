@@ -10,6 +10,7 @@
 """Git implementation of _version.py."""
 
 # pylint: skip-file
+# flake8: noqa
 
 import errno
 import os

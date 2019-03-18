@@ -169,7 +169,7 @@ def expect_values(
         raise
 
 
-class debug_help:
+class DebugContext:
     """
     Add a message to be included if an assertion/validation
     error is thrown within this block of code.
@@ -215,7 +215,7 @@ def _add_context(e: AssertionError, context_message: str):
     context_message = "-" + context_message[2:]
 
     if separator in full_error:
-        # If there's already debug_help, place the new message at the beginning.
+        # If there's already DebugContext, place the new message at the beginning.
         # (as unwinding happens backwards.)
         original, existing_context = full_error.split(separator)
         full_error = f"{original}{separator}\n{context_message}{existing_context}"
