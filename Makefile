@@ -9,13 +9,13 @@ install:
 .PHONY: format
 format:
 	isort -rc cubedash integration_tests
-	black -N --py36 cubedash integration_tests
+	black cubedash integration_tests
 
 .PHONY: lint
 lint:
 	python setup.py check -rms
 	pyflakes cubedash/ integration_tests/
-	black -N --py36 --check cubedash integration_tests
+	black --check cubedash integration_tests
 
 .PHONY: weblint
 weblint:
