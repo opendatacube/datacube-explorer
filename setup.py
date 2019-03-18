@@ -8,8 +8,9 @@ tests_require = [
     "black",
     "boltons",
     "digitalearthau",
+    "flake8",
+    "isort",
     "jsonschema > 3",
-    "pyflakes",
     "requests-html",
 ]
 
