@@ -1,59 +1,76 @@
 ---
-dist: trusty
-sudo: false  # Use the new travis docker based infrastructure
+dist: xenial
+sudo: false
 # We always want to be able to reach a tagged version in `git describe`
 git:
-  depth: 99999
+  depth: false
+  quiet: true
 
 language: python
 python:
 - '3.6'
+env:
+matrix:
+  include:
+  - env: STABLE_DATACUBE=true
+  allow_failures:
+  - env: STABLE_DATACUBE=''
 
-cache:
-  directories:
-  - $HOME/.cache/pip
 addons:
   postgresql: '9.6'
   services:
   - postgresql
   apt:
-    sources:
-    - sourceline: ppa:nextgis/ppa
     packages:
+    - cython3
     - gdal-bin
-    - gdal-data
+    - gfortran
+    - libatlas-base-dev
+    - libatlas-dev
+    - libgdal1-dev
+    - libgdal-dev
     - libhdf5-serial-dev
+    - liblapack-dev
     - libnetcdf-dev
     - libproj-dev
-    - libgdal1-dev
-    - libudunits2-dev
-    - libblas-dev
-    - liblapack-dev
-    - gfortran
-    - postgresql-9.6-postgis-2.3
     - libudunits2-0
+    - libudunits2-dev
+    - libxml2-dev
+    - libxslt-dev
+    - postgresql-9.6-postgis-2.4
+    - shellcheck
 before_install:
   # Database for the integration tests.
 - createdb dea_integration
   # Tests should never use the default datacube config, so add a "honeypot" that fails.
 - cp .travis/honeypot.conf ~/.datacube.conf
 
-- export CPLUS_INCLUDE_PATH="/usr/include/gdal"
-- export C_INCLUDE_PATH="/usr/include/gdal"
-
-  # The following is a temporary fix for broken gdal shared libraries due to upgrade of GDAL to 2.4.0.
-  # This may require removing if more recent versions fixes this issue or alternative isolation
-  # approaches between postgis and GDAL could be implemented instead
-- sudo ln -s /usr/lib/x86_64-linux-gnu/libgdal.so /usr/lib/x86_64-linux-gnu/libgdal.so.1
-- sudo /sbin/ldconfig
+# Set paths for building python-gdal
+- export CPLUS_INCLUDE_PATH=/usr/include/gdal
+- export C_INCLUDE_PATH=/usr/include/gdal
+- export GDAL_DATA="$(gdal-config --datadir)"
+# Install pygdal bindings compatible with dpkg based gdal libs
+- pip install 'GDAL==1.11.*'
 
 install:
-- travis_retry pip install --upgrade pip
-- travis_retry pip install --progress-bar off --requirement requirements-test.txt
-- travis_retry pip install -e git+https://github.com/opendatacube/datacube-core.git#egg=datacube
-- travis_retry pip install -e git+https://github.com/GeoscienceAustralia/eo-datasets.git#egg=eodatasets
-- travis_retry pip install -e git+https://github.com/GeoscienceAustralia/digitalearthau.git#egg=digitalearthau
-- make install
+- travis_retry pip install --upgrade pip pytest pytest-cov
+- pip freeze
+- pip install -e .
+- pip freeze
+- |
+  if [ -z "${STABLE_DATACUBE}" ]; then
+      echo "Installing latest develop datacube+dea"
+      # ? travis_retry pip install git+https://github.com/GeoscienceAustralia/eo-datasets.git
+      travis_retry pip install -U --extra-index-url https://packages.dea.gadevs.ga/ 'datacube>=0.0.dev0' 'digitalearthau>=0.0.dev0'
+  else
+      echo "Using stable datacube+dea"
+      # ? travis_retry pip install git+https://github.com/GeoscienceAustralia/eo-datasets.git
+      travis_retry pip install -U --extra-index-url https://packages.dea.gadevs.ga/ 'digitalearthau==20180116+268.g391cbc0'
+      # Stable datacube has an issue on alchemy 1.3: https://github.com/opendatacube/datacube-core/pull/680
+      travis_retry pip install 'sqlalchemy==1.2.*'
+  fi
+- pip freeze
+- pip install -e .[test]
 - pip freeze
 
 script:
