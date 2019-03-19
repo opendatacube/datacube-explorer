@@ -45,7 +45,6 @@ flake8==3.7.7
 Flask==1.0.2
 Flask-Caching==1.6.0
 freezegun==0.3.11
-GDAL==1.11.2
 GeoAlchemy2==0.6.1
 geographiclib==1.49
 hyperlink==18.0.0
