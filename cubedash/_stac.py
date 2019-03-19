@@ -4,7 +4,9 @@ from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
+from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
+from urllib.parse import urljoin
 
 import flask
 from dateutil.tz import tz
@@ -13,7 +15,6 @@ from flask import abort, request
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
-from datacube.utils.uris import uri_resolve
 
 from . import _model, _utils
 
@@ -477,3 +478,16 @@ def _build_properties(d: DocReader):
         converter = _STAC_PROPERTY_MAP.get(key)
         if converter:
             yield from converter(key, val)
+
+
+def uri_resolve(base: str, path: Optional[str]) -> str:
+    """
+    Backport of datacube.utils.uris.uri_resolve(), which isn't
+    available on the stable release of datacube.
+    """
+    if path:
+        p = Path(path)
+        if p.is_absolute():
+            return p.as_uri()
+
+    return urljoin(base, path)
