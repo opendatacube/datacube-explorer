@@ -51,6 +51,7 @@ before_install:
 - export GDAL_DATA="$(gdal-config --datadir)"
 # Install pygdal bindings compatible with dpkg based gdal libs
 - pip install 'GDAL==1.11.*'
+- cat /etc/postgresql/*/main/postgresql.conf
 
 install:
 - travis_retry pip install --upgrade pip pytest pytest-cov
