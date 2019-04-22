@@ -119,7 +119,7 @@ structlog==19.1.0
 toml==0.10.0
 toolz==0.9.0
 tqdm==4.31.1
-Twisted==18.9.0
+Twisted==19.2.0
 urllib3==1.24.1
 vine==1.2.0
 virtualenv==16.0.0
