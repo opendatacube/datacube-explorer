@@ -47,7 +47,7 @@ Flask-Caching==1.7.1
 freezegun==0.3.11
 GeoAlchemy2==0.6.1
 geographiclib==1.49
-hyperlink==18.0.0
+hyperlink==19.0.0
 identify==1.4.0
 idna==2.8
 imagesize==1.1.0
