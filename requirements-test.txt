@@ -120,7 +120,7 @@ toml==0.10.0
 toolz==0.9.0
 tqdm==4.31.1
 Twisted==19.2.0
-urllib3==1.24.1
+urllib3==1.25
 vine==1.2.0
 virtualenv==16.0.0
 virtualenv-clone==0.4.0
