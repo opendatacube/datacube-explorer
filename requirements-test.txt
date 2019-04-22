@@ -48,7 +48,7 @@ freezegun==0.3.11
 GeoAlchemy2==0.6.1
 geographiclib==1.49
 hyperlink==19.0.0
-identify==1.4.0
+identify==1.4.1
 idna==2.8
 imagesize==1.1.0
 importlib-metadata==0.8
