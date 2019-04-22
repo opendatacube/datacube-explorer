@@ -22,7 +22,7 @@ certifi==2019.3.9
 cfgv==1.6.0
 cftime==1.0.3.4
 chardet==3.0.4
-checksumdir==1.1.5
+checksumdir==1.1.6
 ciso8601==2.1.1
 Click==7.0
 click-plugins==1.0.4
