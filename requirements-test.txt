@@ -51,7 +51,7 @@ hyperlink==19.0.0
 identify==1.4.1
 idna==2.8
 imagesize==1.1.0
-importlib-metadata==0.8
+importlib-metadata==0.9
 importlib-resources==1.0.2
 incremental==17.5.0
 isort==4.3.15
