@@ -19,7 +19,7 @@ bs4==0.0.1
 cachetools==3.1.0
 celery==4.3.0
 certifi==2019.3.9
-cfgv==1.5.0
+cfgv==1.6.0
 cftime==1.0.3.4
 chardet==3.0.4
 checksumdir==1.1.5
