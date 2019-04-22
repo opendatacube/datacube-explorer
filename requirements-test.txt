@@ -43,7 +43,7 @@ fake-useragent==0.1.11
 Fiona==1.8.6
 flake8==3.7.7
 Flask==1.0.2
-Flask-Caching==1.6.0
+Flask-Caching==1.7.1
 freezegun==0.3.11
 GeoAlchemy2==0.6.1
 geographiclib==1.49
