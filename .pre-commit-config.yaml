@@ -4,7 +4,6 @@ repos:
       rev: stable
       hooks:
           - id: black
-            language_version: python3.6
     # Update the sha variable with the release version that you want, from the yamllint repo
     - repo: https://github.com/adrienverge/yamllint.git
       sha: v1.15.0
