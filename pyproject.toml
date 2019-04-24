@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 40.6.0", "wheel"]
+build-backend = "setuptools.build-meta"
+
 [tool.black]
 line-length = 88
 target_version = ['py36', 'py37', 'py38']
