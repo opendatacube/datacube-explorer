@@ -70,7 +70,7 @@ install:
       travis_retry pip install 'sqlalchemy==1.2.*'
   fi
 - pip freeze
-- pip install -e .[test]
+- pip install .[test]
 - pip freeze
 
 script:
