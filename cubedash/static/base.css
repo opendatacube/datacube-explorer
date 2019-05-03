@@ -43,7 +43,7 @@ ul:last-child, ol:last-child { margin-bottom: 0; }
 .panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child, .panel p:last-child { margin-bottom: 0; }
 .panel.odd { background-color: #f0f0f0; border-bottom: 0; }
 .panel.highlight { background: #616161; color: #efefef; border-bottom: 0; }
-.panel.highlight > h1 { color: #efefef; }
+.panel.highlight > h1 { color: #fff; }
 .panel.highlight a { color: #999; }
 
 .header-option { position: relative; border-collapse: collapse; max-width: 60%; vertical-align: bottom; background-color: #616161; }
