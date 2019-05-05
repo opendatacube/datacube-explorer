@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
     python3-fiona python3-shapely \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install gunicorn flask pyorbital colorama \
+RUN pip3 install gunicorn flask pyorbital colorama sentry-sdk[flask] raven \
     && rm -rf $HOME/.cache/pip
 
 WORKDIR /code
