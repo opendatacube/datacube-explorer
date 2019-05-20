@@ -335,7 +335,7 @@ def test_stac_item(stac_client: FlaskClient):
             "eo:platform": "landsat-8",
             "eo:instrument": "OLI_TIRS",
             "cubedash:region_code": "-11_-34",
-            "odc:creation-time": "2018-05-20T07:57:51.178223+00:00",
+            "odc:processing_datetime": "2018-05-20T07:57:51.178223+00:00",
             "odc:product": "wofs_albers",
         },
         # 'geometry': {

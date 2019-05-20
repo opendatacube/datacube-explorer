@@ -322,7 +322,7 @@ def as_stac_item(dataset: DatasetItem):
             "datetime": utc(dataset.center_time),
             **dict(_build_properties(dataset.odc_dataset.metadata)),
             "odc:product": dataset.product_name,
-            "odc:creation-time": utc(dataset.creation_time),
+            "odc:processing_datetime": utc(dataset.creation_time),
             "cubedash:region_code": dataset.region_code,
         },
         assets=dict(_stac_item_assets(ds)),
