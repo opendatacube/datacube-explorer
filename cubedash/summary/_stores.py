@@ -81,7 +81,7 @@ class DatasetItem:
             properties={
                 "datetime": self.center_time,
                 "odc:product": self.product_name,
-                "odc:creation-time": self.creation_time,
+                "odc:processing_datetime": self.creation_time,
                 "cubedash:region_code": self.region_code,
             },
         )
