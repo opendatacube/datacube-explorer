@@ -51,39 +51,39 @@ log_info "Vars:"
 
 if psql ${psql_args} -lqtA | grep -q "^$dbname|";
 then 
-	log_info "DB exists"
+    log_info "DB exists"
 else
-	if [ ! -e "${dump_file}" ];
-	then
-		# Fetch new one
-		log_info "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
-		# Our public key is whitelisted in lpgs to scp the latest backup (only)
-		# '-p' to preserve time the backup was taken: we refer to it below
-		set -x
-		scp -p "lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
-		set +x
-	fi
+    if [[ ! -e "${dump_file}" ]];
+    then
+        # Fetch new one
+        log_info "Downloading backup from NCI. If there's no credentials, you'll have to do this manually and rerun:"
+        # Our public key is whitelisted in lpgs to scp the latest backup (only)
+        # '-p' to preserve time the backup was taken: we refer to it below
+        set -x
+        scp -p "lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}-datacube.pgdump" "${dump_file}"
+        set +x
+    fi
 
     # Record date/time of DB backup, cubedash will show it as last update time
     date -r "${dump_file}" > "${summary_dir}/generated.txt"
 
-	createdb ${psql_args} "$dbname"
+    createdb ${psql_args} "$dbname"
 
-	# TODO: the dump has "create extension" statements which will fail (but that's ok here)
-	log_info "Restoring"
-	# "no data for failed tables": when postgis extension fails to (re)initialise, don't populate its data
-	# owner, privileges and tablespace are all NCI-specific.
-	pg_restore -v --no-owner --no-privileges --no-tablespaces --no-data-for-failed-tables ${psql_args} -d "${dbname}" -j 4 "${dump_file}" || true
+    # TODO: the dump has "create extension" statements which will fail (but that's ok here)
+    log_info "Restoring"
+    # "no data for failed tables": when postgis extension fails to (re)initialise, don't populate its data
+    # owner, privileges and tablespace are all NCI-specific.
+    pg_restore -v --no-owner --no-privileges --no-tablespaces --no-data-for-failed-tables ${psql_args} -d "${dbname}" -j 4 "${dump_file}" || true
 
-	# Hygiene
-	log_info "Vacuuming"
-	psql ${psql_args} "${dbname}" -c "vacuum analyze;"
+    # Hygiene
+    log_info "Vacuuming"
+    psql ${psql_args} "${dbname}" -c "vacuum analyze;"
 fi
 
 # Collect query stats on the new DB
 psql ${psql_args} "${dbname}" -c "create extension if not exists pg_stat_statements;"
 
-[ -e "${dump_file}" ] && rm -v "${dump_file}"
+[[ -e "${dump_file}" ]] && rm -v "${dump_file}"
 
 ## Summary generation
 
@@ -108,8 +108,8 @@ echo "Done $(date)"
 echo "Testing a summary"
 if ! $python -m cubedash.summary.show -C /etc/datacube.conf -C new-dump.conf ls8_nbar_scene;
 then
-	log_info "Summary gen seems to have failed"
-	exit 1
+    log_info "Summary gen seems to have failed"
+    exit 1
 fi
 
 log_info "Restarting deadash (with updated summaries)"
@@ -129,10 +129,52 @@ old_databases=$(psql ${psql_args} -X -t -c "select datname from pg_database wher
 
 for database in ${old_databases};
 do
-	echo "Dropping ${database}";
-	dropdb "${database}";
+    echo "Dropping ${database}";
+    dropdb "${database}";
 done;
 
 
 log_info "All Done $(date) ${summary_dir}"
 
+log_info "Cubedash Database (${dbname}) updated on $(date)"
+
+## Publish cubedash database update to SNS topic
+AWS_PROFILE='devProfile'
+
+module use /g/data/v10/public/modules/modulefiles
+module load dea
+
+# If aws cli is not installed, exit with command command not found status
+aws --version 2> /dev/null || exit 1;
+
+filename=~/.aws/credentials
+
+# -s: Returns true if file exists and has a size > 0
+if [[ -s ~/.aws/credentials ]]; then
+    exists=
+    while read -ra line;
+    do
+        for word in "${line[@]}";
+        do
+            [[ "$word" = "[$AWS_PROFILE]" ]] && exists="$word"
+        done;
+    done < "$filename"
+
+    if [[ -n "$exists" ]]
+    then
+        aws configure list --profile "$AWS_PROFILE"
+    else
+        echo "'$AWS_PROFILE' profile does not exist in '~/.aws/credentials' file"
+        less '~/.aws/credentials'
+        exit 1
+    fi
+else
+    echo "'~/.aws/credentials' file not found"
+    exit 1
+fi
+
+export AWS_PROFILE="${AWS_PROFILE}"
+TOPIC_ARN=$(aws sns list-topics | grep "cubedash" | cut -f4 -d'"')
+
+log_info "Publish new updated db (${dbname}) on AWS SNS topic"
+aws sns publish --topic-arn "${TOPIC_ARN}" --message "${dbname}"
