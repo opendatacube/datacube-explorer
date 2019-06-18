@@ -139,7 +139,7 @@ log_info "All Done $(date) ${summary_dir}"
 log_info "Cubedash Database (${dbname}) updated on $(date)"
 
 ## Publish cubedash database update to SNS topic
-AWS_PROFILE='devProfile'
+AWS_PROFILE='default'
 
 module use /g/data/v10/public/modules/modulefiles
 module load dea
