@@ -135,44 +135,10 @@ done;
 
 
 log_info "All Done $(date) ${summary_dir}"
-
 log_info "Cubedash Database (${dbname}) updated on $(date)"
 
 ## Publish cubedash database update to SNS topic
 AWS_PROFILE='default'
-
-module use /g/data/v10/public/modules/modulefiles
-module load dea
-
-# If aws cli is not installed, exit with command command not found status
-aws --version 2> /dev/null || exit 1;
-
-filename=~/.aws/credentials
-
-# -s: Returns true if file exists and has a size > 0
-if [[ -s ~/.aws/credentials ]]; then
-    exists=
-    while read -ra line;
-    do
-        for word in "${line[@]}";
-        do
-            [[ "$word" = "[$AWS_PROFILE]" ]] && exists="$word"
-        done;
-    done < "$filename"
-
-    if [[ -n "$exists" ]]
-    then
-        aws configure list --profile "$AWS_PROFILE"
-    else
-        echo "'$AWS_PROFILE' profile does not exist in '~/.aws/credentials' file"
-        less '~/.aws/credentials'
-        exit 1
-    fi
-else
-    echo "'~/.aws/credentials' file not found"
-    exit 1
-fi
-
 export AWS_PROFILE="${AWS_PROFILE}"
 TOPIC_ARN=$(aws sns list-topics | grep "cubedash" | cut -f4 -d'"')
 
