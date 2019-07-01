@@ -8,7 +8,7 @@ export TZ="Australia/Sydney"
 
 # Optional first argument is day to load (eg. "yesterday")
 dump_id="$(date "-d${1:-today}" +%Y%m%d)"
-psql_args="-h db-prod-eks-datacube-default.cfeq4wxgcaui.ap-southeast-2.rds.amazonaws.com -U dea_db_admin"
+psql_args="-h db-prod-eks-datacube-default.cfeq4wxgcaui.ap-southeast-2.rds.amazonaws.com -U superuser"
 dump_file="/data/nci/105-${dump_id}-datacube.pgdump"
 app_dir="/var/www/dea-dashboard"
 
