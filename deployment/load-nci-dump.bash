@@ -8,7 +8,7 @@ export TZ="Australia/Sydney"
 
 # Optional first argument is day to load (eg. "yesterday")
 dump_id="$(date "-d${1:-today}" +%Y%m%d)"
-psql_args="-h db-dev-eks-datacube-default.cxhoeczwhtar.ap-southeast-2.rds.amazonaws.com -U superuser"
+psql_args="-h db-prod-eks-datacube-default.cfeq4wxgcaui.ap-southeast-2.rds.amazonaws.com -U superuser"
 dump_file="/data/nci/105-${dump_id}-datacube.pgdump"
 app_dir="/var/www/dea-dashboard"
 
@@ -140,7 +140,7 @@ log_info "Cubedash Database (${dbname}) updated on $(date)"
 ## Publish cubedash database update to SNS topic
 AWS_PROFILE='default'
 export AWS_PROFILE="${AWS_PROFILE}"
-TOPIC_ARN=$(aws sns list-topics | grep "cubedash" | cut -f4 -d'"')
+TOPIC_ARN=$(/opt/conda/bin/aws sns list-topics | grep "cubedash" | cut -f4 -d'"')
 
 log_info "Publish new updated db (${dbname}) on AWS SNS topic"
-aws sns publish --topic-arn "${TOPIC_ARN}" --message "${dbname}"
+/opt/conda/bin/aws sns publish --topic-arn "${TOPIC_ARN}" --message "${dbname}"
