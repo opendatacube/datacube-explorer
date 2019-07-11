@@ -8,6 +8,17 @@ export TZ="Australia/Sydney"
 
 # Optional first argument is day to load (eg. "yesterday")
 dump_id="$(date "-d${1:-today}" +%Y%m%d)"
+
+# Check to see if pg-dump exists, else use previous day's dump id
+if find lpgs@r-dm.nci.org.au:/g/data/v10/agdc/backup/archive/105-${dump_id}*.-datacube.pgdump -type f \
+-mtime +7 &>/dev/null ;
+then
+    log_info "Latest NCI pgdump exists"
+else
+    dump_id="$(date "-d${1:-yesterday}" +%Y%m%d)"
+    log_info "Using previous day's ($dump_id) NCI pgdump"
+fi
+
 psql_args="-h db-prod-eks-datacube-default.cfeq4wxgcaui.ap-southeast-2.rds.amazonaws.com -U superuser"
 dump_file="/data/nci/105-${dump_id}-datacube.pgdump"
 app_dir="/var/www/dea-dashboard"
