@@ -2,7 +2,6 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import Iterable, Optional, Set, Tuple, Union
 
 import pyproj
@@ -10,9 +9,8 @@ import shapely
 import shapely.geometry
 import shapely.ops
 import structlog
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiPolygon, Polygon
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import transform
 
 from datacube.model import Dataset, Range
 
@@ -156,14 +154,52 @@ class TimePeriodOverview:
             warnings.warn(f"Geometry without a crs for {self}")
             return None
 
-        tranform_wrs84 = partial(
-            pyproj.transform,
-            pyproj.Proj(init=self.footprint_crs),
-            pyproj.Proj(init="epsg:4326"),
-        )
+        origin = pyproj.Proj(init=self.footprint_crs)
+        dest = pyproj.Proj(init="epsg:4326")
+
+        wrapped = self._test_wrap_coordinates(self, self.footprint_geometry, origin, dest)
+        new_geometry = self._convert_coordinates(self, self.footprint_geometry, origin, dest, wrapped)
+
         # It's possible to get self-intersection after transformation, presumably due to
         # rounding, so we buffer 0.
-        return transform(tranform_wrs84, self.footprint_geometry).buffer(0)
+        return new_geometry.buffer(0)
+
+    # Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
+    @staticmethod
+    def _test_wrap_coordinates(self, features, origin, dest):
+        """ Test whether coordinates wrap around the antimeridian in wgs84 """
+        lon_under_minus_170 = False
+        lon_over_plus_170 = False
+
+        if isinstance(features, MultiPolygon):
+            return any([self._test_wrap_coordinates(self, feature, origin, dest) for feature in list(features)])
+        elif isinstance(features, Polygon):
+            for c in features.exterior.coords:
+                c = list(pyproj.transform(origin, dest, *c))
+                if c[0] < -170:
+                    lon_under_minus_170 = True
+                elif c[0] > 170:
+                    lon_over_plus_170 = True
+        else:
+            return False
+        return lon_under_minus_170 and lon_over_plus_170
+
+    # Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
+    @staticmethod
+    def _convert_coordinates(self, features, origin, dest, wrapped):
+        """ Convert coordinates from one crs to another """
+        if isinstance(features, MultiPolygon):
+            return MultiPolygon([self._convert_coordinates(self, feature, origin, dest, wrapped) for feature in list(features)])
+        elif isinstance(features, Polygon):
+            results = [self._convert_coordinates(self, feature, origin, dest, wrapped) for feature in features.exterior.coords]
+            return Polygon(results)
+        elif isinstance(features, list) or isinstance(features, tuple):
+            c = list(pyproj.transform(origin, dest, *features))
+            if wrapped and c[0] < -170:
+                c[0] = c[0] + 360
+            return (c)
+
+        return None
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
