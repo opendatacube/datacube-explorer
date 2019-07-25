@@ -157,8 +157,12 @@ class TimePeriodOverview:
         origin = pyproj.Proj(init=self.footprint_crs)
         dest = pyproj.Proj(init="epsg:4326")
 
-        wrapped = self._test_wrap_coordinates(self, self.footprint_geometry, origin, dest)
-        new_geometry = self._convert_coordinates(self, self.footprint_geometry, origin, dest, wrapped)
+        wrapped = self._test_wrap_coordinates(
+            self, self.footprint_geometry, origin, dest
+        )
+        new_geometry = self._convert_coordinates(
+            self, self.footprint_geometry, origin, dest, wrapped
+        )
 
         # It's possible to get self-intersection after transformation, presumably due to
         # rounding, so we buffer 0.
@@ -172,7 +176,12 @@ class TimePeriodOverview:
         lon_over_plus_170 = False
 
         if isinstance(features, MultiPolygon):
-            return any([self._test_wrap_coordinates(self, feature, origin, dest) for feature in list(features)])
+            return any(
+                [
+                    self._test_wrap_coordinates(self, feature, origin, dest)
+                    for feature in list(features)
+                ]
+            )
         elif isinstance(features, Polygon):
             for c in features.exterior.coords:
                 c = list(pyproj.transform(origin, dest, *c))
@@ -189,30 +198,24 @@ class TimePeriodOverview:
     def _convert_coordinates(self, features, origin, dest, wrapped):
         """ Convert coordinates from one crs to another """
         if isinstance(features, MultiPolygon):
-            return MultiPolygon([
-                self._convert_coordinates(
-                    self,
-                    feature,
-                    origin,
-                    dest,
-                    wrapped
-                ) for feature in list(features)
-            ])
+            return MultiPolygon(
+                [
+                    self._convert_coordinates(self, feature, origin, dest, wrapped)
+                    for feature in list(features)
+                ]
+            )
         elif isinstance(features, Polygon):
-            return Polygon([
-                self._convert_coordinates(
-                    self,
-                    feature,
-                    origin,
-                    dest,
-                    wrapped
-                ) for feature in features.exterior.coords
-            ])
+            return Polygon(
+                [
+                    self._convert_coordinates(self, feature, origin, dest, wrapped)
+                    for feature in features.exterior.coords
+                ]
+            )
         elif isinstance(features, list) or isinstance(features, tuple):
             c = list(pyproj.transform(origin, dest, *features))
             if wrapped and c[0] < -170:
                 c[0] = c[0] + 360
-            return (c)
+            return c
 
         return None
 
