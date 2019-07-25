@@ -189,10 +189,25 @@ class TimePeriodOverview:
     def _convert_coordinates(self, features, origin, dest, wrapped):
         """ Convert coordinates from one crs to another """
         if isinstance(features, MultiPolygon):
-            return MultiPolygon([self._convert_coordinates(self, feature, origin, dest, wrapped) for feature in list(features)])
+            return MultiPolygon([
+                self._convert_coordinates(
+                    self,
+                    feature,
+                    origin,
+                    dest,
+                    wrapped
+                ) for feature in list(features)
+            ])
         elif isinstance(features, Polygon):
-            results = [self._convert_coordinates(self, feature, origin, dest, wrapped) for feature in features.exterior.coords]
-            return Polygon(results)
+            return Polygon([
+                self._convert_coordinates(
+                    self,
+                    feature,
+                    origin,
+                    dest,
+                    wrapped
+                ) for feature in features.exterior.coords
+            ])
         elif isinstance(features, list) or isinstance(features, tuple):
             c = list(pyproj.transform(origin, dest, *features))
             if wrapped and c[0] < -170:
