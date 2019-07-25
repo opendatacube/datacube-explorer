@@ -19,21 +19,24 @@ def test_footprint_antimeridian():
 
     overview = TimePeriodOverview(
         dataset_count=1,
-        timeline_dataset_counts=Counter('abc'),
-        region_dataset_counts=Counter('abc'),
-        timeline_period='dummy value',
-        time_range=Range('2000-01-01', '2001-01-01'),
+        timeline_dataset_counts=Counter("abc"),
+        region_dataset_counts=Counter("abc"),
+        timeline_period="dummy value",
+        time_range=Range("2000-01-01", "2001-01-01"),
         footprint_geometry=footprint,
-        footprint_crs='EPSG:3577',
+        footprint_crs="EPSG:3577",
         footprint_count=1,
         newest_dataset_creation_time=datetime.now(),
         crses=set(),
         summary_gen_time=datetime.now(),
-        size_bytes=256
+        size_bytes=256,
     )
 
     footprint_latlon = overview.footprint_wrs84
     origin = pyproj.Proj(init=overview.footprint_crs)
     dest = pyproj.Proj(init="epsg:4326")
 
-    assert overview._test_wrap_coordinates(overview, footprint_latlon, origin, dest) is False
+    assert (
+        overview._test_wrap_coordinates(overview, footprint_latlon, origin, dest)
+        is False
+    )
