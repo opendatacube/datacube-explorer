@@ -87,7 +87,7 @@ pyflakes==2.1.1
 Pygments==2.4.2
 PyHamcrest==1.9.0
 pyorbital==1.5.0
-pyparsing==2.4.1
+pyparsing==2.4.0
 pyPEG2==2.15.2
 pyppeteer==0.0.25
 pyproj==2.2.1
