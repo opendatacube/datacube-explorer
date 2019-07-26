@@ -21,7 +21,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 from cubedash import _utils
-from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
+from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import TimePeriodOverview, _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -827,6 +827,7 @@ def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
         return None
 
     shape = to_shape(geometry)
+    shape = test_wrap_coordinates(shape)
 
     if not shape.is_valid:
         newshape = shape.buffer(0)
