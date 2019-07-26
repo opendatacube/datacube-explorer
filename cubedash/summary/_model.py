@@ -2,19 +2,35 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from typing import Iterable, Optional, Set, Tuple, Union
 
 import pyproj
 import shapely
-import shapely.geometry
-import shapely.ops
 import structlog
-from shapely.geometry import MultiPolygon, Polygon
-from shapely.geometry.base import BaseGeometry
-
 from datacube.model import Dataset, Range
+from shapely.geometry import MultiPolygon, Polygon, shape
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import transform
+
 
 _LOG = structlog.get_logger()
+
+
+NEAR_ANTIMERIDIAN = shape(
+    {
+        "coordinates": [
+            (
+                (179, -90),
+                (179, 90),
+                (181, 90),
+                (181, -90),
+                (179, -90)
+            ),
+        ],
+        "type": "Polygon",
+    }
+)
 
 
 @dataclass
@@ -157,12 +173,22 @@ class TimePeriodOverview:
         origin = pyproj.Proj(init=self.footprint_crs)
         dest = pyproj.Proj(init="epsg:4326")
 
-        wrapped = self._test_wrap_coordinates(
-            self, self.footprint_geometry, origin, dest
+        tranform_wrs84 = partial(
+            pyproj.transform,
+            origin,
+            dest,
         )
-        new_geometry = self._convert_coordinates(
-            self, self.footprint_geometry, origin, dest, wrapped
-        )
+        new_geometry = transform(tranform_wrs84, self.footprint_geometry)
+
+        # Check if we need to do antimeridian test
+        if new_geometry.intersects(NEAR_ANTIMERIDIAN):
+            wrapped = self._test_wrap_coordinates(
+                self, new_geometry, origin, dest
+            )
+            if wrapped:
+                new_geometry = self._unwrap_coordinates(
+                    self, new_geometry, origin, dest
+                )
 
         # It's possible to get self-intersection after transformation, presumably due to
         # rounding, so we buffer 0.
@@ -184,7 +210,7 @@ class TimePeriodOverview:
             )
         elif isinstance(features, Polygon):
             for c in features.exterior.coords:
-                c = list(pyproj.transform(origin, dest, *c))
+                # c = list(pyproj.transform(origin, dest, *c))
                 if c[0] < -170:
                     lon_under_minus_170 = True
                 elif c[0] > 170:
@@ -195,28 +221,27 @@ class TimePeriodOverview:
 
     # Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
     @staticmethod
-    def _convert_coordinates(self, features, origin, dest, wrapped):
-        """ Convert coordinates from one crs to another """
+    def _unwrap_coordinates(self, features, origin, dest):
+        """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
         if isinstance(features, MultiPolygon):
             return MultiPolygon(
                 [
-                    self._convert_coordinates(self, feature, origin, dest, wrapped)
+                    self._unwrap_coordinates(self, feature, origin, dest)
                     for feature in list(features)
                 ]
             )
         elif isinstance(features, Polygon):
             return Polygon(
                 [
-                    self._convert_coordinates(self, feature, origin, dest, wrapped)
+                    self._unwrap_coordinates(self, feature, origin, dest)
                     for feature in features.exterior.coords
                 ]
             )
         elif isinstance(features, list) or isinstance(features, tuple):
-            c = list(pyproj.transform(origin, dest, *features))
-            if wrapped and c[0] < -170:
-                c[0] = c[0] + 360
-            return c
-
+            coords = list(features)
+            if coords[0] < -170:
+                coords[0] = coords[0] + 360
+            return coords
         return None
 
     @staticmethod
