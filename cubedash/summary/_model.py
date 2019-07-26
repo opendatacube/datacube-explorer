@@ -167,11 +167,10 @@ class TimePeriodOverview:
 
         # Unwrap coordinates, if necessary
         new_geometry = test_wrap_coordinates(new_geometry)
-        
+
         # It's possible to get self-intersection after transformation, presumably due to
         # rounding, so we buffer 0.
         return new_geometry.buffer(0)
-
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
