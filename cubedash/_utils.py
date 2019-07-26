@@ -20,7 +20,7 @@ import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPolygon, shape
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
@@ -40,6 +40,21 @@ DEFAULT_PLATFORM_END_DATE = {
     "LANDSAT_7": datetime.now() - relativedelta(months=2),
     "LANDSAT_5": datetime(2011, 11, 30),
 }
+
+NEAR_ANTIMERIDIAN = shape(
+    {
+        "coordinates": [
+            (
+                (175, -90),
+                (175, 90),
+                (185, 90),
+                (185, -90),
+                (175, -90)
+            ),
+        ],
+        "type": "Polygon",
+    }
+)
 
 _LOG = structlog.get_logger()
 
@@ -362,6 +377,66 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     return geom, True
+
+
+def test_wrap_coordinates(features):
+    if needs_unwrapping(features):
+        return unwrap_coordinates(features)
+    else:
+        return features
+
+
+# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
+def needs_unwrapping(features):
+    """ Test whether coordinates wrap around the antimeridian in wgs84 and if they do fix it """
+    if not features.intersects(NEAR_ANTIMERIDIAN):
+        return False
+
+    lon_under_minus_170 = False
+    lon_over_plus_170 = False
+
+    if isinstance(features, MultiPolygon):
+        return any(
+            [
+                test_wrap_coordinates(feature)
+                for feature in list(features)
+            ]
+        )
+    elif isinstance(features, Polygon):
+        for c in features.exterior.coords:
+            if c[0] < -170:
+                lon_under_minus_170 = True
+            elif c[0] > 170:
+                lon_over_plus_170 = True
+    else:
+        return False
+
+    return lon_under_minus_170 and lon_over_plus_170
+
+
+# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
+def unwrap_coordinates(features):
+    """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
+    if isinstance(features, MultiPolygon):
+        return MultiPolygon(
+            [
+                unwrap_coordinates(feature)
+                for feature in list(features)
+            ]
+        )
+    elif isinstance(features, Polygon):
+        return Polygon(
+            [
+                unwrap_coordinates(feature)
+                for feature in features.exterior.coords
+            ]
+        )
+    elif isinstance(features, list) or isinstance(features, tuple):
+        coords = list(features)
+        if coords[0] < -170:
+            coords[0] = coords[0] + 360
+        return coords
+    return None
 
 
 ###############

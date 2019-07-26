@@ -9,28 +9,13 @@ import pyproj
 import shapely
 import structlog
 from datacube.model import Dataset, Range
-from shapely.geometry import MultiPolygon, Polygon, shape
+from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
+from cubedash._utils import test_wrap_coordinates
 
 
 _LOG = structlog.get_logger()
-
-
-NEAR_ANTIMERIDIAN = shape(
-    {
-        "coordinates": [
-            (
-                (179, -90),
-                (179, 90),
-                (181, 90),
-                (181, -90),
-                (179, -90)
-            ),
-        ],
-        "type": "Polygon",
-    }
-)
 
 
 @dataclass
@@ -180,69 +165,13 @@ class TimePeriodOverview:
         )
         new_geometry = transform(tranform_wrs84, self.footprint_geometry)
 
-        # Check if we need to do antimeridian test
-        if new_geometry.intersects(NEAR_ANTIMERIDIAN):
-            wrapped = self._test_wrap_coordinates(
-                self, new_geometry, origin, dest
-            )
-            if wrapped:
-                new_geometry = self._unwrap_coordinates(
-                    self, new_geometry, origin, dest
-                )
-
+        # Unwrap coordinates, if necessary
+        new_geometry = test_wrap_coordinates(new_geometry)
+        
         # It's possible to get self-intersection after transformation, presumably due to
         # rounding, so we buffer 0.
         return new_geometry.buffer(0)
 
-    # Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-    @staticmethod
-    def _test_wrap_coordinates(self, features, origin, dest):
-        """ Test whether coordinates wrap around the antimeridian in wgs84 """
-        lon_under_minus_170 = False
-        lon_over_plus_170 = False
-
-        if isinstance(features, MultiPolygon):
-            return any(
-                [
-                    self._test_wrap_coordinates(self, feature, origin, dest)
-                    for feature in list(features)
-                ]
-            )
-        elif isinstance(features, Polygon):
-            for c in features.exterior.coords:
-                # c = list(pyproj.transform(origin, dest, *c))
-                if c[0] < -170:
-                    lon_under_minus_170 = True
-                elif c[0] > 170:
-                    lon_over_plus_170 = True
-        else:
-            return False
-        return lon_under_minus_170 and lon_over_plus_170
-
-    # Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-    @staticmethod
-    def _unwrap_coordinates(self, features, origin, dest):
-        """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
-        if isinstance(features, MultiPolygon):
-            return MultiPolygon(
-                [
-                    self._unwrap_coordinates(self, feature, origin, dest)
-                    for feature in list(features)
-                ]
-            )
-        elif isinstance(features, Polygon):
-            return Polygon(
-                [
-                    self._unwrap_coordinates(self, feature, origin, dest)
-                    for feature in features.exterior.coords
-                ]
-            )
-        elif isinstance(features, list) or isinstance(features, tuple):
-            coords = list(features)
-            if coords[0] < -170:
-                coords[0] = coords[0] + 360
-            return coords
-        return None
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
