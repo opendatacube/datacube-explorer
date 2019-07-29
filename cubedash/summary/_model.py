@@ -158,11 +158,7 @@ class TimePeriodOverview:
         origin = pyproj.Proj(init=self.footprint_crs)
         dest = pyproj.Proj(init="epsg:4326")
 
-        tranform_wrs84 = partial(
-            pyproj.transform,
-            origin,
-            dest,
-        )
+        tranform_wrs84 = partial(pyproj.transform, origin, dest)
         new_geometry = transform(tranform_wrs84, self.footprint_geometry)
 
         # Unwrap coordinates, if necessary

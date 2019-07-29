@@ -43,15 +43,7 @@ DEFAULT_PLATFORM_END_DATE = {
 
 NEAR_ANTIMERIDIAN = shape(
     {
-        "coordinates": [
-            (
-                (175, -90),
-                (175, 90),
-                (185, 90),
-                (185, -90),
-                (175, -90)
-            ),
-        ],
+        "coordinates": [((175, -90), (175, 90), (185, 90), (185, -90), (175, -90))],
         "type": "Polygon",
     }
 )
@@ -396,12 +388,7 @@ def needs_unwrapping(features):
     lon_over_plus_170 = False
 
     if isinstance(features, MultiPolygon):
-        return any(
-            [
-                test_wrap_coordinates(feature)
-                for feature in list(features)
-            ]
-        )
+        return any([test_wrap_coordinates(feature) for feature in list(features)])
     elif isinstance(features, Polygon):
         for c in features.exterior.coords:
             if c[0] < -170:
@@ -418,18 +405,10 @@ def needs_unwrapping(features):
 def unwrap_coordinates(features):
     """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
     if isinstance(features, MultiPolygon):
-        return MultiPolygon(
-            [
-                unwrap_coordinates(feature)
-                for feature in list(features)
-            ]
-        )
+        return MultiPolygon([unwrap_coordinates(feature) for feature in list(features)])
     elif isinstance(features, Polygon):
         return Polygon(
-            [
-                unwrap_coordinates(feature)
-                for feature in features.exterior.coords
-            ]
+            [unwrap_coordinates(feature) for feature in features.exterior.coords]
         )
     elif isinstance(features, list) or isinstance(features, tuple):
         coords = list(features)
