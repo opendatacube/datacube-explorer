@@ -12,6 +12,7 @@ tests_require = [
     "isort[requirements]",
     "jsonschema > 3",
     "pytest",
+    "pytest-benchmark",
     "pytest-cov",
     "requests-html",
 ]

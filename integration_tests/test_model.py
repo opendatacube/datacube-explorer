@@ -66,12 +66,7 @@ EXPECTED_CLEAN_POLY = shape(
 )
 
 
-def test_footprint_antimeridian():
-    """
-    When a polygon crosses the antimeridian, check that it's translated correctly.
-
-    Existing integration tests check "normal" polygons already, so we're not repeating that here.
-    """
+def _create_overview():
     overview = TimePeriodOverview(
         dataset_count=1,
         timeline_dataset_counts=Counter("abc"),
@@ -86,11 +81,63 @@ def test_footprint_antimeridian():
         summary_gen_time=datetime.now(),
         size_bytes=256,
     )
+    return overview
 
-    footprint_latlon = overview.footprint_wrs84
+
+def test_footprint_antimeridian(benchmark):
+    """
+    When a polygon crosses the antimeridian, check that it's translated correctly.
+    """
+    overview = _create_overview()
+
+    footprint_latlon = benchmark(lambda: overview.footprint_wrs84)
     assert footprint_latlon.is_valid, "Expected valid footprint"
 
     assert_shapes_mostly_equal(footprint_latlon, EXPECTED_CLEAN_POLY, 0.001)
+
+
+def test_footprint_normal(benchmark):
+    # A normal poly that doesn't cross antimeridian.
+    normal_poly = shape(
+        {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [-1_100_000.0, -1_800_000.0],
+                    [-1_100_000.0, -1_820_678.597_382_843_7],
+                    [-1_184_944.706_234_691_7, -1_814_708.549_002_366_4],
+                    [-1_188_914.681_756_198_4, -1_814_413.718_946_547_2],
+                    [-1_189_815.686_895_983_5, -1_802_644.727_911_235_5],
+                    [-1_189_748.998_910_200_8, -1_801_865.255_277_810_9],
+                    [-1_189_494.857_669_78, -1_800_000.0],
+                    [-1_100_000.0, -1_800_000.0],
+                ]
+            ],
+        }
+    )
+    expected_poly = shape(
+        {
+            "coordinates": (
+                (
+                    (121.728_481_294_995, -16.493_157_200_887_75),
+                    (121.712_966_884_510_11, -16.680_127_187_578_158),
+                    (120.927_236_349_784_75, -16.561_834_079_973_22),
+                    (120.890_564_152_335_9, -16.556_046_811_339_68),
+                    (120.891_725_246_251_8, -16.448_956_170_181_916),
+                    (120.892_975_809_931_98, -16.441_961_802_367_327),
+                    (120.896_846_007_609_55, -16.425_298_327_691_696),
+                    (121.728_481_294_995, -16.493_157_200_887_75),
+                ),
+            ),
+            "type": "Polygon",
+        }
+    )
+
+    o = _create_overview()
+    o.footprint_geometry = normal_poly
+    res: BaseGeometry = benchmark(lambda: o.footprint_wrs84)
+
+    assert_shapes_mostly_equal(res, expected_poly, 0.001)
 
 
 def assert_shapes_mostly_equal(
