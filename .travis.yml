@@ -94,20 +94,10 @@ jobs:
   include:
     - stage: test
       script:
-        - docker build -t opendatacube/wms:latest .
+        - docker build -t opendatacube/dashboard:latest .
         # Start the Clair database and Clair locally or while running your job
         - docker run -d --name clair_db arminc/clair-db:latest
         - docker run -p 6060:6060 --link clair_db:postgres -d --name clair arminc/clair-local-scan:v2.0.8_fe9b059d930314b54c78f75afe265955faf4fdc1
-        - export DEV_TAG=$(git describe --tags | awk -F'[-.]' '{if ($4!="" && $5!="") print $1"."$2"."$3+1"-unstable."$4"."$5; else print $1"."$2"."$3;}')
-        - docker build -t opendatacube/dashboard:2.1.1 -t opendatacube/dashboard:latest .
-        # ens4 is specific to Travis Xenial should be changed if moving to another OS / CI provider
-        - "wget https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64 && chmod +x clair-scanner_linux_amd64 && ./clair-scanner_linux_amd64 --threshold='High' --report='clair-scan.json' --ip $(ifconfig ens4 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}') --reportAll=false opendatacube/dashboard:latest"
-        # Now that your Docker image is built and contains application code, upload it into a public registry.
-        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker push opendatacube/dashboard:$DEV_TAG
-        - docker push opendatacube/dashboard:latest
-        - docker run opendatacube/dashboard:latest /bin/sh -c "./check-code.sh"
-        - ifconfig
     - stage: build
       if: (branch = develop OR (tag = branch)) AND type = push
       script:
