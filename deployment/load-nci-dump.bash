@@ -12,11 +12,13 @@ rm -rf /data/nci/*-datacube.pgdump
 
 # Optional first argument is day to load (eg. "yesterday")
 dump_id="$(date "-d${1:-today}" +%Y%m%d)"
+
 export PGUSER="$2"
 export PGHOST="$1"
 export PGPORT=5432
 
 psql_args="-h ${PGHOST} -p ${PGPORT} -U ${PGUSER}"
+
 dump_file="/data/nci/105-${dump_id}-datacube.pgdump"
 app_dir="/var/www/dea-dashboard"
 
@@ -57,6 +59,7 @@ log_info "Vars:"
 (set -o posix; set) | grep -e '^[a-z_]\+=' | sed 's/^/    /'
 
 if psql -lqtA | grep -q "^$dbname|";
+
 then
     log_info "DB exists"
 else
