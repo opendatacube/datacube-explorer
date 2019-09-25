@@ -1,5 +1,7 @@
 FROM opendatacube/datacube-core:latest
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     python3-fiona \
     python3-shapely \
@@ -25,6 +27,9 @@ WORKDIR /code
 RUN mkdir /code/product-summaries
 
 ADD . .
+
+# copy load-rds-db-dump.bash script
+COPY deployment/load-rds-db-dump.bash .
 
 RUN pip3 install .[deployment]
 
