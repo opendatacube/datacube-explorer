@@ -28,8 +28,8 @@ RUN mkdir /code/product-summaries
 
 ADD . .
 
-# copy load-rds-db-dump.bash script
 COPY deployment/load-rds-db-dump.bash .
+COPY deployment/load-nci-dump.bash .
 
 RUN pip3 install .[deployment]
 
