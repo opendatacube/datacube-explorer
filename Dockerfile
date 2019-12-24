@@ -1,4 +1,4 @@
-FROM opendatacube/datacube-core:latest
+FROM opendatacube/datacube-core:1.7
 
 ENV DEBIAN_FRONTEND=noninteractive
 
