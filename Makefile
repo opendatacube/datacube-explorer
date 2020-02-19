@@ -29,7 +29,7 @@ cubedash/static/base.css: cubedash/static/base.sass
 
 .PHONY: test
 test:
-	pytest --cov=cubedash -r sx --durations=5
+	pytest -r sx --durations=5
 
 .PHONY: testcov
 testcov:

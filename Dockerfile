@@ -1,4 +1,4 @@
-FROM opendatacube/datacube-core:latest
+FROM opendatacube/datacube-core:1.7
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
-RUN pip3 install gunicorn flask pyorbital colorama sentry-sdk[flask] raven \
+RUN pip3 install gunicorn flask pyorbital colorama sentry-sdk[flask] raven gevent \
     && rm -rf $HOME/.cache/pip
 
 WORKDIR /code
@@ -33,4 +33,5 @@ COPY deployment/load-nci-dump.bash .
 
 RUN pip3 install .[deployment]
 
-CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
+CMD gunicorn -b '0.0.0.0:8000' --workers=3 --threads=2 -k gevent --timeout 121 --pid gunicorn.pid --log-level info \
+--worker-tmp-dir -env/dev/shm cubedash:app

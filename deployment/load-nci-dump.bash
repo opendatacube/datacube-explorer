@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -eu
-set -x
 umask 0022
 
 # NCI dates are in AEST
@@ -16,6 +15,7 @@ dump_id="$(date "-d${1:-today}" +%Y%m%d)"
 export PGUSER="$2"
 export PGHOST="$1"
 export PGPORT=5432
+bit_bucket_branch="eks-prod"
 
 psql_args="-h ${PGHOST} -p ${PGPORT} -U ${PGUSER}"
 
@@ -139,11 +139,14 @@ export AWS_PROFILE="${AWS_PROFILE}"
 TOPIC_ARN=$(/opt/conda/bin/aws sns list-topics | grep "cubedash" | cut -f4 -d'"')
 
 log_info "Publish new updated db (${dbname}) to AWS SNS topic"
-/opt/conda/bin/aws sns publish --topic-arn "${TOPIC_ARN}" --message "${dbname}"
+/opt/conda/bin/aws sns publish --topic-arn "${TOPIC_ARN}" --message "${bit_bucket_branch}:${dbname}"
 
 ## Clean old databases
 log_info "Cleaning up old DBs"
-old_databases=$(psql -X -t -d template1 -c "select datname from pg_database where datname similar to 'nci_\d{8}' and ((now() - split_part(datname, '_', 2)::date) > interval '3 days');")
+old_databases=$(psql -X -t -d template1 -c "select datname from pg_database where datname similar to 'nci_\d{8}' and ((now() - split_part(datname, '_', 2)::date) > interval '1 day');")
+
+## Wait for db switch to be completed by k8s pod deployment
+sleep 300
 
 for database in ${old_databases};
 do

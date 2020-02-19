@@ -83,6 +83,7 @@ script:
 after_success:
 - ls -lha
 - coveralls
+- make testcov
 
 notifications:
   slack:
@@ -95,11 +96,10 @@ jobs:
   include:
     - stage: test
       script:
-        - export DEV_TAG=$(git describe --tags | awk -F'[-.]' '{if ($4!="" && $5!="") print $2"."$3"."$4"."$5; else print $2"."$3"."$4"-unstable-"$5;}')
-        - docker build -t opendatacube/dashboard:$DEV_TAG .
-        # Now that your Docker image is built and contains application code, upload it into a public registry.
-        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker push opendatacube/dashboard:$DEV_TAG
+        - docker build -t opendatacube/dashboard:latest .
+        # Start the Clair database and Clair locally or while running your job
+        - docker run -d --name clair_db arminc/clair-db:latest
+        - docker run -p 6060:6060 --link clair_db:postgres -d --name clair arminc/clair-local-scan:v2.0.8_fe9b059d930314b54c78f75afe265955faf4fdc1
     - stage: build
       if: (branch = develop OR (tag = branch)) AND type = push
       script:
