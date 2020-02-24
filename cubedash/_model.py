@@ -20,10 +20,17 @@ from cubedash.summary._stores import ProductSummary
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
+
+# Fix up URL Scheme handling using this
+# from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
 
 app = flask.Flask(NAME)
+# Also part of the fix from ^
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 # Optional environment settings file or variable
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
