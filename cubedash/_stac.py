@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
-import flask
 from dateutil.tz import tz
-from flask import abort, request
 
+import flask
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
+from flask import abort, request
 
 from . import _model, _utils
 
@@ -319,11 +319,13 @@ def as_stac_item(dataset: DatasetItem):
         bbox=dataset.bbox,
         geometry=dataset.geom_geojson,
         properties={
+            "collection": dataset.product_name,
             "datetime": utc(dataset.center_time),
             **dict(_build_properties(dataset.odc_dataset.metadata)),
             "odc:product": dataset.product_name,
             "odc:processing_datetime": utc(dataset.creation_time),
             "cubedash:region_code": dataset.region_code,
+            "eo:epsg": ds.crs.epsg
         },
         assets=dict(_stac_item_assets(ds)),
         links=[
