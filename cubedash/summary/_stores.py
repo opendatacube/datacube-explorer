@@ -128,18 +128,19 @@ class SummaryStore:
     ):
         our_product = self.get_product_summary(product.name)
 
+        _LOG.info(f"Refreshing if {our_product.last_refresh_age} is older than {refresh_older_than}")
         if (
             our_product is not None
             and our_product.last_refresh_age < refresh_older_than
         ):
             _LOG.debug(
-                "init.product.skip.too_recent",
+                "init.product.skipping.too_recent",
                 product_name=product.name,
                 age=str(our_product.last_refresh_age),
             )
             return None
 
-        _LOG.debug("init.product", product_name=product.name)
+        _LOG.info("init.product", product_name=product.name)
         added_count = _extents.refresh_product(self.index, product)
         earliest, latest, total_count = self._engine.execute(
             select(
@@ -510,7 +511,7 @@ class SummaryStore:
             query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
 
         if require_geometry:
-            query = query.where(DATASET_SPATIAL.c.footprint != None)
+            query = query.where(DATASET_SPATIAL.c.footprint is not None)
 
         if ordered:
             query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
@@ -542,6 +543,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        force_refresh: Optional[bool] = False
     ):
         """
         Get a cached summary if exists, otherwise generate one
@@ -549,7 +551,7 @@ class SummaryStore:
         Note that generating one can be *extremely* slow.
         """
         summary = self.get(product_name, year, month, day)
-        if summary:
+        if summary and not force_refresh:
             return summary
         else:
             summary = self.update(product_name, year, month, day)
