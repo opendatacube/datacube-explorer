@@ -56,3 +56,17 @@ clean:
 	rm -rf build
 	# python setup.py clean
 
+# DOCKER STUFF
+up:
+	docker-compose up
+
+build:
+	docker-compose build
+
+schema:
+	docker-compose exec explorer \
+		python3 /code/cubedash/generate.py --init-database
+
+index:
+	docker-compose exec explorer \
+		python3 /code/cubedash/generate.py --all
