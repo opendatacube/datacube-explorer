@@ -31,10 +31,6 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./certs:/etc/nginx/certs
+      # - ./certs:/etc/nginx/certs
     depends_on:
       - explorer
-
-
-# pip3 install -U --extra-index-url https://packages.dea.gadevs.ga/ 'datacube>=0.0.dev0' 'digitalearthau>=0.0.dev0';
-# pip3 install -e .[test];
