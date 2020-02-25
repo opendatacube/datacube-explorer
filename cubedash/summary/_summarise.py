@@ -13,8 +13,7 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
-from cubedash.summary._schema import (DATASET_SPATIAL, FOOTPRINT_SRID,
-                                      SPATIAL_REF_SYS)
+from cubedash.summary._schema import DATASET_SPATIAL, FOOTPRINT_SRID, SPATIAL_REF_SYS
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
 
@@ -179,7 +178,9 @@ class Summariser:
                 DATASET_SPATIAL.c.center_time
             ),
             DATASET_SPATIAL.c.dataset_type_ref
-            == select([ODC_DATASET_TYPE.c.id]).where(ODC_DATASET_TYPE.c.name == product_name),
+            == select([ODC_DATASET_TYPE.c.id]).where(
+                ODC_DATASET_TYPE.c.name == product_name
+            ),
         )
         return begin_time, end_time, where_clause
 

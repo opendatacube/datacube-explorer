@@ -225,7 +225,7 @@ def _region_geometry_function(region_info: RegionInfo, footprint):
         footprint_boundary = shapely.prepared.prep(footprint.boundary)
 
         def region_geometry_cut(
-            region_code: str
+            region_code: str,
         ) -> shapely.geometry.GeometryCollection:
             """
             Cut the polygon down to the footprint
