@@ -67,9 +67,7 @@ install:
       # Stable datacube has an issue on alchemy 1.3: https://github.com/opendatacube/datacube-core/pull/680
       travis_retry pip install 'sqlalchemy==1.2.*'
   fi
-- pip freeze
 - pip install .[test]
-- pip freeze
 
 script:
 - make lint

@@ -1,0 +1,26 @@
+from ubuntu:bionic
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+ADD apt-requirements.txt requirements-test.txt /tmp/
+
+RUN apt-get update
+RUN sed 's/#.*//' /tmp/apt-requirements.txt | xargs apt-get install -y
+
+RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal && \
+    export C_INCLUDE_PATH=/usr/include/gdal && \
+    export GDAL_DATA="$(gdal-config --datadir)" && \
+    pip3 install GDAL==$(gdal-config --version)
+
+RUN pip3 install --upgrade pip pytest pytest-cov
+
+RUN pip3 install -r /tmp/requirements-test.txt
+
+RUN mkdir -p /code
+WORKDIR /code
+
+ADD . .
+
+RUN pip3 install --upgrade --extra-index-url \
+    https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
+RUN pip3 install .[test]
