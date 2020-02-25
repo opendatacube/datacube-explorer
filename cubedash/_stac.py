@@ -399,7 +399,7 @@ def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
         # If there's one band, name it by that.
         bands = asset.get("eo:bands")
         if bands and len(bands) == 1:
-            asset_name, = bands
+            (asset_name,) = bands
         elif asset["href"] == main_uri:
             asset_name = "location"
         else:

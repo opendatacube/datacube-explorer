@@ -200,7 +200,7 @@ class SummaryStore:
         if sample_percentage < 100:
             sample_sql = "tablesample system (%(sample_percentage)s)"
 
-        linked_product_names, = self._engine.execute(
+        (linked_product_names,) = self._engine.execute(
             f"""
             with datasets as (
                 select id from agdc.dataset {sample_sql}
