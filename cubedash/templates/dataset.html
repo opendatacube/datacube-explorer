@@ -161,13 +161,13 @@
                 zoom: 3,
                 center: [-26.2756326, 134.9387844],
                 layers: [osm_carto_light, dataset_data],
-                zoomControl: true,
-                attributionControl: true,
+                zoomControl: false,
+                attributionControl: false,
                 scrollWheelZoom: false
             });
-            // L.control.zoom({position: "bottomright"}).addTo(map);
+            L.control.zoom({position: "bottomright"}).addTo(map);
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
-            
+
             window.MAP = map;
         </script>
     {% endif %}
