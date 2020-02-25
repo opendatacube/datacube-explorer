@@ -511,7 +511,7 @@ class SummaryStore:
             query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
 
         if require_geometry:
-            query = query.where(DATASET_SPATIAL.c.footprint is not None)
+            query = query.where(DATASET_SPATIAL.c.footprint != None)
 
         if ordered:
             query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
