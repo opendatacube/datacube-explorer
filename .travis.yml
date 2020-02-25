@@ -41,7 +41,6 @@ addons:
     - git
 before_install:
 # Database for the integration tests.
-- sql -U postgres -c "create extension postgis"
 - createdb dea_integration
 # Tests should never use the default datacube config, so add a "honeypot" that fails.
 - cp .travis/honeypot.conf ~/.datacube.conf
