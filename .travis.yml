@@ -53,7 +53,7 @@ before_install:
 - pip install GDAL==$(gdal-config --version)
 
 install:
-- travis_retry pip install --upgrade pip pytest pytest-cov
+- travis_retry pip install --upgrade pip pytest pytest-cov coveralls
 - travis_retry pip install -r requirements-test.txt
 - |
   if [ -z "${STABLE_DATACUBE}" ]; then
