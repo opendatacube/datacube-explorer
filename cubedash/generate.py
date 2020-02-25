@@ -159,7 +159,6 @@ def cli(
     """
     Generate summary files for the given products
     """
-    _LOG.info("Running process to refresh")
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     index = _get_index(config, "setup")
