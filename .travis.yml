@@ -1,5 +1,5 @@
 ---
-dist: xenial
+dist: bionic
 sudo: required
 services:
   - docker
@@ -52,8 +52,8 @@ before_install:
 - export C_INCLUDE_PATH=/usr/include/gdal
 - export GDAL_DATA="$(gdal-config --datadir)"
 # Install pygdal bindings compatible with dpkg based gdal libs
-- pip install 'GDAL==1.11.*'
-- cat /etc/postgresql/*/main/postgresql.conf
+# - pip install 'GDAL==1.11.*'
+# - cat /etc/postgresql/*/main/postgresql.conf
 
 install:
 - travis_retry pip install --upgrade pip pytest pytest-cov
@@ -61,8 +61,7 @@ install:
 - |
   if [ -z "${STABLE_DATACUBE}" ]; then
       echo "Installing latest develop datacube+dea"
-      # ? travis_retry pip install git+https://github.com/GeoscienceAustralia/eo-datasets.git
-      travis_retry pip install -U --extra-index-url https://packages.dea.gadevs.ga/ 'datacube>=0.0.dev0' 'digitalearthau>=0.0.dev0'
+      travis_retry pip install -U --extra-index-url https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
   else
       echo "Using stable datacube+dea"
       # We already installed datacube+dea stable in requirements.txt
