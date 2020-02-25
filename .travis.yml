@@ -38,6 +38,7 @@ addons:
     - libxslt-dev
     - postgresql-10-postgis-2.4
     - shellcheck
+    - git
 before_install:
   # Database for the integration tests.
 - createdb dea_integration
