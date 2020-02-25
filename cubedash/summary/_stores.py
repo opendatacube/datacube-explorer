@@ -128,15 +128,15 @@ class SummaryStore:
     ):
         our_product = self.get_product_summary(product.name)
 
-        _LOG.info(f"Refreshing if {our_product.last_refresh_age} is older than {refresh_older_than}")
         if (
             our_product is not None
             and our_product.last_refresh_age < refresh_older_than
         ):
             _LOG.debug(
-                "init.product.skipping.too_recent",
+                "init.product.skip.too_recent",
                 product_name=product.name,
                 age=str(our_product.last_refresh_age),
+                refresh_older_than=refresh_older_than
             )
             return None
 
