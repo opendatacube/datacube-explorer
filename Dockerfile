@@ -6,9 +6,18 @@ RUN apt-get update && apt-get install -y \
     python3-fiona \
     python3-shapely \
     libpng-dev \
-    postgresql-client \
+#    postgresql-client \
     libev-dev \
+    gpg-agent \
     && rm -rf /var/lib/apt/lists/*
+
+RUN curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+RUN apt-get update
+
+RUN apt install -y postgresql-client-11
 
 RUN pip3 install --upgrade pip \
     && pip3 install gunicorn flask pyorbital colorama sentry-sdk[flask] raven \
