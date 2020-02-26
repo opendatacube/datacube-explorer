@@ -79,7 +79,10 @@ create-test-db-docker:
 	docker-compose exec explorer \
 		bash /code/.docker/create_db.sh
 
-test-docker: build
-	docker-compose --file docker-compose.yml \
-		run explorer \
-			bash -c "make lint; make test"
+lint-docker:
+	docker-compose exec explorer \
+		make lint
+
+test-docker:
+	docker-compose exec explorer \
+		make test
