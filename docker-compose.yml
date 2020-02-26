@@ -5,7 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile.Dev
     volumes:
-      - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
     ports:
       - 5000:5000
