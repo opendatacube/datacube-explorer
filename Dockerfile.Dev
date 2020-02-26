@@ -27,7 +27,7 @@ RUN pip3 install -r /tmp/requirements-test.txt \
 RUN mkdir -p /code
 WORKDIR /code
 
-ADD setup.py setup.cfg versioneer.py pylintrc Makefile /code/
+ADD setup.py conftest.py setup.cfg versioneer.py pylintrc Makefile /code/
 ADD cubedash /code/cubedash
 ADD integration_tests /code/integration_tests
 

@@ -1,7 +1,0 @@
-version: "3.4"
-services:
-  explorer:
-    volumes:
-      # This is in here, because the .override file is default
-      # and I don't want this code dir mounted when I run tests.
-      - ./:/code
