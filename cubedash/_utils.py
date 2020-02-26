@@ -438,5 +438,11 @@ def make_dataset_from_select_fields(index, row):
 
 # pylint: disable=protected-access
 DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
-ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
+
+try:
+    ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
+except:
+    # ODC 1.7 and earlier.
+    ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
+
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
