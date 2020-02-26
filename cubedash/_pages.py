@@ -1,4 +1,5 @@
 import itertools
+import werkzeug
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
@@ -7,7 +8,6 @@ import structlog
 from flask import Response, abort, redirect, request, url_for
 
 from werkzeug.datastructures import MultiDict
-import werkzeug
 werkzeug.cached_property = werkzeug.utils.cached_property
 
 import cubedash
