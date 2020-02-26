@@ -27,7 +27,9 @@ RUN pip3 install -r /tmp/requirements-test.txt \
 RUN mkdir -p /code
 WORKDIR /code
 
-ADD cubedash setup.py setup.cfg versioneer.py pylintrc /code/
+ADD setup.py setup.cfg versioneer.py pylintrc Makefile /code/
+ADD cubedash /code/cubedash
+ADD integration_tests /code/integration_tests
 
 RUN pip3 install --upgrade --extra-index-url \
     https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
