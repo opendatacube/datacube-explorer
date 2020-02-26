@@ -71,6 +71,10 @@ index:
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --all
 
+create-test-db-docker:
+	docker-compose exec explorer \
+		bash /code/.docker/create_db.sh
+
 test-docker:
 	docker-compose exec explorer \
 		bash -c "make lint; make test"
