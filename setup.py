@@ -32,7 +32,7 @@ extras_require = {
 setup(
     name="dea-dashboard",
     use_scm_version=True,
-    setup_requires=['setuptools_scm'],
+    setup_requires=["setuptools_scm"],
     python_requires=">=3.6",
     url="https://github.com/opendatacube/datacube-explorer",
     author="Geoscience Australia",
