@@ -6,7 +6,7 @@ repos:
           - id: black
     # Update the sha variable with the release version that you want, from the yamllint repo
     - repo: https://github.com/adrienverge/yamllint.git
-      sha: v1.15.0
+      rev: v1.15.0
       hooks:
           - id: yamllint
     - repo: https://github.com/pre-commit/pre-commit-hooks
