@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
-import flask
 from dateutil.tz import tz
-from flask import abort, request
 
+import flask
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
+from flask import abort, request
 
 from . import _model, _utils
 

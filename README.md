@@ -180,5 +180,19 @@ Add a `.datacube_integration.conf` file to your home directory in the same forma
 
 Then run pytest: `pytest integration_tests`
 
-__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal 
-development db.
+__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+
+## Docker for Development and running tests
+You need to have Docker and Docker Compose installed on your system.
+
+To create your environment, run `make up` or `docker-compose up`.
+
+You need an ODC database, so you'll need to refer to the [ODC docs](https://datacube-core.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
+
+When you have some ODC data indexed, you can run `make index` to create the Explorer indexes.
+
+Once Explorer indexes have been created, you can browse the running application at [http://localhost:5000](http://localhost:5000).
+
+You can run tests by first creating a test database `make create-test-db-docker` and then running tests with `make test-docker`.
+
+And you can run a single test in Docker using a command like this: ` docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`

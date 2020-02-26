@@ -13,7 +13,7 @@ format:
 
 .PHONY: lint
 lint:
-	python setup.py check -rms
+	python3 setup.py check -rms
 	flake8 cubedash/ integration_tests/
 	black --check cubedash integration_tests
 
@@ -63,6 +63,10 @@ up:
 build:
 	docker-compose build
 
+init-odc:
+	docker-compose exec explorer \
+		datacube system init
+
 schema:
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --init-database
@@ -70,3 +74,15 @@ schema:
 index:
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --all
+
+create-test-db-docker:
+	docker-compose exec explorer \
+		bash /code/.docker/create_db.sh
+
+lint-docker:
+	docker-compose exec explorer \
+		make lint
+
+test-docker:
+	docker-compose exec explorer \
+		make test

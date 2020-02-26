@@ -25,7 +25,6 @@ RUN pip3 install --upgrade pip \
     && rm -rf $HOME/.cache/pip
 
 WORKDIR /code
-RUN mkdir /code/product-summaries
 
 ADD . .
 
