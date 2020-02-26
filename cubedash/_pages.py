@@ -5,7 +5,10 @@ from typing import List, Tuple
 import flask
 import structlog
 from flask import Response, abort, redirect, request, url_for
+
 from werkzeug.datastructures import MultiDict
+import werkzeug
+werkzeug.cached_property = werkzeug.utils.cached_property
 
 import cubedash
 import datacube
