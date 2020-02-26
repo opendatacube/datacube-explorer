@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     python3-shapely \
     libpng-dev \
 #    postgresql-client \
+    curl \
     libev-dev \
     gpg-agent \
     && rm -rf /var/lib/apt/lists/*
