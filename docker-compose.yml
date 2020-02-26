@@ -1,0 +1,36 @@
+version: "3.4"
+services:
+  explorer:
+    build:
+      context: .
+      dockerfile: Dockerfile.Dev
+    volumes:
+      - ./:/code
+    expose:
+      - 5000
+    environment:
+      - DB_HOSTNAME=host.docker.internal
+      - DB_USERNAME=opendatacube
+      - DB_PASSWORD=opendatacubepassword
+      - DB_DATABASE=opendatacube
+      - DB_PORT=5432
+      - FLASK_ENV=development
+      - FLASK_APP=cubedash
+      - FLASK_DEBUG=1
+      - VIRTUAL_HOST=datacube.explorer
+      - VIRTUAL_PORT=5000
+    command: |-
+      bash -c "
+        flask run --host 0.0.0.0
+      "
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "5000:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # - ./certs:/etc/nginx/certs
+    depends_on:
+      - explorer
