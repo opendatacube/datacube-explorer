@@ -13,7 +13,7 @@ format:
 
 .PHONY: lint
 lint:
-	python setup.py check -rms
+	python3 setup.py check -rms
 	flake8 cubedash/ integration_tests/
 	black --check cubedash integration_tests
 
@@ -70,3 +70,7 @@ schema:
 index:
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --all
+
+test-docker:
+	docker-compose exec explorer \
+		bash -c "make lint; make test"
