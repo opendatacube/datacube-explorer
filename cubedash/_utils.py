@@ -418,10 +418,10 @@ def unwrap_coordinates(features):
     return None
 
 
-###############
-# These functions are bad and access non-public parts of datacube.
-# They are kept here in one place for easy criticism.
-#
+# ######################### WARNING ############################### #
+#  These functions are bad and access non-public parts of datacube  #
+#     They are kept here in one place for easy criticism.           #
+# ################################################################# #
 
 
 def alchemy_engine(index: Index) -> Engine:
