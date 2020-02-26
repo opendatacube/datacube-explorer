@@ -152,4 +152,4 @@ def assert_shapes_mostly_equal(
 
     s1 = shape1.simplify(tolerance=threshold)
     s2 = shape2.simplify(tolerance=threshold)
-    assert s1 == s2, f"{s1} is not mostly equal to {s2}"
+    assert (s1-s2).area < threshold ,  f"{s1} is not mostly equal to {s2}"
