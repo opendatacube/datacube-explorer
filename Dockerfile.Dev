@@ -1,35 +1,39 @@
-FROM opendatacube/datacube-core:latest
+FROM ubuntu:bionic
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
-    python3-fiona \
-    python3-shapely \
-    libpng-dev \
-    wget \
-    vim \
-    unzip \
-    postgresql-client \
-    jq \
-    awscli \
-    curl \
-    libev-dev \
+RUN apt-get update && apt-get install -y wget gnupg
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+    apt-key add - \
+    && echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" \
+    >> /etc/apt/sources.list.d/postgresql.list
+
+ADD requirements-apt.txt requirements-test.txt /tmp/
+
+RUN apt-get update \
+    && sed 's/#.*//' /tmp/requirements-apt.txt | xargs apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip first: pip3 install --upgrade pip.
-RUN pip3 install --upgrade pip \
+RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal && \
+    export C_INCLUDE_PATH=/usr/include/gdal && \
+    export GDAL_DATA="$(gdal-config --datadir)" && \
+    pip3 install GDAL==$(gdal-config --version)
+
+RUN pip3 install --upgrade pip
+
+RUN pip3 install -r /tmp/requirements-test.txt \
     && rm -rf $HOME/.cache/pip
 
-RUN pip3 install gunicorn flask pyorbital colorama sentry-sdk[flask] raven \
-    && rm -rf $HOME/.cache/pip
-
+RUN mkdir -p /code
 WORKDIR /code
-RUN mkdir /code/product-summaries
 
-ADD . .
+ADD cubedash setup.py setup.cfg versioneer.py pylintrc /code/
 
-# RUN pip3 install .[deployment]
-RUN pip3 install -U --extra-index-url https://packages.dea.gadevs.ga/ 'datacube>=0.0.dev0' 'digitalearthau>=0.0.dev0';
-RUN pip3 install -e .[test];
+RUN pip3 install --upgrade --extra-index-url \
+    https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
+RUN pip3 install -e .[test]
 
-CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+CMD flask run --host 0.0.0.0
