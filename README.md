@@ -52,6 +52,8 @@ with [pyflakes](https://github.com/PyCQA/pyflakes).
 
 They are included when installing the test dependencies:
 
+    pip install --upgrade --no-deps --extra-index-url https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau'
+    
     pip install -e .[test]
 
 Run `make lint` to check your changes, and `make format` to format your code
