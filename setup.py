@@ -2,8 +2,6 @@
 
 from setuptools import find_packages, setup
 
-import versioneer
-
 tests_require = [
     "black",
     "boltons",
@@ -33,8 +31,8 @@ extras_require = {
 
 setup(
     name="dea-dashboard",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     python_requires=">=3.6",
     url="https://github.com/opendatacube/datacube-explorer",
     author="Geoscience Australia",

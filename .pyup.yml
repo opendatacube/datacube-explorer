@@ -1,3 +1,4 @@
+---
 schedule: 'every week'
 branch: develop
 label_prs: update
