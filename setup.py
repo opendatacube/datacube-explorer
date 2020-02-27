@@ -48,7 +48,7 @@ setup(
         "fiona",
         "flask",
         "Flask-Caching",
-        "flask_themes @ git+https://git@github.com/maxcountryman/flask-themes@master",
+        "flask_themes @ git+https://git@github.com/opendatacube/flask-themes@master",
         "geoalchemy2",
         "geographiclib",
         "jinja2",
