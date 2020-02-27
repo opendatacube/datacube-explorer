@@ -25,7 +25,7 @@ weblint:
 style: cubedash/static/base.css
 
 cubedash/static/base.css: cubedash/static/base.sass
-	sass -t compact --no-cache $< $@
+	sass -s compressed $< $@
 
 .PHONY: test
 test:
