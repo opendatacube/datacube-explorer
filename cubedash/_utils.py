@@ -418,10 +418,10 @@ def unwrap_coordinates(features):
     return None
 
 
-###############
-# These functions are bad and access non-public parts of datacube.
-# They are kept here in one place for easy criticism.
-#
+# ######################### WARNING ############################### #
+#  These functions are bad and access non-public parts of datacube  #
+#     They are kept here in one place for easy criticism.           #
+# ################################################################# #
 
 
 def alchemy_engine(index: Index) -> Engine:
@@ -438,5 +438,11 @@ def make_dataset_from_select_fields(index, row):
 
 # pylint: disable=protected-access
 DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
-ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
+
+try:
+    ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
+except AttributeError:
+    # ODC 1.7 and earlier.
+    ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
+
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
