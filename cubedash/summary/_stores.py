@@ -136,7 +136,7 @@ class SummaryStore:
                 "init.product.skip.too_recent",
                 product_name=product.name,
                 age=str(our_product.last_refresh_age),
-                refresh_older_than=refresh_older_than
+                refresh_older_than=refresh_older_than,
             )
             return None
 
@@ -249,7 +249,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
-        force_refresh: Optional[bool] = False
+        force_refresh: Optional[bool] = False,
     ) -> Optional[TimePeriodOverview]:
         start_day, period = self._start_day(year, month, day)
 
@@ -544,7 +544,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
-        force_refresh: Optional[bool] = False
+        force_refresh: Optional[bool] = False,
     ):
         """
         Get a cached summary if exists, otherwise generate one
@@ -553,9 +553,12 @@ class SummaryStore:
         """
         if force_refresh:
             summary = self.update(
-                product_name, year, month, day,
+                product_name,
+                year,
+                month,
+                day,
                 generate_missing_children=True,
-                force_refresh=True
+                force_refresh=True,
             )
         else:
             summary = self.get(product_name, year, month, day)
@@ -570,7 +573,7 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
         generate_missing_children: Optional[bool] = True,
-        force_refresh: Optional[bool] = False
+        force_refresh: Optional[bool] = False,
     ):
         """Update the given summary and return the new one"""
         product = self._product(product_name)
@@ -587,7 +590,8 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year, month_, None, force_refresh=force_refresh) for month_ in range(1, 13)
+                get_child(product_name, year, month_, None, force_refresh=force_refresh)
+                for month_ in range(1, 13)
             )
         elif product_name:
             if product.dataset_count > 0:
@@ -595,10 +599,8 @@ class SummaryStore:
             else:
                 years = []
             summary = TimePeriodOverview.add_periods(
-                get_child(
-                    product_name, year_, None, None,
-                    force_refresh=force_refresh
-                ) for year_ in years
+                get_child(product_name, year_, None, None, force_refresh=force_refresh)
+                for year_ in years
             )
         else:
             summary = TimePeriodOverview.add_periods(

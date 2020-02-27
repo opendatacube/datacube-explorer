@@ -228,7 +228,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     for feature in doc["features"]:
         with DebugContext(f"feature {feature['id']}"):
             assert len(feature["assets"]) == 1, "Expected only one"
-            (name, asset), = feature["assets"].items()
+            ((name, asset),) = feature["assets"].items()
             assert name == "location"
             assert tuple(sorted(asset["eo:bands"])) == bands
 

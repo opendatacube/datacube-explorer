@@ -64,7 +64,7 @@ def run_generation(
     config: LocalConfig,
     products: Sequence[DatasetType],
     workers=3,
-    force_refresh: Optional[bool] = False
+    force_refresh: Optional[bool] = False,
 ) -> Tuple[int, int]:
     echo(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
@@ -80,7 +80,9 @@ def run_generation(
         summary: TimePeriodOverview
 
         for product_name, summary in pool.imap_unordered(
-            generate_report, ((config, p.name, force_refresh) for p in products), chunksize=1
+            generate_report,
+            ((config, p.name, force_refresh) for p in products),
+            chunksize=1,
         ):
             if summary is None:
                 echo(f"{style(product_name, fg='yellow')} error (see log)", err=True)
@@ -154,7 +156,7 @@ def cli(
     force_concurrently: bool,
     verbose: bool,
     init_database: bool,
-    force_refresh: bool
+    force_refresh: bool,
 ):
     """
     Generate summary files for the given products
@@ -169,7 +171,9 @@ def cli(
     else:
         products = list(_load_products(store.index, product_names))
 
-    completed, failures = run_generation(config, products, workers=jobs, force_refresh=force_refresh)
+    completed, failures = run_generation(
+        config, products, workers=jobs, force_refresh=force_refresh
+    )
     if refresh_stats:
         echo("Refreshing statistics...", nl=False)
         store.refresh_stats(concurrently=force_concurrently)
