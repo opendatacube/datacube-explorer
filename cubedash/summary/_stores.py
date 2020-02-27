@@ -249,6 +249,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        force_refresh: Optional[bool] = False
     ) -> Optional[TimePeriodOverview]:
         start_day, period = self._start_day(year, month, day)
 
@@ -550,12 +551,17 @@ class SummaryStore:
 
         Note that generating one can be *extremely* slow.
         """
-        summary = self.get(product_name, year, month, day)
-        if summary and not force_refresh:
-            return summary
+        if force_refresh:
+            summary = self.update(
+                product_name, year, month, day,
+                generate_missing_children=True,
+                force_refresh=True
+            )
         else:
+            summary = self.get(product_name, year, month, day)
+        if not summary:
             summary = self.update(product_name, year, month, day)
-            return summary
+        return summary
 
     def update(
         self,
@@ -563,7 +569,8 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
-        generate_missing_children=True,
+        generate_missing_children: Optional[bool] = True,
+        force_refresh: Optional[bool] = False
     ):
         """Update the given summary and return the new one"""
         product = self._product(product_name)
@@ -580,7 +587,7 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year, month_, None) for month_ in range(1, 13)
+                get_child(product_name, year, month_, None, force_refresh=force_refresh) for month_ in range(1, 13)
             )
         elif product_name:
             if product.dataset_count > 0:
@@ -588,11 +595,14 @@ class SummaryStore:
             else:
                 years = []
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year_, None, None) for year_ in years
+                get_child(
+                    product_name, year_, None, None,
+                    force_refresh=force_refresh
+                ) for year_ in years
             )
         else:
             summary = TimePeriodOverview.add_periods(
-                get_child(product.name, None, None, None)
+                get_child(product.name, None, None, None, force_refresh=force_refresh)
                 for product in self.all_dataset_types()
             )
 
