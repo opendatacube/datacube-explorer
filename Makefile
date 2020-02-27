@@ -28,7 +28,7 @@ weblint: ## Run stylelint across HTML and SASS
 style: cubedash/static/base.css ## Compile SASS stylesheets to CSS
 
 cubedash/static/base.css: cubedash/static/base.sass
-	sass -t compact --no-cache $< $@
+	sass -s compressed $< $@
 
 .PHONY: test
 test: ## Run tests using pytest
