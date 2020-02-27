@@ -441,7 +441,7 @@ DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
 
 try:
     ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
-except:
+except AttributeError:
     # ODC 1.7 and earlier.
     ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
 
