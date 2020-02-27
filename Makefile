@@ -64,30 +64,30 @@ up: ## Start server using Docker
 build: ## Build the Docker image
 	docker-compose build
 
-init-odc:
+init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
 		datacube system init
 
-schema: ## Initialise DB using Docker
+schema: ## Initialise Explorer DB using Docker
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --init-database
 
-index: ## Update DB using Docker
+index: ## Update Explorer DB using Docker
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --all
 
-force-refresh:
+force-refresh: ## Entirely refresh the Explorer tables in Docker
 	docker-compose exec explorer \
 		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
 
-create-test-db-docker:
+create-test-db-docker: ## Create a test database inside Docker
 	docker-compose exec explorer \
 		bash /code/.docker/create_db.sh
 
-lint-docker:
+lint-docker: ## Run linting inside inside Docker
 	docker-compose exec explorer \
 		make lint
 
-test-docker:
+test-docker: ## Run tests inside Docker
 	docker-compose exec explorer \
 		make test
