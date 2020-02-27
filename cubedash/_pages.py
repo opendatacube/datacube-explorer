@@ -4,6 +4,7 @@ from typing import List, Tuple
 
 import flask
 import structlog
+import werkzeug
 from flask import Response, abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
@@ -19,6 +20,9 @@ from datacube.scripts.dataset import build_dataset_info
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports, _stac
 from . import _utils as utils
 from ._utils import as_rich_json
+
+werkzeug.cached_property = werkzeug.utils.cached_property
+
 
 app = _model.app
 app.register_blueprint(_filters.bp)
