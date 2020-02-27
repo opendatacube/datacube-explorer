@@ -1,6 +1,7 @@
 import multiprocessing
 import sys
-from typing import List, Sequence, Tuple
+from datetime import timedelta
+from typing import List, Optional, Sequence, Tuple
 
 import click
 import structlog
@@ -20,7 +21,8 @@ _LOG = structlog.get_logger()
 def generate_report(item):
     config: LocalConfig
     product_name: str
-    config, product_name = item
+    force_refresh: Optional(bool) = False
+    config, product_name, force_refresh = item
     log = _LOG.bind(product=product_name)
 
     store = SummaryStore.create(_get_index(config, product_name), log=log)
@@ -29,12 +31,18 @@ def generate_report(item):
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
 
+        # If we're going to force things, we need a time that will always update
+        if force_refresh:
+            refresh_time = timedelta(minutes=-1)
+        else:
+            refresh_time = timedelta(days=1)
+
         log.info("generate.product.refresh")
-        store.refresh_product(product)
+        store.refresh_product(product, refresh_older_than=refresh_time)
         log.info("generate.product.refresh.done")
 
         log.info("generate.product")
-        updated = store.get_or_update(product.name, None, None, None)
+        updated = store.get_or_update(product.name, None, None, None, force_refresh)
         log.info("generate.product.done")
 
         return product_name, updated
@@ -53,7 +61,10 @@ def _get_index(config: LocalConfig, variant: str) -> Index:
 
 
 def run_generation(
-    config: LocalConfig, products: Sequence[DatasetType], workers=3
+    config: LocalConfig,
+    products: Sequence[DatasetType],
+    workers=3,
+    force_refresh: Optional[bool] = False,
 ) -> Tuple[int, int]:
     echo(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
@@ -69,7 +80,9 @@ def run_generation(
         summary: TimePeriodOverview
 
         for product_name, summary in pool.imap_unordered(
-            generate_report, ((config, p.name) for p in products), chunksize=1
+            generate_report,
+            ((config, p.name, force_refresh) for p in products),
+            chunksize=1,
         ):
             if summary is None:
                 echo(f"{style(product_name, fg='yellow')} error (see log)", err=True)
@@ -125,6 +138,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     type=click.Path(writable=True, dir_okay=True),
 )
 @click.option("--refresh-stats/--no-refresh-stats", is_flag=True, default=True)
+@click.option("--force-refresh/--no-force-refresh", is_flag=True, default=False)
 @click.option("--force-concurrently", is_flag=True, default=False)
 @click.option(
     "--init-database/--no-init-database",
@@ -142,6 +156,7 @@ def cli(
     force_concurrently: bool,
     verbose: bool,
     init_database: bool,
+    force_refresh: bool,
 ):
     """
     Generate summary files for the given products
@@ -156,7 +171,9 @@ def cli(
     else:
         products = list(_load_products(store.index, product_names))
 
-    completed, failures = run_generation(config, products, workers=jobs)
+    completed, failures = run_generation(
+        config, products, workers=jobs, force_refresh=force_refresh
+    )
     if refresh_stats:
         echo("Refreshing statistics...", nl=False)
         store.refresh_stats(concurrently=force_concurrently)
