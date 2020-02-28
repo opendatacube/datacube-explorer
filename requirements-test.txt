@@ -1,4 +1,4 @@
---extra-index-url https://packages.dea.gadevs.ga/ 
+--extra-index-url https://packages.dea.ga.gov.au/
 digitalearthau==20180116+268.g391cbc0
 -e git://github.com/maxcountryman/flask-themes@9eac2dcc9b81c3af29c2386ce1afba9b446562bf#egg=Flask-Themes
 affine==2.2.2

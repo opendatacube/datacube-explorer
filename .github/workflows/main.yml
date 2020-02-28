@@ -10,7 +10,7 @@ on:
       - '**'
 
 env:
-  IMAGE_NAME: opendatacube/explorer:latest
+  IMAGE_NAME: opendatacube/explorer
 
 jobs:
   main:
@@ -36,9 +36,9 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Pull Docker
+    - name: Build Docker
       run: |
-        docker pull ${IMAGE_NAME}
+        docker build --tag ${IMAGE_NAME}:local .
 
     - name: Run linting
       run: |
@@ -51,6 +51,7 @@ jobs:
           - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
           - e FLASK_ENV=development \
           - e FLASK_APP=cubedash \
+          ${IMAGE_NAME}:local \
           make lint
 
     - name: Run tests
@@ -65,6 +66,7 @@ jobs:
           - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
           - e FLASK_ENV=development \
           - e FLASK_APP=cubedash \
+          ${IMAGE_NAME}:local \
           make lint
 
     - name: Upload coverage to Codecov
