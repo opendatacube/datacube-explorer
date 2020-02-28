@@ -28,6 +28,7 @@ jobs:
     - name: Build Docker
       run: |
         make build
+        docker-compose up -d
 
     - name: Run linting
       run: |
