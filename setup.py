@@ -30,7 +30,7 @@ extras_require = {
 }
 
 setup(
-    name="dea-dashboard",
+    name="datacube-explorer",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     python_requires=">=3.6",

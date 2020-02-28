@@ -72,3 +72,6 @@ settings.env.py
 node_modules
 
 certs
+
+# Let setuptools_scm manage the _version.py file
+cubedash/_version.py
