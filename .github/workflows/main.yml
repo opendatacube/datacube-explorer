@@ -1,4 +1,4 @@
-name: Lint and Test
+name: Lint and Test Code and Push for DEVELOP or TAG
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image:  ubuntu:bionic
+      image: ubuntu:bionic
 
     services:
       postgres:
@@ -73,3 +73,46 @@ jobs:
         token: ${{ secrets.CodeCovToken }}
         file: ./coverage.xml
         fail_ci_if_error: false
+
+  push:
+    runs-on: ubuntu-latest
+    needs: main
+    if: github.ref == 'refs/heads/develop' || contains(github.ref, "cubedash-")
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Get the version
+      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+
+    - name: test version
+      run: echo $VERSION
+
+    - name: Pull docker cache
+      run: |
+        docker pull ${IMAGE_NAME}:latest         || true
+
+    - name: Build Test Runner Docker
+      run: |
+        # build and cache first stage (env_builder)
+        docker build \
+          --target env_builder \
+          --cache-from ${IMAGE_NAME}:latest \
+          --tag        ${IMAGE_NAME}:build \
+          .
+
+    - name: Verify Docker Image
+      run: |
+        ./check-code.sh --with-docker integration_tests
+
+    - name; Test Security with 
+    - name: DockerHub Push
+      if: |
+        github.event_name == 'push' && (
+          github.ref == 'refs/heads/develop'
+          )
+      run: |
+        echo "Login to DockerHub as ${DOCKER_USER}"
+        echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
+        docker push ${IMAGE_NAME}:${BUILDER_TAG}
+        docker push ${IMAGE_NAME}:latest
