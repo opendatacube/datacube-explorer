@@ -1,0 +1,9 @@
+version: "3.4"
+services:
+  explorer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
+    ports:
+      - "80:8080"

@@ -61,8 +61,18 @@ clean:  ## Clean all working/temporary files
 up: ## Start server using Docker
 	docker-compose up
 
-build: ## Build the Docker image
+build-dev: ## Build the dev Docker image
 	docker-compose build
+
+up-prod: ## Start using the prod Docker image
+	docker-compose \
+		--file docker-compose.yml --file docker-compose.prod.yml \
+		up
+
+build-prod: ## Build the prod Docker image
+	docker-compose \
+		--file docker-compose.yml --file docker-compose.prod.yml \
+		build
 
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \

@@ -1,0 +1,75 @@
+name: Lint and Test
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+env:
+  IMAGE_NAME: opendatacube/explorer:latest
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    container:
+      image:  ubuntu:bionic
+
+    services:
+      postgres:
+        image: kartoza/postgis:11.0-2.5
+        env:
+          POSTGRES_USER: opendatacube
+          POSTGRES_PASSWORD: opendatacubepassword
+          POSTGRES_DB: opendatacube
+        ports:
+        - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Pull Docker
+      run: |
+        docker pull ${IMAGE_NAME}
+
+    - name: Run linting
+      run: |
+        docker run --rm  \
+          -v $(pwd):/code/ \
+          - e DB_HOSTNAME=postgres \
+          - e DB_USERNAME=opendatacube \
+          - e DB_PASSWORD=opendatacubepassword \
+          - e DB_DATABASE=opendatacube_test \
+          - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          - e FLASK_ENV=development \
+          - e FLASK_APP=cubedash \
+          make lint
+
+    - name: Run tests
+      run: |
+        docker run --rm  \
+          -v $(pwd):/code/ \
+          - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
+          - e DB_HOSTNAME=postgres \
+          - e DB_USERNAME=opendatacube \
+          - e DB_PASSWORD=opendatacubepassword \
+          - e DB_DATABASE=opendatacube \
+          - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          - e FLASK_ENV=development \
+          - e FLASK_APP=cubedash \
+          make lint
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CodeCovToken }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
