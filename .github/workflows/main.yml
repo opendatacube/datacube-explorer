@@ -48,7 +48,7 @@ jobs:
           -e DB_USERNAME=opendatacube \
           -e DB_PASSWORD=opendatacubepassword \
           -e DB_DATABASE=opendatacube_test \
-          -e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          -e DB_PORT=${{ job.services.postgres.ports[5432] }} \
           -e FLASK_ENV=development \
           -e FLASK_APP=cubedash \
           ${IMAGE_NAME}:local \
@@ -63,7 +63,7 @@ jobs:
           -e DB_USERNAME=opendatacube \
           -e DB_PASSWORD=opendatacubepassword \
           -e DB_DATABASE=opendatacube \
-          -e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          -e DB_PORT=${{ job.services.postgres.ports[5432] }} \
           -e FLASK_ENV=development \
           -e FLASK_APP=cubedash \
           ${IMAGE_NAME}:local \
@@ -89,6 +89,10 @@ jobs:
 
     - name: tag output
       run: echo ${{ steps.vars.outputs.tag }}
+
+    - name: tag exists?
+      if: contains(github.ref, "cubedash-")
+      run: echo "cubedash- is in the tag"
 
     - name: Pull docker cache
       run: |
