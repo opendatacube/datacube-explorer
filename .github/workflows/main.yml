@@ -16,9 +16,6 @@ jobs:
   main:
     runs-on: ubuntu-latest
 
-    container:
-      image: ubuntu:bionic
-
     services:
       postgres:
         image: kartoza/postgis:11.0-2.5
@@ -38,13 +35,16 @@ jobs:
 
     - name: Build Docker
       run: |
-        docker build --tag ${IMAGE_NAME}:local .
+        docker build \
+          --tag ${IMAGE_NAME}:local \
+          --file Dockerfile.Dev \
+          .
 
     - name: Run linting
       run: |
         docker run --rm  \
           -v $(pwd):/code/ \
-          - e DB_HOSTNAME=postgres \
+          - e DB_HOSTNAME=localhost \
           - e DB_USERNAME=opendatacube \
           - e DB_PASSWORD=opendatacubepassword \
           - e DB_DATABASE=opendatacube_test \
@@ -59,7 +59,7 @@ jobs:
         docker run --rm  \
           -v $(pwd):/code/ \
           - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
-          - e DB_HOSTNAME=postgres \
+          - e DB_HOSTNAME=localhost \
           - e DB_USERNAME=opendatacube \
           - e DB_PASSWORD=opendatacubepassword \
           - e DB_DATABASE=opendatacube \
