@@ -21,6 +21,10 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Cache Docker
+      run: |
+        docker pull ${IMAGE_NAME}
+
     - name: Build Docker
       run: |
         make build
@@ -31,6 +35,7 @@ jobs:
 
     - name: Run tests
       run: |
+        make create-test-db-docker
         make test-docker
 
     - name: Upload coverage to Codecov
@@ -40,7 +45,7 @@ jobs:
         file: ./coverage.xml
         fail_ci_if_error: false
 
-    - name: Pipeline ran
+    - name: Notify Slack
       uses: rtCamp/action-slack-notify@v2.0.0
       env:
         SLACK_CHANNEL: explorer-alerts
@@ -57,16 +62,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
 
     - name: Get the tag
       run: echo ::set-output name=tag::${GITHUB_REF:10}
 
-    - name: tag output
+    - name: Echo the tag
       run: echo ${{ steps.vars.outputs.tag }}
 
-    # - name: tag exists?
-    #   if: contains(github.ref, "cubedash-")
-    #   run: echo "cubedash- is in the tag"
+    - name: tag exists?
+      if: contains(github.ref, 'cubedash-'')
+      run: echo "cubedash- is in the tag"
 
     - name: Pull docker cache
       run: |
