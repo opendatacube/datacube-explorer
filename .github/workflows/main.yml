@@ -105,7 +105,9 @@ jobs:
       run: |
         ./check-code.sh --with-docker integration_tests
 
-    - name; Test Security with 
+    - name: Test Security with clair_db
+      run: echo "todo"
+
     - name: DockerHub Push
       if: |
         github.event_name == 'push' && (
