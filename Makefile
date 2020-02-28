@@ -61,18 +61,18 @@ clean:  ## Clean all working/temporary files
 up: ## Start server using Docker
 	docker-compose up
 
-build-dev: ## Build the dev Docker image
+build: ## Build the dev Docker image
 	docker-compose build
-
-up-prod: ## Start using the prod Docker image
-	docker-compose \
-		--file docker-compose.yml --file docker-compose.prod.yml \
-		up
 
 build-prod: ## Build the prod Docker image
 	docker-compose \
 		--file docker-compose.yml --file docker-compose.prod.yml \
 		build
+
+up-prod: ## Start using the prod Docker image
+	docker-compose \
+		--file docker-compose.yml --file docker-compose.prod.yml \
+		up
 
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
@@ -95,9 +95,9 @@ create-test-db-docker: ## Create a test database inside Docker
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
-	docker-compose exec explorer \
+	docker-compose run explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose exec explorer \
+	docker-compose run explorer \
 		make test

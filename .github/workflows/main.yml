@@ -10,23 +10,11 @@ on:
       - '**'
 
 env:
-  IMAGE_NAME: opendatacube/explorer
+  IMAGE_NAME: opendatacube/dashboard
 
 jobs:
   main:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: kartoza/postgis:11.0-2.5
-        env:
-          POSTGRES_USER: opendatacube
-          POSTGRES_PASSWORD: opendatacubepassword
-          POSTGRES_DB: opendatacube
-        ports:
-        - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
     - uses: actions/checkout@v1
@@ -35,39 +23,15 @@ jobs:
 
     - name: Build Docker
       run: |
-        docker build \
-          --tag ${IMAGE_NAME}:local \
-          --file Dockerfile.Dev \
-          .
+        make build-dev
 
     - name: Run linting
       run: |
-        docker run --rm  \
-          -v $(pwd):/code/ \
-          -e DB_HOSTNAME=localhost \
-          -e DB_USERNAME=opendatacube \
-          -e DB_PASSWORD=opendatacubepassword \
-          -e DB_DATABASE=opendatacube_test \
-          -e DB_PORT=${{ job.services.postgres.ports[5432] }} \
-          -e FLASK_ENV=development \
-          -e FLASK_APP=cubedash \
-          ${IMAGE_NAME}:local \
-          make lint
+        make lint-docker
 
     - name: Run tests
       run: |
-        docker run --rm  \
-          -v $(pwd):/code/ \
-          -v $(pwd)/.docker/.datacube_integration.conf:/root/.datacube_integration.conf \
-          -e DB_HOSTNAME=localhost \
-          -e DB_USERNAME=opendatacube \
-          -e DB_PASSWORD=opendatacubepassword \
-          -e DB_DATABASE=opendatacube \
-          -e DB_PORT=${{ job.services.postgres.ports[5432] }} \
-          -e FLASK_ENV=development \
-          -e FLASK_APP=cubedash \
-          ${IMAGE_NAME}:local \
-          make test
+        make test-docker
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
