@@ -28,12 +28,12 @@ RUN pip3 install -r /tmp/requirements.txt \
 RUN mkdir -p /code
 WORKDIR /code
 
-ADD setup.py setup.cfg /code/
+ADD setup.py setup.cfg pyproject.toml /code/
 ADD cubedash /code/cubedash
 ADD .git /code/.git
 
 RUN pip3 install --upgrade --extra-index-url \
-    https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
+    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau'
 
 RUN pip3 install .[deployment]
 
