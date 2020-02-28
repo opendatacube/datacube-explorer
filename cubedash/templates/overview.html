@@ -138,7 +138,11 @@
                         </ul>
                     {% endif %}
 
-                    <h4>Fields ({{ product.metadata_type.name }})</h4>
+                    <h4>
+                        <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                            {{ product.metadata_type.name }}</a>
+                        fields
+                    </h4>
 
                     {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
 
