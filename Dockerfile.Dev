@@ -31,6 +31,7 @@ WORKDIR /code
 ADD setup.py conftest.py setup.cfg pylintrc Makefile pyproject.toml /code/
 ADD cubedash /code/cubedash
 ADD integration_tests /code/integration_tests
+ADD .git /code/.git
 
 RUN pip3 install --upgrade --extra-index-url \
     https://packages.dea.gadevs.ga/ 'datacube' 'digitalearthau'
