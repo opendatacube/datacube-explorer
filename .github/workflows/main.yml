@@ -23,7 +23,7 @@ jobs:
 
     - name: Build Docker
       run: |
-        make build-dev
+        make build
 
     - name: Run linting
       run: |
