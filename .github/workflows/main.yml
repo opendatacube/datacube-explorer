@@ -44,13 +44,13 @@ jobs:
       run: |
         docker run --rm  \
           -v $(pwd):/code/ \
-          - e DB_HOSTNAME=localhost \
-          - e DB_USERNAME=opendatacube \
-          - e DB_PASSWORD=opendatacubepassword \
-          - e DB_DATABASE=opendatacube_test \
-          - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
-          - e FLASK_ENV=development \
-          - e FLASK_APP=cubedash \
+          -e DB_HOSTNAME=localhost \
+          -e DB_USERNAME=opendatacube \
+          -e DB_PASSWORD=opendatacubepassword \
+          -e DB_DATABASE=opendatacube_test \
+          -e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          -e FLASK_ENV=development \
+          -e FLASK_APP=cubedash \
           ${IMAGE_NAME}:local \
           make lint
 
@@ -59,13 +59,13 @@ jobs:
         docker run --rm  \
           -v $(pwd):/code/ \
           - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
-          - e DB_HOSTNAME=localhost \
-          - e DB_USERNAME=opendatacube \
-          - e DB_PASSWORD=opendatacubepassword \
-          - e DB_DATABASE=opendatacube \
-          - e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
-          - e FLASK_ENV=development \
-          - e FLASK_APP=cubedash \
+          -e DB_HOSTNAME=localhost \
+          -e DB_USERNAME=opendatacube \
+          -e DB_PASSWORD=opendatacubepassword \
+          -e DB_DATABASE=opendatacube \
+          -e DB_PORT= ${{ job.services.postgres.ports[5432] }} \
+          -e FLASK_ENV=development \
+          -e FLASK_APP=cubedash \
           ${IMAGE_NAME}:local \
           make lint
 
@@ -84,39 +84,29 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    - name: Get the version
-      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+    - name: Get the tag
+      run: echo ::set-output name=tag::${GITHUB_REF:10}
 
-    - name: test version
-      run: echo $VERSION
+    - name: tag output
+      run: echo ${{ steps.vars.outputs.tag }}
 
     - name: Pull docker cache
       run: |
-        docker pull ${IMAGE_NAME}:latest         || true
+        docker pull ${IMAGE_NAME}:latest || true
 
-    - name: Build Test Runner Docker
+    - name: Build and Tag image
       run: |
-        # build and cache first stage (env_builder)
         docker build \
-          --target env_builder \
-          --cache-from ${IMAGE_NAME}:latest \
-          --tag        ${IMAGE_NAME}:build \
+          --tag ${IMAGE_NAME} \
+          --file Dockerfile.Dev \
           .
-
-    - name: Verify Docker Image
-      run: |
-        ./check-code.sh --with-docker integration_tests
 
     - name: Test Security with clair_db
       run: echo "todo"
 
     - name: DockerHub Push
-      if: |
-        github.event_name == 'push' && (
-          github.ref == 'refs/heads/develop'
-          )
       run: |
         echo "Login to DockerHub as ${DOCKER_USER}"
         echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-        docker push ${IMAGE_NAME}:${BUILDER_TAG}
+        # docker push ${IMAGE_NAME}:${VERSION}
         docker push ${IMAGE_NAME}:latest
