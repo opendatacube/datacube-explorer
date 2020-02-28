@@ -72,7 +72,7 @@ jobs:
       run: echo ${{ steps.vars.outputs.tag }}
 
     - name: tag exists?
-      if: contains(github.ref, 'cubedash-'')
+      if: contains(github.ref, 'cubedash-')
       run: echo "cubedash- is in the tag"
 
     - name: Pull docker cache
