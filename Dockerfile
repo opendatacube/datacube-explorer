@@ -4,7 +4,8 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y wget gnupg
+RUN apt-get update && apt-get install -y wget gnupg \
+    && rm -rf /var/lib/apt/lists/*
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
     apt-key add - \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" \
@@ -21,7 +22,7 @@ RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal && \
     pip3 install GDAL==$(gdal-config --version)
 
 ADD requirements.txt /tmp/
-RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade pip setuptools
 RUN pip3 install -r /tmp/requirements.txt \
     && rm -rf $HOME/.cache/pip
 
@@ -36,5 +37,9 @@ RUN pip3 install --upgrade --extra-index-url \
     https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau'
 
 RUN pip3 install .[deployment]
+
+WORKDIR /root
+
+RUN rm -rf /code
 
 CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
