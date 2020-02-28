@@ -8,16 +8,37 @@ from cubedash import _model
 from cubedash import _utils as utils
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint("product", __name__, url_prefix="/product")
+bp = Blueprint("product", __name__)
 
 
-@bp.route("/<name>")
+@bp.route("/product/<name>")
 def product_page(name):
     product = _model.STORE.index.products.get_by_name(name)
     if not product:
         abort(404, "Unknown product %r" % name)
     ordered_metadata = utils.get_ordered_metadata(product.definition)
 
+    return utils.render("product.html", product=product, metadata_doc=ordered_metadata)
+
+
+@bp.route("/metadata-type/<name>")
+def metadata_type_page(name):
+    metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
+    if not metadata_type:
+        abort(404, "Unknown metadata type %r" % name)
+    ordered_metadata = utils.get_ordered_metadata(metadata_type.definition)
+
+    products_using_it = sorted(
+        (
+            p
+            for p in _model.STORE.index.products.get_all()
+            if p.metadata_type.name == name
+        ),
+        key=lambda p: p.name,
+    )
     return utils.render(
-        "product.html", product=product, product_metadata=ordered_metadata
+        "metadata_type.html",
+        metadata_type=metadata_type,
+        metadata_doc=ordered_metadata,
+        products_using_it=products_using_it,
     )
