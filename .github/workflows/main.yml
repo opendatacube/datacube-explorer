@@ -67,7 +67,7 @@ jobs:
           -e FLASK_ENV=development \
           -e FLASK_APP=cubedash \
           ${IMAGE_NAME}:local \
-          make lint
+          make test
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
