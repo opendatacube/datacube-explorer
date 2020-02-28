@@ -58,7 +58,7 @@ jobs:
       run: |
         docker run --rm  \
           -v $(pwd):/code/ \
-          - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
+          -v ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
           -e DB_HOSTNAME=localhost \
           -e DB_USERNAME=opendatacube \
           -e DB_PASSWORD=opendatacubepassword \
@@ -75,6 +75,16 @@ jobs:
         token: ${{ secrets.CodeCovToken }}
         file: ./coverage.xml
         fail_ci_if_error: false
+
+    - name: Pipeline ran
+      uses: rtCamp/action-slack-notify@v2.0.0
+      env:
+        SLACK_CHANNEL: explorer-alerts
+        SLACK_ICON_EMOJI: ':github:'
+        SLACK_MESSAGE: 'Linting and tests passed! :rocket:'
+        SLACK_TITLE: GitHub Action completed
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   push:
     runs-on: ubuntu-latest
