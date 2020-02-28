@@ -16,14 +16,17 @@ RUN apt-get update \
     && sed 's/#.*//' /tmp/requirements-apt.txt | xargs apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
-RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal && \
-    export C_INCLUDE_PATH=/usr/include/gdal && \
-    export GDAL_DATA="$(gdal-config --datadir)" && \
-    pip3 install GDAL==$(gdal-config --version)
+RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal \
+    && export C_INCLUDE_PATH=/usr/include/gdal \
+    && export GDAL_DATA="$(gdal-config --datadir)" \
+    && pip3 install GDAL==$(gdal-config --version) \
+    && rm -rf $HOME/.cache/pip
 
 ADD requirements.txt /tmp/
-RUN pip3 install --upgrade pip setuptools
-RUN pip3 install -r /tmp/requirements.txt \
+RUN  \
+    && rm -rf $HOME/.cache/pip
+RUN pip3 install --upgrade pip setuptools \
+    && pip3 install -r /tmp/requirements.txt \
     && rm -rf $HOME/.cache/pip
 
 RUN mkdir -p /code
@@ -34,9 +37,9 @@ ADD cubedash /code/cubedash
 ADD .git /code/.git
 
 RUN pip3 install --upgrade --extra-index-url \
-    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau'
-
-RUN pip3 install .[deployment]
+    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau' \
+    && pip3 install .[deployment] \
+    && rm -rf $HOME/.cache/pip
 
 WORKDIR /root
 
