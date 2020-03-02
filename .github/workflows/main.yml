@@ -87,3 +87,14 @@ jobs:
         password: "${{ secrets.DockerPassword }}"
         push_git_tag: true
         build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+    - name: Notify Slack for Failures
+      uses: rtCamp/action-slack-notify@v2.0.0
+      if: failure()
+      env:
+        SLACK_CHANNEL: explorer-alerts
+        SLACK_ICON_EMOJI: ':fire:'
+        SLACK_MESSAGE: 'Building Docker images failed...'
+        SLACK_TITLE: GitHub Action failed
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
