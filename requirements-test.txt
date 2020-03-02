@@ -12,7 +12,7 @@ Automat==0.7.0
 Babel==2.7.0
 beautifulsoup4==4.8.0
 billiard==3.6.1.0
-black==19.3b0
+black==19.10b0
 boltons==19.1.0
 bs4==0.0.1
 cachetools==3.1.1
