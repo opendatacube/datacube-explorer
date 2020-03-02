@@ -32,7 +32,7 @@ cubedash/static/base.css: cubedash/static/base.sass
 
 .PHONY: test
 test: ## Run tests using pytest
-	pytest --cov=cubedash -r sx --durations=5
+	pytest --cov=cubedash --cov-report=xml -r sx --durations=5
 
 .PHONY: testcov
 testcov:
@@ -61,8 +61,18 @@ clean:  ## Clean all working/temporary files
 up: ## Start server using Docker
 	docker-compose up
 
-build: ## Build the Docker image
+build: ## Build the dev Docker image
 	docker-compose build
+
+build-prod: ## Build the prod Docker image
+	docker-compose \
+		--file docker-compose.yml --file docker-compose.prod.yml \
+		build
+
+up-prod: ## Start using the prod Docker image
+	docker-compose \
+		--file docker-compose.yml --file docker-compose.prod.yml \
+		up
 
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
@@ -81,13 +91,13 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose exec explorer \
+	docker-compose run explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
-	docker-compose exec explorer \
+	docker-compose run explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose exec explorer \
+	docker-compose run explorer \
 		make test

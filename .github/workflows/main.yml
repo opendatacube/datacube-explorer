@@ -1,0 +1,88 @@
+name: Lint, Test Code and Push Docker image for DEVELOP or TAG
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+env:
+  IMAGE_NAME: opendatacube/dashboard
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Cache Docker
+      run: |
+        docker pull ${IMAGE_NAME}
+
+    - name: Build Docker
+      run: |
+        make build
+        docker-compose up -d
+
+    - name: Run linting
+      run: |
+        make lint-docker
+
+    - name: Run tests
+      run: |
+        make create-test-db-docker
+        make test-docker
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CodeCovToken }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+    - name: Notify Slack
+      uses: rtCamp/action-slack-notify@v2.0.0
+      env:
+        SLACK_CHANNEL: explorer-alerts
+        SLACK_ICON_EMOJI: ':github:'
+        SLACK_MESSAGE: 'Linting and tests passed! :rocket:'
+        SLACK_TITLE: GitHub Action completed
+        SLACK_USERNAME: GitHub Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  push:
+    runs-on: ubuntu-latest
+    needs: main
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 0
+
+    - name: Get the tag
+      run: echo ::set-output name=tag::${GITHUB_REF:10}
+
+    - name: Echo the tag
+      run: echo ${{ steps.vars.outputs.tag }}
+
+    - name: tag exists?
+      if: contains(github.ref, 'cubedash-')
+      run: echo "cubedash- is in the tag"
+
+    # ToDO: run claire_db test thingy here.
+
+    - uses: whoan/docker-build-with-cache-action@v4
+      with:
+        image_name: ${IMAGE_NAME}
+        image_tag: latest
+        username: gadockersvc
+        password: "${{ secrets.DockerPassword }}"
+        push_git_tag: true
+        build_extra_args: "--build-arg=ENVIRONMENT=deployment"

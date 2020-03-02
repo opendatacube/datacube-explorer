@@ -4,7 +4,8 @@ services:
   explorer:
     build:
       context: .
-      dockerfile: Dockerfile.Dev
+      args:
+        ENVIRONMENT: test
     volumes:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
