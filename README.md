@@ -1,4 +1,7 @@
-# Data Cube Explorer [![Build Status](https://travis-ci.org/opendatacube/datacube-explorer.svg?branch=develop)](https://travis-ci.org/opendatacube/datacube-explorer) [![Coverage Status](https://coveralls.io/repos/github/opendatacube/datacube-explorer/badge.svg?branch=develop)](https://coveralls.io/github/opendatacube/datacube-explorer?branch=develop)
+# Data Cube Explorer
+
+![Lint, Test Code and Push Docker image for DEVELOP or TAG](https://github.com/opendatacube/datacube-explorer/workflows/Lint,%20Test%20Code%20and%20Push%20Docker%20image%20for%20DEVELOP%20or%20TAG/badge.svg)
+[![codecov](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 
 ![Explorer Screenshot](deployment/screenshot.png)
 
