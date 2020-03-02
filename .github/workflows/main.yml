@@ -20,13 +20,10 @@ jobs:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 0
-    - uses: whoan/docker-build-with-cache-action@v4
-      with:
-        image_name: ${IMAGE_NAME}
 
-    # - name: Cache Docker
-    #   run: |
-    #     docker pull ${IMAGE_NAME}
+    - name: Cache Docker
+      run: |
+        docker pull ${IMAGE_NAME}
 
     - name: Build Docker
       run: |
@@ -79,22 +76,13 @@ jobs:
       if: contains(github.ref, 'cubedash-')
       run: echo "cubedash- is in the tag"
 
-    - name: Pull docker cache
-      run: |
-        docker pull ${IMAGE_NAME}:latest || true
+    # ToDO: run claire_db test thingy here.
 
-    - name: Build and Tag image
-      run: |
-        docker build \
-          --tag ${IMAGE_NAME} \
-          .
-
-    - name: Test Security with clair_db
-      run: echo "todo"
-
-    - name: DockerHub Push
-      run: |
-        echo "Login to DockerHub as ${DOCKER_USER}"
-        echo "${{ secrets.DockerPassword }}" | docker login -u "${DOCKER_USER}" --password-stdin
-        # docker push ${IMAGE_NAME}:${VERSION}
-        docker push ${IMAGE_NAME}:latest
+    - uses: whoan/docker-build-with-cache-action@v4
+      with:
+        image_name: ${IMAGE_NAME}
+        image_tag: latest
+        username: gadockersvc
+        password: "${{ secrets.DockerPassword }}"
+        push_git_tag: true
+        build_extra_args: "--build-arg=ENVIRONMENT=deployment"
