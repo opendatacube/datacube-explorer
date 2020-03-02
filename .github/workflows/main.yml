@@ -46,13 +46,14 @@ jobs:
         file: ./coverage.xml
         fail_ci_if_error: false
 
-    - name: Notify Slack
+    - name: Notify Slack for Failures
       uses: rtCamp/action-slack-notify@v2.0.0
+      if: failure()
       env:
         SLACK_CHANNEL: explorer-alerts
-        SLACK_ICON_EMOJI: ':github:'
-        SLACK_MESSAGE: 'Linting and tests passed! :rocket:'
-        SLACK_TITLE: GitHub Action completed
+        SLACK_ICON_EMOJI: ':fire:'
+        SLACK_MESSAGE: 'Linting or tests failed...'
+        SLACK_TITLE: GitHub Action failed
         SLACK_USERNAME: GitHub Actions
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
