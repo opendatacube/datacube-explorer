@@ -4,6 +4,7 @@ from setuptools import find_packages, setup
 
 tests_require = [
     "black",
+    "docutils",
     "boltons",
     "digitalearthau",
     "flake8",
@@ -43,7 +44,7 @@ setup(
         "cachetools",
         "click",
         "dataclasses>=0.6;python_version<'3.7'",
-        "datacube>=1.6",
+        "datacube>=1.7",
         "fiona",
         "flask",
         "Flask-Caching",
