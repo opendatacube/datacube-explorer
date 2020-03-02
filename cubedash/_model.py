@@ -13,6 +13,9 @@ import shapely.wkb
 import structlog
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
+# Fix up URL Scheme handling using this
+# from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
@@ -20,10 +23,10 @@ from cubedash.summary._stores import ProductSummary
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
-
-# Fix up URL Scheme handling using this
-# from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
-from werkzeug.middleware.proxy_fix import ProxyFix
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "Unknown/Not Installed"
 
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
@@ -262,9 +265,8 @@ def internal_server_error(error):
 if "SENTRY_CONFIG" in app.config:
     # pylint: disable=import-error
     from raven.contrib.flask import Sentry
-    from ._version import get_versions
 
-    app.config["SENTRY_CONFIG"]["release"] = get_versions()["version"]
+    app.config["SENTRY_CONFIG"]["release"] = __version__
     SENTRY = Sentry(app)
 
     @app.context_processor
