@@ -25,7 +25,7 @@ jobs:
     - name: Cache Docker
       run: |
         docker pull ${IMAGE_NAME}
-        docker tag --${IMAGE_NAME} datacube-explorer_explorer:latest
+        docker tag ${IMAGE_NAME}:latest datacube-explorer_explorer:latest
 
     - name: Build Docker
       run: |
