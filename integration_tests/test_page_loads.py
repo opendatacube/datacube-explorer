@@ -8,6 +8,7 @@ from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
+from requests_html import HTML
 
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
@@ -168,12 +169,26 @@ def test_view_dataset(client: FlaskClient):
 
 
 def _h1_text(html):
-    return html.find("h1", first=True).text
+    return _text(html, "h1")
+
+
+def _text(html, tag):
+    return html.find(tag, first=True).text
 
 
 def test_view_product(client: FlaskClient):
     rv: Response = client.get("/product/ls7_nbar_scene")
     assert b"Landsat 7 NBAR 25 metre" in rv.data
+
+
+def test_view_metadata_type(client: FlaskClient):
+    # Does it load without error?
+    html: HTML = get_html(client, "/metadata-type/eo")
+    assert "eo Metadata Type" in _text(html, "h2")
+
+    # Does the page list products using the type?
+    products_using_it = [t.text for t in html.find(".type-usage-item")]
+    assert "ls8_nbar_albers" in products_using_it
 
 
 def test_about_page(client: FlaskClient):

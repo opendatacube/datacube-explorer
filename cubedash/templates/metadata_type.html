@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ metadata_type.name }} definition{% endblock %}
+
+
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .metadata-type-name {
+            text-transform: uppercase;
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+
+{% endblock %}
+{% block content %}
+    {% from "layout/macros.html" import query_param_list, show_raw_document %}
+
+    <div class="panel odd">
+        <h2><span class="metadata-type-name">{{ metadata_type.name }}</span> Metadata Type</h2>
+        {{ show_raw_document(metadata_doc) }}
+    </div>
+
+    <div class="panel">
+        <h2>Usage</h2>
+        {% if products_using_it %}
+            <ul class="type-usage-list">
+            {% for product in products_using_it %}
+                <li class="type-usage-item">{{ product.name | product_link }}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <em>None</em>
+        {% endif %}
+    </div>
+
+
+{% endblock %}
