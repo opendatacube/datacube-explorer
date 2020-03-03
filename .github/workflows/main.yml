@@ -9,6 +9,10 @@ on:
     paths:
       - '**'
 
+  release:
+    types:
+      - created
+
 env:
   IMAGE_NAME: opendatacube/dashboard
 
@@ -79,6 +83,9 @@ jobs:
         username: gadockersvc
         password: "${{ secrets.DockerPassword }}"
         build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+    - name: Temporarily log release from that Docker image just built
+      run: docker run --rm ${{ env.IMAGE_NAME }}:latest python3 setup.py --version
 
     - name: Get tag for this build if it exists
       if: contains(github.ref, 'cubedash-')
