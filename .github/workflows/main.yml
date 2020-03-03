@@ -65,29 +65,34 @@ jobs:
     if: github.ref == 'refs/heads/develop'
 
     steps:
-    - uses: actions/checkout@v1
+    - name: Checkout git
+      uses: actions/checkout@v1
       with:
         fetch-depth: 0
 
-    - name: Get the tag
-      run: echo ::set-output name=tag::${GITHUB_REF:10}
-
-    - name: Echo the tag
-      run: echo ${{ steps.vars.outputs.tag }}
-
-    - name: tag exists?
-      if: contains(github.ref, 'cubedash-')
-      run: echo "cubedash- is in the tag"
-
     # ToDO: run claire_db test thingy here.
 
-    - uses: whoan/docker-build-with-cache-action@v4
+    - name: Build and Push latest Docker image
+      uses: whoan/docker-build-with-cache-action@v4
       with:
         image_name: ${{ env.IMAGE_NAME }}
-        image_tag: latest
         username: gadockersvc
         password: "${{ secrets.DockerPassword }}"
-        push_git_tag: true
+        build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+    - name: Get tag for this build if it exists
+      if: contains(github.ref, 'cubedash-')
+      run: |
+        echo "::set-output name=release::$(docker run --rm ${{ env.IMAGE_NAME }}:latest python3 setup.py --version)"
+
+    - name: Build and Push release if we have a tag
+      uses: whoan/docker-build-with-cache-action@v4
+      if: contains(github.ref, 'cubedash-')
+      with:
+        image_name: ${{ env.IMAGE_NAME }}
+        image_tag: ${{ steps.vars.outputs.release }}
+        username: gadockersvc
+        password: "${{ secrets.DockerPassword }}"
         build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
     - name: Notify Slack for Failures
