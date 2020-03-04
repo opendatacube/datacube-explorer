@@ -27,7 +27,7 @@ extras_require = {
         "gunicorn",
         "setproctitle",
         "meinheld",
-        "gevent"
+        "gevent",
     ],
 }
 
