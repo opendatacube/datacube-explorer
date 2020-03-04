@@ -25,26 +25,26 @@ jobs:
       with:
         fetch-depth: 0
 
-    # - name: Build Docker
-    #   run: |
-    #     make build
-    #     docker-compose up -d
+    - name: Build Docker
+      run: |
+        make build
+        docker-compose up -d
 
-    # - name: Run linting
-    #   run: |
-    #     make lint-docker
+    - name: Run linting
+      run: |
+        make lint-docker
 
-    # - name: Run tests
-    #   run: |
-    #     make create-test-db-docker
-    #     make test-docker
+    - name: Run tests
+      run: |
+        make create-test-db-docker
+        make test-docker
 
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v1
-    #   with:
-    #     token: ${{ secrets.CodeCovToken }}
-    #     file: ./coverage.xml
-    #     fail_ci_if_error: false
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CodeCovToken }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
 
     - name: Notify Slack for Failures
       uses: rtCamp/action-slack-notify@v2.0.0
