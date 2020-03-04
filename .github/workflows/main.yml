@@ -68,7 +68,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    # ToDO: run claire_db test thingy here.
+    # ToDO: run claire_db test thingy here
 
     - name: Build and Push latest Docker image
       uses: whoan/docker-build-with-cache-action@v4
