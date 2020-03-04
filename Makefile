@@ -57,6 +57,7 @@ clean:  ## Clean all working/temporary files
 	# python setup.py clean
 
 .PHONY: up build schema index
+
 # DOCKER STUFF
 up: ## Start server using Docker
 	docker-compose up

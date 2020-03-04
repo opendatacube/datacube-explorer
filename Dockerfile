@@ -3,6 +3,7 @@ FROM ubuntu:bionic
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
+
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
 ARG ENVIRONMENT=deployment
@@ -28,13 +29,11 @@ RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal \
     && pip3 install GDAL==$(gdal-config --version) \
     && rm -rf $HOME/.cache/pip
 
-# Use a simple requirements.txt file... maybe
-# ADD requirements.txt /tmp/
-# RUN  \
-#     && rm -rf $HOME/.cache/pip
-# RUN pip3 install --upgrade pip setuptools \
-#     && pip3 install -r /tmp/requirements.txt \
-#     && rm -rf $HOME/.cache/pip
+# Install some important dependencies
+RUN pip3 install --upgrade pip setuptools \
+    && pip3 install --extra-index-url \
+    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau' \
+    && rm -rf $HOME/.cache/pip
 
 # Set up a nice workdir, and only copy the things we care about in
 RUN mkdir -p /code
@@ -44,12 +43,14 @@ ADD setup.py setup.cfg pyproject.toml /code/
 ADD cubedash /code/cubedash
 ADD .git /code/.git
 
-RUN pip3 install --upgrade pip setuptools \
-    && pip3 install --extra-index-url \
-    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau' \
-    && pip3 install .[${ENVIRONMENT}] \
+# These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
+# then we want to link the source (with the -e flag) and if we're in prod, we
+# want to delete the stuff in the /code folder to keep it simple.
+RUN if [ "$ENVIRONMENT" = "deployment" ] ; then FLAG='' ; else FLAG='-e'; fi \
+    && pip3 install ${FLAG} .[${ENVIRONMENT}] \
     && rm -rf $HOME/.cache/pip
 
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then rm -r /code/* ; fi
 
+# This is for prod, and serves as docs. It's usually overwritten
 CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app

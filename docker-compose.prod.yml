@@ -3,7 +3,7 @@ services:
   explorer:
     build:
       context: .
-      env:
+      args:
         ENVIRONMENT: deployment
     command: gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
     ports:
