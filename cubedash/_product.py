@@ -37,7 +37,7 @@ def metadata_type_page(name):
         key=lambda p: p.name,
     )
     return utils.render(
-        "metadata_type.html",
+        "metadata-type.html",
         metadata_type=metadata_type,
         metadata_doc=ordered_metadata,
         products_using_it=products_using_it,
