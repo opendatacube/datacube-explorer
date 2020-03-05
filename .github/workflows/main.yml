@@ -78,19 +78,11 @@ jobs:
         password: "${{ secrets.DockerPassword }}"
         build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
-    - name: Temporarily log release from that Docker image just built
-      run: >
-        docker run --rm -e DATACUBE_DB_URL=postgresql://username:password@hostname:5432/database
-        ${{ env.IMAGE_NAME }}:latest python3 -c 'import cubedash; print(cubedash.__version__)'
-
     - name: Get tag for this build if it exists
       if: contains(github.ref, 'cubedash-')
       run: >
         echo ::set-env name=RELEASE::$(docker run --rm -e DATACUBE_DB_URL=postgresql://username:password@hostname:5432/database
         ${{ env.IMAGE_NAME }}:latest python3 -c 'import cubedash; print(cubedash.__version__)')
-
-    - name: Test the tag
-      run: echo $RELEASE
 
     - name: Build and Push release if we have a tag
       uses: whoan/docker-build-with-cache-action@v4
