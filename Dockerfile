@@ -39,9 +39,7 @@ RUN pip3 install --upgrade pip setuptools \
 RUN mkdir -p /code
 WORKDIR /code
 
-ADD setup.py setup.cfg pyproject.toml /code/
-ADD cubedash /code/cubedash
-ADD .git /code/.git
+ADD . /code
 
 # These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
 # then we want to link the source (with the -e flag) and if we're in prod, we
