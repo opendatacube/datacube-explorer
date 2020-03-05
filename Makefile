@@ -12,13 +12,13 @@ install: ## Install all requirements and explorer
 .PHONY: format
 format: ## Reformat all Python code
 	isort -rc cubedash integration_tests
-	black cubedash integration_tests
+	black cubedash integration_tests ./*.py
 
 .PHONY: lint
 lint: ## Run all Python linting checks
 	python3 setup.py check -rms
 	flake8 cubedash/ integration_tests/
-	black --check cubedash integration_tests
+	black --check cubedash integration_tests ./*.py
 
 .PHONY: weblint
 weblint: ## Run stylelint across HTML and SASS
