@@ -5,12 +5,9 @@ services:
     build:
       context: .
       args:
-        ENVIRONMENT: test
-    volumes:
-      - ./:/code
-      - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
+        ENVIRONMENT: deployment
     ports:
-      - 5000:5000
+      - 80:8080
     environment:
       # - DB_HOSTNAME=host.docker.internal
       - DB_HOSTNAME=postgres
@@ -22,7 +19,7 @@ services:
       - FLASK_APP=cubedash
       - FLASK_DEBUG=1
       # - VIRTUAL_HOST=datacube.explorer
-    command: flask run --host 0.0.0.0
+    command: gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
     depends_on:
       - postgres
 

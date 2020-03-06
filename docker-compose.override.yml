@@ -1,0 +1,13 @@
+version: "3.4"
+services:
+  explorer:
+    build:
+      context: .
+      args:
+        ENVIRONMENT: test
+    volumes:
+      - ./:/code
+      - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
+    command: flask run --host 0.0.0.0
+    ports:
+      - "5000:5000"
