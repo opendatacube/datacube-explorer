@@ -48,7 +48,5 @@ RUN if [ "$ENVIRONMENT" = "deployment" ] ; then FLAG='' ; else FLAG='-e'; fi \
     && pip3 install ${FLAG} .[${ENVIRONMENT}] \
     && rm -rf $HOME/.cache/pip
 
-RUN if [ "$ENVIRONMENT" = "deployment" ] ; then rm -r /code/* ; fi
-
 # This is for prod, and serves as docs. It's usually overwritten
 CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
