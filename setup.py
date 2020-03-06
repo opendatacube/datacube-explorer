@@ -28,6 +28,9 @@ extras_require = {
         "setproctitle",
         "meinheld",
         "gevent",
+        # Monitoring
+        "raven",
+        "blinker",
     ],
 }
 
