@@ -67,12 +67,12 @@ build: ## Build the dev Docker image
 
 build-prod: ## Build the prod Docker image
 	docker-compose \
-		--file docker-compose.yml --file docker-compose.prod.yml \
+		--file docker-compose.yml \
 		build
 
 up-prod: ## Start using the prod Docker image
 	docker-compose \
-		--file docker-compose.yml --file docker-compose.prod.yml \
+		--file docker-compose.yml \
 		up
 
 init-odc: ## Initialise ODC Database
