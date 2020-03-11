@@ -1,2 +1,5 @@
-include versioneer.py
 include cubedash/_version.py
+graft cubedash/data
+graft cubedash/static
+graft cubedash/templates
+graft cubedash/themes
