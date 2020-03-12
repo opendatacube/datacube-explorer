@@ -5,6 +5,7 @@ RUN env-build-tool new /requirements-docker.txt /env
 FROM opendatacube/geobase:runner
 COPY --from=env_builder /env /env
 ENV LC_ALL=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
@@ -32,11 +33,13 @@ WORKDIR /code
 
 ADD . /code
 
+RUN ls -lah /code
+
 # These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then FLAG='' ; else FLAG='-e'; fi \
-    && pip3 install ${FLAG} .[${ENVIRONMENT}] \
+    && /env/bin/pip install ${FLAG} .[${ENVIRONMENT}] \
     && rm -rf $HOME/.cache/pip
 
 # Delete code from the /code folder if we're in a prod build

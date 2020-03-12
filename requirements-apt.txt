@@ -1,1 +1,3 @@
-postgresql-11-postgis-2.5
+postgresql-11
+git
+make
