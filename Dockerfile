@@ -1,8 +1,13 @@
-FROM ubuntu:bionic
+FROM opendatacube/geobase:wheels as env_builder
+COPY requirements-docker.txt /
+RUN env-build-tool new /requirements-docker.txt /env
+RUN pip3 install --extra-index-url \
+    https://packages.dea.ga.gov.au/ 'digitalearthau' \
+    && rm -rf $HOME/.cache/pip
 
+FROM opendatacube/geobase:runner
+COPY --from=env_builder /env /env
 ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
@@ -22,18 +27,7 @@ RUN apt-get update \
     && sed 's/#.*//' /tmp/requirements-apt.txt | xargs apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
-# GDAL is particular...
-RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal \
-    && export C_INCLUDE_PATH=/usr/include/gdal \
-    && export GDAL_DATA="$(gdal-config --datadir)" \
-    && pip3 install GDAL==$(gdal-config --version) \
-    && rm -rf $HOME/.cache/pip
-
-# Install some important dependencies
-RUN pip3 install --upgrade pip setuptools \
-    && pip3 install --extra-index-url \
-    https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau' \
-    && rm -rf $HOME/.cache/pip
+ENV PATH="/env/bin:${PATH}"
 
 # Set up a nice workdir, and only copy the things we care about in
 RUN mkdir -p /code
