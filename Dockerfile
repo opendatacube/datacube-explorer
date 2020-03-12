@@ -1,9 +1,6 @@
 FROM opendatacube/geobase:wheels as env_builder
 COPY requirements-docker.txt /
 RUN env-build-tool new /requirements-docker.txt /env
-RUN pip3 install --extra-index-url \
-    https://packages.dea.ga.gov.au/ 'digitalearthau' \
-    && rm -rf $HOME/.cache/pip
 
 FROM opendatacube/geobase:runner
 COPY --from=env_builder /env /env
