@@ -5,6 +5,8 @@ services:
       context: .
       args:
         ENVIRONMENT: test
+    environment:
+      - PROJ_LIB=/usr/share/proj  # This is to fix an odd issue with PyProj
     volumes:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
