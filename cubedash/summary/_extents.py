@@ -131,7 +131,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
     # When datasets have no CRS, optionally use this as default.
     default_crs_expression = None
     if default_crs:
-        if not default_crs.lower().startswith("epsg:"):
+        if not default_crs.lower().startswith("epsg:") and not default_crs.lower().startswith("esri:"):
             raise NotImplementedError(
                 "CRS expected in form of 'EPSG:1234'. Got: %r" % default_crs
             )
