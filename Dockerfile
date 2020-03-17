@@ -1,4 +1,5 @@
 FROM opendatacube/geobase:wheels as env_builder
+
 COPY requirements-docker.txt /
 RUN env-build-tool new /requirements-docker.txt /env
 
@@ -32,8 +33,6 @@ RUN mkdir -p /code
 WORKDIR /code
 
 ADD . /code
-
-RUN ls -lah /code
 
 # These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
 # then we want to link the source (with the -e flag) and if we're in prod, we
