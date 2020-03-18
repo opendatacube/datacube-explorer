@@ -16,12 +16,8 @@ from datacube.ui.click import config_option, environment_option, pass_config
 
 _LOG = structlog.get_logger()
 
-
 # pylint: disable=broad-except
-def generate_report(item):
-    config: LocalConfig
-    product_name: str
-    force_refresh: Optional(bool) = False
+def generate_report(item: Tuple[LocalConfig, str, bool]):
     config, product_name, force_refresh = item
     log = _LOG.bind(product=product_name)
 
@@ -142,7 +138,8 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 @click.option("--force-concurrently", is_flag=True, default=False)
 @click.option(
     "--init-database/--no-init-database",
-    default=True,
+    "--init",
+    default=False,
     help="Prepare the database for use by datacube explorer",
 )
 @click.argument("product_names", nargs=-1)
@@ -164,7 +161,18 @@ def cli(
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     index = _get_index(config, "setup")
-    store = SummaryStore.create(index, init_schema=init_database)
+    store = SummaryStore.create(index)
+
+    if init_database:
+        echo("Initialising schema", err=True)
+        store.init()
+    elif not store.is_initialised():
+        echo(
+            style("No cubedash schema exists. ", fg="red")
+            + "Please rerun with --init to create one",
+            err=True,
+        )
+        sys.exit(-1)
 
     if generate_all_products:
         products = sorted(store.all_dataset_types(), key=lambda p: p.name)

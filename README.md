@@ -26,9 +26,9 @@ Now install the explorer dependencies:
 
 ### Summary generation
 
-Cache some product summaries:
+Initialise and create product summaries:
 
-    nohup cubedash-gen --all &>> summary-gen.log &
+    nohup cubedash-gen --init --all &>> summary-gen.log &
 
 (This can take a while the first time, depending on your datacube size. 
 We're using `nohup .. &` to run in the background.)

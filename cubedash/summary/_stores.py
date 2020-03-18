@@ -88,9 +88,7 @@ class DatasetItem:
 
 
 class SummaryStore:
-    def __init__(
-        self, index: Index, summariser: Summariser, init_schema=False, log=_LOG
-    ) -> None:
+    def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
         self.log = log
         self._update_listeners = []
@@ -98,17 +96,23 @@ class SummaryStore:
         self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
-        if init_schema:
-            _schema.create_schema(self._engine)
+    def is_initialised(self) -> bool:
+        """
+        Do our DB schemas exist?
+        """
+        return _schema.has_schema(self._engine)
+
+    def init(self):
+        """
+        Initialise any schema elements that don't exist.
+
+        (Requires `create` permissions in the db)
+        """
+        _schema.create_schema(self._engine)
 
     @classmethod
-    def create(cls, index: Index, init_schema=False, log=_LOG) -> "SummaryStore":
-        return cls(
-            index,
-            Summariser(_utils.alchemy_engine(index)),
-            init_schema=init_schema,
-            log=log,
-        )
+    def create(cls, index: Index, log=_LOG) -> "SummaryStore":
+        return cls(index, Summariser(_utils.alchemy_engine(index)), log=log)
 
     def close(self):
         """Close any pooled/open connections. Necessary before forking."""
