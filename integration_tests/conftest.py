@@ -28,9 +28,10 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 @pytest.fixture(scope="function")
 def summary_store(module_dea_index: Index) -> SummaryStore:
-    SummaryStore.create(module_dea_index, init_schema=False).drop_all()
+    store = SummaryStore.create(module_dea_index)
+    store.drop_all()
     module_dea_index.close()
-    store = SummaryStore.create(module_dea_index, init_schema=True)
+    store.init()
     return store
 
 

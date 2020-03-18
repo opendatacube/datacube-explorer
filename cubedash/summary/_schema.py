@@ -171,7 +171,17 @@ SPATIAL_QUALITY_STATS = Table(
 )
 
 
+def has_schema(engine: Engine) -> bool:
+    """
+    Does the cubedash schema already exist?
+    """
+    return engine.dialect.has_schema(engine, CUBEDASH_SCHEMA)
+
+
 def create_schema(engine: Engine):
+    """
+    Create any missing parts of the cubedash schema
+    """
     engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
     engine.execute(DDL(f"create extension if not exists postgis"))
 
