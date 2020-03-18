@@ -1,11 +1,13 @@
 import multiprocessing
 import sys
 from datetime import timedelta
+from functools import partial
 from typing import List, Optional, Sequence, Tuple
 
 import click
 import structlog
-from click import echo, secho, style
+from click import secho as click_secho
+from click import style
 
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore, TimePeriodOverview
@@ -14,7 +16,12 @@ from datacube.index import Index, index_connect
 from datacube.model import DatasetType
 from datacube.ui.click import config_option, environment_option, pass_config
 
+# Machine (json) logging.
 _LOG = structlog.get_logger()
+
+# Interactive messages for a human go to stderr.
+user_message = partial(click_secho, err=True)
+
 
 # pylint: disable=broad-except
 def generate_report(item: Tuple[LocalConfig, str, bool]):
@@ -62,15 +69,14 @@ def run_generation(
     workers=3,
     force_refresh: Optional[bool] = False,
 ) -> Tuple[int, int]:
-    echo(
+    user_message(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
-        err=True,
     )
 
     completed = 0
     failures = 0
 
-    echo("Generating product summaries...", err=True)
+    user_message("Generating product summaries...")
     with multiprocessing.Pool(workers) as pool:
         product: DatasetType
         summary: TimePeriodOverview
@@ -81,13 +87,12 @@ def run_generation(
             chunksize=1,
         ):
             if summary is None:
-                echo(f"{style(product_name, fg='yellow')} error (see log)", err=True)
+                user_message(f"{style(product_name, fg='yellow')} error (see log)")
                 failures += 1
             else:
-                echo(
+                user_message(
                     f"{style(product_name, fg='green')} done: "
                     f"({summary.dataset_count} datasets)",
-                    err=True,
                 )
                 completed += 1
 
@@ -98,10 +103,9 @@ def run_generation(
     #     echo("\tregenerating totals....", nl=False, err=True)
     #     store.update(None, None, None, None, generate_missing_children=False)
 
-    secho(
+    user_message(
         f"done. " f"{completed}/{len(products)} generated, " f"{failures} failures",
         fg="red" if failures else "green",
-        err=True,
     )
     _LOG.info("completed", count=len(products), generated=completed, failures=failures)
     return completed, failures
@@ -164,13 +168,12 @@ def cli(
     store = SummaryStore.create(index)
 
     if init_database:
-        echo("Initialising schema", err=True)
+        user_message("Initialising schema")
         store.init()
     elif not store.is_initialised():
-        echo(
+        user_message(
             style("No cubedash schema exists. ", fg="red")
             + "Please rerun with --init to create one",
-            err=True,
         )
         sys.exit(-1)
 
@@ -183,9 +186,9 @@ def cli(
         config, products, workers=jobs, force_refresh=force_refresh
     )
     if refresh_stats:
-        echo("Refreshing statistics...", nl=False)
+        user_message("Refreshing statistics...", nl=False)
         store.refresh_stats(concurrently=force_concurrently)
-        secho("done", color="green")
+        user_message("done", color="green")
         _LOG.info("stats.refresh")
     sys.exit(failures)
 
