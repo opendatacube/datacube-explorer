@@ -1,0 +1,197 @@
+{
+    "$id": "collection.json#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "allOf": [
+        {
+            "$ref": "https://cdn.staclint.com/master/catalog.json"
+        },
+        {
+            "$ref": "#/definitions/collection"
+        }
+    ],
+    "definitions": {
+        "collection": {
+            "description": "These are the fields specific to a STAC Collection. All other fields are inherited from STAC Catalog.",
+            "properties": {
+                "extent": {
+                    "properties": {
+                        "spatial": {
+                            "properties": {
+                                "bbox": {
+                                    "items": {
+                                        "items": {
+                                            "type": "number"
+                                        },
+                                        "maxItems": 6,
+                                        "minItems": 4,
+                                        "title": "Spatial extent",
+                                        "type": "array"
+                                    },
+                                    "minItems": 1,
+                                    "title": "Spatial extents",
+                                    "type": "array"
+                                }
+                            },
+                            "required": [
+                                "bbox"
+                            ],
+                            "title": "Spatial extent object",
+                            "type": "object"
+                        },
+                        "temporal": {
+                            "properties": {
+                                "interval": {
+                                    "items": {
+                                        "items": {
+                                            "format": "date-time",
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "maxItems": 2,
+                                        "minItems": 2,
+                                        "title": "Temporal extent",
+                                        "type": "array"
+                                    },
+                                    "minItems": 1,
+                                    "title": "Temporal extents",
+                                    "type": "array"
+                                }
+                            },
+                            "required": [
+                                "interval"
+                            ],
+                            "title": "Temporal extent object",
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "spatial",
+                        "temporal"
+                    ],
+                    "title": "Extents",
+                    "type": "object"
+                },
+                "keywords": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Keywords",
+                    "type": "array"
+                },
+                "license": {
+                    "pattern": "^[\\w\\-\\.\\+]+$",
+                    "title": "Collection License Name",
+                    "type": "string"
+                },
+                "providers": {
+                    "items": {
+                        "properties": {
+                            "description": {
+                                "title": "Organization description",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Organization name",
+                                "type": "string"
+                            },
+                            "roles": {
+                                "items": {
+                                    "enum": [
+                                        "producer",
+                                        "licensor",
+                                        "processor",
+                                        "host"
+                                    ],
+                                    "type": "string"
+                                },
+                                "title": "Organization roles",
+                                "type": "array"
+                            },
+                            "url": {
+                                "format": "url",
+                                "title": "Organization homepage",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "type": "array"
+                },
+                "stac_extensions": {
+                    "items": {
+                        "anyOf": [
+                            {
+                                "format": "uri",
+                                "title": "Reference to a JSON Schema",
+                                "type": "string"
+                            },
+                            {
+                                "enum": [
+                                    "asset",
+                                    "commons",
+                                    "checksum",
+                                    "datacube",
+                                    "scientific",
+                                    "version"
+                                ],
+                                "title": "Reference to a core extension",
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "title": "STAC extensions",
+                    "type": "array",
+                    "uniqueItems": true
+                },
+                "summaries": {
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "max": {
+                                        "title": "Maximum value",
+                                        "type": [
+                                            "number",
+                                            "string"
+                                        ]
+                                    },
+                                    "min": {
+                                        "title": "Minimum value",
+                                        "type": [
+                                            "number",
+                                            "string"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "min",
+                                    "max"
+                                ],
+                                "title": "Stats",
+                                "type": "object"
+                            },
+                            {
+                                "items": {
+                                    "description": "Any data type could occur."
+                                },
+                                "minItems": 1,
+                                "title": "Set of values",
+                                "type": "array"
+                            }
+                        ]
+                    },
+                    "type": "object"
+                }
+            },
+            "required": [
+                "license",
+                "extent"
+            ],
+            "title": "STAC Collection",
+            "type": "object"
+        }
+    },
+    "description": "This object represents Collections in a SpatioTemporal Asset Catalog.",
+    "title": "STAC Collection Specification"
+}
