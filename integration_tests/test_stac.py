@@ -7,6 +7,7 @@ from pathlib import Path
 from pprint import pformat, pprint
 from typing import Dict, Generator, Iterable, Optional
 
+import jsonschema
 import pytest
 from boltons.iterutils import research
 from dateutil import tz
@@ -17,7 +18,7 @@ from shapely.validation import explain_validity
 
 import cubedash._stac
 from cubedash import _model
-from datacube.utils import validate_document
+from datacube.utils import read_documents
 from integration_tests.asserts import DebugContext, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
@@ -26,23 +27,62 @@ DEFAULT_TZ = tz.gettz("Australia/Darwin")
 OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
-_SCHEMA_DIR = Path(__file__).parent / "schemas" / "stac"
+_SCHEMA_DIR = Path(__file__).parent / "schemas" / "stac" / "v0.9.0"
+
+
+def load_validator(schema_location: Path):
+    # Allow schemas to reference other schemas in the same folder.
+    def doc_reference(path):
+        path = schema_location.parent.joinpath(path)
+        if not path.exists():
+            raise ValueError(
+                f"Schema reference not found: {path!r} (within {schema_location.name})"
+            )
+        referenced_schema = next(iter(read_documents(path)))[1]
+        return referenced_schema
+
+    if not schema_location.exists():
+        raise ValueError(f"No jsonschema file found at {schema_location}")
+
+    with schema_location.open("r") as s:
+        schema = json.load(s)
+
+    jsonschema.Draft4Validator.check_schema(schema)
+    ref_resolver = jsonschema.RefResolver.from_schema(
+        schema, handlers={"": doc_reference}
+    )
+    return jsonschema.Draft4Validator(schema, resolver=ref_resolver)
+
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-_ITEM_SCHEMA_PATH = _SCHEMA_DIR / "item.json"
-_ITEM_SCHEMA = json.load(_ITEM_SCHEMA_PATH.open("r"))
-_CATALOG_SCHEMA_PATH = _SCHEMA_DIR / "catalog.json"
-_CATALOG_SCHEMA = json.load(_CATALOG_SCHEMA_PATH.open("r"))
+_ITEM_SCHEMA = load_validator(_SCHEMA_DIR / "item.json")
+_CATALOG_SCHEMA = load_validator(_SCHEMA_DIR / "catalog.json")
+_COLLECTION_SCHEMA = load_validator(_SCHEMA_DIR / "collection.json")
+_ITEM_COLLECTION_SCHEMA = load_validator(_SCHEMA_DIR / "itemcollection.json")
 
 
-def get_items(client: FlaskClient, url: str) -> Dict:
+def get_collection(client: FlaskClient, url: str) -> Dict:
+    """
+    Get a URL, expecting a valid stac collection document to be there"""
     with DebugContext(f"Requested {repr(url)}"):
         data = get_geojson(client, url)
         assert_collection(data)
     return data
 
 
+def get_items(client: FlaskClient, url: str) -> Dict:
+    """
+    Get a URL, expecting a valid stac item collection document to be there"""
+    with DebugContext(f"Requested {repr(url)}"):
+        data = get_geojson(client, url)
+        assert_item_collection(data)
+    return data
+
+
 def get_item(client: FlaskClient, url: str) -> Dict:
+    """
+    Get a URL, expecting a single valid Stac Item to be there
+    """
     with DebugContext(f"Requested {repr(url)}"):
         data = get_json(client, url)
         validate_item(data)
@@ -258,7 +298,7 @@ def test_stac_collections(stac_client: FlaskClient):
         href = child_link["href"]
 
         print(f"Loading collection page for {product_name}: {repr(href)}")
-        collection_data = get_json(stac_client, href)
+        collection_data = get_collection(stac_client, href)
         assert collection_data["id"] == product_name
         # TODO: assert items, properties, etc.
         found_products.add(product_name)
@@ -285,7 +325,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     scene_collection = get_json(stac_client, collection_href)
     pprint(scene_collection)
     assert scene_collection == {
-        "stac_version": "0.6.0",
+        "stac_version": "0.9.0",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
         "properties": {},
@@ -326,6 +366,7 @@ def test_stac_item(stac_client: FlaskClient):
     del response["geometry"]
 
     assert response == {
+        "stac_version": "0.9.0",
         "id": "87676cf2-ef18-47b5-ba30-53a99539428d",
         "type": "Feature",
         # 'bbox': [120.527607997473, -30.8500455408006,
@@ -369,13 +410,20 @@ def test_stac_item(stac_client: FlaskClient):
     }
 
 
+def assert_item_collection(collection: Dict):
+    assert "features" in collection, "No features in collection"
+    _ITEM_COLLECTION_SCHEMA.validate(collection)
+    validate_items(collection["features"])
+
+
 def assert_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
+    _COLLECTION_SCHEMA.validate(collection)
     validate_items(collection["features"])
 
 
 def validate_item(item: Dict):
-    validate_document(item, _ITEM_SCHEMA, schema_folder=_ITEM_SCHEMA_PATH.parent)
+    _ITEM_SCHEMA.validate(item)
 
     # Should be a valid polygon
     assert "geometry" in item, "Item has no geometry"

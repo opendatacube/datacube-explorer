@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
-from dateutil.tz import tz
-
 import flask
+from dateutil.tz import tz
+from flask import abort, request
+
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
-from flask import abort, request
 
 from . import _model, _utils
 
@@ -26,7 +26,8 @@ DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
 # Should we force all URLs to include the full hostname?
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
-_STAC_DEFAULTS = dict(stac_version="0.6.0")
+_STAC_VERSION = "0.9.0"
+_STAC_DEFAULTS = dict(stac_version=_STAC_VERSION)
 
 
 def url_for(*args, **kwargs):
@@ -162,6 +163,7 @@ def search_stac_items(
     )
 
     result = dict(
+        **_STAC_DEFAULTS,
         type="FeatureCollection",
         features=[as_stac_item(f) for f in items[:limit]],
         meta=dict(page=offset // limit, limit=limit),
@@ -314,6 +316,7 @@ def as_stac_item(dataset: DatasetItem):
     """
     ds = dataset.odc_dataset
     item_doc = dict(
+        **_STAC_DEFAULTS,
         id=dataset.dataset_id,
         type="Feature",
         bbox=dataset.bbox,

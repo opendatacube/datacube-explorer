@@ -1,0 +1,31 @@
+{
+    "$id": "schema.json#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "STAC Commons Extension for STAC Items and STAC Collections.",
+    "oneOf": [
+        {
+            "$ref": "https://cdn.staclint.com/master/item.json"
+        },
+        {
+            "allOf": [
+                {
+                    "$ref": "https://cdn.staclint.com/master/collection.json"
+                },
+                {
+                    "properties": {
+                        "properties": {
+                            "additionalProperties": true,
+                            "title": "Common fields",
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "properties"
+                    ],
+                    "type": "object"
+                }
+            ]
+        }
+    ],
+    "title": "Commons Extension"
+}
