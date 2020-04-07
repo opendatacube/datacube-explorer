@@ -4,6 +4,7 @@ Tests that hit the stac api
 
 import json
 import urllib.parse
+from collections import defaultdict
 from pathlib import Path
 from pprint import pformat, pprint
 from typing import Dict, Generator, Iterable, Optional
@@ -32,6 +33,10 @@ OUR_PAGE_SIZE = 4
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
 _STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac"
 
+_SCHEMAS_BY_NAME = defaultdict(list)
+for schema_path in _SCHEMA_BASE.rglob("*.json"):
+    _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
+
 
 def read_document(path: Path) -> dict:
     """
@@ -52,6 +57,17 @@ def load_validator(schema_location: Path):
         if relative_path.exists():
             return read_document(relative_path)
 
+        # This is a sloppy workaround.
+        # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
+        # paths in stac work. We fallback to matching based on filename.
+        similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
+        if similar_schemas:
+            if len(similar_schemas) > 1:
+                raise NotImplementedError(
+                    f"cannot distinguish schema {ref!r} (within {schema_location}"
+                )
+            [presumed_schema] = similar_schemas
+            return read_document(presumed_schema)
         raise ValueError(
             f"Schema reference not found: {ref!r} (within {schema_location})"
         )
