@@ -3,6 +3,7 @@ Tests that hit the stac api
 """
 
 import json
+import urllib.parse
 from pathlib import Path
 from pprint import pformat, pprint
 from typing import Dict, Generator, Iterable, Optional
@@ -19,7 +20,8 @@ from shapely.validation import explain_validity
 import cubedash._stac
 from cubedash import _model
 from datacube.utils import read_documents
-from integration_tests.asserts import DebugContext, get_geojson, get_json
+
+from .asserts import DebugContext, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -27,19 +29,50 @@ DEFAULT_TZ = tz.gettz("Australia/Darwin")
 OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
-_SCHEMA_DIR = Path(__file__).parent / "schemas" / "stac" / "v0.9.0"
+_SCHEMA_BASE = Path(__file__).parent / "schemas"
+_STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac"
+
+
+def read_document(path: Path) -> dict:
+    """
+    Read and parse exactly one document.
+    """
+    ds = list(read_documents(path))
+    if len(ds) != 1:
+        raise ValueError("Expected only one document to be in path %s" % path)
+
+    _, doc = ds[0]
+    return doc
 
 
 def load_validator(schema_location: Path):
     # Allow schemas to reference other schemas in the same folder.
-    def doc_reference(path):
-        path = schema_location.parent.joinpath(path)
+    def local_reference(ref):
+        relative_path = schema_location.parent.joinpath(ref)
+        if relative_path.exists():
+            return read_document(relative_path)
+
+        raise ValueError(
+            f"Schema reference not found: {ref!r} (within {schema_location})"
+        )
+
+    def web_reference(ref: str):
+        """
+        A reference to a schema via a URL
+
+        eg http://geojson.org/schemas/Features.json'
+        """
+        (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
+        # We used `wget -r` to download the remote schemas locally.
+        # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
+        path = _SCHEMA_BASE / f"{netloc}{offset}"
         if not path.exists():
             raise ValueError(
-                f"Schema reference not found: {path!r} (within {schema_location.name})"
+                f"No local copy exists of schema {ref!r}.\n"
+                f"\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
+                f"\t(looked in {path})"
             )
-        referenced_schema = next(iter(read_documents(path)))[1]
-        return referenced_schema
+        return read_document(path)
 
     if not schema_location.exists():
         raise ValueError(f"No jsonschema file found at {schema_location}")
@@ -49,23 +82,30 @@ def load_validator(schema_location: Path):
 
     jsonschema.Draft4Validator.check_schema(schema)
     ref_resolver = jsonschema.RefResolver.from_schema(
-        schema, handlers={"": doc_reference}
+        schema,
+        handlers={"": local_reference, "https": web_reference, "http": web_reference},
     )
     return jsonschema.Draft4Validator(schema, resolver=ref_resolver)
 
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-_ITEM_SCHEMA = load_validator(_SCHEMA_DIR / "item.json")
-_CATALOG_SCHEMA = load_validator(_SCHEMA_DIR / "catalog.json")
-_COLLECTION_SCHEMA = load_validator(_SCHEMA_DIR / "collection.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(_SCHEMA_DIR / "itemcollection.json")
+_CATALOG_SCHEMA = load_validator(
+    _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json"
+)
+_COLLECTION_SCHEMA = load_validator(
+    _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
+)
+_ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
+_ITEM_COLLECTION_SCHEMA = load_validator(
+    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
+)
 
 
 def get_collection(client: FlaskClient, url: str) -> Dict:
     """
     Get a URL, expecting a valid stac collection document to be there"""
     with DebugContext(f"Requested {repr(url)}"):
-        data = get_geojson(client, url)
+        data = get_json(client, url)
         assert_collection(data)
     return data
 
@@ -417,7 +457,6 @@ def assert_item_collection(collection: Dict):
 
 
 def assert_collection(collection: Dict):
-    assert "features" in collection, "No features in collection"
     _COLLECTION_SCHEMA.validate(collection)
     validate_items(collection["features"])
 
