@@ -143,6 +143,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Which theme to use (in the cubedash/themes folder)
     CUBEDASH_THEME = 'odc'
     
+    # The default license to show for products that don't have one.
+    #     license is optional, but the stac API collections will not pass validation if it's null)
+    #     Either a SPDX License identifier, 'various' or 'proprietary'
+    #     Example value: "CC-BY-SA-4.0"
+    CUBEDASH_DEFAULT_LICENSE = None
+    
     # Customise '/stac' endpoint information
     STAC_ENDPOINT_ID = 'my-odc-explorer'
     STAC_ENDPOINT_TITLE = 'My ODC Explorer'

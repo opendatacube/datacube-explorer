@@ -15,6 +15,7 @@ from flask import abort, request
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
+
 from . import _model, _utils
 
 _LOG = logging.getLogger(__name__)
@@ -201,6 +202,7 @@ def collection(product_name: str):
             **_STAC_DEFAULTS,
             id=summary.name,
             title=summary.name,
+            license=_utils.product_license(dataset_type),
             description=dataset_type.definition.get("description"),
             properties=dict(_build_properties(dataset_type.metadata)),
             providers=[],

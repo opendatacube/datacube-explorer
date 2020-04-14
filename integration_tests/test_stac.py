@@ -153,6 +153,7 @@ def stac_client(populated_index, client: FlaskClient):
     """
     cubedash._stac.PAGE_SIZE_LIMIT = OUR_DATASET_LIMIT
     cubedash._stac.DEFAULT_PAGE_SIZE = OUR_PAGE_SIZE
+    _model.app.config["CUBEDASH_DEFAULT_LICENSE"] = "CC-BY-4.0"
     return client
 
 
@@ -400,6 +401,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
         "stac_version": "0.9.0",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
+        "license": "CC-BY-4.0",
         "properties": {},
         "description": "High Tide 20 percentage composites for entire coastline",
         "extent": {
