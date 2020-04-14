@@ -12,6 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
+import flask
 import rapidjson
 import shapely.geometry
 import shapely.validation
@@ -21,9 +22,9 @@ from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
 from shapely.geometry import MultiPolygon, Polygon, shape
 from sqlalchemy.engine import Engine
+from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
-import flask
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.index import Index
@@ -31,7 +32,6 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
-from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -120,6 +120,29 @@ def dataset_label(dataset):
         return p.name
     # TODO: Otherwise try to build a label from the available fields?
     return str(dataset.id)
+
+
+def product_license(dt: DatasetType) -> Optional[str]:
+    """
+    What is the license for this product?
+
+    The return format should match the stac collection spec
+    - Either a SPDX License identifier
+    - 'various'
+    -  or 'proprietary'
+
+    Example value: "CC-BY-SA-4.0"
+    """
+    # Maybe the metadata type has a 'license' field defined.
+    if "license" in dt.metadata.fields:
+        return dt.metadata.fields["license"]
+
+    # Otherwise, look in a default location in the document, matching stac collections.
+    if "license" in dt.definition:
+        return dt.definition["license"]
+
+    # Otherwise is there a global default?
+    return flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
 
 
 def _next_month(date: datetime):
