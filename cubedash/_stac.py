@@ -15,7 +15,6 @@ from flask import abort, request
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
-
 from . import _model, _utils
 
 _LOG = logging.getLogger(__name__)
@@ -190,12 +189,13 @@ def collection(product_name: str):
     summary_props = {}
     if summary and summary.time_earliest:
         begin, end = utc(summary.time_earliest), utc(summary.time_latest)
-        extent = {"temporal": [begin, end]}
+        extent = {"temporal": {"interval": [[begin, end]]}}
         footprint = all_time_summary.footprint_wrs84
         if footprint:
-            extent["spatial"] = footprint.bounds
+            extent["spatial"] = {"bbox": [footprint.bounds]}
 
         summary_props["extent"] = extent
+
     return _utils.as_geojson(
         dict(
             **_STAC_DEFAULTS,
