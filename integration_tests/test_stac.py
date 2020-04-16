@@ -9,18 +9,17 @@ from pathlib import Path
 from pprint import pformat, pprint
 from typing import Dict, Generator, Iterable, Optional
 
+import cubedash._stac
 import jsonschema
 import pytest
 from boltons.iterutils import research
+from cubedash import _model
+from datacube.utils import read_documents
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
-
-import cubedash._stac
-from cubedash import _model
-from datacube.utils import read_documents
 
 from .asserts import DebugContext, get_geojson, get_json
 
@@ -395,7 +394,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     else:
         assert False, "high_tide_comp_20p not found in collection list"
 
-    scene_collection = get_json(stac_client, collection_href)
+    scene_collection = get_collection(stac_client, collection_href)
     pprint(scene_collection)
     assert scene_collection == {
         "stac_version": "0.9.0",
@@ -415,7 +414,9 @@ def test_stac_collection_items(stac_client: FlaskClient):
                     ]
                 ]
             },
-            "temporal": [["2008-06-01T00:00:00+00:00", "2008-06-01T00:00:00+00:00"]],
+            "temporal": {
+                "interval": [["2008-06-01T00:00:00+00:00", "2008-06-01T00:00:00+00:00"]]
+            },
         },
         "links": [
             {
