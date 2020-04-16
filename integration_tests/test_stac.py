@@ -9,17 +9,19 @@ from pathlib import Path
 from pprint import pformat, pprint
 from typing import Dict, Generator, Iterable, Optional
 
-import cubedash._stac
 import jsonschema
 import pytest
 from boltons.iterutils import research
-from cubedash import _model
-from datacube.utils import read_documents
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
+from pytest import approx
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
+
+import cubedash._stac
+from cubedash import _model
+from datacube.utils import read_documents
 
 from .asserts import DebugContext, get_geojson, get_json
 
@@ -438,18 +440,13 @@ def test_stac_item(stac_client: FlaskClient):
         "http://localhost/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d",
     )
     # Our item document can still be improved. This is ensuring changes are deliberate.
-    pprint(response)
-    # TODO: These two properties need to be compared with fuzzier float precision
-    #       (a minor difference between python installs)
-    del response["bbox"]
-    del response["geometry"]
-
     assert response == {
         "stac_version": "0.9.0",
         "id": "87676cf2-ef18-47b5-ba30-53a99539428d",
         "type": "Feature",
-        # 'bbox': [120.527607997473, -30.8500455408006,
-        #          121.510624611368, -29.9068405072815],
+        "bbox": approx(
+            [120.527607997473, -30.8500455408006, 121.510624611368, -29.9068405072815]
+        ),
         "properties": {
             "datetime": "2017-04-19T01:45:56+00:00",
             "eo:platform": "landsat-8",
@@ -458,14 +455,18 @@ def test_stac_item(stac_client: FlaskClient):
             "odc:processing_datetime": "2018-05-20T07:57:51.178223+00:00",
             "odc:product": "wofs_albers",
         },
-        # 'geometry': {
-        #     'type': 'Polygon',
-        #     'coordinates': [[[121.42398691222829, -30.850045540800554],
-        #                      [120.52760799747303, -30.784505852831213],
-        #                      [120.76724282948523, -29.90684050728149],
-        #                      [121.5106246113678, -29.96078549604967],
-        #                      [121.42398691222829, -30.850045540800554]]],
-        # },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    approx([121.42398691222829, -30.850045540800554]),
+                    approx([120.52760799747303, -30.784505852831213]),
+                    approx([120.76724282948523, -29.90684050728149]),
+                    approx([121.5106246113678, -29.96078549604967]),
+                    approx([121.42398691222829, -30.850045540800554]),
+                ]
+            ],
+        },
         "assets": {
             "water": {
                 "href": "file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d",
