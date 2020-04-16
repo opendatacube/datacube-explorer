@@ -15,6 +15,7 @@ from boltons.iterutils import research
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
+from jsonschema import SchemaError
 from pytest import approx
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
@@ -51,7 +52,8 @@ def read_document(path: Path) -> dict:
     return doc
 
 
-def load_validator(schema_location: Path):
+def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
+
     # Allow schemas to reference other schemas in the same folder.
     def local_reference(ref):
         relative_path = schema_location.parent.joinpath(ref)
@@ -97,12 +99,16 @@ def load_validator(schema_location: Path):
     with schema_location.open("r") as s:
         schema = json.load(s)
 
-    jsonschema.Draft4Validator.check_schema(schema)
+    try:
+        jsonschema.Draft7Validator.check_schema(schema)
+    except SchemaError as e:
+        raise RuntimeError(f"Invalid schema {schema_location}") from e
+
     ref_resolver = jsonschema.RefResolver.from_schema(
         schema,
         handlers={"": local_reference, "https": web_reference, "http": web_reference},
     )
-    return jsonschema.Draft4Validator(schema, resolver=ref_resolver)
+    return jsonschema.Draft7Validator(schema, resolver=ref_resolver)
 
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
@@ -115,6 +121,12 @@ _COLLECTION_SCHEMA = load_validator(
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
 _ITEM_COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
+)
+
+_STAC_EXTENSIONS = dict(
+    (extension.name, load_validator(extension / "json-schema" / "schema.json"))
+    for extension_dir in _STAC_SCHEMA_BASE.rglob("extensions")
+    for extension in extension_dir.iterdir()
 )
 
 
@@ -226,6 +238,7 @@ def _iter_items_across_pages(
     """
     while url is not None:
         items = get_items(client, url)
+
         yield from items["features"]
         url = _get_next_href(items)
 
@@ -490,15 +503,28 @@ def test_stac_item(stac_client: FlaskClient):
     }
 
 
+def assert_stac_extensions(doc: Dict):
+    stac_extensions = doc.get("stac_extensions", ())
+
+    for extension_name in stac_extensions:
+        assert (
+            extension_name in _STAC_EXTENSIONS
+        ), f"Unknown stac extension? No schema for {extension_name}"
+
+        _STAC_EXTENSIONS[extension_name].validate(doc)
+
+
 def assert_item_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
     _ITEM_COLLECTION_SCHEMA.validate(collection)
+    assert_stac_extensions(collection)
     validate_items(collection["features"])
 
 
 def assert_collection(collection: Dict):
     _COLLECTION_SCHEMA.validate(collection)
     assert "features" not in collection
+    assert_stac_extensions(collection)
 
     # Does it have a link to the list of items?
     links = collection["links"]
@@ -528,6 +554,8 @@ def validate_item(item: Dict):
     for offset, value in research(item, lambda p, k, v: k == "href"):
         viewable_offset = "→".join(map(repr, offset))
         assert value.strip(), f"href has empty value: {repr(viewable_offset)}"
+
+    assert_stac_extensions(item)
 
 
 def _get_next_href(geojson: Dict) -> Optional[str]:
