@@ -262,12 +262,18 @@ def as_rich_json(o):
 
 
 def as_json(o, content_type="application/json"):
+    # Indent if they're loading directly in a browser.
+    #   (Flask's Accept parsing is too smart, and sees html-acceptance in
+    #    default ajax requests "accept: */*". So we do it raw.)
+    prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
+
     return flask.Response(
         rapidjson.dumps(
             o,
             datetime_mode=rapidjson.DM_ISO8601,
             uuid_mode=rapidjson.UM_CANONICAL,
             number_mode=rapidjson.NM_NATIVE,
+            indent=4 if prefer_formatted else None,
         ),
         content_type=content_type,
     )
