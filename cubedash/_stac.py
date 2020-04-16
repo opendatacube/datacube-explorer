@@ -161,16 +161,17 @@ def search_stac_items(
             full_dataset=True,
         )
     )
+    returned = items[:limit]
+    there_are_more = len(items) == limit + 1
 
     result = dict(
         **_STAC_DEFAULTS,
+        stac_extensions=["context"],
         type="FeatureCollection",
-        features=[as_stac_item(f) for f in items[:limit]],
-        meta=dict(page=offset // limit, limit=limit),
+        features=[as_stac_item(f) for f in returned],
+        context=dict(page=offset // limit, limit=limit, returned=len(returned)),
         links=[],
     )
-
-    there_are_more = len(items) == limit + 1
 
     if there_are_more:
         result["links"].append(dict(rel="next", href=get_next_url(offset + limit)))
@@ -241,8 +242,8 @@ def collection_items(product_name: str):
         offset=request.args.get("_o", default=0, type=int),
     )
 
-    # Maybe we shouldn't include "found" as it prevents some future optimisation?
-    feature_collection["meta"]["found"] = all_time_summary.dataset_count
+    # Maybe we shouldn't include total count, as it prevents some future optimisation?
+    feature_collection["context"]["matched"] = all_time_summary.dataset_count
 
     return _utils.as_geojson(feature_collection)
 
@@ -319,6 +320,8 @@ def as_stac_item(dataset: DatasetItem):
     ds = dataset.odc_dataset
     item_doc = dict(
         **_STAC_DEFAULTS,
+        # TODO: stac_extensions=['eo'],
+        #       (needs all the required fields for tests to pass)
         id=dataset.dataset_id,
         type="Feature",
         bbox=dataset.bbox,
