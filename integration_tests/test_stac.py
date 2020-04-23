@@ -450,54 +450,89 @@ def test_stac_item(stac_client: FlaskClient):
     # Load one stac dataset from the test data.
     response = get_item(
         stac_client,
-        "http://localhost/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d",
+        "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
     )
     # Our item document can still be improved. This is ensuring changes are deliberate.
     assert response == {
         "stac_version": "0.9.0",
-        "id": "87676cf2-ef18-47b5-ba30-53a99539428d",
+        "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
         "type": "Feature",
         "bbox": approx(
-            [120.527607997473, -30.8500455408006, 121.510624611368, -29.9068405072815]
+            [140.035960082973, -32.6888300563717, 142.621067117769, -30.7799534711876]
         ),
         "properties": {
-            "datetime": "2017-04-19T01:45:56+00:00",
-            "eo:platform": "landsat-8",
-            "eo:instrument": "OLI_TIRS",
-            "cubedash:region_code": "-11_-34",
-            "odc:processing_datetime": "2018-05-20T07:57:51.178223+00:00",
-            "odc:product": "wofs_albers",
+            "datetime": "2017-05-02T00:29:01+00:00",
+            "dtr:start_datetime": "2017-05-02T00:28:48+00:00",
+            "dtr:end_datetime": "2017-05-02T00:29:14+00:00",
+            "eo:platform": "landsat-7",
+            "eo:instrument": "ETM",
+            "eo:column": "96",
+            "eo:row": "82",
+            "cubedash:region_code": "96_82",
+            "odc:processing_datetime": "2017-07-11T01:32:22+00:00",
+            "odc:product": "ls7_nbar_scene",
         },
         "geometry": {
             "type": "Polygon",
             "coordinates": [
                 [
-                    approx([121.42398691222829, -30.850045540800554]),
-                    approx([120.52760799747303, -30.784505852831213]),
-                    approx([120.76724282948523, -29.90684050728149]),
-                    approx([121.5106246113678, -29.96078549604967]),
-                    approx([121.42398691222829, -30.850045540800554]),
+                    approx([140.494174472712, -30.779953471187625]),
+                    approx([140.48160638713588, -30.786613939351987]),
+                    approx([140.47654885652616, -30.803517459008308]),
+                    approx([140.26694302361142, -31.554989847530283]),
+                    approx([140.11071136692811, -32.10972728807016]),
+                    approx([140.05019849367122, -32.32331059968287]),
+                    approx([140.03596008297276, -32.374863567950605]),
+                    approx([140.04582698730871, -32.37992930113176]),
+                    approx([140.09253434030472, -32.38726630955288]),
+                    approx([142.19093826112766, -32.68798630718157]),
+                    approx([142.19739423481033, -32.68883005637166]),
+                    approx([142.20859663812988, -32.688497041665755]),
+                    approx([142.21294093862082, -32.68685778341274]),
+                    approx([142.6210671177689, -31.092487513703713]),
+                    approx([142.6090583939577, -31.083354434650456]),
+                    approx([142.585607903412, -31.08001593849131]),
+                    approx([140.494174472712, -30.779953471187625]),
                 ]
             ],
         },
         "assets": {
-            "water": {
-                "href": "file://example.com/test_dataset/87676cf2-ef18-47b5-ba30-53a99539428d",
-                "odc:secondary_hrefs": [],
-                # TODO: we're supposed to map bands to integers in stac.
-                "eo:bands": ["water"],
-            }
+            # TODO: we're supposed to map bands to numbers in stac.
+            "1": {
+                "eo:bands": ["1"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif",
+            },
+            "2": {
+                "eo:bands": ["2"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif",
+            },
+            "3": {
+                "eo:bands": ["3"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif",
+            },
+            "4": {
+                "eo:bands": ["4"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif",
+            },
+            "5": {
+                "eo:bands": ["5"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif",
+            },
+            "7": {
+                "eo:bands": ["7"],
+                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif",
+            },
         },
         "links": [
             {
                 "rel": "self",
-                "href": "http://localhost/collections/wofs_albers/items/87676cf2-ef18-47b5-ba30-53a99539428d",
+                "href": "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
             },
-            {"rel": "parent", "href": "http://localhost/collections/wofs_albers"},
+            {"rel": "parent", "href": "http://localhost/collections/ls7_nbar_scene"},
             {
                 "rel": "alternative",
                 "type": "text/html",
-                "href": "http://localhost/dataset/87676cf2-ef18-47b5-ba30-53a99539428d",
+                "href": "http://localhost/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
             },
         ],
     }
