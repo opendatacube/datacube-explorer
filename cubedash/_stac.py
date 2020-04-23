@@ -358,10 +358,8 @@ def as_stac_item(dataset: DatasetItem):
     # If the dataset has a real start/end time, add it.
     time = ds.time
     if time.begin < time.end:
-        # datetime range extension propeosal (dtr):
-        # https://github.com/radiantearth/stac-spec/tree/master/extensions/datetime-range
-        item_doc["properties"]["dtr:start_datetime"] = utc(time.begin)
-        item_doc["properties"]["dtr:end_datetime"] = utc(time.end)
+        item_doc["properties"]["start_datetime"] = utc(time.begin)
+        item_doc["properties"]["end_datetime"] = utc(time.end)
 
     return item_doc
 
@@ -419,11 +417,25 @@ def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
 
 
 def field_platform(key, value):
-    yield "eo:platform", value.lower().replace("_", "-")
+    yield "platform", value.lower().replace("_", "-")
+
+
+def _as_stac_instruments(value: str):
+    """
+    >>> _as_stac_instruments('TM')
+    ['tm']
+    >>> _as_stac_instruments('OLI')
+    ['oli']
+    >>> _as_stac_instruments('ETM+')
+    ['etm']
+    >>> _as_stac_instruments('OLI_TIRS')
+    ['oli', 'tirs']
+    """
+    return [i.strip("+-").lower() for i in value.split("_")]
 
 
 def field_instrument(key, value):
-    yield "eo:instrument", value
+    yield "instruments", _as_stac_instruments(value)
 
 
 def field_bands(key, value: Dict):
@@ -437,9 +449,9 @@ def field_path_row(key, value):
     # Stac doesn't accept a range here, so we'll skip it in those products,
     # but we can handle the 99% case when lower==higher.
     if key == "sat_path":
-        kind = "column"
+        kind = "landsat:wrs_path"
     elif key == "sat_row":
-        kind = "row"
+        kind = "landsat:wrs_row"
     else:
         raise ValueError(f"Path/row kind {repr(key)}")
 
@@ -447,7 +459,7 @@ def field_path_row(key, value):
     if isinstance(value, Range):
         if value.end is None or value.begin == value.end:
             # Standard stac
-            yield f"eo:{kind}", str(value.begin)
+            yield kind, str(value.begin)
         else:
             # Our questionable output. Only present in telemetry products?
             yield f"odc:{key}", f"{value.begin}/{value.end}"
