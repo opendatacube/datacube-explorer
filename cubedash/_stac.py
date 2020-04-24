@@ -459,7 +459,7 @@ def field_path_row(key, value):
     if isinstance(value, Range):
         if value.end is None or value.begin == value.end:
             # Standard stac
-            yield kind, str(value.begin)
+            yield kind, int(value.begin)
         else:
             # Our questionable output. Only present in telemetry products?
             yield f"odc:{key}", f"{value.begin}/{value.end}"
