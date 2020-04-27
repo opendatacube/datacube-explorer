@@ -236,10 +236,10 @@ var DatasetsLayer = /** @class */ (function (_super) {
 }(L.GeoJSON));
 var OverviewMap = /** @class */ (function (_super) {
     __extends(OverviewMap, _super);
-    function OverviewMap(dataLayers, activeLayer) {
+    function OverviewMap(dataLayers, activeLayer, defaultZoom, defaultCenter) {
         var _this = _super.call(this, "map", {
-            zoom: 3,
-            center: [-26.2756326, 134.9387844],
+            zoom: defaultZoom,
+            center: defaultCenter,
             layers: [
                 L.tileLayer("//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png", {
                     maxZoom: 19,
@@ -295,7 +295,7 @@ var OverviewMap = /** @class */ (function (_super) {
     ;
     return OverviewMap;
 }(L.Map));
-function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData, footprintData) {
+function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData, footprintData, defaultZoom, defaultCenter) {
     var layers = [];
     var activeLayer = null;
     var infoControl = new DatasetInfoControl();
@@ -311,8 +311,10 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
         if (showIndividualDatasets) {
             layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(infoControl, routes)));
         }
+    } else {
+        console.log("No displayable data")
     }
-    var map = new OverviewMap(layers, activeLayer);
+    var map = new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
     if (hasDisplayableData) {
         infoControl.addTo(map);
     }
