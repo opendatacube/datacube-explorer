@@ -51,9 +51,13 @@ def overview_page(
     )
 
     theme = app.theme_manager.themes[flask.current_app.config["CUBEDASH_THEME"]]
-    _LOG.debug('overview.page.theme', theme=flask.current_app.config["CUBEDASH_THEME"], options=theme.options)
-    default_zoom = theme.options['startZoom']
-    default_center = theme.options['startCoords']
+    _LOG.debug(
+        "overview.page.theme",
+        theme=flask.current_app.config["CUBEDASH_THEME"],
+        options=theme.options,
+    )
+    default_zoom = theme.options["startZoom"]
+    default_center = theme.options["startCoords"]
 
     return utils.render(
         "overview.html",
@@ -72,7 +76,7 @@ def overview_page(
         selected_summary=selected_summary,
         # Map defaults
         default_zoom=default_zoom,
-        default_center=default_center
+        default_center=default_center,
     )
 
 
