@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import List, Tuple
 
 import flask
-import flask_themes
 import structlog
 from flask import Response, abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
