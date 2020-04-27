@@ -216,7 +216,9 @@
         (function () {
             'use strict';
             const footprintGeoJSON = {{ footprint_geojson | torapidjson }},
-                  regionsGeoJSON = {{ regions_geojson | torapidjson }};
+                  regionsGeoJSON = {{ regions_geojson | torapidjson }},
+                  defaultZoom = {{ default_zoom }},
+                  defaultCenter = {{ default_center }};
 
             const routes = new ApplicationRoutes(
                 '{{ url_for('region_page', region_code='__REGION_CODE__', **product_args)}}',
@@ -231,7 +233,9 @@
                 {% if show_individual_datasets %}true{% else %}false{% endif %},
                 routes,
                 regionsGeoJSON,
-                footprintGeoJSON
+                footprintGeoJSON,
+                defaultZoom,
+                defaultCenter
             );
 
             {% if selected_summary.timeline_dataset_counts and (selected_summary.timeline_dataset_counts | length > 1) %}
