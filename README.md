@@ -3,7 +3,7 @@
 ![build](https://github.com/opendatacube/datacube-explorer/workflows/Lint,%20Test%20Code%20and%20Push%20Docker%20image%20for%20DEVELOP%20or%20TAG/badge.svg)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 
-![Explorer Screenshot](deployment/screenshot.png)
+![Explorer Screenshot](screenshot.png)
 
 ## Developer Setup
 
