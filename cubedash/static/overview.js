@@ -1,3 +1,4 @@
+"use strict";
 /// <reference path="../../node_modules/@types/leaflet/index.d.ts"/>
 /// <reference path="../../node_modules/@types/geojson/index.d.ts"/>
 var __extends = (this && this.__extends) || (function () {
@@ -168,7 +169,7 @@ var RegionsLayer = /** @class */ (function (_super) {
                     mouseover: function (e) {
                         var layer = e.target;
                         layer.setStyle({
-                            color: '#375400'
+                            color: '#375400',
                         });
                         var props = layer.feature.properties, template = "<div>\n                                            <strong>" + (props.label || props.region_code) + "</strong>\n                                        </div>\n                                        " + props.count + " dataset" + (props.count === 1 ? '' : 's');
                         control.update(template);
@@ -214,9 +215,9 @@ var DatasetsLayer = /** @class */ (function (_super) {
                         var layer = e.target;
                         layer.setStyle({
                             color: '#375400',
-                            fillOpacity: 0.6
+                            fillOpacity: 0.6,
                         });
-                        var props = layer.feature.properties, template = "<div>\n                                            <strong>\n                                                " + (props.label || props['cubedash:region_code']) + "\n                                            </strong>\n                                            <div>" + props['datetime'] + "</div>\n                                        </div>";
+                        var props = layer.feature.properties, template = "<div>\n                                            <strong>\n                                                " + (props.label || props['cubedash:region_code'] || '') + "\n                                            </strong>\n                                            <div>" + props['datetime'] + "</div>\n                                        </div>";
                         infoControl.update(template);
                     },
                     mouseout: function (e) {
@@ -311,8 +312,6 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
         if (showIndividualDatasets) {
             layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(infoControl, routes)));
         }
-    } else {
-        console.log("No displayable data")
     }
     var map = new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
     if (hasDisplayableData) {
