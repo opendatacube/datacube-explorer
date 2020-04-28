@@ -49,6 +49,16 @@ def overview_page(
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
     )
+
+    theme = app.theme_manager.themes[flask.current_app.config["CUBEDASH_THEME"]]
+    _LOG.debug(
+        "overview.page.theme",
+        theme=flask.current_app.config["CUBEDASH_THEME"],
+        options=theme.options,
+    )
+    default_zoom = theme.options["startZoom"]
+    default_center = theme.options["startCoords"]
+
     return utils.render(
         "overview.html",
         year=year,
@@ -64,6 +74,9 @@ def overview_page(
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
         selected_summary=selected_summary,
+        # Map defaults
+        default_zoom=default_zoom,
+        default_center=default_center,
     )
 
 

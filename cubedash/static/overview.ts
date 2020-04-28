@@ -15,7 +15,6 @@ class ApplicationRoutes {
         public regionSearchURLPattern: string,
         public regionViewURLPattern: string,
         public datasetURLPattern: string,
-
         public geojsonRegionsURL: string,
         public geojsonDatasetsURL: string,
         public geojsonFootprintURL: string,
@@ -249,10 +248,13 @@ class DatasetsLayer extends L.GeoJSON {
 }
 
 class OverviewMap extends L.Map {
-    constructor(private dataLayers: DataLayer[], activeLayer: DataLayer | null) {
+    constructor(private dataLayers: DataLayer[],
+                activeLayer: DataLayer | null,
+                defaultZoom: number,
+                defaultCenter: number[]) {
         super("map", {
-            zoom: 3,
-            center: [-26.2756326, 134.9387844],
+            zoom: defaultZoom,
+            center: defaultCenter,
             layers: [
                 L.tileLayer(
                     "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
@@ -312,7 +314,9 @@ function initPage(hasDisplayableData: boolean,
                   showIndividualDatasets: boolean,
                   routes: ApplicationRoutes,
                   regionData: GeoJSON.FeatureCollection,
-                  footprintData: GeoJSON.FeatureCollection) {
+                  footprintData: GeoJSON.FeatureCollection,
+                  defaultZoom:number,
+                  defaultCenter:number[]) {
 
     const layers = [];
     let activeLayer = null;
@@ -351,7 +355,7 @@ function initPage(hasDisplayableData: boolean,
         }
     }
 
-    const map = new OverviewMap(layers, activeLayer);
+    const map = new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
     if (hasDisplayableData) {
         infoControl.addTo(map);
     }

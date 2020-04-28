@@ -4,5 +4,9 @@
     "name": "odc",
     "author": "Geoscience Australia",
     "license": "Apache 2",
-    "description": "Open Data Cube Theme"
+    "description": "Open Data Cube Theme",
+    "options": {
+        "startZoom": 2,
+        "startCoords": [0.0, 60.0]
+    }
 }

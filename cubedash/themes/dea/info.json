@@ -4,5 +4,9 @@
     "name": "dea",
     "author": "Geoscience Australia",
     "license": "Apache 2",
-    "description": "Digital Earth Australia Theme"
+    "description": "Digital Earth Australia Theme",
+    "options": {
+        "startZoom": 3,
+        "startCoords": [-26.2756326, 134.9387844]
+    }
 }
