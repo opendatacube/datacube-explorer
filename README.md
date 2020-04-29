@@ -156,10 +156,24 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
 
 
-### Why aren't stylesheets updating?
+### How do I modify the css/javascript?
 
-The CSS is compiled from [Sass](https://sass-lang.com/). Run `make style` to rebuild them after a change,
-or use your editor to watch for changes (PyCharm will prompt to do so).
+The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from 
+[Typescript](https://www.typescriptlang.org/).
+
+Install [npm](https://www.npmjs.com/get-npm), and then install them both:
+
+    npm install -g sass typescript
+
+You can now run `make static` to rebuild all the static files, or
+individually with `make style` or `make js`.
+
+Alternatively, if using PyCharm, open a Sass file and you will be prompted 
+to enable a `File Watcher` to compile automatically.
+
+PyCharm will also compile the Typescript automatically by ticking
+the "Recompile on changes" option in `Languages & Frameworks ->
+Typescript`.
 
 ### How do I run the integration tests?
     
