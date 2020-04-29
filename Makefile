@@ -24,11 +24,23 @@ lint: ## Run all Python linting checks
 weblint: ## Run stylelint across HTML and SASS
 	stylelint $(find . -iname '*.html') $(find . -iname '*.sass')
 
+
+static: style js
+
 .PHONY: style
 style: cubedash/static/base.css ## Compile SASS stylesheets to CSS
 
 cubedash/static/base.css: cubedash/static/base.sass
 	sass -s compressed $< $@
+
+node_modules:
+	npm install @types/geojson @types/leaflet
+
+.PHONY: js ## Compile Typescript to JS
+js: cubedash/static/overview.js node_modules
+
+cubedash/static/overview.js: cubedash/static/overview.ts
+	tsc --build cubedash/static/tsconfig.json
 
 .PHONY: test
 test: ## Run tests using pytest
