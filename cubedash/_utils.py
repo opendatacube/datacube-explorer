@@ -124,7 +124,7 @@ def dataset_label(dataset):
 
 def product_license(dt: DatasetType) -> Optional[str]:
     """
-    What is the license for this product?
+    What is the license to display for this product?
 
     The return format should match the stac collection spec
     - Either a SPDX License identifier
@@ -133,11 +133,12 @@ def product_license(dt: DatasetType) -> Optional[str]:
 
     Example value: "CC-BY-SA-4.0"
     """
-    # Maybe the metadata type has a 'license' field defined.
+    # Does the metadata type has a 'license' field defined?
     if "license" in dt.metadata.fields:
         return dt.metadata.fields["license"]
 
     # Otherwise, look in a default location in the document, matching stac collections.
+    # (Note that datacube > 1.8.0b6 is required to allow licenses in products).
     if "license" in dt.definition:
         return dt.definition["license"]
 
