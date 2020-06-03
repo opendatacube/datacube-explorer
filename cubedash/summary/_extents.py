@@ -135,7 +135,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             "epsg:"
         ) and not default_crs.lower().startswith("esri:"):
             raise NotImplementedError(
-                "CRS expected in form of 'EPSG:1234'. Got: %r" % default_crs
+                f"CRS expected in form of 'EPSG:1234'. Got: {default_crs!r}"
             )
 
         auth_name, auth_srid = default_crs.split(":")
@@ -510,7 +510,7 @@ class GridRegionInfo(RegionInfo):
         return shapely.wkb.loads(extent._geom.ExportToWkb())
 
     def region_label(self, region_code: str) -> str:
-        return "Tile %+d, %+d" % _from_xy_region_code(region_code)
+        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
 
 
 def _from_xy_region_code(region_code: str):
@@ -586,7 +586,7 @@ def _get_path_row_shapes():
     path_row_shapes = {}
     for shape_file in _WRS_PATH_ROW:
         with fiona.open(str(shape_file)) as f:
-            for k, item in f.items():
+            for _k, item in f.items():
                 prop = item["properties"]
                 key = prop["PATH"], prop["ROW"]
                 assert key not in path_row_shapes

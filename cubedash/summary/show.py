@@ -66,7 +66,7 @@ def cli(
 
     echo(f"{summary.dataset_count} ", nl=False)
     secho(product_name, nl=False, bold=True)
-    echo(f" datasets for ", nl=False)
+    echo(" datasets for ", nl=False)
     secho(f"{year or 'all'} {month or 'all'} {day or 'all'}", fg="blue")
     if summary.size_bytes is not None:
         echo(sizeof_fmt(summary.size_bytes))

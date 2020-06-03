@@ -26,7 +26,7 @@ module_dea_index = factories.dea_index_fixture("module_index", scope="module")
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def summary_store(module_dea_index: Index) -> SummaryStore:
     store = SummaryStore.create(module_dea_index)
     store.drop_all()
@@ -35,22 +35,22 @@ def summary_store(module_dea_index: Index) -> SummaryStore:
     return store
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def summariser(summary_store: SummaryStore):
     return summary_store._summariser
 
 
 @pytest.fixture(autouse=True, scope="session")
-def init_logs(pytestconfig):
+def _init_logs(pytestconfig):
     logs.init_logging(verbose=pytestconfig.getoption("verbose") > 0)
 
 
-@pytest.fixture
+@pytest.fixture()
 def tmppath(tmpdir):
     return Path(str(tmpdir))
 
 
-@pytest.fixture
+@pytest.fixture()
 def clirunner(global_integration_cli_args):
     def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
         exe_opts = list(global_integration_cli_args)
@@ -59,10 +59,7 @@ def clirunner(global_integration_cli_args):
         runner = CliRunner()
         result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, "Error for %r. output: %r" % (
-                opts,
-                result.output,
-            )
+            assert 0 == result.exit_code, f"Error for {opts}. output: {result.output!r}"
         return result
 
     return _run_cli
@@ -105,7 +102,7 @@ def dataset_loader(module_dea_index):
     return _populate_from_dump
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def empty_client(summary_store: SummaryStore) -> FlaskClient:
     _model.cache.clear()
     _model.STORE = summary_store
@@ -113,7 +110,7 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
     return cubedash.app.test_client()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def unpopulated_client(
     empty_client: FlaskClient, summary_store: SummaryStore
 ) -> FlaskClient:
@@ -121,7 +118,7 @@ def unpopulated_client(
     return empty_client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def client(unpopulated_client: FlaskClient) -> FlaskClient:
     for product in _model.STORE.index.products.get_all():
         _model.STORE.get_or_update(product.name)

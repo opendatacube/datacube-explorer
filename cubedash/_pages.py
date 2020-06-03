@@ -221,7 +221,7 @@ def _load_product(
         try:
             product = _model.STORE.get_dataset_type(product_name)
         except KeyError:
-            abort(404, "Unknown product %r" % product_name)
+            abort(404, f"Unknown product {product_name!r}")
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
@@ -300,7 +300,7 @@ def _merge_singular_groups(
     Remove groups with only one member, and place them at the end in batches.
     """
     lonely_products = []
-    for group, items in reversed(grouped_product_summarise):
+    for _group, items in reversed(grouped_product_summarise):
         if len(items) > 1:
             break
         lonely_products.extend(items)
@@ -317,7 +317,7 @@ def _merge_singular_groups(
     return grouped_product_summarise
 
 
-def chunks(l: List, n: int):
+def chunks(ls: List, n: int):
     """
     Split list into chunks of max size n.
 
@@ -332,8 +332,8 @@ def chunks(l: List, n: int):
     >>> list(chunks([], 3))
     []
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(ls), n):
+        yield ls[i : i + n]
 
 
 @app.route("/")

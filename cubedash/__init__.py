@@ -5,4 +5,4 @@ except ImportError:
 
 from ._pages import app
 
-__all__ = (app, __version__)
+__all__ = ("app", "__version__")

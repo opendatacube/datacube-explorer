@@ -19,12 +19,14 @@ def _sample(iterable, sample_count):
 
     (you will get Nones if sample_count is less than iterable length)
     """
+    rand = random.SystemRandom()
+
     result = [None] * sample_count
     for i, item in enumerate(iterable):
         if i < sample_count:
             result[i] = item
         else:
-            j = int(random.random() * (i + 1))
+            j = int(rand.random() * (i + 1))
             if j < sample_count:
                 result[j] = item
     return result
@@ -54,7 +56,7 @@ def dump_datasets(
         label=msg,
     ) as progress:
         with gzip.open(path, "w") as f:
-            yaml.dump_all(
+            yaml.safe_dump_all(
                 (_get_dumpable_doc(dc, d, include_sources) for d in progress),
                 stream=f,
                 encoding="utf-8",

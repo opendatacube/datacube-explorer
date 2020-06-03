@@ -1,19 +1,37 @@
 ---
 repos:
-    - repo: https://github.com/ambv/black
-      rev: 19.10b0
-      hooks:
-          - id: black
-    # Update the sha variable with the release version that you want, from the yamllint repo
-    - repo: https://github.com/adrienverge/yamllint.git
-      rev: v1.22.1
-      hooks:
-          - id: yamllint
-    - repo: https://gitlab.com/pycqa/flake8
-      rev: 3.7.9
-      hooks:
-          - id: flake8
-    - repo: https://github.com/pre-commit/mirrors-isort
-      rev: v4.3.21
-      hooks:
-          - id: isort
+  - repo: https://github.com/ambv/black
+    rev: 19.10b0
+    hooks:
+      - id: black
+  # Update the sha variable with the release version that you want, from the yamllint repo
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.22.1
+    hooks:
+      - id: yamllint
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.2
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - dlint # Check common security issues
+          - flake8-broken-line # Don't escape newlines. (surround in parens or simplify)
+          - flake8-bugbear # Lint-checks too opinionated for flake8 proper
+          - flake8-builtins # Don't allow built-in names like list
+          - flake8-coding # Only UTF-8
+          - flake8-debugger # Don't commit debugger calls
+          - flake8-executable # Check shebangs and executable permissions
+          - flake8-logging-format # Use log arguments, not string format
+          - flake8-pep3101 # Don't use old string % formatting
+          - flake8-pytest-style # Avoid common pytest mistakes
+          - flake8-pytest # Use plain assert, not unittest assertions
+          - flake8-rst-docstrings # docstring should be valid ReST
+  # Flake8 python in markdown files
+  - repo: https://github.com/johnfraney/flake8-markdown
+    rev: v0.2.0
+    hooks:
+      - id: flake8-markdown
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v4.3.21
+    hooks:
+      - id: isort
