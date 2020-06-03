@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Common global filters and util methods.
 """
@@ -195,7 +194,7 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
     for field_name, field_vals in field_groups.items():
         field: Field = product.metadata_type.dataset_fields.get(field_name)
         if not field:
-            raise ValueError("No field %r for product %s" % (field_name, product.name))
+            raise ValueError(f"No field {field_name!r} for product {product.name!r}")
 
         parser = _field_parser(field)
 
@@ -207,7 +206,7 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
                 parser(begin) if begin else None, parser(end) if end else None
             )
         else:
-            raise ValueError("Unknown field classifier: %r" % field_vals)
+            raise ValueError(f"Unknown field classifier: {field_vals!r}")
 
     return query
 

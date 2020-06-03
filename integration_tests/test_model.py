@@ -6,7 +6,7 @@ import operator
 from collections import Counter
 from datetime import datetime
 
-from pytest import approx
+import pytest
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
@@ -146,7 +146,7 @@ def assert_shapes_mostly_equal(
     __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
     # Check area first, as it's a nicer error message when they're wildly different.
-    assert shape1.area == approx(
+    assert shape1.area == pytest.approx(
         shape2.area, abs=threshold
     ), "Shapes have different areas"
 

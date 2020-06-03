@@ -60,9 +60,9 @@ def _fast_tojson(obj):
 def sizeof_fmt(num, suffix="B"):
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
+            return f"{num:3.1f}{unit}{suffix}"
         num /= 1024.0
-    return "%.1f%s%s" % (num, "Yi", suffix)
+    return f"{num:.1f}Yi{suffix}"
 
 
 @bp.app_template_filter("percent")
@@ -240,9 +240,7 @@ def timesince(dt, default="just now"):
 
     for period, singular, plural in periods:
         if period:
-            return _time(
-                "%d %s ago" % (period, singular if period == 1 else plural), dt
-            )
+            return _time(f"{period:d} {singular if period == 1 else plural} ago", dt)
 
     return _time(default, dt)
 

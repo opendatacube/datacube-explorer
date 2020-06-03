@@ -46,7 +46,7 @@ def read_document(path: Path) -> dict:
     """
     ds = list(read_documents(path))
     if len(ds) != 1:
-        raise ValueError("Expected only one document to be in path %s" % path)
+        raise ValueError(f"Expected only one document to be in path {path}")
 
     _, doc = ds[0]
     return doc
@@ -159,7 +159,7 @@ def get_item(client: FlaskClient, url: str) -> Dict:
     return data
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def stac_client(populated_index, client: FlaskClient):
     """
     Get a client with populated data and standard settings
@@ -173,7 +173,7 @@ def stac_client(populated_index, client: FlaskClient):
 def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
-    all_items = _iter_items_across_pages(stac_client, f"/stac/search")
+    all_items = _iter_items_across_pages(stac_client, "/stac/search")
     validate_items(all_items, expect_count=393)
 
     # A constrained search within a bounding box.
@@ -181,9 +181,9 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     all_items = _iter_items_across_pages(
         stac_client,
         (
-            f"/stac/search?"
-            f"&bbox=[114, -33, 153, -10]"
-            f"&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            "/stac/search?"
+            "&bbox=[114, -33, 153, -10]"
+            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
     validate_items(all_items, expect_count=66)
@@ -357,8 +357,8 @@ def test_stac_collections(stac_client: FlaskClient):
     ), "Expected default unconfigured endpoint title"
 
     # A child link to each "collection" (product)
-    child_links = [l for l in response["links"] if l["rel"] == "child"]
-    other_links = [l for l in response["links"] if l["rel"] != "child"]
+    child_links = [r for r in response["links"] if r["rel"] == "child"]
+    other_links = [r for r in response["links"] if r["rel"] != "child"]
 
     # a "self" link.
     assert len(other_links) == 1
@@ -407,7 +407,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
             collection_href = link["href"]
             break
     else:
-        assert False, "high_tide_comp_20p not found in collection list"
+        raise AssertionError("high_tide_comp_20p not found in collection list")
 
     scene_collection = get_collection(stac_client, collection_href)
     pprint(scene_collection)
@@ -564,7 +564,7 @@ def assert_collection(collection: Dict):
     # Does it have a link to the list of items?
     links = collection["links"]
     assert links, "No links in collection"
-    rels = [l["rel"] for l in links]
+    rels = [r["rel"] for r in links]
     # TODO: 'child'? The newer stac examples use that rather than items.
     assert "items" in rels, "Collection has no link to its items"
 

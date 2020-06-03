@@ -97,12 +97,12 @@ def test_get_overview_product_links(client: FlaskClient):
     html = get_html(client, "/ls7_nbar_scene/2017")
 
     product_links = html.find(".source-product a")
-    assert [l.text for l in product_links] == ["ls7_level1_scene"]
-    assert [l.attrs["href"] for l in product_links] == ["/ls7_level1_scene/2017"]
+    assert [p.text for p in product_links] == ["ls7_level1_scene"]
+    assert [p.attrs["href"] for p in product_links] == ["/ls7_level1_scene/2017"]
 
     product_links = html.find(".derived-product a")
-    assert [l.text for l in product_links] == ["ls7_pq_legacy_scene"]
-    assert [l.attrs["href"] for l in product_links] == ["/ls7_pq_legacy_scene/2017"]
+    assert [p.text for p in product_links] == ["ls7_pq_legacy_scene"]
+    assert [p.attrs["href"] for p in product_links] == ["/ls7_pq_legacy_scene/2017"]
 
 
 def test_get_day_overviews(client: FlaskClient):
