@@ -507,7 +507,10 @@ class GridRegionInfo(RegionInfo):
         # So we're now converting to shapely to do it.
         # TODO: Is there a nicer way to do this?
         # pylint: disable=protected-access
-        return shapely.wkb.loads(extent._geom.ExportToWkb())
+        try:
+            return shapely.wkb.loads(extent._geom.ExportToWkb())
+        except AttributeError:
+            return extent.geom
 
     def region_label(self, region_code: str) -> str:
         return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
