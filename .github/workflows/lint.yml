@@ -10,10 +10,6 @@ on:
     paths:
       - '**'
 
-  release:
-    types:
-      - created
-
 env:
   IMAGE_NAME: opendatacube/dashboard
 
