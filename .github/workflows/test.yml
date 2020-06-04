@@ -14,7 +14,7 @@ env:
   IMAGE_NAME: opendatacube/dashboard
 
 jobs:
-  quality-check:
+  integration-tests:
     runs-on: ubuntu-latest
 
     steps:
