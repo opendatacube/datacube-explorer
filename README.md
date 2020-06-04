@@ -1,6 +1,7 @@
 # Data Cube Explorer
-
+[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
 [![Tests](https://github.com/opendatacube/datacube-explorer/workflows/Tests/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ATests)
+[![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 
 ![Explorer Screenshot](screenshot.png)
