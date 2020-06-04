@@ -104,8 +104,7 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker ps
-	docker-compose run explorer \
+	docker-compose exec explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
