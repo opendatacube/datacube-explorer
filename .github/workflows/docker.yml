@@ -6,7 +6,7 @@ on:
     branches:
       - develop
     paths:
-      - '**'
+      - "**"
 
   release:
     types:
@@ -25,8 +25,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      # ToDO: run claire_db test thingy here
 
       - name: Build and Push latest Docker image
         uses: whoan/docker-build-with-cache-action@v4
@@ -55,14 +53,23 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
+      - name: Run vulnerability scanner for releases
+        uses: aquasecurity/trivy-action@0.0.5
+        if: contains(github.ref, 'cubedash-')
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:${{ env.RELEASE }}"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+
       - name: Notify Slack for Failures
         uses: rtCamp/action-slack-notify@v2.0.0
         if: failure()
         env:
           SLACK_CHANNEL: explorer-alerts
-          SLACK_ICON: 'https://github.com/docker.png?size=48'
-          SLACK_COLOR: '#482de1'
-          SLACK_MESSAGE: ''
+          SLACK_ICON: "https://github.com/docker.png?size=48"
+          SLACK_COLOR: "#482de1"
+          SLACK_MESSAGE: ""
           SLACK_TITLE: Docker failure
           SLACK_USERNAME: Explorer Docker
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
