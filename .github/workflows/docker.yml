@@ -18,7 +18,7 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' || contains(github.ref, 'cubedash-')
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'release'
 
     steps:
       - name: Checkout git
@@ -43,7 +43,7 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Get tag for this build if it exists
-        if: contains(github.ref, 'cubedash-')
+        if: github.event_name == 'release'
         run: >
           echo ::set-env name=RELEASE::$(docker run --rm -e DATACUBE_DB_URL=postgresql://username:password@hostname:5432/database
           ${{ env.IMAGE_NAME }}:latest python3 -c 'import cubedash; print(cubedash.__version__)')
@@ -53,7 +53,7 @@ jobs:
 
       - name: Build and Push release if we have a tag
         uses: whoan/docker-build-with-cache-action@v4
-        if: contains(github.ref, 'cubedash-')
+        if: github.event_name == 'release'
         with:
           image_name: ${{ env.IMAGE_NAME }}
           image_tag: ${{ env.RELEASE }}
