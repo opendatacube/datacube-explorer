@@ -13,7 +13,7 @@ on:
       - created
 
 env:
-  IMAGE_NAME: opendatacube/dashboard
+  IMAGE_NAME: opendatacube/explorer
 
 jobs:
   docker:
