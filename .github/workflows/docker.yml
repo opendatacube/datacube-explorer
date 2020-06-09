@@ -57,7 +57,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.0.5
         if: contains(github.ref, 'cubedash-')
         with:
-          image-ref: ${{ env.IMAGE_NAME }}
+          image-ref: "opendatacube/dashboard"
           format: "table"
           exit-code: "1"
           severity: "CRITICAL,HIGH"
