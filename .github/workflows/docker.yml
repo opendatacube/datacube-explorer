@@ -34,6 +34,14 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
+      - name: Run vulnerability scanner
+        uses: aquasecurity/trivy-action@0.0.6
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:latest"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+
       - name: Get tag for this build if it exists
         if: contains(github.ref, 'cubedash-')
         run: >
@@ -52,15 +60,6 @@ jobs:
           username: gadockersvc
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
-
-      - name: Run vulnerability scanner for releases
-        uses: aquasecurity/trivy-action@0.0.5
-        if: contains(github.ref, 'cubedash-')
-        with:
-          image-ref: "opendatacube/dashboard"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
 
       - name: Notify Slack for Failures
         uses: rtCamp/action-slack-notify@v2.0.0
