@@ -6,9 +6,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, Optional
 
+import datacube.drivers.postgres._api as postgres_api
 import fiona
 import shapely.wkb
 import structlog
+from cubedash._utils import alchemy_engine
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField, RangeDocField
+from datacube.drivers.postgres._schema import DATASET
+from datacube.index import Index
+from datacube.model import DatasetType, MetadataType
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
@@ -28,15 +36,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
-
-import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
-from datacube.index import Index
-from datacube.model import DatasetType, MetadataType
 
 _LOG = structlog.get_logger()
 
@@ -218,6 +217,9 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
         ),
         default_crs_expression,
         # TODO: Handle arbitrary WKT strings (?)
+        # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
+        #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
+        # "degree\\",0.0174532925199433]]'
     )
     # print(as_sql(expression))
     return expression
