@@ -6,7 +6,7 @@ on:
     branches:
       - develop
     paths:
-      - '**'
+      - "**"
 
   release:
     types:
@@ -34,6 +34,14 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
+      - name: Run vulnerability scanner
+        uses: aquasecurity/trivy-action@0.0.6
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:latest"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+
       - name: Get tag for this build if it exists
         if: github.event_name == 'release'
         run: >
@@ -58,9 +66,9 @@ jobs:
         if: failure()
         env:
           SLACK_CHANNEL: explorer-alerts
-          SLACK_ICON: 'https://github.com/docker.png?size=48'
-          SLACK_COLOR: '#482de1'
-          SLACK_MESSAGE: ''
+          SLACK_ICON: "https://github.com/docker.png?size=48"
+          SLACK_COLOR: "#482de1"
+          SLACK_MESSAGE: ""
           SLACK_TITLE: Docker failure
           SLACK_USERNAME: Explorer Docker
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
