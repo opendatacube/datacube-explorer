@@ -13,6 +13,7 @@ on:
       - created
 
 env:
+  OLD_IMAGE_NAME: opendatacube/dashboard
   IMAGE_NAME: opendatacube/explorer
 
 jobs:
@@ -30,6 +31,14 @@ jobs:
         uses: whoan/docker-build-with-cache-action@v4
         with:
           image_name: ${{ env.IMAGE_NAME }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Build and Push latest Docker image (old name)
+        uses: whoan/docker-build-with-cache-action@v4
+        with:
+          image_name: ${{ env.OLD_IMAGE_NAME }}
           username: gadockersvc
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
@@ -56,6 +65,16 @@ jobs:
         if: github.event_name == 'release'
         with:
           image_name: ${{ env.IMAGE_NAME }}
+          image_tag: ${{ env.RELEASE }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Build and Push release if we have a tag (old name)
+        uses: whoan/docker-build-with-cache-action@v4
+        if: github.event_name == 'release'
+        with:
+          image_name: ${{ env.OLD_IMAGE_NAME }}
           image_tag: ${{ env.RELEASE }}
           username: gadockersvc
           password: "${{ secrets.DockerPassword }}"
