@@ -6,17 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, Optional
 
-import datacube.drivers.postgres._api as postgres_api
 import fiona
 import shapely.wkb
 import structlog
-from cubedash._utils import alchemy_engine
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
-from datacube.index import Index
-from datacube.model import DatasetType, MetadataType
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
@@ -36,6 +28,15 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
+
+import datacube.drivers.postgres._api as postgres_api
+from cubedash._utils import alchemy_engine, infer_crs
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField, RangeDocField
+from datacube.drivers.postgres._schema import DATASET
+from datacube.index import Index
+from datacube.model import DatasetType, MetadataType
 
 _LOG = structlog.get_logger()
 
@@ -133,9 +134,13 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
         if not default_crs.lower().startswith(
             "epsg:"
         ) and not default_crs.lower().startswith("esri:"):
-            raise NotImplementedError(
-                f"CRS expected in form of 'EPSG:1234'. Got: {default_crs!r}"
-            )
+            # HACK: Change default CRS with inference
+            inferred_crs = infer_crs(default_crs)
+            if inferred_crs is None:
+                raise NotImplementedError(
+                    f"CRS expected in form of 'EPSG:1234'. Got: {default_crs!r}"
+                )
+            default_crs = inferred_crs
 
         auth_name, auth_srid = default_crs.split(":")
         default_crs_expression = (

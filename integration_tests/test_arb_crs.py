@@ -15,4 +15,4 @@ def test_crs_infer_fail():
 
 
 def test_crs_infer_pass():
-    assert infer_crs(TEST_CRS_RAW) == "EPSG:4283"
+    assert infer_crs(TEST_CRS_RAW) == "epsg:4283"
