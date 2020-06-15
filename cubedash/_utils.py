@@ -62,7 +62,7 @@ def infer_crs(crs_str: str) -> Optional[str]:
     if len(closest_wkt) == 0:
         return
     epsg = PJCRS.from_wkt(closest_wkt[0]).to_epsg()
-    return f"EPSG:{epsg}"
+    return f"epsg:{epsg}"
 
 
 def render(template, **context):
