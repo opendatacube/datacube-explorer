@@ -5,6 +5,7 @@ Common global filters and util methods.
 from __future__ import absolute_import, division
 
 import collections
+import difflib
 import functools
 import pathlib
 from collections import defaultdict
@@ -19,6 +20,7 @@ import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
+from pyproj import CRS as PJCRS
 from shapely.geometry import MultiPolygon, Polygon, shape
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
@@ -47,7 +49,20 @@ NEAR_ANTIMERIDIAN = shape(
     }
 )
 
+# CRS's we use as inference results
+DEFAULT_CRS_INFERENCES = [4283, 4326]
+MATCH_CUTOFF = 0.38
+
 _LOG = structlog.get_logger()
+
+
+def infer_crs(crs_str: str) -> Optional[str]:
+    plausible_list = [PJCRS.from_epsg(code).to_wkt() for code in DEFAULT_CRS_INFERENCES]
+    closest_wkt = difflib.get_close_matches(crs_str, plausible_list, cutoff=0.38)
+    if len(closest_wkt) == 0:
+        return
+    epsg = PJCRS.from_wkt(closest_wkt[0]).to_epsg()
+    return f"EPSG:{epsg}"
 
 
 def render(template, **context):
