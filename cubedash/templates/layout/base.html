@@ -21,13 +21,13 @@
     </p>
 </div>
 <![endif]-->
-
+<div id="logo">
+    <a href="{{ url_for('default_redirect') }}">
+        {% include theme('logo.html') %}
+    </a>
+</div>
 <div class="content-wrapper">
-    <div id="logo">
-        <a href="{{ url_for('default_redirect') }}">
-            {% include theme('logo.html') %}
-        </a>
-    </div>
+
     {% block header %}{% endblock %}
     <div id="content">{% block content %}{% endblock %}</div>
 </div>

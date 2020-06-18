@@ -14,13 +14,14 @@
 }
 body {
   font-family: Helvetica, Arial, sans-serif;
-  background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px);
-  min-height: calc(100vh - 50px);
+  background: rgba(0,0,0,.05);
+  /* min-height: calc(100vh - 50px); */
   color: #212121;
   font-size: 0.86em;
   margin: 0 auto;
-  padding: 0 15px;
-  max-width: 1024px;
+  overflow-x: hidden;
+  /* padding: 0 15px;
+  max-width: 1024px; */
 }
 
 html {
@@ -33,34 +34,46 @@ a {
 
 .content-wrapper {
   position: relative;
-  padding: 110px 0 0;
+  /* max-width: 1024px; */
+  display: flex;
+  height: calc(100vh - 150px);
+  overflow: hidden;
+  margin: 0 auto;
+  /* padding: 110px 0 0; */
 }
 
 header {
-  margin-top: -30px;
+  /* margin-top: -30px; */
+  overflow: scroll;
   color: #efefef;
   padding: 0;
-  display: flex;
+  flex: 0.4;
   flex-direction: row;
 }
 
 footer {
-  padding: 20px 20px 20px;
+  /* padding: 20px 20px 20px; */
   text-align: right;
   color: #a6a6a6;
   font-size: 0.7em;
+  background: #000;
+  /* width: 100vw; */
+  clear: both;
   line-height: 2em;
 }
 @media (min-width: 800px) {
   footer {
-    padding: 30px 30px 30px;
+    padding: 20px 30px 20px;
   }
 }
 
 #content {
   clear: right;
   position: relative;
+  flex: 1;
+  /* max-width: 1024px; */
   width: auto;
+  overflow: scroll;
   background-color: #e0e0e0;
 }
 
@@ -70,8 +83,8 @@ footer {
 
 #map {
   flex: 1 1;
-  height: calc(100vh - 100px);
-  border-top: 7px #2dace1 solid;
+  height: calc(100vh - 150px);
+  /* border-top: 7px #2dace1 solid; */
 }
 
 @media (min-width: 800px) {
@@ -82,6 +95,8 @@ footer {
   .info-panel {
     width: 250px;
     border-top: 7px #7fd0eb solid;
+    height: calc(100vh - 150px);
+    overflow: scroll;
   }
 }
 .info-panel ul {
@@ -161,7 +176,7 @@ ul:last-child, ol:last-child {
 .header-option {
   position: relative;
   border-collapse: collapse;
-  max-width: 60%;
+  /* max-width: 60%; */
   vertical-align: bottom;
   background-color: #616161;
 }
@@ -186,6 +201,8 @@ ul:last-child, ol:last-child {
 .header-option.is-open .option-menu {
   background-color: #008fc5;
   display: table;
+  overflow: scroll;
+  width: 100%;
 }
 .header-option .option-title {
   font-size: 1em;
@@ -396,6 +413,7 @@ label.disabled {
 }
 
 .raw-metadata .property {
+  word-wrap: break-word;
   font-family: "Courier New", monospace;
 }
 .raw-metadata .property .property {
@@ -410,17 +428,23 @@ label.disabled {
   margin: 10px;
   padding: 15px;
 }
-
+#dataset-map{
+  height: calc(100vw - 200px) !important;
+}
 .recenter-map {
   margin: 0;
   padding: 0;
 }
 
 #logo {
-  padding-right: 25px;
+  /* padding-right: 25px;
   position: absolute;
   top: 15px;
-  right: 0;
+  right: 0; */
+  width: 100%;
+  background-color: #00A1DE;
+  padding: 10px;
+  height: 35px;
 }
 #logo img {
   vertical-align: middle;
