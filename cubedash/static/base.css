@@ -15,7 +15,7 @@
 body {
   font-family: Helvetica, Arial, sans-serif;
   background: rgba(0,0,0,.05);
-  /* min-height: calc(100vh - 50px); */
+  min-height: calc(100vh);
   color: #212121;
   font-size: 0.86em;
   margin: 0 auto;
@@ -38,7 +38,7 @@ a {
   display: flex;
   height: calc(100vh - 150px);
   overflow: hidden;
-  clear: both;
+  /* clear: both; */
   margin: 0 auto;
   /* padding: 110px 0 0; */
 }
@@ -458,6 +458,15 @@ label.disabled {
   background-color: #00A1DE;
   height: 54px;
 }
+
+#logo:after {
+  visibility: hidden;
+  display: block;
+  font-size: 0;
+  content: " ";
+  clear: both;
+  height: 0;
+}
 #logo img {
   vertical-align: middle;
   padding-right: 2px;
@@ -484,10 +493,10 @@ label.disabled {
   color: #f2f2f2;
   text-align: center;
   padding-right: 16px;
-  font-weight: 600;
+  font-weight: 400;
   padding-left: 16px;
   text-decoration: none;
-  font-size: 17px;
+  font-size: 14px;
 }
 
 /* Change the color of links on hover */
@@ -502,7 +511,13 @@ label.disabled {
 }
 
 .logo-text {
-  display: inline-block;
+  display: block;
+  float: left;
+  line-height: 44px;
+  border-right: 1px solid #fff;
+  height: 40px;
+  margin-top: 7px;
+  padding-right: 20px;
 }
 
 .grid-form *, .grid-form *:before, .grid-form *:after {
