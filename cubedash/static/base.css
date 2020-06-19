@@ -38,13 +38,14 @@ a {
   display: flex;
   height: calc(100vh - 150px);
   overflow: hidden;
+  clear: both;
   margin: 0 auto;
   /* padding: 110px 0 0; */
 }
 
 header {
   /* margin-top: -30px; */
-  overflow: scroll;
+  overflow-y: scroll;
   color: #efefef;
   padding: 0;
   flex: 0.4;
@@ -73,7 +74,7 @@ footer {
   flex: 1;
   /* max-width: 1024px; */
   width: auto;
-  overflow: scroll;
+  overflow-y: scroll;
   background-color: #e0e0e0;
 }
 
@@ -90,11 +91,13 @@ footer {
 @media (min-width: 800px) {
   .panels {
     display: flex;
+    max-height: 100%;
+    overflow: hidden;
   }
 
   .info-panel {
     width: 250px;
-    border-top: 7px #7fd0eb solid;
+    /* border-top: 7px #7fd0eb solid; */
     height: calc(100vh - 150px);
     overflow: scroll;
   }
@@ -202,7 +205,7 @@ ul:last-child, ol:last-child {
   background-color: #008fc5;
   display: table;
   overflow: scroll;
-  width: 100%;
+  width: 101%;
 }
 .header-option .option-title {
   font-size: 1em;
@@ -211,13 +214,14 @@ ul:last-child, ol:last-child {
 .header-option .group-name {
   margin: 0;
   padding: 20px 20px 10px;
-  font-size: 0.8em;
-  color: #212121;
+  font-size: 1.2em;
+  color: #fff;
   text-transform: lowercase;
+  text-decoration: underline;
 }
 @media (min-width: 800px) {
   .header-option .group-name {
-    padding: 30px 30px 15px;
+    padding-top: 5px;
   }
 }
 .header-option > .option-title {
@@ -238,21 +242,30 @@ ul:last-child, ol:last-child {
 .header-option ul {
   margin: 0;
   padding: 0;
+  padding-left: 20px;
   list-style: none;
 }
 .header-option ul li {
   margin: 0;
+  line-height: 20px;
+  padding: 0px 0px 5px 15px;
 }
 .header-option a.option-menu-link {
   display: block;
   text-decoration: none;
-  padding: 10px 20px 10px;
+  /* padding: 10px 20px 10px; */
   color: #fcfcfc;
   font-weight: bold;
+  font-weight: 14px;
+}
+.header-option a.option-menu-link i.description {
+  font-size: 12px;
+  display: block;
+  font-weight: 400;
 }
 @media (min-width: 800px) {
   .header-option a.option-menu-link {
-    padding: 15px 30px 15px;
+    /* padding: 15px; */
   }
 }
 .header-option a.option-menu-link.active {
@@ -281,7 +294,7 @@ ul:last-child, ol:last-child {
   display: table-row;
 }
 .header-option .option-menu > ul > li {
-  display: table-cell;
+  /* display: table-cell; */
 }
 .header-option .option-menu > .footer {
   padding: 10px 20px 10px;
@@ -443,16 +456,49 @@ label.disabled {
   right: 0; */
   width: 100%;
   background-color: #00A1DE;
-  padding: 10px;
-  height: 35px;
+  height: 54px;
 }
 #logo img {
   vertical-align: middle;
   padding-right: 2px;
+  float:left;
+  padding: 10px;
 }
 #logo > a {
   text-decoration: none;
   color: #fff;
+}
+
+/* Add a black background color to the top navigation */
+.topnav {
+  /* background-color: #333; */
+  overflow: hidden;
+  float: left;
+}
+
+/* Style the links inside the navigation bar */
+.topnav a {
+  line-height: 54px;
+  float: left;
+  text-align: center;
+  color: #f2f2f2;
+  text-align: center;
+  padding-right: 16px;
+  font-weight: 600;
+  padding-left: 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+/* Change the color of links on hover */
+.topnav a:hover {
+  /* background-color: #fff; */
+  color: #7fd0eb;
+}
+
+/* Add a color to the active/current link */
+.topnav a.active {
+  color: #7fd0eb;
 }
 
 .logo-text {

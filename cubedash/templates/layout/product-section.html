@@ -55,7 +55,9 @@
                         {% for group_name, product_summaries in row %}
                             <li>
                                 {# We leave a space character in blank headings for consistent line height. #}
-                                <h3 class="group-name">{{ group_name or ('&nbsp;'|safe)}}</h3>
+                                {% if group_name %}
+                                <h3 class="group-name">{{ group_name }}</h3>
+                                {% endif %}
                                 <ul class="items">
                                     {% for product_opt, summary in product_summaries if summary %}
                                         <li class="{% if summary.dataset_count == 0 %}empty{% endif %}">
@@ -63,6 +65,8 @@
                                                title="{{ product_opt.definition.description }}"
                                                class="option-menu-link {% if product_opt.name == product.name %}active{% endif %}">
                                                 {{ product_opt.name }}
+                                                <i class="dataset-count" style="text-align:right; display:block; float:right; margin-right:80px;">dataset count: {{ summary.dataset_count }}</i>
+                                                <i class="description">{{ product_opt.definition.description }}</i>
                                             </a>
                                         </li>
                                     {% endfor %}
@@ -186,5 +190,3 @@
         {% endif %}
     </header>
 {% endblock %}
-
-

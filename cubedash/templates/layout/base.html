@@ -25,6 +25,11 @@
     <a href="{{ url_for('default_redirect') }}">
         {% include theme('logo.html') %}
     </a>
+    <div class="topnav">
+        <a class="active" href="{{ url_for('default_redirect') }}">Home</a>
+        <a href="{{ url_for('product_list_text') }}">View Product lists txt</a>
+        <a href="{{ url_for('about_page') }}">Overview</a>
+    </div>
 </div>
 <div class="content-wrapper">
 
