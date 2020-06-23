@@ -140,7 +140,7 @@
 
                     <h4>
                         <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-                            {{ product.metadata_type.name }}</a>
+                            {{ product.metadata_type.name | upper }}</a>
                         fields
                     </h4>
 
@@ -189,7 +189,7 @@
                         </ul>
                     {% endif %}
 
-                    <p style="margin-bottom:100px;">
+                    <p style="margin-bottom:0px;">
                         <a href="{{ url_for('product.product_page', name=product.name) }}"
                            class="muted">raw metadata</a>
                     </p>

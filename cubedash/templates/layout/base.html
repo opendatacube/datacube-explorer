@@ -38,7 +38,7 @@
 </div>
 <footer>
     Open Data Cube v<span id="datacube-version">{{ datacube_version }}</span>,
-    Dash v<span id="app-version">{{ app_version }}</span>, <span id="map-attribution-text"></span><br/>
+    Dash v<span id="app-version">{{ app_version }}</span>, <span id="map-attribution-text"></span>
     {% if last_updated_time %}
         Updated {{ last_updated_time | timesince }}
     {% endif %}
@@ -145,7 +145,7 @@
                     // Open header
                     this.parentNode.classList.add('is-open');
                     this.setAttribute('aria-expanded', "true");
-                    document.addEventListener('click', outsideClickListener)
+                    document.addEventListener('click', outsideClickListener);
                 }
                 event.preventDefault();
                 return false;
