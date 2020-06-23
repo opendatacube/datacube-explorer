@@ -1,0 +1,19 @@
+{% extends "layout/base.html" %}
+
+{% block title %}404 Not found{% endblock %}
+{% block content %}
+
+<div class="panel">
+    <h4>404 not found</h4>
+</div>
+</body>
+{% if sentry_event_id %}
+    <script src="https://cdn.ravenjs.com/3.26.4/raven.min.js" crossorigin="anonymous"></script>
+    <script>
+        Raven.showReportDialog({
+            eventId: '{{ sentry_event_id }}',
+            dsn: '{{ sentry_public_dsn }}'
+        });
+    </script>
+{% endif %}
+{% endblock %}
