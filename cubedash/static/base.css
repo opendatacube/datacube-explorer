@@ -14,14 +14,12 @@
 }
 body {
   font-family: Helvetica, Arial, sans-serif;
-  background: rgba(0,0,0,.05);
+  background: rgba(0, 0, 0, 0.05);
   min-height: calc(100vh);
   color: #212121;
   font-size: 0.86em;
   margin: 0 auto;
   overflow-x: hidden;
-  /* padding: 0 15px;
-  max-width: 1024px; */
 }
 
 html {
@@ -34,17 +32,13 @@ a {
 
 .content-wrapper {
   position: relative;
-  /* max-width: 1024px; */
   display: flex;
   height: calc(100vh - 72px);
   overflow: hidden;
-  /* clear: both; */
   margin: 0 auto;
-  /* padding: 110px 0 0; */
 }
 
 header {
-  /* margin-top: -30px; */
   overflow-y: scroll;
   color: #efefef;
   padding: 0;
@@ -52,18 +46,15 @@ header {
   -ms-overflow-style: none;
   flex-direction: row;
 }
-
 header::-webkit-scrollbar {
   display: none;
 }
 
 footer {
-  /* padding: 20px 20px 20px; */
   text-align: right;
   color: #a6a6a6;
   font-size: 0.7em;
   background: #000;
-  /* width: 100vw; */
   clear: both;
   line-height: 2em;
   position: absolute;
@@ -75,7 +66,6 @@ footer {
   clear: right;
   position: relative;
   flex: 1;
-  /* max-width: 1024px; */
   width: auto;
   overflow-y: scroll;
   -ms-overflow-style: none;
@@ -92,7 +82,6 @@ footer {
 #map {
   flex: 1 1;
   height: 100%;
-  /* border-top: 7px #2dace1 solid; */
 }
 
 @media (min-width: 800px) {
@@ -105,16 +94,13 @@ footer {
 
   .info-panel {
     width: 250px;
-    /* border-top: 7px #7fd0eb solid; */
     -ms-overflow-style: none;
     height: 100%;
     overflow: scroll;
   }
-
   .info-panel::-webkit-scrollbar {
     display: none;
   }
-
 }
 .info-panel ul {
   list-style-type: none;
@@ -193,7 +179,6 @@ ul:last-child, ol:last-child {
 .header-option {
   position: relative;
   border-collapse: collapse;
-  /* max-width: 60%; */
   vertical-align: bottom;
   background-color: #616161;
 }
@@ -267,20 +252,14 @@ ul:last-child, ol:last-child {
 .header-option a.option-menu-link {
   display: block;
   text-decoration: none;
-  /* padding: 10px 20px 10px; */
   color: #fcfcfc;
   font-weight: bold;
-  font-weight: 14px;
+  font-size: 14px;
 }
 .header-option a.option-menu-link i.description {
   font-size: 12px;
   display: block;
   font-weight: 400;
-}
-@media (min-width: 800px) {
-  .header-option a.option-menu-link {
-    /* padding: 15px; */
-  }
 }
 .header-option a.option-menu-link.active {
   background-color: #00a1de;
@@ -306,9 +285,6 @@ ul:last-child, ol:last-child {
 }
 .header-option .option-menu > ul {
   display: table-row;
-}
-.header-option .option-menu > ul > li {
-  /* display: table-cell; */
 }
 .header-option .option-menu > .footer {
   padding: 10px 20px 10px;
@@ -455,24 +431,21 @@ label.disabled {
   margin: 10px;
   padding: 15px;
 }
-#dataset-map{
+
+#dataset-map {
   height: calc(100vw - 200px) !important;
 }
+
 .recenter-map {
   margin: 0;
   padding: 0;
 }
 
 #logo {
-  /* padding-right: 25px;
-  position: absolute;
-  top: 15px;
-  right: 0; */
+  height: 54px;
   width: 100%;
   background-color: #00A1DE;
-  height: 54px;
 }
-
 #logo:after {
   visibility: hidden;
   display: block;
@@ -484,28 +457,21 @@ label.disabled {
 #logo img {
   vertical-align: middle;
   padding-right: 2px;
-  float:left;
+  float: left;
   padding: 10px;
-  -webkit-filter: drop-shadow(5px 5px 5px #222);
-  filter: drop-shadow(5px 5px 5px #222);
 }
 #logo > a {
   text-decoration: none;
   color: #fff;
 }
 
-/* Add a black background color to the top navigation */
 .topnav {
-  /* background-color: #333; */
   overflow: hidden;
   float: left;
 }
-
-/* Style the links inside the navigation bar */
 .topnav a {
   line-height: 54px;
   float: left;
-  text-align: center;
   color: #f2f2f2;
   text-align: center;
   padding-right: 16px;
@@ -514,14 +480,9 @@ label.disabled {
   text-decoration: none;
   font-size: 14px;
 }
-
-/* Change the color of links on hover */
 .topnav a:hover {
-  /* background-color: #fff; */
   color: #7fd0eb;
 }
-
-/* Add a color to the active/current link */
 .topnav a.active {
   color: #7fd0eb;
 }

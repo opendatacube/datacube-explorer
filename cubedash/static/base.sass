@@ -38,7 +38,9 @@ $header_stripe2: #7fd0eb
 
 @mixin header_padding
     // Place a header closer to its contents below.
-    @include box_padding(2, 1)
+    padding: 20px 20px 10px
+    @media (min-width: 800px)
+        padding-top: 5px
 
 // On small screens, move the description to the info panel.
 .product-description
@@ -53,12 +55,12 @@ $header_stripe2: #7fd0eb
 
 body
     font-family: Helvetica, Arial, sans-serif
-    background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)
-
-    min-height: calc(100vh - 50px)
+    background: rgba(0,0,0,.05)
+    min-height: calc(100vh)
     color: $bold_highlight
     font-size: 0.86em
     margin: 0 auto
+    overflow-x: hidden
 //    padding: 0 15px
 //    max-width: 1024px
 
@@ -69,33 +71,46 @@ a
     color: #2b2b2b
 
 .content-wrapper
-    position: relative;
-    padding: 0px 0 0;
-    max-width: 1024px;
-    margin: 0 auto;
+    position: relative
+    display: flex
+    height: calc(100vh - 72px)
+    overflow: hidden
+    margin: 0 auto
 
 // Pages with tabs: put the tabs in the margin.
 header
-    margin-top: -30px
+    overflow-y: scroll
     color: #efefef
     padding: 0
-    display: flex
+    flex: 0.4
+    -ms-overflow-style: none
     flex-direction: row
 
+    &::-webkit-scrollbar
+      display: none
+
 footer
-    @include square_padding
     text-align: right
     color: #a6a6a6
     font-size: 0.7em
+    background: #000
+    clear: both
     line-height: 2em
-    background: #000;
+    position: absolute
+    bottom: 0px
+    width: 100%
 
 #content
     clear: right
     position: relative
+    flex: 1
     width: auto
-
+    overflow-y: scroll
+    -ms-overflow-style: none
     background-color: $content_background
+
+    &::-webkit-scrollbar
+      display: none
 
 .map-panel
     width: 100%
@@ -103,17 +118,24 @@ footer
 // Spatial page
 #map
     flex: 1 1
-    height: calc(100vh - 100px)
-    border-top: 7px $header_stipe1 solid
+    height: 100%
 
 // show two columns on wide displays
 @media (min-width: 800px)
     .panels
         display: flex
+        max-height: 100%
+        overflow: hidden
+        height: calc(100vh - 74px)
 
     .info-panel
         width: 250px
-        border-top: 7px $header_stripe2 solid
+        -ms-overflow-style: none
+        height: 100%
+        overflow: scroll
+
+        &::-webkit-scrollbar
+            display: none
 
 
 .info-panel
@@ -180,7 +202,6 @@ ul:last-child, ol:last-child
 .header-option
     position: relative
     border-collapse: collapse
-    max-width: 60%
     vertical-align: bottom
 
     background-color: $header_highlight_strong
@@ -208,6 +229,8 @@ ul:last-child, ol:last-child
         .option-menu
             background-color: $menu_background
             display: table
+            overflow: scroll
+            width: 101%
 
     .option-title
         font-size: 1em
@@ -217,9 +240,10 @@ ul:last-child, ol:last-child
     .group-name
         margin: 0
         @include header_padding
-        font-size: 0.8em
-        color: $bold_highlight
+        font-size: 1.2em
+        color: #fff
         text-transform: lowercase
+        text-decoration: underline
 
 
     > .option-title
@@ -237,16 +261,25 @@ ul:last-child, ol:last-child
     ul
         margin: 0
         padding: 0
+        padding-left: 20px
         list-style: none
+
         li
             margin: 0
+            line-height: 20px
+            padding: 0px 0px 5px 15px
 
     a.option-menu-link
         display: block
         text-decoration: none
-        @include wide_padding
         color: #fcfcfc
         font-weight: bold
+        font-size: 14px
+
+        i.description
+           font-size: 12px
+           display: block
+           font-weight: 400
 
         &.active
             background-color: lighten($menu_background, 5%)
@@ -274,8 +307,6 @@ ul:last-child, ol:last-child
 
         > ul
             display: table-row
-            & > li
-                display: table-cell
 
         > .footer
             @include wide_padding
@@ -391,6 +422,7 @@ label
 
 .raw-metadata
     .property
+        word-wrap: break-word
         font-family: 'Courier New', monospace
 
         .property
@@ -405,29 +437,65 @@ label
     margin: 10px
     padding: 15px
 
+#dataset-map
+    height: calc(100vw - 200px) !important
+
 .recenter-map
     margin: 0
     padding: 0
 
 #logo
-//    padding-right: 25px
-//    position: absolute
-//    top: 15px
-//    right: 0
-    width: 100%;
-    background-color: #00A1DE;
-    padding: 20px;
+    height: 54px
+    width: 100%
+    background-color: #00A1DE
+
+    &:after
+        visibility: hidden
+        display: block
+        font-size: 0
+        content: " "
+        clear: both
+        height: 0
 
     img
         vertical-align: middle
         padding-right: 2px
+        float: left
+        padding: 10px
 
     > a
         text-decoration: none
         color: #fff
 
+.topnav
+    overflow: hidden
+    float: left
+
+    a
+        line-height: 54px
+        float: left
+        color: #f2f2f2
+        text-align: center
+        padding-right: 16px
+        font-weight: 400
+        padding-left: 16px
+        text-decoration: none
+        font-size: 14px
+
+        &:hover
+            color: #7fd0eb
+
+        &.active
+            color: #7fd0eb
+
 .logo-text
-    display: inline-block
+    display: block
+    float: left
+    line-height: 44px
+    border-right: 1px solid #fff
+    height: 40px
+    margin-top: 7px
+    padding-right: 20px
 
 @import gridforms/gridforms.sass
 
