@@ -45,6 +45,7 @@ header {
   flex: 0.4;
   -ms-overflow-style: none;
   flex-direction: row;
+  scrollbar-width: none;
 }
 header::-webkit-scrollbar {
   display: none;
@@ -70,6 +71,7 @@ footer {
   overflow-y: scroll;
   -ms-overflow-style: none;
   background-color: #e0e0e0;
+  scrollbar-width: none;
 }
 #content::-webkit-scrollbar {
   display: none;
@@ -97,6 +99,7 @@ footer {
     -ms-overflow-style: none;
     height: 100%;
     overflow: scroll;
+    scrollbar-width: none;
   }
   .info-panel::-webkit-scrollbar {
     display: none;
