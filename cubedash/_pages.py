@@ -358,6 +358,7 @@ def product_list_text():
         "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
     )
 
+
 @app.errorhandler(404)
 def page_not_found(error):
-   return utils.render('404.html', title = '404'), 404
+    return utils.render("404.html", title="404"), 404
