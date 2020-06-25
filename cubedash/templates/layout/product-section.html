@@ -65,7 +65,7 @@
                                                title="{{ product_opt.definition.description }}"
                                                class="option-menu-link {% if product_opt.name == product.name %}active{% endif %}">
                                                 {{ product_opt.name }}
-                                                <i class="dataset-count" style="text-align:right; display:block; float:right; margin-right:80px;">dataset count: {{ summary.dataset_count }}</i>
+                                                <span style="text-align:right; display:block; float:right; margin-right:80px;">dataset count: <i class="dataset-count">{{ summary.dataset_count }}<i></span>
                                                 <i class="description">{{ product_opt.definition.description }}</i>
                                             </a>
                                         </li>
