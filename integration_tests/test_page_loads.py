@@ -80,7 +80,7 @@ def test_all_products_are_shown(client: FlaskClient):
     # We use a sorted array instead of a Set to detect duplicates too.
     found_product_names = sorted(
         [
-            a.text.strip()
+            a.text.strip().split()[0]
             for a in html.find(".product-selection-header .option-menu-link")
         ]
     )
