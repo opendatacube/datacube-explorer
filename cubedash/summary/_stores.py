@@ -8,18 +8,9 @@ from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 import dateutil.parser
-import structlog
 from dateutil import tz
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
-from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, String, and_, func, select
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import Select
 
+import structlog
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import TimePeriodOverview, _extents, _schema
@@ -33,6 +24,15 @@ from cubedash.summary._schema import (
 from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from shapely.geometry.base import BaseGeometry
+from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql import Select
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -385,13 +385,13 @@ class SummaryStore:
         )
 
         row = self._engine.execute(
-            select([PRODUCT.c.id,]).where(PRODUCT.c.name == product.name)
+            select([PRODUCT.c.id]).where(PRODUCT.c.name == product.name)
         ).fetchone()
 
         if row:
             # Product already exists, so update it
             self._engine.execute(
-                PRODUCT.update().where(PRODUCT.c.id==row[0]).values(fields)
+                PRODUCT.update().where(PRODUCT.c.id == row[0]).values(fields)
             )
         else:
             # Product doesn't exist, so insert it
