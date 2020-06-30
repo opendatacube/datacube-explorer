@@ -19,7 +19,7 @@ from datacube.utils import InvalidDocException, validate_document
 
 # GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
 _FEATURE_COLLECTION_SCHEMA_PATH = (
-    Path(__file__).parent / "schemas" / "FeatureCollection.json"
+    Path(__file__).parent / "schemas/geojson.org/schema/FeatureCollection.json"
 )
 _FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open("r"))
 

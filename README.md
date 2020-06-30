@@ -1,6 +1,7 @@
 # Data Cube Explorer
-
-![build](https://github.com/opendatacube/datacube-explorer/workflows/Lint,%20Test%20Code%20and%20Push%20Docker%20image%20for%20DEVELOP%20or%20TAG/badge.svg)
+[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
+[![Tests](https://github.com/opendatacube/datacube-explorer/workflows/Tests/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ATests)
+[![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 
 ![Explorer Screenshot](screenshot.png)
@@ -143,6 +144,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Which theme to use (in the cubedash/themes folder)
     CUBEDASH_THEME = 'odc'
     
+    # The default license to show for products that don't have one.
+    #     license is optional, but the stac API collections will not pass validation if it's null)
+    #     Either a SPDX License identifier, 'various' or 'proprietary'
+    #     Example value: "CC-BY-SA-4.0"
+    CUBEDASH_DEFAULT_LICENSE = None
+    
     # Customise '/stac' endpoint information
     STAC_ENDPOINT_ID = 'my-odc-explorer'
     STAC_ENDPOINT_TITLE = 'My ODC Explorer'
@@ -156,10 +163,24 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
 
 
-### Why aren't stylesheets updating?
+### How do I modify the css/javascript?
 
-The CSS is compiled from [Sass](https://sass-lang.com/). Run `make style` to rebuild them after a change,
-or use your editor to watch for changes (PyCharm will prompt to do so).
+The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from 
+[Typescript](https://www.typescriptlang.org/).
+
+Install [npm](https://www.npmjs.com/get-npm), and then install them both:
+
+    npm install -g sass typescript
+
+You can now run `make static` to rebuild all the static files, or
+individually with `make style` or `make js`.
+
+Alternatively, if using PyCharm, open a Sass file and you will be prompted 
+to enable a `File Watcher` to compile automatically.
+
+PyCharm will also compile the Typescript automatically by ticking
+the "Recompile on changes" option in `Languages & Frameworks ->
+Typescript`.
 
 ### How do I run the integration tests?
     

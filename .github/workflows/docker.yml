@@ -1,0 +1,93 @@
+---
+name: Docker
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "**"
+
+  release:
+    types:
+      - created
+
+env:
+  OLD_IMAGE_NAME: opendatacube/dashboard
+  IMAGE_NAME: opendatacube/explorer
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'release'
+
+    steps:
+      - name: Checkout git
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build and Push latest Docker image
+        uses: whoan/docker-build-with-cache-action@v4
+        with:
+          image_name: ${{ env.IMAGE_NAME }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Build and Push latest Docker image (old name)
+        uses: whoan/docker-build-with-cache-action@v4
+        with:
+          image_name: ${{ env.OLD_IMAGE_NAME }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Run vulnerability scanner
+        uses: aquasecurity/trivy-action@0.0.6
+        with:
+          image-ref: "${{ env.IMAGE_NAME }}:latest"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+
+      - name: Get tag for this build if it exists
+        if: github.event_name == 'release'
+        run: >
+          echo ::set-env name=RELEASE::$(docker run --rm -e DATACUBE_DB_URL=postgresql://username:password@hostname:5432/database
+          ${{ env.IMAGE_NAME }}:latest python3 -c 'import cubedash; print(cubedash.__version__)')
+
+      - name: Log the tag
+        run: echo $RELEASE
+
+      - name: Build and Push release if we have a tag
+        uses: whoan/docker-build-with-cache-action@v4
+        if: github.event_name == 'release'
+        with:
+          image_name: ${{ env.IMAGE_NAME }}
+          image_tag: ${{ env.RELEASE }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Build and Push release if we have a tag (old name)
+        uses: whoan/docker-build-with-cache-action@v4
+        if: github.event_name == 'release'
+        with:
+          image_name: ${{ env.OLD_IMAGE_NAME }}
+          image_tag: ${{ env.RELEASE }}
+          username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Notify Slack for Failures
+        uses: rtCamp/action-slack-notify@v2.0.0
+        if: failure()
+        env:
+          SLACK_CHANNEL: explorer-alerts
+          SLACK_ICON: "https://github.com/docker.png?size=48"
+          SLACK_COLOR: "#482de1"
+          SLACK_MESSAGE: ""
+          SLACK_TITLE: Docker failure
+          SLACK_USERNAME: Explorer Docker
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

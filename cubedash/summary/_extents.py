@@ -30,7 +30,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
 
 import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine
+from cubedash._utils import alchemy_engine, infer_crs
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
@@ -134,9 +134,13 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
         if not default_crs.lower().startswith(
             "epsg:"
         ) and not default_crs.lower().startswith("esri:"):
-            raise NotImplementedError(
-                "CRS expected in form of 'EPSG:1234'. Got: %r" % default_crs
-            )
+            # HACK: Change default CRS with inference
+            inferred_crs = infer_crs(default_crs)
+            if inferred_crs is None:
+                raise NotImplementedError(
+                    f"CRS expected in form of 'EPSG:1234'. Got: {default_crs!r}"
+                )
+            default_crs = inferred_crs
 
         auth_name, auth_srid = default_crs.split(":")
         default_crs_expression = (
@@ -218,6 +222,9 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
         ),
         default_crs_expression,
         # TODO: Handle arbitrary WKT strings (?)
+        # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
+        #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
+        # "degree\\",0.0174532925199433]]'
     )
     # print(as_sql(expression))
     return expression
@@ -507,10 +514,13 @@ class GridRegionInfo(RegionInfo):
         # So we're now converting to shapely to do it.
         # TODO: Is there a nicer way to do this?
         # pylint: disable=protected-access
-        return shapely.wkb.loads(extent._geom.ExportToWkb())
+        try:
+            return shapely.wkb.loads(extent._geom.ExportToWkb())
+        except AttributeError:
+            return extent.geom
 
     def region_label(self, region_code: str) -> str:
-        return "Tile %+d, %+d" % _from_xy_region_code(region_code)
+        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
 
 
 def _from_xy_region_code(region_code: str):
@@ -586,7 +596,7 @@ def _get_path_row_shapes():
     path_row_shapes = {}
     for shape_file in _WRS_PATH_ROW:
         with fiona.open(str(shape_file)) as f:
-            for k, item in f.items():
+            for _k, item in f.items():
                 prop = item["properties"]
                 key = prop["PATH"], prop["ROW"]
                 assert key not in path_row_shapes

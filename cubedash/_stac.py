@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
-from dateutil.tz import tz
-
 import flask
+from dateutil.tz import tz
+from flask import abort, request
+
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
-from flask import abort, request
 
 from . import _model, _utils
 
@@ -26,7 +26,8 @@ DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
 # Should we force all URLs to include the full hostname?
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
-_STAC_DEFAULTS = dict(stac_version="0.6.0")
+_STAC_VERSION = "0.9.0"
+_STAC_DEFAULTS = dict(stac_version=_STAC_VERSION)
 
 
 def url_for(*args, **kwargs):
@@ -160,15 +161,17 @@ def search_stac_items(
             full_dataset=True,
         )
     )
+    returned = items[:limit]
+    there_are_more = len(items) == limit + 1
 
     result = dict(
+        **_STAC_DEFAULTS,
+        stac_extensions=["context"],
         type="FeatureCollection",
-        features=[as_stac_item(f) for f in items[:limit]],
-        meta=dict(page=offset // limit, limit=limit),
+        features=[as_stac_item(f) for f in returned],
+        context=dict(page=offset // limit, limit=limit, returned=len(returned)),
         links=[],
     )
-
-    there_are_more = len(items) == limit + 1
 
     if there_are_more:
         result["links"].append(dict(rel="next", href=get_next_url(offset + limit)))
@@ -188,17 +191,19 @@ def collection(product_name: str):
     summary_props = {}
     if summary and summary.time_earliest:
         begin, end = utc(summary.time_earliest), utc(summary.time_latest)
-        extent = {"temporal": [begin, end]}
+        extent = {"temporal": {"interval": [[begin, end]]}}
         footprint = all_time_summary.footprint_wrs84
         if footprint:
-            extent["spatial"] = footprint.bounds
+            extent["spatial"] = {"bbox": [footprint.bounds]}
 
         summary_props["extent"] = extent
+
     return _utils.as_geojson(
         dict(
             **_STAC_DEFAULTS,
             id=summary.name,
             title=summary.name,
+            license=_utils.product_license(dataset_type),
             description=dataset_type.definition.get("description"),
             properties=dict(_build_properties(dataset_type.metadata)),
             providers=[],
@@ -237,8 +242,8 @@ def collection_items(product_name: str):
         offset=request.args.get("_o", default=0, type=int),
     )
 
-    # Maybe we shouldn't include "found" as it prevents some future optimisation?
-    feature_collection["meta"]["found"] = all_time_summary.dataset_count
+    # Maybe we shouldn't include total count, as it prevents some future optimisation?
+    feature_collection["context"]["matched"] = all_time_summary.dataset_count
 
     return _utils.as_geojson(feature_collection)
 
@@ -314,6 +319,9 @@ def as_stac_item(dataset: DatasetItem):
     """
     ds = dataset.odc_dataset
     item_doc = dict(
+        **_STAC_DEFAULTS,
+        # TODO: stac_extensions=['eo'],
+        #       (needs all the required fields for tests to pass)
         id=dataset.dataset_id,
         type="Feature",
         bbox=dataset.bbox,
@@ -350,10 +358,8 @@ def as_stac_item(dataset: DatasetItem):
     # If the dataset has a real start/end time, add it.
     time = ds.time
     if time.begin < time.end:
-        # datetime range extension propeosal (dtr):
-        # https://github.com/radiantearth/stac-spec/tree/master/extensions/datetime-range
-        item_doc["properties"]["dtr:start_datetime"] = utc(time.begin)
-        item_doc["properties"]["dtr:end_datetime"] = utc(time.end)
+        item_doc["properties"]["start_datetime"] = utc(time.begin)
+        item_doc["properties"]["end_datetime"] = utc(time.end)
 
     return item_doc
 
@@ -411,11 +417,25 @@ def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
 
 
 def field_platform(key, value):
-    yield "eo:platform", value.lower().replace("_", "-")
+    yield "platform", value.lower().replace("_", "-")
+
+
+def _as_stac_instruments(value: str):
+    """
+    >>> _as_stac_instruments('TM')
+    ['tm']
+    >>> _as_stac_instruments('OLI')
+    ['oli']
+    >>> _as_stac_instruments('ETM+')
+    ['etm']
+    >>> _as_stac_instruments('OLI_TIRS')
+    ['oli', 'tirs']
+    """
+    return [i.strip("+-").lower() for i in value.split("_")]
 
 
 def field_instrument(key, value):
-    yield "eo:instrument", value
+    yield "instruments", _as_stac_instruments(value)
 
 
 def field_bands(key, value: Dict):
@@ -429,9 +449,9 @@ def field_path_row(key, value):
     # Stac doesn't accept a range here, so we'll skip it in those products,
     # but we can handle the 99% case when lower==higher.
     if key == "sat_path":
-        kind = "column"
+        kind = "landsat:wrs_path"
     elif key == "sat_row":
-        kind = "row"
+        kind = "landsat:wrs_row"
     else:
         raise ValueError(f"Path/row kind {repr(key)}")
 
@@ -439,7 +459,7 @@ def field_path_row(key, value):
     if isinstance(value, Range):
         if value.end is None or value.begin == value.end:
             # Standard stac
-            yield f"eo:{kind}", str(value.begin)
+            yield kind, int(value.begin)
         else:
             # Our questionable output. Only present in telemetry products?
             yield f"odc:{key}", f"{value.begin}/{value.end}"

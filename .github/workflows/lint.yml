@@ -1,0 +1,44 @@
+---
+name: Linting
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+env:
+  IMAGE_NAME: opendatacube/dashboard
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build Docker
+        run: |
+          make build
+          docker-compose up -d
+
+      - name: Run linting
+        run: |
+          make lint-docker
+
+      - name: Notify Slack for Failures
+        uses: rtCamp/action-slack-notify@v2.0.0
+        if: failure()
+        env:
+          SLACK_CHANNEL: explorer-alerts
+          SLACK_COLOR: '#00a1de'
+          SLACK_ICON: 'https://github.com/psf.png?size=48'
+          SLACK_MESSAGE: ''
+          SLACK_TITLE: Lint failure
+          SLACK_USERNAME: Explorer linter
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

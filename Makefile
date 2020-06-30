@@ -24,11 +24,23 @@ lint: ## Run all Python linting checks
 weblint: ## Run stylelint across HTML and SASS
 	stylelint $(find . -iname '*.html') $(find . -iname '*.sass')
 
+
+static: style js
+
 .PHONY: style
 style: cubedash/static/base.css ## Compile SASS stylesheets to CSS
 
 cubedash/static/base.css: cubedash/static/base.sass
-	sass -s compressed $< $@
+	sass $< $@
+
+node_modules:
+	npm install @types/geojson @types/leaflet
+
+.PHONY: js ## Compile Typescript to JS
+js: cubedash/static/overview.js node_modules
+
+cubedash/static/overview.js: cubedash/static/overview.ts
+	tsc --build cubedash/static/tsconfig.json
 
 .PHONY: test
 test: ## Run tests using pytest
@@ -99,7 +111,8 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose run explorer \
+	sleep 10
+	docker-compose run -T explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker

@@ -1,0 +1,53 @@
+---
+name: Tests
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    paths:
+      - '**'
+
+env:
+  IMAGE_NAME: opendatacube/dashboard
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build Docker
+        run: |
+          make build
+
+      - name: Run tests
+        run: |
+          docker-compose up -d
+          make create-test-db-docker
+          make test-docker
+          docker-compose down
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CodeCovToken }}
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Notify Slack for Failures
+        uses: rtCamp/action-slack-notify@v2.0.0
+        if: failure()
+        env:
+          SLACK_CHANNEL: explorer-alerts
+          SLACK_COLOR: '#EEAF30'
+          SLACK_ICON: 'https://github.com/pytest-dev.png?size=48'
+          SLACK_MESSAGE: ''
+          SLACK_TITLE: Test failure
+          SLACK_USERNAME: Explorer tester
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

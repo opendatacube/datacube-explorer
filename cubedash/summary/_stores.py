@@ -34,6 +34,8 @@ from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 
+_DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
+
 _LOG = structlog.get_logger()
 
 
@@ -119,7 +121,9 @@ class SummaryStore:
         self.index.close()
         self._engine.dispose()
 
-    def refresh_all_products(self, refresh_older_than: timedelta = timedelta(days=1)):
+    def refresh_all_products(
+        self, refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN
+    ):
         for product in self.all_dataset_types():
             self.refresh_product(product, refresh_older_than=refresh_older_than)
         self.refresh_stats()
@@ -127,7 +131,7 @@ class SummaryStore:
     def refresh_product(
         self,
         product: DatasetType,
-        refresh_older_than: timedelta = timedelta(hours=23),
+        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
     ):
         our_product = self.get_product_summary(product.name)
@@ -190,10 +194,10 @@ class SummaryStore:
         would be enough for most products)
         """
         if kind not in ("source", "derived"):
-            raise ValueError("Unexpected kind of link: %r" % kind)
+            raise ValueError(f"Unexpected kind of link: {kind!r}")
         if not 0.0 < sample_percentage <= 100.0:
             raise ValueError(
-                "Sample percentage out of range 0>s>=100. Got %r" % sample_percentage
+                f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
             )
 
         from_ref, to_ref = "source_dataset_ref", "dataset_ref"
@@ -297,14 +301,14 @@ class SummaryStore:
         for d in self.all_dataset_types():
             if d.name == name:
                 return d
-        raise KeyError("Unknown dataset type %r" % name)
+        raise KeyError(f"Unknown dataset type {name!r}")
 
     @functools.lru_cache()
     def _dataset_type_by_id(self, id_) -> DatasetType:
         for d in self.all_dataset_types():
             if d.id == id_:
                 return d
-        raise KeyError("Unknown dataset type id %r" % id_)
+        raise KeyError(f"Unknown dataset type id {id_!r}")
 
     @functools.lru_cache()
     def _product(self, name: str) -> ProductSummary:
@@ -322,7 +326,7 @@ class SummaryStore:
             ).where(PRODUCT.c.name == name)
         ).fetchone()
         if not row:
-            raise ValueError("Unknown product %r (initialised?)" % name)
+            raise ValueError(f"Unknown product {name!r} (initialised?)")
 
         row = dict(row)
         source_products = [

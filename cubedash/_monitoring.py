@@ -60,7 +60,7 @@ def init_app_monitoring():
         """
         Decorate all public methods of the class with the given decorator.
         """
-        for name, clasification, clz, attr in inspect.classify_class_attrs(cls):
+        for name, clasification, _clz, attr in inspect.classify_class_attrs(cls):
             if clasification == "method" and not name.startswith("_"):
                 setattr(cls, name, decorator(attr))
         return cls

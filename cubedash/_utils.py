@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Common global filters and util methods.
 """
@@ -6,12 +5,14 @@ Common global filters and util methods.
 from __future__ import absolute_import, division
 
 import collections
+import difflib
 import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
+import flask
 import rapidjson
 import shapely.geometry
 import shapely.validation
@@ -19,11 +20,12 @@ import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
+from pyproj import CRS as PJCRS
 from shapely.geometry import MultiPolygon, Polygon, shape
 from sqlalchemy.engine import Engine
+from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
-import flask
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.index import Index
@@ -31,7 +33,6 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
-from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -48,7 +49,20 @@ NEAR_ANTIMERIDIAN = shape(
     }
 )
 
+# CRS's we use as inference results
+DEFAULT_CRS_INFERENCES = [4283, 4326]
+MATCH_CUTOFF = 0.38
+
 _LOG = structlog.get_logger()
+
+
+def infer_crs(crs_str: str) -> Optional[str]:
+    plausible_list = [PJCRS.from_epsg(code).to_wkt() for code in DEFAULT_CRS_INFERENCES]
+    closest_wkt = difflib.get_close_matches(crs_str, plausible_list, cutoff=0.38)
+    if len(closest_wkt) == 0:
+        return
+    epsg = PJCRS.from_wkt(closest_wkt[0]).to_epsg()
+    return f"epsg:{epsg}"
 
 
 def render(template, **context):
@@ -122,6 +136,30 @@ def dataset_label(dataset):
     return str(dataset.id)
 
 
+def product_license(dt: DatasetType) -> Optional[str]:
+    """
+    What is the license to display for this product?
+
+    The return format should match the stac collection spec
+    - Either a SPDX License identifier
+    - 'various'
+    -  or 'proprietary'
+
+    Example value: "CC-BY-SA-4.0"
+    """
+    # Does the metadata type has a 'license' field defined?
+    if "license" in dt.metadata.fields:
+        return dt.metadata.fields["license"]
+
+    # Otherwise, look in a default location in the document, matching stac collections.
+    # (Note that datacube > 1.8.0b6 is required to allow licenses in products).
+    if "license" in dt.definition:
+        return dt.definition["license"]
+
+    # Otherwise is there a global default?
+    return flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
+
+
 def _next_month(date: datetime):
     if date.month == 12:
         return datetime(date.year + 1, 1, 1)
@@ -171,7 +209,7 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
     for field_name, field_vals in field_groups.items():
         field: Field = product.metadata_type.dataset_fields.get(field_name)
         if not field:
-            raise ValueError("No field %r for product %s" % (field_name, product.name))
+            raise ValueError(f"No field {field_name!r} for product {product.name!r}")
 
         parser = _field_parser(field)
 
@@ -183,7 +221,7 @@ def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
                 parser(begin) if begin else None, parser(end) if end else None
             )
         else:
-            raise ValueError("Unknown field classifier: %r" % field_vals)
+            raise ValueError(f"Unknown field classifier: {field_vals!r}")
 
     return query
 
@@ -239,12 +277,18 @@ def as_rich_json(o):
 
 
 def as_json(o, content_type="application/json"):
+    # Indent if they're loading directly in a browser.
+    #   (Flask's Accept parsing is too smart, and sees html-acceptance in
+    #    default ajax requests "accept: */*". So we do it raw.)
+    prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
+
     return flask.Response(
         rapidjson.dumps(
             o,
             datetime_mode=rapidjson.DM_ISO8601,
             uuid_mode=rapidjson.UM_CANONICAL,
             number_mode=rapidjson.NM_NATIVE,
+            indent=4 if prefer_formatted else None,
         ),
         content_type=content_type,
     )
