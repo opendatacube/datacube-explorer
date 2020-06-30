@@ -122,13 +122,3 @@ lint-docker: ## Run linting inside inside Docker
 test-docker: ## Run tests inside Docker
 	docker-compose run explorer \
 		make test
-
-index-s2a:
-	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py \
-		--no-init-database --refresh-stats --force-refresh --verbose s2_l2a
-
-index-dem:
-	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py \
-		--no-init-database --no-refresh-stats --force-refresh --verbose srtm
