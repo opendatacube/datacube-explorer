@@ -7,9 +7,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 from dateutil import tz
 from dateutil.tz import tzutc
 
+from cubedash._utils import alchemy_engine
+from cubedash.generate import cli
 from cubedash.summary import SummaryStore
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
@@ -247,3 +250,25 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         cached_s.summary_gen_time == summary.summary_gen_time
     ), "A new, rather than cached, summary was returned"
     assert cached_s.dataset_count == summary.dataset_count
+
+
+def test_cubedash_gen_refresh(module_index):
+    """
+    Test cubedash get with refresh does not increment sequence
+    """
+    runner = CliRunner()
+    res = runner.invoke(cli, ["--init"])
+    assert res
+    engine = alchemy_engine(module_index)
+    last_val = engine.execute(
+        "select last_value from cubedash.product_id_seq;"
+    ).fetchone()[0]
+    assert last_val == 74
+    res = runner.invoke(
+        cli, ["--no-init-database", "--refresh-stats", "--force-refresh", "--all"]
+    )
+    assert res
+    new_last_val = engine.execute(
+        "select last_value from cubedash.product_id_seq;"
+    ).fetchone()[0]
+    assert new_last_val == 74
