@@ -8,18 +8,9 @@ from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 import dateutil.parser
-import structlog
 from dateutil import tz
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
-from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, String, and_, func, select
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import Select
 
+import structlog
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import TimePeriodOverview, _extents, _schema
@@ -33,6 +24,15 @@ from cubedash.summary._schema import (
 from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from shapely.geometry.base import BaseGeometry
+from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql import Select
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -374,6 +374,7 @@ class SummaryStore:
             for name in product.derived_products
         ]
         fields = dict(
+            name=product.name,
             dataset_count=product.dataset_count,
             time_earliest=product.time_earliest,
             time_latest=product.time_latest,
@@ -382,11 +383,27 @@ class SummaryStore:
             # Deliberately do all age calculations with the DB clock rather than local.
             last_refresh=func.now(),
         )
+
+        # Dear future reader. This section used to use an 'UPSERT' statement (as in,
+        # insert, on_conflict...) and while this works, it triggers the sequence
+        # `product_id_seq` to increment as part of the check for insertion. This
+        # is bad because there's only 32 k values in the sequence and we have run out
+        # a couple of times! So, It appears that this update-else-insert must be done
+        # in two transactions...
         row = self._engine.execute(
-            postgres.insert(PRODUCT)
-            .on_conflict_do_update(index_elements=["name"], set_=fields)
-            .values(name=product.name, **fields)
-        ).inserted_primary_key
+            select([PRODUCT.c.id]).where(PRODUCT.c.name == product.name)
+        ).fetchone()
+
+        if row:
+            # Product already exists, so update it
+            self._engine.execute(
+                PRODUCT.update().where(PRODUCT.c.id == row[0]).values(fields)
+            )
+        else:
+            # Product doesn't exist, so insert it
+            row = self._engine.execute(
+                postgres.insert(PRODUCT).values(**fields)
+            ).inserted_primary_key
         self._product.cache_clear()
         return row[0]
 

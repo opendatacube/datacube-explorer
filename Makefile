@@ -77,6 +77,9 @@ up: ## Start server using Docker
 build: ## Build the dev Docker image
 	docker-compose build
 
+docker-clean: ## Get rid of the local docker env and DB
+	docker-compose down
+
 build-prod: ## Build the prod Docker image
 	docker-compose \
 		--file docker-compose.yml \
@@ -90,6 +93,10 @@ up-prod: ## Start using the prod Docker image
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
 		datacube system init
+		
+docker-shell: ## Get a shell into local Docker environ
+	docker-compose exec explorer \
+		bash
 
 schema: ## Initialise Explorer DB using Docker
 	docker-compose exec explorer \
