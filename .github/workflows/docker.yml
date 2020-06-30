@@ -27,11 +27,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get unstable git tag
+        run: >
+          echo ::set-env name=UNSTABLE_TAG::$(git describe --tags)
+
+      - name: Log the unstable tag
+        run: echo $UNSTABLE_TAG
+
       - name: Build and Push latest Docker image
         uses: whoan/docker-build-with-cache-action@v4
         with:
           image_name: ${{ env.IMAGE_NAME }}
           username: gadockersvc
+          password: "${{ secrets.DockerPassword }}"
+          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+
+      - name: Build and Push unstable Docker image tag
+        uses: whoan/docker-build-with-cache-action@v4
+        with:
+          image_name: ${{ env.IMAGE_NAME }}
+          username: gadockersvc
+          image_tag: ${{ env.UNSTABLE_TAG }}
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
@@ -46,7 +62,7 @@ jobs:
       - name: Run vulnerability scanner
         uses: aquasecurity/trivy-action@0.0.6
         with:
-          image-ref: "${{ env.IMAGE_NAME }}:latest"
+          image-ref: "${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}"
           format: "table"
           exit-code: "1"
           severity: "CRITICAL,HIGH"
