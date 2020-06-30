@@ -8,18 +8,9 @@ from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 import dateutil.parser
-import structlog
 from dateutil import tz
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
-from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, String, and_, func, select
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import Select
 
+import structlog
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import TimePeriodOverview, _extents, _schema
@@ -33,6 +24,15 @@ from cubedash.summary._schema import (
 from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from shapely.geometry.base import BaseGeometry
+from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql import Select
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -374,6 +374,7 @@ class SummaryStore:
             for name in product.derived_products
         ]
         fields = dict(
+            name=product.name,
             dataset_count=product.dataset_count,
             time_earliest=product.time_earliest,
             time_latest=product.time_latest,
@@ -385,7 +386,7 @@ class SummaryStore:
         row = self._engine.execute(
             postgres.insert(PRODUCT)
             .on_conflict_do_update(index_elements=["name"], set_=fields)
-            .values(name=product.name, **fields)
+            .values(**fields)
         ).inserted_primary_key
         self._product.cache_clear()
         return row[0]
