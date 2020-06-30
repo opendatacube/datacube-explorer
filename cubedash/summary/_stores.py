@@ -384,6 +384,12 @@ class SummaryStore:
             last_refresh=func.now(),
         )
 
+        # Dear future reader. This section used to use an 'UPSERT' statement (as in,
+        # insert, on_conflict...) and while this works, it triggers the sequence
+        # `product_id_seq` to increment as part of the check for insertion. This
+        # is bad because there's only 32 k values in the sequence and we have run out
+        # a couple of times! So, It appears that this update-else-insert must be done
+        # in two transactions...
         row = self._engine.execute(
             select([PRODUCT.c.id]).where(PRODUCT.c.name == product.name)
         ).fetchone()
