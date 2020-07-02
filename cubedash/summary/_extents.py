@@ -289,6 +289,10 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
 
 
 def _select_dataset_extent_query(dt: DatasetType):
+    """
+    Create a query that selects all fields which go into the spatial table
+    for this DatasetType.
+    """
     md_type = dt.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
