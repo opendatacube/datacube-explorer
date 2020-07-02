@@ -8,6 +8,7 @@ from dateutil import tz
 import pytest
 from cubedash.summary import _extents
 from datacube.index import Index
+from geoalchemy2.shape import to_shape
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -54,13 +55,26 @@ def test_eo3_extents(eo3_index: Index):
         dataset_extent_row["dataset_type_ref"]
         == eo3_index.products.get_by_name("usgs_ls5t_level1_1").id
     )
-    # Note this should be the geometry, not the max/min bounds.
-    footprint = _extents._as_json(dataset_extent_row["footprint"])
-    assert footprint == (
-        '"SRID=32650;POLYGON ('
-        "(233985 -3248685, 233985 -3458115, 467715 -3458115, 467715 -3248685, 233985 -3248685)"
-        ')"'
-    )
+
+    # This should be the geometry field of eo3, not the max/min bounds
+    # that eo1 compatibility adds within `grid_spatial`.
+    footprint = to_shape(dataset_extent_row["footprint"])
+    assert footprint.__geo_interface__ == {
+        "type": "Polygon",
+        "coordinates": (
+            (
+                (233985.0, -3248685.0),
+                (233985.0, -3458115.0),
+                (467715.0, -3458115.0),
+                (467715.0, -3248685.0),
+                (233985.0, -3248685.0),
+            ),
+        ),
+    }
+    assert footprint.is_valid, "Created footprint is not a valid geometry"
+    assert (
+        dataset_extent_row["footprint"].srid == 32650
+    ), "Expected epsg:32650 within the footprint geometry"
 
     # TODO: eo3 region codes
     # assert dataset_extent_row["region_code"] == "113081"
