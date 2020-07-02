@@ -76,8 +76,5 @@ def test_eo3_extents(eo3_index: Index):
         dataset_extent_row["footprint"].srid == 32650
     ), "Expected epsg:32650 within the footprint geometry"
 
-    # TODO: eo3 region codes
-    # assert dataset_extent_row["region_code"] == "113081"
-    assert dataset_extent_row["region_code"] is None
-
+    assert dataset_extent_row["region_code"] == "113081"
     assert dataset_extent_row["size_bytes"] is None
