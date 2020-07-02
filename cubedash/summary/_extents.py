@@ -6,9 +6,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, Optional
 
+import datacube.drivers.postgres._api as postgres_api
 import fiona
 import shapely.wkb
 import structlog
+from cubedash._utils import alchemy_engine, infer_crs
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField, RangeDocField
+from datacube.drivers.postgres._schema import DATASET
+from datacube.index import Index
+from datacube.model import DatasetType, MetadataType
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
@@ -29,15 +37,6 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import ColumnElement
 
-import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine, infer_crs
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
-from datacube.index import Index
-from datacube.model import DatasetType, MetadataType
-
 _LOG = structlog.get_logger()
 
 _WRS_PATH_ROW = [
@@ -48,7 +47,7 @@ _WRS_PATH_ROW = [
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
     """
-    Build an SQLaLchemy expression to get the extent for a dataset.
+    Build an SQLAlchemy expression to get the extent for a dataset.
 
     It's returned as a postgis geometry.
 
@@ -60,26 +59,42 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
-    projection_offset = _projection_doc_offset(md)
-    valid_data_offset = projection_offset + ["valid_data"]
+    if _expects_eo3_metadata_type(md):
+        return func.ST_SetSRID(
+            func.ST_GeomFromGeoJSON(doc[["geometry"]].astext, type_=Geometry),
+            get_dataset_srid_alchemy_expression(md, default_crs),
+        )
+    else:
+        projection_offset = _projection_doc_offset(md)
+        valid_data_offset = projection_offset + ["valid_data"]
 
-    return func.ST_SetSRID(
-        case(
-            [
-                # If we have valid_data offset, use it as the polygon.
-                (
-                    doc[valid_data_offset] != None,
-                    func.ST_GeomFromGeoJSON(
-                        doc[valid_data_offset].astext, type_=Geometry
-                    ),
-                )
-            ],
-            # Otherwise construct a polygon from the four corner points.
-            else_=_bounds_polygon(doc, projection_offset),
-        ),
-        get_dataset_srid_alchemy_expression(md, default_crs),
-        type_=Geometry,
-    )
+        return func.ST_SetSRID(
+            case(
+                [
+                    # If we have valid_data offset, use it as the polygon.
+                    (
+                        doc[valid_data_offset] != None,
+                        func.ST_GeomFromGeoJSON(
+                            doc[valid_data_offset].astext, type_=Geometry
+                        ),
+                    )
+                ],
+                # Otherwise construct a polygon from the four corner points.
+                else_=_bounds_polygon(doc, projection_offset),
+            ),
+            get_dataset_srid_alchemy_expression(md, default_crs),
+            type_=Geometry,
+        )
+
+
+def _expects_eo3_metadata_type(md: MetadataType):
+    # We don't have a clean way to say that a product expects EO3
+
+    measurements_offset = md.definition["dataset"]["measurements"]
+
+    # In EO3, the measurements are in ['measurments'],
+    # In EO1, they are in ['image', 'bands'].
+    return measurements_offset == ["measurements"]
 
 
 def _projection_doc_offset(md):
@@ -124,9 +139,11 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
-    # Most have a spatial_reference field we can use directly.
-    spatial_reference_offset = projection_offset + ["spatial_reference"]
-    spatial_ref = doc[spatial_reference_offset].astext
+    if _expects_eo3_metadata_type(md):
+        spatial_ref = doc[["crs"]].astext
+    else:
+        # Most have a spatial_reference field we can use directly.
+        spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
 
     # When datasets have no CRS, optionally use this as default.
     default_crs_expression = None
@@ -382,7 +399,7 @@ def _as_json(obj):
         if isinstance(o, WKBElement):
             # Following the EWKT format: include srid
             prefix = f"SRID={o.srid};" if o.srid else ""
-            return prefix + to_shape(o).wkt
+            return str(prefix + to_shape(o).wkt)
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):
