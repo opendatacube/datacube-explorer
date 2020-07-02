@@ -12,20 +12,16 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 
-import flask
 import rapidjson
-import shapely.geometry
-import shapely.validation
-import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
-from pyproj import CRS as PJCRS
-from shapely.geometry import MultiPolygon, Polygon, shape
-from sqlalchemy.engine import Engine
-from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
+import flask
+import shapely.geometry
+import shapely.validation
+import structlog
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.index import Index
@@ -33,6 +29,10 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
+from pyproj import CRS as PJCRS
+from shapely.geometry import MultiPolygon, Polygon, shape
+from sqlalchemy.engine import Engine
+from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -341,7 +341,25 @@ def get_ordered_metadata(metadata_doc):
 
 
 EODATASETS_PROPERTY_ORDER = [
+    "$schema",
+    # Products / Types
+    "name",
+    "license",
+    "metadata_type",
+    "description",
+    "metadata",
+    # EO3
     "id",
+    "label",
+    "product",
+    "locations",
+    "crs",
+    "geometry",
+    "grids",
+    "properties",
+    "measurements",
+    "accessories",
+    # EO
     "ga_label",
     "name",
     "description",
