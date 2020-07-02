@@ -1,0 +1,75 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 9989545f-906d-5090-a38e-cdbfbfc1afca
+
+label: usgs_ls5t_level1_1-0-20170209_113081_1988-03-30
+product:
+  name: usgs_ls5t_level1_1
+  href: https://collections.dea.ga.gov.au/product/usgs_ls5t_level1_1
+
+crs: epsg:32650
+geometry:
+  type: Polygon
+  coordinates: [[[233985.0, -3248685.0], [233985.0, -3458115.0], [467715.0, -3458115.0],
+      [467715.0, -3248685.0], [233985.0, -3248685.0]]]
+grids:
+  default:
+    shape: [6981, 7791]
+    transform: [30.0, 0.0, 233985.0, 0.0, -30.0, -3248685.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 1988-03-30 01:41:16.892044Z
+  eo:cloud_cover: 0.0
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  eo:sun_azimuth: 55.71404191
+  eo:sun_elevation: 38.53058787
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:data_type: L1TP
+  landsat:ephemeris_type: PREDICTIVE
+  landsat:geometric_rmse_model_x: 3.701
+  landsat:geometric_rmse_model_y: 3.946
+  landsat:geometric_rmse_verify: 0.264
+  landsat:ground_control_points_model: 100
+  landsat:ground_control_points_verify: 1061
+  landsat:ground_control_points_version: 4
+  landsat:landsat_product_id: LT05_L1TP_113081_19880330_20170209_01_T1
+  landsat:landsat_scene_id: LT51130811988090ASA00
+  landsat:processing_software_version: LPGS_12.8.3
+  landsat:station_id: ASA
+  landsat:wrs_path: 113
+  landsat:wrs_row: 81
+  odc:dataset_version: 1.0.20170209
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2017-02-09 08:14:26Z
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '113081'
+
+measurements:
+  blue:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B1.TIF
+  green:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B2.TIF
+  nir:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B4.TIF
+  quality:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_BQA.TIF
+  red:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B3.TIF
+  swir_1:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B5.TIF
+  swir_2:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B7.TIF
+  tir:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_B6.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LT05_L1TP_113081_19880330_20170209_01_T1_MTL.txt
+
+lineage: {}
+...
