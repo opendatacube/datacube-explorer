@@ -16,7 +16,7 @@ from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
 from datacube.drivers.postgres._schema import DATASET
 from datacube.index import Index
-from datacube.model import DatasetType, MetadataType
+from datacube.model import DatasetType, Field, MetadataType
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
@@ -595,11 +595,25 @@ def _region_code_field(dt: DatasetType):
     """
     Get an sqlalchemy expression to calculate the region code (a string)
 
+    This is usually the 'region_code' field, if one exists, but there are
+    fallbacks for other native Satellites/Platforms.
+
     Eg.
+
         On Landsat scenes this is the path/row (separated by underscore)
         On tiles this is the tile numbers (separated by underscore: possibly with negative)
         On Sentinel this is MGRS number
     """
+    region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
+    if region_code_field is not None:
+        # `alchemy_expression` is part of the postgres driver (PgDocField),
+        # not the base Field class.
+        if not hasattr(region_code_field, "alchemy_expression"):
+            raise NotImplementedError(
+                "ODC index driver doesn't support alchemy expressions"
+            )
+        return region_code_field.alchemy_expression
+
     region_info = RegionInfo.for_product(dt)
     if region_info:
         return region_info.alchemy_expression()
