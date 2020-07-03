@@ -3,26 +3,26 @@ from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
 import dateutil.parser
-import flask
 import flask_themes
+
+import flask
 import shapely
 import shapely.geometry
 import shapely.ops
 import shapely.prepared
 import shapely.wkb
 import structlog
+from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary._extents import RegionInfo
+from cubedash.summary._stores import ProductSummary
+from datacube.index import index_connect
+from datacube.model import DatasetType
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
 # from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._extents import RegionInfo
-from cubedash.summary._stores import ProductSummary
-from datacube.index import index_connect
-from datacube.model import DatasetType
 
 try:
     from ._version import version as __version__
@@ -154,7 +154,7 @@ def get_regions_geojson(
 
     product = STORE.get_dataset_type(product_name)
 
-    region_info = RegionInfo.for_product(product)
+    region_info = STORE.get_product_region_info(product_name)
     if not region_info:
         return None
 

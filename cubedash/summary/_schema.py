@@ -41,7 +41,7 @@ DATASET_SPATIAL = Table(
     Column(
         "dataset_type_ref",
         SmallInteger,
-        comment="Cubedash product list " "(corresponding to datacube dataset_type)",
+        comment="The ODC dataset_type id)",
         nullable=False,
     ),
     Column("center_time", DateTime(timezone=True), nullable=False),
@@ -170,6 +170,16 @@ SPATIAL_QUALITY_STATS = Table(
     Column("has_region", Integer),
 )
 
+# The geometry of each unique 'region' for a product.
+REGION = Table(
+    "mv_region",
+    _REF_TABLE_METADATA,
+    Column("dataset_type_ref", SmallInteger, nullable=False),
+    Column("region_code", String),
+    Column("footprint", Geometry(srid=4326, spatial_index=False)),
+    Column("count", Integer, nullable=False),
+)
+
 
 def has_schema(engine: Engine) -> bool:
     """
@@ -238,6 +248,30 @@ def create_schema(engine: Engine):
     """
     )
 
+    # A geometry for each declared region.
+    #
+    # This happens in two steps so that we union cleanly (in the native CRS rather than after transforming)
+    # TODO: Simplify geom after union?
+    engine.execute(
+        f"""
+    create materialized view if not exists {CUBEDASH_SCHEMA}.mv_region as (
+        select dataset_type_ref,
+               region_code,
+               ST_Union(footprint) as footprint,
+               sum(count)          as count
+        from (
+             select dataset_type_ref,
+                    region_code,
+                    ST_Transform(ST_Union(footprint), 4326) as footprint,
+                    count(*)                                as count
+             from {CUBEDASH_SCHEMA}.dataset_spatial
+             group by dataset_type_ref, region_code, ST_SRID(footprint)
+        ) srid_groups
+        group by dataset_type_ref, region_code
+    ) with no data;
+    """
+    )
+
 
 def refresh_supporting_views(conn, concurrently=False):
     args = "concurrently" if concurrently else ""
@@ -249,6 +283,11 @@ def refresh_supporting_views(conn, concurrently=False):
     conn.execute(
         f"""
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
+    """
+    )
+    conn.execute(
+        f"""
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_region;
     """
     )
 

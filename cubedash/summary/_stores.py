@@ -22,10 +22,12 @@ from sqlalchemy.sql import Select
 
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
-from cubedash.summary import TimePeriodOverview, _extents, _schema
+from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary._extents import CachedRegionInfo
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
+    REGION,
     SPATIAL_QUALITY_STATS,
     TIME_OVERVIEW,
     refresh_supporting_views,
@@ -703,6 +705,23 @@ class SummaryStore:
         return _extents.datasets_by_region(
             self._engine, self.index, product_name, region_code, time_range, limit
         )
+
+    def get_product_region_info(self, product_name: str) -> RegionInfo:
+        dt = self.get_dataset_type(product_name)
+
+        region_geoms = {
+            code: to_shape(geom)
+            for code, geom in self._engine.execute(
+                select([REGION.c.region_code, REGION.c.footprint])
+                .where(REGION.c.dataset_type_ref == dt.id)
+                .order_by(REGION.c.region_code)
+            )
+        }
+
+        if region_geoms:
+            return CachedRegionInfo(dt, region_geoms)
+        else:
+            return RegionInfo.for_product(self.get_dataset_type(product_name))
 
 
 def _safe_read_date(d):

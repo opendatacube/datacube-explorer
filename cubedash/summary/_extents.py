@@ -492,6 +492,22 @@ class RegionInfo:
         return region_code
 
 
+class CachedRegionInfo(RegionInfo):
+    def __init__(
+        self, product: DatasetType, region_shapes: Dict[str, GeometryCollection]
+    ) -> None:
+        super().__init__(product)
+        self.region_shapes = region_shapes
+
+    def geographic_extent(self, region_code: str) -> GeometryCollection:
+        if region_code not in self.region_shapes:
+            raise RuntimeError(
+                f"No region geometry found for {region_code!r}"
+                "cubedash-gen may need to be rerun to update caches."
+            )
+        return self.region_shapes[region_code]
+
+
 class GridRegionInfo(RegionInfo):
     name = "tiled"
     description = "Tiled product"
