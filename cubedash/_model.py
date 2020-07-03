@@ -3,26 +3,21 @@ from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
 import dateutil.parser
-import flask_themes
-
 import flask
-import shapely
-import shapely.geometry
-import shapely.ops
-import shapely.prepared
-import shapely.wkb
+import flask_themes
 import structlog
-from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._extents import RegionInfo
-from cubedash.summary._stores import ProductSummary
-from datacube.index import index_connect
-from datacube.model import DatasetType
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
 # from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary._extents import RegionInfo
+from cubedash.summary._stores import ProductSummary
+from datacube.index import index_connect
+from datacube.model import DatasetType
 
 try:
     from ._version import version as __version__
@@ -166,12 +161,9 @@ def get_regions_geojson(
     if not period:
         # Valid product, but no summary generated.
         return None
-    footprint_wrs84 = _get_footprint(period)
 
     start = time.time()
-    regions = _get_regions_geojson(
-        period.region_dataset_counts, footprint_wrs84, region_info
-    )
+    regions = _get_regions_geojson(period.region_dataset_counts, region_info)
     _LOG.debug("overview.region_gen", time_sec=time.time() - start)
     return regions
 
@@ -195,10 +187,9 @@ def _get_footprint(period: TimePeriodOverview) -> Optional[MultiPolygon]:
 
 
 def _get_regions_geojson(
-    region_counts: Counter[str], footprint: MultiPolygon, region_info: RegionInfo
+    region_counts: Counter[str], region_info: RegionInfo
 ) -> Optional[Dict]:
-    region_geometry = _region_geometry_function(region_info, footprint)
-    if not region_geometry:
+    if not region_info:
         # Regions are unsupported for product
         return None
 
@@ -218,7 +209,9 @@ def _get_regions_geojson(
         "features": [
             {
                 "type": "Feature",
-                "geometry": region_geometry(region_code).__geo_interface__,
+                "geometry": region_info.geographic_extent(
+                    region_code
+                ).__geo_interface__,
                 "properties": {
                     "region_code": region_code,
                     "label": region_info.region_label(region_code),
@@ -228,32 +221,6 @@ def _get_regions_geojson(
             for region_code in (region_counts or [])
         ],
     }
-
-
-def _region_geometry_function(region_info: RegionInfo, footprint):
-    region_shape = region_info.geographic_extent
-
-    if footprint is None:
-        return region_shape
-    else:
-        footprint_boundary = shapely.prepared.prep(footprint.boundary)
-
-        def region_geometry_cut(
-            region_code: str,
-        ) -> shapely.geometry.GeometryCollection:
-            """
-            Cut the polygon down to the footprint
-            """
-            shapely_extent = region_shape(region_code)
-
-            # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
-            # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
-            if footprint_boundary.intersects(shapely_extent):
-                return footprint.intersection(shapely_extent)
-            else:
-                return shapely_extent
-
-        return region_geometry_cut
 
 
 @app.errorhandler(500)

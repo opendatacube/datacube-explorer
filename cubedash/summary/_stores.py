@@ -706,10 +706,10 @@ class SummaryStore:
             self._engine, self.index, product_name, region_code, time_range, limit
         )
 
-    def get_product_region_info(self, product_name: str) -> RegionInfo:
+    @functools.lru_cache()
+    def _region_geoms(self, product_name: str) -> Dict[str, BaseGeometry]:
         dt = self.get_dataset_type(product_name)
-
-        region_geoms = {
+        return {
             code: to_shape(geom)
             for code, geom in self._engine.execute(
                 select([REGION.c.region_code, REGION.c.footprint])
@@ -718,10 +718,13 @@ class SummaryStore:
             )
         }
 
+    def get_product_region_info(self, product_name: str) -> RegionInfo:
+        dt = self.get_dataset_type(product_name)
+        region_geoms = self._region_geoms(product_name)
         if region_geoms:
             return CachedRegionInfo(dt, region_geoms)
         else:
-            return RegionInfo.for_product(self.get_dataset_type(product_name))
+            return RegionInfo.for_product(dt)
 
 
 def _safe_read_date(d):
