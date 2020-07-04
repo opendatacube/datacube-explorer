@@ -4,7 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
 
 import dateutil.parser
@@ -52,7 +52,9 @@ class ProductSummary:
     source_products: List[str]
     derived_products: List[str]
 
-    # fixed_fields: Dict[str, Union[str, float, int]]
+    # Metadata values that are the same on every dataset.
+    # (on large products this is judged via sampling, so may not be 100%)
+    fixed_metadata: Dict[str, Union[str, float, int, datetime]]
 
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
@@ -166,6 +168,7 @@ class SummaryStore:
 
         source_products = []
         derived_products = []
+        fixed_metadata = {}
         if total_count:
             sample_percentage = min(dataset_sample_size / total_count, 1) * 100.0
             source_products = self._get_linked_products(
@@ -173,6 +176,9 @@ class SummaryStore:
             )
             derived_products = self._get_linked_products(
                 product, kind="derived", sample_percentage=sample_percentage
+            )
+            fixed_metadata = self._find_product_fixed_metadata(
+                product, sample_percentage=sample_percentage
             )
 
         self._set_product_extent(
@@ -183,6 +189,7 @@ class SummaryStore:
                 latest,
                 source_products=source_products,
                 derived_products=derived_products,
+                fixed_metadata=fixed_metadata,
             )
         )
         return added_count
@@ -190,7 +197,9 @@ class SummaryStore:
     def refresh_stats(self, concurrently=False):
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
-    def _find_product_fixed_fields(self, product: DatasetType, sample_percentage=0.05):
+    def _find_product_fixed_metadata(
+        self, product: DatasetType, sample_percentage=0.05
+    ):
         """
         Find metadata fields that have an identical value in every dataset of the product.
 
@@ -386,6 +395,7 @@ class SummaryStore:
                     PRODUCT.c.id.label("id_"),
                     PRODUCT.c.source_product_refs,
                     PRODUCT.c.derived_product_refs,
+                    PRODUCT.c.fixed_metadata,
                 ]
             ).where(PRODUCT.c.name == name)
         ).fetchone()
@@ -429,7 +439,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _set_product_extent(self, product: ProductSummary):
+    def _set_product_extent(self, product: ProductSummary) -> int:
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -438,12 +448,12 @@ class SummaryStore:
             for name in product.derived_products
         ]
         fields = dict(
-            name=product.name,
             dataset_count=product.dataset_count,
             time_earliest=product.time_earliest,
             time_latest=product.time_latest,
             source_product_refs=source_product_ids,
             derived_product_refs=derived_product_ids,
+            fixed_metadata=product.fixed_metadata,
             # Deliberately do all age calculations with the DB clock rather than local.
             last_refresh=func.now(),
         )
@@ -466,7 +476,7 @@ class SummaryStore:
         else:
             # Product doesn't exist, so insert it
             row = self._engine.execute(
-                postgres.insert(PRODUCT).values(**fields)
+                postgres.insert(PRODUCT).values(**fields, name=product.name)
             ).inserted_primary_key
         self._product.cache_clear()
         return row[0]
