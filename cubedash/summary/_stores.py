@@ -112,6 +112,12 @@ class SummaryStore:
         """
         return _schema.has_schema(self._engine)
 
+    def is_schema_compatible(self) -> bool:
+        """
+        Have all schema update been applied?
+        """
+        return _schema.is_compatible_schema(self._engine)
+
     def init(self):
         """
         Initialise any schema elements that don't exist.
@@ -119,6 +125,8 @@ class SummaryStore:
         (Requires `create` permissions in the db)
         """
         _schema.create_schema(self._engine)
+        # If it already existed, check updates are applied.
+        _schema.update_schema(self._engine)
 
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
@@ -247,6 +255,11 @@ class SummaryStore:
         else:
             dataset_table = ODC_DATASET
 
+        _LOG.info(
+            "product.fixed_metadata_search",
+            product=product.name,
+            sample_percentage=round(sample_percentage, 2),
+        )
         result: List[RowProxy] = self._engine.execute(
             select(
                 [
@@ -262,14 +275,21 @@ class SummaryStore:
             .where(dataset_table.c.dataset_type_ref == product.id)
             .where(dataset_table.c.archived == None)
         ).fetchall()
-
         assert len(result) == 1
 
-        return {
+        fixed_fields = {
             key: first_dataset_fields[key]
             for key, is_fixed in result[0].items()
             if is_fixed
         }
+        _LOG.info(
+            "product.fixed_metadata_search.done",
+            product=product.name,
+            sample_percentage=round(sample_percentage, 2),
+            searched_field_count=len(result[0]),
+            found_field_count=len(fixed_fields),
+        )
+        return fixed_fields
 
     def _get_linked_products(
         self, product: DatasetType, kind="source", sample_percentage=0.05
