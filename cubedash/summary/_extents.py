@@ -1,26 +1,14 @@
-import functools
 import json
 import sys
 import uuid
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Iterable, Optional
 
-import datacube.drivers.postgres._api as postgres_api
-import fiona
-import shapely.wkb
 import structlog
-from cubedash._utils import alchemy_engine, infer_crs
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
-from datacube.index import Index
-from datacube.model import DatasetType, Field, MetadataType
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
-from shapely.geometry import GeometryCollection, shape
+from shapely.geometry import GeometryCollection
 from sqlalchemy import (
     BigInteger,
     Integer,
@@ -35,14 +23,17 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
-from sqlalchemy.sql import ColumnElement
+
+import datacube.drivers.postgres._api as postgres_api
+from cubedash._utils import alchemy_engine, infer_crs
+from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField, RangeDocField
+from datacube.drivers.postgres._schema import DATASET
+from datacube.index import Index
+from datacube.model import DatasetType, Field, MetadataType
 
 _LOG = structlog.get_logger()
-
-_WRS_PATH_ROW = [
-    Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp",
-    Path(__file__).parent.parent / "data" / "WRS2_ascending" / "WRS2_acsending.shp",
-]
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
@@ -444,8 +435,11 @@ def datasets_by_region(engine, index, product_name, region_code, time_range, lim
 
 
 class RegionInfo:
-    def __init__(self, product: DatasetType) -> None:
+    def __init__(
+        self, product: DatasetType, region_shapes: Dict[str, GeometryCollection]
+    ) -> None:
         self.product = product
+        self._region_shapes = region_shapes
 
     # Treated as an "id" in view code. What kind of region?
     name: str = "region"
@@ -456,26 +450,30 @@ class RegionInfo:
     units_label: str = "regions"
 
     @classmethod
-    def for_product(cls, dt: DatasetType):
+    def for_product(cls, dt: DatasetType, region_shapes: Dict[str, GeometryCollection]):
+        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
         grid_spec = dt.grid_spec
-
+        # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
+        #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
         if grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dt)
+            return GridRegionInfo(dt, region_shapes)
+        elif region_code_field is not None:
+            # Generic region info
+            return RegionInfo(dt, region_shapes)
         elif "sat_path" in dt.metadata_type.dataset_fields:
-            return SceneRegionInfo(dt)
-        # TODO: Geometry for other types of regions (eg. MGRS, or manual 'region_code' fields)
+            return SceneRegionInfo(dt, region_shapes)
+
         return None
 
-    def alchemy_expression(self) -> ColumnElement:
-        raise NotImplementedError("alchemy expression", self.__class__.name)
-
     def geographic_extent(self, region_code: str) -> GeometryCollection:
-        """
-        Shape
-        """
-        raise NotImplementedError("alchemy expression", self.__class__.name)
+        if region_code not in self._region_shapes:
+            raise RuntimeError(
+                f"No region geometry found for {region_code!r}"
+                "cubedash-gen may need to be rerun to update caches."
+            )
+        return self._region_shapes[region_code]
 
     def geojson_extent(self, region_code):
         extent = self.geographic_extent(region_code)
@@ -485,38 +483,52 @@ class RegionInfo:
             "properties": {"region_code": region_code},
         }
 
+    def alchemy_expression(self):
+        dt = self.product
+        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
+        # `alchemy_expression` is part of the postgres driver (PgDocField),
+        # not the base Field class.
+        if not hasattr(region_code_field, "alchemy_expression"):
+            raise NotImplementedError(
+                "ODC index driver doesn't support alchemy expressions"
+            )
+        return region_code_field.alchemy_expression
+
     def region_label(self, region_code: str) -> str:
         """
         Convert the region_code into something human-readable.
         """
+        # Default plain, un-prettified.
         return region_code
 
 
-class CachedRegionInfo(RegionInfo):
-    def __init__(
-        self, product: DatasetType, region_shapes: Dict[str, GeometryCollection]
-    ) -> None:
-        super().__init__(product)
-        self.region_shapes = region_shapes
-
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        if region_code not in self.region_shapes:
-            raise RuntimeError(
-                f"No region geometry found for {region_code!r}"
-                "cubedash-gen may need to be rerun to update caches."
-            )
-        return self.region_shapes[region_code]
-
-
 class GridRegionInfo(RegionInfo):
+    """Ingested datacube products have tiles"""
+
     name = "tiled"
     description = "Tiled product"
     unit_label = "tile"
     units_label = "tiles"
 
+    def region_label(self, region_code: str) -> str:
+        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
+
     def alchemy_expression(self):
+        """
+        Get an sqlalchemy expression to calculate the region code (a string)
+
+        This is usually the 'region_code' field, if one exists, but there are
+        fallbacks for other native Satellites/Platforms.
+
+        Eg.
+
+        On Landsat scenes this is the path/row (separated by underscore)
+        On tiles this is the tile numbers (separated by underscore: possibly with negative)
+        On Sentinel this is MGRS number
+
+        """
         dt = self.product
-        grid_spec = self.product.grid_spec
+        grid_spec = dt.grid_spec
 
         doc = _jsonb_doc_expression(dt.metadata_type)
         projection_offset = _projection_doc_offset(dt.metadata_type)
@@ -539,26 +551,6 @@ class GridRegionInfo(RegionInfo):
             func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
         )
 
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        """
-        Get a whole polygon for a gridcell
-        """
-        extent = self.product.grid_spec.tile_geobox(
-            _from_xy_region_code(region_code)
-        ).geographic_extent
-        # TODO: The ODC Geometry __geo_interface__ breaks for some products
-        # (eg, when the inner type is a GeometryCollection?)
-        # So we're now converting to shapely to do it.
-        # TODO: Is there a nicer way to do this?
-        # pylint: disable=protected-access
-        try:
-            return shapely.wkb.loads(extent._geom.ExportToWkb())
-        except AttributeError:
-            return extent.geom
-
-    def region_label(self, region_code: str) -> str:
-        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
-
 
 def _from_xy_region_code(region_code: str):
     """
@@ -572,66 +564,41 @@ def _from_xy_region_code(region_code: str):
 
 
 class SceneRegionInfo(RegionInfo):
+    """Landsat WRS2"""
+
     name = "scenes"
-    description = "Landsat WRS scene-based product"
+    description = "Landsat WRS2 scene-based product"
     unit_label = "scene"
     units_label = "scenes"
 
-    def __init__(self, product: DatasetType) -> None:
-        super().__init__(product)
-        self.path_row_shapes = _get_path_row_shapes()
+    def region_label(self, region_code: str) -> str:
+        x, y = _from_xy_region_code(region_code)
+        return f"Path {x}, Row {y}"
 
     def alchemy_expression(self):
-        """
-        Use sat_path/sat_row as grid items
-        """
-        md_fields = self.product.metadata_type.dataset_fields
+        dt = self.product
+        # Generate region code for older sat_path/sat_row pairs.
+        md_fields = dt.metadata_type.dataset_fields
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
+
         return func.concat(
             path_field.lower.alchemy_expression.cast(String),
             "_",
             row_field.greater.alchemy_expression.cast(String),
         )
 
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        extent = self.path_row_shapes.get(_from_xy_region_code(region_code))
-        if not extent:
-            raise KeyError(
-                f"No extent for {self.product.name} region code {region_code!r}"
-            )
-        return extent
-
-    def region_label(self, region_code: str) -> str:
-        x, y = _from_xy_region_code(region_code)
-        return f"Path {x}, Row {y}"
-
 
 def _region_code_field(dt: DatasetType):
     """
     Get an sqlalchemy expression to calculate the region code (a string)
-
-    This is usually the 'region_code' field, if one exists, but there are
-    fallbacks for other native Satellites/Platforms.
-
-    Eg.
-
-        On Landsat scenes this is the path/row (separated by underscore)
-        On tiles this is the tile numbers (separated by underscore: possibly with negative)
-        On Sentinel this is MGRS number
     """
-    region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
-    if region_code_field is not None:
-        # `alchemy_expression` is part of the postgres driver (PgDocField),
-        # not the base Field class.
-        if not hasattr(region_code_field, "alchemy_expression"):
-            raise NotImplementedError(
-                "ODC index driver doesn't support alchemy expressions"
-            )
-        return region_code_field.alchemy_expression
-
-    region_info = RegionInfo.for_product(dt)
-    if region_info:
+    region_info = RegionInfo.for_product(
+        dt,
+        # The None is here bad OO design. The class probably should be split in two for different use-cases.
+        None,
+    )
+    if region_info is not None:
         return region_info.alchemy_expression()
     else:
         _LOG.debug(
@@ -640,19 +607,6 @@ def _region_code_field(dt: DatasetType):
             metadata_type_name=dt.metadata_type.name,
         )
         return null()
-
-
-@functools.lru_cache()
-def _get_path_row_shapes():
-    path_row_shapes = {}
-    for shape_file in _WRS_PATH_ROW:
-        with fiona.open(str(shape_file)) as f:
-            for _k, item in f.items():
-                prop = item["properties"]
-                key = prop["PATH"], prop["ROW"]
-                assert key not in path_row_shapes
-                path_row_shapes[key] = shape(item["geometry"])
-    return path_row_shapes
 
 
 def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
