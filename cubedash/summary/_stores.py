@@ -17,7 +17,7 @@ from shapely.geometry.base import BaseGeometry
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, RowProxy
 from sqlalchemy.sql import Select
 
 from cubedash import _utils
@@ -51,6 +51,8 @@ class ProductSummary:
 
     source_products: List[str]
     derived_products: List[str]
+
+    # fixed_fields: Dict[str, Union[str, float, int]]
 
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
@@ -188,7 +190,67 @@ class SummaryStore:
     def refresh_stats(self, concurrently=False):
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
-    def _get_linked_products(self, product, kind="source", sample_percentage=0.05):
+    def _find_product_fixed_fields(self, product: DatasetType, sample_percentage=0.05):
+        """
+        Find metadata fields that have an identical value in every dataset of the product.
+
+        This is expensive, so only the given percentage of datasets will be sampled (but
+        feel free to sample 100%!)
+
+        """
+        if not 0.0 < sample_percentage <= 100.0:
+            raise ValueError(
+                f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
+            )
+        if sample_percentage < 100:
+            odc_dataset = ODC_DATASET.tablesample(func.system(float(sample_percentage)))
+        else:
+            odc_dataset = ODC_DATASET
+
+        # Get a single dataset, then we'll compare the rest against its values.
+        first_dataset_fields = self.index.datasets.search_eager(
+            product=product.name, limit=1
+        )[0].metadata.fields
+
+        SIMPLE_FIELD_TYPES = {
+            "string",
+            "numeric",
+            "double",
+            "integer",
+            "datetime",
+        }
+        candidate_fields = [
+            (name, field)
+            for name, field in product.metadata_type.dataset_fields.items()
+            if field.type_name in SIMPLE_FIELD_TYPES and name in first_dataset_fields
+        ]
+
+        result: List[RowProxy] = self._engine.execute(
+            select(
+                [
+                    (
+                        func.every(
+                            field.alchemy_expression == first_dataset_fields[field_name]
+                        )
+                    ).label(field_name)
+                    for field_name, field in candidate_fields
+                ]
+            )
+            .select_from(odc_dataset)
+            .where(odc_dataset.c.dataset_type_ref == product.id)
+            .where(odc_dataset.c.archived == None)
+        ).fetchall()
+
+        assert len(result) == 1
+        return {
+            key: first_dataset_fields[key]
+            for key, is_fixed in result[0].items()
+            if is_fixed
+        }
+
+    def _get_linked_products(
+        self, product: DatasetType, kind="source", sample_percentage=0.05
+    ):
         """
         Find products with upstream or downstream datasets from this product.
 

@@ -168,6 +168,44 @@ def test_has_source_derived_product_links(run_generate, summary_store: SummarySt
     assert telem.derived_products == ["ls8_level1_scene"]
 
 
+def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
+    # A scene product without sampling (ie. 100%)
+    fixed_fields = summary_store._find_product_fixed_fields(
+        summary_store.index.products.get_by_name("ls8_nbar_scene"),
+        sample_percentage=100,
+    )
+    assert fixed_fields == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "GeoTIFF",
+        "gsi": "LGN",
+        "orbit": None,
+    }
+
+    # Telemetry product
+    fixed_fields = summary_store._find_product_fixed_fields(
+        summary_store.index.products.get_by_name("ls8_satellite_telemetry_data"),
+        sample_percentage=100,
+    )
+    assert fixed_fields == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "satellite_telemetry_data",
+        "format": "MD",
+        "gsi": "LGN",
+        "orbit": None,
+    }
+
+    # Tiled product, sampled
+    fixed_fields = summary_store._find_product_fixed_fields(
+        summary_store.index.products.get_by_name("ls8_nbar_albers"),
+        sample_percentage=50,
+    )
+    # Ingested products carry little of the original metadata...
+    assert fixed_fields == {"instrument": "OLI_TIRS", "platform": "LANDSAT_8"}
+
+
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
 
