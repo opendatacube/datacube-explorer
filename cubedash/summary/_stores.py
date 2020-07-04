@@ -13,6 +13,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
+from shapely.geometry import GeometryCollection
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
@@ -23,7 +24,6 @@ from sqlalchemy.sql import Select
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
-from cubedash.summary._extents import CachedRegionInfo
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -813,7 +813,7 @@ class SummaryStore:
         )
 
     @functools.lru_cache()
-    def _region_geoms(self, product_name: str) -> Dict[str, BaseGeometry]:
+    def _region_geoms(self, product_name: str) -> Dict[str, GeometryCollection]:
         dt = self.get_dataset_type(product_name)
         return {
             code: to_shape(geom)
@@ -826,11 +826,7 @@ class SummaryStore:
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         dt = self.get_dataset_type(product_name)
-        region_geoms = self._region_geoms(product_name)
-        if region_geoms:
-            return CachedRegionInfo(dt, region_geoms)
-        else:
-            return RegionInfo.for_product(dt)
+        return RegionInfo.for_product(dt, self._region_geoms(product_name))
 
 
 def _safe_read_date(d):
