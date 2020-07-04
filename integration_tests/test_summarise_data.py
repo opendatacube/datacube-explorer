@@ -169,12 +169,13 @@ def test_has_source_derived_product_links(run_generate, summary_store: SummarySt
 
 
 def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
-    # A scene product without sampling (ie. 100%)
-    fixed_fields = summary_store._find_product_fixed_fields(
-        summary_store.index.products.get_by_name("ls8_nbar_scene"),
-        sample_percentage=100,
-    )
-    assert fixed_fields == {
+    run_generate()
+
+    albers = summary_store.get_product_summary("ls8_nbar_albers")
+    scene = summary_store.get_product_summary("ls8_nbar_scene")
+    telem = summary_store.get_product_summary("ls8_satellite_telemetry_data")
+
+    assert scene.fixed_metadata == {
         "platform": "LANDSAT_8",
         "instrument": "OLI_TIRS",
         "product_type": "nbar",
@@ -183,12 +184,7 @@ def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
         "orbit": None,
     }
 
-    # Telemetry product
-    fixed_fields = summary_store._find_product_fixed_fields(
-        summary_store.index.products.get_by_name("ls8_satellite_telemetry_data"),
-        sample_percentage=100,
-    )
-    assert fixed_fields == {
+    assert telem.fixed_metadata == {
         "platform": "LANDSAT_8",
         "instrument": "OLI_TIRS",
         "product_type": "satellite_telemetry_data",
@@ -197,8 +193,18 @@ def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
         "orbit": None,
     }
 
+    # Ingested products carry little of the original metadata...
+    assert albers.fixed_metadata == {"instrument": "OLI_TIRS", "platform": "LANDSAT_8"}
+
+
+def test_sampled_product_fixed_fields(summary_store: SummaryStore):
+    # Compute fixed fields using a sampled percentage.
+
+    # (We're doing this manually to force it to use table sampling -- our test data is
+    # not big enough to trigger it in the `run_generate()` tests)
+
     # Tiled product, sampled
-    fixed_fields = summary_store._find_product_fixed_fields(
+    fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ls8_nbar_albers"),
         sample_percentage=50,
     )
