@@ -33,6 +33,8 @@ from cubedash.summary._schema import (
     refresh_supporting_views,
 )
 from cubedash.summary._summarise import Summariser
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 
@@ -211,10 +213,6 @@ class SummaryStore:
             raise ValueError(
                 f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
             )
-        if sample_percentage < 100:
-            odc_dataset = ODC_DATASET.tablesample(func.system(float(sample_percentage)))
-        else:
-            odc_dataset = ODC_DATASET
 
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = self.index.datasets.search_eager(
@@ -228,11 +226,26 @@ class SummaryStore:
             "integer",
             "datetime",
         }
-        candidate_fields = [
+
+        candidate_fields: List[Tuple[str, PgDocField]] = [
             (name, field)
-            for name, field in product.metadata_type.dataset_fields.items()
+            for name, field in _utils.get_mutable_dataset_search_fields(
+                self.index, product.metadata_type
+            ).items()
             if field.type_name in SIMPLE_FIELD_TYPES and name in first_dataset_fields
         ]
+
+        if sample_percentage < 100:
+            dataset_table = ODC_DATASET.tablesample(
+                func.system(float(sample_percentage))
+            )
+            # Replace the table with our sampled one.
+            for _, field in candidate_fields:
+                if field.alchemy_column.table == ODC_DATASET:
+                    field.alchemy_column.table = dataset_table
+
+        else:
+            dataset_table = ODC_DATASET
 
         result: List[RowProxy] = self._engine.execute(
             select(
@@ -245,12 +258,13 @@ class SummaryStore:
                     for field_name, field in candidate_fields
                 ]
             )
-            .select_from(odc_dataset)
-            .where(odc_dataset.c.dataset_type_ref == product.id)
-            .where(odc_dataset.c.archived == None)
+            .select_from(dataset_table)
+            .where(dataset_table.c.dataset_type_ref == product.id)
+            .where(dataset_table.c.archived == None)
         ).fetchall()
 
         assert len(result) == 1
+
         return {
             key: first_dataset_fields[key]
             for key, is_fixed in result[0].items()
@@ -969,3 +983,16 @@ def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
         ), f"{shape.area} != {newshape.area}"
         shape = newshape
     return shape
+
+
+if __name__ == "__main__":
+    # For debugging store commands...
+    with Datacube() as dc:
+        from pprint import pprint
+
+        store = SummaryStore.create(dc.index)
+        pprint(
+            store._find_product_fixed_metadata(
+                dc.index.products.get_by_name("ls8_nbar_scene"), sample_percentage=50
+            )
+        )
