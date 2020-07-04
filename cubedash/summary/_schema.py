@@ -97,6 +97,9 @@ PRODUCT = Table(
     Column("derived_product_refs", postgres.ARRAY(SmallInteger)),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
+    # A flat key-value set of metadata fields that are the same ("fixed") on every dataset.
+    # (Almost always includes platform, instrument values)
+    Column("fixed_metadata", postgres.JSONB),
 )
 TIME_OVERVIEW = Table(
     "time_overview",
