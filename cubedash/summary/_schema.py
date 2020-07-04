@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     DDL,
@@ -22,6 +23,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+
+_LOG = structlog.get_logger()
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
@@ -191,6 +194,54 @@ def has_schema(engine: Engine) -> bool:
     return engine.dialect.has_schema(engine, CUBEDASH_SCHEMA)
 
 
+def is_compatible_schema(engine: Engine) -> bool:
+    """Do we have the latest schema changes?"""
+    is_latest = True
+
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        is_latest = False
+
+    return is_latest
+
+
+def update_schema(engine: Engine):
+    """Update the schema if needed."""
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        _LOG.info("schema.applying_update.add_fixed_metadata")
+        engine.execute(
+            f"""
+        alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
+        """
+        )
+
+
+def pg_exists(conn, name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return conn.execute("select to_regclass(%s)", name).scalar() is not None
+
+
+def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return (
+        conn.execute(
+            """
+                select 1
+                from pg_attribute
+                where attrelid = to_regclass(%s)
+                    and attname = %s
+                    and not attisdropped
+                """,
+            table_name,
+            column_name,
+        ).scalar()
+        is not None
+    )
+
+
 def create_schema(engine: Engine):
     """
     Create any missing parts of the cubedash schema
@@ -293,11 +344,3 @@ def refresh_supporting_views(conn, concurrently=False):
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_region;
     """
     )
-
-
-def pg_exists(conn, name):
-    """
-    Does a postgres object exist?
-    :rtype bool
-    """
-    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
