@@ -246,11 +246,11 @@ class SummaryStore:
         if sample_percentage < 100:
             dataset_table = ODC_DATASET.tablesample(
                 func.system(float(sample_percentage))
-            )
+            ).alias("sampled_dataset")
             # Replace the table with our sampled one.
             for _, field in candidate_fields:
                 if field.alchemy_column.table == ODC_DATASET:
-                    field.alchemy_column.table = dataset_table
+                    field.alchemy_column = dataset_table.c[field.alchemy_column.name]
 
         else:
             dataset_table = ODC_DATASET
