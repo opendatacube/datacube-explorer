@@ -10,7 +10,7 @@ import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 import rapidjson
 from dateutil import tz
@@ -24,9 +24,10 @@ import shapely.validation
 import structlog
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
+from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 from pyproj import CRS as PJCRS
@@ -508,3 +509,14 @@ except AttributeError:
     ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
 
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
+
+
+def get_mutable_dataset_search_fields(
+    index: Index, md: MetadataType
+) -> Dict[str, PgDocField]:
+    """
+    Get a copy of a metadata type's fields that we can mutate.
+
+    (the ones returned by the Index are cached and so may be shared among callers)
+    """
+    return index._db.get_dataset_fields(md.definition)
