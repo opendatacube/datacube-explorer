@@ -260,7 +260,7 @@ def create_schema(engine: Engine):
     create materialized view if not exists {CUBEDASH_SCHEMA}.mv_region as (
         select dataset_type_ref,
                region_code,
-               ST_Union(footprint) as footprint,
+               ST_SimplifyPreserveTopology(ST_Union(footprint), 0.0001) as footprint,
                sum(count)          as count
         from (
              select dataset_type_ref,
