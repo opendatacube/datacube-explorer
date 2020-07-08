@@ -13,7 +13,6 @@ import shapely.wkb
 import structlog
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
-
 # Fix up URL Scheme handling using this
 # from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -39,6 +38,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 # Optional environment settings file or variable
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
+
+# Enable do template extension
+app.jinja_options["extensions"].append("jinja2.ext.do")
 
 app.config.setdefault("CACHE_TYPE", "simple")
 cache = Cache(app=app, config=app.config)
