@@ -8,12 +8,12 @@ from typing import Iterable, Optional, Set, Tuple, Union
 import pyproj
 import shapely
 import structlog
-from datacube.model import Dataset, Range
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
-from cubedash._utils import test_wrap_coordinates
 
+from cubedash._utils import test_wrap_coordinates
+from datacube.model import Dataset, Range
 
 _LOG = structlog.get_logger()
 
