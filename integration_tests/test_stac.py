@@ -11,7 +11,6 @@ from typing import Dict, Generator, Iterable, Optional
 
 import jsonschema
 import pytest
-from boltons.iterutils import research
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -21,6 +20,7 @@ from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
 import cubedash._stac
+from boltons.iterutils import research
 from cubedash import _model
 from datacube.utils import read_documents
 

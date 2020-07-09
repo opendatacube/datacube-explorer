@@ -6,16 +6,16 @@ from datetime import datetime
 import pandas as pd
 import structlog
 from cachetools.func import lru_cache
-from datacube.model import Range
 from dateutil import tz
+from geoalchemy2 import Geometry
+from geoalchemy2 import shape as geo_shape
 from sqlalchemy import Integer, and_, bindparam, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._schema import DATASET_SPATIAL, FOOTPRINT_SRID, SPATIAL_REF_SYS
-from geoalchemy2 import Geometry
-from geoalchemy2 import shape as geo_shape
+from datacube.model import Range
 
 _LOG = structlog.get_logger()
 
