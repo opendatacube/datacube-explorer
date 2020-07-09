@@ -117,11 +117,13 @@
                 </h2>
                 <div class="option-menu left">
                     {% set month_range=[] %}
+                    {% if selected_summary %}
                     {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items() %}
                             {% if dataset_count > 0 %}
                             {% do month_range.append(dataset_date.month) %}
                             {% endif %}
                     {% endfor %}
+                    {% endif %}
                     {% for row in month_range |unique| batch(3) %}
                         <ul>
                             {% for month_opt in row %}
@@ -161,11 +163,13 @@
                 </h2>
                 <div class="option-menu left">
                     {% set day_range=[] %}
-                    {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items() %}
+                    {% if selected_summary %}
+                    {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items()%}
                             {% if dataset_count > 0 %}
                             {% do day_range.append(dataset_date.day) %}
                             {% endif %}
                     {% endfor %}
+                    {% endif %}
                     {% for row in day_range |  unique | batch(3) %}
                         <ul>
                             {% for day_opt in row %}
