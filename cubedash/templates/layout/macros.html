@@ -4,6 +4,22 @@
             {% set max_count = timeline.most_common(1)[0][1] %}
             <div class="chart-timeline-bars">
                 {% for start_time, count in timeline.items() | sort %}
+                {% if ('_annual' in product.name or '_summary' in product.name or 'mangrove' in product.name) and count and period=='month' %}
+                <div class="chart-timeline-year-block" style="float:left;width:24px;height:100%;position: relative;overflow: hidden;">
+                    <a href="{{ url_for('overview_page',
+                            product_name=product.name,
+                            **{
+                                'year': start_time.year,
+                                'month':start_time.month,
+                                'day': start_time.day if period=='day' else None}
+                            ) }}"
+                       class="chart-timeline-bar {% if start_time[period] == 1 %}new-year{% endif %}"
+                       style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%; position: absolute; bottom: 0;"
+                       title="View the {{ count }} datasets for
+{{ start_time.day|string + ' ' if period == 'day' else '' }}{{ start_time.month | month_name }} {{ start_time.year }}"
+                    ></a>
+                </div>
+                {% else %}
                     <a href="{{ url_for('overview_page',
                             product_name=product.name,
                             **{
@@ -16,6 +32,7 @@
                        title="View the {{ count }} datasets for
 {{ start_time.day|string + ' ' if period == 'day' else '' }}{{ start_time.month | month_name }} {{ start_time.year }}"
                     ></a>
+                {% endif %}
                 {% endfor %}
             </div>
             <div class="chart-timeline-years">
