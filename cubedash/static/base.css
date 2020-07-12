@@ -359,6 +359,17 @@ label.disabled {
   white-space: nowrap;
 }
 
+.chart-timeline-year-block {
+  width: 24px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.chart-timeline-year-block.chart-timeline-bar {
+  position: absolute;
+  bottom: 0;
+}
+
 .chart-timeline-bar {
   width: 2px;
   display: inline-block;
