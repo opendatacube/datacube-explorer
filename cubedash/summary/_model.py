@@ -155,8 +155,8 @@ class TimePeriodOverview:
             warnings.warn(f"Geometry without a crs for {self}")
             return None
 
-        origin = pyproj.Proj(init=self.footprint_crs)
-        dest = pyproj.Proj(init="epsg:4326")
+        origin = pyproj.Proj(self.footprint_crs)
+        dest = pyproj.Proj("epsg:4326")
 
         tranform_wrs84 = partial(pyproj.transform, origin, dest)
         new_geometry = transform(tranform_wrs84, self.footprint_geometry)
