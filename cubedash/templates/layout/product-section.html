@@ -117,7 +117,7 @@
                 </h2>
                 <div class="option-menu left">
                     {% set month_range=[] %}
-                    {% if selected_summary %}
+                    {% if selected_summary and selected_summary.timeline_dataset_counts %}
                     {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items() %}
                             {% if dataset_count > 0 %}
                             {% do month_range.append(dataset_date.month) %}
@@ -163,7 +163,7 @@
                 </h2>
                 <div class="option-menu left">
                     {% set day_range=[] %}
-                    {% if selected_summary %}
+                    {% if selected_summary and selected_summary.timeline_dataset_counts %}
                     {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items()%}
                             {% if dataset_count > 0 %}
                             {% do day_range.append(dataset_date.day) %}
