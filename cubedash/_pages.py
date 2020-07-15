@@ -58,17 +58,20 @@ def overview_page(
     default_zoom = theme.options["startZoom"]
     default_center = theme.options["startCoords"]
 
+    region_geojson = _model.get_regions_geojson(product_name, year, month, day)
     return utils.render(
         "overview.html",
         year=year,
         month=month,
         day=day,
         # Which data to preload with the page?
-        regions_geojson=_model.get_regions_geojson(product_name, year, month, day),
+        regions_geojson=region_geojson,
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
-        product_region_info=_model.STORE.get_product_region_info(product_name),
+        product_region_info=_model.STORE.get_product_region_info(product_name)
+        if region_geojson
+        else None,
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.

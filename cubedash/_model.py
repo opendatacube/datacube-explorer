@@ -163,7 +163,15 @@ def get_regions_geojson(
         return None
 
     start = time.time()
-    regions = _get_regions_geojson(period.region_dataset_counts, region_info)
+    region_counts = period.region_dataset_counts
+
+    # If all datasets have no region name, don't bother showing regions.
+    #
+    # (datasets that are missing a region are in the None region)
+    if len(region_counts) == 1 and list(region_counts.keys()) == [None]:
+        return None
+
+    regions = _get_regions_geojson(region_counts, region_info)
     _LOG.debug("overview.region_gen", time_sec=time.time() - start)
     return regions
 
@@ -219,6 +227,7 @@ def _get_regions_geojson(
                 },
             }
             for region_code in (region_counts or [])
+            if region_info.geographic_extent(region_code) is not None
         ],
     }
 
