@@ -44,9 +44,19 @@ def dataset_page(id_):
         derived_dataset_overflow = len(derived_datasets) - PROVENANCE_DISPLAY_LIMIT
         derived_datasets = derived_datasets[:PROVENANCE_DISPLAY_LIMIT]
 
+    footprint, region_code = _model.STORE.get_dataset_footprint_region(id_)
+    # We only have a footprint in the spatial table above if summarisation has been
+    # run for the product (...and done so after the dataset was added).
+    #
+    # Fall back to a regular footprint for other datasets.
+    if not footprint:
+        footprint, is_valid = utils.dataset_shape(dataset)
+
     return utils.render(
         "dataset.html",
         dataset=dataset,
+        dataset_footprint=footprint,
+        dataset_region_code=region_code,
         dataset_metadata=ordered_metadata,
         derived_datasets=derived_datasets,
         source_datasets=source_datasets,

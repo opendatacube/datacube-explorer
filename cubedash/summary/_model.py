@@ -2,17 +2,15 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import Iterable, Optional, Set, Tuple, Union
 
-import pyproj
 import shapely
+import shapely.ops
 import structlog
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import transform
 
-from cubedash._utils import test_wrap_coordinates
+import cubedash._utils as utils
 from datacube.model import Dataset, Range
 
 _LOG = structlog.get_logger()
@@ -155,18 +153,7 @@ class TimePeriodOverview:
             warnings.warn(f"Geometry without a crs for {self}")
             return None
 
-        origin = pyproj.Proj(init=self.footprint_crs)
-        dest = pyproj.Proj(init="epsg:4326")
-
-        tranform_wrs84 = partial(pyproj.transform, origin, dest)
-        new_geometry = transform(tranform_wrs84, self.footprint_geometry)
-
-        # Unwrap coordinates, if necessary
-        new_geometry = test_wrap_coordinates(new_geometry)
-
-        # It's possible to get self-intersection after transformation, presumably due to
-        # rounding, so we buffer 0.
-        return new_geometry.buffer(0)
+        return utils.to_wrs_84(self.footprint_geometry, self.footprint_crs)
 
     @staticmethod
     def _group_counter_if_needed(counter, period):

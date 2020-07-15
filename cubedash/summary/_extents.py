@@ -1,14 +1,18 @@
+import functools
 import json
 import sys
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Iterable, Optional
 
+import fiona
+import shapely.ops
 import structlog
 from geoalchemy2 import Geometry, WKBElement
-from geoalchemy2.shape import to_shape
+from geoalchemy2.shape import to_shape, from_shape
 from psycopg2._range import Range as PgRange
-from shapely.geometry import GeometryCollection
+from shapely.geometry import GeometryCollection, shape
 from sqlalchemy import (
     BigInteger,
     Integer,
@@ -34,6 +38,11 @@ from datacube.index import Index
 from datacube.model import DatasetType, Field, MetadataType
 
 _LOG = structlog.get_logger()
+
+_WRS_PATH_ROW = [
+    Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp",
+    Path(__file__).parent.parent / "data" / "WRS2_ascending" / "WRS2_acsending.shp",
+]
 
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
@@ -248,6 +257,55 @@ def _gis_point(doc, doc_offset):
 def refresh_product(index: Index, product: DatasetType):
     engine: Engine = alchemy_engine(index)
     insert_count = _populate_missing_dataset_extents(engine, product)
+
+    # If we inserted data...
+    if insert_count:
+        # And it's a non-spatial product...
+        if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
+            # And it has WRS path/rows...
+            if "sat_path" in product.metadata_type.dataset_fields:
+
+                # We can synthesize the polygons!
+                _LOG.debug(
+                    "spatial_synthesizing.start", product_name=product.name,
+                )
+                shapes = _get_path_row_shapes()
+                rows = [
+                    row
+                    for row in index.datasets.search_returning(
+                        ("id", "sat_path", "sat_row"), product=product.name
+                    )
+                    if row.sat_path.lower is not None
+                ]
+                if rows:
+                    engine.execute(
+                        DATASET_SPATIAL.update()
+                        .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
+                        .values(footprint=bindparam("footprint")),
+                        [
+                            dict(
+                                dataset_id=id_,
+                                footprint=from_shape(
+                                    shapely.ops.unary_union(
+                                        [
+                                            shapes[(int(sat_path.lower), row)]
+                                            for row in range(
+                                                int(sat_row.lower),
+                                                int(sat_row.upper) + 1,
+                                            )
+                                        ]
+                                    ),
+                                    srid=4326,
+                                    extended=True,
+                                ),
+                            )
+                            for id_, sat_path, sat_row in rows
+                        ],
+                    )
+            _LOG.debug(
+                "spatial_synthesizing.done", product_name=product.name,
+            )
+
     return insert_count
 
 
@@ -320,7 +378,7 @@ def _select_dataset_extent_query(dt: DatasetType):
                 (
                     null() if footprint_expression is None else footprint_expression
                 ).label("footprint"),
-                _region_code_field(dt).label("region_code"),
+                (_region_code_field(dt).label("region_code")),
                 _size_bytes_field(dt).label("size_bytes"),
                 _dataset_creation_expression(md_type).label("creation_time"),
             ]
@@ -467,16 +525,13 @@ class RegionInfo:
 
         return None
 
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        if region_code not in self._region_shapes:
-            raise RuntimeError(
-                f"No region geometry found for {region_code!r}"
-                "cubedash-gen may need to be rerun to update caches."
-            )
-        return self._region_shapes[region_code]
+    def geographic_extent(self, region_code: str) -> Optional[GeometryCollection]:
+        return self._region_shapes.get(region_code)
 
     def geojson_extent(self, region_code):
         extent = self.geographic_extent(region_code)
+        if not extent:
+            return None
         return {
             "type": "Feature",
             "geometry": extent.__geo_interface__,
@@ -572,8 +627,11 @@ class SceneRegionInfo(RegionInfo):
     units_label = "scenes"
 
     def region_label(self, region_code: str) -> str:
-        x, y = _from_xy_region_code(region_code)
-        return f"Path {x}, Row {y}"
+        if "_" in region_code:
+            x, y = _from_xy_region_code(region_code)
+            return f"Path {x}, Row {y}"
+        else:
+            return f"Path {region_code}"
 
     def alchemy_expression(self):
         dt = self.product
@@ -582,10 +640,21 @@ class SceneRegionInfo(RegionInfo):
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
 
-        return func.concat(
-            path_field.lower.alchemy_expression.cast(String),
-            "_",
-            row_field.greater.alchemy_expression.cast(String),
+        return case(
+            [
+                # Is this just one scene? Include it specifically
+                (
+                    row_field.lower.alchemy_expression
+                    == row_field.greater.alchemy_expression,
+                    func.concat(
+                        path_field.lower.alchemy_expression.cast(String),
+                        "_",
+                        row_field.greater.alchemy_expression.cast(String),
+                    ),
+                ),
+            ],
+            # Otherwise it's a range of rows, so our region-code is the whole path.
+            else_=path_field.lower.alchemy_expression.cast(String),
         )
 
 
@@ -621,6 +690,19 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
             )
             if res:
                 yield dict(res)
+
+
+@functools.lru_cache()
+def _get_path_row_shapes():
+    path_row_shapes = {}
+    for shape_file in _WRS_PATH_ROW:
+        with fiona.open(str(shape_file)) as f:
+            for _k, item in f.items():
+                prop = item["properties"]
+                key = prop["PATH"], prop["ROW"]
+                assert key not in path_row_shapes
+                path_row_shapes[key] = shape(item["geometry"])
+    return path_row_shapes
 
 
 def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:

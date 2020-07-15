@@ -10,8 +10,11 @@ import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Union
 
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import transform
+import pyproj
 import rapidjson
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
@@ -432,6 +435,19 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     return geom, True
+
+
+def to_wrs_84(geometry: BaseGeometry, crs: Union[int, str, dict, pyproj.CRS]):
+    origin = pyproj.Proj(init=crs)
+    dest = pyproj.Proj(init="epsg:4326")
+    tranform_wrs84 = functools.partial(pyproj.transform, origin, dest)
+    new_geometry = transform(tranform_wrs84, geometry)
+    # Unwrap coordinates, if necessary
+    new_geometry = test_wrap_coordinates(new_geometry)
+    # It's possible to get self-intersection after transformation, presumably due to
+    # rounding, so we buffer 0.
+    geom = new_geometry.buffer(0)
+    return geom
 
 
 def test_wrap_coordinates(features):

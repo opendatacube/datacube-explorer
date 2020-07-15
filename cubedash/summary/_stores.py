@@ -822,11 +822,38 @@ class SummaryStore:
                 .where(REGION.c.dataset_type_ref == dt.id)
                 .order_by(REGION.c.region_code)
             )
+            if geom is not None
         }
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         dt = self.get_dataset_type(product_name)
         return RegionInfo.for_product(dt, self._region_geoms(product_name))
+
+    def get_dataset_footprint_region(self, dataset_id):
+        """
+        Get the recorded WRS84 footprint and region code for a given dataset.
+
+        Note that these will be None if the product has not been summarised.
+        """
+        rows = self._engine.execute(
+            select(
+                [
+                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).label(
+                        "footprint"
+                    ),
+                    DATASET_SPATIAL.c.region_code,
+                ]
+            ).where(DATASET_SPATIAL.c.id == dataset_id)
+        ).fetchall()
+        if not rows:
+            return None, None
+        row = rows[0]
+
+        footprint = row.footprint
+        return (
+            to_shape(footprint) if footprint is not None else None,
+            row.region_code,
+        )
 
 
 def _safe_read_date(d):
