@@ -27,7 +27,7 @@
     </div>
 {%- endmacro %}
 
-{% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true, descriptions=None) -%}
+{% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true, descriptions=None, fallback_dict={}) -%}
     <div class="query-param-list {% if wide %}wide{% endif %}">
         {% for key, value in d | dictsort if (show_dicts or value is not mapping) and (show_nulls or value is not none ) recursive %}
             <span class="query-param">
@@ -40,6 +40,15 @@
                 <span class="value">
                     {%- if value is mapping -%}
                         {{- loop(value.items()) -}}
+                    {%- elif value is none -%}
+                        {%- if key in fallback_dict -%}
+                            <span class="missing-value"
+                                  title="Inferred from datasets: not present in product definition">
+                                {{- fallback_dict[key] | query_value -}}
+                            </span>
+                        {%- else -%}
+                            <span class="null-value" title="Unspecified">•</span>
+                        {%- endif -%}
                     {%- else -%}
                         {{- value | query_value -}}
                     {%- endif -%}

@@ -144,8 +144,7 @@
                         fields
                     </h4>
 
-                    {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
-
+                    {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields, fallback_dict=product_summary.fixed_metadata) }}
 
                     {% if product.definition.measurements %}
                         <h4>Measurements</h4>
