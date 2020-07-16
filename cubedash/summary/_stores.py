@@ -228,11 +228,11 @@ class SummaryStore:
         )[0].metadata.fields
 
         SIMPLE_FIELD_TYPES = {
-            "string",
-            "numeric",
-            "double",
-            "integer",
-            "datetime",
+            "string": str,
+            "numeric": (float, int),
+            "double": (float, int),
+            "integer": int,
+            "datetime": datetime,
         }
 
         candidate_fields: List[Tuple[str, PgDocField]] = [
@@ -254,6 +254,17 @@ class SummaryStore:
 
         else:
             dataset_table = ODC_DATASET
+
+        # Give a friendlier error message when a product doesn't match the dataset.
+        for name, field in candidate_fields:
+            sample_value = first_dataset_fields[name]
+            expected_types = SIMPLE_FIELD_TYPES[field.type_name]
+            # noinspection PyTypeHints
+            if not isinstance(sample_value, expected_types):
+                raise ValueError(
+                    f"Product {product.name} field {name!r} is "
+                    f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
+                )
 
         _LOG.info(
             "product.fixed_metadata_search",
