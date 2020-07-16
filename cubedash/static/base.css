@@ -309,6 +309,10 @@ ul:last-child, ol:last-child {
 .query-param .value > .query-param {
   margin-left: 15px;
 }
+.query-param .missing-value {
+  text-decoration-style: wavy;
+  text-decoration-line: underline;
+}
 
 button {
   margin: 5px 0;
