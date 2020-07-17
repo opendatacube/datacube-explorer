@@ -29,7 +29,8 @@
 
 {% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true, descriptions=None, fallback_dict={}) -%}
     <div class="query-param-list {% if wide %}wide{% endif %}">
-        {% for key, value in d | dictsort if (show_dicts or value is not mapping) and (show_nulls or value is not none ) recursive %}
+        {% for key, value in d | dictsort if (show_dicts or value is not mapping) recursive %}
+            {% if show_nulls or (value is not none) or (key in fallback_dict) %}
             <span class="query-param">
                 <span class="key"
                       {% if descriptions  and descriptions[key] -%}
@@ -54,6 +55,7 @@
                     {%- endif -%}
                 </span>
             </span>
+            {% endif %}
         {% endfor %}
     </div>
 {%- endmacro %}

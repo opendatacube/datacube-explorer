@@ -11,8 +11,69 @@
 {% endblock %}
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
-
     <div class="panel odd">
+        <h2>Product {{ product.name }}</h2>
+        of type <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+        {{ product.metadata_type.name }}</a>
+    </div>
+    <div class="panel">
+    <h3>Metadata</h3>
+        {{ query_param_list(product.fields,
+                    wide=true,
+                    show_nulls=false,
+                                        descriptions=product.metadata_type.dataset_fields,
+                                        fallback_dict=product_summary.fixed_metadata) }}
+    </div>
+    <div class="panel">
+        <h3>Searchable fields</h3>
+        {% for key, value in product.fields | dictsort if (value is none and key not in product_summary.fixed_metadata) %}
+            <div>
+                {% set field = product.metadata_type.dataset_fields[key] %}
+                {{ key }}
+                {% if field.indexed is true %}<span title="indexed">•</span>{% endif %}
+                <span class="badge">{{ field.type_name }}</span>
+                {% if field.description and ('TODO' not in field.description) %}
+                    <span class="muted">{{ field.description }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    <div class="panel">
+
+        {% if product.definition.measurements %}
+            <h3>Measurements</h3>
+            <table>
+                <thead>
+                <th></th>
+                <th></th>
+                <th>units</th>
+                <th>nodata</th>
+                </thead>
+                {% for measurement in product.definition.measurements %}
+                    <tr>
+                        <td>
+                            <span>{{ measurement.name }}</span>
+                            {%- for a in measurement.aliases %}
+                                / <span class="muted">{{ a }}</span>
+                            {%- endfor %}
+                        </td>
+                        <td>{{ measurement.dtype }}</td>
+                        <td>{{ measurement.units }}</td>
+                        <td>{{ measurement.nodata }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+    {% if product.definition.storage %}
+        <div class="panel">
+            {# These fields are enforced by dataset-type-schema.yaml#}
+            <h3>Storage</h3>
+            {{ query_param_list(product.definition.storage, show_dicts=true) }}
+        </div>
+    {% endif %}
+    <div class="panel">
+        <h3>Definition</h3>
         {{ show_raw_document(metadata_doc) }}
     </div>
 
