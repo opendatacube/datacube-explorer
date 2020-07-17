@@ -3,12 +3,12 @@ from pathlib import Path
 from pprint import pprint
 from uuid import UUID
 
-from dateutil import tz
-
 import pytest
-from cubedash.summary import _extents
-from datacube.index import Index
+from dateutil import tz
 from geoalchemy2.shape import to_shape
+
+from cubedash.summary import _extents, SummaryStore
+from datacube.index import Index
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -28,6 +28,9 @@ def eo3_index(module_dea_index: Index, dataset_loader):
         / "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
     )
     assert loaded == 1
+
+    # We need postgis and some support tables (eg. srid lookup).
+    SummaryStore.create(module_dea_index).init()
 
     return module_dea_index
 
