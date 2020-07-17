@@ -61,7 +61,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
 
     if _expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
-            func.ST_GeomFromGeoJSON(doc[["geometry"]].astext, type_=Geometry),
+            func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
             get_dataset_srid_alchemy_expression(md, default_crs),
         )
     else:
@@ -74,9 +74,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                     # If we have valid_data offset, use it as the polygon.
                     (
                         doc[valid_data_offset] != None,
-                        func.ST_GeomFromGeoJSON(
-                            doc[valid_data_offset].astext, type_=Geometry
-                        ),
+                        func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
                     )
                 ],
                 # Otherwise construct a polygon from the four corner points.
