@@ -260,7 +260,9 @@ class SummaryStore:
             sample_value = first_dataset_fields[name]
             expected_types = SIMPLE_FIELD_TYPES[field.type_name]
             # noinspection PyTypeHints
-            if not isinstance(sample_value, expected_types):
+            if sample_value is not None and not isinstance(
+                sample_value, expected_types
+            ):
                 raise ValueError(
                     f"Product {product.name} field {name!r} is "
                     f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
