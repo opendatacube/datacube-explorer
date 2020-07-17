@@ -15,9 +15,13 @@
         <h2>Product {{ product.name }}</h2>
         of type <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
         {{ product.metadata_type.name }}</a>
+
+        <div>
+            {{ product.definition['description'] }}
+        </div>
     </div>
     <div class="panel">
-    <h3>Metadata</h3>
+        <h3>Metadata</h3>
         {{ query_param_list(product.fields,
                     wide=true,
                     show_nulls=false,
@@ -42,27 +46,21 @@
 
         {% if product.definition.measurements %}
             <h3>Measurements</h3>
-            <table>
-                <thead>
-                <th></th>
-                <th></th>
-                <th>units</th>
-                <th>nodata</th>
-                </thead>
-                {% for measurement in product.definition.measurements %}
-                    <tr>
-                        <td>
-                            <span>{{ measurement.name }}</span>
-                            {%- for a in measurement.aliases %}
-                                / <span class="muted">{{ a }}</span>
-                            {%- endfor %}
-                        </td>
-                        <td>{{ measurement.dtype }}</td>
-                        <td>{{ measurement.units }}</td>
-                        <td>{{ measurement.nodata }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
+
+            {% for measurement in product.definition.measurements %}
+                <div>
+
+                    <span>{{ measurement.name }}</span>
+                    {%- for a in measurement.aliases %}
+                        / <span class="muted">{{ a }}</span>
+                    {%- endfor %}
+
+                    <span class="badge">{{ measurement.dtype }}</span>
+                    <span class="muted">
+                        with units {{ measurement.units }} and nodata {{ measurement.nodata }}
+                        </span>
+                </div>
+            {% endfor %}
         {% endif %}
     </div>
     {% if product.definition.storage %}
