@@ -13,12 +13,13 @@
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel odd">
         <h2>Product {{ product.name }}</h2>
-        of type <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-        {{ product.metadata_type.name }}</a>
-
-        <div>
+        of type
+        <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+            {{ product.metadata_type.name }}
+        </a>
+        <p>
             {{ product.definition['description'] }}
-        </div>
+        </p>
     </div>
     <div class="panel">
         <h3>Metadata</h3>
