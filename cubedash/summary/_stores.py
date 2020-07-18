@@ -8,9 +8,18 @@ from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 import dateutil.parser
-from dateutil import tz
-
 import structlog
+from dateutil import tz
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from shapely.geometry.base import BaseGeometry
+from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql import Select
+
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
 from cubedash.summary import TimePeriodOverview, _extents, _schema
@@ -24,15 +33,6 @@ from cubedash.summary._schema import (
 from cubedash.summary._summarise import Summariser
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
-from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, String, and_, func, select
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import Select
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 

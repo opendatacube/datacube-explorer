@@ -1,10 +1,10 @@
 import sys
 
+from datacube_apps.wms_wsgi import application as backend
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import DispatcherMiddleware
 
 from cubedash import app
-from datacube_apps.wms_wsgi import application as backend
 
 if __name__ == "__main__":
     DEBUG_MODE = len(sys.argv) == 2 and sys.argv[1] == "--debug"

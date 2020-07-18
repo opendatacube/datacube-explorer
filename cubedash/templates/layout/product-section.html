@@ -120,7 +120,15 @@
                     {% endif %}
                 </h2>
                 <div class="option-menu left">
-                    {% for row in range(1, 13) | batch(3) %}
+                    {% set month_range=[] %}
+                    {% if selected_summary and selected_summary.timeline_dataset_counts %}
+                    {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items() %}
+                            {% if dataset_count > 0 %}
+                            {% do month_range.append(dataset_date.month) %}
+                            {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% for row in month_range |unique| batch(3) %}
                         <ul>
                             {% for month_opt in row %}
                                 <li>
@@ -158,7 +166,15 @@
                     {% endif %}
                 </h2>
                 <div class="option-menu left">
-                    {% for row in (year, month) | days_in_month | batch(3) %}
+                    {% set day_range=[] %}
+                    {% if selected_summary and selected_summary.timeline_dataset_counts %}
+                    {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items()%}
+                            {% if dataset_count > 0 %}
+                            {% do day_range.append(dataset_date.day) %}
+                            {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    {% for row in day_range |  unique | batch(3) %}
                         <ul>
                             {% for day_opt in row %}
                                 <li>
