@@ -2,13 +2,14 @@
 Tests that load pages and check the contained text.
 """
 import json
+from textwrap import indent
 
 import pytest
 from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from requests_html import HTML
+from requests_html import HTML, Element
 
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
@@ -132,7 +133,33 @@ def test_uninitialised_overview(
     # Then load an unpopulated product.
     summary_store.get_or_update("ls7_nbar_albers")
     html = get_html(unpopulated_client, "/ls7_nbar_scene/2017")
-    assert html.find(".coverage-region-count", first=True).text == "0 unique scenes"
+    assert_is_text(html, ".coverage-region-count", "0 unique scenes")
+
+
+def one_element(html: HTML, selector: str) -> Element:
+    """
+    Expect one element on the page to match the given selector, return it.
+    """
+    __tracebackhide__ = True
+
+    def err(msg: str):
+        print(f"Received error on page: {indent(html.text, ' ' * 4)}")
+        raise AssertionError(msg)
+
+    els = html.find(selector)
+    if not els:
+        err(f"{selector!r} is not in the result.")
+
+    if len(els) > 1:
+        err(f"Multiple elements on page match the selector {selector!r}")
+
+    return els[0]
+
+
+def assert_is_text(html: HTML, selector, text: str):
+    __tracebackhide__ = True
+    el = one_element(html, selector)
+    assert el.text == text
 
 
 def test_uninitialised_search_page(
@@ -169,11 +196,7 @@ def test_view_dataset(client: FlaskClient):
 
 
 def _h1_text(html):
-    return _text(html, "h1")
-
-
-def _text(html, tag):
-    return html.find(tag, first=True).text
+    return one_element(html, "h1").text
 
 
 def test_view_product(client: FlaskClient):
@@ -184,7 +207,7 @@ def test_view_product(client: FlaskClient):
 def test_view_metadata_type(client: FlaskClient):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
-    assert "eo Metadata Type" in _text(html, "h2")
+    assert "eo Metadata Type" in one_element(html, "h2").text
 
     # Does the page list products using the type?
     products_using_it = [t.text for t in html.find(".type-usage-item")]
@@ -206,7 +229,7 @@ def test_out_of_date_range(client: FlaskClient):
 
     # The common error here is to say "No data: not yet generated" rather than "0 datasets"
     assert check_dataset_count(html, 0)
-    assert b"Historic Flood Mapping Water Observations from Space" in html.text
+    assert "Historic Flood Mapping Water Observations from Space" in html.text
 
 
 def test_loading_high_low_tide_comp(client: FlaskClient):
@@ -222,7 +245,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
     check_area("2,984,...km2", html)
 
     assert (
-        html.find(".last-processed time", first=True).attrs["datetime"]
+        one_element(html, ".last-processed time").attrs["datetime"]
         == "2017-06-08T20:58:07.014314+00:00"
     )
 
@@ -335,9 +358,9 @@ def test_search_page(client: FlaskClient):
 def test_search_time_completion(client: FlaskClient):
     # They only specified a begin time, so the end time should be filled in with the product extent.
     html = get_html(client, "/datasets/ls7_nbar_scene?time-begin=1999-05-28")
-    assert html.find("#search-time-before", first=True).attrs["value"] == "1999-05-28"
+    assert one_element(html, "#search-time-before").attrs["value"] == "1999-05-28"
     # One day after the product extent end (range is exclusive)
-    assert html.find("#search-time-after", first=True).attrs["value"] == "2017-05-04"
+    assert one_element(html, "#search-time-after").attrs["value"] == "2017-05-04"
     search_results = html.find(".search-result a")
     assert len(search_results) == 4
 
@@ -369,7 +392,7 @@ def test_undisplayable_product(client: FlaskClient):
     """
     html = get_html(client, "/ls7_satellite_telemetry_data")
     check_dataset_count(html, 4)
-    assert "36.6GiB" in html.find(".coverage-filesize", first=True).text
+    assert "36.6GiB" in one_element(html, ".coverage-filesize").text
     assert "(None displayable)" in html.text
     assert "No CRSes defined" in html.text
 
