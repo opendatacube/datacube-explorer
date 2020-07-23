@@ -199,6 +199,7 @@ def validate_items(
     - are all valid individually.
     - (optionally) has a specific count
     """
+    __tracebackhide__ = True
     seen_ids = set()
     last_item = None
     i = 0

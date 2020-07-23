@@ -128,9 +128,15 @@ def test_uninitialised_overview(
 ):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
+    summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
     summary_store.get_or_update("ls7_nbar_albers")
+
     html = get_html(unpopulated_client, "/ls7_nbar_scene/2017")
-    assert_is_text(html, ".coverage-region-count", "0 unique scenes")
+
+    # The page should load without error, but will display 'unknown' fields
+    assert html.find("h2", first=True).text == "ls7_nbar_scene: Landsat 7 NBAR 25 metre"
+    assert "Unknown number of datasets" in html.text
+    assert "No data: not yet generated" in html.text
 
 
 def one_element(html: HTML, selector: str) -> Element:
@@ -140,7 +146,9 @@ def one_element(html: HTML, selector: str) -> Element:
     __tracebackhide__ = True
 
     def err(msg: str):
-        print(f"Received error on page: {indent(html.text, ' ' * 4)}")
+        __tracebackhide__ = True
+        raw_text = html.raw_html.decode("utf-8")[600:]
+        print(f"Received error on page: {indent(raw_text, ' ' * 4)}")
         raise AssertionError(msg)
 
     els = html.find(selector)
@@ -427,7 +435,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     # ls7_nbar_scene / 2017 / 05
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
     print(res.output)
-    assert "Landsat WRS scene-based product" in res.output
+    assert "Landsat WRS2 scene-based product" in res.output
     assert "3 ls7_nbar_scene datasets for 2017 5" in res.output
     assert "727.4MiB" in res.output
     assert (
