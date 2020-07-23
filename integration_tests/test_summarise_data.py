@@ -7,12 +7,10 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 from dateutil import tz
 from dateutil.tz import tzutc
 
 from cubedash._utils import alchemy_engine
-from cubedash.generate import cli
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 from datacube.index.hl import Doc2Dataset
@@ -356,7 +354,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert cached_s.dataset_count == summary.dataset_count
 
 
-def test_cubedash_gen_refresh(module_index):
+def test_cubedash_gen_refresh(run_generate, module_index):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
@@ -369,20 +367,12 @@ def test_cubedash_gen_refresh(module_index):
         )
         return new_val
 
-    runner = CliRunner()
-
-    # Initialise once.
-    res = runner.invoke(cli, ["--init"], catch_exceptions=False)
-    assert res.exit_code == 0
+    # Once
+    run_generate("--all")
     original_value = _get_product_seq_value()
 
-    # Run init again.
-    res = runner.invoke(
-        cli,
-        ["--no-init-database", "--refresh-stats", "--force-refresh", "--all"],
-        catch_exceptions=False,
-    )
-    assert res.exit_code == 0
+    # Twice
+    run_generate("--no-init-database", "--refresh-stats", "--force-refresh", "--all")
 
     # Value wasn't incremented!
     value_after_rerun = _get_product_seq_value()
