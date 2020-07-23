@@ -14,6 +14,7 @@ from dateutil.tz import tzutc
 from cubedash._utils import alchemy_engine
 from cubedash.generate import cli
 from cubedash.summary import SummaryStore
+from cubedash.summary._schema import CUBEDASH_SCHEMA
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
@@ -357,21 +358,34 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
 
 def test_cubedash_gen_refresh(module_index):
     """
-    Test cubedash get with refresh does not increment sequence
+    cubedash-gen shouldn't increment the product sequence when run normally
     """
+
+    def _get_product_seq_value():
+        [new_val] = (
+            alchemy_engine(module_index)
+            .execute(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
+            .fetchone()
+        )
+        return new_val
+
     runner = CliRunner()
-    res = runner.invoke(cli, ["--init"])
-    assert res
-    engine = alchemy_engine(module_index)
-    last_val = engine.execute(
-        "select last_value from cubedash.product_id_seq;"
-    ).fetchone()[0]
-    assert last_val == 74
+
+    # Initialise once.
+    res = runner.invoke(cli, ["--init"], catch_exceptions=False)
+    assert res.exit_code == 0
+    original_value = _get_product_seq_value()
+
+    # Run init again.
     res = runner.invoke(
-        cli, ["--no-init-database", "--refresh-stats", "--force-refresh", "--all"]
+        cli,
+        ["--no-init-database", "--refresh-stats", "--force-refresh", "--all"],
+        catch_exceptions=False,
     )
-    assert res
-    new_last_val = engine.execute(
-        "select last_value from cubedash.product_id_seq;"
-    ).fetchone()[0]
-    assert new_last_val == 74
+    assert res.exit_code == 0
+
+    # Value wasn't incremented!
+    value_after_rerun = _get_product_seq_value()
+    assert (
+        value_after_rerun == original_value
+    ), "Product sequence was incremented without any new products being added."
