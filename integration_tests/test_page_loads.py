@@ -68,9 +68,6 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     html = get_html(client, "/wofs_summary")
     check_dataset_count(html, 1244)
 
-    d = get_geojson(client, "/api/regions/wofs_summary")
-    assert len(d["features"]) == 1244
-
 
 def test_all_products_are_shown(client: FlaskClient):
     """
