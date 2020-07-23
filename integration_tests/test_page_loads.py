@@ -26,10 +26,31 @@ DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
 
 @pytest.fixture(scope="module", autouse=True)
-def auto_populate_index(populated_index):
+def auto_populate_index(populated_index: Index):
     """
     Auto-populate the index for all tests in this file.
     """
+    populated_product_counts = {
+        p.name: count for p, count in populated_index.datasets.count_by_product()
+    }
+    assert populated_product_counts == {
+        "dsm1sv10": 1,
+        "high_tide_comp_20p": 306,
+        "ls7_level1_scene": 4,
+        "ls7_nbar_scene": 4,
+        "ls7_nbart_albers": 4,
+        "ls7_nbart_scene": 4,
+        "ls7_pq_legacy_scene": 4,
+        "ls7_satellite_telemetry_data": 4,
+        "ls8_level1_scene": 7,
+        "ls8_nbar_scene": 7,
+        "ls8_nbart_albers": 7,
+        "ls8_nbart_scene": 7,
+        "ls8_pq_legacy_scene": 7,
+        "ls8_satellite_telemetry_data": 7,
+        "pq_count_summary": 20,
+        "wofs_albers": 11,
+    }
     return populated_index
 
 
@@ -137,6 +158,18 @@ def test_uninitialised_overview(
     assert html.find("h2", first=True).text == "ls7_nbar_scene: Landsat 7 NBAR 25 metre"
     assert "Unknown number of datasets" in html.text
     assert "No data: not yet generated" in html.text
+
+
+def test_empty_product_overview(client: FlaskClient):
+    """
+    A page is still displayable without error when it has no datasets.
+    """
+    html = get_html(client, "/ls5_nbar_scene")
+    assert_is_text(html, ".dataset-count", "0 datasets")
+
+    assert_is_text(html, ".query-param.key-platform .value", "LANDSAT_5")
+    assert_is_text(html, ".query-param.key-instrument .value", "TM")
+    assert_is_text(html, ".query-param.key-product_type .value", "nbar")
 
 
 def one_element(html: HTML, selector: str) -> Element:
