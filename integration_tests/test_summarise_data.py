@@ -193,7 +193,13 @@ def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
     }
 
     # Ingested products carry little of the original metadata...
-    assert albers.fixed_metadata == {"instrument": "OLI_TIRS", "platform": "LANDSAT_8"}
+    assert albers.fixed_metadata == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "NetCDF",
+        "label": None,
+    }
 
 
 def test_sampled_product_fixed_fields(summary_store: SummaryStore):

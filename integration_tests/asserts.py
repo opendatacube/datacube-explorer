@@ -88,11 +88,11 @@ def expect_values(
     footprint_count: int,
     time_range: Range,
     newest_creation_time: datetime,
-    region_dataset_counts: Dict,
     timeline_period: str,
     timeline_count: int,
     crses: Set[str],
     size_bytes: Optional[int],
+    region_dataset_counts: Dict = None,
 ):
 
     __tracebackhide__ = True
