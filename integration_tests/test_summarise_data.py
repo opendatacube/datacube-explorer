@@ -213,7 +213,13 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
         sample_percentage=50,
     )
     # Ingested products carry little of the original metadata...
-    assert fixed_fields == {"instrument": "OLI_TIRS", "platform": "LANDSAT_8"}
+    assert fixed_fields == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "NetCDF",
+        "label": None,
+    }
 
 
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
