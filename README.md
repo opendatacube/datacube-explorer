@@ -10,7 +10,7 @@
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
 
-Firstly, install Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
 is recommended.
 
 Test that you can run `datacube system check`, and that it's connecting
