@@ -5,23 +5,47 @@
 
 {% block head %}
     {{ super() }}
+    <style type="text/css">
+        h2 {
+            display: inline-block;
+        }
+
+        h2 + .sub-header {
+            display: inline-block;
+        }
+    </style>
 {% endblock %}
 {% block panel %}
 
 {% endblock %}
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
-    <div class="panel odd">
-        <h2>Product {{ product.name }}</h2>
-        of type
-        <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-            {{ product.metadata_type.name }}
-        </a>
+    <div class="panel highlight">
+        <h2>{{ product.name }}</h2>
+        <div class="sub-header">
+            product of type
+            <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                {{ product.metadata_type.name }}
+            </a>
+        </div>
+        <div>
+            <em>{{ product.definition['description'] }}</em>
+
+        </div>
         <p>
-            {{ product.definition['description'] }}
+
+            <a href="{{ url_for('overview_page', product_name=product.name) }}">
+                {%- if product_summary.time_earliest -%}
+                {{ product_summary.time_earliest.strftime('%B %Y')   }} to {{ product_summary.time_latest.strftime('%B %Y')  }}
+            {%- endif -%}
+            </a>,
+            <a href="{{ url_for('search_page', product_name=product.name)}}">
+                {{ product_summary.dataset_count or '0' }} datasets
+            </a>
         </p>
     </div>
     <div class="panel">
+
         <h3>Metadata</h3>
         {{ query_param_list(product.fields,
                     wide=true,
@@ -29,7 +53,7 @@
                                         descriptions=product.metadata_type.dataset_fields,
                                         fallback_dict=product_summary.fixed_metadata) }}
     </div>
-    <div class="panel">
+    <div class="panel odd">
         <h3>Searchable fields</h3>
         {% for key, value in product.fields | dictsort if (value is none and key not in product_summary.fixed_metadata) %}
             <div>
@@ -71,13 +95,10 @@
             {{ query_param_list(product.definition.storage, show_dicts=true) }}
         </div>
     {% endif %}
-    <div class="panel">
+
+    <div class="panel odd">
         <h3>Definition</h3>
         {{ show_raw_document(metadata_doc) }}
-    </div>
-
-    <div class="panel">
-        Return to <a href="{{ url_for('overview_page', product_name=product.name) }}">overview</a>
     </div>
 
 {% endblock %}
