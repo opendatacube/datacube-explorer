@@ -305,6 +305,7 @@ ul:last-child, ol:last-child
         grid-template-columns: 1fr 1fr
 
 .query-param
+    display: block
     > .value
         color: $muted_text
 
@@ -400,11 +401,15 @@ label
     .property
         font-family: 'Courier New', monospace
 
-        .property
+        .property, .array, .array-item
             padding-left: 15px
 
         & > .key
             font-weight: bold
+
+        summary
+            font-style: italic
+            color: #ccc
 
 // Information box shown when hovering a map dataset
 .dataset-info
