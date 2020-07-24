@@ -10,21 +10,22 @@ import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Dict, Union
+from typing import Optional, Tuple, Dict
 
-from shapely.geometry.base import BaseGeometry
-from shapely.ops import transform
-import pyproj
-import rapidjson
-from dateutil import tz
-from dateutil.relativedelta import relativedelta
-from flask_themes import render_theme_template
-
-import datacube.drivers.postgres._schema
 import flask
+import rapidjson
 import shapely.geometry
 import shapely.validation
 import structlog
+from dateutil import tz
+from dateutil.relativedelta import relativedelta
+from flask_themes import render_theme_template
+from pyproj import CRS as PJCRS
+from shapely.geometry import Polygon, shape
+from sqlalchemy.engine import Engine
+from werkzeug.datastructures import MultiDict
+
+import datacube.drivers.postgres._schema
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.drivers.postgres._fields import PgDocField
@@ -33,10 +34,6 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
-from pyproj import CRS as PJCRS
-from shapely.geometry import MultiPolygon, Polygon, shape
-from sqlalchemy.engine import Engine
-from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -435,66 +432,6 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     return geom, True
-
-
-def to_wrs_84(geometry: BaseGeometry, crs: Union[int, str, dict, pyproj.CRS]):
-    origin = pyproj.Proj(init=crs)
-    dest = pyproj.Proj(init="epsg:4326")
-    tranform_wrs84 = functools.partial(pyproj.transform, origin, dest)
-    new_geometry = transform(tranform_wrs84, geometry)
-    # Unwrap coordinates, if necessary
-    new_geometry = test_wrap_coordinates(new_geometry)
-    # It's possible to get self-intersection after transformation, presumably due to
-    # rounding, so we buffer 0.
-    geom = new_geometry.buffer(0)
-    return geom
-
-
-def test_wrap_coordinates(features):
-    if needs_unwrapping(features):
-        return unwrap_coordinates(features)
-    else:
-        return features
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def needs_unwrapping(features):
-    """ Test whether coordinates wrap around the antimeridian in wgs84 and if they do fix it """
-    if not features.intersects(NEAR_ANTIMERIDIAN):
-        return False
-
-    lon_under_minus_170 = False
-    lon_over_plus_170 = False
-
-    if isinstance(features, MultiPolygon):
-        return any([test_wrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        for c in features.exterior.coords:
-            if c[0] < -170:
-                lon_under_minus_170 = True
-            elif c[0] > 170:
-                lon_over_plus_170 = True
-    else:
-        return False
-
-    return lon_under_minus_170 and lon_over_plus_170
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def unwrap_coordinates(features):
-    """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
-    if isinstance(features, MultiPolygon):
-        return MultiPolygon([unwrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        return Polygon(
-            [unwrap_coordinates(feature) for feature in features.exterior.coords]
-        )
-    elif isinstance(features, list) or isinstance(features, tuple):
-        coords = list(features)
-        if coords[0] < -170:
-            coords[0] = coords[0] + 360
-        return coords
-    return None
 
 
 # ######################### WARNING ############################### #

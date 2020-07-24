@@ -10,8 +10,8 @@ import structlog
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 
-import cubedash._utils as utils
 from datacube.model import Dataset, Range
+from datacube.utils.geometry import Geometry
 
 _LOG = structlog.get_logger()
 
@@ -153,7 +153,11 @@ class TimePeriodOverview:
             warnings.warn(f"Geometry without a crs for {self}")
             return None
 
-        return utils.to_wrs_84(self.footprint_geometry, self.footprint_crs)
+        return (
+            Geometry(self.footprint_geometry, crs=self.footprint_crs)
+            .to_crs("EPSG:4326", wrapdateline=True)
+            .geom
+        )
 
     @staticmethod
     def _group_counter_if_needed(counter, period):
