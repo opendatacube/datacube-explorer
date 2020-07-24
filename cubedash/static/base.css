@@ -303,6 +303,9 @@ ul:last-child, ol:last-child {
     grid-template-columns: 1fr 1fr;
   }
 }
+.query-param {
+  display: block;
+}
 .query-param > .value {
   color: #737373;
 }
@@ -408,11 +411,15 @@ label.disabled {
 .raw-metadata .property {
   font-family: "Courier New", monospace;
 }
-.raw-metadata .property .property {
+.raw-metadata .property .property, .raw-metadata .property .array, .raw-metadata .property .array-item {
   padding-left: 15px;
 }
 .raw-metadata .property > .key {
   font-weight: bold;
+}
+.raw-metadata .property summary {
+  font-style: italic;
+  color: #ccc;
 }
 
 .dataset-info {

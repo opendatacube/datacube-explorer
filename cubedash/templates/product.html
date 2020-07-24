@@ -87,14 +87,13 @@
                 </div>
             {% endfor %}
         {% endif %}
-    </div>
-    {% if product.definition.storage %}
-        <div class="panel">
+
+        {% if product.definition.storage %}
             {# These fields are enforced by dataset-type-schema.yaml#}
-            <h3>Storage</h3>
+            <h3>Storage Parameters</h3>
             {{ query_param_list(product.definition.storage, show_dicts=true) }}
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 
     <div class="panel odd">
         <h3>Definition</h3>
