@@ -7,7 +7,6 @@ from __future__ import absolute_import, division
 import collections
 import difflib
 import functools
-import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict
@@ -126,15 +125,54 @@ def dataset_label(dataset):
     label = dataset.metadata.fields.get("label")
     if label is not None:
         return label
-    # Otherwise by the file/folder name if there's a path.
-    elif dataset.local_uri:
-        p = pathlib.Path(dataset.local_uri)
-        if p.name in ("ga-metadata.yaml", "agdc-metadata.yaml"):
-            return p.parent.name
 
-        return p.name
+    # Otherwise try to get a file/folder name for the dataset's location.
+    for uri in dataset.uris:
+        name = _get_reasonable_file_label(uri)
+        if name:
+            return name
+
     # TODO: Otherwise try to build a label from the available fields?
     return str(dataset.id)
+
+
+def _get_reasonable_file_label(uri: str) -> Optional[str]:
+    """
+    Get a label for the dataset from a URI.... if we can.
+
+    >>> uri = '/tmp/some/ls7_wofs_1234.nc'
+    >>> _get_reasonable_file_label(uri)
+    'ls7_wofs_1234.nc'
+    >>> uri = 'file:///g/data/rs0/datacube/002/LS7_ETM_NBAR/10_-24/LS7_ETM_NBAR_3577_10_-24_1999_v1496652530.nc#part=0'
+    >>> _get_reasonable_file_label(uri)
+    'LS7_ETM_NBAR_3577_10_-24_1999_v1496652530.nc#part=0'
+    >>> uri = 'file:///tmp/ls7_nbar_20120403_c1/ga-metadata.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'ls7_nbar_20120403_c1'
+    >>> uri = 's3://deafrica-data/jaxa/alos_palsar_mosaic/2017/N05E040/N05E040_2017.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'N05E040_2017'
+    >>> uri = 'file:///g/data/if87/S2A_OPER_MSI_ARD_TL_EPAE_20180820T020800_A016501_T53HQA_N02.06/ARD-METADATA.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'S2A_OPER_MSI_ARD_TL_EPAE_20180820T020800_A016501_T53HQA_N02.06'
+    >>> uri = 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/2020/S2B_36PTU_20200101_0_L2A/'
+    >>> _get_reasonable_file_label(uri)
+    'S2B_36PTU_20200101_0_L2A'
+    >>> _get_reasonable_file_label('ga-metadata.yaml')
+    """
+    for component in reversed(uri.rsplit("/", maxsplit=3)):
+        # If it's a default yaml document name, we want the folder name instead.
+        if component and component not in (
+            "ga-metadata.yaml",
+            "agdc-metadata.yaml",
+            "ARD-METADATA.yaml",
+        ):
+            suffixes = component.rsplit(".", maxsplit=1)
+            # Remove the yaml/json suffix if we have one now.
+            if suffixes[-1] in ("yaml", "json"):
+                return ".".join(suffixes[:-1])
+            return component
+    return None
 
 
 def product_license(dt: DatasetType) -> Optional[str]:
