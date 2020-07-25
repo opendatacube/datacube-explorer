@@ -81,7 +81,7 @@
         {# If it's a long list, make is expandable/collapsable #}
         {% if value | length > 20 %}
             <details class="array">[
-                <summary><span>{{ value | length }} items</span></summary>
+                <summary><span>[{{ value | length }} items...]</span></summary>
             {%- for item in value %}
                 <div class="array-item">{{ _show_raw_keyval(item) }},</div>
             {% endfor %}

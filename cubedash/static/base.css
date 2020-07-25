@@ -417,9 +417,9 @@ label.disabled {
 .raw-metadata .property > .key {
   font-weight: bold;
 }
-.raw-metadata .property summary {
+.raw-metadata .property summary > span {
   font-style: italic;
-  color: #ccc;
+  color: #737373;
 }
 
 .dataset-info {
