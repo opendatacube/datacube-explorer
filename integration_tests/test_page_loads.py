@@ -379,9 +379,7 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     assert len(geojson["features"]) == 0, "Unexpected wofs albers region count"
 
 
-@pytest.mark.xfail(
-    reason="TODO: Cannot display needs more patches"
-)
+@pytest.mark.xfail(reason="TODO: Cannot display needs more patches")
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
