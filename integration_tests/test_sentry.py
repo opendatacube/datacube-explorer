@@ -14,7 +14,7 @@ def sentry_client(empty_client : FlaskClient) -> FlaskClient:
     }
     return empty_client
 
-    
+
 def test_sentry(sentry_client : FlaskClient):
     html = get_html(sentry_client, "/")
     assert html
