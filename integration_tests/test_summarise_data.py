@@ -359,8 +359,10 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     ), "A new, rather than cached, summary was returned"
     assert cached_s.dataset_count == summary.dataset_count
 
-
-def test_cubedash_gen_refresh(run_generate, module_index):
+@pytest.mark.xfail(
+    reason="TODO: Needs merge to other branch for less fragile test"
+)
+def test_cubedash_gen_refresh(module_index):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
