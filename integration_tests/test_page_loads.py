@@ -378,6 +378,7 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     geojson = get_geojson(client, "/api/regions/wofs_albers/2017/04/6")
     assert len(geojson["features"]) == 0, "Unexpected wofs albers region count"
 
+
 @pytest.mark.xfail(
     reason="TODO: Cannot display needs more patches"
 )
