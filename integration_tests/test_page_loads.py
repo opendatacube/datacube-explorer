@@ -59,7 +59,7 @@ def auto_populate_index(populated_index: Index):
     return populated_index
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def sentry_client(client: FlaskClient) -> FlaskClient:
     cubedash.app.config["SENTRY_CONFIG"] = {
         "dsn": "___DSN___",
