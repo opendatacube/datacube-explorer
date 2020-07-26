@@ -1,5 +1,7 @@
 # Test Sentry integration
 import pytest
+from flask.testing import FlaskClient
+
 import cubedash
 from integration_tests.asserts import get_html
 
