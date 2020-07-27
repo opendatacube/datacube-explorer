@@ -146,7 +146,7 @@ class TimePeriodOverview:
         )
 
     @property
-    def footprint_wrs84(self) -> Optional[MultiPolygon]:
+    def footprint_wgs84(self) -> Optional[MultiPolygon]:
         if not self.footprint_geometry:
             return None
         if not self.footprint_crs:

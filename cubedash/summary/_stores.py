@@ -853,7 +853,7 @@ class SummaryStore:
 
     def get_dataset_footprint_region(self, dataset_id):
         """
-        Get the recorded WRS84 footprint and region code for a given dataset.
+        Get the recorded WGS84 footprint and region code for a given dataset.
 
         Note that these will be None if the product has not been summarised.
         """

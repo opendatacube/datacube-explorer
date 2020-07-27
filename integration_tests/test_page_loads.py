@@ -82,7 +82,7 @@ def test_get_overview(client: FlaskClient):
 
 def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # This all-time overview has a valid footprint that becomes invalid
-    # when reprojected to wrs84 by shapely.
+    # when reprojected to wgs84 by shapely.
     from .data_wofs_summary import wofs_time_summary
 
     _model.STORE._do_put("wofs_summary", None, None, None, wofs_time_summary)

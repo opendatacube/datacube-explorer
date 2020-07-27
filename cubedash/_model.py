@@ -185,15 +185,15 @@ def _get_footprint(period: TimePeriodOverview) -> Optional[MultiPolygon]:
     if not period.footprint_geometry:
         return None
     start = time.time()
-    footprint_wrs84 = period.footprint_wrs84
+    footprint_wgs84 = period.footprint_wgs84
     _LOG.info(
         "overview.footprint_size_diff",
         from_len=len(period.footprint_geometry.wkt),
-        to_len=len(footprint_wrs84.wkt),
+        to_len=len(footprint_wgs84.wkt),
     )
     _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
 
-    return footprint_wrs84
+    return footprint_wgs84
 
 
 def _get_regions_geojson(
