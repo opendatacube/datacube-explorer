@@ -10,7 +10,7 @@ import functools
 import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 import flask
 import rapidjson
@@ -21,16 +21,17 @@ from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
 from pyproj import CRS as PJCRS
-from shapely.geometry import MultiPolygon, Polygon, shape
+from shapely.geometry import Polygon, shape
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
+from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
@@ -341,7 +342,25 @@ def get_ordered_metadata(metadata_doc):
 
 
 EODATASETS_PROPERTY_ORDER = [
+    "$schema",
+    # Products / Types
+    "name",
+    "license",
+    "metadata_type",
+    "description",
+    "metadata",
+    # EO3
     "id",
+    "label",
+    "product",
+    "locations",
+    "crs",
+    "geometry",
+    "grids",
+    "properties",
+    "measurements",
+    "accessories",
+    # EO
     "ga_label",
     "name",
     "description",
@@ -415,53 +434,6 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     return geom, True
 
 
-def test_wrap_coordinates(features):
-    if needs_unwrapping(features):
-        return unwrap_coordinates(features)
-    else:
-        return features
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def needs_unwrapping(features):
-    """ Test whether coordinates wrap around the antimeridian in wgs84 and if they do fix it """
-    if not features.intersects(NEAR_ANTIMERIDIAN):
-        return False
-
-    lon_under_minus_170 = False
-    lon_over_plus_170 = False
-
-    if isinstance(features, MultiPolygon):
-        return any([test_wrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        for c in features.exterior.coords:
-            if c[0] < -170:
-                lon_under_minus_170 = True
-            elif c[0] > 170:
-                lon_over_plus_170 = True
-    else:
-        return False
-
-    return lon_under_minus_170 and lon_over_plus_170
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def unwrap_coordinates(features):
-    """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
-    if isinstance(features, MultiPolygon):
-        return MultiPolygon([unwrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        return Polygon(
-            [unwrap_coordinates(feature) for feature in features.exterior.coords]
-        )
-    elif isinstance(features, list) or isinstance(features, tuple):
-        coords = list(features)
-        if coords[0] < -170:
-            coords[0] = coords[0] + 360
-        return coords
-    return None
-
-
 # ######################### WARNING ############################### #
 #  These functions are bad and access non-public parts of datacube  #
 #     They are kept here in one place for easy criticism.           #
@@ -490,3 +462,14 @@ except AttributeError:
     ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
 
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
+
+
+def get_mutable_dataset_search_fields(
+    index: Index, md: MetadataType
+) -> Dict[str, PgDocField]:
+    """
+    Get a copy of a metadata type's fields that we can mutate.
+
+    (the ones returned by the Index are cached and so may be shared among callers)
+    """
+    return index._db.get_dataset_fields(md.definition)

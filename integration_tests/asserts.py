@@ -92,10 +92,13 @@ def expect_values(
     timeline_count: int,
     crses: Set[str],
     size_bytes: Optional[int],
+    region_dataset_counts: Dict = None,
 ):
+
     __tracebackhide__ = True
 
     was_timeline_error = False
+    was_regions_error = False
     try:
         assert s.dataset_count == dataset_count, "wrong dataset count"
         assert s.footprint_count == footprint_count, "wrong footprint count"
@@ -146,6 +149,17 @@ def expect_values(
             ), "timeline count doesn't match dataset count"
         was_timeline_error = False
 
+        if region_dataset_counts is not None:
+            was_regions_error = True
+            if s.region_dataset_counts is None:
+                if region_dataset_counts is not None:
+                    raise AssertionError(
+                        f"No region counts found. "
+                        f"Expected entry with {len(region_dataset_counts)} records."
+                    )
+            else:
+                assert region_dataset_counts == s.region_dataset_counts
+            was_regions_error = False
     except AssertionError:
         print(
             f"""Got:
@@ -166,6 +180,11 @@ def expect_values(
             print("timeline keys:")
             for day, count in s.timeline_dataset_counts.items():
                 print(f"\t{repr(day)}: {count}")
+
+        if was_regions_error:
+            print("region keys:")
+            for region, count in s.region_dataset_counts.items():
+                print(f"\t{repr(region)}: {count}")
         raise
 
 

@@ -309,6 +309,10 @@ ul:last-child, ol:last-child {
 .query-param .value > .query-param {
   margin-left: 15px;
 }
+.query-param .missing-value {
+  text-decoration-style: wavy;
+  text-decoration-line: underline;
+}
 
 button {
   margin: 5px 0;
@@ -393,6 +397,12 @@ label.disabled {
 
 .muted {
   color: #737373;
+}
+
+.badge {
+  font-size: 0.7em;
+  background-color: #ccc;
+  padding: 2px 4px;
 }
 
 .raw-metadata .property {

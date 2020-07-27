@@ -97,7 +97,7 @@ def _dataset_geojson(dataset):
 
 @bp.app_template_filter("product_link")
 def _product_link(product_name):
-    url = flask.url_for("overview_page", product_name=product_name)
+    url = flask.url_for("product.product_page", name=product_name)
     return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
 
 
@@ -151,6 +151,18 @@ def _format_query_value(val):
     if isinstance(val, float):
         return round(val, 3)
     return str(val)
+
+
+@bp.app_template_filter("maybe_to_css_class_name")
+def _maybe_format_css_class(val: str, prefix: str = ""):
+    """
+    Create a CSS class name for the given string if it is safe to do so.
+
+    Otherwise return nothing
+    """
+    if val.replace("-", "_").isidentifier():
+        return f"{prefix}{val}"
+    return ""
 
 
 @bp.app_template_filter("month_name")

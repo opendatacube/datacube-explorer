@@ -17,8 +17,14 @@ def product_page(name):
     if not product:
         abort(404, f"Unknown product {name!r}")
     ordered_metadata = utils.get_ordered_metadata(product.definition)
+    product_summary = _model.get_product_summary(name)
 
-    return utils.render("product.html", product=product, metadata_doc=ordered_metadata)
+    return utils.render(
+        "product.html",
+        product=product,
+        product_summary=product_summary,
+        metadata_doc=ordered_metadata,
+    )
 
 
 @bp.route("/metadata-type/<name>")

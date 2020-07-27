@@ -2,13 +2,14 @@
 Tests that load pages and check the contained text.
 """
 import json
+from textwrap import indent
 
 import pytest
 from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from requests_html import HTML
+from requests_html import HTML, Element
 
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
@@ -25,10 +26,31 @@ DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
 
 @pytest.fixture(scope="module", autouse=True)
-def auto_populate_index(populated_index):
+def auto_populate_index(populated_index: Index):
     """
     Auto-populate the index for all tests in this file.
     """
+    populated_product_counts = {
+        p.name: count for p, count in populated_index.datasets.count_by_product()
+    }
+    assert populated_product_counts == {
+        "dsm1sv10": 1,
+        "high_tide_comp_20p": 306,
+        "ls7_level1_scene": 4,
+        "ls7_nbar_scene": 4,
+        "ls7_nbart_albers": 4,
+        "ls7_nbart_scene": 4,
+        "ls7_pq_legacy_scene": 4,
+        "ls7_satellite_telemetry_data": 4,
+        "ls8_level1_scene": 7,
+        "ls8_nbar_scene": 7,
+        "ls8_nbart_albers": 7,
+        "ls8_nbart_scene": 7,
+        "ls8_pq_legacy_scene": 7,
+        "ls8_satellite_telemetry_data": 7,
+        "pq_count_summary": 20,
+        "wofs_albers": 11,
+    }
     return populated_index
 
 
@@ -60,15 +82,12 @@ def test_get_overview(client: FlaskClient):
 
 def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # This all-time overview has a valid footprint that becomes invalid
-    # when reprojected to wrs84 by shapely.
+    # when reprojected to wgs84 by shapely.
     from .data_wofs_summary import wofs_time_summary
 
     _model.STORE._do_put("wofs_summary", None, None, None, wofs_time_summary)
     html = get_html(client, "/wofs_summary")
     check_dataset_count(html, 1244)
-
-    d = get_geojson(client, "/api/regions/wofs_summary")
-    assert len(d["features"]) == 1244
 
 
 def test_all_products_are_shown(client: FlaskClient):
@@ -130,9 +149,55 @@ def test_uninitialised_overview(
 ):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
+    summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
     summary_store.get_or_update("ls7_nbar_albers")
+
     html = get_html(unpopulated_client, "/ls7_nbar_scene/2017")
-    assert html.find(".coverage-region-count", first=True).text == "0 unique scenes"
+
+    # The page should load without error, but will display 'unknown' fields
+    assert html.find("h2", first=True).text == "ls7_nbar_scene: Landsat 7 NBAR 25 metre"
+    assert "Unknown number of datasets" in html.text
+    assert "No data: not yet generated" in html.text
+
+
+def test_empty_product_overview(client: FlaskClient):
+    """
+    A page is still displayable without error when it has no datasets.
+    """
+    html = get_html(client, "/ls5_nbar_scene")
+    assert_is_text(html, ".dataset-count", "0 datasets")
+
+    assert_is_text(html, ".query-param.key-platform .value", "LANDSAT_5")
+    assert_is_text(html, ".query-param.key-instrument .value", "TM")
+    assert_is_text(html, ".query-param.key-product_type .value", "nbar")
+
+
+def one_element(html: HTML, selector: str) -> Element:
+    """
+    Expect one element on the page to match the given selector, return it.
+    """
+    __tracebackhide__ = True
+
+    def err(msg: str):
+        __tracebackhide__ = True
+        raw_text = html.raw_html.decode("utf-8")[600:]
+        print(f"Received error on page: {indent(raw_text, ' ' * 4)}")
+        raise AssertionError(msg)
+
+    els = html.find(selector)
+    if not els:
+        err(f"{selector!r} is not in the result.")
+
+    if len(els) > 1:
+        err(f"Multiple elements on page match the selector {selector!r}")
+
+    return els[0]
+
+
+def assert_is_text(html: HTML, selector, text: str):
+    __tracebackhide__ = True
+    el = one_element(html, selector)
+    assert el.text == text
 
 
 def test_uninitialised_search_page(
@@ -169,11 +234,7 @@ def test_view_dataset(client: FlaskClient):
 
 
 def _h1_text(html):
-    return _text(html, "h1")
-
-
-def _text(html, tag):
-    return html.find(tag, first=True).text
+    return one_element(html, "h1").text
 
 
 def test_view_product(client: FlaskClient):
@@ -184,7 +245,8 @@ def test_view_product(client: FlaskClient):
 def test_view_metadata_type(client: FlaskClient):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
-    assert "eo Metadata Type" in _text(html, "h2")
+    assert html.find("h2", first=True).text == "eo"
+    assert html.find(".sub-header", first=True).text == "metadata type of 44 products"
 
     # Does the page list products using the type?
     products_using_it = [t.text for t in html.find(".type-usage-item")]
@@ -206,7 +268,7 @@ def test_out_of_date_range(client: FlaskClient):
 
     # The common error here is to say "No data: not yet generated" rather than "0 datasets"
     assert check_dataset_count(html, 0)
-    assert b"Historic Flood Mapping Water Observations from Space" in html.text
+    assert "Historic Flood Mapping Water Observations from Space" in html.text
 
 
 def test_loading_high_low_tide_comp(client: FlaskClient):
@@ -222,7 +284,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
     check_area("2,984,...km2", html)
 
     assert (
-        html.find(".last-processed time", first=True).attrs["datetime"]
+        one_element(html, ".last-processed time").attrs["datetime"]
         == "2017-06-08T20:58:07.014314+00:00"
     )
 
@@ -335,9 +397,9 @@ def test_search_page(client: FlaskClient):
 def test_search_time_completion(client: FlaskClient):
     # They only specified a begin time, so the end time should be filled in with the product extent.
     html = get_html(client, "/datasets/ls7_nbar_scene?time-begin=1999-05-28")
-    assert html.find("#search-time-before", first=True).attrs["value"] == "1999-05-28"
+    assert one_element(html, "#search-time-before").attrs["value"] == "1999-05-28"
     # One day after the product extent end (range is exclusive)
-    assert html.find("#search-time-after", first=True).attrs["value"] == "2017-05-04"
+    assert one_element(html, "#search-time-after").attrs["value"] == "2017-05-04"
     search_results = html.find(".search-result a")
     assert len(search_results) == 4
 
@@ -369,7 +431,7 @@ def test_undisplayable_product(client: FlaskClient):
     """
     html = get_html(client, "/ls7_satellite_telemetry_data")
     check_dataset_count(html, 4)
-    assert "36.6GiB" in html.find(".coverage-filesize", first=True).text
+    assert "36.6GiB" in one_element(html, ".coverage-filesize").text
     assert "(None displayable)" in html.text
     assert "No CRSes defined" in html.text
 
@@ -407,7 +469,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     # ls7_nbar_scene / 2017 / 05
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
     print(res.output)
-    assert "Landsat WRS scene-based product" in res.output
+    assert "Landsat WRS2 scene-based product" in res.output
     assert "3 ls7_nbar_scene datasets for 2017 5" in res.output
     assert "727.4MiB" in res.output
     assert (

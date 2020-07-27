@@ -9,12 +9,17 @@ from cachetools.func import lru_cache
 from dateutil import tz
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import Integer, and_, bindparam, func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
-from cubedash.summary._schema import DATASET_SPATIAL, FOOTPRINT_SRID, SPATIAL_REF_SYS
+from cubedash.summary._schema import (
+    DATASET_SPATIAL,
+    FOOTPRINT_SRID,
+    SPATIAL_REF_SYS,
+    get_srid_name,
+)
 from datacube.model import Range
 
 _LOG = structlog.get_logger()
@@ -199,18 +204,8 @@ class Summariser:
         ).scalar()
 
     @lru_cache()
-    def _get_srid_name(self, srid):
+    def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """
-        return self._engine.execute(
-            select(
-                [
-                    func.concat(
-                        SPATIAL_REF_SYS.c.auth_name,
-                        ":",
-                        SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
-                    )
-                ]
-            ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
-        ).scalar()
+        return get_srid_name(self._engine, srid)

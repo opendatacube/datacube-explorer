@@ -97,7 +97,7 @@
                         {% else %}
                             <li>
                         <span class="coverage-region-missing"
-                              title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
+                              title="Datasets need more than one unique region_code to display region grids">
                             No configured regions
                             <!-- User can hover to see slightly longer explanation -->
                             <i class="fa fa-info-circle"></i>
@@ -141,38 +141,13 @@
                     <h4>
                         <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
                             {{ product.metadata_type.name }}</a>
-                        fields
+                        metadata:
                     </h4>
 
-                    {{ query_param_list(product.fields, descriptions=product.metadata_type.dataset_fields) }}
-
-
-                    {% if product.definition.measurements %}
-                        <h4>Measurements</h4>
-                        <ul>
-                            {% for measurement in product.definition.measurements %}
-                                <li>
-                                    <div>
-                                        <span>{{ measurement.name }}</span>
-                                        {%- for a in measurement.aliases %}
-                                            / <span class="muted">{{ a }}</span>
-                                        {%- endfor %}
-                                    </div>
-                                    {#                            <div>#}
-                                    {#                                type {{ measurement.dtype }};#}
-                                    {#                                units {{ measurement.units }};#}
-                                    {#                                nodata {{ measurement.nodata }}#}
-                                    {#                            </div>#}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-
-                    {# These fields are enforced by dataset-type-schema.yaml #}
-                    {#            {% if product.definition.storage %}#}
-                    {#                <h4>Storage</h4>#}
-                    {#                {{ query_param_list(product.definition.storage, show_dicts=true) }}#}
-                    {#            {% endif %}#}
+                    {{ query_param_list(product.fields,
+                                        show_nulls=false,
+                                        descriptions=product.metadata_type.dataset_fields,
+                                        fallback_dict=product_summary.fixed_metadata) }}
 
 
                     {% if product_summary.derived_products %}
@@ -191,7 +166,7 @@
 
                     <p>
                         <a href="{{ url_for('product.product_page', name=product.name) }}"
-                           class="muted">raw metadata</a>
+                           class="muted">Product information</a>
                     </p>
 
                     {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}

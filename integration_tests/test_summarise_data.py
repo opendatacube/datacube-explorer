@@ -7,17 +7,15 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 from dateutil import tz
 from dateutil.tz import tzutc
 
 from cubedash._utils import alchemy_engine
-from cubedash.generate import cli
 from cubedash.summary import SummaryStore
+from cubedash.summary._schema import CUBEDASH_SCHEMA
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
-
 from .asserts import expect_values as _expect_values
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -168,6 +166,62 @@ def test_has_source_derived_product_links(run_generate, summary_store: SummarySt
     assert telem.derived_products == ["ls8_level1_scene"]
 
 
+def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
+    run_generate()
+
+    albers = summary_store.get_product_summary("ls8_nbar_albers")
+    scene = summary_store.get_product_summary("ls8_nbar_scene")
+    telem = summary_store.get_product_summary("ls8_satellite_telemetry_data")
+
+    assert scene.fixed_metadata == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "GeoTIFF",
+        "gsi": "LGN",
+        "orbit": None,
+    }
+
+    assert telem.fixed_metadata == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "satellite_telemetry_data",
+        "format": "MD",
+        "gsi": "LGN",
+        "orbit": None,
+    }
+
+    # Ingested products carry little of the original metadata...
+    assert albers.fixed_metadata == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "NetCDF",
+        "label": None,
+    }
+
+
+def test_sampled_product_fixed_fields(summary_store: SummaryStore):
+    # Compute fixed fields using a sampled percentage.
+
+    # (We're doing this manually to force it to use table sampling -- our test data is
+    # not big enough to trigger it in the `run_generate()` tests)
+
+    # Tiled product, sampled
+    fixed_fields = summary_store._find_product_fixed_metadata(
+        summary_store.index.products.get_by_name("ls8_nbar_albers"),
+        sample_percentage=50,
+    )
+    # Ingested products carry little of the original metadata...
+    assert fixed_fields == {
+        "platform": "LANDSAT_8",
+        "instrument": "OLI_TIRS",
+        "product_type": "nbar",
+        "format": "NetCDF",
+        "label": None,
+    }
+
+
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
 
@@ -189,6 +243,60 @@ def test_calc_empty(summary_store: SummaryStore):
     # Should not exist.
     summary = summary_store.get("ls8_fake_product", year=2006, month=None, day=None)
     assert summary is None
+
+
+def test_generate_telemetry(run_generate, summary_store: SummaryStore):
+    """
+    Telemetry data polygons can be synthesized from the path/row values
+    """
+    run_generate("ls8_satellite_telemetry_data")
+
+    summary = summary_store.get_or_update("ls8_satellite_telemetry_data")
+    _expect_values(
+        summary,
+        dataset_count=1199,
+        footprint_count=1199,
+        time_range=Range(
+            begin=datetime(2016, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
+        ),
+        region_dataset_counts={
+            "91": 56,
+            "92": 56,
+            "93": 56,
+            "90": 51,
+            "95": 47,
+            "94": 45,
+            "96": 44,
+            "101": 43,
+            "98": 43,
+            "100": 42,
+            "105": 42,
+            "111": 42,
+            "99": 42,
+            "104": 41,
+            "110": 41,
+            "112": 41,
+            "103": 40,
+            "107": 40,
+            "108": 40,
+            "109": 40,
+            "89": 40,
+            "97": 40,
+            "113": 39,
+            "102": 37,
+            "106": 36,
+            "114": 32,
+            "116": 29,
+            "115": 27,
+            "88": 27,
+        },
+        newest_creation_time=datetime(2017, 12, 31, 3, 38, 43, tzinfo=tzutc()),
+        timeline_period="month",
+        timeline_count=24,
+        crses={"EPSG:4326"},
+        size_bytes=10333203380934,
+    )
 
 
 def test_generate_day(run_generate, summary_store: SummaryStore):
@@ -252,23 +360,28 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert cached_s.dataset_count == summary.dataset_count
 
 
-def test_cubedash_gen_refresh(module_index):
+def test_cubedash_gen_refresh(run_generate, module_index):
     """
-    Test cubedash get with refresh does not increment sequence
+    cubedash-gen shouldn't increment the product sequence when run normally
     """
-    runner = CliRunner()
-    res = runner.invoke(cli, ["--init"])
-    assert res
-    engine = alchemy_engine(module_index)
-    last_val = engine.execute(
-        "select last_value from cubedash.product_id_seq;"
-    ).fetchone()[0]
-    assert last_val == 74
-    res = runner.invoke(
-        cli, ["--no-init-database", "--refresh-stats", "--force-refresh", "--all"]
-    )
-    assert res
-    new_last_val = engine.execute(
-        "select last_value from cubedash.product_id_seq;"
-    ).fetchone()[0]
-    assert new_last_val == 74
+
+    def _get_product_seq_value():
+        [new_val] = (
+            alchemy_engine(module_index)
+            .execute(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
+            .fetchone()
+        )
+        return new_val
+
+    # Once
+    run_generate("--all")
+    original_value = _get_product_seq_value()
+
+    # Twice
+    run_generate("--no-init-database", "--refresh-stats", "--force-refresh", "--all")
+
+    # Value wasn't incremented!
+    value_after_rerun = _get_product_seq_value()
+    assert (
+        value_after_rerun == original_value
+    ), "Product sequence was incremented without any new products being added."

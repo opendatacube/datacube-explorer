@@ -5,11 +5,6 @@ from typing import Counter, Dict, Iterable, Optional, Tuple
 import dateutil.parser
 import flask
 import flask_themes
-import shapely
-import shapely.geometry
-import shapely.ops
-import shapely.prepared
-import shapely.wkb
 import structlog
 from flask_caching import Cache
 from shapely.geometry import MultiPolygon
@@ -154,7 +149,7 @@ def get_regions_geojson(
 
     product = STORE.get_dataset_type(product_name)
 
-    region_info = RegionInfo.for_product(product)
+    region_info = STORE.get_product_region_info(product_name)
     if not region_info:
         return None
 
@@ -166,12 +161,19 @@ def get_regions_geojson(
     if not period:
         # Valid product, but no summary generated.
         return None
-    footprint_wrs84 = _get_footprint(period)
 
     start = time.time()
-    regions = _get_regions_geojson(
-        period.region_dataset_counts, footprint_wrs84, region_info
-    )
+    region_counts = period.region_dataset_counts
+    if region_counts is None:
+        return None
+
+    # If all datasets have no region name, don't bother showing regions.
+    #
+    # (datasets that are missing a region are in the None region)
+    if len(region_counts) == 1 and list(region_counts.keys()) == [None]:
+        return None
+
+    regions = _get_regions_geojson(region_counts, region_info)
     _LOG.debug("overview.region_gen", time_sec=time.time() - start)
     return regions
 
@@ -183,22 +185,21 @@ def _get_footprint(period: TimePeriodOverview) -> Optional[MultiPolygon]:
     if not period.footprint_geometry:
         return None
     start = time.time()
-    footprint_wrs84 = period.footprint_wrs84
+    footprint_wgs84 = period.footprint_wgs84
     _LOG.info(
         "overview.footprint_size_diff",
         from_len=len(period.footprint_geometry.wkt),
-        to_len=len(footprint_wrs84.wkt),
+        to_len=len(footprint_wgs84.wkt),
     )
     _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
 
-    return footprint_wrs84
+    return footprint_wgs84
 
 
 def _get_regions_geojson(
-    region_counts: Counter[str], footprint: MultiPolygon, region_info: RegionInfo
+    region_counts: Counter[str], region_info: RegionInfo
 ) -> Optional[Dict]:
-    region_geometry = _region_geometry_function(region_info, footprint)
-    if not region_geometry:
+    if not region_info:
         # Regions are unsupported for product
         return None
 
@@ -218,7 +219,9 @@ def _get_regions_geojson(
         "features": [
             {
                 "type": "Feature",
-                "geometry": region_geometry(region_code).__geo_interface__,
+                "geometry": region_info.geographic_extent(
+                    region_code
+                ).__geo_interface__,
                 "properties": {
                     "region_code": region_code,
                     "label": region_info.region_label(region_code),
@@ -226,34 +229,9 @@ def _get_regions_geojson(
                 },
             }
             for region_code in (region_counts or [])
+            if region_info.geographic_extent(region_code) is not None
         ],
     }
-
-
-def _region_geometry_function(region_info: RegionInfo, footprint):
-    region_shape = region_info.geographic_extent
-
-    if footprint is None:
-        return region_shape
-    else:
-        footprint_boundary = shapely.prepared.prep(footprint.boundary)
-
-        def region_geometry_cut(
-            region_code: str,
-        ) -> shapely.geometry.GeometryCollection:
-            """
-            Cut the polygon down to the footprint
-            """
-            shapely_extent = region_shape(region_code)
-
-            # We only need to cut up tiles that touch the edges of the footprint (including inner "holes")
-            # Checking the boundary is ~2.5x faster than running intersection() blindly, from my tests.
-            if footprint_boundary.intersects(shapely_extent):
-                return footprint.intersection(shapely_extent)
-            else:
-                return shapely_extent
-
-        return region_geometry_cut
 
 
 @app.errorhandler(500)
