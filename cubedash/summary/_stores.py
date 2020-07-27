@@ -30,6 +30,7 @@ from cubedash.summary._schema import (
     SPATIAL_QUALITY_STATS,
     TIME_OVERVIEW,
     refresh_supporting_views,
+    get_srid_name,
 )
 from cubedash.summary._summarise import Summariser
 from datacube import Datacube
@@ -669,11 +670,12 @@ class SummaryStore:
         )
 
         for r in self._engine.execute(query):
+
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
                 product_name=self.index.products.get(r.dataset_type_ref).name,
-                geometry=_get_shape(r.geometry),
+                geometry=_get_shape(r.geometry, self._get_srid_name(r.geometry.srid)),
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
@@ -759,6 +761,13 @@ class SummaryStore:
         for listener in self._update_listeners:
             listener(product_name, year, month, day, summary)
         return summary
+
+    @functools.lru_cache()
+    def _get_srid_name(self, srid: int):
+        """
+        Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
+        """
+        return get_srid_name(self._engine, srid)
 
     def _do_put(self, product_name, year, month, day, summary):
         log = _LOG.bind(
@@ -1017,7 +1026,7 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     return tuple(float(m) for m in m.groups())
 
 
-def _get_shape(geometry: WKBElement) -> Optional[Geometry]:
+def _get_shape(geometry: WKBElement, crs) -> Optional[Geometry]:
     """
     Our shapes are valid in the db, but can become invalid on
     reprojection. We buffer if needed.
@@ -1029,9 +1038,7 @@ def _get_shape(geometry: WKBElement) -> Optional[Geometry]:
     if geometry is None:
         return None
 
-    shape = Geometry(to_shape(geometry), geometry.srid).to_crs(
-        "EPSG:4326", wrapdateline=True
-    )
+    shape = Geometry(to_shape(geometry), crs).to_crs("EPSG:4326", wrapdateline=True)
 
     if not shape.is_valid:
         newshape = shape.buffer(0)

@@ -20,6 +20,8 @@ from sqlalchemy import (
     String,
     Table,
     func,
+    select,
+    bindparam,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -229,12 +231,12 @@ def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
     return (
         conn.execute(
             """
-                select 1
-                from pg_attribute
-                where attrelid = to_regclass(%s)
-                    and attname = %s
-                    and not attisdropped
-                """,
+                    select 1
+                    from pg_attribute
+                    where attrelid = to_regclass(%s)
+                        and attname = %s
+                        and not attisdropped
+                    """,
             table_name,
             column_name,
         ).scalar()
@@ -344,3 +346,20 @@ def refresh_supporting_views(conn, concurrently=False):
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_region;
     """
     )
+
+
+def get_srid_name(engine: Engine, srid: int):
+    """
+    Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
+    """
+    return engine.execute(
+        select(
+            [
+                func.concat(
+                    SPATIAL_REF_SYS.c.auth_name,
+                    ":",
+                    SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
+                )
+            ]
+        ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
+    ).scalar()
