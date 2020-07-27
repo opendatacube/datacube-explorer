@@ -4,8 +4,6 @@ import logging
 
 from flask import Blueprint, abort
 
-import eodatasets3.serialise
-from datacube.index.eo3 import is_doc_eo3
 from . import _model
 from . import _utils as utils
 
@@ -39,7 +37,7 @@ def dataset_page(id_):
     archived_location_times = index.datasets.get_archived_location_times(id_)
 
     dataset.metadata.sources = {}
-    ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
+    ordered_metadata = utils.prepare_document_formatting(dataset.metadata_doc)
 
     derived_datasets = sorted(index.datasets.get_derived(id_), key=utils.dataset_label)
     if len(derived_datasets) > PROVENANCE_DISPLAY_LIMIT:
@@ -78,9 +76,6 @@ def raw_doc(id_):
 
     doc = dataset.metadata_doc
     # Format for readability
-    if is_doc_eo3(doc):
-        doc = eodatasets3.serialise.format_doc(doc)
-        # TODO: Strip EO-legacy fields. Fix sources. Use eodatasets for eo3 formatting?
-    else:
-        doc = utils.get_ordered_metadata(doc)
-    return utils.as_yaml(doc)
+    return utils.as_yaml(
+        utils.prepare_document_formatting(doc, doc_friendly_label="Dataset")
+    )

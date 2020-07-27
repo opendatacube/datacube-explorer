@@ -20,6 +20,7 @@ from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
 from pyproj import CRS as PJCRS
+from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
@@ -30,6 +31,7 @@ from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
+from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
@@ -344,19 +346,50 @@ def as_yaml(o, content_type="text/yaml"):
     return flask.Response(stream.getvalue(), content_type=content_type,)
 
 
-def get_ordered_metadata(metadata_doc):
+def prepare_document_formatting(
+    metadata_doc: Dict, doc_friendly_label: str = ""
+) -> CommentedMap:
+    """
+    Try to format a raw document for readability.
+
+    This will change property order, add comments on the type & source url.
+    """
+
     def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
         if key not in ordered_properties:
             return 999
         return ordered_properties.index(key)
 
+    # If it's EO3, use eodatasets's formatting. It's better.
+    if is_doc_eo3(metadata_doc):
+        ordered_metadata = eodatasets3.serialise.prepare_formatting(metadata_doc)
+        # TODO: Strip EO-legacy fields.
+
+        # Add source url
+        ordered_metadata.yaml_set_comment_before_after_key(
+            "id", before=f"Dataset\nSource: {flask.request.url}",
+        )
+
+        # The EO-compatibility fields added by ODC on index.
+        del ordered_metadata["grid_spatial"]
+        del ordered_metadata["extent"]
+
+        return ordered_metadata
+    elif "Dataset" in doc_friendly_label:
+        doc_friendly_label = "EO1 Dataset"
+
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
-    ordered_metadata = dict(
+    ordered_metadata = CommentedMap(
         sorted(
             metadata_doc.items(),
             key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
         )
+    )
+
+    ordered_metadata.yaml_set_comment_before_after_key(
+        next(iter(metadata_doc.keys())),
+        before=f"{doc_friendly_label}\nSource: {flask.request.url}",
     )
 
     # Order any embedded ones too.
@@ -376,11 +409,11 @@ def get_ordered_metadata(metadata_doc):
             ].items():
                 ordered_metadata["lineage"]["source_datasets"][
                     type_
-                ] = get_ordered_metadata(source_dataset_doc)
+                ] = prepare_document_formatting(source_dataset_doc)
 
     # Products have an embedded metadata doc (subset of dataset metadata)
     if "metadata" in ordered_metadata:
-        ordered_metadata["metadata"] = get_ordered_metadata(
+        ordered_metadata["metadata"] = prepare_document_formatting(
             ordered_metadata["metadata"]
         )
     return ordered_metadata
