@@ -2,6 +2,7 @@
 Tests that load pages and check the contained text.
 """
 import json
+from io import StringIO
 from textwrap import indent
 
 import pytest
@@ -10,6 +11,8 @@ from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML, Element
+from ruamel import yaml
+from ruamel.yaml import YAMLError
 
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
@@ -20,6 +23,7 @@ from integration_tests.asserts import (
     check_last_processed,
     get_geojson,
     get_html,
+    get_text_response,
 )
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
@@ -520,3 +524,38 @@ def test_with_timings(client: FlaskClient):
 def test_plain_product_list(client: FlaskClient):
     rv: Response = client.get("/products.txt")
     assert "ls7_nbar_scene\n" in rv.data.decode("utf-8")
+
+
+def test_raw_documents(client: FlaskClient):
+    """
+    Check that raw-documents load without error,
+    and have embedded hints on where they came from (source-url)
+    """
+
+    def check_doc_start_has_hint(hint: str, url: str):
+        __tracebackhide__ = True
+        doc, rv = get_text_response(client, url)
+        doc_opening = doc[:128]
+        expect_pattern = f"# {hint}\n# Source: http://localhost{url}\n"
+        assert expect_pattern in doc_opening, (
+            f"No hint or source-url in yaml response.\n"
+            f"Expected {expect_pattern!r}\n"
+            f"Got      {doc_opening!r}"
+        )
+
+        try:
+            yaml.load(StringIO(doc))
+        except YAMLError as e:
+            raise AssertionError(f"Expected valid YAML document for url {url!r}") from e
+
+    # Product
+    check_doc_start_has_hint("Product", "/product/ls8_nbar_albers.odc-product.yaml")
+
+    # Metadata type
+    check_doc_start_has_hint("Metadata Type", "/metadata-type/eo3.odc-type.yaml")
+
+    # A legacy EO1 dataset
+    check_doc_start_has_hint(
+        "EO1 Dataset",
+        "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml",
+    )

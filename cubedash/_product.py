@@ -16,7 +16,7 @@ def product_page(name):
     product = _model.STORE.index.products.get_by_name(name)
     if not product:
         abort(404, f"Unknown product {name!r}")
-    ordered_metadata = utils.get_ordered_metadata(product.definition)
+    ordered_metadata = utils.prepare_document_formatting(product.definition)
     product_summary = _model.get_product_summary(name)
 
     return utils.render(
@@ -33,7 +33,7 @@ def raw_product_doc(name):
     if not product:
         abort(404, f"Unknown product {name!r}")
 
-    ordered_metadata = utils.get_ordered_metadata(product.definition)
+    ordered_metadata = utils.prepare_document_formatting(product.definition, "Product")
     return utils.as_yaml(ordered_metadata)
 
 
@@ -42,7 +42,7 @@ def metadata_type_page(name):
     metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
     if not metadata_type:
         abort(404, f"Unknown metadata type {name!r}")
-    ordered_metadata = utils.get_ordered_metadata(metadata_type.definition)
+    ordered_metadata = utils.prepare_document_formatting(metadata_type.definition)
 
     products_using_it = sorted(
         (
@@ -65,5 +65,7 @@ def raw_metadata_type_doc(name):
     metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
     if not metadata_type:
         abort(404, f"Unknown metadata type {name!r}")
-    ordered_metadata = utils.get_ordered_metadata(metadata_type.definition)
+    ordered_metadata = utils.prepare_document_formatting(
+        metadata_type.definition, "Metadata Type"
+    )
     return utils.as_yaml(ordered_metadata)

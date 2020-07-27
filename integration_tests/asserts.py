@@ -41,6 +41,12 @@ def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
     return html, response
 
 
+def get_text_response(client: FlaskClient, url: str) -> Tuple[str, Response]:
+    response: Response = client.get(url)
+    assert response.status_code == 200, response.data.decode("utf-8")
+    return response.data.decode("utf-8"), response
+
+
 def get_json(client: FlaskClient, url: str) -> Dict:
     rv: Response = client.get(url)
     try:
@@ -94,7 +100,6 @@ def expect_values(
     size_bytes: Optional[int],
     region_dataset_counts: Dict = None,
 ):
-
     __tracebackhide__ = True
 
     was_timeline_error = False
