@@ -4,12 +4,12 @@ Common global filters and util methods.
 
 from __future__ import absolute_import, division
 
-import collections
 import difflib
 import functools
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple, Dict
+from io import StringIO
+from typing import Optional, Tuple, Dict, List
 
 import flask
 import rapidjson
@@ -25,6 +25,7 @@ from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
+import eodatasets3.serialise
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.drivers.postgres._fields import PgDocField
@@ -337,15 +338,21 @@ def as_geojson(o):
     return as_json(o, content_type="application/geo+json")
 
 
+def as_yaml(o, content_type="text/yaml"):
+    stream = StringIO()
+    eodatasets3.serialise.dumps_yaml(stream, o)
+    return flask.Response(stream.getvalue(), content_type=content_type,)
+
+
 def get_ordered_metadata(metadata_doc):
-    def get_property_priority(ordered_properties, keyval):
+    def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
         if key not in ordered_properties:
             return 999
         return ordered_properties.index(key)
 
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
-    ordered_metadata = collections.OrderedDict(
+    ordered_metadata = dict(
         sorted(
             metadata_doc.items(),
             key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
@@ -354,7 +361,7 @@ def get_ordered_metadata(metadata_doc):
 
     # Order any embedded ones too.
     if "lineage" in ordered_metadata:
-        ordered_metadata["lineage"] = collections.OrderedDict(
+        ordered_metadata["lineage"] = dict(
             sorted(
                 ordered_metadata["lineage"].items(),
                 key=functools.partial(
@@ -400,10 +407,7 @@ EODATASETS_PROPERTY_ORDER = [
     "accessories",
     # EO
     "ga_label",
-    "name",
-    "description",
     "product_type",
-    "metadata_type",
     "product_level",
     "product_doi",
     "creation_dt",
