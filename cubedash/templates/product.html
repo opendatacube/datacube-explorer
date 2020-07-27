@@ -6,11 +6,11 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        h2 {
+        h2, h3 {
             display: inline-block;
         }
 
-        h2 + .sub-header {
+        .sub-header {
             display: inline-block;
         }
     </style>
@@ -36,10 +36,11 @@
 
             <a href="{{ url_for('overview_page', product_name=product.name) }}">
                 {%- if product_summary.time_earliest -%}
-                {{ product_summary.time_earliest.strftime('%B %Y')   }} to {{ product_summary.time_latest.strftime('%B %Y')  }}
-            {%- endif -%}
+                    {{ product_summary.time_earliest.strftime('%B %Y') }} to
+                    {{ product_summary.time_latest.strftime('%B %Y') }}
+                {%- endif -%}
             </a>,
-            <a href="{{ url_for('search_page', product_name=product.name)}}">
+            <a href="{{ url_for('search_page', product_name=product.name) }}">
                 {{ product_summary.dataset_count or '0' }} datasets
             </a>
         </p>
@@ -97,6 +98,11 @@
 
     <div class="panel odd">
         <h3>Definition</h3>
+        <div class="sub-header">
+            <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
+                View RAW
+            </a>
+        </div>
         {{ show_raw_document(metadata_doc) }}
     </div>
 

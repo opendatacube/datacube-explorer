@@ -23,6 +23,14 @@
         #dataset-map {
             height: 500px;
         }
+
+        h2, h3 {
+            display: inline-block;
+        }
+
+        .sub-header {
+            display: inline-block;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -124,7 +132,8 @@
     {% endif %}
 
     <div class="panel odd">
-        <h2>Raw Metadata</h2>
+        <h2>Metadata Document</h2>
+        <div class="sub-header"><a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">View RAW</a></div>
         {{ show_raw_document(dataset_metadata) }}
     </div>
 {% endblock %}

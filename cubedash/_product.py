@@ -27,6 +27,16 @@ def product_page(name):
     )
 
 
+@bp.route("/product/<name>.odc-product.yaml")
+def raw_product_doc(name):
+    product = _model.STORE.index.products.get_by_name(name)
+    if not product:
+        abort(404, f"Unknown product {name!r}")
+
+    ordered_metadata = utils.get_ordered_metadata(product.definition)
+    return utils.as_yaml(ordered_metadata)
+
+
 @bp.route("/metadata-type/<name>")
 def metadata_type_page(name):
     metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
@@ -48,3 +58,12 @@ def metadata_type_page(name):
         metadata_doc=ordered_metadata,
         products_using_it=products_using_it,
     )
+
+
+@bp.route("/metadata-type/<name>.odc-type.yaml")
+def raw_metadata_type_doc(name):
+    metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
+    if not metadata_type:
+        abort(404, f"Unknown metadata type {name!r}")
+    ordered_metadata = utils.get_ordered_metadata(metadata_type.definition)
+    return utils.as_yaml(ordered_metadata)
