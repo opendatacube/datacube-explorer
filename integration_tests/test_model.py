@@ -168,7 +168,7 @@ def test_footprint_antimeridian(benchmark):
     """
     overview = _create_overview()
 
-    footprint_latlon = benchmark(lambda: overview.footprint_wrs84)
+    footprint_latlon = benchmark(lambda: overview.footprint_wgs84)
     assert_shapes_mostly_equal(footprint_latlon, EXPECTED_CLEAN_POLY, 0.1)
 
 
@@ -211,7 +211,7 @@ def test_footprint_normal(benchmark):
 
     o = _create_overview()
     o.footprint_geometry = normal_poly
-    res: BaseGeometry = benchmark(lambda: o.footprint_wrs84)
+    res: BaseGeometry = benchmark(lambda: o.footprint_wgs84)
     assert_shapes_mostly_equal(res, expected_poly, 0.001)
 
 

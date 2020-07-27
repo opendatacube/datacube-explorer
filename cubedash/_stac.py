@@ -192,7 +192,7 @@ def collection(product_name: str):
     if summary and summary.time_earliest:
         begin, end = utc(summary.time_earliest), utc(summary.time_latest)
         extent = {"temporal": {"interval": [[begin, end]]}}
-        footprint = all_time_summary.footprint_wrs84
+        footprint = all_time_summary.footprint_wgs84
         if footprint:
             extent["spatial"] = {"bbox": [footprint.bounds]}
 
