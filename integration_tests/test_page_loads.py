@@ -68,10 +68,19 @@ def sentry_client(client: FlaskClient) -> FlaskClient:
     return client
 
 
+def _script(html: HTML):
+    return html.find("script")
+
+
 def test_sentry(sentry_client: FlaskClient):
-    rv: Response = sentry_client.get("/", follow_redirects=False)
-    # Redirect to a default.
-    assert rv.location.endswith("/ls7_nbar_scene")
+    """Ensure Sentry Client gets initialized correctly
+
+    Args:
+        sentry_client (FlaskClient): Client for Flask app with Sentry enabled
+    """
+    html: HTML = get_html(sentry_client, "/ls7_nbar_scene")
+    # Ensure rendered page has a SENTRY link
+    assert "raven.min.js" in str(_script(html))
 
 
 def test_default_redirect(client: FlaskClient):
