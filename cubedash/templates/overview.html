@@ -147,7 +147,7 @@
                     {{ query_param_list(product.fields,
                                         show_nulls=false,
                                         descriptions=product.metadata_type.dataset_fields,
-                                        fallback_dict=product_summary.fixed_metadata) }}
+                                        fallback_dict=product_summary.fixed_metadata or {}) }}
 
 
                     {% if product_summary.derived_products %}
