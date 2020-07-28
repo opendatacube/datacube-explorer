@@ -104,6 +104,14 @@ h4 {
   color: #4f4f4f;
 }
 
+h2.followed, h3.followed {
+  display: inline-block;
+}
+
+.header-follow {
+  display: inline-block;
+}
+
 ul:last-child, ol:last-child {
   margin-bottom: 0;
 }
@@ -417,7 +425,7 @@ label.disabled {
 .raw-metadata .property > .key {
   font-weight: bold;
 }
-.raw-metadata .property summary > span {
+.raw-metadata .property summary {
   font-style: italic;
   color: #737373;
 }
