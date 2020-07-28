@@ -250,7 +250,9 @@ def test_view_metadata_type(client: FlaskClient):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
     assert html.find("h2", first=True).text == "eo"
-    assert html.find(".sub-header", first=True).text == "metadata type of 44 products"
+    assert (
+        html.find(".header-follow", first=True).text == "metadata type of 44 products"
+    )
 
     # Does the page list products using the type?
     products_using_it = [t.text for t in html.find(".type-usage-item")]

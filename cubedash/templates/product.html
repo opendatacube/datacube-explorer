@@ -3,26 +3,14 @@
 {% block title %}{{ product.name }} definition{% endblock %}
 {% set fixed_metadata = product_summary.fixed_metadata or {} %}
 
-{% block head %}
-    {{ super() }}
-    <style type="text/css">
-        h2, h3 {
-            display: inline-block;
-        }
-
-        .sub-header {
-            display: inline-block;
-        }
-    </style>
-{% endblock %}
 {% block panel %}
 
 {% endblock %}
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h2>{{ product.name }}</h2>
-        <div class="sub-header">
+        <h2 class="followed">{{ product.name }}</h2>
+        <div class="header-follow">
             product of type
             <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
                 {{ product.metadata_type.name }}
@@ -99,8 +87,8 @@
     </div>
 
     <div class="panel odd">
-        <h3>Definition</h3>
-        <div class="sub-header">
+        <h3 class="followed">Definition</h3>
+        <div class="header-follow">
             <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
                 View RAW
             </a>
