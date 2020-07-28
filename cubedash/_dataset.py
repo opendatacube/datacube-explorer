@@ -77,5 +77,7 @@ def raw_doc(id_):
     doc = dataset.metadata_doc
     # Format for readability
     return utils.as_yaml(
-        utils.prepare_document_formatting(doc, doc_friendly_label="Dataset")
+        utils.prepare_document_formatting(
+            doc, doc_friendly_label="Dataset", include_source_url=True
+        )
     )

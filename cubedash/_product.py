@@ -33,7 +33,9 @@ def raw_product_doc(name):
     if not product:
         abort(404, f"Unknown product {name!r}")
 
-    ordered_metadata = utils.prepare_document_formatting(product.definition, "Product")
+    ordered_metadata = utils.prepare_document_formatting(
+        product.definition, "Product", include_source_url=True
+    )
     return utils.as_yaml(ordered_metadata)
 
 
@@ -66,6 +68,6 @@ def raw_metadata_type_doc(name):
     if not metadata_type:
         abort(404, f"Unknown metadata type {name!r}")
     ordered_metadata = utils.prepare_document_formatting(
-        metadata_type.definition, "Metadata Type"
+        metadata_type.definition, "Metadata Type", include_source_url=True
     )
     return utils.as_yaml(ordered_metadata)
