@@ -346,40 +346,49 @@ def as_yaml(o, content_type="text/yaml"):
     return flask.Response(stream.getvalue(), content_type=content_type,)
 
 
+def prepare_dataset_formatting(
+    dataset: Dataset, include_source_url=False, include_locations=False,
+) -> CommentedMap:
+    """
+    Try to format a raw Dataset document for readability.
+
+    This will change property order, add comments on the type & source url.
+    """
+    doc = dict(dataset.metadata_doc)
+
+    # If it's EO3, use eodatasets's formatting. It's better.
+    if is_doc_eo3(doc):
+        if include_locations:
+            if len(dataset.uris) == 1:
+                doc["location"] = dataset.uris[0]
+            else:
+                doc["locations"] = dataset.uris
+
+        doc = eodatasets3.serialise.prepare_formatting(doc)
+        if include_source_url:
+            doc.yaml_set_comment_before_after_key(
+                "$schema", before=f"url: {flask.request.url}",
+            )
+        # Strip EO-legacy fields.
+        undo_eo3_compatibility(doc)
+        return doc
+    else:
+        return prepare_document_formatting(
+            doc,
+            # Label old-style datasets as old-style datasets.
+            doc_friendly_label="EO1 Dataset",
+            include_source_url=include_source_url,
+        )
+
+
 def prepare_document_formatting(
     metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
-) -> CommentedMap:
+):
     """
     Try to format a raw document for readability.
 
     This will change property order, add comments on the type & source url.
     """
-
-    # If it's EO3, use eodatasets's formatting. It's better.
-    if is_doc_eo3(metadata_doc):
-        ordered_metadata = eodatasets3.serialise.prepare_formatting(metadata_doc)
-        if include_source_url:
-            ordered_metadata.yaml_set_comment_before_after_key(
-                "$schema", before=f"url: {flask.request.url}",
-            )
-        # Strip EO-legacy fields.
-        undo_eo3_compatibility(ordered_metadata)
-        return ordered_metadata
-    elif "Dataset" in doc_friendly_label:
-        # Label old-style datasets as old-style datasets.
-        doc_friendly_label = "EO1 Dataset"
-
-    return _prepare_basic_document_formatting(
-        metadata_doc,
-        doc_friendly_label=doc_friendly_label,
-        include_source_url=include_source_url,
-    )
-
-
-def _prepare_basic_document_formatting(
-    metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
-):
-    """Fallback formatter for documents. """
 
     def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
