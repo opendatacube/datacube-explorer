@@ -37,7 +37,7 @@ def dataset_page(id_):
     archived_location_times = index.datasets.get_archived_location_times(id_)
 
     dataset.metadata.sources = {}
-    ordered_metadata = utils.prepare_document_formatting(dataset.metadata_doc)
+    ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
     derived_datasets = sorted(index.datasets.get_derived(id_), key=utils.dataset_label)
     if len(derived_datasets) > PROVENANCE_DISPLAY_LIMIT:
@@ -74,10 +74,9 @@ def raw_doc(id_):
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
 
-    doc = dataset.metadata_doc
     # Format for readability
     return utils.as_yaml(
-        utils.prepare_document_formatting(
-            doc, doc_friendly_label="Dataset", include_source_url=True
+        utils.prepare_dataset_formatting(
+            dataset, include_source_url=True, include_locations=True
         )
     )
