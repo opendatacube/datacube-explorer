@@ -1,7 +1,7 @@
 {% extends "layout/base.html" %}
 
 {% block title %}{{ product.name }} definition{% endblock %}
-
+{% set fixed_metadata = product_summary.fixed_metadata or {} %}
 
 {% block head %}
     {{ super() }}
@@ -48,15 +48,17 @@
     <div class="panel">
 
         <h3>Metadata</h3>
-        {{ query_param_list(product.fields,
+        {{ query_param_list(
+                    product.fields,
                     wide=true,
                     show_nulls=false,
-                                        descriptions=product.metadata_type.dataset_fields,
-                                        fallback_dict=product_summary.fixed_metadata) }}
+                    descriptions=product.metadata_type.dataset_fields,
+                    fallback_dict=fixed_metadata)
+                }}
     </div>
     <div class="panel odd">
         <h3>Searchable fields</h3>
-        {% for key, value in product.fields | dictsort if (value is none and key not in product_summary.fixed_metadata) %}
+        {% for key, value in product.fields | dictsort if (value is none and key not in fixed_metadata) %}
             <div>
                 {% set field = product.metadata_type.dataset_fields[key] %}
                 {{ key }}
