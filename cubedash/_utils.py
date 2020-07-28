@@ -347,13 +347,14 @@ def as_yaml(o, content_type="text/yaml"):
 
 
 def prepare_document_formatting(
-    metadata_doc: Dict, doc_friendly_label: str = ""
+    metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
 ) -> CommentedMap:
     """
     Try to format a raw document for readability.
 
     This will change property order, add comments on the type & source url.
     """
+    header_comments = []
 
     def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
@@ -379,17 +380,17 @@ def prepare_document_formatting(
     elif "Dataset" in doc_friendly_label:
         doc_friendly_label = "EO1 Dataset"
 
+    if doc_friendly_label:
+        header_comments.append(doc_friendly_label)
+    if include_source_url:
+        header_comments.append(f"Source: {flask.request.url}")
+
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
     ordered_metadata = CommentedMap(
         sorted(
             metadata_doc.items(),
             key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
         )
-    )
-
-    ordered_metadata.yaml_set_comment_before_after_key(
-        next(iter(metadata_doc.keys())),
-        before=f"{doc_friendly_label}\nSource: {flask.request.url}",
     )
 
     # Order any embedded ones too.
@@ -415,6 +416,12 @@ def prepare_document_formatting(
     if "metadata" in ordered_metadata:
         ordered_metadata["metadata"] = prepare_document_formatting(
             ordered_metadata["metadata"]
+        )
+
+    if header_comments:
+        # Add comments above the first key of the document.
+        ordered_metadata.yaml_set_comment_before_after_key(
+            next(iter(metadata_doc.keys())), before="\n".join(header_comments),
         )
     return ordered_metadata
 
