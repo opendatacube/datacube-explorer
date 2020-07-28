@@ -536,7 +536,7 @@ def test_raw_documents(client: FlaskClient):
         __tracebackhide__ = True
         doc, rv = get_text_response(client, url)
         doc_opening = doc[:128]
-        expect_pattern = f"# {hint}\n# Source: http://localhost{url}\n"
+        expect_pattern = f"# {hint}\n# url: http://localhost{url}\n"
         assert expect_pattern in doc_opening, (
             f"No hint or source-url in yaml response.\n"
             f"Expected {expect_pattern!r}\n"

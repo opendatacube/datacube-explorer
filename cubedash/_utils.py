@@ -354,7 +354,32 @@ def prepare_document_formatting(
 
     This will change property order, add comments on the type & source url.
     """
-    header_comments = []
+
+    # If it's EO3, use eodatasets's formatting. It's better.
+    if is_doc_eo3(metadata_doc):
+        ordered_metadata = eodatasets3.serialise.prepare_formatting(metadata_doc)
+        if include_source_url:
+            ordered_metadata.yaml_set_comment_before_after_key(
+                "$schema", before=f"url: {flask.request.url}",
+            )
+        # Strip EO-legacy fields.
+        undo_eo3_compatibility(ordered_metadata)
+        return ordered_metadata
+    elif "Dataset" in doc_friendly_label:
+        # Label old-style datasets as old-style datasets.
+        doc_friendly_label = "EO1 Dataset"
+
+    return _prepare_basic_document_formatting(
+        metadata_doc,
+        doc_friendly_label=doc_friendly_label,
+        include_source_url=include_source_url,
+    )
+
+
+def _prepare_basic_document_formatting(
+    metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
+):
+    """Fallback formatter for documents. """
 
     def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
@@ -362,28 +387,11 @@ def prepare_document_formatting(
             return 999
         return ordered_properties.index(key)
 
-    # If it's EO3, use eodatasets's formatting. It's better.
-    if is_doc_eo3(metadata_doc):
-        ordered_metadata = eodatasets3.serialise.prepare_formatting(metadata_doc)
-        # TODO: Strip EO-legacy fields.
-
-        # Add source url
-        ordered_metadata.yaml_set_comment_before_after_key(
-            "id", before=f"Dataset\nSource: {flask.request.url}",
-        )
-
-        # The EO-compatibility fields added by ODC on index.
-        del ordered_metadata["grid_spatial"]
-        del ordered_metadata["extent"]
-
-        return ordered_metadata
-    elif "Dataset" in doc_friendly_label:
-        doc_friendly_label = "EO1 Dataset"
-
+    header_comments = []
     if doc_friendly_label:
         header_comments.append(doc_friendly_label)
     if include_source_url:
-        header_comments.append(f"Source: {flask.request.url}")
+        header_comments.append(f"url: {flask.request.url}")
 
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
     ordered_metadata = CommentedMap(
@@ -424,6 +432,28 @@ def prepare_document_formatting(
             next(iter(metadata_doc.keys())), before="\n".join(header_comments),
         )
     return ordered_metadata
+
+
+def undo_eo3_compatibility(doc):
+    """
+    In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
+     documents on index.
+    """
+    del doc["grid_spatial"]
+    del doc["extent"]
+
+    lineage = doc.get("lineage")
+    # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),
+    # flatten to EO3-style ID lists.
+
+    # TODO: It's incredibly inefficient that the whole source-dataset tree has been loaded by ODC
+    #       and we're now throwing it all away except the top-level ids.
+
+    if "source_datasets" in lineage:
+        new_lineage = {}
+        for classifier, dataset_doc in lineage["source_datasets"].items():
+            new_lineage.setdefault(classifier, []).append(dataset_doc["id"])
+        doc["lineage"] = new_lineage
 
 
 EODATASETS_PROPERTY_ORDER = [

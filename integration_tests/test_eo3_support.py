@@ -1,32 +1,39 @@
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
+from textwrap import dedent
+from typing import Dict
 from uuid import UUID
 
 import pytest
 from dateutil import tz
+from dateutil.tz import tzutc
+from flask import Response
+from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
+from ruamel import yaml
 
+from cubedash import _utils
 from cubedash.summary import _extents, SummaryStore
 from datacube.index import Index
+from datacube.utils import parse_time
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
+TEST_EO3_DATASET_L1 = (
+    TEST_DATA_DIR / "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml"
+)
+TEST_EO3_DATASET_ARD = (
+    TEST_DATA_DIR / "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml"
+)
 
 
 @pytest.fixture(scope="module")
 def eo3_index(module_dea_index: Index, dataset_loader):
 
-    loaded = dataset_loader(
-        "usgs_ls5t_level1_1",
-        TEST_DATA_DIR / "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
-    )
+    loaded = dataset_loader("usgs_ls5t_level1_1", TEST_EO3_DATASET_L1,)
     assert loaded == 1
 
-    loaded = dataset_loader(
-        "ga_ls5t_ard_3",
-        TEST_DATA_DIR
-        / "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
-    )
+    loaded = dataset_loader("ga_ls5t_ard_3", TEST_EO3_DATASET_ARD,)
     assert loaded == 1
 
     # We need postgis and some support tables (eg. srid lookup).
@@ -93,3 +100,76 @@ def test_eo3_extents(eo3_index: Index):
 
     assert dataset_extent_row["region_code"] == "113081"
     assert dataset_extent_row["size_bytes"] is None
+
+
+def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
+    response: Response = client.get(
+        "/dataset/9989545f-906d-5090-a38e-cdbfbfc1afca.odc-metadata.yaml"
+    )
+    text = response.data.decode("utf-8")
+    assert response.status_code == 200, text
+
+    # Check beginning of doc matches expected.
+    expected = dedent(
+        """\
+        ---
+        # Dataset
+        # url: http://localhost/dataset/9989545f-906d-5090-a38e-cdbfbfc1afca.odc-metadata.yaml
+        $schema: https://schemas.opendatacube.org/dataset
+        id: 9989545f-906d-5090-a38e-cdbfbfc1afca
+    """
+    )
+    assert text[: len(expected)] == expected
+
+
+def test_undo_eo3_doc_compatibility(eo3_index: Index):
+    """
+    ODC adds compatibility fields on index. Check that our undo-method
+    correctly creates an indentical document to the original.
+    """
+
+    # Get our EO3 ARD document that was indexed.
+    indexed_dataset = eo3_index.datasets.get(
+        UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14"), include_sources=True
+    )
+    indexed_doc = with_parsed_datetimes(indexed_dataset.metadata_doc)
+
+    # Undo the changes.
+    _utils.undo_eo3_compatibility(indexed_doc)
+
+    # The lineage should have been flattened to EO3-style
+    assert indexed_doc["lineage"] == {
+        "level1": ["9989545f-906d-5090-a38e-cdbfbfc1afca"]
+    }
+
+    # And does our original, pre-indexed document match exactly?
+    with TEST_EO3_DATASET_ARD.open("r") as f:
+        raw_doc = yaml.load(f)
+
+    assert (
+        indexed_doc == raw_doc
+    ), "Document does not match original after undoing compatibility fields."
+
+
+def with_parsed_datetimes(v: Dict, name=""):
+    """
+    All date fields in eo3 metadata have names ending in 'datetime'. Return a doc
+    with all of these fields parsed as actual dates.
+
+    (they are convertered to strings on datacube index and other json-ification)
+    """
+    if not v:
+        return v
+
+    if name.endswith("datetime"):
+        dt = parse_time(v)
+        # Strip/normalise timezone to match default yaml.load()
+        if dt.tzinfo:
+            dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+        return dt
+    elif isinstance(v, dict):
+        return {k: with_parsed_datetimes(v, name=k) for k, v in v.items()}
+    elif isinstance(v, list):
+        return [with_parsed_datetimes(i) for i in v]
+
+    return v
