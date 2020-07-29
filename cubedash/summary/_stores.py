@@ -709,7 +709,7 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """
         Get a cached summary if exists, otherwise generate one
 
@@ -738,7 +738,7 @@ class SummaryStore:
         day: Optional[int] = None,
         generate_missing_children: Optional[bool] = True,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """Update the given summary and return the new one"""
         product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get

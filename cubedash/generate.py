@@ -4,7 +4,7 @@ import multiprocessing
 import sys
 from datetime import timedelta
 from functools import partial
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, Optional
 
 import click
 import structlog
@@ -26,7 +26,9 @@ user_message = partial(click_secho, err=True)
 
 
 # pylint: disable=broad-except
-def generate_report(item: Tuple[LocalConfig, str, bool, bool]):
+def generate_report(
+    item: Tuple[LocalConfig, str, bool, bool]
+) -> Tuple[str, Optional[TimePeriodOverview]]:
     config, product_name, force_refresh, recreate_dataset_extents = item
     log = _LOG.bind(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
@@ -78,31 +80,43 @@ def run_generation(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
     )
 
-    completed = 0
-    failures = 0
+    counts = {"complete": 0, "failure": 0}
 
     user_message("Generating product summaries...")
-    with multiprocessing.Pool(workers) as pool:
-        product: DatasetType
-        summary: TimePeriodOverview
 
-        for product_name, summary in pool.imap_unordered(
-            generate_report,
-            (
-                (config, p.name, force_refresh, recreate_dataset_extents)
-                for p in products
-            ),
-            chunksize=1,
-        ):
-            if summary is None:
-                user_message(f"{style(product_name, fg='yellow')} error (see log)")
-                failures += 1
-            else:
-                user_message(
-                    f"{style(product_name, fg='green')} done: "
-                    f"({summary.dataset_count} datasets)",
+    def on_complete(product_name: str, summary: TimePeriodOverview):
+        if summary is None:
+            user_message(f"{style(product_name, fg='yellow')} error (see log)")
+            counts["failure"] += 1
+        else:
+            user_message(
+                f"{style(product_name, fg='green')} done: "
+                f"({summary.dataset_count} datasets)",
+            )
+            counts["complete"] += 1
+
+    # If one worker, avoid any subprocesses/forking.
+    # This makes test tracing far easier.
+    if workers == 1:
+        for p in products:
+            on_complete(
+                *generate_report(
+                    (config, p.name, force_refresh, recreate_dataset_extents)
                 )
-                completed += 1
+            )
+    else:
+        with multiprocessing.Pool(workers) as pool:
+            product: DatasetType
+            summary: TimePeriodOverview
+            for product_name, summary in pool.imap_unordered(
+                generate_report,
+                (
+                    (config, p.name, force_refresh, recreate_dataset_extents)
+                    for p in products
+                ),
+                chunksize=1,
+            ):
+                on_complete(product_name, summary)
 
         pool.close()
         pool.join()
@@ -111,6 +125,7 @@ def run_generation(
     #     echo("\tregenerating totals....", nl=False, err=True)
     #     store.update(None, None, None, None, generate_missing_children=False)
 
+    completed, failures = counts["complete"], counts["failure"]
     user_message(
         f"done. " f"{completed}/{len(products)} generated, " f"{failures} failures",
         fg="red" if failures else "green",
