@@ -23,6 +23,7 @@ from sqlalchemy.sql import Select
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary._extents import expects_eo3_metadata_type
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -31,6 +32,7 @@ from cubedash.summary._schema import (
     TIME_OVERVIEW,
     refresh_supporting_views,
     get_srid_name,
+    PleaseRefresh,
 )
 from cubedash.summary._summarise import Summariser
 from datacube import Datacube
@@ -126,8 +128,12 @@ class SummaryStore:
         (Requires `create` permissions in the db)
         """
         _schema.create_schema(self._engine)
-        # If it already existed, check updates are applied.
-        _schema.update_schema(self._engine)
+        # Apply any needed updates.
+        refresh_items = _schema.update_schema(self._engine)
+
+        # Refresh relevant data summaries
+        for refresh_item in refresh_items:
+            _refresh_data(refresh_item, store=self)
 
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
@@ -139,10 +145,16 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(
-        self, refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN
+        self,
+        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
+        force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
-            self.refresh_product(product, refresh_older_than=refresh_older_than)
+            self.refresh_product(
+                product,
+                refresh_older_than=refresh_older_than,
+                force_dataset_extent_recompute=force_dataset_extent_recompute,
+            )
         self.refresh_stats()
 
     def refresh_product(
@@ -150,11 +162,13 @@ class SummaryStore:
         product: DatasetType,
         refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
+        force_dataset_extent_recompute=False,
     ):
         our_product = self.get_product_summary(product.name)
 
         if (
-            our_product is not None
+            not force_dataset_extent_recompute
+            and our_product is not None
             and our_product.last_refresh_age < refresh_older_than
         ):
             _LOG.debug(
@@ -166,7 +180,9 @@ class SummaryStore:
             return None
 
         _LOG.info("init.product", product_name=product.name)
-        added_count = _extents.refresh_product(self.index, product)
+        added_count = _extents.refresh_product(
+            self.index, product, recompute_all_extents=force_dataset_extent_recompute,
+        )
         earliest, latest, total_count = self._engine.execute(
             select(
                 (
@@ -876,6 +892,24 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
+
+
+def _refresh_data(item: PleaseRefresh, store: SummaryStore):
+    """
+    Refresh the given kind of data.
+    """
+    if item == PleaseRefresh.EO3_DATASET_EXTENTS:
+        # Refresh dataset extents for EO3 datasets
+
+        for dt in store.all_dataset_types():
+            # Skip product if it's never been summarised at all.
+            if store.get_product_summary(dt.name) is None:
+                continue
+
+            if expects_eo3_metadata_type(dt.metadata_type):
+                store.refresh_product(dt, force_dataset_extent_recompute=True)
+    else:
+        raise NotImplementedError(f"Unknown data type to refresh_data: {item}")
 
 
 def _safe_read_date(d):

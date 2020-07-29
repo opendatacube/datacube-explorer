@@ -59,7 +59,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
-    if _expects_eo3_metadata_type(md):
+    if expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
             func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
             get_dataset_srid_alchemy_expression(md, default_crs),
@@ -85,7 +85,10 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         )
 
 
-def _expects_eo3_metadata_type(md: MetadataType):
+def expects_eo3_metadata_type(md: MetadataType) -> bool:
+    """
+    Does the given metadata type expect EO3 datasets?
+    """
     # We don't have a clean way to say that a product expects EO3
 
     measurements_offset = md.definition["dataset"]["measurements"]
@@ -137,7 +140,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
-    if _expects_eo3_metadata_type(md):
+    if expects_eo3_metadata_type(md):
         spatial_ref = doc[["crs"]].astext
     else:
         # Most have a spatial_reference field we can use directly.
@@ -252,9 +255,18 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def refresh_product(index: Index, product: DatasetType):
+def refresh_product(index: Index, product: DatasetType, recompute_all_extents=False):
+    """
+    Record the spatial extents for each dataset in a product.
+
+    By default, it will only add datasets that are currently missing.
+
+    :param recompute_all_extents: replace all extents, even if already recorded
+    """
     engine: Engine = alchemy_engine(index)
-    insert_count = _populate_missing_dataset_extents(engine, product)
+    insert_count = _populate_missing_dataset_extents(
+        engine, product, force_update_all=recompute_all_extents
+    )
 
     # If we inserted data...
     if insert_count:
@@ -307,10 +319,11 @@ def refresh_product(index: Index, product: DatasetType):
     return insert_count
 
 
-def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
-    query = (
-        postgres.insert(DATASET_SPATIAL)
-        .from_select(
+def _populate_missing_dataset_extents(
+    engine: Engine, product: DatasetType, force_update_all=False
+):
+    def from_selected_extents(query):
+        return query.from_select(
             [
                 "id",
                 "dataset_type_ref",
@@ -322,17 +335,24 @@ def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
             ],
             _select_dataset_extent_query(product),
         )
-        .on_conflict_do_nothing(index_elements=["id"])
-    )
+
+    if force_update_all:
+        query = from_selected_extents(DATASET_SPATIAL.update())
+    else:
+        query = from_selected_extents(
+            postgres.insert(DATASET_SPATIAL)
+        ).on_conflict_do_nothing(index_elements=["id"])
 
     _LOG.debug(
         "spatial_insert_query.start",
         product_name=product.name,
-        # query_sql=as_sql(query),
+        force_update_all=force_update_all,
     )
-    inserted = engine.execute(query).rowcount
-    _LOG.debug("spatial_insert_query.end", product_name=product.name, inserted=inserted)
-    return inserted
+    changed = engine.execute(query).rowcount
+    _LOG.debug(
+        "spatial_insert_query.end", product_name=product.name, change_count=changed
+    )
+    return changed
 
 
 def _select_dataset_extent_query(dt: DatasetType):
