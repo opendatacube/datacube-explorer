@@ -131,7 +131,7 @@ def search_page(
         )
 
     # For display on the page (and future searches).
-    if "time" not in query and product_summary:
+    if "time" not in query and product_summary and product_summary.time_earliest:
         query["time"] = Range(
             product_summary.time_earliest,
             product_summary.time_latest + timedelta(days=1),
