@@ -4,7 +4,7 @@ import multiprocessing
 import sys
 from datetime import timedelta
 from functools import partial
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import click
 import structlog
@@ -26,9 +26,11 @@ user_message = partial(click_secho, err=True)
 
 
 # pylint: disable=broad-except
-def generate_report(item: Tuple[LocalConfig, str, bool]):
-    config, product_name, force_refresh = item
-    log = _LOG.bind(product=product_name)
+def generate_report(item: Tuple[LocalConfig, str, bool, bool]):
+    config, product_name, force_refresh, recreate_dataset_extents = item
+    log = _LOG.bind(
+        product=product_name, force=force_refresh, extents=recreate_dataset_extents
+    )
 
     store = SummaryStore.create(_get_index(config, product_name), log=log)
     try:
@@ -36,14 +38,14 @@ def generate_report(item: Tuple[LocalConfig, str, bool]):
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
 
-        # If we're going to force things, we need a time that will always update
-        if force_refresh:
-            refresh_time = timedelta(minutes=-1)
-        else:
-            refresh_time = timedelta(days=1)
-
         log.info("generate.product.refresh")
-        store.refresh_product(product, refresh_older_than=refresh_time)
+        store.refresh_product(
+            product,
+            refresh_older_than=(
+                timedelta(minutes=-1) if force_refresh else timedelta(days=1)
+            ),
+            force_dataset_extent_recompute=recreate_dataset_extents,
+        )
         log.info("generate.product.refresh.done")
 
         log.info("generate.product")
@@ -69,7 +71,8 @@ def run_generation(
     config: LocalConfig,
     products: Sequence[DatasetType],
     workers=3,
-    force_refresh: Optional[bool] = False,
+    force_refresh: bool = False,
+    recreate_dataset_extents: bool = False,
 ) -> Tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
@@ -85,7 +88,10 @@ def run_generation(
 
         for product_name, summary in pool.imap_unordered(
             generate_report,
-            ((config, p.name, force_refresh) for p in products),
+            (
+                (config, p.name, force_refresh, recreate_dataset_extents)
+                for p in products
+            ),
             chunksize=1,
         ):
             if summary is None:
@@ -141,6 +147,11 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 )
 @click.option("--refresh-stats/--no-refresh-stats", is_flag=True, default=True)
 @click.option("--force-refresh/--no-force-refresh", is_flag=True, default=False)
+@click.option(
+    "--recreate-dataset-extents/--no-recreate-dataset-extents",
+    is_flag=True,
+    default=False,
+)
 @click.option("--force-concurrently", is_flag=True, default=False)
 @click.option(
     "--init-database/--no-init-database",
@@ -160,6 +171,7 @@ def cli(
     verbose: bool,
     init_database: bool,
     force_refresh: bool,
+    recreate_dataset_extents: bool,
 ):
     """
     Generate summary files for the given products
@@ -191,7 +203,11 @@ def cli(
         products = list(_load_products(store.index, product_names))
 
     completed, failures = run_generation(
-        config, products, workers=jobs, force_refresh=force_refresh
+        config,
+        products,
+        workers=jobs,
+        force_refresh=force_refresh,
+        recreate_dataset_extents=recreate_dataset_extents,
     )
     if refresh_stats:
         user_message("Refreshing statistics...", nl=False)

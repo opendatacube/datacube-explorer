@@ -353,7 +353,7 @@ def test_force_dataset_regeneration(
     assert footprint != original_footprint, "Test data didn't successfully override"
 
     # Now force-recreate dataset extents
-    run_generate("ls8_nbar_albers", "--recreate-dataset-extents")
+    run_generate("-v", "ls8_nbar_albers", "--recreate-dataset-extents")
 
     # ... and they should be correct again
     footprint = summary_store.get_dataset_footprint_region(example_dataset.id)
