@@ -28,6 +28,7 @@ from flask.testing import FlaskClient
 from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import CUBEDASH_SCHEMA
+from cubedash.warmup import find_examples_of_all_public_urls
 from datacube.index import Index
 
 
@@ -70,61 +71,21 @@ def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
     """Assert all given URLs return an OK HTTP response"""
 
     __tracebackhide__ = True
+
     for url in all_urls:
         response: Response = client.get(url, follow_redirects=True)
 
-        assert response.status_code == 200, (
-            f"Response {response.status_code} from url f{url}. "
-            f"Content:\n{indent(response.data.decode('utf-8'), ' ' * 4)}"
-        )
+        if response.status_code != 200:
+            max_failure_line_count = 5
+            error_sample = "\n".join(
+                response.data.decode("utf-8").split("\n")[:max_failure_line_count]
+            )
+            raise AssertionError(
+                f"Response {response.status_code} from url f{url}. "
+                f"Content:\n{indent(error_sample, ' ' * 4)}"
+            )
 
 
 @pytest.fixture()
 def all_urls(summary_store: SummaryStore):
-    return list(_find_all_public_urls(summary_store.index))
-
-
-def _find_all_public_urls(index: Index):
-    yield "/"
-    yield "/about"
-    yield "/products.txt"
-    yield "/product-audit"
-    yield "/product-audit/day-times.txt"
-
-    for mdt in index.metadata_types.get_all():
-        name = mdt.name
-        yield f"/metadata-type/{name}"
-        # yield f"/metadata-type/{name}.odc-type.yaml"
-
-    for dt in index.products.get_all():
-        name = dt.name
-        yield f"/{name}"
-        yield f"/datasets/{name}"
-        yield f"/product/{name}"
-        # yield f"/product/{name}.odc-product.yaml"
-
-        has_datasets = index.datasets.search_eager(product=name, limit=1)
-        if has_datasets:
-            dataset = has_datasets[0]
-            time = dataset.center_time
-            yield f"/{name}/{time:%Y}"
-            yield f"/{name}/{time:%Y%/m}"
-            yield f"/{name}/{time::%Y/%m/%d}"
-            yield f"/datasets/{name}/{time:%Y}"
-            yield f"/datasets/{name}/{time:%Y%/m}"
-            yield f"/datasets/{name}/{time::%Y/%m/%d}"
-
-            yield f"/api/datasets/{name}"
-            yield f"/api/regions/{name}/{time::%Y/%m/%d}"
-            yield f"/api/footprint/{name}/{time::%Y/%m/%d}"
-
-            # TODO: Do non-region_code regions too (such as ingested data)
-            # TODO: Actually we have no EO3 in this test data, so it does nothing.
-            #       Maybe add test data from test_eo3_support.py?
-            if "region_code" in dataset.metadata.fields:
-                yield f"/region/{dataset.metadata.region_code}"
-                yield f"/region/{dataset.metadata.region_code}/{time::%Y/%m/%d}"
-
-    for [dataset_id] in index.datasets.search_returning(("id",), limit=10):
-        yield f"/dataset/{dataset_id}"
-        # yield f"/dataset/{dataset_id}.odc-metadata.yaml"
+    return list(find_examples_of_all_public_urls(summary_store.index))
