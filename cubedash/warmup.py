@@ -22,14 +22,14 @@ def find_examples_of_all_public_urls(index: Index):
     for mdt in index.metadata_types.get_all():
         name = mdt.name
         yield f"/metadata-type/{name}"
-        # yield f"/metadata-type/{name}.odc-type.yaml"
+        yield f"/metadata-type/{name}.odc-type.yaml"
 
     for dt in index.products.get_all():
         name = dt.name
         yield f"/{name}"
         yield f"/datasets/{name}"
         yield f"/product/{name}"
-        # yield f"/product/{name}.odc-product.yaml"
+        yield f"/product/{name}.odc-product.yaml"
 
         has_datasets = index.datasets.search_eager(product=name, limit=1)
         if has_datasets:
@@ -55,7 +55,7 @@ def find_examples_of_all_public_urls(index: Index):
 
     for [dataset_id] in index.datasets.search_returning(("id",), limit=10):
         yield f"/dataset/{dataset_id}"
-        # yield f"/dataset/{dataset_id}.odc-metadata.yaml"
+        yield f"/dataset/{dataset_id}.odc-metadata.yaml"
 
 
 @click.command()
