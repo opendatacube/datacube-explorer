@@ -17,6 +17,8 @@ from ruamel.yaml import YAMLError
 import cubedash
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
+from cubedash import _model, _monitoring, _utils
+from cubedash.summary import SummaryStore, _extents, show, _schema
 from datacube.index import Index
 from integration_tests.asserts import (
     check_area,
@@ -25,6 +27,7 @@ from integration_tests.asserts import (
     get_geojson,
     get_html,
     get_text_response,
+    assert_all_urls_render,
 )
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
@@ -602,3 +605,38 @@ def test_raw_documents(client: FlaskClient):
         "EO1 Dataset",
         "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml",
     )
+
+
+def test_all_pages_render(all_urls, client: FlaskClient):
+    """Do all expected URLS render with HTTP OK response/"""
+    assert_all_urls_render(all_urls, client)
+
+
+def test_allows_null_product_fixed_fields(
+    all_urls, client: FlaskClient, module_index: Index, summary_store: SummaryStore,
+):
+    """
+    Pages should not fallover when fixed_metadata is null.
+
+    Older versions of cubedash-gen don't write the fixed_metadata column, so
+    it can be null in legacy and migrated deployments.
+
+    (and null is desired behaviour here: null indicates "not known",
+    while "empty dict" indicates there are zero fields of metadata)
+    """
+
+    # WHEN we have some products summarised
+    assert (
+        summary_store.list_complete_products()
+    ), "There's no summarised products to test"
+
+    # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
+    update_count = (
+        _utils.alchemy_engine(module_index)
+        .execute(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
+        .rowcount
+    )
+    assert update_count > 0, "There were no test products to update?"
+
+    # THEN All pages should still render fine.
+    assert_all_urls_render(all_urls, client)
