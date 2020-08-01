@@ -33,6 +33,7 @@ extras_require = {
         # Monitoring
         "raven",
         "blinker",
+        "prometheus-flask-exporter",
     ],
 }
 
