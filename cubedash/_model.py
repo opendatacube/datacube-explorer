@@ -244,21 +244,24 @@ def internal_server_error(error):
 
 
 # Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
-if "SENTRY_CONFIG" in app.config:
-    # pylint: disable=import-error
-    from raven.contrib.flask import Sentry
+# This is injected before application starts serving requests
+@app.before_request
+def enable_sentry():
+    if "SENTRY_CONFIG" in app.config:
+        # pylint: disable=import-error
+        from raven.contrib.flask import Sentry
 
-    app.config["SENTRY_CONFIG"]["release"] = __version__
-    SENTRY = Sentry(app)
+        app.config["SENTRY_CONFIG"]["release"] = __version__
+        SENTRY = Sentry(app)
 
-    @app.context_processor
-    def inject_sentry_info():
-        # For Javascript error reporting. See the base template (base.html) and 500.html
-        sentry_args = {"release": SENTRY.client.release}
-        if SENTRY.client.environment:
-            sentry_args["environment"] = SENTRY.client.environment
+        @app.context_processor
+        def inject_sentry_info():
+            # For Javascript error reporting. See the base template (base.html) and 500.html
+            sentry_args = {"release": SENTRY.client.release}
+            if SENTRY.client.environment:
+                sentry_args["environment"] = SENTRY.client.environment
 
-        return dict(
-            sentry_public_dsn=SENTRY.client.get_public_dsn("https"),
-            sentry_public_args=sentry_args,
-        )
+            return dict(
+                sentry_public_dsn=SENTRY.client.get_public_dsn("https"),
+                sentry_public_args=sentry_args,
+            )
