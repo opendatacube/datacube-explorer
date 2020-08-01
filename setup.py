@@ -14,6 +14,8 @@ tests_require = [
     "pytest-benchmark",
     "pytest-cov",
     "requests-html",
+    "raven",
+    "blinker",
 ]
 
 extras_require = {
