@@ -62,7 +62,7 @@ def auto_populate_index(populated_index: Index):
 @pytest.fixture()
 def sentry_client(client: FlaskClient) -> FlaskClient:
     cubedash.app.config["SENTRY_CONFIG"] = {
-        "dsn": "___DSN___",
+        "dsn": "https://githash@number.sentry.opendatacube.org/123456",
         "include_paths": ["cubedash"],
     }
     return client
