@@ -245,7 +245,7 @@ def internal_server_error(error):
 
 # Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
 # This is injected before application starts serving requests
-@app.before_request
+@app.before_first_request
 def enable_sentry():
     if "SENTRY_CONFIG" in app.config:
         # pylint: disable=import-error
