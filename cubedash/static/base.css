@@ -104,6 +104,14 @@ h4 {
   color: #4f4f4f;
 }
 
+h2.followed, h3.followed {
+  display: inline-block;
+}
+
+.header-follow {
+  display: inline-block;
+}
+
 ul:last-child, ol:last-child {
   margin-bottom: 0;
 }
@@ -303,11 +311,18 @@ ul:last-child, ol:last-child {
     grid-template-columns: 1fr 1fr;
   }
 }
+.query-param {
+  display: block;
+}
 .query-param > .value {
   color: #737373;
 }
 .query-param .value > .query-param {
   margin-left: 15px;
+}
+.query-param .missing-value {
+  text-decoration-style: wavy;
+  text-decoration-line: underline;
 }
 
 button {
@@ -395,14 +410,24 @@ label.disabled {
   color: #737373;
 }
 
+.badge {
+  font-size: 0.7em;
+  background-color: #ccc;
+  padding: 2px 4px;
+}
+
 .raw-metadata .property {
   font-family: "Courier New", monospace;
 }
-.raw-metadata .property .property {
+.raw-metadata .property .property, .raw-metadata .property .array, .raw-metadata .property .array-item {
   padding-left: 15px;
 }
 .raw-metadata .property > .key {
   font-weight: bold;
+}
+.raw-metadata .property summary {
+  font-style: italic;
+  color: #737373;
 }
 
 .dataset-info {

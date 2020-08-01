@@ -10,7 +10,7 @@
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
 
-Firstly, install Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
 is recommended.
 
 Test that you can run `datacube system check`, and that it's connecting
@@ -29,10 +29,9 @@ Now install the explorer dependencies:
 
 Initialise and create product summaries:
 
-    nohup cubedash-gen --init --all &>> summary-gen.log &
+    cubedash-gen --init --all
 
-(This can take a while the first time, depending on your datacube size. 
-We're using `nohup .. &` to run in the background.)
+(This can take a long time the first time, depending on your datacube size.)
 
 ### Run
 
@@ -175,8 +174,9 @@ Install [npm](https://www.npmjs.com/get-npm), and then install them both:
 You can now run `make static` to rebuild all the static files, or
 individually with `make style` or `make js`.
 
-Alternatively, if using PyCharm, open a Sass file and you will be prompted 
-to enable a `File Watcher` to compile automatically.
+Alternatively, if using [PyCharm](https://www.jetbrains.com/pycharm), open a 
+Sass file and you will be prompted to enable a `File Watcher` to 
+compile automatically.
 
 PyCharm will also compile the Typescript automatically by ticking
 the "Recompile on changes" option in `Languages & Frameworks ->

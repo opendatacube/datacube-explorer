@@ -2,7 +2,7 @@
 
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
 
-{% set extent_geojson = dataset | dataset_geojson %}
+{% set extent_geojson = dataset_footprint.__geo_interface__ %}
 
 {% block head %}
     {{ super() }}
@@ -34,6 +34,7 @@
         <h1><strong>{{ dataset | printable_dataset }}</strong></h1>
         <div class="sub-header">
             <span>
+                {% if dataset_region_code %}Region <strong>{{ dataset_region_code }}</strong>, {% endif %}
                 Indexed by <strong>{{ dataset.indexed_by }}</strong>
                 {{ dataset.indexed_time | timesince }},
                 created {{ dataset | dataset_created | timesince }}
@@ -123,14 +124,15 @@
     {% endif %}
 
     <div class="panel odd">
-        <h2>Raw Metadata</h2>
+        <h2 class="followed">Metadata Document</h2>
+        <div class="header-follow"><a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">View RAW</a></div>
         {{ show_raw_document(dataset_metadata) }}
     </div>
 {% endblock %}
 
 {% block body_footer %}
     {{ super() }}
-    
+
     {% if extent_geojson %}
         <script type="application/javascript">
 

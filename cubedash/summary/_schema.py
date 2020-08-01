@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     DDL,
@@ -19,9 +20,13 @@ from sqlalchemy import (
     String,
     Table,
     func,
+    select,
+    bindparam,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+
+_LOG = structlog.get_logger()
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
@@ -41,7 +46,7 @@ DATASET_SPATIAL = Table(
     Column(
         "dataset_type_ref",
         SmallInteger,
-        comment="Cubedash product list " "(corresponding to datacube dataset_type)",
+        comment="The ODC dataset_type id)",
         nullable=False,
     ),
     Column("center_time", DateTime(timezone=True), nullable=False),
@@ -97,6 +102,9 @@ PRODUCT = Table(
     Column("derived_product_refs", postgres.ARRAY(SmallInteger)),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
+    # A flat key-value set of metadata fields that are the same ("fixed") on every dataset.
+    # (Almost always includes platform, instrument values)
+    Column("fixed_metadata", postgres.JSONB),
 )
 TIME_OVERVIEW = Table(
     "time_overview",
@@ -170,12 +178,70 @@ SPATIAL_QUALITY_STATS = Table(
     Column("has_region", Integer),
 )
 
+# The geometry of each unique 'region' for a product.
+REGION = Table(
+    "mv_region",
+    _REF_TABLE_METADATA,
+    Column("dataset_type_ref", SmallInteger, nullable=False),
+    Column("region_code", String),
+    Column("footprint", Geometry(srid=4326, spatial_index=False)),
+    Column("count", Integer, nullable=False),
+)
+
 
 def has_schema(engine: Engine) -> bool:
     """
     Does the cubedash schema already exist?
     """
     return engine.dialect.has_schema(engine, CUBEDASH_SCHEMA)
+
+
+def is_compatible_schema(engine: Engine) -> bool:
+    """Do we have the latest schema changes?"""
+    is_latest = True
+
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        is_latest = False
+
+    return is_latest
+
+
+def update_schema(engine: Engine):
+    """Update the schema if needed."""
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        _LOG.info("schema.applying_update.add_fixed_metadata")
+        engine.execute(
+            f"""
+        alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
+        """
+        )
+
+
+def pg_exists(conn, name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return conn.execute("select to_regclass(%s)", name).scalar() is not None
+
+
+def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return (
+        conn.execute(
+            """
+                    select 1
+                    from pg_attribute
+                    where attrelid = to_regclass(%s)
+                        and attname = %s
+                        and not attisdropped
+                    """,
+            table_name,
+            column_name,
+        ).scalar()
+        is not None
+    )
 
 
 def create_schema(engine: Engine):
@@ -238,6 +304,30 @@ def create_schema(engine: Engine):
     """
     )
 
+    # A geometry for each declared region.
+    #
+    # This happens in two steps so that we union cleanly (in the native CRS rather than after transforming)
+    # TODO: Simplify geom after union?
+    engine.execute(
+        f"""
+    create materialized view if not exists {CUBEDASH_SCHEMA}.mv_region as (
+        select dataset_type_ref,
+               region_code,
+               ST_SimplifyPreserveTopology(ST_Union(footprint), 0.0001) as footprint,
+               sum(count)          as count
+        from (
+             select dataset_type_ref,
+                    region_code,
+                    ST_Transform(ST_Union(footprint), 4326) as footprint,
+                    count(*)                                as count
+             from {CUBEDASH_SCHEMA}.dataset_spatial
+             group by dataset_type_ref, region_code, ST_SRID(footprint)
+        ) srid_groups
+        group by dataset_type_ref, region_code
+    ) with no data;
+    """
+    )
+
 
 def refresh_supporting_views(conn, concurrently=False):
     args = "concurrently" if concurrently else ""
@@ -251,11 +341,25 @@ def refresh_supporting_views(conn, concurrently=False):
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
     """
     )
+    conn.execute(
+        f"""
+    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_region;
+    """
+    )
 
 
-def pg_exists(conn, name):
+def get_srid_name(engine: Engine, srid: int):
     """
-    Does a postgres object exist?
-    :rtype bool
+    Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
     """
-    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
+    return engine.execute(
+        select(
+            [
+                func.concat(
+                    SPATIAL_REF_SYS.c.auth_name,
+                    ":",
+                    SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
+                )
+            ]
+        ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
+    ).scalar()

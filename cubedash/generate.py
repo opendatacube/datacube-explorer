@@ -178,6 +178,12 @@ def cli(
             + "Please rerun with --init to create one",
         )
         sys.exit(-1)
+    elif not store.is_schema_compatible():
+        user_message(
+            style("Cubedash schema is out of date. ", fg="red")
+            + "Please rerun with --init to apply updates.",
+        )
+        sys.exit(-2)
 
     if generate_all_products:
         products = sorted(store.all_dataset_types(), key=lambda p: p.name)

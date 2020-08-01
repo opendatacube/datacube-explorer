@@ -2,15 +2,6 @@
 
 {% block title %}{{ metadata_type.name }} definition{% endblock %}
 
-
-{% block head %}
-    {{ super() }}
-    <style type="text/css">
-        .metadata-type-name {
-            text-transform: uppercase;
-        }
-    </style>
-{% endblock %}
 {% block panel %}
 
 {% endblock %}
@@ -18,22 +9,36 @@
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
     <div class="panel odd">
-        <h2><span class="metadata-type-name">{{ metadata_type.name }}</span> Metadata Type</h2>
-        {{ show_raw_document(metadata_doc) }}
-    </div>
+        <h2 class="followed"><span class="metadata-type-name">{{ metadata_type.name }}</span></h2>
+        <div class="header-follow">metadata type of {{ products_using_it | length }} products</div>
 
+        <div><em>
+            {{ metadata_type.definition['description'] }}
+        </em></div>
+
+    </div>
     <div class="panel">
-        <h2>Usage</h2>
+        <h3>Usage</h3>
         {% if products_using_it %}
-            <ul class="type-usage-list">
-            {% for product in products_using_it %}
-                <li class="type-usage-item">{{ product.name | product_link }}</li>
-            {% endfor %}
-            </ul>
+            <div class="type-usage-list">
+                {% for product in products_using_it %}
+                    <div class="type-usage-item">{{ product.name | product_link }}</div>
+                {% endfor %}
+            </div>
         {% else %}
             <em>None</em>
         {% endif %}
     </div>
 
+    <div class="panel odd">
+        <h3 class="followed">Definition</h3>
+        <div class="header-follow">
+            <a href="{{ url_for('product.raw_metadata_type_doc', name=metadata_type.name) }}"
+               class="badge">
+                View RAW
+            </a>
+        </div>
+        {{ show_raw_document(metadata_doc) }}
+    </div>
 
 {% endblock %}

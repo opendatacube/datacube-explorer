@@ -4,13 +4,12 @@ Common global filters and util methods.
 
 from __future__ import absolute_import, division
 
-import collections
 import difflib
 import functools
-import pathlib
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from io import StringIO
+from typing import Optional, Tuple, Dict, List
 
 import flask
 import rapidjson
@@ -21,16 +20,20 @@ from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from flask_themes import render_theme_template
 from pyproj import CRS as PJCRS
-from shapely.geometry import MultiPolygon, Polygon, shape
+from ruamel.yaml.comments import CommentedMap
+from shapely.geometry import Polygon, shape
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
 import datacube.drivers.postgres._schema
+import eodatasets3.serialise
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
+from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
+from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
 
@@ -125,15 +128,54 @@ def dataset_label(dataset):
     label = dataset.metadata.fields.get("label")
     if label is not None:
         return label
-    # Otherwise by the file/folder name if there's a path.
-    elif dataset.local_uri:
-        p = pathlib.Path(dataset.local_uri)
-        if p.name in ("ga-metadata.yaml", "agdc-metadata.yaml"):
-            return p.parent.name
 
-        return p.name
+    # Otherwise try to get a file/folder name for the dataset's location.
+    for uri in dataset.uris:
+        name = _get_reasonable_file_label(uri)
+        if name:
+            return name
+
     # TODO: Otherwise try to build a label from the available fields?
     return str(dataset.id)
+
+
+def _get_reasonable_file_label(uri: str) -> Optional[str]:
+    """
+    Get a label for the dataset from a URI.... if we can.
+
+    >>> uri = '/tmp/some/ls7_wofs_1234.nc'
+    >>> _get_reasonable_file_label(uri)
+    'ls7_wofs_1234.nc'
+    >>> uri = 'file:///g/data/rs0/datacube/002/LS7_ETM_NBAR/10_-24/LS7_ETM_NBAR_3577_10_-24_1999_v1496652530.nc#part=0'
+    >>> _get_reasonable_file_label(uri)
+    'LS7_ETM_NBAR_3577_10_-24_1999_v1496652530.nc#part=0'
+    >>> uri = 'file:///tmp/ls7_nbar_20120403_c1/ga-metadata.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'ls7_nbar_20120403_c1'
+    >>> uri = 's3://deafrica-data/jaxa/alos_palsar_mosaic/2017/N05E040/N05E040_2017.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'N05E040_2017'
+    >>> uri = 'file:///g/data/if87/S2A_OPER_MSI_ARD_TL_EPAE_20180820T020800_A016501_T53HQA_N02.06/ARD-METADATA.yaml'
+    >>> _get_reasonable_file_label(uri)
+    'S2A_OPER_MSI_ARD_TL_EPAE_20180820T020800_A016501_T53HQA_N02.06'
+    >>> uri = 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/2020/S2B_36PTU_20200101_0_L2A/'
+    >>> _get_reasonable_file_label(uri)
+    'S2B_36PTU_20200101_0_L2A'
+    >>> _get_reasonable_file_label('ga-metadata.yaml')
+    """
+    for component in reversed(uri.rsplit("/", maxsplit=3)):
+        # If it's a default yaml document name, we want the folder name instead.
+        if component and component not in (
+            "ga-metadata.yaml",
+            "agdc-metadata.yaml",
+            "ARD-METADATA.yaml",
+        ):
+            suffixes = component.rsplit(".", maxsplit=1)
+            # Remove the yaml/json suffix if we have one now.
+            if suffixes[-1] in ("yaml", "json"):
+                return ".".join(suffixes[:-1])
+            return component
+    return None
 
 
 def product_license(dt: DatasetType) -> Optional[str]:
@@ -298,15 +340,70 @@ def as_geojson(o):
     return as_json(o, content_type="application/geo+json")
 
 
-def get_ordered_metadata(metadata_doc):
-    def get_property_priority(ordered_properties, keyval):
+def as_yaml(o, content_type="text/yaml"):
+    stream = StringIO()
+    eodatasets3.serialise.dumps_yaml(stream, o)
+    return flask.Response(stream.getvalue(), content_type=content_type,)
+
+
+def prepare_dataset_formatting(
+    dataset: Dataset, include_source_url=False, include_locations=False,
+) -> CommentedMap:
+    """
+    Try to format a raw Dataset document for readability.
+
+    This will change property order, add comments on the type & source url.
+    """
+    doc = dict(dataset.metadata_doc)
+
+    # If it's EO3, use eodatasets's formatting. It's better.
+    if is_doc_eo3(doc):
+        if include_locations:
+            if len(dataset.uris) == 1:
+                doc["location"] = dataset.uris[0]
+            else:
+                doc["locations"] = dataset.uris
+
+        doc = eodatasets3.serialise.prepare_formatting(doc)
+        if include_source_url:
+            doc.yaml_set_comment_before_after_key(
+                "$schema", before=f"url: {flask.request.url}",
+            )
+        # Strip EO-legacy fields.
+        undo_eo3_compatibility(doc)
+        return doc
+    else:
+        return prepare_document_formatting(
+            doc,
+            # Label old-style datasets as old-style datasets.
+            doc_friendly_label="EO1 Dataset",
+            include_source_url=include_source_url,
+        )
+
+
+def prepare_document_formatting(
+    metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
+):
+    """
+    Try to format a raw document for readability.
+
+    This will change property order, add comments on the type & source url.
+    """
+
+    def get_property_priority(ordered_properties: List, keyval):
         key, val = keyval
         if key not in ordered_properties:
             return 999
         return ordered_properties.index(key)
 
+    header_comments = []
+    if doc_friendly_label:
+        header_comments.append(doc_friendly_label)
+    if include_source_url:
+        header_comments.append(f"url: {flask.request.url}")
+
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
-    ordered_metadata = collections.OrderedDict(
+    ordered_metadata = CommentedMap(
         sorted(
             metadata_doc.items(),
             key=functools.partial(get_property_priority, EODATASETS_PROPERTY_ORDER),
@@ -315,7 +412,7 @@ def get_ordered_metadata(metadata_doc):
 
     # Order any embedded ones too.
     if "lineage" in ordered_metadata:
-        ordered_metadata["lineage"] = collections.OrderedDict(
+        ordered_metadata["lineage"] = dict(
             sorted(
                 ordered_metadata["lineage"].items(),
                 key=functools.partial(
@@ -330,23 +427,66 @@ def get_ordered_metadata(metadata_doc):
             ].items():
                 ordered_metadata["lineage"]["source_datasets"][
                     type_
-                ] = get_ordered_metadata(source_dataset_doc)
+                ] = prepare_document_formatting(source_dataset_doc)
 
     # Products have an embedded metadata doc (subset of dataset metadata)
     if "metadata" in ordered_metadata:
-        ordered_metadata["metadata"] = get_ordered_metadata(
+        ordered_metadata["metadata"] = prepare_document_formatting(
             ordered_metadata["metadata"]
+        )
+
+    if header_comments:
+        # Add comments above the first key of the document.
+        ordered_metadata.yaml_set_comment_before_after_key(
+            next(iter(metadata_doc.keys())), before="\n".join(header_comments),
         )
     return ordered_metadata
 
 
+def undo_eo3_compatibility(doc):
+    """
+    In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
+     documents on index.
+    """
+    del doc["grid_spatial"]
+    del doc["extent"]
+
+    lineage = doc.get("lineage")
+    # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),
+    # flatten to EO3-style ID lists.
+
+    # TODO: It's incredibly inefficient that the whole source-dataset tree has been loaded by ODC
+    #       and we're now throwing it all away except the top-level ids.
+
+    if "source_datasets" in lineage:
+        new_lineage = {}
+        for classifier, dataset_doc in lineage["source_datasets"].items():
+            new_lineage.setdefault(classifier, []).append(dataset_doc["id"])
+        doc["lineage"] = new_lineage
+
+
 EODATASETS_PROPERTY_ORDER = [
-    "id",
-    "ga_label",
+    "$schema",
+    # Products / Types
     "name",
-    "description",
-    "product_type",
+    "license",
     "metadata_type",
+    "description",
+    "metadata",
+    # EO3
+    "id",
+    "label",
+    "product",
+    "locations",
+    "crs",
+    "geometry",
+    "grids",
+    "properties",
+    "measurements",
+    "accessories",
+    # EO
+    "ga_label",
+    "product_type",
     "product_level",
     "product_doi",
     "creation_dt",
@@ -415,53 +555,6 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     return geom, True
 
 
-def test_wrap_coordinates(features):
-    if needs_unwrapping(features):
-        return unwrap_coordinates(features)
-    else:
-        return features
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def needs_unwrapping(features):
-    """ Test whether coordinates wrap around the antimeridian in wgs84 and if they do fix it """
-    if not features.intersects(NEAR_ANTIMERIDIAN):
-        return False
-
-    lon_under_minus_170 = False
-    lon_over_plus_170 = False
-
-    if isinstance(features, MultiPolygon):
-        return any([test_wrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        for c in features.exterior.coords:
-            if c[0] < -170:
-                lon_under_minus_170 = True
-            elif c[0] > 170:
-                lon_over_plus_170 = True
-    else:
-        return False
-
-    return lon_under_minus_170 and lon_over_plus_170
-
-
-# Inspired by https://github.com/developmentseed/sentinel-s3/blob/master/sentinel_s3/converter.py
-def unwrap_coordinates(features):
-    """ Unwrap coordinates, i.e., if something is <-170 add 360 to it """
-    if isinstance(features, MultiPolygon):
-        return MultiPolygon([unwrap_coordinates(feature) for feature in list(features)])
-    elif isinstance(features, Polygon):
-        return Polygon(
-            [unwrap_coordinates(feature) for feature in features.exterior.coords]
-        )
-    elif isinstance(features, list) or isinstance(features, tuple):
-        coords = list(features)
-        if coords[0] < -170:
-            coords[0] = coords[0] + 360
-        return coords
-    return None
-
-
 # ######################### WARNING ############################### #
 #  These functions are bad and access non-public parts of datacube  #
 #     They are kept here in one place for easy criticism.           #
@@ -490,3 +583,14 @@ except AttributeError:
     ODC_DATASET_TYPE = datacube.drivers.postgres._schema.DATASET_TYPE
 
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
+
+
+def get_mutable_dataset_search_fields(
+    index: Index, md: MetadataType
+) -> Dict[str, PgDocField]:
+    """
+    Get a copy of a metadata type's fields that we can mutate.
+
+    (the ones returned by the Index are cached and so may be shared among callers)
+    """
+    return index._db.get_dataset_fields(md.definition)
