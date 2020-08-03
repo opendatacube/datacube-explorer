@@ -273,14 +273,18 @@ def create_schema(engine: Engine):
     """
     # Create schema if needed.
     #
-    # Note that we don't use the built in "if not exists" because running it *always* needs
-    # `create` permission. This gives users the ability to run this tool without `create` permission.
+    # Note that we don't use the built-in "if not exists" because running it *always* requires
+    # `create` permission.
+    #
+    # Doing it separately allows users to run this tool without `create` permission.
+    #
     if not engine.dialect.has_schema(engine, CUBEDASH_SCHEMA):
         engine.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
 
     # Add Postgis if needed
     #
     # Note that, as above, we deliberately don't use the built-in "if not exists"
+    #
     if (
         engine.execute(
             "select count(*) from pg_extension where extname='postgis';"

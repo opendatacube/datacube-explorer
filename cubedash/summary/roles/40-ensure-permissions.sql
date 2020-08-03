@@ -1,7 +1,7 @@
 --
--- Set correct permissions on the three Explorer roles.
+-- Grant all permissions on the three Explorer roles.
 --
--- This is designed to be re-runnable, to fix anything missing.
+-- This is designed to be re-runnable, to add anything missing.
 --
 
 begin;

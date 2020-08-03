@@ -1,7 +1,9 @@
 
--- Create the three explorer roles and schema.
 --
--- Can be run on an existing schema if adding the roles for the first time.
+-- Create the three Explorer roles.
+--
+-- This can be run on an existing host if adding the roles for the first time.
+--
 begin;
 
 ----- Explorer Viewer -----
@@ -24,10 +26,5 @@ comment on role explorer_generator is 'Explorer data summariser (for running cub
 create user explorer_owner inherit in role explorer_generator;
 comment on role explorer_owner is 'Explorer schema creator and updater';
 
-
--- Now give them a schema, which the Explorer Owner can populate.
-create schema if not exists cubedash;
-grant create on schema cubedash to explorer_owner;
-
-
 commit;
+

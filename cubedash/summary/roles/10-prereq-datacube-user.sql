@@ -8,7 +8,7 @@
 -- You do not need to run this file if you already use datacube's
 -- default roles.
 --
--- Explorer is a datacube user, and so its roles with extend agdc_user.
+-- Explorer is a datacube user, and so its roles extend agdc_user.
 --
 begin;
 
