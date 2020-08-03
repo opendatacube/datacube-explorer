@@ -13,7 +13,6 @@ tests_require = [
     "pytest",
     "pytest-benchmark",
     "pytest-cov",
-    "prometheus_flask_exporter",
     "requests-html",
     "raven",
     "blinker",
