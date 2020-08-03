@@ -360,8 +360,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert cached_s.dataset_count == summary.dataset_count
 
 
-@pytest.mark.xfail(reason="TODO: Needs merge to other branch for less fragile test")
-def test_cubedash_gen_refresh(module_index):
+def test_cubedash_gen_refresh(run_generate, module_index):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
