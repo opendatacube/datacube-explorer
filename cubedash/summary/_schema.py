@@ -248,8 +248,23 @@ def create_schema(engine: Engine):
     """
     Create any missing parts of the cubedash schema
     """
-    engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
-    engine.execute(DDL("create extension if not exists postgis"))
+    # Create schema if needed.
+    #
+    # Note that we don't use the built in "if not exists" because running it *always* needs
+    # `create` permission. This gives users the ability to run this tool without `create` permission.
+    if not engine.dialect.has_schema(engine, CUBEDASH_SCHEMA):
+        engine.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
+
+    # Add Postgis if needed
+    #
+    # Note that, as above, we deliberately don't use the built-in "if not exists"
+    if (
+        engine.execute(
+            "select count(*) from pg_extension where extname='postgis';"
+        ).scalar()
+        == 0
+    ):
+        engine.execute(DDL("create extension postgis"))
 
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.
