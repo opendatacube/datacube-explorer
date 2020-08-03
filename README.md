@@ -209,6 +209,22 @@ Add a `.datacube_integration.conf` file to your home directory in the same forma
 Then run pytest: `pytest integration_tests`
 
 __Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+#### Roles for production deployments
+
+The [roles](cubedash/summary/roles) directory contains sql files for creating
+Postgres roles for Explorer. These are suitable for running each Explorer 
+task with minimum needed security permissions.
+
+Three roles are created:
+
+- **explorer-viewer**: A read-only user of datacube and Explorer. Suitable for the web interface and cli (`cubedash-view`) commands.
+- **explorer-generator**: Suitable for generating and updating summaries (ie. Running `cubedash-gen`)
+- **explorer-owner**: For creating and updating the schema. (ie. Running `cubedash-gen --init`)
+
+Note that these roles extend the built-in datacube role `agdc_user`. If you
+created your datacube without permissions, a stand-alone creator of the `agdc_user`
+role is available as a prerequisity in the same [roles](cubedash/summary/roles) 
+directory.
 
 ## Docker for Development and running tests
 You need to have Docker and Docker Compose installed on your system.
