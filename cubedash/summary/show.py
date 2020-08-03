@@ -1,3 +1,10 @@
+"""
+A simple command-line viewer of Explorer products
+and time-periods.
+
+Useful for testing Explorer-generated summaries from
+scripts and the command-line.
+"""
 import time
 from typing import Counter
 
@@ -21,7 +28,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
     return SummaryStore.create(index, log=log)
 
 
-@click.command()
+@click.command(help=__doc__)
 @environment_option
 @config_option
 @pass_config
