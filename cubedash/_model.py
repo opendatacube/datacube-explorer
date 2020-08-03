@@ -8,7 +8,6 @@ import flask
 import flask_themes
 import structlog
 from flask_caching import Cache
-from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -60,11 +59,6 @@ DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
 )
 
 _LOG = structlog.get_logger()
-
-# Enable deployment specific code for Prometheus metrics
-if os.environ.get("prometheus_multiproc_dir", False):
-    metrics = GunicornInternalPrometheusMetrics(app)
-    _LOG.info("Prometheus metrics enabled")
 
 
 @cache.memoize(timeout=60)
@@ -272,3 +266,15 @@ def enable_sentry():
                 sentry_public_dsn=SENTRY.client.get_public_dsn("https"),
                 sentry_public_args=sentry_args,
             )
+
+
+@app.before_first_request
+def enable_prometheus():
+    # Enable deployment specific code for Prometheus metrics
+    if os.environ.get("prometheus_multiproc_dir", False):
+        from prometheus_flask_exporter.multiprocess import (
+            GunicornInternalPrometheusMetrics,
+        )
+
+        metrics = GunicornInternalPrometheusMetrics(app)
+        _LOG.info(f"Prometheus metrics enabled : {metrics}")
