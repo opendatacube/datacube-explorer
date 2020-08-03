@@ -38,5 +38,6 @@ alter table cubedash.product owner to explorer_owner;
 alter table cubedash.time_overview owner to explorer_owner;
 alter sequence cubedash.product_id_seq owner to explorer_owner;
 
+alter schema cubedash owner to explorer_owner;
 
 commit;
