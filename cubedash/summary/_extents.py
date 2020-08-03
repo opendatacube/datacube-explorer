@@ -351,7 +351,7 @@ def _populate_missing_dataset_extents(
             )
             .on_conflict_do_nothing(index_elements=["id"])
         )
-    print(as_sql(query))
+    # print(as_sql(query))
 
     _LOG.debug(
         "spatial_insert_query.start",
