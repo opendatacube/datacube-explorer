@@ -83,6 +83,14 @@ def test_sentry(sentry_client: FlaskClient):
     assert "raven.min.js" in str(_script(html))
 
 
+def test_prometheus(sentry_client: FlaskClient):
+    """
+    Ensure Prometheus metrics endpoint exists
+    """
+    resp = sentry_client.get("/metrics")
+    assert b"flask_exporter_info" in resp.data
+
+
 def test_default_redirect(client: FlaskClient):
     rv: Response = client.get("/", follow_redirects=False)
     # Redirect to a default.

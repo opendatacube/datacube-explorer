@@ -16,6 +16,7 @@ tests_require = [
     "requests-html",
     "raven",
     "blinker",
+    "prometheus-flask-exporter",
 ]
 
 extras_require = {
