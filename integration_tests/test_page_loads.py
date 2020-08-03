@@ -14,6 +14,7 @@ from requests_html import HTML, Element
 from ruamel import yaml
 from ruamel.yaml import YAMLError
 
+import cubedash
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
 from datacube.index import Index
@@ -56,6 +57,30 @@ def auto_populate_index(populated_index: Index):
         "wofs_albers": 11,
     }
     return populated_index
+
+
+@pytest.fixture()
+def sentry_client(client: FlaskClient) -> FlaskClient:
+    cubedash.app.config["SENTRY_CONFIG"] = {
+        "dsn": "https://githash@number.sentry.opendatacube.org/123456",
+        "include_paths": ["cubedash"],
+    }
+    return client
+
+
+def _script(html: HTML):
+    return html.find("script")
+
+
+def test_sentry(sentry_client: FlaskClient):
+    """Ensure Sentry Client gets initialized correctly
+
+    Args:
+        sentry_client (FlaskClient): Client for Flask app with Sentry enabled
+    """
+    html: HTML = get_html(sentry_client, "/ls7_nbar_scene")
+    # Ensure rendered page has a SENTRY link
+    assert "raven.min.js" in str(_script(html))
 
 
 def test_default_redirect(client: FlaskClient):
