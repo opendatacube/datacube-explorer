@@ -1,4 +1,5 @@
 import time
+import os
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
@@ -7,6 +8,7 @@ import flask
 import flask_themes
 import structlog
 from flask_caching import Cache
+from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -58,6 +60,11 @@ DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
 )
 
 _LOG = structlog.get_logger()
+
+# Enable deployment specific code for Prometheus metrics
+if os.environ.get("prometheus_multiproc_dir", False):
+    metrics = GunicornInternalPrometheusMetrics(app)
+    _LOG.info("Prometheus metrics enabled")
 
 
 @cache.memoize(timeout=60)
