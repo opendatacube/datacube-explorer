@@ -15,6 +15,8 @@ tests_require = [
     "pytest-cov",
     "prometheus_flask_exporter",
     "requests-html",
+    "raven",
+    "blinker",
 ]
 
 extras_require = {
