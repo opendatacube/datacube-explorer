@@ -71,9 +71,9 @@ def clirunner(global_integration_cli_args):
 @pytest.fixture()
 def run_generate(clirunner, summary_store, multi_processed=False):
     def do(*args, expect_success=True):
-        args = args or ["--all"]
+        args = args or ("--all",)
         if not multi_processed:
-            args = ("-j", "1") + args
+            args = ("-j", "1") + tuple(args)
         res = clirunner(generate.cli, args, expect_success=expect_success)
         return res
 
