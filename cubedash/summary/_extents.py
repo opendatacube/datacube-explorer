@@ -30,11 +30,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
 import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine, infer_crs
+from cubedash._utils import alchemy_engine, infer_crs, ODC_DATASET as DATASET
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
+
 from datacube.index import Index
 from datacube.model import DatasetType, Field, MetadataType
 
@@ -704,7 +704,15 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
             product = index.products.get_by_name(product_name)
             res = (
                 alchemy_engine(index)
-                .execute(select(_select_dataset_extent_columns(product)).limit(1))
+                .execute(
+                    select(_select_dataset_extent_columns(product))
+                    .where(
+                        DATASET.c.dataset_type_ref
+                        == bindparam("product_ref", product.id, type_=SmallInteger)
+                    )
+                    .where(DATASET.c.archived == None)
+                    .limit(1)
+                )
                 .fetchone()
             )
             if res:
