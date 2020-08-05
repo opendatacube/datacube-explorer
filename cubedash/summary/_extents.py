@@ -334,7 +334,7 @@ def _populate_missing_dataset_extents(
                 DATASET.c.dataset_type_ref
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
-            .where(DATASET.c.archived == None),
+            .where(DATASET.c.archived == None)
         )
     else:
         query = (
