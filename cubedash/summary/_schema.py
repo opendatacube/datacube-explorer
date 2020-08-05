@@ -215,8 +215,8 @@ class PleaseRefresh(Enum):
     What data should be refreshed/recomputed?
     """
 
-    # Refresh dataset extents for EO3 datasets
-    EO3_DATASET_EXTENTS = 1
+    # Refresh all calculated extents/geometry for datasets
+    DATASET_EXTENTS = 1
 
 
 def update_schema(engine: Engine) -> Set[PleaseRefresh]:
@@ -235,7 +235,7 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
         """
         )
-        refresh.add(PleaseRefresh.EO3_DATASET_EXTENTS)
+        refresh.add(PleaseRefresh.DATASET_EXTENTS)
 
     return refresh
 

@@ -51,7 +51,7 @@ def generate_report(
         log.info("generate.product.refresh.done")
 
         log.info("generate.product")
-        updated = store.get_or_update(product.name, None, None, None, force_refresh)
+        updated = store.get_or_update(product.name, force_refresh=force_refresh)
         log.info("generate.product.done")
 
         return product_name, updated

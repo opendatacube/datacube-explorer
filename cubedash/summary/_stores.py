@@ -23,7 +23,6 @@ from sqlalchemy.sql import Select
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
-from cubedash.summary._extents import expects_eo3_metadata_type
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -898,16 +897,13 @@ def _refresh_data(item: PleaseRefresh, store: SummaryStore):
     """
     Refresh the given kind of data.
     """
-    if item == PleaseRefresh.EO3_DATASET_EXTENTS:
-        # Refresh dataset extents for EO3 datasets
-
+    if item == PleaseRefresh.DATASET_EXTENTS:
         for dt in store.all_dataset_types():
             # Skip product if it's never been summarised at all.
             if store.get_product_summary(dt.name) is None:
                 continue
 
-            if expects_eo3_metadata_type(dt.metadata_type):
-                store.refresh_product(dt, force_dataset_extent_recompute=True)
+            store.refresh_product(dt, force_dataset_extent_recompute=True)
     else:
         raise NotImplementedError(f"Unknown data type to refresh_data: {item}")
 
