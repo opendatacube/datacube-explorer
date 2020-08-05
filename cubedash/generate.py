@@ -169,7 +169,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     default=False,
     help=dedent(
         """\
-        Overwrite Explorer's dataset extents rather than appending only the new datasets.
+        Rebuild Explorer's existing dataset extents rather than appending new datasets.
 
         This is useful if you've patched datasets or products in-place with new geometry
         or regions.
