@@ -162,7 +162,11 @@ class SummaryStore:
         refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
         force_dataset_extent_recompute=False,
-    ):
+    ) -> Optional[int]:
+        """
+        Update Explorer's computed extents for the given product, and record any new
+        datasets into the spatial table.
+        """
         our_product = self.get_product_summary(product.name)
 
         if (
@@ -221,11 +225,16 @@ class SummaryStore:
         return added_count
 
     def refresh_stats(self, concurrently=False):
+        """
+        Refresh general statistics tables that cover all products.
+
+        This is ideally done once after all needed products have been refreshed.
+        """
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
         self, product: DatasetType, sample_percentage=0.05
-    ):
+    ) -> Dict[str, any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
 
@@ -322,7 +331,7 @@ class SummaryStore:
 
     def _get_linked_products(
         self, product: DatasetType, kind="source", sample_percentage=0.05
-    ):
+    ) -> List[str]:
         """
         Find products with upstream or downstream datasets from this product.
 

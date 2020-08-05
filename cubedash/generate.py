@@ -4,6 +4,7 @@ import multiprocessing
 import sys
 from datetime import timedelta
 from functools import partial
+from textwrap import dedent
 from typing import List, Sequence, Tuple, Optional
 
 import click
@@ -163,9 +164,17 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 @click.option("--refresh-stats/--no-refresh-stats", is_flag=True, default=True)
 @click.option("--force-refresh/--no-force-refresh", is_flag=True, default=False)
 @click.option(
-    "--recreate-dataset-extents/--no-recreate-dataset-extents",
+    "--recreate-dataset-extents/--append-dataset-extents",
     is_flag=True,
     default=False,
+    help=dedent(
+        """\
+        Overwrite Explorer's dataset extents rather than appending only the new datasets.
+
+        This is useful if you've patched datasets or products in-place with new geometry
+        or regions.
+        """
+    ),
 )
 @click.option("--force-concurrently", is_flag=True, default=False)
 @click.option(
