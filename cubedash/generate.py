@@ -1,4 +1,50 @@
 #!/usr/bin/env python3
+"""
+A tool to generate and update Explorer's caches of datacube data.
+
+Explorer's view of ODC data is too expensive to calculate on
+every page load (or API call), so Explorer uses its own tables
+to calculate this summary information ahead-of-time.
+
+The cubedash-gen command creates these summaries in a schema called
+`cubedash`, separate from datacube’s own schema.
+
+By default, only missing summaries will be added for the specified
+product names; and it will not recreate summaries that already exist.
+
+---
+
+Datacube config
+
+To choose which datacube to point to, it takes identical datacube
+config (-C) and environment (-E) options as the `datacube` command,
+and reads identical datacube config files and environment variables.
+
+ie. It will use the datacube that is shown by running the command
+`datacube system check`
+
+See datacube’s own docs for this configuration handling.
+
+---
+
+Examples
+
+Create Explorer's schemas and generate all summaries that don't exist:
+
+    cubedash-gen --init --all
+
+
+Recreate all summaries for two products:
+
+    cubedash-gen --force-refresh ls8_nbart_scene ls8_level1_scene
+
+
+Drop all of Explorer’s additions to the database:
+
+    cubedash-gen --drop
+
+
+"""
 
 import multiprocessing
 import sys
@@ -146,23 +192,76 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
             )
 
 
-@click.command()
+@click.command(help=__doc__)
 @environment_option
 @config_option
 @pass_config
-@click.option("--all", "generate_all_products", is_flag=True, default=False)
-@click.option("-v", "--verbose", is_flag=True)
 @click.option(
-    "-j", "--jobs", type=int, default=3, help="Number of worker processes to use"
+    "--all",
+    "generate_all_products",
+    is_flag=True,
+    default=False,
+    help="Refresh all products in the datacube, rather than the specified list.",
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help=dedent(
+        """\
+        Enable all log messages, instead of just errors.
+
+        Logging goes to stdout unless `--event-log-file` is specified.
+
+        Logging is coloured plain-text if going to a tty, and jsonl format otherwise.
+        """
+    ),
+)
+@click.option(
+    "-j",
+    "--jobs",
+    type=int,
+    default=3,
+    help=dedent(
+        """\
+        Number of concurrent worker subprocesses to use (default: 3)
+
+        This should match how many io-and-cpu-heavy queries your DB would
+        like to handle concurrently.
+    """
+    ),
 )
 @click.option(
     "-l",
     "--event-log-file",
-    help="Output jsonl logs to file",
+    help="Output log messages to file, in jsonl format",
     type=click.Path(writable=True, dir_okay=True),
 )
-@click.option("--refresh-stats/--no-refresh-stats", is_flag=True, default=True)
-@click.option("--force-refresh/--no-force-refresh", is_flag=True, default=False)
+@click.option(
+    "--refresh-stats/--no-refresh-stats",
+    is_flag=True,
+    default=True,
+    help=dedent(
+        """\
+        Refresh general statistics tables that cover all products (default: true)
+
+        This can be slow, and only needs to be done once (at the end) if calling
+        cubedash-gen repeatedly
+        """
+    ),
+)
+@click.option(
+    "--force-refresh/--no-force-refresh",
+    is_flag=True,
+    default=False,
+    help=dedent(
+        """\
+        Force all time periods to be regenerated, rather than just the missing ones.
+
+        (default: false)
+        """
+    ),
+)
 @click.option(
     "--recreate-dataset-extents/--append-dataset-extents",
     is_flag=True,
@@ -170,18 +269,46 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     help=dedent(
         """\
         Rebuild Explorer's existing dataset extents rather than appending new datasets.
+        (default: false)
 
         This is useful if you've patched datasets or products in-place with new geometry
         or regions.
         """
     ),
 )
-@click.option("--force-concurrently", is_flag=True, default=False)
+@click.option(
+    "--force-concurrently",
+    is_flag=True,
+    default=False,
+    help=dedent(
+        """\
+        Refresh materialised views concurrently in Postgres. (default: false)
+
+        This will avoid taking any locks when updating statistics, but has some caveats,
+        see https://www.postgresql.org/docs/10/sql-refreshmaterializedview.html
+        """
+    ),
+)
 @click.option(
     "--init-database/--no-init-database",
     "--init",
     default=False,
-    help="Prepare the database for use by datacube explorer",
+    help=dedent(
+        """\
+        Create Explorer's schemas, and prepare the database, before doing anything.
+        """
+    ),
+)
+@click.option(
+    "--drop-database",
+    "--drop",
+    is_flag=True,
+    default=False,
+    help=dedent(
+        """\
+        Drop all of Explorer's database additions and exit.
+        """
+    ),
 )
 @click.argument("product_names", nargs=-1)
 def cli(
@@ -194,16 +321,20 @@ def cli(
     force_concurrently: bool,
     verbose: bool,
     init_database: bool,
+    drop_database: bool,
     force_refresh: bool,
     recreate_dataset_extents: bool,
 ):
-    """
-    Generate summary files for the given products
-    """
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     index = _get_index(config, "setup")
     store = SummaryStore.create(index)
+
+    if drop_database:
+        user_message("Dropping all Explorer additions to the database")
+        store.drop_all()
+        user_message("Done. Goodbye.")
+        sys.exit(0)
 
     if init_database:
         user_message("Initialising schema")
