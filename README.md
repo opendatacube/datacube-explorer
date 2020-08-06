@@ -221,7 +221,7 @@ Three roles are created:
 
 Note that these roles extend the built-in datacube role `agdc_user`. If you
 created your datacube without permissions, a stand-alone creator of the `agdc_user`
-role is available as a prerequisity in the same [roles](cubedash/summary/roles) 
+role is available as a prerequisite in the same [roles](cubedash/summary/roles) 
 directory.
 
 ## Docker for Development and running tests
