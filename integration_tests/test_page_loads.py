@@ -279,12 +279,17 @@ def test_view_product(client: FlaskClient):
     assert b"Landsat 7 NBAR 25 metre" in rv.data
 
 
-def test_view_metadata_type(client: FlaskClient):
+def test_view_metadata_type(client: FlaskClient, populated_index: Index):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
     assert html.find("h2", first=True).text == "eo"
+
+    how_many_are_eo = len(
+        [p for p in populated_index.products.get_all() if p.metadata_type.name == "eo"]
+    )
     assert (
-        html.find(".header-follow", first=True).text == "metadata type of 44 products"
+        html.find(".header-follow", first=True).text
+        == f"metadata type of {how_many_are_eo} products"
     )
 
     # Does the page list products using the type?
