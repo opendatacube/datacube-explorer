@@ -33,6 +33,8 @@ Initialise and create product summaries:
 
 (This can take a long time the first time, depending on your datacube size.)
 
+Other available options can be seen by running `cubedash-gen --help`.
+
 ### Run
 
 Explorer can be run using any typical python wsgi server, for example:
