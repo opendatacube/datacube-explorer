@@ -1,5 +1,5 @@
-import time
 import os
+import time
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
@@ -147,7 +147,6 @@ def get_regions_geojson(
     month: Optional[int] = None,
     day: Optional[int] = None,
 ) -> Optional[Dict]:
-
     product = STORE.get_dataset_type(product_name)
 
     region_info = STORE.get_product_region_info(product_name)
@@ -278,3 +277,11 @@ def enable_prometheus():
 
         metrics = GunicornInternalPrometheusMetrics(app)
         _LOG.info(f"Prometheus metrics enabled : {metrics}")
+
+
+@app.before_first_request
+def check_schema_compatibility():
+    if not STORE.is_schema_compatible():
+        raise RuntimeError(
+            "Cubedash schema is out of date. Please rerun `cubedash-gen --init` to apply updates."
+        )
