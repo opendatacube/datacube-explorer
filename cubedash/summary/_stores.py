@@ -910,11 +910,13 @@ def _refresh_data(item: PleaseRefresh, store: SummaryStore):
     """
     if item == PleaseRefresh.DATASET_EXTENTS:
         for dt in store.all_dataset_types():
+            _LOG.info("data.refreshing_extents", product=dt.name)
             # Skip product if it's never been summarised at all.
             if store.get_product_summary(dt.name) is None:
                 continue
 
             store.refresh_product(dt, force_dataset_extent_recompute=True)
+        _LOG.info("data.refreshing_extents.complete")
     else:
         raise NotImplementedError(f"Unknown data type to refresh_data: {item}")
 
