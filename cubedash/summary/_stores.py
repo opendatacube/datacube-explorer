@@ -1,4 +1,3 @@
-import functools
 import math
 import re
 from collections import Counter
@@ -9,6 +8,7 @@ from uuid import UUID
 
 import dateutil.parser
 import structlog
+from cachetools.func import ttl_cache
 from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
@@ -39,6 +39,8 @@ from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils.geometry import Geometry
+
+DEFAULT_TTL = 10
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -437,25 +439,25 @@ class SummaryStore:
         return date(year or 1900, month or 1, day or 1), period
 
     # These are cached to avoid repeated unnecessary DB queries.
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def all_dataset_types(self) -> Iterable[DatasetType]:
         return tuple(self.index.products.get_all())
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def get_dataset_type(self, name) -> DatasetType:
         for d in self.all_dataset_types():
             if d.name == name:
                 return d
         raise KeyError(f"Unknown dataset type {name!r}")
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _dataset_type_by_id(self, id_) -> DatasetType:
         for d in self.all_dataset_types():
             if d.id == id_:
                 return d
         raise KeyError(f"Unknown dataset type id {id_!r}")
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _product(self, name: str) -> ProductSummary:
         row = self._engine.execute(
             select(
@@ -786,7 +788,7 @@ class SummaryStore:
             listener(product_name, year, month, day, summary)
         return summary
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
@@ -858,7 +860,7 @@ class SummaryStore:
             self._engine, self.index, product_name, region_code, time_range, limit
         )
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _region_geoms(self, product_name: str) -> Dict[str, GeometryCollection]:
         dt = self.get_dataset_type(product_name)
         return {
@@ -984,7 +986,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         dataset_count=summary.dataset_count,
         timeline_dataset_start_days=day_values,
         timeline_dataset_counts=day_counts,
-        # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
+        # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
         regions=func.cast(region_values, type_=postgres.ARRAY(String)),
         region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
