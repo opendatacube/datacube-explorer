@@ -283,5 +283,6 @@ def enable_prometheus():
 def check_schema_compatibility():
     if not STORE.is_schema_compatible():
         raise RuntimeError(
-            "Cubedash schema is out of date. Please rerun `cubedash-gen --init` to apply updates."
+            "Cubedash schema is out of date. "
+            "Please rerun `cubedash-gen -v --init` to apply updates."
         )
