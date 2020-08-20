@@ -7,6 +7,7 @@ from __future__ import absolute_import, division
 import calendar
 import logging
 from datetime import datetime
+from typing import Mapping
 
 import flask
 import rapidjson
@@ -104,6 +105,11 @@ def _product_link(product_name):
 @bp.app_template_filter("dataset_created")
 def _dataset_created(dataset: Dataset):
     return utils.dataset_created(dataset)
+
+
+@bp.app_template_filter("all_values_none")
+def _all_values_none(d: Mapping):
+    return all(v is None for v in d.values())
 
 
 @bp.app_template_filter("dataset_day_link")
