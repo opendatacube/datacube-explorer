@@ -696,7 +696,6 @@ class SummaryStore:
         )
 
         for r in self._engine.execute(query):
-
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
@@ -1009,7 +1008,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
     )
 
 
-def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
+def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple]:
     """
     Split counter into a keys sequence and a values sequence.
 
@@ -1019,11 +1018,17 @@ def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
     (('a', 'b'), (2, 1))
     >>> tuple(_counter_key_vals(Counter(['a'])))
     (('a',), (1,))
+    >>> tuple(_counter_key_vals(Counter(['a', None])))
+    (('a', None), (1, 1))
     >>> # Important! zip(*) doesn't do this.
     >>> tuple(_counter_key_vals(Counter()))
     ((), ())
     """
-    items = sorted(counts.items())
+    items = sorted(
+        counts.items(),
+        # Swap nulls if needed.
+        key=lambda t: (null_sort_key, t[1]) if t[0] is None else t,
+    )
     return tuple(k for k, v in items), tuple(v for k, v in items)
 
 
