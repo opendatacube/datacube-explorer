@@ -29,7 +29,7 @@
                 </a><br/>
                 <i class="fa fa-list" aria-hidden="true"></i>
                 <a href="{{ url_for('search_page', product_name=product.name) }}">
-                    {{ product_summary.dataset_count or '0' }} datasets
+                    {{ '{:,d}'.format(product_summary.dataset_count) if product_summary.dataset_count else '0' }} datasets
                 </a>
         </p>
     </div>
