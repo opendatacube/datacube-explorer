@@ -209,7 +209,8 @@ Add a `.datacube_integration.conf` file to your home directory in the same forma
 Then run pytest: `pytest integration_tests`
 
 __Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
-#### Roles for production deployments
+
+## Roles for production deployments
 
 The [roles](cubedash/summary/roles) directory contains sql files for creating
 Postgres roles for Explorer. These are suitable for running each Explorer 
