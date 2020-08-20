@@ -19,11 +19,11 @@
 {% endblock %}
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
-    <div class="panel highlight">
-        <h1 class="followed">Product Audit
+    <div class="panel">
+        <h2 class="followed">Product Audit
             {%- if sentry_public_dsn and sentry_public_args.environment %} ({{ sentry_public_args.environment }})
             {%- endif -%}
-        </h1>
+        </h2>
         <div class="header-follow">{{ products_summarised|length }} products with summaries.
             {{ (products_missing | length) or 'None' }} without{% if products_missing %}:{% else %}.{% endif %}
             {% for name in products_missing %}

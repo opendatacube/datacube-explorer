@@ -18,31 +18,40 @@
         </div>
         <div>
             <em>{{ product.definition['description'] }}</em>
-
         </div>
         <p>
-
-            <a href="{{ url_for('overview_page', product_name=product.name) }}">
-                {%- if product_summary.time_earliest -%}
-                    {{ product_summary.time_earliest.strftime('%B %Y') }} to
-                    {{ product_summary.time_latest.strftime('%B %Y') }}
-                {%- endif -%}
-            </a>,
-            <a href="{{ url_for('search_page', product_name=product.name) }}">
-                {{ product_summary.dataset_count or '0' }} datasets
-            </a>
+                <i class="fa fa-globe" aria-hidden="true"></i>
+                <a href="{{ url_for('overview_page', product_name=product.name) }}">
+                    {% if product_summary.time_earliest -%}
+                        {{ product_summary.time_earliest.strftime('%B %Y') }} to
+                        {{ product_summary.time_latest.strftime('%B %Y') }}
+                    {%- endif -%}
+                </a><br/>
+                <i class="fa fa-list" aria-hidden="true"></i>
+                <a href="{{ url_for('search_page', product_name=product.name) }}">
+                    {{ product_summary.dataset_count or '0' }} datasets
+                </a>
         </p>
     </div>
     <div class="panel">
 
         <h3>Metadata</h3>
-        {{ query_param_list(
-                    product.fields,
-                    wide=true,
-                    show_nulls=false,
-                    descriptions=product.metadata_type.dataset_fields,
-                    fallback_dict=fixed_metadata)
-                }}
+
+        {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
+            <em>No common values</em>
+        {% else %}
+            {{ query_param_list(product.fields,
+                            show_nulls=false,
+                            wide=true,
+                            descriptions=product.metadata_type.dataset_fields,
+                            fallback_dict=product_summary.fixed_metadata or {}) }}
+            {% if product_summary.fixed_metadata is none %}
+                <em title="Generated summaries are out of date">
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    Unknown fixed fields
+                </em>
+            {% endif %}
+        {% endif %}
     </div>
     <div class="panel odd">
         <h3>Searchable fields</h3>
@@ -50,8 +59,13 @@
             <div>
                 {% set field = product.metadata_type.dataset_fields[key] %}
                 {{ key }}
-                {% if field.indexed is true %}<span title="indexed">•</span>{% endif %}
-                <span class="badge">{{ field.type_name }}</span>
+
+                <span class="badge">
+                    {{- field.type_name -}}
+                    {%- if field.indexed is true %}
+                        <span title="indexed"><i class="fa fa-square" aria-hidden="true"></i></span>
+                    {%- endif -%}
+                </span>
                 {% if field.description and ('TODO' not in field.description) %}
                     <span class="muted">{{ field.description }}</span>
                 {% endif %}
