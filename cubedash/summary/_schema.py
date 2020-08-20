@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from typing import Set
+from enum import Enum
 import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import (
@@ -9,7 +11,7 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
-    Enum,
+    Enum as SqlEnum,
     ForeignKey,
     Index,
     Integer,
@@ -111,7 +113,9 @@ TIME_OVERVIEW = Table(
     METADATA,
     # Uniquely identified by three values:
     Column("product_ref", None, ForeignKey(PRODUCT.c.id)),
-    Column("period_type", Enum("all", "year", "month", "day", name="overviewperiod")),
+    Column(
+        "period_type", SqlEnum("all", "year", "month", "day", name="overviewperiod")
+    ),
     Column("start_day", Date),
     Column("dataset_count", Integer, nullable=False),
     # Time range (if there's at least one dataset)
@@ -119,7 +123,7 @@ TIME_OVERVIEW = Table(
     Column("time_latest", DateTime(timezone=True)),
     Column(
         "timeline_period",
-        Enum("year", "month", "week", "day", name="timelineperiod"),
+        SqlEnum("year", "month", "week", "day", name="timelineperiod"),
         nullable=False,
     ),
     Column(
@@ -206,8 +210,24 @@ def is_compatible_schema(engine: Engine) -> bool:
     return is_latest
 
 
-def update_schema(engine: Engine):
-    """Update the schema if needed."""
+class PleaseRefresh(Enum):
+    """
+    What data should be refreshed/recomputed?
+    """
+
+    # Refresh all calculated extents/geometry for datasets
+    DATASET_EXTENTS = 1
+
+
+def update_schema(engine: Engine) -> Set[PleaseRefresh]:
+    """
+    Update the schema if needed.
+
+    Returns what data should be resummarised.
+    """
+
+    refresh = set()
+
     if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
         _LOG.info("schema.applying_update.add_fixed_metadata")
         engine.execute(
@@ -215,6 +235,9 @@ def update_schema(engine: Engine):
         alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
         """
         )
+        refresh.add(PleaseRefresh.DATASET_EXTENTS)
+
+    return refresh
 
 
 def pg_exists(conn, name: str) -> bool:

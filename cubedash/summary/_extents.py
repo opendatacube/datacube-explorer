@@ -4,7 +4,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, List
 
 import fiona
 import shapely.ops
@@ -27,13 +27,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+from sqlalchemy.sql.elements import ClauseElement, Label
 
 import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine, infer_crs
+from cubedash._utils import alchemy_engine, infer_crs, ODC_DATASET as DATASET
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
+
 from datacube.index import Index
 from datacube.model import DatasetType, Field, MetadataType
 
@@ -59,7 +60,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
-    if _expects_eo3_metadata_type(md):
+    if expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
             func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
             get_dataset_srid_alchemy_expression(md, default_crs),
@@ -85,7 +86,10 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         )
 
 
-def _expects_eo3_metadata_type(md: MetadataType):
+def expects_eo3_metadata_type(md: MetadataType) -> bool:
+    """
+    Does the given metadata type expect EO3 datasets?
+    """
     # We don't have a clean way to say that a product expects EO3
 
     measurements_offset = md.definition["dataset"]["measurements"]
@@ -137,7 +141,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
-    if _expects_eo3_metadata_type(md):
+    if expects_eo3_metadata_type(md):
         spatial_ref = doc[["crs"]].astext
     else:
         # Most have a spatial_reference field we can use directly.
@@ -252,9 +256,18 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def refresh_product(index: Index, product: DatasetType):
+def refresh_product(index: Index, product: DatasetType, recompute_all_extents=False):
+    """
+    Record the spatial extents for each dataset in a product.
+
+    By default, it will only add datasets that are currently missing.
+
+    :param recompute_all_extents: replace all extents, even if already recorded
+    """
     engine: Engine = alchemy_engine(index)
-    insert_count = _populate_missing_dataset_extents(engine, product)
+    insert_count = _populate_missing_dataset_extents(
+        engine, product, force_update_all=recompute_all_extents
+    )
 
     # If we inserted data...
     if insert_count:
@@ -307,37 +320,54 @@ def refresh_product(index: Index, product: DatasetType):
     return insert_count
 
 
-def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
-    query = (
-        postgres.insert(DATASET_SPATIAL)
-        .from_select(
-            [
-                "id",
-                "dataset_type_ref",
-                "center_time",
-                "footprint",
-                "region_code",
-                "size_bytes",
-                "creation_time",
-            ],
-            _select_dataset_extent_query(product),
+def _populate_missing_dataset_extents(
+    engine: Engine, product: DatasetType, force_update_all=False
+):
+    columns = {c.name: c for c in _select_dataset_extent_columns(product)}
+
+    if force_update_all:
+        query = (
+            DATASET_SPATIAL.update()
+            .values(**columns)
+            .where(DATASET_SPATIAL.c.id == columns["id"])
+            .where(
+                DATASET.c.dataset_type_ref
+                == bindparam("product_ref", product.id, type_=SmallInteger)
+            )
+            .where(DATASET.c.archived == None)
         )
-        .on_conflict_do_nothing(index_elements=["id"])
-    )
+    else:
+        query = (
+            postgres.insert(DATASET_SPATIAL)
+            .from_select(
+                columns.keys(),
+                select(columns.values())
+                .where(
+                    DATASET.c.dataset_type_ref
+                    == bindparam("product_ref", product.id, type_=SmallInteger)
+                )
+                .where(DATASET.c.archived == None)
+                .order_by(columns["center_time"]),
+            )
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+    # print(as_sql(query))
 
     _LOG.debug(
         "spatial_insert_query.start",
         product_name=product.name,
-        # query_sql=as_sql(query),
+        force_update_all=force_update_all,
     )
-    inserted = engine.execute(query).rowcount
-    _LOG.debug("spatial_insert_query.end", product_name=product.name, inserted=inserted)
-    return inserted
+    changed = engine.execute(query).rowcount
+    _LOG.debug(
+        "spatial_insert_query.end", product_name=product.name, change_count=changed
+    )
+    return changed
 
 
-def _select_dataset_extent_query(dt: DatasetType):
+def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
     """
-    Create a query that selects all fields which go into the spatial table
+    Get columns for all fields which go into the spatial table
     for this DatasetType.
     """
     md_type = dt.metadata_type
@@ -356,8 +386,6 @@ def _select_dataset_extent_query(dt: DatasetType):
             footprint_expression, resolution / 4
         )
 
-    product_ref = bindparam("product_ref", dt.id, type_=SmallInteger)
-
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
     time = md_type.dataset_fields["time"].alchemy_expression
@@ -367,24 +395,17 @@ def _select_dataset_extent_query(dt: DatasetType):
         "center_time"
     )
 
-    return (
-        select(
-            [
-                DATASET.c.id,
-                DATASET.c.dataset_type_ref,
-                center_time,
-                (
-                    null() if footprint_expression is None else footprint_expression
-                ).label("footprint"),
-                (_region_code_field(dt).label("region_code")),
-                _size_bytes_field(dt).label("size_bytes"),
-                _dataset_creation_expression(md_type).label("creation_time"),
-            ]
-        )
-        .where(DATASET.c.dataset_type_ref == product_ref)
-        .where(DATASET.c.archived == None)
-        .order_by(center_time)
-    )
+    return [
+        DATASET.c.id,
+        DATASET.c.dataset_type_ref,
+        center_time,
+        (null() if footprint_expression is None else footprint_expression).label(
+            "footprint"
+        ),
+        _region_code_field(dt).label("region_code"),
+        _size_bytes_field(dt).label("size_bytes"),
+        _dataset_creation_expression(md_type).label("creation_time"),
+    ]
 
 
 def _default_crs(dt: DatasetType) -> Optional[str]:
@@ -395,7 +416,7 @@ def _default_crs(dt: DatasetType) -> Optional[str]:
     return storage.get("crs")
 
 
-def _dataset_creation_expression(md: MetadataType) -> Optional[datetime]:
+def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
 
     # Either there's a field called "created", or we fallback to the default "creation_dt' in metadata type.
@@ -683,7 +704,15 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
             product = index.products.get_by_name(product_name)
             res = (
                 alchemy_engine(index)
-                .execute(_select_dataset_extent_query(product).limit(1))
+                .execute(
+                    select(_select_dataset_extent_columns(product))
+                    .where(
+                        DATASET.c.dataset_type_ref
+                        == bindparam("product_ref", product.id, type_=SmallInteger)
+                    )
+                    .where(DATASET.c.archived == None)
+                    .limit(1)
+                )
                 .fetchone()
             )
             if res:

@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import indent
 from typing import Tuple
 
 import pytest
@@ -59,17 +60,21 @@ def clirunner(global_integration_cli_args):
         runner = CliRunner()
         result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, f"Error for {opts}. output: {result.output!r}"
+            assert (
+                0 == result.exit_code
+            ), f"Error for {opts}. Out:\n{indent(result.output, ' '*4)}"
         return result
 
     return _run_cli
 
 
 @pytest.fixture()
-def run_generate(clirunner, summary_store):
-    def do(*only_products, expect_success=True):
-        products = only_products or ["--all"]
-        res = clirunner(generate.cli, products, expect_success=expect_success)
+def run_generate(clirunner, summary_store, multi_processed=False):
+    def do(*args, expect_success=True):
+        args = args or ("--all",)
+        if not multi_processed:
+            args = ("-j", "1") + tuple(args)
+        res = clirunner(generate.cli, args, expect_success=expect_success)
         return res
 
     return do

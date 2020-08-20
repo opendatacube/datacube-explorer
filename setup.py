@@ -8,7 +8,6 @@ tests_require = [
     "boltons",
     "digitalearthau",
     "flake8",
-    "isort[requirements]",
     "jsonschema > 3",
     "pytest",
     "pytest-benchmark",

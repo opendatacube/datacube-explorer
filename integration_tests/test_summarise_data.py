@@ -13,6 +13,7 @@ from dateutil.tz import tzutc
 from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import CUBEDASH_SCHEMA
+from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 from datacube.utils import read_documents
@@ -318,6 +319,47 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
     )
 
 
+def test_force_dataset_regeneration(
+    run_generate, summary_store: SummaryStore, module_index: Index
+):
+    """
+    We should be able to force-replace dataset extents with the "--recreate-dataset-extents" option
+    """
+    run_generate("ls8_nbar_albers")
+    [example_dataset] = summary_store.index.datasets.search_eager(
+        product="ls8_nbar_albers", limit=1
+    )
+
+    original_footprint = summary_store.get_dataset_footprint_region(example_dataset.id)
+    assert original_footprint is not None
+
+    # Now let's break the footprint!
+    alchemy_engine(module_index).execute(
+        f"update {CUBEDASH_SCHEMA}.dataset_spatial "
+        "    set footprint="
+        "        ST_SetSRID("
+        "            ST_GeomFromText("
+        "                'POLYGON((-71.1776585052917 42.3902909739571,-71.1776820268866 42.3903701743239,"
+        "                          -71.1776063012595 42.3903825660754,-71.1775826583081 42.3903033653531,"
+        "                          -71.1776585052917 42.3902909739571))'"
+        "            ),"
+        "            4326"
+        "        )"
+        "    where id=%s",
+        example_dataset.id,
+    )
+    # Make sure it worked
+    footprint = summary_store.get_dataset_footprint_region(example_dataset.id)
+    assert footprint != original_footprint, "Test data didn't successfully override"
+
+    # Now force-recreate dataset extents
+    run_generate("-v", "ls8_nbar_albers", "--recreate-dataset-extents")
+
+    # ... and they should be correct again
+    footprint = summary_store.get_dataset_footprint_region(example_dataset.id)
+    assert footprint == original_footprint, "Dataset extent was not regenerated"
+
+
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     summary_store.refresh_all_products()
 
@@ -360,7 +402,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert cached_s.dataset_count == summary.dataset_count
 
 
-def test_cubedash_gen_refresh(run_generate, module_index):
+def test_cubedash_gen_refresh(run_generate, module_index: Index):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """

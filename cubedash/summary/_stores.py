@@ -31,6 +31,7 @@ from cubedash.summary._schema import (
     TIME_OVERVIEW,
     refresh_supporting_views,
     get_srid_name,
+    PleaseRefresh,
 )
 from cubedash.summary._summarise import Summariser
 from datacube import Datacube
@@ -126,8 +127,12 @@ class SummaryStore:
         (Requires `create` permissions in the db)
         """
         _schema.create_schema(self._engine)
-        # If it already existed, check updates are applied.
-        _schema.update_schema(self._engine)
+        # Apply any needed updates.
+        refresh_items = _schema.update_schema(self._engine)
+
+        # Refresh relevant data summaries
+        for refresh_item in refresh_items:
+            _refresh_data(refresh_item, store=self)
 
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
@@ -139,10 +144,16 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(
-        self, refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN
+        self,
+        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
+        force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
-            self.refresh_product(product, refresh_older_than=refresh_older_than)
+            self.refresh_product(
+                product,
+                refresh_older_than=refresh_older_than,
+                force_dataset_extent_recompute=force_dataset_extent_recompute,
+            )
         self.refresh_stats()
 
     def refresh_product(
@@ -150,11 +161,17 @@ class SummaryStore:
         product: DatasetType,
         refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
-    ):
+        force_dataset_extent_recompute=False,
+    ) -> Optional[int]:
+        """
+        Update Explorer's computed extents for the given product, and record any new
+        datasets into the spatial table.
+        """
         our_product = self.get_product_summary(product.name)
 
         if (
-            our_product is not None
+            not force_dataset_extent_recompute
+            and our_product is not None
             and our_product.last_refresh_age < refresh_older_than
         ):
             _LOG.debug(
@@ -166,7 +183,9 @@ class SummaryStore:
             return None
 
         _LOG.info("init.product", product_name=product.name)
-        added_count = _extents.refresh_product(self.index, product)
+        added_count = _extents.refresh_product(
+            self.index, product, recompute_all_extents=force_dataset_extent_recompute,
+        )
         earliest, latest, total_count = self._engine.execute(
             select(
                 (
@@ -206,11 +225,16 @@ class SummaryStore:
         return added_count
 
     def refresh_stats(self, concurrently=False):
+        """
+        Refresh general statistics tables that cover all products.
+
+        This is ideally done once after all needed products have been refreshed.
+        """
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
         self, product: DatasetType, sample_percentage=0.05
-    ):
+    ) -> Dict[str, any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
 
@@ -307,7 +331,7 @@ class SummaryStore:
 
     def _get_linked_products(
         self, product: DatasetType, kind="source", sample_percentage=0.05
-    ):
+    ) -> List[str]:
         """
         Find products with upstream or downstream datasets from this product.
 
@@ -693,7 +717,7 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """
         Get a cached summary if exists, otherwise generate one
 
@@ -722,7 +746,7 @@ class SummaryStore:
         day: Optional[int] = None,
         generate_missing_children: Optional[bool] = True,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """Update the given summary and return the new one"""
         product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get
@@ -876,6 +900,21 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
+
+
+def _refresh_data(item: PleaseRefresh, store: SummaryStore):
+    """
+    Refresh the given kind of data.
+    """
+    if item == PleaseRefresh.DATASET_EXTENTS:
+        for dt in store.all_dataset_types():
+            # Skip product if it's never been summarised at all.
+            if store.get_product_summary(dt.name) is None:
+                continue
+
+            store.refresh_product(dt, force_dataset_extent_recompute=True)
+    else:
+        raise NotImplementedError(f"Unknown data type to refresh_data: {item}")
 
 
 def _safe_read_date(d):
