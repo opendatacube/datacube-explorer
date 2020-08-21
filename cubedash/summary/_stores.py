@@ -3,7 +3,17 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    Set,
+)
 from uuid import UUID
 
 import dateutil.parser
@@ -14,7 +24,7 @@ from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
 from shapely.geometry import GeometryCollection
-from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy import DDL, String, and_, func, select, bindparam, SmallInteger, literal
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -128,13 +138,14 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        _schema.create_schema(self._engine)
-        # Apply any needed updates.
-        refresh_items = _schema.update_schema(self._engine)
+        needed_update = not _schema.is_compatible_schema(self._engine)
 
-        # Refresh relevant data summaries
-        for refresh_item in refresh_items:
-            _refresh_data(refresh_item, store=self)
+        # Add any missing schema items or patches.
+        _schema.create_schema(self._engine)
+        refresh_also = _schema.update_schema(self._engine)
+
+        if needed_update or refresh_also:
+            _refresh_data(refresh_also, store=self)
 
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
@@ -185,7 +196,7 @@ class SummaryStore:
             return None
 
         _LOG.info("init.product", product_name=product.name)
-        added_count = _extents.refresh_product(
+        change_count = _extents.refresh_product(
             self.index,
             product,
             recompute_all_extents=force_dataset_extent_recompute,
@@ -226,7 +237,62 @@ class SummaryStore:
                 fixed_metadata=fixed_metadata,
             )
         )
-        return added_count
+
+        self._refresh_product_regions(product)
+        _LOG.info("init.regions.done", product_name=product.name)
+        return change_count
+
+    def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
+        log = _LOG.bind(product_name=dataset_type.name)
+        log.info("refresh.regions.start")
+        select_by_srid = (
+            select(
+                [
+                    DATASET_SPATIAL.c.dataset_type_ref,
+                    DATASET_SPATIAL.c.region_code,
+                    func.ST_Transform(
+                        func.ST_Union(DATASET_SPATIAL.c.footprint), 4326
+                    ).label("footprint"),
+                    func.count().label("count"),
+                ]
+            )
+            .where(
+                DATASET_SPATIAL.c.dataset_type_ref
+                == bindparam("product_ref", dataset_type.id, type_=SmallInteger)
+            )
+            .group_by("dataset_type_ref", "region_code")
+            .cte("srid_groups")
+        )
+
+        columns = dict(
+            dataset_type_ref=select_by_srid.c.dataset_type_ref,
+            region_code=func.coalesce(select_by_srid.c.region_code, ""),
+            footprint=func.ST_SimplifyPreserveTopology(
+                func.ST_Union(select_by_srid.c.footprint), literal(0.0001)
+            ),
+            count=func.sum(select_by_srid.c.count),
+        )
+        query = postgres.insert(REGION).from_select(
+            columns.keys(),
+            select(columns.values())
+            .select_from(select_by_srid)
+            .group_by("dataset_type_ref", "region_code"),
+        )
+        query = query.on_conflict_do_update(
+            index_elements=["dataset_type_ref", "region_code"],
+            set_=dict(
+                footprint=query.excluded.footprint,
+                count=query.excluded.count,
+                generation_time=func.now(),
+            ),
+        )
+        # Path(__file__).parent.joinpath("insertion.sql").write_text(
+        #     f"\n{as_sql(query)}\n"
+        # )
+        changed_rows = self._engine.execute(query).rowcount
+
+        log.info("refresh.regions.end", changed_regions=changed_rows)
+        return changed_rows
 
     def refresh_stats(self, concurrently=False):
         """
@@ -905,21 +971,24 @@ class SummaryStore:
         )
 
 
-def _refresh_data(item: PleaseRefresh, store: SummaryStore):
+def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
     """
-    Refresh the given kind of data.
+    Refresh product information after a schema update, plus the given kind of data.
     """
-    if item == PleaseRefresh.DATASET_EXTENTS:
-        for dt in store.all_dataset_types():
-            _LOG.info("data.refreshing_extents", product=dt.name)
-            # Skip product if it's never been summarised at all.
-            if store.get_product_summary(dt.name) is None:
-                continue
+    recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
 
-            store.refresh_product(dt, force_dataset_extent_recompute=True)
-        _LOG.info("data.refreshing_extents.complete")
-    else:
-        raise NotImplementedError(f"Unknown data type to refresh_data: {item}")
+    for dt in store.all_dataset_types():
+        _LOG.info("data.refreshing_extents", product=dt.name)
+        # Skip product if it's never been summarised at all.
+        if store.get_product_summary(dt.name) is None:
+            continue
+
+        store.refresh_product(
+            dt,
+            refresh_older_than=timedelta(minutes=-1),
+            force_dataset_extent_recompute=recompute_dataset_extents,
+        )
+    _LOG.info("data.refreshing_extents.complete")
 
 
 def _safe_read_date(d):
