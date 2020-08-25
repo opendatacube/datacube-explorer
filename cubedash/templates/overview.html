@@ -73,7 +73,11 @@
                     </a>
 
                     {% if selected_summary.dataset_count != selected_summary.footprint_count %}
-                        ({{ selected_summary.footprint_count or 'None' }} displayable)
+                        {%- if selected_summary.footprint_count -%}
+                            ({{ '{:,d}'.format(selected_summary.footprint_count) }} displayable)
+                        {%- else -%}
+                            (None displayable)
+                        {%- endif -%}
                     {% endif %}
 
                     <ul>
