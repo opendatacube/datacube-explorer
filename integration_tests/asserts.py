@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 from textwrap import indent
-from typing import Dict, Optional, Set, Tuple, List
+from typing import Dict, Optional, Set, Tuple
 
 import jsonschema
 from dateutil.tz import tzutc
@@ -191,41 +191,6 @@ def expect_values(
             for region, count in s.region_dataset_counts.items():
                 print(f"\t{repr(region)}: {count}")
         raise
-
-
-def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
-    """Assert all given URLs return an OK HTTP response
-
-    These can be used to test that the application works when
-    the DB/Index is put in an unusual state -- the most common
-    situation by far is a hard rendering error.
-
-    *caution*
-
-    Please don't rely on this for increasing test coverage of
-    normal functionality.
-
-    Other test modules, such as `test_page_loads.py`, are more
-    useful to imitate for normal testing as they test the
-    actual values on the page.
-
-    This does catch a lot of bugs though, at low effort.
-    """
-
-    __tracebackhide__ = True
-
-    for url in all_urls:
-        response: Response = client.get(url, follow_redirects=True)
-
-        if response.status_code != 200:
-            max_failure_line_count = 5
-            error_sample = "\n".join(
-                response.data.decode("utf-8").split("\n")[:max_failure_line_count]
-            )
-            raise AssertionError(
-                f"Response {response.status_code} from url f{url}. "
-                f"Content:\n{indent(error_sample, ' ' * 4)}"
-            )
 
 
 class DebugContext:
