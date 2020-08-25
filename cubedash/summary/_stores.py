@@ -1055,7 +1055,7 @@ def _dataset_to_feature(dataset: Dataset):
 
 
 _BOX2D_PATTERN = re.compile(
-    r"BOX\(([-0-9.]+)\s+([-0-9.]+)\s*,\s*([-0-9.]+)\s+([-0-9.]+)\)"
+    r"BOX\(([-0-9.e]+)\s+([-0-9.e]+)\s*,\s*([-0-9.e]+)\s+([-0-9.e]+)\)"
 )
 
 
@@ -1067,8 +1067,16 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     ...     "BOX(134.806923200497 -17.7694714883835,135.769692610214 -16.8412669214876)"
     ... )
     (134.806923200497, -17.7694714883835, 135.769692610214, -16.8412669214876)
+    >>> # Scientific notation in numbers is sometimes given
+    >>> _box2d_to_bbox(
+    ...     "BOX(35.6948526641442 -0.992278901187827,36.3518945675102 -9.03173177994956e-06)"
+    ... )
+    (35.6948526641442, -0.992278901187827, 36.3518945675102, -9.03173177994956e-06)
     """
     m = _BOX2D_PATTERN.match(pg_box2d)
+    if m is None:
+        raise RuntimeError(f"Unexpected postgis box syntax {pg_box2d!r}")
+
     # We know there's exactly four groups, but type checker doesn't...
     # noinspection PyTypeChecker
     return tuple(float(m) for m in m.groups())
