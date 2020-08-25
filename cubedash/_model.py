@@ -39,7 +39,7 @@ app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 # Enable do template extension
 app.jinja_options["extensions"].append("jinja2.ext.do")
 
-app.config.setdefault("CACHE_TYPE", "simple")
+app.config.setdefault("CACHE_TYPE", "null")
 cache = Cache(app=app, config=app.config)
 
 app.config.setdefault("CUBEDASH_THEME", "odc")
