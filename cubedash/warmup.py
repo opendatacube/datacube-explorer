@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 import click
 from click import secho
 
+from cubedash.summary import RegionInfo
 from datacube.index import Index
 from datacube.ui.click import config_option, environment_option, pass_index
 
@@ -48,11 +49,15 @@ def find_examples_of_all_public_urls(index: Index):
             # TODO: Do non-region_code regions too (such as ingested data)
             # TODO: Actually we have no EO3 in this test data, so it does nothing.
             #       Maybe add test data from test_eo3_support.py?
-            if "region_code" in dataset.metadata.fields:
-                yield f"/api/regions/{name}/{time:%Y/%m/%d}"
+            region_info = RegionInfo.for_product(dt)
 
-                yield f"/region/{name}/{dataset.metadata.region_code}"
-                yield f"/region/{name}/{dataset.metadata.region_code}/{time:%Y/%m/%d}"
+            if region_info is not None:
+                region_code = region_info.dataset_region_code(dataset)
+                if region_code is not None:
+                    yield f"/api/regions/{name}/{time:%Y/%m/%d}"
+
+                    yield f"/region/{name}/{region_code}"
+                    yield f"/region/{name}/{region_code}/{time:%Y/%m/%d}"
 
     for [dataset_id] in index.datasets.search_returning(("id",), limit=10):
         yield f"/dataset/{dataset_id}"

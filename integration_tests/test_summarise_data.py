@@ -12,6 +12,7 @@ from dateutil.tz import tzutc
 
 from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
+from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
@@ -427,3 +428,28 @@ def test_cubedash_gen_refresh(run_generate, module_index: Index):
     assert (
         value_after_rerun == original_value
     ), "Product sequence was incremented without any new products being added."
+
+
+def test_computed_regions_match_those_summarised(summary_store: SummaryStore):
+    """
+    The region code for all datasets should be computed identically when
+    done in both SQL and Python.
+    """
+    summary_store.refresh_all_products()
+
+    # Loop through all datasets in the test data to check that the the DB and Python
+    # functions give identical region codes.
+    for product in summary_store.index.products.get_all():
+        region_info = GridRegionInfo.for_product(product, None)
+        for dataset in summary_store.index.datasets.search(product=product.name):
+            (
+                footprint,
+                alchemy_calculated_region_code,
+            ) = summary_store.get_dataset_footprint_region(dataset.id)
+
+            python_calculated_region_code = region_info.dataset_region_code(dataset)
+            assert python_calculated_region_code == alchemy_calculated_region_code, (
+                "Python and DB calculated region codes didn't product the same value. "
+                f"{python_calculated_region_code!r} != {alchemy_calculated_region_code!r}"
+                f"for product {dataset.type.name!r}, dataset {dataset!r}"
+            )
