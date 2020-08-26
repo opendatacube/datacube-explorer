@@ -343,11 +343,16 @@ def as_geojson(o):
 def as_yaml(o, content_type="text/yaml"):
     stream = StringIO()
     eodatasets3.serialise.dumps_yaml(stream, o)
-    return flask.Response(stream.getvalue(), content_type=content_type,)
+    return flask.Response(
+        stream.getvalue(),
+        content_type=content_type,
+    )
 
 
 def prepare_dataset_formatting(
-    dataset: Dataset, include_source_url=False, include_locations=False,
+    dataset: Dataset,
+    include_source_url=False,
+    include_locations=False,
 ) -> CommentedMap:
     """
     Try to format a raw Dataset document for readability.
@@ -367,7 +372,8 @@ def prepare_dataset_formatting(
         doc = eodatasets3.serialise.prepare_formatting(doc)
         if include_source_url:
             doc.yaml_set_comment_before_after_key(
-                "$schema", before=f"url: {flask.request.url}",
+                "$schema",
+                before=f"url: {flask.request.url}",
             )
         # Strip EO-legacy fields.
         undo_eo3_compatibility(doc)
@@ -382,7 +388,9 @@ def prepare_dataset_formatting(
 
 
 def prepare_document_formatting(
-    metadata_doc: Dict, doc_friendly_label: str = "", include_source_url=False,
+    metadata_doc: Dict,
+    doc_friendly_label: str = "",
+    include_source_url=False,
 ):
     """
     Try to format a raw document for readability.
@@ -438,7 +446,8 @@ def prepare_document_formatting(
     if header_comments:
         # Add comments above the first key of the document.
         ordered_metadata.yaml_set_comment_before_after_key(
-            next(iter(metadata_doc.keys())), before="\n".join(header_comments),
+            next(iter(metadata_doc.keys())),
+            before="\n".join(header_comments),
         )
     return ordered_metadata
 

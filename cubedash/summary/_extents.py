@@ -278,7 +278,8 @@ def refresh_product(index: Index, product: DatasetType, recompute_all_extents=Fa
 
                 # We can synthesize the polygons!
                 _LOG.debug(
-                    "spatial_synthesizing.start", product_name=product.name,
+                    "spatial_synthesizing.start",
+                    product_name=product.name,
                 )
                 shapes = _get_path_row_shapes()
                 rows = [
@@ -314,7 +315,8 @@ def refresh_product(index: Index, product: DatasetType, recompute_all_extents=Fa
                         ],
                     )
             _LOG.debug(
-                "spatial_synthesizing.done", product_name=product.name,
+                "spatial_synthesizing.done",
+                product_name=product.name,
             )
 
     return insert_count

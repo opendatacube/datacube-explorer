@@ -32,10 +32,16 @@ TEST_EO3_DATASET_ARD = (
 @pytest.fixture(scope="module")
 def eo3_index(module_dea_index: Index, dataset_loader):
 
-    loaded = dataset_loader("usgs_ls5t_level1_1", TEST_EO3_DATASET_L1,)
+    loaded = dataset_loader(
+        "usgs_ls5t_level1_1",
+        TEST_EO3_DATASET_L1,
+    )
     assert loaded == 1
 
-    loaded = dataset_loader("ga_ls5t_ard_3", TEST_EO3_DATASET_ARD,)
+    loaded = dataset_loader(
+        "ga_ls5t_ard_3",
+        TEST_EO3_DATASET_ARD,
+    )
     assert loaded == 1
 
     # We need postgis and some support tables (eg. srid lookup).

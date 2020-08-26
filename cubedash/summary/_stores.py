@@ -186,7 +186,9 @@ class SummaryStore:
 
         _LOG.info("init.product", product_name=product.name)
         added_count = _extents.refresh_product(
-            self.index, product, recompute_all_extents=force_dataset_extent_recompute,
+            self.index,
+            product,
+            recompute_all_extents=force_dataset_extent_recompute,
         )
         earliest, latest, total_count = self._engine.execute(
             select(
