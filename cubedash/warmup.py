@@ -55,9 +55,8 @@ def find_examples_of_all_public_urls(index: Index):
                     yield f"/region/{name}/{region_code}"
                     yield f"/region/{name}/{region_code}/{time:%Y/%m/%d}"
 
-    for [dataset_id] in index.datasets.search_returning(("id",), limit=10):
-        yield f"/dataset/{dataset_id}"
-        yield f"/dataset/{dataset_id}.odc-metadata.yaml"
+            yield f"/dataset/{dataset.id}"
+            yield f"/dataset/{dataset.id}.odc-metadata.yaml"
 
 
 @click.command()
