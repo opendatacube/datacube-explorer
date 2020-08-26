@@ -46,11 +46,7 @@ def find_examples_of_all_public_urls(index: Index):
             yield f"/api/datasets/{name}"
             yield f"/api/footprint/{name}/{time:%Y/%m/%d}"
 
-            # TODO: Do non-region_code regions too (such as ingested data)
-            # TODO: Actually we have no EO3 in this test data, so it does nothing.
-            #       Maybe add test data from test_eo3_support.py?
             region_info = RegionInfo.for_product(dt)
-
             if region_info is not None:
                 region_code = region_info.dataset_region_code(dataset)
                 if region_code is not None:
