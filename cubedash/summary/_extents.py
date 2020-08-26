@@ -36,7 +36,7 @@ from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
 
 from datacube.index import Index
-from datacube.model import DatasetType, Field, MetadataType
+from datacube.model import DatasetType, Field, MetadataType, Dataset
 
 _LOG = structlog.get_logger()
 
@@ -527,7 +527,9 @@ class RegionInfo:
     units_label: str = "regions"
 
     @classmethod
-    def for_product(cls, dt: DatasetType, region_shapes: Dict[str, GeometryCollection]):
+    def for_product(
+        cls, dt: DatasetType, region_shapes: Dict[str, GeometryCollection] = None
+    ):
         region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
         grid_spec = dt.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
@@ -557,7 +559,23 @@ class RegionInfo:
             "properties": {"region_code": region_code},
         }
 
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        """
+        Get the region code for a dataset.
+
+        This should always give the same result as the alchemy_expression() function,
+        but is computed in pure python.
+
+        Classes that override alchemy_expression should override this to match.
+        """
+        return dataset.metadata.region_code
+
     def alchemy_expression(self):
+        """
+        Get an alchemy expression that computes dataset's region code
+
+        Classes that override this should also override dataset_region_code to match.
+        """
         dt = self.product
         region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
         # `alchemy_expression` is part of the postgres driver (PgDocField),
@@ -625,6 +643,21 @@ class GridRegionInfo(RegionInfo):
             func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
         )
 
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        tiles = [
+            tile
+            for tile, _ in dataset.type.grid_spec.tiles(
+                dataset.extent.centroid.boundingbox
+            )
+        ]
+        if not len(tiles) == 1:
+            raise ValueError(
+                "Tiled dataset should only have one tile? "
+                f"Got {tiles!r} for {dataset!r}"
+            )
+        x, y = tiles[0]
+        return f"{x}_{y}"
+
 
 def _from_xy_region_code(region_code: str):
     """
@@ -675,6 +708,19 @@ class SceneRegionInfo(RegionInfo):
             # Otherwise it's a range of rows, so our region-code is the whole path.
             else_=path_field.lower.alchemy_expression.cast(String),
         )
+
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        path_range = dataset.metadata.fields["sat_path"]
+        row_range = dataset.metadata.fields["sat_row"]
+        if row_range is None and path_range is None:
+            return None
+
+        # If it's just one scene? Include it specifically
+        if row_range[0] == row_range[1]:
+            return f"{path_range[0]}_{row_range[1]}"
+        # Otherwise it's a range of rows, so we say the whole path.
+        else:
+            return f"{path_range[0]}"
 
 
 def _region_code_field(dt: DatasetType):
