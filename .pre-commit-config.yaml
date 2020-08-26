@@ -1,16 +1,16 @@
 ---
 repos:
   - repo: https://github.com/ambv/black
-    rev: 19.10b0
+    rev: 20.8b1
     hooks:
       - id: black
   # Update the sha variable with the release version that you want, from the yamllint repo
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.22.1
+    rev: v1.24.2
     hooks:
       - id: yamllint
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.2
+    rev: 3.8.3
     hooks:
       - id: flake8
         additional_dependencies:

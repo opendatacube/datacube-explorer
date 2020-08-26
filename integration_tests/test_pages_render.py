@@ -53,7 +53,10 @@ def test_all_pages_render(all_urls, client: FlaskClient):
 
 
 def test_allows_null_product_fixed_fields(
-    all_urls, client: FlaskClient, module_index: Index, summary_store: SummaryStore,
+    all_urls,
+    client: FlaskClient,
+    module_index: Index,
+    summary_store: SummaryStore,
 ):
     """
     Pages should not fall over when fixed_metadata is null.
