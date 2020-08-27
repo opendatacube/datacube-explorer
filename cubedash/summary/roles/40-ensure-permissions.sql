@@ -21,7 +21,6 @@ grant insert, update, delete on all tables in schema cubedash to explorer_genera
 
 -- Must be owner of materialised views to refresh them.
 alter materialized view cubedash.mv_dataset_spatial_quality owner to explorer_generator;
-alter materialized view cubedash.mv_region owner to explorer_generator;
 alter materialized view cubedash.mv_spatial_ref_sys owner to explorer_generator;
 grant usage on sequence cubedash.product_id_seq to explorer_generator;
 
@@ -35,6 +34,7 @@ grant all privileges on all tables in schema cubedash to explorer_owner;
 -- Double-check that tables are owned by them (they should be if it created them)
 alter table cubedash.dataset_spatial owner to explorer_owner;
 alter table cubedash.product owner to explorer_owner;
+alter table cubedash.region owner to explorer_owner;
 alter table cubedash.time_overview owner to explorer_owner;
 alter sequence cubedash.product_id_seq owner to explorer_owner;
 
