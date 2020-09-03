@@ -277,20 +277,21 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     group_by_regex = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_REGEX", None)
 
     if group_by_regex:
-        grouped_summaries = {}
-        grouped_product_summarise =[]
-        group_regex = {}
-        regex_group_pairs = group_by_regex.split(';')
-        for regex_group_pair in regex_group_pairs:
-            regex, group = regex_group_pair.split(',')
-            group_regex[group] = re.compile(regex)  
-            grouped_summaries[group] = []
+        try:
+            regex_group= {}
+            for regex_group_pair in group_by_regex.split(';'):
+                regex, group = regex_group_pair.split(',')
+                regex_group[re.compile(regex.strip())] = group.strip()  
+        except Exception as e:
+            _LOG.warn("invalid CUBEDASH_PRODUCT_GROUP_BY_REGEX: {}".format(group_by_regex))
+            group_by_regex = None
+    
+    if group_by_regex:
         # group using regex 
         def regex_key(t):
-            for product_summary in product_summaries:
-                for group, regex in group_regex.items():
-                    if regex.match(t[0].name):
-                        return group
+            for regex, group in regex_group.items():
+                if regex.search(t[0].name):
+                    return group
             return t[0].name
         key = regex_key
     else:
