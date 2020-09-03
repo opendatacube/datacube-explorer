@@ -129,6 +129,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
     
+    # Limited regex syntax and group name pairs. Within pairs regex and group name seperated by 
+    # pairs seperated by ; regex matches on product name
+    # eg ".*albers.*,Albers projection;.*level1.*,Level 1 products" defaults to None
+    # items are only categorized into the first group matched even if subsequent regexes match
+    # if defined overrules CUBEDASH_PRODUCT_GROUP_BY_FIELD 
+    CUBEDASH_PRODUCT_GROUP_BY_REGEX = ".*albers.*,Albers projection;.*level1.*,Level 1 products"
     # Which field should we use when grouping products in the top menu?
     CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
     # Ungrouped products will be grouped together in this size.
