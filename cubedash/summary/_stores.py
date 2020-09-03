@@ -24,7 +24,7 @@ from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
 from shapely.geometry import GeometryCollection
-from sqlalchemy import DDL, String, and_, func, select, bindparam, SmallInteger, literal
+from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -245,51 +245,33 @@ class SummaryStore:
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
         log.info("refresh.regions.start")
-        select_by_srid = (
-            select(
-                [
-                    DATASET_SPATIAL.c.dataset_type_ref,
-                    DATASET_SPATIAL.c.region_code,
-                    func.ST_Transform(
-                        func.ST_Union(DATASET_SPATIAL.c.footprint), 4326
-                    ).label("footprint"),
-                    func.count().label("count"),
-                ]
-            )
-            .where(
-                DATASET_SPATIAL.c.dataset_type_ref
-                == bindparam("product_ref", dataset_type.id, type_=SmallInteger)
-            )
-            .group_by("dataset_type_ref", "region_code")
-            .cte("srid_groups")
+        changed_rows = self._engine.execute(
+            """
+        with srid_groups as (
+             select cubedash.dataset_spatial.dataset_type_ref                        as dataset_type_ref,
+                     cubedash.dataset_spatial.region_code                             as region_code,
+                     ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
+                     count(*)                                                         as count
+              from cubedash.dataset_spatial
+              where cubedash.dataset_spatial.dataset_type_ref = %s
+              group by cubedash.dataset_spatial.dataset_type_ref, cubedash.dataset_spatial.region_code
         )
+        insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
+            select srid_groups.dataset_type_ref,
+                   coalesce(srid_groups.region_code, '')                          as region_code,
+                   ST_SimplifyPreserveTopology(
+                           ST_Union(srid_groups.footprint), 0.0001) as footprint,
+                   sum(srid_groups.count)                                         as count
+            from srid_groups
+            group by srid_groups.dataset_type_ref, srid_groups.region_code
+        on conflict (dataset_type_ref, region_code)
+            do update set count           = excluded.count,
+                          generation_time = now(),
+                          footprint       = excluded.footprint
 
-        columns = dict(
-            dataset_type_ref=select_by_srid.c.dataset_type_ref,
-            region_code=func.coalesce(select_by_srid.c.region_code, ""),
-            footprint=func.ST_SimplifyPreserveTopology(
-                func.ST_Union(select_by_srid.c.footprint), literal(0.0001)
-            ),
-            count=func.sum(select_by_srid.c.count),
-        )
-        query = postgres.insert(REGION).from_select(
-            columns.keys(),
-            select(columns.values())
-            .select_from(select_by_srid)
-            .group_by("dataset_type_ref", "region_code"),
-        )
-        query = query.on_conflict_do_update(
-            index_elements=["dataset_type_ref", "region_code"],
-            set_=dict(
-                footprint=query.excluded.footprint,
-                count=query.excluded.count,
-                generation_time=func.now(),
-            ),
-        )
-        # Path(__file__).parent.joinpath("insertion.sql").write_text(
-        #     f"\n{as_sql(query)}\n"
-        # )
-        changed_rows = self._engine.execute(query).rowcount
+            """,
+            dataset_type.id,
+        ).rowcount
 
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
