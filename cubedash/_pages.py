@@ -1,6 +1,7 @@
 import itertools
 from datetime import datetime, timedelta
 from typing import List, Tuple
+import re
 
 import flask
 import structlog
@@ -273,10 +274,30 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     # Which field should we use when grouping products in the top menu?
     group_by_field = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_FIELD", "product_type")
     group_field_size = app.config.get("CUBEDASH_PRODUCT_GROUP_SIZE", 5)
+    group_by_regex = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_REGEX", None)
 
-    # Group using the configured key, or fall back to the product name.
-    def key(t):
-        return t[0].fields.get(group_by_field) or t[0].name
+    if group_by_regex:
+        grouped_summaries = {}
+        grouped_product_summarise =[]
+        group_regex = {}
+        regex_group_pairs = group_by_regex.split(';')
+        for regex_group_pair in regex_group_pairs:
+            regex, group = regex_group_pair.split(',')
+            group_regex[group] = re.compile(regex)  
+            grouped_summaries[group] = []
+        # group using regex 
+        def regex_key(t):
+            for product_summary in product_summaries:
+                for group, regex in group_regex.items():
+                    if regex.match(t[0].name):
+                        return group
+            return t[0].name
+        key = regex_key
+    else:
+        # Group using the configured key, or fall back to the product name.
+        def field_key(t):
+            return t[0].fields.get(group_by_field) or t[0].name
+        key = field_key
 
     grouped_product_summarise = sorted(
         (
