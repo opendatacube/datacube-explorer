@@ -281,9 +281,8 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     if group_by_regex:
         try:
             regex_group= {}
-            for regex_group_pair in group_by_regex.split(';'):
-                regex, group = regex_group_pair.split(',')
-                regex_group[re.compile(regex.strip())] = group.strip()  
+            for regex, group in group_by_regex:
+                regex_group[re.compile(regex.strip())] = group.strip()
         except Exception as e:
             _LOG.warn("invalid CUBEDASH_PRODUCT_GROUP_BY_REGEX: {}".format(group_by_regex))
             group_by_regex = None
