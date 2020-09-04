@@ -284,7 +284,9 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
             for regex, group in group_by_regex:
                 regex_group[re.compile(regex.strip())] = group.strip()
         except Exception:
-            _LOG.warn("invalid CUBEDASH_PRODUCT_GROUP_BY_REGEX: {}".format(group_by_regex))
+            _LOG.warn(
+                "invalid CUBEDASH_PRODUCT_GROUP_BY_REGEX: {}".format(group_by_regex)
+            )
             group_by_regex = None
 
     if group_by_regex:
@@ -294,11 +296,13 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
                 if regex.search(t[0].name):
                     return group
             return t[0].name
+
         key = regex_key
     else:
         # Group using the configured key, or fall back to the product name.
         def field_key(t):
             return t[0].fields.get(group_by_field) or t[0].name
+
         key = field_key
 
     grouped_product_summarise = sorted(
