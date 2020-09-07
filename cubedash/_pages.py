@@ -282,12 +282,11 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
         try:
             regex_group = {}
             for regex, group in group_by_regex:
-                regex_group[re.compile(regex.strip())] = group.strip()
-        except Exception:
-            _LOG.warn(
-                "invalid CUBEDASH_PRODUCT_GROUP_BY_REGEX: {}".format(group_by_regex)
+                regex_group[re.compile(regex)] = group.strip()
+        except re.error as e:
+            raise RuntimeError(
+                f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
             )
-            group_by_regex = None
 
     if group_by_regex:
         # group using regex
