@@ -1,13 +1,19 @@
+"""
+A simple command-line viewer of Explorer products
+and time-periods.
+
+Useful for testing Explorer-generated summaries from
+scripts and the command-line.
+"""
 import time
 from typing import Counter
 
 import click
 import structlog
 from click import echo, secho
-
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
-from cubedash.summary import RegionInfo, SummaryStore
+from cubedash.summary import SummaryStore
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.ui.click import config_option, environment_option, pass_config
@@ -22,7 +28,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
     return SummaryStore.create(index, log=log)
 
 
-@click.command()
+@click.command(help=__doc__)
 @environment_option
 @config_option
 @pass_config
@@ -54,8 +60,7 @@ def cli(
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     store = _get_store(config, "setup")
-    dataset_type = store.get_dataset_type(product_name)
-    region_info = RegionInfo.for_product(dataset_type)
+    region_info = store.get_product_region_info(product_name)
 
     t = time.time()
     if allow_cache:

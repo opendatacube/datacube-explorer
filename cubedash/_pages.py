@@ -3,19 +3,18 @@ from datetime import datetime, timedelta
 from typing import List, Tuple
 import re
 
-import flask
-import structlog
-from flask import Response, abort, redirect, request, url_for
-from werkzeug.datastructures import MultiDict
-
 import cubedash
 import datacube
+import flask
+import structlog
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
-from cubedash.summary import RegionInfo, TimePeriodOverview
+from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
+from flask import Response, abort, redirect, request, url_for
+from werkzeug.datastructures import MultiDict
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _stac
 from . import _utils as utils
@@ -60,17 +59,20 @@ def overview_page(
     default_zoom = theme.options["startZoom"]
     default_center = theme.options["startCoords"]
 
+    region_geojson = _model.get_regions_geojson(product_name, year, month, day)
     return utils.render(
         "overview.html",
         year=year,
         month=month,
         day=day,
         # Which data to preload with the page?
-        regions_geojson=_model.get_regions_geojson(product_name, year, month, day),
+        regions_geojson=region_geojson,
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
-        product_region_info=RegionInfo.for_product(product),
+        product_region_info=_model.STORE.get_product_region_info(product_name)
+        if region_geojson
+        else None,
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
@@ -130,7 +132,7 @@ def search_page(
         )
 
     # For display on the page (and future searches).
-    if "time" not in query and product_summary:
+    if "time" not in query and product_summary and product_summary.time_earliest:
         query["time"] = Range(
             product_summary.time_earliest,
             product_summary.time_latest + timedelta(days=1),
@@ -167,7 +169,7 @@ def region_page(
         product_name, year, month, day
     )
 
-    region_info = RegionInfo.for_product(product)
+    region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:
         abort(404, f"Product {product_name} has no region specification.")
 

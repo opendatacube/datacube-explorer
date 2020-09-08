@@ -37,20 +37,46 @@ def dataset_page(id_):
     archived_location_times = index.datasets.get_archived_location_times(id_)
 
     dataset.metadata.sources = {}
-    ordered_metadata = utils.get_ordered_metadata(dataset.metadata_doc)
+    ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
     derived_datasets = sorted(index.datasets.get_derived(id_), key=utils.dataset_label)
     if len(derived_datasets) > PROVENANCE_DISPLAY_LIMIT:
         derived_dataset_overflow = len(derived_datasets) - PROVENANCE_DISPLAY_LIMIT
         derived_datasets = derived_datasets[:PROVENANCE_DISPLAY_LIMIT]
 
+    footprint, region_code = _model.STORE.get_dataset_footprint_region(id_)
+    # We only have a footprint in the spatial table above if summarisation has been
+    # run for the product (...and done so after the dataset was added).
+    #
+    # Fall back to a regular footprint for other datasets.
+    if not footprint:
+        footprint, is_valid = utils.dataset_shape(dataset)
+
     return utils.render(
         "dataset.html",
         dataset=dataset,
+        dataset_footprint=footprint,
+        dataset_region_code=region_code,
         dataset_metadata=ordered_metadata,
         derived_datasets=derived_datasets,
         source_datasets=source_datasets,
         archive_location_times=archived_location_times,
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
+    )
+
+
+@bp.route("/<uuid:id_>.odc-metadata.yaml")
+def raw_doc(id_):
+    index = _model.STORE.index
+    dataset = index.datasets.get(id_, include_sources=True)
+
+    if dataset is None:
+        abort(404, f"No dataset found with id {id_}")
+
+    # Format for readability
+    return utils.as_yaml(
+        utils.prepare_dataset_formatting(
+            dataset, include_source_url=True, include_locations=True
+        )
     )

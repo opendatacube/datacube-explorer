@@ -4,13 +4,13 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, List
 
 import fiona
-import shapely.wkb
+import shapely.ops
 import structlog
 from geoalchemy2 import Geometry, WKBElement
-from geoalchemy2.shape import to_shape
+from geoalchemy2.shape import to_shape, from_shape
 from psycopg2._range import Range as PgRange
 from shapely.geometry import GeometryCollection, shape
 from sqlalchemy import (
@@ -27,16 +27,16 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
-from sqlalchemy.sql import ColumnElement
+from sqlalchemy.sql.elements import ClauseElement, Label
 
 import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine, infer_crs
+from cubedash._utils import alchemy_engine, infer_crs, ODC_DATASET as DATASET
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.drivers.postgres._schema import DATASET
+
 from datacube.index import Index
-from datacube.model import DatasetType, MetadataType
+from datacube.model import DatasetType, Field, MetadataType, Dataset
 
 _LOG = structlog.get_logger()
 
@@ -48,7 +48,7 @@ _WRS_PATH_ROW = [
 
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
     """
-    Build an SQLaLchemy expression to get the extent for a dataset.
+    Build an SQLAlchemy expression to get the extent for a dataset.
 
     It's returned as a postgis geometry.
 
@@ -60,26 +60,43 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
-    projection_offset = _projection_doc_offset(md)
-    valid_data_offset = projection_offset + ["valid_data"]
+    if expects_eo3_metadata_type(md):
+        return func.ST_SetSRID(
+            func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+            get_dataset_srid_alchemy_expression(md, default_crs),
+        )
+    else:
+        projection_offset = _projection_doc_offset(md)
+        valid_data_offset = projection_offset + ["valid_data"]
 
-    return func.ST_SetSRID(
-        case(
-            [
-                # If we have valid_data offset, use it as the polygon.
-                (
-                    doc[valid_data_offset] != None,
-                    func.ST_GeomFromGeoJSON(
-                        doc[valid_data_offset].astext, type_=Geometry
-                    ),
-                )
-            ],
-            # Otherwise construct a polygon from the four corner points.
-            else_=_bounds_polygon(doc, projection_offset),
-        ),
-        get_dataset_srid_alchemy_expression(md, default_crs),
-        type_=Geometry,
-    )
+        return func.ST_SetSRID(
+            case(
+                [
+                    # If we have valid_data offset, use it as the polygon.
+                    (
+                        doc[valid_data_offset] != None,
+                        func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
+                    )
+                ],
+                # Otherwise construct a polygon from the four corner points.
+                else_=_bounds_polygon(doc, projection_offset),
+            ),
+            get_dataset_srid_alchemy_expression(md, default_crs),
+            type_=Geometry,
+        )
+
+
+def expects_eo3_metadata_type(md: MetadataType) -> bool:
+    """
+    Does the given metadata type expect EO3 datasets?
+    """
+    # We don't have a clean way to say that a product expects EO3
+
+    measurements_offset = md.definition["dataset"]["measurements"]
+
+    # In EO3, the measurements are in ['measurments'],
+    # In EO1, they are in ['image', 'bands'].
+    return measurements_offset == ["measurements"]
 
 
 def _projection_doc_offset(md):
@@ -124,9 +141,11 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
     projection_offset = md.definition["dataset"]["grid_spatial"]
 
-    # Most have a spatial_reference field we can use directly.
-    spatial_reference_offset = projection_offset + ["spatial_reference"]
-    spatial_ref = doc[spatial_reference_offset].astext
+    if expects_eo3_metadata_type(md):
+        spatial_ref = doc[["crs"]].astext
+    else:
+        # Most have a spatial_reference field we can use directly.
+        spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
 
     # When datasets have no CRS, optionally use this as default.
     default_crs_expression = None
@@ -237,41 +256,122 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def refresh_product(index: Index, product: DatasetType):
+def refresh_product(index: Index, product: DatasetType, recompute_all_extents=False):
+    """
+    Record the spatial extents for each dataset in a product.
+
+    By default, it will only add datasets that are currently missing.
+
+    :param recompute_all_extents: replace all extents, even if already recorded
+    """
     engine: Engine = alchemy_engine(index)
-    insert_count = _populate_missing_dataset_extents(engine, product)
+    insert_count = _populate_missing_dataset_extents(
+        engine, product, force_update_all=recompute_all_extents
+    )
+
+    # If we inserted data...
+    if insert_count:
+        # And it's a non-spatial product...
+        if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
+            # And it has WRS path/rows...
+            if "sat_path" in product.metadata_type.dataset_fields:
+
+                # We can synthesize the polygons!
+                _LOG.debug(
+                    "spatial_synthesizing.start",
+                    product_name=product.name,
+                )
+                shapes = _get_path_row_shapes()
+                rows = [
+                    row
+                    for row in index.datasets.search_returning(
+                        ("id", "sat_path", "sat_row"), product=product.name
+                    )
+                    if row.sat_path.lower is not None
+                ]
+                if rows:
+                    engine.execute(
+                        DATASET_SPATIAL.update()
+                        .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
+                        .values(footprint=bindparam("footprint")),
+                        [
+                            dict(
+                                dataset_id=id_,
+                                footprint=from_shape(
+                                    shapely.ops.unary_union(
+                                        [
+                                            shapes[(int(sat_path.lower), row)]
+                                            for row in range(
+                                                int(sat_row.lower),
+                                                int(sat_row.upper) + 1,
+                                            )
+                                        ]
+                                    ),
+                                    srid=4326,
+                                    extended=True,
+                                ),
+                            )
+                            for id_, sat_path, sat_row in rows
+                        ],
+                    )
+            _LOG.debug(
+                "spatial_synthesizing.done",
+                product_name=product.name,
+            )
+
     return insert_count
 
 
-def _populate_missing_dataset_extents(engine: Engine, product: DatasetType):
-    query = (
-        postgres.insert(DATASET_SPATIAL)
-        .from_select(
-            [
-                "id",
-                "dataset_type_ref",
-                "center_time",
-                "footprint",
-                "region_code",
-                "size_bytes",
-                "creation_time",
-            ],
-            _select_dataset_extent_query(product),
+def _populate_missing_dataset_extents(
+    engine: Engine, product: DatasetType, force_update_all=False
+):
+    columns = {c.name: c for c in _select_dataset_extent_columns(product)}
+
+    if force_update_all:
+        query = (
+            DATASET_SPATIAL.update()
+            .values(**columns)
+            .where(DATASET_SPATIAL.c.id == columns["id"])
+            .where(
+                DATASET.c.dataset_type_ref
+                == bindparam("product_ref", product.id, type_=SmallInteger)
+            )
+            .where(DATASET.c.archived == None)
         )
-        .on_conflict_do_nothing(index_elements=["id"])
-    )
+    else:
+        query = (
+            postgres.insert(DATASET_SPATIAL)
+            .from_select(
+                columns.keys(),
+                select(columns.values())
+                .where(
+                    DATASET.c.dataset_type_ref
+                    == bindparam("product_ref", product.id, type_=SmallInteger)
+                )
+                .where(DATASET.c.archived == None)
+                .order_by(columns["center_time"]),
+            )
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+    # print(as_sql(query))
 
     _LOG.debug(
         "spatial_insert_query.start",
         product_name=product.name,
-        # query_sql=as_sql(query),
+        force_update_all=force_update_all,
     )
-    inserted = engine.execute(query).rowcount
-    _LOG.debug("spatial_insert_query.end", product_name=product.name, inserted=inserted)
-    return inserted
+    changed = engine.execute(query).rowcount
+    _LOG.debug(
+        "spatial_insert_query.end", product_name=product.name, change_count=changed
+    )
+    return changed
 
 
-def _select_dataset_extent_query(dt: DatasetType):
+def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
+    """
+    Get columns for all fields which go into the spatial table
+    for this DatasetType.
+    """
     md_type = dt.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
@@ -288,8 +388,6 @@ def _select_dataset_extent_query(dt: DatasetType):
             footprint_expression, resolution / 4
         )
 
-    product_ref = bindparam("product_ref", dt.id, type_=SmallInteger)
-
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
     time = md_type.dataset_fields["time"].alchemy_expression
@@ -299,24 +397,17 @@ def _select_dataset_extent_query(dt: DatasetType):
         "center_time"
     )
 
-    return (
-        select(
-            [
-                DATASET.c.id,
-                DATASET.c.dataset_type_ref,
-                center_time,
-                (
-                    null() if footprint_expression is None else footprint_expression
-                ).label("footprint"),
-                _region_code_field(dt).label("region_code"),
-                _size_bytes_field(dt).label("size_bytes"),
-                _dataset_creation_expression(md_type).label("creation_time"),
-            ]
-        )
-        .where(DATASET.c.dataset_type_ref == product_ref)
-        .where(DATASET.c.archived == None)
-        .order_by(center_time)
-    )
+    return [
+        DATASET.c.id,
+        DATASET.c.dataset_type_ref,
+        center_time,
+        (null() if footprint_expression is None else footprint_expression).label(
+            "footprint"
+        ),
+        _region_code_field(dt).label("region_code"),
+        _size_bytes_field(dt).label("size_bytes"),
+        _dataset_creation_expression(md_type).label("creation_time"),
+    ]
 
 
 def _default_crs(dt: DatasetType) -> Optional[str]:
@@ -327,7 +418,7 @@ def _default_crs(dt: DatasetType) -> Optional[str]:
     return storage.get("crs")
 
 
-def _dataset_creation_expression(md: MetadataType) -> Optional[datetime]:
+def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
 
     # Either there's a field called "created", or we fallback to the default "creation_dt' in metadata type.
@@ -382,7 +473,7 @@ def _as_json(obj):
         if isinstance(o, WKBElement):
             # Following the EWKT format: include srid
             prefix = f"SRID={o.srid};" if o.srid else ""
-            return prefix + to_shape(o).wkt
+            return str(prefix + to_shape(o).wkt)
         if isinstance(o, datetime):
             return o.isoformat()
         if isinstance(o, PgRange):
@@ -423,8 +514,11 @@ def datasets_by_region(engine, index, product_name, region_code, time_range, lim
 
 
 class RegionInfo:
-    def __init__(self, product: DatasetType) -> None:
+    def __init__(
+        self, product: DatasetType, region_shapes: Dict[str, GeometryCollection]
+    ) -> None:
         self.product = product
+        self._region_shapes = region_shapes
 
     # Treated as an "id" in view code. What kind of region?
     name: str = "region"
@@ -435,51 +529,100 @@ class RegionInfo:
     units_label: str = "regions"
 
     @classmethod
-    def for_product(cls, dt: DatasetType):
+    def for_product(
+        cls, dt: DatasetType, region_shapes: Dict[str, GeometryCollection] = None
+    ):
+        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
         grid_spec = dt.grid_spec
-
+        # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
+        #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
         if grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dt)
+            return GridRegionInfo(dt, region_shapes)
+        elif region_code_field is not None:
+            # Generic region info
+            return RegionInfo(dt, region_shapes)
         elif "sat_path" in dt.metadata_type.dataset_fields:
-            return SceneRegionInfo(dt)
-        # TODO: Geometry for other types of regions (eg. MGRS, or manual 'region_code' fields)
+            return SceneRegionInfo(dt, region_shapes)
+
         return None
 
-    def alchemy_expression(self) -> ColumnElement:
-        raise NotImplementedError("alchemy expression", self.__class__.name)
-
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        """
-        Shape
-        """
-        raise NotImplementedError("alchemy expression", self.__class__.name)
+    def geographic_extent(self, region_code: str) -> Optional[GeometryCollection]:
+        return self._region_shapes.get(region_code)
 
     def geojson_extent(self, region_code):
         extent = self.geographic_extent(region_code)
+        if not extent:
+            return None
         return {
             "type": "Feature",
             "geometry": extent.__geo_interface__,
             "properties": {"region_code": region_code},
         }
 
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        """
+        Get the region code for a dataset.
+
+        This should always give the same result as the alchemy_expression() function,
+        but is computed in pure python.
+
+        Classes that override alchemy_expression should override this to match.
+        """
+        return dataset.metadata.region_code
+
+    def alchemy_expression(self):
+        """
+        Get an alchemy expression that computes dataset's region code
+
+        Classes that override this should also override dataset_region_code to match.
+        """
+        dt = self.product
+        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
+        # `alchemy_expression` is part of the postgres driver (PgDocField),
+        # not the base Field class.
+        if not hasattr(region_code_field, "alchemy_expression"):
+            raise NotImplementedError(
+                "ODC index driver doesn't support alchemy expressions"
+            )
+        return region_code_field.alchemy_expression
+
     def region_label(self, region_code: str) -> str:
         """
         Convert the region_code into something human-readable.
         """
+        # Default plain, un-prettified.
         return region_code
 
 
 class GridRegionInfo(RegionInfo):
+    """Ingested datacube products have tiles"""
+
     name = "tiled"
     description = "Tiled product"
     unit_label = "tile"
     units_label = "tiles"
 
+    def region_label(self, region_code: str) -> str:
+        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
+
     def alchemy_expression(self):
+        """
+        Get an sqlalchemy expression to calculate the region code (a string)
+
+        This is usually the 'region_code' field, if one exists, but there are
+        fallbacks for other native Satellites/Platforms.
+
+        Eg.
+
+        On Landsat scenes this is the path/row (separated by underscore)
+        On tiles this is the tile numbers (separated by underscore: possibly with negative)
+        On Sentinel this is MGRS number
+
+        """
         dt = self.product
-        grid_spec = self.product.grid_spec
+        grid_spec = dt.grid_spec
 
         doc = _jsonb_doc_expression(dt.metadata_type)
         projection_offset = _projection_doc_offset(dt.metadata_type)
@@ -502,25 +645,20 @@ class GridRegionInfo(RegionInfo):
             func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
         )
 
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        """
-        Get a whole polygon for a gridcell
-        """
-        extent = self.product.grid_spec.tile_geobox(
-            _from_xy_region_code(region_code)
-        ).geographic_extent
-        # TODO: The ODC Geometry __geo_interface__ breaks for some products
-        # (eg, when the inner type is a GeometryCollection?)
-        # So we're now converting to shapely to do it.
-        # TODO: Is there a nicer way to do this?
-        # pylint: disable=protected-access
-        try:
-            return shapely.wkb.loads(extent._geom.ExportToWkb())
-        except AttributeError:
-            return extent.geom
-
-    def region_label(self, region_code: str) -> str:
-        return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        tiles = [
+            tile
+            for tile, _ in dataset.type.grid_spec.tiles(
+                dataset.extent.centroid.boundingbox
+            )
+        ]
+        if not len(tiles) == 1:
+            raise ValueError(
+                "Tiled dataset should only have one tile? "
+                f"Got {tiles!r} for {dataset!r}"
+            )
+        x, y = tiles[0]
+        return f"{x}_{y}"
 
 
 def _from_xy_region_code(region_code: str):
@@ -535,52 +673,68 @@ def _from_xy_region_code(region_code: str):
 
 
 class SceneRegionInfo(RegionInfo):
+    """Landsat WRS2"""
+
     name = "scenes"
-    description = "Landsat WRS scene-based product"
+    description = "Landsat WRS2 scene-based product"
     unit_label = "scene"
     units_label = "scenes"
 
-    def __init__(self, product: DatasetType) -> None:
-        super().__init__(product)
-        self.path_row_shapes = _get_path_row_shapes()
+    def region_label(self, region_code: str) -> str:
+        if "_" in region_code:
+            x, y = _from_xy_region_code(region_code)
+            return f"Path {x}, Row {y}"
+        else:
+            return f"Path {region_code}"
 
     def alchemy_expression(self):
-        """
-        Use sat_path/sat_row as grid items
-        """
-        md_fields = self.product.metadata_type.dataset_fields
+        dt = self.product
+        # Generate region code for older sat_path/sat_row pairs.
+        md_fields = dt.metadata_type.dataset_fields
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
-        return func.concat(
-            path_field.lower.alchemy_expression.cast(String),
-            "_",
-            row_field.greater.alchemy_expression.cast(String),
+
+        return case(
+            [
+                # Is this just one scene? Include it specifically
+                (
+                    row_field.lower.alchemy_expression
+                    == row_field.greater.alchemy_expression,
+                    func.concat(
+                        path_field.lower.alchemy_expression.cast(String),
+                        "_",
+                        row_field.greater.alchemy_expression.cast(String),
+                    ),
+                ),
+            ],
+            # Otherwise it's a range of rows, so our region-code is the whole path.
+            else_=path_field.lower.alchemy_expression.cast(String),
         )
 
-    def geographic_extent(self, region_code: str) -> GeometryCollection:
-        extent = self.path_row_shapes.get(_from_xy_region_code(region_code))
-        if not extent:
-            raise KeyError(
-                f"No extent for {self.product.name} region code {region_code!r}"
-            )
-        return extent
+    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+        path_range = dataset.metadata.fields["sat_path"]
+        row_range = dataset.metadata.fields["sat_row"]
+        if row_range is None and path_range is None:
+            return None
 
-    def region_label(self, region_code: str) -> str:
-        x, y = _from_xy_region_code(region_code)
-        return f"Path {x}, Row {y}"
+        # If it's just one scene? Include it specifically
+        if row_range[0] == row_range[1]:
+            return f"{path_range[0]}_{row_range[1]}"
+        # Otherwise it's a range of rows, so we say the whole path.
+        else:
+            return f"{path_range[0]}"
 
 
 def _region_code_field(dt: DatasetType):
     """
     Get an sqlalchemy expression to calculate the region code (a string)
-
-    Eg.
-        On Landsat scenes this is the path/row (separated by underscore)
-        On tiles this is the tile numbers (separated by underscore: possibly with negative)
-        On Sentinel this is MGRS number
     """
-    region_info = RegionInfo.for_product(dt)
-    if region_info:
+    region_info = RegionInfo.for_product(
+        dt,
+        # The None is here bad OO design. The class probably should be split in two for different use-cases.
+        None,
+    )
+    if region_info is not None:
         return region_info.alchemy_expression()
     else:
         _LOG.debug(
@@ -589,6 +743,28 @@ def _region_code_field(dt: DatasetType):
             metadata_type_name=dt.metadata_type.name,
         )
         return null()
+
+
+def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
+    with Datacube(index=index) as dc:
+        index = dc.index
+        for product_name in product_names:
+            product = index.products.get_by_name(product_name)
+            res = (
+                alchemy_engine(index)
+                .execute(
+                    select(_select_dataset_extent_columns(product))
+                    .where(
+                        DATASET.c.dataset_type_ref
+                        == bindparam("product_ref", product.id, type_=SmallInteger)
+                    )
+                    .where(DATASET.c.archived == None)
+                    .limit(1)
+                )
+                .fetchone()
+            )
+            if res:
+                yield dict(res)
 
 
 @functools.lru_cache()
@@ -602,20 +778,6 @@ def _get_path_row_shapes():
                 assert key not in path_row_shapes
                 path_row_shapes[key] = shape(item["geometry"])
     return path_row_shapes
-
-
-def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
-    with Datacube(index=index) as dc:
-        index = dc.index
-        for product_name in product_names:
-            product = index.products.get_by_name(product_name)
-            res = (
-                alchemy_engine(index)
-                .execute(_select_dataset_extent_query(product).limit(1))
-                .fetchone()
-            )
-            if res:
-                yield dict(res)
 
 
 def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:

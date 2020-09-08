@@ -2,7 +2,7 @@
 
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
 
-{% set extent_geojson = dataset | dataset_geojson %}
+{% set extent_geojson = dataset_footprint.__geo_interface__ %}
 
 {% block head %}
     {{ super() }}
@@ -31,7 +31,10 @@
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h1><strong>{{ dataset | printable_dataset }}</strong></h1>
+        <h2 class="followed"><strong>{{ dataset | printable_dataset }}</strong></h2>
+        <div class="header-follow">
+                dataset of product {{ dataset.type.name | product_link }}
+        </div>
         <div class="sub-header">
             <span>
                 Indexed by <strong>{{ dataset.indexed_by }}</strong>
@@ -48,8 +51,14 @@
             </span>
         </div>
         <div class="sub-header">
-            {{ dataset.type.name | product_link }} of {{ dataset | dataset_day_link(grouping_timezone) }}
-            ({{ dataset.type.metadata_type.name }})
+            {% if dataset_region_code %}
+                    Region
+                    <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
+                        {{- dataset_region_code -}}
+                    </a>
+                {% endif %}
+            for
+            {{ dataset | dataset_day_link(grouping_timezone) }}
         </div>
     </div>
 
@@ -123,14 +132,15 @@
     {% endif %}
 
     <div class="panel odd">
-        <h2>Raw Metadata</h2>
+        <h2 class="followed">Metadata Document</h2>
+        <div class="header-follow"><a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">View RAW</a></div>
         {{ show_raw_document(dataset_metadata) }}
     </div>
 {% endblock %}
 
 {% block body_footer %}
     {{ super() }}
-    
+
     {% if extent_geojson %}
         <script type="application/javascript">
 

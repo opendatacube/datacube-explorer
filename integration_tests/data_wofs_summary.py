@@ -11,7 +11,7 @@ from datacube.model import Range
 #
 # This is a dump of the wofs_summary overview for all-time.
 # It was consistently failing because the valid footprint becomes invalid when
-# projected to wrs84.
+# projected to wgs84.
 # (perhaps the non-footprint data can be thrown away in the future if too unmaintable)
 #
 wofs_time_summary = TimePeriodOverview(

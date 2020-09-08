@@ -132,6 +132,12 @@ h1
 h4
     color: lighten($bold_highlight, 18%)
 
+// A Header followed by smaller text on the same line
+h2.followed, h3.followed
+    display: inline-block
+.header-follow
+    display: inline-block
+
 ul:last-child, ol:last-child
     margin-bottom: 0
 
@@ -305,11 +311,16 @@ ul:last-child, ol:last-child
         grid-template-columns: 1fr 1fr
 
 .query-param
+    display: block
     > .value
         color: $muted_text
 
     .value > .query-param
         margin-left: 15px
+
+    .missing-value
+        text-decoration-style: wavy
+        text-decoration-line: underline
 
 button
     margin: 5px 0
@@ -385,16 +396,26 @@ label
 
 .muted
     color: $muted_text
+// An adornment to a title. Such as the data type.
+.badge
+    font-size: 0.7em
+    background-color: #ccc
+    padding: 2px 4px
+
 
 .raw-metadata
     .property
         font-family: 'Courier New', monospace
 
-        .property
+        .property, .array, .array-item
             padding-left: 15px
 
         & > .key
             font-weight: bold
+
+        summary
+            font-style: italic
+            color: $muted_text
 
 // Information box shown when hovering a map dataset
 .dataset-info

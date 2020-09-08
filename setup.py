@@ -8,12 +8,14 @@ tests_require = [
     "boltons",
     "digitalearthau",
     "flake8",
-    "isort[requirements]",
     "jsonschema > 3",
     "pytest",
     "pytest-benchmark",
     "pytest-cov",
     "requests-html",
+    "raven",
+    "blinker",
+    "prometheus-flask-exporter",
 ]
 
 extras_require = {
@@ -31,6 +33,7 @@ extras_require = {
         # Monitoring
         "raven",
         "blinker",
+        "prometheus-flask-exporter",
     ],
 }
 
@@ -49,6 +52,7 @@ setup(
         "click",
         "dataclasses>=0.6;python_version<'3.7'",
         "datacube>=1.8",
+        "eodatasets3 >= 0.10.0",
         "fiona",
         "flask",
         "Flask-Caching",
@@ -67,5 +71,11 @@ setup(
     ],
     tests_require=tests_require,
     extras_require=extras_require,
-    entry_points={"console_scripts": ["cubedash-gen = cubedash.generate:cli"]},
+    entry_points={
+        "console_scripts": [
+            "cubedash-gen = cubedash.generate:cli",
+            "cubedash-view = cubedash.summary.show:cli",
+            "cubedash-page-test = cubedash.warmup:cli",
+        ]
+    },
 )

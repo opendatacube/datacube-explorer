@@ -27,10 +27,11 @@
     </div>
 {%- endmacro %}
 
-{% macro query_param_list(d, wide=false, show_nulls=true, show_dicts=true, descriptions=None) -%}
+{% macro query_param_list(d, prefix="", wide=false, show_nulls=true, show_dicts=true, descriptions=None, fallback_dict={}) -%}
     <div class="query-param-list {% if wide %}wide{% endif %}">
-        {% for key, value in d | dictsort if (show_dicts or value is not mapping) and (show_nulls or value is not none ) recursive %}
-            <span class="query-param">
+        {% for key, value in d | dictsort if (show_dicts or value is not mapping) recursive %}
+            {% if show_nulls or (value is not none) or (key in fallback_dict) %}
+            <span class="query-param {{ prefix+key | maybe_to_css_class_name(prefix="key-") }}">
                 <span class="key"
                       {% if descriptions  and descriptions[key] -%}
                       title="{{ descriptions[key].description}}"
@@ -40,11 +41,24 @@
                 <span class="value">
                     {%- if value is mapping -%}
                         {{- loop(value.items()) -}}
+                    {%- elif value is none -%}
+                        {%- if key in fallback_dict -%}
+                            {% if fallback_dict[key] is not none %}
+                                <span class="missing-value" title="Inferred from datasets: not present in product definition">
+                                    {{- fallback_dict[key] | query_value -}}
+                                </span>
+                            {% else %}
+                                <span class="missing-value null-value" title="Always empty in dataset samples">•</span>
+                            {% endif %}
+                        {%- else -%}
+                            <span class="null-value" title="Unspecified">•</span>
+                        {%- endif -%}
                     {%- else -%}
                         {{- value | query_value -}}
                     {%- endif -%}
                 </span>
             </span>
+            {% endif %}
         {% endfor %}
     </div>
 {%- endmacro %}
@@ -53,9 +67,9 @@
 
 
 {% macro _show_raw_keyval(value) -%}
-    {% if value is string or value is number %}
+    {%- if value is string or value is number -%}
         <span class="value">{{ value }}</span>
-    {% elif value is mapping %}
+    {%- elif value is mapping -%}
         {%- for key, val in value.items() %}
             <div class="property">
                 <span class="key">{{ key }}:</span>
@@ -63,15 +77,26 @@
             </div>
         {%- endfor %}
     {# A string is an iterable, so we check for it above #}
-{#    {% elif value is iterable %}#}
-{#        <ul>#}
-{#            {%- for item in value %}#}
-{#                <li>{{ _show_raw_keyval(item) }}</li>#}
-{#            {% endfor %}#}
-{#        </ul>#}
-    {% else %}
+    {%- elif value is iterable -%}
+        {# If it's a long list, make is expandable/collapsable #}
+        {% if value | length > 20 %}
+            <details class="array">[
+                <summary><span>[{{ value | length }} items...]</span></summary>
+            {%- for item in value %}
+                <div class="array-item">{{ _show_raw_keyval(item) }},</div>
+            {% endfor %}
+            ]
+            </details>
+        {% else %}
+            <span class="array">[
+            {%- for item in value %}
+                <div class="array-item">{{ _show_raw_keyval(item) }}</div>
+            {% endfor %}
+            ]</span>
+        {% endif %}
+    {%- else -%}
         <span class="value unknown">{{ value | torapidjson}}</span>
-    {% endif %}
+    {%- endif -%}
 {%- endmacro %}
 
 

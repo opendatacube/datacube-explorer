@@ -7,9 +7,11 @@ services:
         ENVIRONMENT: test
     environment:
       - PROJ_LIB=/usr/share/proj  # This is to fix an odd issue with PyProj
+      - prometheus_multiproc_dir=/tmp # Enable prometheus metrics
     volumes:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
+      - ./.docker/settings_docker.py:/code/settings.env.py
     command: flask run --host 0.0.0.0
     ports:
       - "5000:5000"
