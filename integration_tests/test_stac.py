@@ -119,9 +119,6 @@ _COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
 )
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
-)
 
 _STAC_EXTENSIONS = dict(
     (extension.name, load_validator(extension / "json-schema" / "schema.json"))
@@ -599,7 +596,7 @@ def assert_stac_extensions(doc: Dict):
 
 def assert_item_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
-    _ITEM_COLLECTION_SCHEMA.validate(collection)
+    _COLLECTION_SCHEMA.validate(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
