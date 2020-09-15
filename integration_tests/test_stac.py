@@ -97,7 +97,13 @@ def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
         raise ValueError(f"No jsonschema file found at {schema_location}")
 
     with schema_location.open("r") as s:
-        schema = json.load(s)
+        try:
+            schema = json.load(s)
+        except json.JSONDecodeError as e:
+            # Some in the repo have not been valid before...
+            raise RuntimeError(
+                f"Invalid json, cannot load schema {schema_location}"
+            ) from e
 
     try:
         jsonschema.Draft7Validator.check_schema(schema)
