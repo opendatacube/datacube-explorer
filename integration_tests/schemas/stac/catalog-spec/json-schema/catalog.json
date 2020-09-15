@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "catalog.json#",
+  "$id": "https://schemas.stacspec.org/v1.0.0-beta.2/catalog-spec/json-schema/catalog.json#",
   "title": "STAC Catalog Specification",
   "description": "This object represents Catalogs in a SpatioTemporal Asset Catalog.",
   "allOf": [
@@ -22,14 +22,24 @@
         "stac_version": {
           "title": "STAC version",
           "type": "string",
-          "const": "0.9.0"
+          "const": "1.0.0-beta.2"
         },
         "stac_extensions": {
           "title": "STAC extensions",
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "type": "string"
+            "anyOf": [
+              {
+                "title": "Reference to a JSON Schema",
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "title": "Reference to a core extension",
+                "type": "string"
+              }
+            ]
           }
         },
         "id": {

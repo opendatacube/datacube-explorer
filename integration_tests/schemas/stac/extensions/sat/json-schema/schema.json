@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "schema.json#",
+  "$id": "https://schemas.stacspec.org/v1.0.0-beta.2/extensions/sat/json-schema/schema.json#",
   "title": "Sat Extension",
   "description": "STAC Sat Extension to a STAC Item.",
   "allOf": [
@@ -18,12 +18,25 @@
     "sat": {
       "type": "object",
       "required": [
+        "stac_extensions",
         "properties"
       ],
       "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "enum": [
+              "sat",
+              "https://schemas.stacspec.org/v1.0.0-beta.2/extensions/sat/json-schema/schema.json"
+            ]
+          }
+        },
         "properties": {
           "type": "object",
-          "required": [],
+          "anyOf": [
+            {"required": ["sat:relative_orbit"]},
+            {"required": ["sat:orbit_state"]}
+          ],
           "properties": {
             "sat:relative_orbit": {
               "type": "integer",

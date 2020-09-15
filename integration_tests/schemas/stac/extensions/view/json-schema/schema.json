@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "schema.json#",
+  "$id": "https://schemas.stacspec.org/v1.0.0-beta.2/extensions/view/json-schema/schema.json#",
   "title": "View Geometry Extension",
   "description": "STAC View Geometry Extension to a STAC Item.",
   "allOf": [
@@ -15,12 +15,28 @@
     "view": {
       "type": "object",
       "required": [
+        "stac_extensions",
         "properties"
       ],
       "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "enum": [
+              "view",
+              "https://schemas.stacspec.org/v1.0.0-beta.2/extensions/view/json-schema/schema.json"
+            ]
+          }
+        },
         "properties": {
           "type": "object",
-          "required": [],
+          "anyOf": [
+            {"required": ["view:off_nadir"]},
+            {"required": ["view:incidence_angle"]},
+            {"required": ["view:azimuth"]},
+            {"required": ["view:sun_azimuth"]},
+            {"required": ["view:sun_elevation"]}
+          ],
           "properties": {
             "view:off_nadir": {
               "title": "Off Nadir",

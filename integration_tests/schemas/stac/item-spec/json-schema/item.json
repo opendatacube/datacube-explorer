@@ -1,10 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "item.json#",
+  "$id": "https://schemas.stacspec.org/v1.0.0-beta.2/item-spec/json-schema/item.json#",
   "title": "STAC Item",
   "type": "object",
   "description": "This object represents the metadata for an item in a SpatioTemporal Asset Catalog.",
-  "additionalProperties": true,
   "allOf": [
     {
       "$ref": "#/definitions/core"
@@ -17,16 +16,13 @@
           "$ref": "basics.json"
         },
         {
-          "$ref": "datetimerange.json"
+          "$ref": "datetime.json"
         },
         {
           "$ref": "instrument.json"
         },
         {
           "$ref": "licensing.json"
-        },
-        {
-          "$ref": "metadata.json"
         },
         {
           "$ref": "provider.json"
@@ -39,20 +35,65 @@
           "$ref": "https://geojson.org/schema/Feature.json"
         },
         {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "geometry",
+                "bbox"
+              ],
+              "properties": {
+                "geometry": {
+                  "$ref": "https://geojson.org/schema/Geometry.json"
+                },
+                "bbox": {
+                  "type": "array",
+                  "oneOf": [
+                    {
+                      "minItems": 4,
+                      "maxItems": 4
+                    },
+                    {
+                      "minItems": 6,
+                      "maxItems": 6
+                    }
+                  ],
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "geometry"
+              ],
+              "properties": {
+                "geometry": {
+                  "type": "null"
+                },
+                "bbox": {
+                  "not": {}
+                }
+              }
+            }
+          ]
+        },
+        {
           "type": "object",
           "required": [
             "stac_version",
             "id",
             "links",
             "assets",
-            "bbox",
             "properties"
           ],
           "properties": {
             "stac_version": {
               "title": "STAC version",
               "type": "string",
-              "const": "0.9.0"
+              "const": "1.0.0-beta.2"
             },
             "stac_extensions": {
               "title": "STAC extensions",
@@ -67,21 +108,7 @@
                   },
                   {
                     "title": "Reference to a core extension",
-                    "type": "string",
-                    "enum": [
-                      "checksum",
-                      "commons",
-                      "datacube",
-                      "eo",
-                      "label",
-                      "pointcloud",
-                      "projection",
-                      "sar",
-                      "sat",
-                      "scientific",
-                      "version",
-                      "view"
-                    ]
+                    "type": "string"
                   }
                 ]
               }
@@ -90,13 +117,6 @@
               "title": "Provider ID",
               "description": "Provider item ID",
               "type": "string"
-            },
-            "bbox": {
-              "type": "array",
-              "minItems": 4,
-              "items": {
-                "type": "number"
-              }
             },
             "links": {
               "title": "Item links",
@@ -107,33 +127,10 @@
               }
             },
             "assets": {
-              "title": "Asset links",
-              "description": "Links to assets",
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/asset"
-              }
+              "$ref": "#/definitions/assets"
             },
             "properties": {
-              "allOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "datetime"
-                  ],
-                  "properties": {
-                    "datetime": {
-                      "title": "Date and Time",
-                      "description": "The searchable date/time of the assets, in UTC (Formatted in RFC 3339) ",
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                },
-                {
-                  "$ref": "#/definitions/common_metadata"
-                }
-              ]
+              "$ref": "#/definitions/common_metadata"
             },
             "collection": {
               "title": "Collection ID",
@@ -166,7 +163,21 @@
         "title": {
           "title": "Link title",
           "type": "string"
+        },
+        "created": {
+          "$ref": "datetime.json#/definitions/created"
+        },
+        "updated": {
+          "$ref": "datetime.json#/definitions/updated"
         }
+      }
+    },
+    "assets": {
+      "title": "Asset links",
+      "description": "Links to assets",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/asset"
       }
     },
     "asset": {
