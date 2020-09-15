@@ -3,8 +3,7 @@
 set -eu
 
 
-stac_tag='v0.9.0'
-# stac_tag='master'
+stac_tag='v1.0.0-beta.2'
 
 
 function get() {
@@ -22,6 +21,7 @@ subfolder="stac-spec-${stac_version}"
 wget https://github.com/radiantearth/stac-spec/archive/${stac_tag}.tar.gz
 tar -xvf ${stac_tag}.tar.gz --wildcards "${subfolder}/*/json-schema/*.json"
 rm ${stac_tag}.tar.gz
+rm -rf stac
 mv -v ${subfolder} stac
 
 echo "Success"
