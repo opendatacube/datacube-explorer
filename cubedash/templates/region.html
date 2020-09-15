@@ -29,8 +29,12 @@
         <h1><strong>{{ product_region_info.region_label(region_code) }}</strong> {{ product_args_label }}</h1>
         {% if datasets %}
             <p>
-                {{ datasets | length }} dataset{% if datasets | length > 1 %}s{% endif %}
-                {% if datasets|length == result_limit %}<strong>(query limit)</strong>{% endif %}
+                {% if there_are_more_results %}First {% endif %}
+                {{ datasets | length }}
+                {% if there_are_more_results %}
+                    {% if not day %}(of {{ product_region_info.region(region_code).count }} total){% endif %}
+                {% endif %}
+                dataset{% if datasets | length > 1 %}s{% endif %}
             </p>
         {% else %}
             <p>No datasets.</p>
@@ -72,7 +76,7 @@
             }
         );
 
-        const dataset_data = L.geoJson({{ product_region_info.geojson_extent(region_code)| torapidjson }},
+        const dataset_data = L.geoJson({{ product_region_info.region(region_code).footprint_geojson | torapidjson }},
             {
                 interactive: false,
                 style: function (feature) {

@@ -2,6 +2,7 @@ import functools
 import json
 import sys
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, Optional, List
@@ -12,7 +13,7 @@ import structlog
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape, from_shape
 from psycopg2._range import Range as PgRange
-from shapely.geometry import GeometryCollection, shape
+from shapely.geometry import shape
 from sqlalchemy import (
     BigInteger,
     Integer,
@@ -34,7 +35,6 @@ from cubedash._utils import alchemy_engine, infer_crs, ODC_DATASET as DATASET
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-
 from datacube.index import Index
 from datacube.model import DatasetType, Field, MetadataType, Dataset
 
@@ -572,12 +572,32 @@ def datasets_by_region(engine, index, product_name, region_code, time_range, lim
     )
 
 
+@dataclass
+class RegionSummary:
+    product_name: str
+    region_code: str
+    count: int
+    generation_time: datetime
+    footprint_wgs84: Geometry
+
+    @property
+    def footprint_geojson(self):
+        extent = self.footprint_wgs84
+        if not extent:
+            return None
+        return {
+            "type": "Feature",
+            "geometry": extent.__geo_interface__,
+            "properties": {"region_code": self.region_code, "count": self.count},
+        }
+
+
 class RegionInfo:
     def __init__(
-        self, product: DatasetType, region_shapes: Dict[str, GeometryCollection]
+        self, product: DatasetType, known_regions: Optional[Dict[str, RegionSummary]]
     ) -> None:
         self.product = product
-        self._region_shapes = region_shapes
+        self._known_regions = known_regions
 
     # Treated as an "id" in view code. What kind of region?
     name: str = "region"
@@ -589,36 +609,28 @@ class RegionInfo:
 
     @classmethod
     def for_product(
-        cls, dt: DatasetType, region_shapes: Dict[str, GeometryCollection] = None
+        cls, dataset_type: DatasetType, known_regions: Dict[str, RegionSummary] = None
     ):
-        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
-        grid_spec = dt.grid_spec
+        region_code_field: Field = dataset_type.metadata_type.dataset_fields.get(
+            "region_code"
+        )
+        grid_spec = dataset_type.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
         #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
         if grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dt, region_shapes)
+            return GridRegionInfo(dataset_type, known_regions)
         elif region_code_field is not None:
             # Generic region info
-            return RegionInfo(dt, region_shapes)
-        elif "sat_path" in dt.metadata_type.dataset_fields:
-            return SceneRegionInfo(dt, region_shapes)
+            return RegionInfo(dataset_type, known_regions)
+        elif "sat_path" in dataset_type.metadata_type.dataset_fields:
+            return SceneRegionInfo(dataset_type, known_regions)
 
         return None
 
-    def geographic_extent(self, region_code: str) -> Optional[GeometryCollection]:
-        return self._region_shapes.get(region_code)
-
-    def geojson_extent(self, region_code):
-        extent = self.geographic_extent(region_code)
-        if not extent:
-            return None
-        return {
-            "type": "Feature",
-            "geometry": extent.__geo_interface__,
-            "properties": {"region_code": region_code},
-        }
+    def region(self, region_code: str) -> Optional[RegionSummary]:
+        return self._known_regions.get(region_code)
 
     def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
         """

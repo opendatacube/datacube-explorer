@@ -133,9 +133,13 @@ def search_page(
 
     # TODO: Add sort option to index API
     datasets = sorted(
-        _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT),
+        _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
         key=lambda d: d.center_time,
     )
+    more_datasets_exist = False
+    if len(datasets) > _HARD_SEARCH_LIMIT:
+        more_datasets_exist = True
+        datasets = datasets[:_HARD_SEARCH_LIMIT]
 
     if request_wants_json():
         return as_rich_json(
@@ -161,7 +165,7 @@ def search_page(
         selected_summary=selected_summary,
         datasets=datasets,
         query_params=query,
-        result_limit=_HARD_SEARCH_LIMIT,
+        there_are_more_results=more_datasets_exist,
         time_selector_summary=time_selector_summary,
         year_selector_summary=year_selector_summary,
     )
@@ -188,13 +192,20 @@ def region_page(
 
     region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:
-        abort(404, f"Product {product_name} has no region specification.")
+        abort(404, f"Product {product_name!r} has no region specification.")
+
+    if region_info.region(region_code) is None:
+        abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
     datasets = list(
         _model.STORE.find_datasets_for_region(
-            product_name, region_code, year, month, day, limit=_HARD_SEARCH_LIMIT
+            product_name, region_code, year, month, day, limit=_HARD_SEARCH_LIMIT + 1
         )
     )
+    more_datasets_exist = False
+    if len(datasets) > _HARD_SEARCH_LIMIT:
+        more_datasets_exist = True
+        datasets = datasets[:_HARD_SEARCH_LIMIT]
 
     if len(datasets) == 1 and "feelinglucky" in flask.request.args:
         return flask.redirect(url_for("dataset.dataset_page", id_=datasets[0].id))
@@ -217,7 +228,7 @@ def region_page(
         # Summary for the users' currently selected filters.
         selected_summary=selected_summary,
         datasets=datasets,
-        result_limit=_HARD_SEARCH_LIMIT,
+        there_are_more_results=more_datasets_exist,
         time_selector_summary=time_selector_summary,
         year_selector_summary=year_selector_summary,
     )

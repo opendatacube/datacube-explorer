@@ -219,9 +219,9 @@ def _get_regions_geojson(
         "features": [
             {
                 "type": "Feature",
-                "geometry": region_info.geographic_extent(
+                "geometry": region_info.region(
                     region_code
-                ).__geo_interface__,
+                ).footprint_wgs84.__geo_interface__,
                 "properties": {
                     "region_code": region_code,
                     "label": region_info.region_label(region_code),
@@ -229,7 +229,7 @@ def _get_regions_geojson(
                 },
             }
             for region_code in (region_counts or [])
-            if region_info.geographic_extent(region_code) is not None
+            if region_info.region(region_code) is not None
         ],
     }
 
