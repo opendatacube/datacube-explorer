@@ -25,7 +25,6 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from shapely.geometry import GeometryCollection
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
@@ -35,6 +34,7 @@ from sqlalchemy.sql import Select
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary._extents import RegionSummary
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -968,12 +968,25 @@ class SummaryStore:
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def _region_geoms(self, product_name: str) -> Dict[str, GeometryCollection]:
+    def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
         dt = self.get_dataset_type(product_name)
         return {
-            code: to_shape(geom)
-            for code, geom in self._engine.execute(
-                select([REGION.c.region_code, REGION.c.footprint])
+            code: RegionSummary(
+                product_name=product_name,
+                region_code=code,
+                count=count,
+                generation_time=generation_time,
+                footprint_wgs84=to_shape(geom),
+            )
+            for code, count, generation_time, geom in self._engine.execute(
+                select(
+                    [
+                        REGION.c.region_code,
+                        REGION.c.count,
+                        REGION.c.generation_time,
+                        REGION.c.footprint,
+                    ]
+                )
                 .where(REGION.c.dataset_type_ref == dt.id)
                 .order_by(REGION.c.region_code)
             )
@@ -981,8 +994,10 @@ class SummaryStore:
         }
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
-        dt = self.get_dataset_type(product_name)
-        return RegionInfo.for_product(dt, self._region_geoms(product_name))
+        return RegionInfo.for_product(
+            dataset_type=self.get_dataset_type(product_name),
+            known_regions=self._region_summaries(product_name),
+        )
 
     def get_dataset_footprint_region(self, dataset_id):
         """

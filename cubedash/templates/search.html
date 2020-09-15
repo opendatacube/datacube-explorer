@@ -104,9 +104,9 @@
     <div class="panel odd">
         {% if datasets %}
             <p>
-                {% if datasets|length == result_limit %}First{% endif %}
+                {% if there_are_more_results %}First{% endif %}
                 {{ datasets | length }} result{% if datasets | length > 1 %}s{% endif %}
-                {% if datasets|length == result_limit %}<strong>(query limit)</strong>{% endif %}
+                {% if there_are_more_results %}<strong>(query limit)</strong>{% endif %}
             </p>
             <table class="data-table">
                 <thead>
