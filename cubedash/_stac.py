@@ -16,6 +16,11 @@ from werkzeug.datastructures import MultiDict
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
+from eodatasets3 import serialise
+from eodatasets3.model import DatasetDoc, ProductDoc
+from eodatasets3.properties import StacPropertyView
+from eodatasets3.scripts import tostac
+from eodatasets3.utils import is_doc_eo3
 
 from . import _model, _utils
 
@@ -320,48 +325,54 @@ def as_stac_item(dataset: DatasetItem):
     Get a dict corresponding to a stac item
     """
     ds = dataset.odc_dataset
-    item_doc = dict(
-        **_STAC_DEFAULTS,
-        # TODO: stac_extensions=['eo'],
-        #       (needs all the required fields for tests to pass)
-        id=dataset.dataset_id,
-        type="Feature",
-        bbox=dataset.bbox,
-        geometry=dataset.geom_geojson,
-        properties={
-            "datetime": utc(dataset.center_time),
-            **dict(_build_properties(dataset.odc_dataset.metadata)),
-            "odc:product": dataset.product_name,
-            "odc:processing_datetime": utc(dataset.creation_time),
-            "cubedash:region_code": dataset.region_code,
-        },
-        assets=dict(_stac_item_assets(ds)),
-        links=[
-            {
-                "rel": "self",
-                "href": url_for(
-                    ".item",
-                    product_name=dataset.product_name,
-                    dataset_id=dataset.dataset_id,
-                ),
-            },
-            {
-                "rel": "parent",
-                "href": url_for(".collection", product_name=dataset.product_name),
-            },
-            {
-                "rel": "alternative",
-                "type": "text/html",
-                "href": url_for("dataset.dataset_page", id_=dataset.dataset_id),
-            },
-        ],
-    )
 
-    # If the dataset has a real start/end time, add it.
-    time = ds.time
-    if time.begin < time.end:
-        item_doc["properties"]["start_datetime"] = utc(time.begin)
-        item_doc["properties"]["end_datetime"] = utc(time.end)
+    if is_doc_eo3(ds.metadata_doc):
+        dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
+    else:
+        # eo1 to eo3
+        dataset_doc = DatasetDoc(
+            id=ds.id,
+            # Filled-in below.
+            label=None,
+            product=ProductDoc(dataset.product_name),
+            locations=ds.uris,
+            crs=dataset.geometry.crs.crs_str,
+            geometry=dataset.geometry.geom,
+            grids=None,
+            # TODO: Convert these from stac to eo3
+            properties=StacPropertyView(
+                {
+                    "datetime": utc(dataset.center_time),
+                    **dict(_build_properties(dataset.odc_dataset.metadata)),
+                    "odc:product": dataset.product_name,
+                    "odc:processing_datetime": utc(dataset.creation_time),
+                }
+            ),
+            # TODO
+            measurements={},
+            # TODO: Check for old thumbnail?
+            accessories={},
+            # TODO: Convert from eo1?
+            lineage={},
+        )
+
+    if dataset_doc.label is None:
+        dataset_doc.label = _utils.dataset_label(ds)
+
+    item_doc = tostac.dataset_as_stac_item(
+        dataset=dataset_doc,
+        input_metadata_url=url_for("dataset.raw_doc", id_=ds.id),
+        output_url=url_for(
+            ".item",
+            product_name=dataset.product_name,
+            dataset_id=dataset.dataset_id,
+        ),
+        explorer_base_url=url_for("default_redirect"),
+    )
+    # Add the region code that Explorer inferred.
+    # (Explorer's region codes predate ODC's and support
+    #  many more products.
+    item_doc["properties"]["cubedash:region_code"] = dataset.region_code
 
     return item_doc
 
@@ -419,29 +430,11 @@ def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
 
 
 def field_platform(key, value):
-    yield "platform", value.lower().replace("_", "-")
-
-
-def _as_stac_instruments(value: str):
-    """
-    >>> _as_stac_instruments('TM')
-    ['tm']
-    >>> _as_stac_instruments('OLI')
-    ['oli']
-    >>> _as_stac_instruments('ETM+')
-    ['etm']
-    >>> _as_stac_instruments('OLI_TIRS')
-    ['oli', 'tirs']
-    """
-    return [i.strip("+-").lower() for i in value.split("_")]
+    yield "eo:platform", value.lower().replace("_", "-")
 
 
 def field_instrument(key, value):
-    yield "instruments", _as_stac_instruments(value)
-
-
-def field_bands(key, value: Dict):
-    yield "eo:bands", [dict(name=k, **v) for k, v in value.items()]
+    yield "eo:instrument", value
 
 
 def field_path_row(key, value):
