@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
-from typing import Set
+import warnings
 from enum import Enum
+from typing import Set
+
 import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import (
@@ -156,6 +158,24 @@ TIME_OVERVIEW = Table(
     ),
 )
 
+# The geometry of each unique 'region' for a product.
+REGION = Table(
+    "region",
+    METADATA,
+    Column("dataset_type_ref", SmallInteger, nullable=False),
+    Column("region_code", String, nullable=False),
+    Column("count", Integer, nullable=False),
+    Column(
+        "generation_time",
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    ),
+    Column("footprint", Geometry(srid=4326, spatial_index=False)),
+    PrimaryKeyConstraint("dataset_type_ref", "region_code"),
+)
+
+
 _REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 # This is a materialised view of the postgis spatial_ref_sys for lookups.
 # See creation of mv_spatial_ref_sys below.
@@ -182,16 +202,6 @@ SPATIAL_QUALITY_STATS = Table(
     Column("has_region", Integer),
 )
 
-# The geometry of each unique 'region' for a product.
-REGION = Table(
-    "mv_region",
-    _REF_TABLE_METADATA,
-    Column("dataset_type_ref", SmallInteger, nullable=False),
-    Column("region_code", String),
-    Column("footprint", Geometry(srid=4326, spatial_index=False)),
-    Column("count", Integer, nullable=False),
-)
-
 
 def has_schema(engine: Engine) -> bool:
     """
@@ -207,6 +217,16 @@ def is_compatible_schema(engine: Engine) -> bool:
     if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
         is_latest = False
 
+    if not pg_exists(engine, f"{CUBEDASH_SCHEMA}.region"):
+        is_latest = False
+
+    if pg_exists(engine, f"{CUBEDASH_SCHEMA}.mv_region"):
+        warnings.warn(
+            "Your database has item `cubedash.mv_region` from an unstable version of Explorer. "
+            "It will not harm you, but feel free to drop it once all Explorer instances "
+            "have been upgraded: "
+            "    drop materialised view cubedash.mv_region"
+        )
     return is_latest
 
 
@@ -346,30 +366,6 @@ def create_schema(engine: Engine):
     """
     )
 
-    # A geometry for each declared region.
-    #
-    # This happens in two steps so that we union cleanly (in the native CRS rather than after transforming)
-    # TODO: Simplify geom after union?
-    engine.execute(
-        f"""
-    create materialized view if not exists {CUBEDASH_SCHEMA}.mv_region as (
-        select dataset_type_ref,
-               region_code,
-               ST_SimplifyPreserveTopology(ST_Union(footprint), 0.0001) as footprint,
-               sum(count)          as count
-        from (
-             select dataset_type_ref,
-                    region_code,
-                    ST_Transform(ST_Union(footprint), 4326) as footprint,
-                    count(*)                                as count
-             from {CUBEDASH_SCHEMA}.dataset_spatial
-             group by dataset_type_ref, region_code, ST_SRID(footprint)
-        ) srid_groups
-        group by dataset_type_ref, region_code
-    ) with no data;
-    """
-    )
-
 
 def refresh_supporting_views(conn, concurrently=False):
     args = "concurrently" if concurrently else ""
@@ -381,11 +377,6 @@ def refresh_supporting_views(conn, concurrently=False):
     conn.execute(
         f"""
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
-    """
-    )
-    conn.execute(
-        f"""
-    refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_region;
     """
     )
 

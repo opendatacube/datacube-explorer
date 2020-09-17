@@ -129,8 +129,13 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
     
-    # Which field should we use when grouping products in the top menu?
-    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
+    # Specify product grouping in the top menu.
+    # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
+    # anywhere in its name. Unmatched products have their own group.
+    # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )" 
+    CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
+    # Otherwise, group by a single metadata field in the products:
+    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type' 
     # Ungrouped products will be grouped together in this size.
     CUBEDASH_PRODUCT_GROUP_SIZE = 5
     

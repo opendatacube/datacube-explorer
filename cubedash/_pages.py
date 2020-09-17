@@ -1,6 +1,7 @@
 import itertools
 from datetime import datetime, timedelta
 from typing import List, Tuple
+import re
 
 import cubedash
 import datacube
@@ -275,10 +276,33 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     # Which field should we use when grouping products in the top menu?
     group_by_field = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_FIELD", "product_type")
     group_field_size = app.config.get("CUBEDASH_PRODUCT_GROUP_SIZE", 5)
+    group_by_regex = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_REGEX", None)
 
-    # Group using the configured key, or fall back to the product name.
-    def key(t):
-        return t[0].fields.get(group_by_field) or t[0].name
+    if group_by_regex:
+        try:
+            regex_group = {}
+            for regex, group in group_by_regex:
+                regex_group[re.compile(regex)] = group.strip()
+        except re.error as e:
+            raise RuntimeError(
+                f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
+            )
+
+    if group_by_regex:
+        # group using regex
+        def regex_key(t):
+            for regex, group in regex_group.items():
+                if regex.search(t[0].name):
+                    return group
+            return t[0].name
+
+        key = regex_key
+    else:
+        # Group using the configured key, or fall back to the product name.
+        def field_key(t):
+            return t[0].fields.get(group_by_field) or t[0].name
+
+        key = field_key
 
     grouped_product_summarise = sorted(
         (
