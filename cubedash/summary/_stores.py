@@ -248,13 +248,15 @@ class SummaryStore:
         changed_rows = self._engine.execute(
             """
         with srid_groups as (
-             select cubedash.dataset_spatial.dataset_type_ref                        as dataset_type_ref,
+             select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
                      cubedash.dataset_spatial.region_code                             as region_code,
                      ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
                      count(*)                                                         as count
               from cubedash.dataset_spatial
               where cubedash.dataset_spatial.dataset_type_ref = %s
-              group by cubedash.dataset_spatial.dataset_type_ref, cubedash.dataset_spatial.region_code
+              group by cubedash.dataset_spatial.dataset_type_ref,
+                       cubedash.dataset_spatial.region_code,
+					   st_srid(cubedash.dataset_spatial.footprint)
         )
         insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
             select srid_groups.dataset_type_ref,
