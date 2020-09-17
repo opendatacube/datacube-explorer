@@ -256,7 +256,7 @@ class SummaryStore:
               where cubedash.dataset_spatial.dataset_type_ref = %s
               group by cubedash.dataset_spatial.dataset_type_ref,
                        cubedash.dataset_spatial.region_code,
-					   st_srid(cubedash.dataset_spatial.footprint)
+                       st_srid(cubedash.dataset_spatial.footprint)
         )
         insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
             select srid_groups.dataset_type_ref,
