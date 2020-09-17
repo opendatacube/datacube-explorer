@@ -26,7 +26,7 @@ DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
 # Should we force all URLs to include the full hostname?
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
-_STAC_VERSION = "0.9.0"
+_STAC_VERSION = "1.0.0-beta.2"
 _STAC_DEFAULTS = dict(stac_version=_STAC_VERSION)
 
 
