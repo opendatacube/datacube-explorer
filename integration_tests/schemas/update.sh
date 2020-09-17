@@ -4,6 +4,7 @@ set -eu
 
 
 stac_tag='v1.0.0-beta.2'
+stac_api_tag='master'
 
 
 function get() {
@@ -11,8 +12,10 @@ function get() {
     wget -r "$1"
 }
 
+get 'http://geojson.org/schema/Geometry.json'
 get 'http://geojson.org/schema/FeatureCollection.json'
 get 'http://geojson.org/schema/Feature.json'
+
 
 # strip the 'v' from the start if there.
 stac_version="${stac_tag#v}"
@@ -24,5 +27,18 @@ rm ${stac_tag}.tar.gz
 rm -rf stac
 mv -v ${subfolder} stac
 
+api_subfolder="stac-api-spec-${stac_api_tag}"
+wget https://github.com/radiantearth/stac-api-spec/archive/${stac_api_tag}.tar.gz
+tar -xvf ${stac_api_tag}.tar.gz --wildcards "${api_subfolder}/*/json-schema/*.json"
+rm ${stac_api_tag}.tar.gz
+rm -rf stac-api
+mv -v ${api_subfolder} stac-api
+
+# The ItemCollection was removed from core stac, but is used by stac-api.
+cd stac/item-spec/json-schema
+wget https://raw.githubusercontent.com/radiantearth/stac-spec/568a04821935cc92de7b4b05ea6fa9f6bf8a0592/item-spec/json-schema/itemcollection.json
+
 echo "Success"
 echo "If git status shows any changes, rerun tests, and commit them"
+
+

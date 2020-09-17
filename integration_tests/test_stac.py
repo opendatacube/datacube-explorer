@@ -125,10 +125,13 @@ _COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
 )
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
+_ITEM_COLLECTION_SCHEMA = load_validator(
+    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
+)
 
 _STAC_EXTENSIONS = dict(
     (extension.name, load_validator(extension / "json-schema" / "schema.json"))
-    for extension_dir in _STAC_SCHEMA_BASE.rglob("extensions")
+    for extension_dir in _SCHEMA_BASE.rglob("extensions")
     for extension in extension_dir.iterdir()
 )
 
@@ -297,7 +300,7 @@ def _iter_items_across_pages(
 def test_stac_search_limits(stac_client: FlaskClient):
     # Tell user with error if they request too much.
     large_limit = OUR_DATASET_LIMIT + 1
-    rv: Response = stac_client.get((f"/stac/search?" f"&limit={large_limit}"))
+    rv: Response = stac_client.get(f"/stac/search?" f"&limit={large_limit}")
     assert rv.status_code == 400
     assert b"Max page size" in rv.data
 
@@ -602,7 +605,7 @@ def assert_stac_extensions(doc: Dict):
 
 def assert_item_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
-    _COLLECTION_SCHEMA.validate(collection)
+    _ITEM_COLLECTION_SCHEMA.validate(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
