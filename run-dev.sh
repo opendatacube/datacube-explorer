@@ -4,4 +4,4 @@ export FLASK_APP=cubedash
 export FLASK_DEBUG=1
 export PYTHONPATH=${PYTHONPATH}:`pwd`
 
-flask run -p 8080
+python -m flask run -p 8080
