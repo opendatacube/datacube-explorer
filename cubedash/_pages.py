@@ -261,7 +261,7 @@ def dashboard_page():
 
         common_uri = os.path.commonprefix(uri_list)
         if common_uri:
-            uri = common_uri
+            uri = os.path.dirname(common_uri)
         else:
             uri = uri_list
         item = {
