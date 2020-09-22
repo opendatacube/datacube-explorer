@@ -246,7 +246,7 @@ def about_page():
 
 @app.route("/dashboard")
 def dashboard_page():
-    dc = datacube.Datacube()
+    dc = datacube.Datacube(index=_model.STORE.index)
     dashboard = []
     import os
 
