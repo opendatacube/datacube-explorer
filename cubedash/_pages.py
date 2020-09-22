@@ -258,11 +258,18 @@ def dashboard_page():
         for dl in dataset_list:
             for uri in dl.uris:
                 uri_list.append(uri)
+
+        common_uri = os.path.commonprefix(uri_list)
+        if common_uri:
+            uri = common_uri
+        else:
+            uri = uri_list
         item = {
             "product_name": p.name,
-            "description": p.definition["description"],
             "dataset_count": _.dataset_count,
-            "uri": os.path.commonprefix(uri_list),
+            "metadata_type": p.definition["metadata_type"],
+            "product_metadata": p.definition["metadata"],
+            "uri": uri,
         }
         dashboard.append(item)
 

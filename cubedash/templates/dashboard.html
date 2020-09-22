@@ -44,7 +44,8 @@
             <thead>
                 <tr>
                     <th>Product Name</th>
-                    <!-- <th>Product Description</th> -->
+                    <th>Product metadata type</th>
+                    <th>Product type</th>
                     <th>Dataset count</th>
                     <th>URI</th>
                 </tr>
@@ -53,7 +54,8 @@
                 {% for product in dashboard %}
                 <tr>
                     <td>{{ product.product_name }}</td>
-                    <!-- <td>{{ product.description }}</td> -->
+                    <td>{{ product.metadata_type }}</td>
+                    <td>{{ product.product_metadata.product_type }}</td>
                     <td>{{ product.dataset_count }}</td>
                     <td>{{ product.uri }}</td>
                 </tr>
