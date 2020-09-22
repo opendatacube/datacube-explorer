@@ -251,13 +251,18 @@ def dashboard_page():
     import os
 
     for p, _ in _model.get_products_with_summaries():
-        dataset_list = dc.find_datasets(product=p.name, limit=1)
-        uri = dataset_list[0].uris
+        dataset_list = dc.find_datasets(
+            product=p.name, limit=100
+        )  # sample max 100 datasets
+        uri_list = []
+        for dl in dataset_list:
+            for uri in dl.uris:
+                uri_list.append(uri)
         item = {
             "product_name": p.name,
             "description": p.definition["description"],
             "dataset_count": _.dataset_count,
-            "uri": os.path.commonprefix(uri),
+            "uri": os.path.commonprefix(uri_list),
         }
         dashboard.append(item)
 
