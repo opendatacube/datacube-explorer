@@ -7,7 +7,7 @@ services:
       args:
         ENVIRONMENT: deployment
     ports:
-      - 8000:8080
+      - 80:8080
     environment:
       # - DB_HOSTNAME=host.docker.internal
       - DB_HOSTNAME=postgres
