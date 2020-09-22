@@ -244,6 +244,24 @@ def about_page():
     return utils.render("about.html")
 
 
+@app.route("/dashboard")
+def dashboard_page():
+    dc = datacube.Datacube()
+    dashboard = []
+    for p, _ in _model.get_products_with_summaries():
+        dataset_list = dc.find_datasets(product=p.name, limit=1)
+        uri = dataset_list[0].uris[0]
+        item = {
+            "product_name": p.name,
+            "description": p.definition["description"],
+            "dataset_count": _.dataset_count,
+            "uri": uri,
+        }
+        dashboard.append(item)
+
+    return utils.render("dashboard.html", dashboard=dashboard)
+
+
 @app.context_processor
 def inject_globals():
     last_updated = _model.get_last_updated()
