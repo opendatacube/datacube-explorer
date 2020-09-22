@@ -45,6 +45,7 @@
                 <tr>
                     <th>Product Name</th>
                     <th>Product metadata type</th>
+                    <th>Product definition doc</th>
                     <th>Product type</th>
                     <th>Dataset count</th>
                     <th>URI</th>
@@ -55,6 +56,7 @@
                 <tr>
                     <td>{{ product.product_name }}</td>
                     <td>{{ product.metadata_type }}</td>
+                    <td><a href="{{url_for('product.raw_product_doc', name=product.product_name, _external=True)}}">{{url_for('product.raw_product_doc', name=product.product_name)}}</a></td>
                     <td>{{ product.product_metadata.product_type }}</td>
                     <td>{{ product.dataset_count }}</td>
                     <td>{{ product.uri }}</td>
