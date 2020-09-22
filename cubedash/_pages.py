@@ -248,14 +248,16 @@ def about_page():
 def dashboard_page():
     dc = datacube.Datacube()
     dashboard = []
+    import os
+
     for p, _ in _model.get_products_with_summaries():
         dataset_list = dc.find_datasets(product=p.name, limit=1)
-        uri = dataset_list[0].uris[0]
+        uri = dataset_list[0].uris
         item = {
             "product_name": p.name,
             "description": p.definition["description"],
             "dataset_count": _.dataset_count,
-            "uri": uri,
+            "uri": os.path.commonprefix(uri),
         }
         dashboard.append(item)
 
