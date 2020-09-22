@@ -22,6 +22,18 @@
             width: 100%;
             max-width: 100%;
         }
+        thead tr {
+            display: block;
+        }
+        tbody {
+            display: block;
+            height: 700px;
+            overflow: auto;
+        }
+        table th {
+            width: 220px;
+            text-align: left;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -44,14 +56,14 @@
             <thead>
                 <tr>
                     <th>Product Name</th>
-                    <th>Product metadata type</th>
-                    <th>Product definition doc</th>
+                    <th>metadata type</th>
+                    <th>definition doc</th>
                     <th>Product type</th>
                     <th>Dataset count</th>
                     <th>URI</th>
                 </tr>
             </thead>
-            <tbocdy>
+            <tbody>
                 {% for product in dashboard %}
                 <tr>
                     <td>{{ product.product_name }}</td>
