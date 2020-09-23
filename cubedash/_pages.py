@@ -32,6 +32,7 @@ app.register_blueprint(_stac.bp)
 _LOG = structlog.getLogger()
 
 _HARD_SEARCH_LIMIT = app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
+_DEFAULT_GROUP_NAME = app.config.get("CUBEDASH_DEFAULT_GROUP_NAME", "Other Products")
 
 # Add server timings to http headers.
 if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
@@ -289,13 +290,13 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
             for regex, group in regex_group.items():
                 if regex.search(t[0].name):
                     return group
-            return t[0].name
+            return _DEFAULT_GROUP_NAME
 
         key = regex_key
     else:
         # Group using the configured key, or fall back to the product name.
         def field_key(t):
-            return t[0].fields.get(group_by_field) or t[0].name
+            return t[0].fields.get(group_by_field) or _DEFAULT_GROUP_NAME
 
         key = field_key
 
@@ -310,30 +311,28 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
         key=lambda k: len(k[1]),
         reverse=True,
     )
-    return _merge_singular_groups(grouped_product_summarise, group_field_size)
+    return _partition_default(grouped_product_summarise, group_field_size)
 
 
-def _merge_singular_groups(
+def _partition_default(
     grouped_product_summarise: List[Tuple[str, List[ProductWithSummary]]],
     remainder_group_size=5,
 ) -> List[Tuple[str, List[ProductWithSummary]]]:
     """
-    Remove groups with only one member, and place them at the end in batches.
+    For default items and place them at the end in batches.
     """
     lonely_products = []
-    for _group, items in reversed(grouped_product_summarise):
-        if len(items) > 1:
+    for i, group_tuple in enumerate(grouped_product_summarise.copy()):
+        if group_tuple[0] == _DEFAULT_GROUP_NAME:
+            lonely_products = group_tuple[1]
+            grouped_product_summarise.pop(i)
             break
-        lonely_products.extend(items)
-        grouped_product_summarise = grouped_product_summarise[:-1]
 
     there_are_groups = len(grouped_product_summarise) > 0
 
     lonely_products = sorted(lonely_products, key=lambda p: p[1].name)
-    for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
-        group_name = ""
-        if i == 0:
-            group_name = "Other Products" if there_are_groups else "Products"
+    group_name = _DEFAULT_GROUP_NAME if there_are_groups else "Products"
+    for lonely_group in chunks(lonely_products, remainder_group_size):
         grouped_product_summarise.append((group_name, lonely_group))
     return grouped_product_summarise
 
