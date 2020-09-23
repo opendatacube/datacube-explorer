@@ -131,14 +131,16 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     # Specify product grouping in the top menu.
     # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
-    # anywhere in its name. Unmatched products have their own group.
+    # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't
+    include the default name.  
     # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )" 
     CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
     # Otherwise, group by a single metadata field in the products:
     CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type' 
     # Ungrouped products will be grouped together in this size.
     CUBEDASH_PRODUCT_GROUP_SIZE = 5
-    
+    # Ungrouped products will be grouped together using this name
+    CUBEDASH_DEFAULT_GROUP_NAME = 'Other Products'
     # Maximum search results
     CUBEDASH_HARD_SEARCH_LIMIT = 100
     # Maximum number of source/derived datasets to show
