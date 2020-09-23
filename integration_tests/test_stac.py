@@ -466,7 +466,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     scene_collection = get_collection(stac_client, collection_href)
     pprint(scene_collection)
     assert scene_collection == {
-        "stac_version": "0.9.0",
+        "stac_version": "1.0.0-beta.2",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
         "license": "CC-BY-4.0",
@@ -508,7 +508,7 @@ def test_stac_item(stac_client: FlaskClient):
     )
     # Our item document can still be improved. This is ensuring changes are deliberate.
     assert response == {
-        "stac_version": "0.9.0",
+        "stac_version": "1.0.0-beta.2",
         "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
         "type": "Feature",
         "bbox": approx(

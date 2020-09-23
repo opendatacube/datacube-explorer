@@ -24,15 +24,15 @@ subfolder="stac-spec-${stac_version}"
 wget https://github.com/radiantearth/stac-spec/archive/${stac_tag}.tar.gz
 tar -xvf ${stac_tag}.tar.gz --wildcards "${subfolder}/*/json-schema/*.json"
 rm ${stac_tag}.tar.gz
-rm -rf stac
-mv -v ${subfolder} stac
+rm -f stac
+ln -s ${subfolder} stac
 
 api_subfolder="stac-api-spec-${stac_api_tag}"
 wget https://github.com/radiantearth/stac-api-spec/archive/${stac_api_tag}.tar.gz
 tar -xvf ${stac_api_tag}.tar.gz --wildcards "${api_subfolder}/*/json-schema/*.json"
 rm ${stac_api_tag}.tar.gz
-rm -rf stac-api
-mv -v ${api_subfolder} stac-api
+rm -f stac-api
+ln -s ${api_subfolder} stac-api
 
 # The ItemCollection was removed from core stac, but is used by stac-api.
 cd stac/item-spec/json-schema
