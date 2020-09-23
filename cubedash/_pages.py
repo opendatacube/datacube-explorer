@@ -250,7 +250,7 @@ def dashboard_page():
     dashboard = []
     import os
 
-    for p, _ in _model.get_products_with_summaries():
+    for product, summary in _model.get_products_with_summaries():
         dataset_list = dc.find_datasets(
             product=p.name, limit=100
         )  # sample max 100 datasets
