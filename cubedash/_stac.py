@@ -259,7 +259,10 @@ def item(product_name, dataset_id):
         # We're not doing a redirect as we don't want people to rely on wrong urls
         # (and we're unkind)
         actual_url = url_for(
-            ".item", product_name=product_name, dataset_id=dataset_id, _external=True
+            ".item",
+            product_name=actual_product_name,
+            dataset_id=dataset_id,
+            _external=True,
         )
         abort(
             404,
