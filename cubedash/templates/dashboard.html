@@ -66,7 +66,7 @@
             <tbody>
                 {% for product in dashboard %}
                 <tr>
-                    <td>{{ product.product_name }}</td>
+                    <td>{{ product.product_name | product_link }}</td>
                     <td>{{ product.metadata_type }}</td>
                     <td><a href="{{url_for('product.raw_product_doc', name=product.product_name, _external=True)}}">{{url_for('product.raw_product_doc', name=product.product_name)}}</a></td>
                     <td>{{ product.product_metadata.product_type }}</td>
