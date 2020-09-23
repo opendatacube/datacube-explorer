@@ -251,13 +251,13 @@ def dashboard_page():
     import os
 
     for product, summary in _model.get_products_with_summaries():
-        dataset_list = dc.find_datasets(
-            product=p.name, limit=100
-        )  # sample max 100 datasets
-        uri_list = []
-        for dl in dataset_list:
-            for uri in dl.uris:
-                uri_list.append(uri)
+        # Sample 100 dataset uris
+        uri_list = [
+            uri
+            for [uri] in dc.index.datasets.search_returning(
+                ["uri"], product=p.name, limit=100
+            )
+        ]
 
         common_uri = os.path.commonprefix(uri_list)
         if common_uri:
