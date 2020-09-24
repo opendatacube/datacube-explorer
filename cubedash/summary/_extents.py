@@ -60,15 +60,25 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
+    projection_offset = _projection_doc_offset(md)
+
     if expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
-            func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+            case(
+                [
+                    # If we have geometry, use it as the polygon.
+                    (
+                        doc[["geometry"]] != None,
+                        func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+                    )
+                ],
+                # Otherwise construct a polygon from the computed bounds that ODC added on index.
+                else_=_bounds_polygon(doc, projection_offset),
+            ),
             get_dataset_srid_alchemy_expression(md, default_crs),
         )
     else:
-        projection_offset = _projection_doc_offset(md)
         valid_data_offset = projection_offset + ["valid_data"]
-
         return func.ST_SetSRID(
             case(
                 [
