@@ -425,11 +425,14 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     created_field = md.dataset_fields.get("created")
     if created_field is not None:
         assert isinstance(created_field, PgDocField)
-        return created_field.alchemy_expression
+        creation_expression = created_field.alchemy_expression
+    else:
+        doc = md.dataset_fields["metadata_doc"].alchemy_expression
+        creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
+        creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
 
-    doc = md.dataset_fields["metadata_doc"].alchemy_expression
-    creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-    return func.agdc.common_timestamp(doc[creation_dt].astext)
+    # If they're missing a dataset-creation time, fall back to the time it was indexed.
+    return func.coalesce(creation_expression, DATASET.c.added)
 
 
 def get_dataset_bounds_query(md_type):
