@@ -305,6 +305,10 @@ def refresh_product(
         change_count += engine.execute(
             DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
         ).rowcount
+        log.debug(
+            "extent_removal.end",
+            deleted_count=change_count,
+        )
 
     insert_count = _populate_missing_dataset_extents(
         engine, product, force_update_all=recompute_all_extents, after_date=after_date
