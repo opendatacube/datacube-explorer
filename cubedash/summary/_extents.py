@@ -60,15 +60,25 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         # Non-spatial product
         return None
 
+    projection_offset = _projection_doc_offset(md)
+
     if expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
-            func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+            case(
+                [
+                    # If we have geometry, use it as the polygon.
+                    (
+                        doc[["geometry"]] != None,
+                        func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+                    )
+                ],
+                # Otherwise construct a polygon from the computed bounds that ODC added on index.
+                else_=_bounds_polygon(doc, projection_offset),
+            ),
             get_dataset_srid_alchemy_expression(md, default_crs),
         )
     else:
-        projection_offset = _projection_doc_offset(md)
         valid_data_offset = projection_offset + ["valid_data"]
-
         return func.ST_SetSRID(
             case(
                 [
@@ -256,18 +266,54 @@ def _gis_point(doc, doc_offset):
     )
 
 
-def refresh_product(index: Index, product: DatasetType, recompute_all_extents=False):
+# noinspection PyComparisonWithNone
+def refresh_product(
+    index: Index,
+    product: DatasetType,
+    recompute_all_extents=False,
+    remove_archived_datasets=True,
+    after_date: datetime = None,
+):
     """
     Record the spatial extents for each dataset in a product.
 
-    By default, it will only add datasets that are currently missing.
+    By default, it will only add datasets that are currently missing, and remove
+    archived datasets.
 
-    :param recompute_all_extents: replace all extents, even if already recorded
+    :param after_date: Only scan datasets that have changed after the given (db server) time.
+    :param recompute_all_extents: replace/update all extents, even if already present.
     """
     engine: Engine = alchemy_engine(index)
+    change_count = 0
+
+    log = _LOG.bind(product_name=product.name, after_date=after_date)
+
+    if remove_archived_datasets:
+        # Remove any archived datasets from our spatial table.
+        datasets_to_delete = (
+            select([DATASET.c.id])
+            .where(DATASET.c.archived != None)
+            .where(DATASET.c.dataset_type_ref == product.id)
+        )
+        if after_date is not None:
+            datasets_to_delete = datasets_to_delete.where(
+                DATASET.c.archived > after_date
+            )
+        log.debug(
+            "extent_removal.start",
+        )
+        change_count += engine.execute(
+            DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
+        ).rowcount
+        log.debug(
+            "extent_removal.end",
+            deleted_count=change_count,
+        )
+
     insert_count = _populate_missing_dataset_extents(
-        engine, product, force_update_all=recompute_all_extents
+        engine, product, force_update_all=recompute_all_extents, after_date=after_date
     )
+    change_count += insert_count
 
     # If we inserted data...
     if insert_count:
@@ -277,9 +323,8 @@ def refresh_product(index: Index, product: DatasetType, recompute_all_extents=Fa
             if "sat_path" in product.metadata_type.dataset_fields:
 
                 # We can synthesize the polygons!
-                _LOG.debug(
+                log.debug(
                     "spatial_synthesizing.start",
-                    product_name=product.name,
                 )
                 shapes = _get_path_row_shapes()
                 rows = [
@@ -314,16 +359,18 @@ def refresh_product(index: Index, product: DatasetType, recompute_all_extents=Fa
                             for id_, sat_path, sat_row in rows
                         ],
                     )
-            _LOG.debug(
+            log.debug(
                 "spatial_synthesizing.done",
-                product_name=product.name,
             )
 
-    return insert_count
+    return change_count
 
 
 def _populate_missing_dataset_extents(
-    engine: Engine, product: DatasetType, force_update_all=False
+    engine: Engine,
+    product: DatasetType,
+    force_update_all=False,
+    after_date: datetime = None,
 ):
     columns = {c.name: c for c in _select_dataset_extent_columns(product)}
 
@@ -338,18 +385,26 @@ def _populate_missing_dataset_extents(
             )
             .where(DATASET.c.archived == None)
         )
+        # TODO: We could use the `updated` date for smarter updating,
+        #       but it's optional on ODC at the moment!
+        if after_date is not None:
+            query = query.where(DATASET.c.added > after_date)
     else:
+        extent_selection = (
+            select(columns.values())
+            .where(
+                DATASET.c.dataset_type_ref
+                == bindparam("product_ref", product.id, type_=SmallInteger)
+            )
+            .where(DATASET.c.archived == None)
+        )
+        if after_date is not None:
+            extent_selection = extent_selection.where(DATASET.c.added > after_date)
         query = (
             postgres.insert(DATASET_SPATIAL)
             .from_select(
                 columns.keys(),
-                select(columns.values())
-                .where(
-                    DATASET.c.dataset_type_ref
-                    == bindparam("product_ref", product.id, type_=SmallInteger)
-                )
-                .where(DATASET.c.archived == None)
-                .order_by(columns["center_time"]),
+                extent_selection.order_by(columns["center_time"]),
             )
             .on_conflict_do_nothing(index_elements=["id"])
         )
@@ -358,6 +413,7 @@ def _populate_missing_dataset_extents(
     _LOG.debug(
         "spatial_insert_query.start",
         product_name=product.name,
+        after_date=after_date,
         force_update_all=force_update_all,
     )
     changed = engine.execute(query).rowcount
@@ -425,11 +481,14 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     created_field = md.dataset_fields.get("created")
     if created_field is not None:
         assert isinstance(created_field, PgDocField)
-        return created_field.alchemy_expression
+        creation_expression = created_field.alchemy_expression
+    else:
+        doc = md.dataset_fields["metadata_doc"].alchemy_expression
+        creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
+        creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
 
-    doc = md.dataset_fields["metadata_doc"].alchemy_expression
-    creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-    return func.agdc.common_timestamp(doc[creation_dt].astext)
+    # If they're missing a dataset-creation time, fall back to the time it was indexed.
+    return func.coalesce(creation_expression, DATASET.c.added)
 
 
 def get_dataset_bounds_query(md_type):
