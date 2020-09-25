@@ -12,6 +12,18 @@
         .data-table tr:hover {
             background-color: #f0f0f0;
         }
+
+        thead tr {
+            display: block;
+        }
+        tbody {
+            display: block;
+            height: 700px;
+            overflow: auto;
+        }
+        .data-table td, .data-table th {
+            width: 160px;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -125,4 +137,3 @@
     {% endif %}
 
 {% endblock %}
-
