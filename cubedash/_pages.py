@@ -255,7 +255,7 @@ def dashboard_page():
         uri_list = [
             uri
             for [uri] in dc.index.datasets.search_returning(
-                ["uri"], product=p.name, limit=100
+                ["uri"], product=product.name, limit=100
             )
         ]
 
@@ -265,10 +265,10 @@ def dashboard_page():
         else:
             uri = uri_list
         item = {
-            "product_name": p.name,
+            "product_name": product.name,
             "dataset_count": _.dataset_count,
-            "metadata_type": p.definition["metadata_type"],
-            "product_metadata": p.definition["metadata"],
+            "metadata_type": product.definition["metadata_type"],
+            "product_metadata": product.definition["metadata"],
             "uri": uri,
         }
         dashboard.append(item)
