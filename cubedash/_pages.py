@@ -331,8 +331,10 @@ def _partition_default(
     there_are_groups = len(grouped_product_summarise) > 0
 
     lonely_products = sorted(lonely_products, key=lambda p: p[1].name)
-    group_name = _DEFAULT_GROUP_NAME if there_are_groups else "Products"
-    for lonely_group in chunks(lonely_products, remainder_group_size):
+    for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
+        group_name = ""
+        if i == 0:
+            group_name = _DEFAULT_GROUP_NAME if there_are_groups else "Products"
         grouped_product_summarise.append((group_name, lonely_group))
     return grouped_product_summarise
 
