@@ -266,7 +266,7 @@ def dashboard_page():
             uri = uri_list
         item = {
             "product_name": product.name,
-            "dataset_count": _.dataset_count,
+            "dataset_count": summary.dataset_count,
             "metadata_type": product.definition["metadata_type"],
             "product_metadata": product.definition["metadata"],
             "uri": uri,
