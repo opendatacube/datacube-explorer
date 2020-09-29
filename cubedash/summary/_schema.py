@@ -267,6 +267,11 @@ def pg_exists(conn, name: str) -> bool:
     return conn.execute("select to_regclass(%s)", name).scalar() is not None
 
 
+def get_postgis_versions(conn) -> str:
+    """What versions of Postgis, Postgres and libs do we have?"""
+    return conn.execute(select([func.postgis_full_version()])).scalar()
+
+
 def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
     """
     Does a postgres object exist?
