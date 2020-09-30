@@ -17,7 +17,7 @@ from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from eodatasets3 import serialise
-from eodatasets3.model import DatasetDoc, ProductDoc
+from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryDoc
 from eodatasets3.properties import StacPropertyView
 from eodatasets3.scripts import tostac
 from eodatasets3.utils import is_doc_eo3
@@ -320,6 +320,17 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
     return f"{start_time.isoformat()}/{end_time.isoformat()}"
 
 
+def _band_to_measurement(band: Dict) -> MeasurementDoc:
+    """Create EO3 measurement from an EO1 band dict"""
+    return MeasurementDoc(
+        path=band.get("path"),
+        band=band.get("band"),
+        layer=band.get("layer"),
+        name=band.get("name"),
+        alias=band.get("label"),
+    )
+
+
 def as_stac_item(dataset: DatasetItem):
     """
     Get a dict corresponding to a stac item
@@ -345,15 +356,15 @@ def as_stac_item(dataset: DatasetItem):
                 {
                     "datetime": utc(dataset.center_time),
                     **dict(_build_properties(dataset.odc_dataset.metadata)),
-                    "odc:product": dataset.product_name,
                     "odc:processing_datetime": utc(dataset.creation_time),
                 }
             ),
-            # TODO
-            measurements={},
-            # TODO: Check for old thumbnail?
-            accessories={},
-            # TODO: Convert from eo1?
+            measurements={
+                name: _band_to_measurement(b) for name, b in ds.measurements.items()
+            },
+            accessories=_accessories_from_eo1(ds.metadata_doc),
+            # TODO: Fill in lineage. The datacube API only gives us full datasets, which is
+            #       expensive. We only need a list of IDs here.
             lineage={},
         )
 
@@ -376,6 +387,25 @@ def as_stac_item(dataset: DatasetItem):
     item_doc["properties"]["cubedash:region_code"] = dataset.region_code
 
     return item_doc
+
+
+def _accessories_from_eo1(metadata_doc: Dict) -> Dict[str, AccessoryDoc]:
+    """Create and EO3 accessories section from an EO1 document"""
+    accessories = {}
+
+    # Browse image -> thumbnail
+    if "browse" in metadata_doc:
+        for name, browse in metadata_doc["browse"].items():
+            accessories[f"thumbnail:{name}"] = AccessoryDoc(
+                path=browse["path"], name=name
+            )
+
+    # Checksum
+    if "checksum_path" in metadata_doc:
+        accessories["checksum:sha1"] = AccessoryDoc(
+            path=metadata_doc["checksum_path"], name="checksum:sha1"
+        )
+    return accessories
 
 
 def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
