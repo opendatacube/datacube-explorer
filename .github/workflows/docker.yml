@@ -9,7 +9,7 @@ on:
       - "**"
 
   release:
-    types: [created, published]
+    types: [created, edited, published]
 
 env:
   OLD_IMAGE_NAME: opendatacube/dashboard
