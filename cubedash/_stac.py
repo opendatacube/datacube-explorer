@@ -76,7 +76,7 @@ def root():
                         title=product.name,
                         description=product.definition.get("description"),
                         href=url_for(
-                            ".collection", product_name=product.name, _external=True
+                            ".collection", collection=product.name, _external=True
                         ),
                     )
                     for product, product_summary in _model.get_products_with_summaries()
@@ -188,14 +188,14 @@ def search_stac_items(
     return result
 
 
-@bp.route("/collections/<product_name>")
-def collection(product_name: str):
+@bp.route("/collections/<collection>")
+def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
     """
-    summary = _model.get_product_summary(product_name)
-    dataset_type = _model.STORE.get_dataset_type(product_name)
-    all_time_summary = _model.get_time_summary(product_name)
+    summary = _model.get_product_summary(collection)
+    dataset_type = _model.STORE.get_dataset_type(collection)
+    all_time_summary = _model.get_time_summary(collection)
 
     summary_props = {}
     if summary and summary.time_earliest:
@@ -221,7 +221,7 @@ def collection(product_name: str):
                 dict(
                     rel="items",
                     href=url_for(
-                        ".collection_items", product_name=product_name, _external=True
+                        ".collection_items", collection=collection, _external=True
                     ),
                 )
             ],
@@ -252,14 +252,14 @@ def collection_items(collection: str):
     return _utils.as_geojson(feature_collection)
 
 
-@bp.route("/collections/<product_name>/items/<dataset_id>")
-def item(product_name, dataset_id):
+@bp.route("/collections/<collection>/items/<dataset_id>")
+def item(collection, dataset_id):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
         abort(404, "No such dataset")
 
     actual_product_name = dataset.product_name
-    if product_name != actual_product_name:
+    if collection != actual_product_name:
         # We're not doing a redirect as we don't want people to rely on wrong urls
         # (and we're unkind)
         actual_url = url_for(
@@ -364,7 +364,7 @@ def as_stac_item(dataset: DatasetItem):
         input_metadata_url=url_for("dataset.raw_doc", id_=ds.id),
         output_url=url_for(
             ".item",
-            product_name=dataset.product_name,
+            collection=dataset.product_name,
             dataset_id=dataset.dataset_id,
         ),
         explorer_base_url=url_for("default_redirect"),
