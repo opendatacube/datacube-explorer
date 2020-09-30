@@ -328,6 +328,7 @@ def as_stac_item(dataset: DatasetItem):
 
     if is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
+        dataset_doc.locations = ds.uris
     else:
         # eo1 to eo3
         dataset_doc = DatasetDoc(
