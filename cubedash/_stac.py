@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 import flask
 from dateutil.tz import tz
 from flask import abort, request
+from werkzeug.datastructures import MultiDict
 
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
@@ -87,20 +88,25 @@ def stac_search():
     Search api for stac items.
     """
     if request.method == "GET":
-        bbox = request.args.get("bbox")
-        if bbox:
-            bbox = json.loads(bbox)
-        time = request.args.get("time")
-        product_name = request.args.get("product")
-        limit = request.args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
-        offset = request.args.get("_o", default=0, type=int)
+        args = request.args
     else:
-        req_data = request.get_json()
-        bbox = req_data.get("bbox")
-        time = req_data.get("time")
-        product_name = req_data.get("product")
-        limit = req_data.get("limit") or DEFAULT_PAGE_SIZE
-        offset = req_data.get("_o") or 0
+        args = request.get_json()
+    return _utils.as_geojson(_handle_search_request(args))
+
+
+def _handle_search_request(request_args: MultiDict, route_name=".stac_search") -> Dict:
+    bbox = request_args.get("bbox")
+    if bbox and isinstance(bbox, str):
+        bbox = json.loads(bbox)
+    time = request_args.get("time")
+    product_name = request_args.get("collection")
+
+    # Fallback for legacy 'product' argument
+    if not product_name and "product" in request_args:
+        product_name = request_args.get("product")
+
+    limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    offset = request_args.get("_o", default=0, type=int)
 
     if limit > PAGE_SIZE_LIMIT:
         abort(
@@ -117,23 +123,21 @@ def stac_search():
 
     def next_page_url(next_offset):
         return url_for(
-            ".stac_search",
-            product=product_name,
+            route_name,
+            collection=product_name,
             bbox="[{},{},{},{}]".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             limit=limit,
             _o=next_offset,
         )
 
-    return _utils.as_geojson(
-        search_stac_items(
-            product_name=product_name,
-            bbox=bbox,
-            time=time,
-            limit=limit,
-            offset=offset,
-            get_next_url=next_page_url,
-        )
+    return search_stac_items(
+        product_name=product_name,
+        bbox=bbox,
+        time=time,
+        limit=limit,
+        offset=offset,
+        get_next_url=next_page_url,
     )
 
 
@@ -220,31 +224,26 @@ def collection(product_name: str):
     )
 
 
-@bp.route("/collections/<product_name>/items")
-def collection_items(product_name: str):
+@bp.route("/collections/<collection>/items")
+def collection_items(collection: str):
     """
     A geojson FeatureCollection of all items in a collection/product.
 
     (with paging)
     """
-
-    def next_url(offset):
-        return url_for(".collection_items", product_name=product_name, _o=offset)
-
-    all_time_summary = _model.get_time_summary(product_name)
+    all_time_summary = _model.get_time_summary(collection)
     if not all_time_summary:
         abort(404, "Product not yet summarised")
 
-    feature_collection = search_stac_items(
-        product_name=product_name,
-        limit=PAGE_SIZE_LIMIT,
-        get_next_url=next_url,
-        offset=request.args.get("_o", default=0, type=int),
-    )
-
     # Maybe we shouldn't include total count, as it prevents some future optimisation?
-    feature_collection["context"]["matched"] = all_time_summary.dataset_count
 
+    args = MultiDict(request.args)
+    args["collection"] = collection
+
+    feature_collection = _handle_search_request(
+        request_args=args, route_name=".collection_items"
+    )
+    feature_collection["context"]["matched"] = all_time_summary.dataset_count
     return _utils.as_geojson(feature_collection)
 
 
