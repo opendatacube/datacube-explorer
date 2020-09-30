@@ -11,6 +11,7 @@ on:
   release:
     types:
       - created
+      - edited
 
 env:
   OLD_IMAGE_NAME: opendatacube/dashboard
