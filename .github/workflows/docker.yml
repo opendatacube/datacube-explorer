@@ -67,8 +67,7 @@ jobs:
       - name: Get tag for this build if it exists
         if: github.event_name == 'release'
         run: >
-          echo ::set-env name=RELEASE::$(docker run --rm -e DATACUBE_DB_URL=postgresql://username:password@hostname:5432/database
-          ${{ env.IMAGE_NAME }}:latest python3 -c 'import cubedash; print(cubedash.__version__)')
+          echo ::set-env name=RELEASE::$(git describe --tags)
 
       - name: Log the tag
         run: echo $RELEASE
