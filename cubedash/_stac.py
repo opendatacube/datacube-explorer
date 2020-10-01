@@ -340,6 +340,15 @@ def as_stac_item(dataset: DatasetItem):
     if is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
         dataset_doc.locations = ds.uris
+
+        # Geometry is optional in eo3, and needs to be calculated from grids if missing.
+        # We can use ODC's own calculation that happens on index.
+        if dataset_doc.geometry is None:
+            fallback_extent = ds.extent
+            if fallback_extent is not None:
+                dataset_doc.geometry = fallback_extent.geom
+                dataset_doc.crs = str(ds.crs)
+
     else:
         # eo1 to eo3
         dataset_doc = DatasetDoc(
