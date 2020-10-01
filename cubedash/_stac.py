@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 import flask
 from dateutil.tz import tz
 from flask import abort, request
-from werkzeug.datastructures import MultiDict
+from werkzeug.datastructures import TypeConversionDict
 
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
@@ -21,7 +21,6 @@ from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryD
 from eodatasets3.properties import StacPropertyView
 from eodatasets3.scripts import tostac
 from eodatasets3.utils import is_doc_eo3
-
 from . import _model, _utils
 
 _LOG = logging.getLogger(__name__)
@@ -46,7 +45,7 @@ def _endpoint_params() -> Dict:
     config = _model.app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "ODC Explorer instance"),
+        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
     )
     description = config.get(
         "STAC_ENDPOINT_DESCRIPTION",
@@ -98,11 +97,13 @@ def stac_search():
     if request.method == "GET":
         args = request.args
     else:
-        args = MultiDict(request.get_json())
+        args = TypeConversionDict(request.get_json())
     return _utils.as_geojson(_handle_search_request(args))
 
 
-def _handle_search_request(request_args: MultiDict, route_name=".stac_search") -> Dict:
+def _handle_search_request(
+    request_args: TypeConversionDict, route_name=".stac_search"
+) -> Dict:
     bbox = request_args.get("bbox")
     if bbox and isinstance(bbox, str):
         bbox = json.loads(bbox)
@@ -245,7 +246,7 @@ def collection_items(collection: str):
 
     # Maybe we shouldn't include total count, as it prevents some future optimisation?
 
-    args = MultiDict(request.args)
+    args = TypeConversionDict(request.args)
     args["collection"] = collection
 
     feature_collection = _handle_search_request(
@@ -267,7 +268,7 @@ def item(collection, dataset_id):
         # (and we're unkind)
         actual_url = url_for(
             ".item",
-            product_name=actual_product_name,
+            collection=actual_product_name,
             dataset_id=dataset_id,
             _external=True,
         )
