@@ -46,9 +46,12 @@ def _endpoint_params() -> Dict:
     config = _model.app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
+        title=config.get("STAC_ENDPOINT_TITLE", "ODC Explorer instance"),
     )
-    description = config.get("STAC_ENDPOINT_DESCRIPTION")
+    description = config.get(
+        "STAC_ENDPOINT_DESCRIPTION",
+        "Configure stac endpoint information in your Explorer `settings.env.py` file",
+    )
     if description:
         o["description"] = description
     return o
