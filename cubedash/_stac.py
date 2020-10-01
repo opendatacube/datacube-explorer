@@ -352,6 +352,18 @@ def as_stac_item(dataset: DatasetItem):
                 dataset_doc.geometry = fallback_extent.geom
                 dataset_doc.crs = str(ds.crs)
 
+        if ds.sources:
+            dataset_doc.lineage = {classifier: [d.id] for classifier, d in ds.sources}
+        # Does ODC still put legacy lineage into indexed documents?
+        elif ("source_datasets" in dataset_doc.lineage) and len(
+            dataset_doc.lineage
+        ) == 1:
+            # From old to new lineage type.
+            dataset_doc.lineage = {
+                classifier: [dataset["id"]]
+                for classifier, dataset in dataset_doc.lineage["source_datasets"]
+            }
+
     else:
         # eo1 to eo3
         dataset_doc = DatasetDoc(
