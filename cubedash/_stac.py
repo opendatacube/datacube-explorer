@@ -98,7 +98,7 @@ def stac_search():
     if request.method == "GET":
         args = request.args
     else:
-        args = request.get_json()
+        args = MultiDict(request.get_json())
     return _utils.as_geojson(_handle_search_request(args))
 
 
