@@ -4,6 +4,7 @@ Tests that hit the stac api
 
 import json
 import urllib.parse
+from collections import Counter
 from collections import defaultdict
 from pathlib import Path
 from pprint import pformat, pprint
@@ -11,19 +12,17 @@ from typing import Dict, Generator, Iterable, Optional, Union
 
 import jsonschema
 import pytest
+from boltons.iterutils import research
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
-from pytest import approx
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
-from collections import Counter
+
 import cubedash._stac
-from boltons.iterutils import research
 from cubedash import _model
 from datacube.utils import read_documents
-
 from .asserts import DebugContext, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
@@ -506,87 +505,143 @@ def test_stac_item(stac_client: FlaskClient):
         stac_client,
         "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
     )
+    print(repr(response))
+
     # Our item document can still be improved. This is ensuring changes are deliberate.
     assert response == {
         "stac_version": "1.0.0-beta.2",
-        "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        "stac_extensions": ["eo", "projection"],
         "type": "Feature",
-        "bbox": approx(
-            [140.035960082973, -32.6888300563717, 142.621067117769, -30.7799534711876]
-        ),
+        "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        "bbox": [
+            140.03596008297276,
+            -32.68883005637166,
+            142.6210671177689,
+            -30.779953471187625,
+        ],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [140.494174472712, -30.779953471187625],
+                    [140.48160638713588, -30.786613939351987],
+                    [140.47654885652616, -30.803517459008308],
+                    [140.26694302361142, -31.554989847530283],
+                    [140.11071136692811, -32.10972728807016],
+                    [140.05019849367122, -32.32331059968287],
+                    [140.03596008297276, -32.374863567950605],
+                    [140.04582698730871, -32.37992930113176],
+                    [140.09253434030472, -32.38726630955288],
+                    [142.19093826112766, -32.68798630718157],
+                    [142.19739423481033, -32.68883005637166],
+                    [142.20859663812988, -32.688497041665755],
+                    [142.21294093862082, -32.68685778341274],
+                    [142.6210671177689, -31.092487513703713],
+                    [142.6090583939577, -31.083354434650456],
+                    [142.585607903412, -31.08001593849131],
+                    [140.494174472712, -30.779953471187625],
+                ]
+            ],
+        },
         "properties": {
+            "created": "2017-07-11T01:32:22+00:00",
             "datetime": "2017-05-02T00:29:01+00:00",
-            "start_datetime": "2017-05-02T00:28:48+00:00",
-            "end_datetime": "2017-05-02T00:29:14+00:00",
+            "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
             "platform": "landsat-7",
             "instruments": ["etm"],
             "landsat:wrs_path": 96,
             "landsat:wrs_row": 82,
             "cubedash:region_code": "96_82",
-            "odc:processing_datetime": "2017-07-11T01:32:22+00:00",
             "odc:product": "ls7_nbar_scene",
-        },
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    approx([140.494174472712, -30.779953471187625]),
-                    approx([140.48160638713588, -30.786613939351987]),
-                    approx([140.47654885652616, -30.803517459008308]),
-                    approx([140.26694302361142, -31.554989847530283]),
-                    approx([140.11071136692811, -32.10972728807016]),
-                    approx([140.05019849367122, -32.32331059968287]),
-                    approx([140.03596008297276, -32.374863567950605]),
-                    approx([140.04582698730871, -32.37992930113176]),
-                    approx([140.09253434030472, -32.38726630955288]),
-                    approx([142.19093826112766, -32.68798630718157]),
-                    approx([142.19739423481033, -32.68883005637166]),
-                    approx([142.20859663812988, -32.688497041665755]),
-                    approx([142.21294093862082, -32.68685778341274]),
-                    approx([142.6210671177689, -31.092487513703713]),
-                    approx([142.6090583939577, -31.083354434650456]),
-                    approx([142.585607903412, -31.08001593849131]),
-                    approx([140.494174472712, -30.779953471187625]),
-                ]
-            ],
+            "proj:epsg": 4326,
         },
         "assets": {
-            # TODO: we're supposed to map bands to numbers in stac.
             "1": {
-                "eo:bands": ["1"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif",
+                "eo:bands": [{"name": "1"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif",
             },
             "2": {
-                "eo:bands": ["2"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif",
+                "eo:bands": [{"name": "2"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif",
             },
             "3": {
-                "eo:bands": ["3"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif",
+                "eo:bands": [{"name": "3"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif",
             },
             "4": {
-                "eo:bands": ["4"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif",
+                "eo:bands": [{"name": "4"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif",
             },
             "5": {
-                "eo:bands": ["5"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif",
+                "eo:bands": [{"name": "5"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif",
             },
             "7": {
-                "eo:bands": ["7"],
-                "href": "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif",
+                "eo:bands": [{"name": "7"}],
+                "type": "image/tiff; application=geotiff",
+                "roles": ["data"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
+                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif",
+            },
+            "thumbnail:full": {
+                "title": "Thumbnail image",
+                "type": "image/jpeg",
+                "roles": ["thumbnail"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/browse.fr.jpg",
+            },
+            "thumbnail:medium": {
+                "title": "Thumbnail image",
+                "type": "image/jpeg",
+                "roles": ["thumbnail"],
+                "href": "http://localhost/collections/ls7_nbar_scene/items/browse.jpg",
+            },
+            "checksum:sha1": {
+                "type": "text/plain",
+                "href": "http://localhost/collections/ls7_nbar_scene/items/package.sha1",
             },
         },
         "links": [
             {
                 "rel": "self",
+                "type": "application/json",
                 "href": "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
             },
-            {"rel": "parent", "href": "http://localhost/collections/ls7_nbar_scene"},
             {
+                "title": "ODC Dataset YAML",
+                "rel": "odc_yaml",
+                "type": "text/yaml",
+                "href": "http://localhost/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml",
+            },
+            {
+                "title": "ODC Product Overview",
+                "rel": "product_overview",
+                "type": "text/html",
+                "href": "http://localhost/product/ls7_nbar_scene",
+            },
+            {
+                "title": "ODC Dataset Overview",
                 "rel": "alternative",
                 "type": "text/html",
                 "href": "http://localhost/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+            },
+            {
+                "rel": "parent",
+                "href": "http://localhost/stac/collections/ls7_nbar_scene",
             },
         ],
     }
