@@ -388,14 +388,28 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     assert rv.status_code == 200
     doc = rv.json
 
-    # Features should in include all bands.
-    bands = ("blue", "green", "nir", "red", "swir1", "swir2")
+    # Features should include all bands.
+
     for feature in doc["features"]:
+        bands = ["blue", "green", "nir", "red", "swir1", "swir2"]
         with DebugContext(f"feature {feature['id']}"):
-            assert len(feature["assets"]) == 1, "Expected only one"
-            ((name, asset),) = feature["assets"].items()
-            assert name == "location"
-            assert tuple(sorted(asset["eo:bands"])) == bands
+            # TODO: These are the same file in a NetCDF. They should probably be one asset?
+            assert len(feature["assets"]) == len(
+                bands
+            ), f"Expected an asset per band, got {repr(feature['assets'])}"
+            assert set(feature["assets"].keys()) == set(bands)
+            while bands:
+                band = bands.pop()
+                assert band in feature["assets"]
+
+                band_d = feature["assets"][band]
+                assert band_d["roles"] == ["data"]
+                assert band_d["eo:bands"] == [{"name": band}]
+                # These have no path, so they should be the dataset location itself.
+                # (this is a .nc file in reality, but our test data loading creates weird locations)
+                assert (
+                    band_d["href"] == f'file://example.com/test_dataset/{feature["id"]}'
+                )
 
             # Validate stac item with jsonschema
             validate_item(feature)
