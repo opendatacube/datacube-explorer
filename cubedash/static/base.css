@@ -116,6 +116,18 @@ ul:last-child, ol:last-child {
   margin-bottom: 0;
 }
 
+ul {
+  padding-left: 20px;
+}
+@media (min-width: 800px) {
+  ul {
+    padding-left: 30px;
+  }
+}
+ul.quiet {
+  list-style: none;
+}
+
 .message-box {
   position: absolute;
   left: calc(50% - 100px);
@@ -164,6 +176,9 @@ ul:last-child, ol:last-child {
 }
 .panel.highlight a {
   color: #999;
+}
+.panel.overflowable {
+  overflow-x: auto;
 }
 
 .header-option {
@@ -434,6 +449,7 @@ label.disabled {
 .uri-path {
   font-family: monospace;
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .raw-metadata .property {
@@ -478,6 +494,10 @@ label.disabled {
 
 .logo-text {
   display: inline-block;
+}
+
+details > summary {
+  cursor: pointer;
 }
 
 .grid-form *, .grid-form *:before, .grid-form *:after {
