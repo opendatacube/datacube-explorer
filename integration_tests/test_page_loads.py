@@ -306,6 +306,11 @@ def test_about_page(client: FlaskClient):
     assert b"11 total datasets" in rv.data
 
 
+def test_dashboard_page(client: FlaskClient):
+    rv: Response = client.get("/dashboard")
+    assert b"wofs_albers" in rv.data
+
+
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(client: FlaskClient):
     """

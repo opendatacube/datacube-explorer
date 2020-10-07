@@ -245,6 +245,38 @@ def about_page():
     return utils.render("about.html")
 
 
+@app.route("/dashboard")
+def dashboard_page():
+    dc = datacube.Datacube(index=_model.STORE.index)
+    dashboard = []
+    import os
+
+    for product, summary in _model.get_products_with_summaries():
+        # Sample 100 dataset uris
+        uri_list = [
+            uri
+            for [uri] in dc.index.datasets.search_returning(
+                ["uri"], product=product.name, limit=100
+            )
+        ]
+
+        common_uri = os.path.commonprefix(uri_list)
+        if common_uri:
+            uri = os.path.dirname(common_uri)
+        else:
+            uri = uri_list
+        item = {
+            "product_name": product.name,
+            "dataset_count": summary.dataset_count,
+            "metadata_type": product.definition["metadata_type"],
+            "product_metadata": product.definition["metadata"],
+            "uri": uri,
+        }
+        dashboard.append(item)
+
+    return utils.render("dashboard.html", dashboard=dashboard)
+
+
 @app.context_processor
 def inject_globals():
     last_updated = _model.get_last_updated()
