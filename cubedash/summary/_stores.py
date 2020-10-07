@@ -1,8 +1,10 @@
 import math
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from itertools import groupby
 from typing import (
     Dict,
     Generator,
@@ -543,6 +545,31 @@ class SummaryStore:
             derived_products=derived_products,
             **row,
         )
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def product_location_prefixes(self, name: str) -> List[str]:
+        """
+        Take a sampling of dataset locations, and return the common
+        prefix for each location uri scheme.
+        """
+        # Sample 100 dataset uris
+        uri_samples = sorted(
+            [
+                uri
+                for [uri] in self.index.datasets.search_returning(
+                    ("uri",), product=name, limit=100
+                )
+            ]
+        )
+
+        def uri_scheme(uri: str):
+            return uri.split(":", 1)[0]
+
+        unique_locations = []
+        for _, uris in groupby(uri_samples, uri_scheme):
+            unique_locations.append(os.path.commonpath(uris))
+
+        return unique_locations
 
     def get_quality_stats(self) -> Iterable[Dict]:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))

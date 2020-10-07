@@ -1,7 +1,6 @@
 import csv
 import io
 import itertools
-import os
 import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
@@ -252,19 +251,11 @@ def about_page():
 def _product_sample_information():
     product_summary_uris = []
     for product, summary in _model.get_products_with_summaries():
-        # Sample 100 dataset uris
-        uri_samples = [
-            uri
-            for [uri] in _model.STORE.index.datasets.search_returning(
-                ("uri",), product=product.name, limit=100
-            )
-        ]
-        common_uri = os.path.commonprefix(uri_samples)
         product_summary_uris.append(
             (
                 product,
                 summary,
-                [os.path.dirname(common_uri)] if common_uri else uri_samples[:3],
+                _model.STORE.product_location_prefixes(product.name),
             )
         )
     return product_summary_uris
