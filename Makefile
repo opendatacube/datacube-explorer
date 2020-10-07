@@ -47,7 +47,7 @@ static: style js
 style: cubedash/static/base.css ## Compile SASS stylesheets to CSS
 
 cubedash/static/base.css: cubedash/static/base.sass
-	sass $< $@
+	npx sass $< $@
 
 node_modules:
 	npm install @types/geojson @types/leaflet
