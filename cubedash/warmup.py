@@ -16,6 +16,7 @@ def find_examples_of_all_public_urls(index: Index):
 
     yield "/"
     yield "/about"
+    yield "/about.csv"
     yield "/products.txt"
     yield "/product-audit/"
     yield "/product-audit/day-times.txt"

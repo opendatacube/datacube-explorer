@@ -1,23 +1,27 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}About Products{% endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .sub-header {
-            line-height: 1.4em;
-        }
 
         a {
             font-weight: bold;
         }
 
-        .panel {
-            line-height: 1.5em;
+        body {
+            max-width: 100%;
+        }
+        .uri-path {
+            margin-bottom: 10px;
         }
 
-        .group-name {
-            text-transform: lowercase;
+        tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .panel.overflowable {
+            overflow-x: auto;
         }
     </style>
 {% endblock %}
@@ -25,34 +29,56 @@
 
 {% endblock %}
 {% block content %}
-    <div class="panel highlight">
-        <h2>Collection overview</h2>
-        <div class="sub-header">
+    <div class="panel">
+        <h2 class="followed">{{ product_summary_uris | length }} Products</h2>
+        <div class="header-follow">
             Open Data Cube {{ datacube_version }}
+            {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
+            <a href="{{ url_for('about_sheet') }}" class="badge">csv <i class="fa fa-file-excel-o" aria-hidden="true"></i></a>
         </div>
     </div>
-    <div class="panel">
-        Products available on this Open Data Cube instance
-        {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
-    </div>
-    {% from "layout/macros.html" import chart_timeline %}
-    <div class="panel odd">
-        {% for group_name, product_summaries in grouped_products %}
-            <h2 class="group-name">{{ group_name }}</h2>
-            <div class="panel odd">
-                {% for product, summary in product_summaries %}
-                    <h3>
-                        <a href="{{ url_for('overview_page', product_name=product.name) }}">
-                            {{ product.name }}
+    <div class="panel overflowable">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="numeric">Count</th>
+                    <th>Location</th>
+                    <th class="numeric">License</th>
+                    <th>Definition</th>
+                    <th>Metadata Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product, summary, uris in product_summary_uris %}
+                <tr>
+                    <td>{{ product.name | product_link }}</td>
+                    <td class="numeric">{{ '{:,d}'.format(summary.dataset_count) }}</td>
+                    <td>
+                        {% if uris -%}
+                            {%- for uri in uris[:3] -%}
+                                <div class="uri-path">{{- uri -}}</div>
+                            {%- endfor -%}
+                            {# Finish with ellipsis if there was no single common prefix #}
+                            {%- if uris | length > 1 -%}
+                               <span class="badge">...and more</span>
+                            {% endif %}
+                        {% else -%}
+                            -
+                        {%- endif %}
+                    </td>
+                    <td class="numeric">{{ product | product_license_link }}</td>
+                    <td><a href="{{url_for('product.raw_product_doc', name=product.name)}}" class="badge">doc</a></td>
+                    <td>
+                        <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                            {{ product.metadata_type.name }}
                         </a>
-                    </h3>
-                    <p>
-                        {{ product.definition.description }}
-                        <strong>({{ summary.dataset_count }} total datasets)</strong>
-                    </p>
-{#                    {{ chart_timeline(summary.dataset_counts, product) }}#}
-                {% endfor %}
-            </div>
-        {% endfor %}
+                    </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+
+
     </div>
 {% endblock %}

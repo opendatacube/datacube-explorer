@@ -15,11 +15,11 @@ from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
 from shapely.geometry import MultiPolygon
-
+from urllib.parse import quote_plus
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 
-from . import _utils as utils
+from . import _utils as utils, _utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -198,6 +198,24 @@ def day_range(year_month):
 @bp.app_template_filter("max")
 def _max_val(ls):
     return max(ls)
+
+
+@bp.app_template_filter("product_license_link")
+def _product_license(product: DatasetType):
+    license_ = _utils.product_license(product)
+
+    if license_ is None:
+        return "-"
+
+    if license_ in ("various", "proprietry"):
+        return license_
+
+    return Markup(
+        f"<a href='https://spdx.org/licenses/"
+        f"{quote_plus(license_)}.html' "
+        f"class='spdx-license badge'>{license_}"
+        f"</a>"
+    )
 
 
 @bp.app_template_filter("searchable_fields")
