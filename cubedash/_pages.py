@@ -1,21 +1,24 @@
+import csv
+import io
 import itertools
+import os
+import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
-import re
+
+import flask
+import structlog
+from flask import Response, abort, redirect, request, url_for
+from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-import flask
-import structlog
-from cubedash import _audit, _monitoring
+from cubedash import _audit, _monitoring, _utils
 from cubedash._model import ProductWithSummary
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
-from flask import Response, abort, redirect, request, url_for
-from werkzeug.datastructures import MultiDict
-
 from . import _api, _dataset, _filters, _model, _platform, _product, _stac
 from . import _utils as utils
 from ._utils import as_rich_json
@@ -241,39 +244,65 @@ def request_wants_json():
 
 @app.route("/about")
 def about_page():
-    return utils.render("about.html")
+    return utils.render(
+        "about.html", product_summary_uris=_product_sample_information()
+    )
 
 
-@app.route("/dashboard")
-def dashboard_page():
-    dc = datacube.Datacube(index=_model.STORE.index)
-    dashboard = []
-    import os
-
+def _product_sample_information():
+    product_summary_uris = []
     for product, summary in _model.get_products_with_summaries():
         # Sample 100 dataset uris
-        uri_list = [
+        uri_samples = [
             uri
-            for [uri] in dc.index.datasets.search_returning(
-                ["uri"], product=product.name, limit=100
+            for [uri] in _model.STORE.index.datasets.search_returning(
+                ("uri",), product=product.name, limit=100
             )
         ]
+        common_uri = os.path.commonprefix(uri_samples)
+        product_summary_uris.append(
+            (
+                product,
+                summary,
+                [os.path.dirname(common_uri)] if common_uri else uri_samples[:3],
+            )
+        )
+    return product_summary_uris
 
-        common_uri = os.path.commonprefix(uri_list)
-        if common_uri:
-            uri = os.path.dirname(common_uri)
-        else:
-            uri = uri_list
-        item = {
-            "product_name": product.name,
-            "dataset_count": summary.dataset_count,
-            "metadata_type": product.definition["metadata_type"],
-            "product_metadata": product.definition["metadata"],
-            "uri": uri,
-        }
-        dashboard.append(item)
 
-    return utils.render("dashboard.html", dashboard=dashboard)
+@app.route("/about.csv")
+def about_sheet():
+    """Get the about-products table as a CSV"""
+    out = io.StringIO()
+    cw = csv.writer(out)
+    cw.writerow(
+        ["name", "count", "locations", "license", "definition", "metadata_type"]
+    )
+    cw.writerows(
+        (
+            product.name,
+            summary.dataset_count,
+            uri_samples,
+            _utils.product_license(product),
+            url_for("product.raw_product_doc", name=product.name, _external=True),
+            product.metadata_type.name,
+        )
+        for product, summary, uri_samples in _product_sample_information()
+    )
+    this_explorer_id = _only_alphanumeric(
+        _model.app.config.get("STAC_ENDPOINT_ID", "explorer")
+    )
+
+    response = flask.make_response(out.getvalue())
+    response.headers[
+        "Content-Disposition"
+    ] = f"attachment; filename=product-information-{this_explorer_id}.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
+
+def _only_alphanumeric(s: str):
+    return re.sub("[^0-9a-zA-Z]+", "-", s)
 
 
 @app.context_processor

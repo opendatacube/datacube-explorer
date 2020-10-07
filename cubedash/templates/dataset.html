@@ -15,11 +15,6 @@
             margin-top: 15px;
         }
 
-        .file-path {
-            font-family: monospace;
-            font-size: 12px;
-        }
-
         #dataset-map {
             height: 500px;
         }
@@ -111,7 +106,7 @@
         {% for uri in dataset.uris %}
             <div class="dataset-location">
                 <div><strong>Active:</strong></div>
-                <span class="file-path">{{ uri }}</span>
+                <span class="uri-path">{{ uri }}</span>
             </div>
         {% else %}
             No known active locations
@@ -121,7 +116,7 @@
             {% for uri, archive_time in archive_location_times %}
                 <div class="dataset-location">
                     <div><strong>Archived {{ archive_time | timesince }}:</strong></div>
-                    <span class="file-path archived">{{ uri }}</span>
+                    <span class="uri-path archived">{{ uri }}</span>
                 </div>
             {% endfor %}
         {% endif %}
