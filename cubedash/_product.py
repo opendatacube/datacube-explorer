@@ -15,19 +15,6 @@ _LOG = logging.getLogger(__name__)
 bp = Blueprint("product", __name__)
 
 
-def _product_sample_information():
-    product_summary_uris = []
-    for product, summary in _model.get_products_with_summaries():
-        product_summary_uris.append(
-            (
-                product,
-                summary,
-                _model.STORE.product_location_prefixes(product.name),
-            )
-        )
-    return product_summary_uris
-
-
 @bp.route("/about.csv")
 def products_csv():
     """Get the products table as a CSV"""
@@ -40,12 +27,15 @@ def products_csv():
         (
             product.name,
             summary.dataset_count,
-            uri_samples,
+            [
+                location.common_prefix
+                for location in _model.STORE.product_location_samples(product.name)
+            ],
             _utils.product_license(product),
             url_for("product.raw_product_doc", name=product.name, _external=True),
             product.metadata_type.name,
         )
-        for product, summary, uri_samples in _product_sample_information()
+        for product, summary in _model.get_products_with_summaries()
     )
     this_explorer_id = _only_alphanumeric(
         _model.app.config.get("STAC_ENDPOINT_ID", "explorer")
@@ -74,7 +64,11 @@ def _only_alphanumeric(s: str):
 @bp.route("/about")
 def products_page():
     return utils.render(
-        "about.html", product_summary_uris=_product_sample_information()
+        "about.html",
+        product_summary_and_location=[
+            (product, summary, _model.STORE.product_location_samples(product.name))
+            for product, summary in _model.get_products_with_summaries()
+        ],
     )
 
 
@@ -98,7 +92,7 @@ def product_page(name):
         "product.html",
         product=product,
         product_summary=product_summary,
-        location_prefixes=_model.STORE.product_location_prefixes(name),
+        location_samples=_model.STORE.product_location_samples(name),
         metadata_doc=ordered_metadata,
     )
 
