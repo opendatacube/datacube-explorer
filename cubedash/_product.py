@@ -23,6 +23,7 @@ def product_page(name):
         "product.html",
         product=product,
         product_summary=product_summary,
+        location_prefixes=_model.STORE.product_location_prefixes(name),
         metadata_doc=ordered_metadata,
     )
 
