@@ -301,14 +301,11 @@ def test_view_metadata_type(client: FlaskClient, populated_index: Index):
 
 
 def test_about_page(client: FlaskClient):
-    rv: Response = client.get("/about")
-    assert b"wofs_albers" in rv.data
-    assert b"11 total datasets" in rv.data
+    html: HTML = get_html(client, "/about")
 
-
-def test_dashboard_page(client: FlaskClient):
-    rv: Response = client.get("/dashboard")
-    assert b"wofs_albers" in rv.data
+    assert html.find(".product-name", containing="wofs_albers")
+    assert "80 Products" in html.text
+    assert len(html.find(".data-table tbody tr")) == 80
 
 
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
