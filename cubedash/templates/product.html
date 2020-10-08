@@ -33,6 +33,16 @@
                 </a>
         </p>
     </div>
+    <div class="panel odd">
+        <h3>Location{% if location_prefixes | length > 1 %}s{% endif %} <span class="addendum">(from samples)</span></h3>
+        {% for uri_prefix in location_prefixes %}
+            <div class="dataset-location">
+                <span class="uri-path">{{ uri_prefix }}</span>
+            </div>
+        {% else %}
+            <p>No recorded locations</p>
+        {% endfor %}
+    </div>
     <div class="panel">
 
         <h3>Metadata</h3>
@@ -53,7 +63,8 @@
             {% endif %}
         {% endif %}
     </div>
-    <div class="panel odd">
+
+    <div class="panel">
         <h3>Searchable fields</h3>
         {% for key, value in product.fields | dictsort if (value is none and key not in fixed_metadata) %}
             <div>

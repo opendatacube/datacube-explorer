@@ -299,6 +299,13 @@ ul:last-child, ol:last-child
         padding: 0 15px
         text-align: left
         line-height: 30px
+        vertical-align: top
+
+        // Numeric columns right-aligned for readability, like Excel.
+        &.numeric
+            text-align: right
+            font-variant-numeric: tabular-nums
+
 
 /* lists of key-values
 
@@ -394,14 +401,27 @@ label
 .relative
     position: relative
 
+// De-emphasized, less-important text
 .muted
     color: $muted_text
+.addendum
+    color: $muted_text
+    font-size: 0.7em
+
 // An adornment to a title. Such as the data type.
 .badge
     font-size: 0.7em
     background-color: #ccc
+    white-space: nowrap
     padding: 2px 4px
 
+    .header-follow &
+        font-size: inherit
+        margin: 0 10px
+
+.uri-path
+    font-family: monospace
+    font-size: 12px
 
 .raw-metadata
     .property

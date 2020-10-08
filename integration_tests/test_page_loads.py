@@ -300,15 +300,14 @@ def test_view_metadata_type(client: FlaskClient, populated_index: Index):
     assert "ls8_nbar_albers" in products_using_it
 
 
-def test_about_page(client: FlaskClient):
-    rv: Response = client.get("/about")
-    assert b"wofs_albers" in rv.data
-    assert b"11 total datasets" in rv.data
+def test_about_page(client: FlaskClient, populated_index: Index):
+    html: HTML = get_html(client, "/about")
 
+    assert html.find(".product-name", containing="wofs_albers")
 
-def test_dashboard_page(client: FlaskClient):
-    rv: Response = client.get("/dashboard")
-    assert b"wofs_albers" in rv.data
+    product_count = len(list(populated_index.products.get_all()))
+    assert f"{product_count} Products" in html.text
+    assert len(html.find(".data-table tbody tr")) == product_count
 
 
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
