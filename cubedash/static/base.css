@@ -442,8 +442,10 @@ label.disabled {
   padding: 2px 4px;
 }
 .header-follow .badge {
-  font-size: inherit;
   margin: 0 10px;
+}
+.badge.header-badge {
+  font-size: inherit;
 }
 
 .uri-path {
