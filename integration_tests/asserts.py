@@ -233,7 +233,8 @@ def _add_context(e: AssertionError, context_message: str):
     full_error = args[0]
     if isinstance(full_error, jsonschema.ValidationError):
         full_error = str(full_error)
-
+    if isinstance(full_error, bytes):
+        full_error = full_error.decode("utf-8")
     # Indent the message with a bullet "-" prefix
     context_message = indent(context_message, " " * 3)
     context_message = "-" + context_message[2:]
