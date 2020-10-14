@@ -5,6 +5,7 @@ from typing import Tuple
 import pytest
 import sqlalchemy
 from click.testing import CliRunner
+from deepdiff import DeepDiff
 from flask.testing import FlaskClient
 
 import cubedash
@@ -26,6 +27,38 @@ from digitalearthau.testing import factories
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
 module_vanilla_db = factories.db_fixture("local_config", scope="module")
+
+
+def pytest_assertrepr_compare(op, left, right):
+    """
+    Custom pytest error messages for large documents.
+
+    The default pytest dict==dict error messages are unreadable for
+    nested document-like dicts. (Such as our json and yaml docs!)
+
+    We just want to know which fields differ.
+    """
+
+    def is_a_doc(o: object):
+        """
+        Is it a dict that's not printable on one line?
+        """
+        return isinstance(o, dict) and len(repr(o)) > 88
+
+    if is_a_doc(left) and is_a_doc(right) and op == "==":
+        doc_diffs = DeepDiff(left, right, significant_digits=6)
+        out = ["Documents differ:"]
+        for offset, change in doc_diffs["values_changed"].items():
+            if offset.startswith("root"):
+                offset: str = offset[len("root") :]
+            out.extend(
+                (
+                    f"   {offset}: ",
+                    f'          {change["old_value"]!r}',
+                    f'       != {change["new_value"]!r}',
+                )
+            )
+        return out
 
 
 @pytest.fixture(scope="module")
@@ -96,7 +129,7 @@ def clirunner(global_integration_cli_args):
         if expect_success:
             assert (
                 0 == result.exit_code
-            ), f"Error for {opts}. Out:\n{indent(result.output, ' '*4)}"
+            ), f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
         return result
 
     return _run_cli
