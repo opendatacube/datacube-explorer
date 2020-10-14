@@ -7,7 +7,7 @@ import urllib.parse
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
-from pprint import pformat, pprint
+from pprint import pformat
 from typing import Dict, Generator, Iterable, Optional, Union
 
 import jsonschema
@@ -22,6 +22,7 @@ from shapely.validation import explain_validity
 
 import cubedash._stac
 from cubedash import _model
+from datacube.index import Index
 from datacube.utils import read_documents
 from .asserts import DebugContext, get_geojson, get_json
 
@@ -37,6 +38,16 @@ _STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac"
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
     _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
+
+
+def explorer_url(offset: str):
+    """The public absolute url for this url"""
+    return urllib.parse.urljoin("http://localhost/", offset)
+
+
+def stac_url(offset: str):
+    """The public absolute url for this stac url"""
+    return urllib.parse.urljoin("http://localhost/stac/", offset)
 
 
 def read_document(path: Path) -> dict:
@@ -477,7 +488,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
         raise AssertionError("high_tide_comp_20p not found in collection list")
 
     scene_collection = get_collection(stac_client, collection_href)
-    pprint(scene_collection)
+
     assert scene_collection == {
         "stac_version": "1.0.0-beta.2",
         "id": "high_tide_comp_20p",
@@ -502,7 +513,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
         },
         "links": [
             {
-                "href": "http://localhost/collections/high_tide_comp_20p/items",
+                "href": stac_url("collections/high_tide_comp_20p/items"),
                 "rel": "items",
             }
         ],
@@ -513,15 +524,33 @@ def test_stac_collection_items(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
-def test_stac_item(stac_client: FlaskClient):
+def test_stac_item(stac_client: FlaskClient, populated_index: Index):
     # Load one stac dataset from the test data.
+
+    dataset_uri = (
+        "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+        "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
+    )
+    populated_index.datasets.add_location(
+        "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
+    )
+
     response = get_item(
         stac_client,
-        "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        stac_url(
+            "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
+        ),
     )
-    print(repr(response))
 
-    # Our item document can still be improved. This is ensuring changes are deliberate.
+    def dataset_url(s: str):
+        return (
+            f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+            f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
+        )
+
+    # Our item document can still be improved.
+    # This is ensuring changes are deliberate.
+
     assert response == {
         "stac_version": "1.0.0-beta.2",
         "stac_extensions": ["eo", "projection"],
@@ -574,88 +603,98 @@ def test_stac_item(stac_client: FlaskClient):
                 "eo:bands": [{"name": "1"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
+                ),
             },
             "2": {
                 "eo:bands": [{"name": "2"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
+                ),
             },
             "3": {
                 "eo:bands": [{"name": "3"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
+                ),
             },
             "4": {
                 "eo:bands": [{"name": "4"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
+                ),
             },
             "5": {
                 "eo:bands": [{"name": "5"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
+                ),
             },
             "7": {
                 "eo:bands": [{"name": "7"}],
                 "type": "image/tiff; application=geotiff",
                 "roles": ["data"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/product/"
-                "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif",
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
+                ),
             },
             "thumbnail:full": {
                 "title": "Thumbnail image",
                 "type": "image/jpeg",
                 "roles": ["thumbnail"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/browse.fr.jpg",
+                "href": dataset_url("browse.fr.jpg"),
             },
             "thumbnail:medium": {
                 "title": "Thumbnail image",
                 "type": "image/jpeg",
                 "roles": ["thumbnail"],
-                "href": "http://localhost/collections/ls7_nbar_scene/items/browse.jpg",
+                "href": dataset_url("browse.jpg"),
             },
             "checksum:sha1": {
                 "type": "text/plain",
-                "href": "http://localhost/collections/ls7_nbar_scene/items/package.sha1",
+                "href": dataset_url("package.sha1"),
             },
         },
         "links": [
             {
                 "rel": "self",
                 "type": "application/json",
-                "href": "http://localhost/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+                "href": stac_url(
+                    "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
+                ),
             },
             {
                 "title": "ODC Dataset YAML",
                 "rel": "odc_yaml",
                 "type": "text/yaml",
-                "href": "http://localhost/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml",
+                "href": explorer_url(
+                    "dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml"
+                ),
             },
             {
                 "title": "ODC Product Overview",
                 "rel": "product_overview",
                 "type": "text/html",
-                "href": "http://localhost/product/ls7_nbar_scene",
+                "href": explorer_url("product/ls7_nbar_scene"),
             },
             {
                 "title": "ODC Dataset Overview",
                 "rel": "alternative",
                 "type": "text/html",
-                "href": "http://localhost/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+                "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
             },
             {
                 "rel": "parent",
-                "href": "http://localhost/stac/collections/ls7_nbar_scene",
+                "href": stac_url("collections/ls7_nbar_scene"),
             },
         ],
     }
