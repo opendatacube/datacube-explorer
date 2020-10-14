@@ -30,6 +30,13 @@ $header_stripe2: #7fd0eb
 
     padding: 10px*$scale_top 20px 10px*$scale_bottom
 
+// Add the standard padding multiples, but only on the left side.
+@mixin left_padding($scale:1)
+    @media (min-width: 800px)
+        padding-left: 15px*$scale
+
+    padding-left: 10px*$scale
+
 @mixin wide_padding
     @include box_padding(1)
 
@@ -39,6 +46,7 @@ $header_stripe2: #7fd0eb
 @mixin header_padding
     // Place a header closer to its contents below.
     @include box_padding(2, 1)
+
 
 // On small screens, move the description to the info panel.
 .product-description
@@ -141,6 +149,14 @@ h2.followed, h3.followed
 ul:last-child, ol:last-child
     margin-bottom: 0
 
+// The default list indent should be a multiple of normal padding
+ul
+    @include left_padding(2)
+
+    // Quiet list: no bullets, the indent is enough.
+    &.quiet
+        list-style: none
+
 .message-box
     position: absolute
     left: calc(50% - 100px)
@@ -179,6 +195,10 @@ ul:last-child, ol:last-child
             color: #fff
         a
             color: #999
+
+    // Allow horizontal scrolling rather than wrapping content
+    &.overflowable
+        overflow-x: auto
 
 .header-option
     position: relative
@@ -415,13 +435,17 @@ label
     white-space: nowrap
     padding: 2px 4px
 
+    // If it's in a header
     .header-follow &
-        font-size: inherit
         margin: 0 10px
+
+    &.header-badge
+        font-size: inherit
 
 .uri-path
     font-family: monospace
     font-size: 12px
+    white-space: nowrap
 
 .raw-metadata
     .property
@@ -463,6 +487,9 @@ label
 
 .logo-text
     display: inline-block
+
+details > summary
+  cursor: pointer
 
 @import gridforms/gridforms.sass
 

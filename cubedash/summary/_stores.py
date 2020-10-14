@@ -113,6 +113,22 @@ class DatasetItem:
         )
 
 
+@dataclass
+class ProductLocationSample:
+    """
+    The apparent storage location of a product
+
+    (judged via a small sampling of datasets)
+    """
+
+    # eg. 'http', "file", ...
+    uri_scheme: str
+    # The common uri prefix across all samples
+    common_prefix: str
+    # A few examples of full location URIs
+    example_uris: List[str]
+
+
 class SummaryStore:
     def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
@@ -547,10 +563,12 @@ class SummaryStore:
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def product_location_prefixes(self, name: str) -> List[str]:
+    def product_location_samples(self, name: str) -> List[ProductLocationSample]:
         """
-        Take a sampling of dataset locations, and return the common
-        prefix for each location uri scheme.
+        Sample some dataset locations for the given product, and return
+        the common location.
+
+        Returns one row for each uri scheme found (http, file etc).
         """
         # Sample 100 dataset uris
         uri_samples = sorted(
@@ -565,11 +583,22 @@ class SummaryStore:
         def uri_scheme(uri: str):
             return uri.split(":", 1)[0]
 
-        unique_locations = []
-        for _, uris in groupby(uri_samples, uri_scheme):
-            unique_locations.append(os.path.commonpath(uris))
+        location_schemes = []
+        for scheme, uris in groupby(uri_samples, uri_scheme):
+            uris = list(uris)
 
-        return unique_locations
+            # Use the first, last and middle as examples
+            # (they're sorted, so this shows diversity)
+            example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
+            #              ⮤ we use a set for when len < 3
+
+            location_schemes.append(
+                ProductLocationSample(
+                    scheme, os.path.commonpath(uris), sorted(example_uris)
+                )
+            )
+
+        return location_schemes
 
     def get_quality_stats(self) -> Iterable[Dict]:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))

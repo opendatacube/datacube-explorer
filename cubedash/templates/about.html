@@ -20,9 +20,6 @@
             background-color: #f0f0f0;
         }
 
-        .panel.overflowable {
-            overflow-x: auto;
-        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -30,11 +27,11 @@
 {% endblock %}
 {% block content %}
     <div class="panel">
-        <h2 class="followed">{{ product_summary_uris | length }} Products</h2>
+        <h2 class="followed">{{ product_summary_and_location | length }} Products</h2>
         <div class="header-follow">
             Open Data Cube {{ datacube_version }}
             {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
-            <a href="{{ url_for('about_sheet') }}" class="badge">csv <i class="fa fa-file-excel-o" aria-hidden="true"></i></a>
+            <a href="{{ url_for('product.products_csv') }}" class="badge header-badge">csv <i class="fa fa-file-excel-o" aria-hidden="true"></i></a>
         </div>
     </div>
     <div class="panel overflowable">
@@ -50,19 +47,15 @@
                 </tr>
             </thead>
             <tbody>
-                {% for product, summary, uris in product_summary_uris %}
+                {% for product, summary, locations in product_summary_and_location %}
                 <tr>
                     <td>{{ product.name | product_link }}</td>
                     <td class="numeric">{{ '{:,d}'.format(summary.dataset_count) }}</td>
                     <td>
-                        {% if uris -%}
-                            {%- for uri in uris[:3] -%}
-                                <div class="uri-path">{{- uri -}}</div>
+                        {% if locations -%}
+                            {%- for location in locations -%}
+                                <div class="uri-path">{{- location.common_prefix -}}</div>
                             {%- endfor -%}
-                            {# Finish with ellipsis if there was no single common prefix #}
-                            {%- if uris | length > 1 -%}
-                               <span class="badge">...and more</span>
-                            {% endif %}
                         {% else -%}
                             -
                         {%- endif %}

@@ -1,5 +1,3 @@
-import csv
-import io
 import itertools
 import re
 from datetime import datetime, timedelta
@@ -7,12 +5,12 @@ from typing import List, Tuple
 
 import flask
 import structlog
-from flask import Response, abort, redirect, request, url_for
+from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
-from cubedash import _audit, _monitoring, _utils
+from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
@@ -242,61 +240,6 @@ def request_wants_json():
     )
 
 
-@app.route("/about")
-def about_page():
-    return utils.render(
-        "about.html", product_summary_uris=_product_sample_information()
-    )
-
-
-def _product_sample_information():
-    product_summary_uris = []
-    for product, summary in _model.get_products_with_summaries():
-        product_summary_uris.append(
-            (
-                product,
-                summary,
-                _model.STORE.product_location_prefixes(product.name),
-            )
-        )
-    return product_summary_uris
-
-
-@app.route("/about.csv")
-def about_sheet():
-    """Get the about-products table as a CSV"""
-    out = io.StringIO()
-    cw = csv.writer(out)
-    cw.writerow(
-        ["name", "count", "locations", "license", "definition", "metadata_type"]
-    )
-    cw.writerows(
-        (
-            product.name,
-            summary.dataset_count,
-            uri_samples,
-            _utils.product_license(product),
-            url_for("product.raw_product_doc", name=product.name, _external=True),
-            product.metadata_type.name,
-        )
-        for product, summary, uri_samples in _product_sample_information()
-    )
-    this_explorer_id = _only_alphanumeric(
-        _model.app.config.get("STAC_ENDPOINT_ID", "explorer")
-    )
-
-    response = flask.make_response(out.getvalue())
-    response.headers[
-        "Content-Disposition"
-    ] = f"attachment; filename=product-information-{this_explorer_id}.csv"
-    response.headers["Content-type"] = "text/csv"
-    return response
-
-
-def _only_alphanumeric(s: str):
-    return re.sub("[^0-9a-zA-Z]+", "-", s)
-
-
 @app.context_processor
 def inject_globals():
     last_updated = _model.get_last_updated()
@@ -428,11 +371,3 @@ def default_redirect():
         default_product = available_product_names[0]
 
     return flask.redirect(flask.url_for("overview_page", product_name=default_product))
-
-
-@app.route("/products.txt")
-def product_list_text():
-    # This is useful for bash scripts when we want to loop products :)
-    return Response(
-        "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
-    )
