@@ -10,10 +10,9 @@ from urllib.parse import urljoin
 
 import flask
 from dateutil.tz import tz
-from flask import abort, request, Response
+from flask import abort, request
 from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import HTTPException
-from werkzeug.urls import iri_to_uri
 
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
@@ -26,7 +25,7 @@ from eodatasets3.utils import is_doc_eo3
 from . import _model, _utils
 
 _LOG = logging.getLogger(__name__)
-bp = flask.Blueprint("stac", __name__)
+bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
 PAGE_SIZE_LIMIT = _model.app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
 DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
@@ -64,7 +63,7 @@ def utc(d: datetime):
     return d.astimezone(tz.tzutc())
 
 
-@bp.route("/stac")
+@bp.route("/")
 def root():
     """
     The root stac page links to each collection (product) catalog
@@ -91,7 +90,7 @@ def root():
     )
 
 
-@bp.route("/stac/search", methods=["GET", "POST"])
+@bp.route("/search", methods=["GET", "POST"])
 def stac_search():
     """
     Search api for stac items.
@@ -194,7 +193,7 @@ def search_stac_items(
     return result
 
 
-@bp.route("/stac/collections/<collection>")
+@bp.route("/collections/<collection>")
 def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
@@ -235,7 +234,7 @@ def collection(collection: str):
     )
 
 
-@bp.route("/stac/collections/<collection>/items")
+@bp.route("/collections/<collection>/items")
 def collection_items(collection: str):
     """
     A geojson FeatureCollection of all items in a collection/product.
@@ -258,7 +257,7 @@ def collection_items(collection: str):
     return _utils.as_geojson(feature_collection)
 
 
-@bp.route("/stac/collections/<collection>/items/<dataset_id>")
+@bp.route("/collections/<collection>/items/<dataset_id>")
 def item(collection, dataset_id):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
@@ -281,26 +280,6 @@ def item(collection, dataset_id):
         )
 
     return _utils.as_geojson(as_stac_item(dataset))
-
-
-@bp.route("/collections/<collection>")
-def legacy_collection(collection: str):
-    """Legacy redirect for non-stac prefixed offset"""
-    return legacy_redirect(url_for(".collection", collection=collection))
-
-
-@bp.route("/collections/<collection>/items")
-def legacy_collection_items(collection: str):
-    """Legacy redirect for non-stac prefixed offset"""
-    return legacy_redirect(url_for(".collection_items", collection=collection))
-
-
-@bp.route("/collections/<collection>/items/<dataset_id>")
-def legacy_item(collection, dataset_id):
-    """Legacy redirect for non-stac prefixed offset"""
-    return legacy_redirect(
-        url_for(".item", collection=collection, dataset_id=dataset_id)
-    )
 
 
 def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
@@ -598,29 +577,4 @@ def handle_exception(e):
         }
     )
     response.content_type = "application/json"
-    return response
-
-
-def legacy_redirect(location):
-    """
-    Redirect to a new location.
-
-    Used for backwards compatibility with older URLs that may be bookmarked or stored.
-    """
-    if isinstance(location, str):
-        location = iri_to_uri(location, safe_conversion=True)
-    response = Response(
-        json.dumps(
-            {
-                "code": 302,
-                "name": "legacy-redirect",
-                "description": "This is a legacy URL endpoint -- please follow the redirect "
-                "and update links to the new one",
-                "new_location": location,
-            }
-        ),
-        302,
-        mimetype="application/json",
-    )
-    response.headers["Location"] = location
     return response

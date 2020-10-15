@@ -700,6 +700,32 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
     }
 
 
+@pytest.mark.parametrize(
+    ("url", "redirect_to_url"),
+    [
+        (
+            "/collections/ls7_nbar_scene",
+            "/stac/collections/ls7_nbar_scene",
+        ),
+        (
+            "/collections/ls7_nbar_scene/items",
+            "/stac/collections/ls7_nbar_scene/items",
+        ),
+        (
+            "/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+            "/stac/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        ),
+    ],
+)
+def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
+    resp: Response = stac_client.get(url, follow_redirects=False)
+    assert resp.location == stac_url(redirect_to_url), (
+        f"Expected {url} to be redirected to:\n"
+        f"             {redirect_to_url}\n"
+        f"  instead of {resp.location}"
+    )
+
+
 def assert_stac_extensions(doc: Dict):
     stac_extensions = doc.get("stac_extensions", ())
 
