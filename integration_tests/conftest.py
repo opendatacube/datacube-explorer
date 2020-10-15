@@ -1,12 +1,15 @@
+from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
 from typing import Tuple
 
 import pytest
 import sqlalchemy
+import structlog
 from click.testing import CliRunner
 from deepdiff import DeepDiff
 from flask.testing import FlaskClient
+from structlog import DropEvent
 
 import cubedash
 from cubedash import _model, generate, logs, _utils
@@ -96,7 +99,9 @@ def summary_store(module_dea_index: Index) -> SummaryStore:
     store = SummaryStore.create(module_dea_index)
     store.drop_all()
     module_dea_index.close()
-    store.init()
+
+    with disable_logging():
+        store.init()
     _make_all_tables_unlogged(
         _utils.alchemy_engine(module_dea_index), CUBEDASH_METADATA
     )
@@ -110,7 +115,9 @@ def summariser(summary_store: SummaryStore):
 
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig):
-    logs.init_logging(verbose=pytestconfig.getoption("verbose") > 0)
+    logs.init_logging(
+        verbose=pytestconfig.getoption("verbose") > 0, cache_logger_on_first_use=False
+    )
 
 
 @pytest.fixture()
@@ -192,14 +199,37 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
 def unpopulated_client(
     empty_client: FlaskClient, summary_store: SummaryStore
 ) -> FlaskClient:
-    _model.STORE.refresh_all_products()
+    with disable_logging():
+        _model.STORE.refresh_all_products()
     return empty_client
+
+
+@contextmanager
+def disable_logging():
+    """
+    Turn off logging within the if-block
+
+    Used for repetitive environment setup that makes test errors too verbose.
+    """
+    original_processors = structlog.get_config()["processors"]
+
+    def swallow_log(_logger, _log_method, _event_dict):
+        raise DropEvent
+
+    structlog.configure(processors=[swallow_log])
+    try:
+        yield
+    finally:
+        structlog.configure(processors=original_processors)
 
 
 @pytest.fixture()
 def client(unpopulated_client: FlaskClient) -> FlaskClient:
-    for product in _model.STORE.index.products.get_all():
-        _model.STORE.get_or_update(product.name)
+
+    with disable_logging():
+        for product in _model.STORE.index.products.get_all():
+            _model.STORE.get_or_update(product.name)
+
     return unpopulated_client
 
 

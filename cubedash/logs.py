@@ -7,7 +7,7 @@ import rapidjson
 import structlog
 
 
-def init_logging(output_file=None, verbose=False):
+def init_logging(output_file=None, verbose=False, cache_logger_on_first_use=True):
     """
     Setup structlog for structured logging output.
 
@@ -48,7 +48,7 @@ def init_logging(output_file=None, verbose=False):
     structlog.configure(
         processors=processors,
         context_class=dict,
-        cache_logger_on_first_use=True,
+        cache_logger_on_first_use=cache_logger_on_first_use,
         logger_factory=structlog.PrintLoggerFactory(file=output_file),
     )
 
