@@ -47,10 +47,13 @@ def get_text_response(client: FlaskClient, url: str) -> Tuple[str, Response]:
     return response.data.decode("utf-8"), response
 
 
-def get_json(client: FlaskClient, url: str) -> Dict:
+def get_json(client: FlaskClient, url: str, expect_status_code=200) -> Dict:
     rv: Response = client.get(url)
     try:
-        assert rv.status_code == 200, rv.data
+        assert rv.status_code == expect_status_code, (
+            f"Expected status {expect_status_code} not {rv.status_code}."
+            f"\nGot:\n{indent(rv.data.decode('utf-8'), ' ' * 6)}"
+        )
         assert rv.is_json, "Expected json content type in response"
         data = rv.json
         assert data is not None, "Empty response from server"

@@ -21,6 +21,7 @@ def find_examples_of_all_public_urls(index: Index):
     yield "/product-audit/"
     yield "/product-audit/day-times.txt"
     yield "/stac"
+    yield "/stac/collections"
 
     for mdt in index.metadata_types.get_all():
         name = mdt.name
@@ -34,8 +35,8 @@ def find_examples_of_all_public_urls(index: Index):
         yield f"/product/{name}"
         yield f"/product/{name}.odc-product.yaml"
 
-        yield f"/collections/{name}"
-        yield f"/collections/{name}/items"
+        yield f"/stac/collections/{name}"
+        yield f"/stac/collections/{name}/items"
         yield f"/stac/search?collection={name}&limit=1"
 
         has_datasets = index.datasets.search_eager(product=name, limit=1)
