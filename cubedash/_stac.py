@@ -4,15 +4,17 @@ from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
+from functools import partial
+from json.decoder import JSONDecodeError
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple, List
 from urllib.parse import urljoin
 
 import flask
 from dateutil.tz import tz
 from flask import abort, request
 from werkzeug.datastructures import TypeConversionDict
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, BadRequest
 
 from cubedash.summary._stores import DatasetItem
 from datacube.model import Dataset, Range
@@ -63,7 +65,7 @@ def utc(d: datetime):
     return d.astimezone(tz.tzutc())
 
 
-@bp.route("/")
+@bp.route("")
 def root():
     """
     The root stac page links to each collection (product) catalog
@@ -102,12 +104,36 @@ def stac_search():
     return _utils.as_geojson(_handle_search_request(args))
 
 
+def _array_arg(arg: str, expect_size=None) -> List:
+    """
+    Parse an argument that should be a simple list.
+    """
+    if isinstance(arg, list):
+        return arg
+
+    # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
+    try:
+        value = json.loads(arg)
+    except JSONDecodeError:
+        raise BadRequest(
+            f"Invalid argument syntax. Expected json-like list, got: {arg!r}"
+        )
+
+    if not isinstance(value, list):
+        raise BadRequest(f"Invalid argument syntax. Expected json list, got: {value!r}")
+
+    if expect_size is not None and len(value) != expect_size:
+        raise BadRequest(
+            f"Expected size {expect_size}, got {len(value)} elements in {arg!r}"
+        )
+
+    return value
+
+
 def _handle_search_request(
     request_args: TypeConversionDict, route_name=".stac_search"
 ) -> Dict:
-    bbox = request_args.get("bbox")
-    if bbox and isinstance(bbox, str):
-        bbox = json.loads(bbox)
+    bbox = request_args.get("bbox", type=partial(_array_arg, expect_size=4))
     time = request_args.get("time")
     product_name = request_args.get("collection")
 
@@ -116,6 +142,8 @@ def _handle_search_request(
         product_name = request_args.get("product")
 
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    ids = request_args.get("ids", default=None, type=_array_arg)
+
     offset = request_args.get("_o", default=0, type=int)
 
     if limit > PAGE_SIZE_LIMIT:
@@ -137,6 +165,7 @@ def _handle_search_request(
             collection=product_name,
             bbox="[{},{},{},{}]".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
+            ids=json.dumps(ids) if ids else None,
             limit=limit,
             _o=next_offset,
         )
@@ -145,6 +174,7 @@ def _handle_search_request(
         product_name=product_name,
         bbox=bbox,
         time=time,
+        dataset_ids=ids,
         limit=limit,
         offset=offset,
         get_next_url=next_page_url,
@@ -155,6 +185,7 @@ def search_stac_items(
     get_next_url: Callable[[int], str],
     limit: int = DEFAULT_PAGE_SIZE,
     offset: int = 0,
+    dataset_ids: Optional[str] = None,
     product_name: Optional[str] = None,
     bbox: Optional[Tuple[float, float, float, float]] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
@@ -171,6 +202,7 @@ def search_stac_items(
             time=time,
             bbox=bbox,
             limit=limit + 1,
+            dataset_ids=dataset_ids,
             offset=offset,
             full_dataset=True,
         )
@@ -193,11 +225,35 @@ def search_stac_items(
     return result
 
 
+@bp.route("/collections")
+def list_collections():
+    """
+    This is like the root "/", but has full information for each collection in
+     an array (instead of just a link to each collection).
+    """
+    return _utils.as_json(
+        dict(
+            **_STAC_DEFAULTS,
+            links=[
+                # TODO: Link to... root, I guess?
+            ],
+            collections=[
+                _stac_collection(product.name)
+                for product, product_summary in _model.get_products_with_summaries()
+            ],
+        )
+    )
+
+
 @bp.route("/collections/<collection>")
 def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
     """
+    return _utils.as_geojson(_stac_collection(collection))
+
+
+def _stac_collection(collection: str):
     summary = _model.get_product_summary(collection)
     dataset_type = _model.STORE.get_dataset_type(collection)
     all_time_summary = _model.get_time_summary(collection)
@@ -211,27 +267,25 @@ def collection(collection: str):
             extent["spatial"] = {"bbox": [footprint.bounds]}
 
         summary_props["extent"] = extent
-
-    return _utils.as_geojson(
-        dict(
-            **_STAC_DEFAULTS,
-            id=summary.name,
-            title=summary.name,
-            license=_utils.product_license(dataset_type),
-            description=dataset_type.definition.get("description"),
-            properties=dict(_build_properties(dataset_type.metadata)),
-            providers=[],
-            **summary_props,
-            links=[
-                dict(
-                    rel="items",
-                    href=url_for(
-                        ".collection_items", collection=collection, _external=True
-                    ),
-                )
-            ],
-        )
+    stac_collection = dict(
+        **_STAC_DEFAULTS,
+        id=summary.name,
+        title=summary.name,
+        license=_utils.product_license(dataset_type),
+        description=dataset_type.definition.get("description"),
+        properties=dict(_build_properties(dataset_type.metadata)),
+        providers=[],
+        **summary_props,
+        links=[
+            dict(
+                rel="items",
+                href=url_for(
+                    ".collection_items", collection=collection, _external=True
+                ),
+            )
+        ],
     )
+    return stac_collection
 
 
 @bp.route("/collections/<collection>/items")
