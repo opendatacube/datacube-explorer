@@ -16,7 +16,7 @@ from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
-from . import _api, _dataset, _filters, _model, _platform, _product, _stac
+from . import _api, _dataset, _filters, _model, _platform, _product, _stac, _stac_legacy
 from . import _utils as utils
 from ._utils import as_rich_json
 
@@ -28,6 +28,7 @@ app.register_blueprint(_product.bp)
 app.register_blueprint(_platform.bp)
 app.register_blueprint(_audit.bp)
 app.register_blueprint(_stac.bp)
+app.register_blueprint(_stac_legacy.bp)
 
 _LOG = structlog.getLogger()
 
