@@ -1,13 +1,19 @@
 from pathlib import Path
+from textwrap import indent
 from typing import Tuple
 
 import pytest
+import sqlalchemy
 from click.testing import CliRunner
 from flask.testing import FlaskClient
 
 import cubedash
-from cubedash import _model, generate, logs
+from cubedash import _model, generate, logs, _utils
 from cubedash.summary import SummaryStore
+from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
+from cubedash.warmup import find_examples_of_all_public_urls
+from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
@@ -19,8 +25,34 @@ from digitalearthau.testing import factories
 # -> Note: Since we're reusing the default config unchanged, we can't use the
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
-module_db = factories.db_fixture("local_config", scope="module")
+module_vanilla_db = factories.db_fixture("local_config", scope="module")
+
+
+@pytest.fixture(scope="module")
+def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
+    # Set all the tables to unlogged for faster perf.
+    _make_all_tables_unlogged(module_vanilla_db._engine, ODC_SCHEMA_METADATA)
+    return module_vanilla_db
+
+
+def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
+    """
+    Set all tables in this alchemy metadata to unlogged.
+
+    Make them faster, but data is lost on crashes. Which is a good
+    trade-off for tests.
+    """
+    for table in reversed(metadata.sorted_tables):
+        table: sqlalchemy.Table
+        if table.name.startswith("mv_"):
+            # Not supported for materialised views.
+            continue
+        else:
+            engine.execute(f"""alter table {table.selectable.fullname} set unlogged;""")
+
+
 module_index = factories.index_fixture("module_db", scope="module")
+
 module_dea_index = factories.dea_index_fixture("module_index", scope="module")
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -32,6 +64,9 @@ def summary_store(module_dea_index: Index) -> SummaryStore:
     store.drop_all()
     module_dea_index.close()
     store.init()
+    _make_all_tables_unlogged(
+        _utils.alchemy_engine(module_dea_index), CUBEDASH_METADATA
+    )
     return store
 
 
@@ -59,17 +94,21 @@ def clirunner(global_integration_cli_args):
         runner = CliRunner()
         result = runner.invoke(cli_method, exe_opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, f"Error for {opts}. output: {result.output!r}"
+            assert (
+                0 == result.exit_code
+            ), f"Error for {opts}. Out:\n{indent(result.output, ' '*4)}"
         return result
 
     return _run_cli
 
 
 @pytest.fixture()
-def run_generate(clirunner, summary_store):
-    def do(*only_products, expect_success=True):
-        products = only_products or ["--all"]
-        res = clirunner(generate.cli, products, expect_success=expect_success)
+def run_generate(clirunner, summary_store, multi_processed=False):
+    def do(*args, expect_success=True):
+        args = args or ("--all",)
+        if not multi_processed:
+            args = ("-j", "1") + tuple(args)
+        res = clirunner(generate.cli, args, expect_success=expect_success)
         return res
 
     return do
@@ -100,6 +139,12 @@ def dataset_loader(module_dea_index):
         return dataset_count
 
     return _populate_from_dump
+
+
+@pytest.fixture()
+def all_urls(summary_store: SummaryStore):
+    """A list of public URLs to try on the current Explorer instance"""
+    return list(find_examples_of_all_public_urls(summary_store.index))
 
 
 @pytest.fixture()

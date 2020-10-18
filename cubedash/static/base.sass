@@ -30,6 +30,13 @@ $header_stripe2: #7fd0eb
 
     padding: 10px*$scale_top 20px 10px*$scale_bottom
 
+// Add the standard padding multiples, but only on the left side.
+@mixin left_padding($scale:1)
+    @media (min-width: 800px)
+        padding-left: 15px*$scale
+
+    padding-left: 10px*$scale
+
 @mixin wide_padding
     @include box_padding(1)
 
@@ -41,6 +48,7 @@ $header_stripe2: #7fd0eb
     padding: 20px 20px 10px
     @media (min-width: 800px)
         padding-top: 5px
+
 
 // On small screens, move the description to the info panel.
 .product-description
@@ -160,8 +168,22 @@ h1
 h4
     color: lighten($bold_highlight, 18%)
 
+// A Header followed by smaller text on the same line
+h2.followed, h3.followed
+    display: inline-block
+.header-follow
+    display: inline-block
+
 ul:last-child, ol:last-child
     margin-bottom: 0
+
+// The default list indent should be a multiple of normal padding
+ul
+    @include left_padding(2)
+
+    // Quiet list: no bullets, the indent is enough.
+    &.quiet
+        list-style: none
 
 .message-box
     position: absolute
@@ -201,6 +223,10 @@ ul:last-child, ol:last-child
             color: #fff
         a
             color: #999
+
+    // Allow horizontal scrolling rather than wrapping content
+    &.overflowable
+        overflow-x: auto
 
 .header-option
     position: relative
@@ -330,6 +356,13 @@ ul:last-child, ol:last-child
         padding: 0 15px
         text-align: left
         line-height: 30px
+        vertical-align: top
+
+        // Numeric columns right-aligned for readability, like Excel.
+        &.numeric
+            text-align: right
+            font-variant-numeric: tabular-nums
+
 
 /* lists of key-values
 
@@ -342,11 +375,16 @@ ul:last-child, ol:last-child
         grid-template-columns: 1fr 1fr
 
 .query-param
+    display: block
     > .value
         color: $muted_text
 
     .value > .query-param
         margin-left: 15px
+
+    .missing-value
+        text-decoration-style: wavy
+        text-decoration-line: underline
 
 button
     margin: 5px 0
@@ -420,19 +458,46 @@ label
 .relative
     position: relative
 
+// De-emphasized, less-important text
 .muted
     color: $muted_text
+.addendum
+    color: $muted_text
+    font-size: 0.7em
+
+// An adornment to a title. Such as the data type.
+.badge
+    font-size: 0.7em
+    background-color: #ccc
+    white-space: nowrap
+    padding: 2px 4px
+
+    // If it's in a header
+    .header-follow &
+        margin: 0 10px
+
+    &.header-badge
+        font-size: inherit
+
+.uri-path
+    font-family: monospace
+    font-size: 12px
+    white-space: nowrap
 
 .raw-metadata
     .property
         word-wrap: break-word
         font-family: 'Courier New', monospace
 
-        .property
+        .property, .array, .array-item
             padding-left: 15px
 
         & > .key
             font-weight: bold
+
+        summary
+            font-style: italic
+            color: $muted_text
 
 // Information box shown when hovering a map dataset
 .dataset-info
@@ -499,6 +564,9 @@ label
     height: 40px
     margin-top: 7px
     padding-right: 20px
+
+details > summary
+  cursor: pointer
 
 @import gridforms/gridforms.sass
 

@@ -7,7 +7,7 @@ import urllib.parse
 from collections import defaultdict
 from pathlib import Path
 from pprint import pformat, pprint
-from typing import Dict, Generator, Iterable, Optional
+from typing import Dict, Generator, Iterable, Optional, Union
 
 import jsonschema
 import pytest
@@ -18,7 +18,7 @@ from jsonschema import SchemaError
 from pytest import approx
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
-
+from collections import Counter
 import cubedash._stac
 from boltons.iterutils import research
 from cubedash import _model
@@ -174,7 +174,26 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
     all_items = _iter_items_across_pages(stac_client, "/stac/search")
-    validate_items(all_items, expect_count=393)
+    validate_items(
+        all_items,
+        expect_count=dict(
+            pq_count_summary=20,
+            dsm1sv10=1,
+            high_tide_comp_20p=306,
+            wofs_albers=11,
+            ls8_nbar_scene=7,
+            ls8_level1_scene=7,
+            ls8_nbart_scene=7,
+            ls8_pq_legacy_scene=7,
+            ls8_nbart_albers=7,
+            ls8_satellite_telemetry_data=7,
+            ls7_nbart_albers=4,
+            ls7_nbart_scene=4,
+            ls7_nbar_scene=4,
+            ls7_pq_legacy_scene=4,
+            ls7_level1_scene=4,
+        ),
+    )
 
     # A constrained search within a bounding box.
     # It should return matching datasets in order with no duplicates.
@@ -186,11 +205,27 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
             "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
-    validate_items(all_items, expect_count=66)
+    validate_items(
+        all_items,
+        expect_count=dict(
+            wofs_albers=11,
+            ls8_nbar_scene=7,
+            ls8_level1_scene=7,
+            ls8_nbart_scene=7,
+            ls8_pq_legacy_scene=7,
+            ls8_nbart_albers=7,
+            ls8_satellite_telemetry_data=6,
+            ls7_nbart_albers=4,
+            ls7_nbart_scene=4,
+            ls7_nbar_scene=4,
+            ls7_pq_legacy_scene=4,
+            ls7_level1_scene=4,
+        ),
+    )
 
 
 def validate_items(
-    items: Iterable[Dict], expect_ordered=True, expect_count: int = None
+    items: Iterable[Dict], expect_ordered=True, expect_count: Union[int, dict] = None
 ):
     """
     Check that a series of stac Items:
@@ -199,13 +234,16 @@ def validate_items(
     - are all valid individually.
     - (optionally) has a specific count
     """
+    __tracebackhide__ = True
     seen_ids = set()
     last_item = None
     i = 0
+    product_counts = Counter()
     for item in items:
         id_ = item["id"]
         with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
             validate_item(item)
+        product_counts[item["properties"]["odc:product"]] += 1
 
         # Assert there's no duplicates
         assert (
@@ -227,7 +265,17 @@ def validate_items(
     # ("already seen this dataset id")
     # So we perform this length check in the same method and afterwards.
     if expect_count is not None:
-        assert i == expect_count, f"Expected {expect_count} items"
+        printable_product_counts = "\n\t".join(
+            f"{k}: {v}" for k, v in product_counts.items()
+        )
+        if isinstance(expect_count, int):
+            assert i == expect_count, (
+                f"Expected {expect_count} items.\n"
+                "Got:\n"
+                f"\t{printable_product_counts}"
+            )
+        else:
+            assert product_counts == expect_count
 
 
 def _iter_items_across_pages(

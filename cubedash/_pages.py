@@ -1,21 +1,21 @@
 import itertools
+import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
 import flask
 import structlog
-from flask import Response, abort, redirect, request, url_for
+from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
 import cubedash
 import datacube
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
-from cubedash.summary import RegionInfo, TimePeriodOverview
+from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
-
 from . import _api, _dataset, _filters, _model, _platform, _product, _stac
 from . import _utils as utils
 from ._utils import as_rich_json
@@ -59,17 +59,20 @@ def overview_page(
     default_zoom = theme.options["startZoom"]
     default_center = theme.options["startCoords"]
 
+    region_geojson = _model.get_regions_geojson(product_name, year, month, day)
     return utils.render(
         "overview.html",
         year=year,
         month=month,
         day=day,
         # Which data to preload with the page?
-        regions_geojson=_model.get_regions_geojson(product_name, year, month, day),
+        regions_geojson=region_geojson,
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
-        product_region_info=RegionInfo.for_product(product),
+        product_region_info=_model.STORE.get_product_region_info(product_name)
+        if region_geojson
+        else None,
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
@@ -129,7 +132,7 @@ def search_page(
         )
 
     # For display on the page (and future searches).
-    if "time" not in query and product_summary:
+    if "time" not in query and product_summary and product_summary.time_earliest:
         query["time"] = Range(
             product_summary.time_earliest,
             product_summary.time_latest + timedelta(days=1),
@@ -166,7 +169,7 @@ def region_page(
         product_name, year, month, day
     )
 
-    region_info = RegionInfo.for_product(product)
+    region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:
         abort(404, f"Product {product_name} has no region specification.")
 
@@ -236,11 +239,6 @@ def request_wants_json():
     )
 
 
-@app.route("/about")
-def about_page():
-    return utils.render("about.html")
-
-
 @app.context_processor
 def inject_globals():
     last_updated = _model.get_last_updated()
@@ -273,10 +271,33 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     # Which field should we use when grouping products in the top menu?
     group_by_field = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_FIELD", "product_type")
     group_field_size = app.config.get("CUBEDASH_PRODUCT_GROUP_SIZE", 5)
+    group_by_regex = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_REGEX", None)
 
-    # Group using the configured key, or fall back to the product name.
-    def key(t):
-        return t[0].fields.get(group_by_field) or t[0].name
+    if group_by_regex:
+        try:
+            regex_group = {}
+            for regex, group in group_by_regex:
+                regex_group[re.compile(regex)] = group.strip()
+        except re.error as e:
+            raise RuntimeError(
+                f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
+            )
+
+    if group_by_regex:
+        # group using regex
+        def regex_key(t):
+            for regex, group in regex_group.items():
+                if regex.search(t[0].name):
+                    return group
+            return t[0].name
+
+        key = regex_key
+    else:
+        # Group using the configured key, or fall back to the product name.
+        def field_key(t):
+            return t[0].fields.get(group_by_field) or t[0].name
+
+        key = field_key
 
     grouped_product_summarise = sorted(
         (
@@ -349,16 +370,3 @@ def default_redirect():
         default_product = available_product_names[0]
 
     return flask.redirect(flask.url_for("overview_page", product_name=default_product))
-
-
-@app.route("/products.txt")
-def product_list_text():
-    # This is useful for bash scripts when we want to loop products :)
-    return Response(
-        "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
-    )
-
-
-@app.errorhandler(404)
-def page_not_found(error):
-    return utils.render("404.html", title="404"), 404

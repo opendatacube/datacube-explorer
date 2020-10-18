@@ -1,5 +1,10 @@
 from __future__ import absolute_import
 
+import warnings
+from enum import Enum
+from typing import Set
+
+import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     DDL,
@@ -8,7 +13,7 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
-    Enum,
+    Enum as SqlEnum,
     ForeignKey,
     Index,
     Integer,
@@ -19,9 +24,13 @@ from sqlalchemy import (
     String,
     Table,
     func,
+    select,
+    bindparam,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+
+_LOG = structlog.get_logger()
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
@@ -41,7 +50,7 @@ DATASET_SPATIAL = Table(
     Column(
         "dataset_type_ref",
         SmallInteger,
-        comment="Cubedash product list " "(corresponding to datacube dataset_type)",
+        comment="The ODC dataset_type id)",
         nullable=False,
     ),
     Column("center_time", DateTime(timezone=True), nullable=False),
@@ -97,13 +106,18 @@ PRODUCT = Table(
     Column("derived_product_refs", postgres.ARRAY(SmallInteger)),
     Column("time_earliest", DateTime(timezone=True)),
     Column("time_latest", DateTime(timezone=True)),
+    # A flat key-value set of metadata fields that are the same ("fixed") on every dataset.
+    # (Almost always includes platform, instrument values)
+    Column("fixed_metadata", postgres.JSONB),
 )
 TIME_OVERVIEW = Table(
     "time_overview",
     METADATA,
     # Uniquely identified by three values:
     Column("product_ref", None, ForeignKey(PRODUCT.c.id)),
-    Column("period_type", Enum("all", "year", "month", "day", name="overviewperiod")),
+    Column(
+        "period_type", SqlEnum("all", "year", "month", "day", name="overviewperiod")
+    ),
     Column("start_day", Date),
     Column("dataset_count", Integer, nullable=False),
     # Time range (if there's at least one dataset)
@@ -111,7 +125,7 @@ TIME_OVERVIEW = Table(
     Column("time_latest", DateTime(timezone=True)),
     Column(
         "timeline_period",
-        Enum("year", "month", "week", "day", name="timelineperiod"),
+        SqlEnum("year", "month", "week", "day", name="timelineperiod"),
         nullable=False,
     ),
     Column(
@@ -143,6 +157,24 @@ TIME_OVERVIEW = Table(
         name="timeline_lengths_equal",
     ),
 )
+
+# The geometry of each unique 'region' for a product.
+REGION = Table(
+    "region",
+    METADATA,
+    Column("dataset_type_ref", SmallInteger, nullable=False),
+    Column("region_code", String, nullable=False),
+    Column("count", Integer, nullable=False),
+    Column(
+        "generation_time",
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    ),
+    Column("footprint", Geometry(srid=4326, spatial_index=False)),
+    PrimaryKeyConstraint("dataset_type_ref", "region_code"),
+)
+
 
 _REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 # This is a materialised view of the postgis spatial_ref_sys for lookups.
@@ -178,12 +210,108 @@ def has_schema(engine: Engine) -> bool:
     return engine.dialect.has_schema(engine, CUBEDASH_SCHEMA)
 
 
+def is_compatible_schema(engine: Engine) -> bool:
+    """Do we have the latest schema changes?"""
+    is_latest = True
+
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        is_latest = False
+
+    if not pg_exists(engine, f"{CUBEDASH_SCHEMA}.region"):
+        is_latest = False
+
+    if pg_exists(engine, f"{CUBEDASH_SCHEMA}.mv_region"):
+        warnings.warn(
+            "Your database has item `cubedash.mv_region` from an unstable version of Explorer. "
+            "It will not harm you, but feel free to drop it once all Explorer instances "
+            "have been upgraded: "
+            "    drop materialised view cubedash.mv_region"
+        )
+    return is_latest
+
+
+class PleaseRefresh(Enum):
+    """
+    What data should be refreshed/recomputed?
+    """
+
+    # Refresh all calculated extents/geometry for datasets
+    DATASET_EXTENTS = 1
+
+
+def update_schema(engine: Engine) -> Set[PleaseRefresh]:
+    """
+    Update the schema if needed.
+
+    Returns what data should be resummarised.
+    """
+
+    refresh = set()
+
+    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+        _LOG.info("schema.applying_update.add_fixed_metadata")
+        engine.execute(
+            f"""
+        alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
+        """
+        )
+        refresh.add(PleaseRefresh.DATASET_EXTENTS)
+
+    return refresh
+
+
+def pg_exists(conn, name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return conn.execute("select to_regclass(%s)", name).scalar() is not None
+
+
+def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
+    """
+    Does a postgres object exist?
+    """
+    return (
+        conn.execute(
+            """
+                    select 1
+                    from pg_attribute
+                    where attrelid = to_regclass(%s)
+                        and attname = %s
+                        and not attisdropped
+                    """,
+            table_name,
+            column_name,
+        ).scalar()
+        is not None
+    )
+
+
 def create_schema(engine: Engine):
     """
     Create any missing parts of the cubedash schema
     """
-    engine.execute(DDL(f"create schema if not exists {CUBEDASH_SCHEMA}"))
-    engine.execute(DDL("create extension if not exists postgis"))
+    # Create schema if needed.
+    #
+    # Note that we don't use the built-in "if not exists" because running it *always* requires
+    # `create` permission.
+    #
+    # Doing it separately allows users to run this tool without `create` permission.
+    #
+    if not engine.dialect.has_schema(engine, CUBEDASH_SCHEMA):
+        engine.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
+
+    # Add Postgis if needed
+    #
+    # Note that, as above, we deliberately don't use the built-in "if not exists"
+    #
+    if (
+        engine.execute(
+            "select count(*) from pg_extension where extname='postgis';"
+        ).scalar()
+        == 0
+    ):
+        engine.execute(DDL("create extension postgis"))
 
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.
@@ -253,9 +381,18 @@ def refresh_supporting_views(conn, concurrently=False):
     )
 
 
-def pg_exists(conn, name):
+def get_srid_name(engine: Engine, srid: int):
     """
-    Does a postgres object exist?
-    :rtype bool
+    Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
     """
-    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
+    return engine.execute(
+        select(
+            [
+                func.concat(
+                    SPATIAL_REF_SYS.c.auth_name,
+                    ":",
+                    SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
+                )
+            ]
+        ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
+    ).scalar()

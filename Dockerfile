@@ -45,4 +45,4 @@ RUN if [ "$ENVIRONMENT" = "deployment" ] ; then FLAG='' ; else FLAG='-e'; fi \
 RUN if [ "$ENVIRONMENT" = "deployment" ]; then rm -rf /code/*; fi
 
 # This is for prod, and serves as docs. It's usually overwritten
-CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 cubedash:app
+CMD gunicorn -b '0.0.0.0:8080' -w 1 '--worker-class=egg:meinheld#gunicorn_worker'  --timeout 60 --config python:cubedash.gunicorn_config cubedash:app

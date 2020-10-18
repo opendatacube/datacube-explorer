@@ -1,38 +1,58 @@
-import functools
 import math
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Dict, Generator, Iterable, List, Optional, Sequence, Tuple
+from itertools import groupby
+from typing import (
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    Set,
+)
 from uuid import UUID
 
 import dateutil.parser
 import structlog
+from cachetools.func import ttl_cache
 from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from shapely.geometry.base import BaseGeometry
+from shapely.geometry import GeometryCollection
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, RowProxy
 from sqlalchemy.sql import Select
 
 from cubedash import _utils
-from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, test_wrap_coordinates
-from cubedash.summary import TimePeriodOverview, _extents, _schema
+from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
+from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
+    REGION,
     SPATIAL_QUALITY_STATS,
     TIME_OVERVIEW,
     refresh_supporting_views,
+    get_srid_name,
+    PleaseRefresh,
 )
 from cubedash.summary._summarise import Summariser
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
+from datacube.utils.geometry import Geometry
+
+DEFAULT_TTL = 10
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -50,6 +70,10 @@ class ProductSummary:
     source_products: List[str]
     derived_products: List[str]
 
+    # Metadata values that are the same on every dataset.
+    # (on large products this is judged via sampling, so may not be 100%)
+    fixed_metadata: Dict[str, Union[str, float, int, datetime]]
+
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
     last_refresh_age: Optional[timedelta] = None
@@ -62,7 +86,7 @@ class DatasetItem:
     dataset_id: UUID
     bbox: object
     product_name: str
-    geometry: BaseGeometry
+    geometry: Geometry
     region_code: str
     creation_time: datetime
     center_time: datetime
@@ -89,6 +113,22 @@ class DatasetItem:
         )
 
 
+@dataclass
+class ProductLocationSample:
+    """
+    The apparent storage location of a product
+
+    (judged via a small sampling of datasets)
+    """
+
+    # eg. 'http', "file", ...
+    uri_scheme: str
+    # The common uri prefix across all samples
+    common_prefix: str
+    # A few examples of full location URIs
+    example_uris: List[str]
+
+
 class SummaryStore:
     def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
@@ -104,13 +144,26 @@ class SummaryStore:
         """
         return _schema.has_schema(self._engine)
 
+    def is_schema_compatible(self) -> bool:
+        """
+        Have all schema update been applied?
+        """
+        return _schema.is_compatible_schema(self._engine)
+
     def init(self):
         """
         Initialise any schema elements that don't exist.
 
         (Requires `create` permissions in the db)
         """
+        needed_update = not _schema.is_compatible_schema(self._engine)
+
+        # Add any missing schema items or patches.
         _schema.create_schema(self._engine)
+        refresh_also = _schema.update_schema(self._engine)
+
+        if needed_update or refresh_also:
+            _refresh_data(refresh_also, store=self)
 
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
@@ -122,10 +175,16 @@ class SummaryStore:
         self._engine.dispose()
 
     def refresh_all_products(
-        self, refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN
+        self,
+        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
+        force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
-            self.refresh_product(product, refresh_older_than=refresh_older_than)
+            self.refresh_product(
+                product,
+                refresh_older_than=refresh_older_than,
+                force_dataset_extent_recompute=force_dataset_extent_recompute,
+            )
         self.refresh_stats()
 
     def refresh_product(
@@ -133,11 +192,17 @@ class SummaryStore:
         product: DatasetType,
         refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
-    ):
+        force_dataset_extent_recompute=False,
+    ) -> Optional[int]:
+        """
+        Update Explorer's computed extents for the given product, and record any new
+        datasets into the spatial table.
+        """
         our_product = self.get_product_summary(product.name)
 
         if (
-            our_product is not None
+            not force_dataset_extent_recompute
+            and our_product is not None
             and our_product.last_refresh_age < refresh_older_than
         ):
             _LOG.debug(
@@ -149,7 +214,11 @@ class SummaryStore:
             return None
 
         _LOG.info("init.product", product_name=product.name)
-        added_count = _extents.refresh_product(self.index, product)
+        change_count = _extents.refresh_product(
+            self.index,
+            product,
+            recompute_all_extents=force_dataset_extent_recompute,
+        )
         earliest, latest, total_count = self._engine.execute(
             select(
                 (
@@ -162,6 +231,7 @@ class SummaryStore:
 
         source_products = []
         derived_products = []
+        fixed_metadata = {}
         if total_count:
             sample_percentage = min(dataset_sample_size / total_count, 1) * 100.0
             source_products = self._get_linked_products(
@@ -169,6 +239,9 @@ class SummaryStore:
             )
             derived_products = self._get_linked_products(
                 product, kind="derived", sample_percentage=sample_percentage
+            )
+            fixed_metadata = self._find_product_fixed_metadata(
+                product, sample_percentage=sample_percentage
             )
 
         self._set_product_extent(
@@ -179,14 +252,158 @@ class SummaryStore:
                 latest,
                 source_products=source_products,
                 derived_products=derived_products,
+                fixed_metadata=fixed_metadata,
             )
         )
-        return added_count
+
+        self._refresh_product_regions(product)
+        _LOG.info("init.regions.done", product_name=product.name)
+        return change_count
+
+    def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
+        log = _LOG.bind(product_name=dataset_type.name)
+        log.info("refresh.regions.start")
+        changed_rows = self._engine.execute(
+            """
+        with srid_groups as (
+             select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
+                     cubedash.dataset_spatial.region_code                             as region_code,
+                     ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
+                     count(*)                                                         as count
+              from cubedash.dataset_spatial
+              where cubedash.dataset_spatial.dataset_type_ref = %s
+              group by cubedash.dataset_spatial.dataset_type_ref,
+                       cubedash.dataset_spatial.region_code,
+                       st_srid(cubedash.dataset_spatial.footprint)
+        )
+        insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
+            select srid_groups.dataset_type_ref,
+                   coalesce(srid_groups.region_code, '')                          as region_code,
+                   ST_SimplifyPreserveTopology(
+                           ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
+                   sum(srid_groups.count)                                         as count
+            from srid_groups
+            group by srid_groups.dataset_type_ref, srid_groups.region_code
+        on conflict (dataset_type_ref, region_code)
+            do update set count           = excluded.count,
+                          generation_time = now(),
+                          footprint       = excluded.footprint
+
+            """,
+            dataset_type.id,
+        ).rowcount
+
+        log.info("refresh.regions.end", changed_regions=changed_rows)
+        return changed_rows
 
     def refresh_stats(self, concurrently=False):
+        """
+        Refresh general statistics tables that cover all products.
+
+        This is ideally done once after all needed products have been refreshed.
+        """
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
-    def _get_linked_products(self, product, kind="source", sample_percentage=0.05):
+    def _find_product_fixed_metadata(
+        self, product: DatasetType, sample_percentage=0.05
+    ) -> Dict[str, any]:
+        """
+        Find metadata fields that have an identical value in every dataset of the product.
+
+        This is expensive, so only the given percentage of datasets will be sampled (but
+        feel free to sample 100%!)
+
+        """
+        if not 0.0 < sample_percentage <= 100.0:
+            raise ValueError(
+                f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
+            )
+
+        # Get a single dataset, then we'll compare the rest against its values.
+        first_dataset_fields = self.index.datasets.search_eager(
+            product=product.name, limit=1
+        )[0].metadata.fields
+
+        SIMPLE_FIELD_TYPES = {
+            "string": str,
+            "numeric": (float, int),
+            "double": (float, int),
+            "integer": int,
+            "datetime": datetime,
+        }
+
+        candidate_fields: List[Tuple[str, PgDocField]] = [
+            (name, field)
+            for name, field in _utils.get_mutable_dataset_search_fields(
+                self.index, product.metadata_type
+            ).items()
+            if field.type_name in SIMPLE_FIELD_TYPES and name in first_dataset_fields
+        ]
+
+        if sample_percentage < 100:
+            dataset_table = ODC_DATASET.tablesample(
+                func.system(float(sample_percentage))
+            ).alias("sampled_dataset")
+            # Replace the table with our sampled one.
+            for _, field in candidate_fields:
+                if field.alchemy_column.table == ODC_DATASET:
+                    field.alchemy_column = dataset_table.c[field.alchemy_column.name]
+
+        else:
+            dataset_table = ODC_DATASET
+
+        # Give a friendlier error message when a product doesn't match the dataset.
+        for name, field in candidate_fields:
+            sample_value = first_dataset_fields[name]
+            expected_types = SIMPLE_FIELD_TYPES[field.type_name]
+            # noinspection PyTypeHints
+            if sample_value is not None and not isinstance(
+                sample_value, expected_types
+            ):
+                raise ValueError(
+                    f"Product {product.name} field {name!r} is "
+                    f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
+                )
+
+        _LOG.info(
+            "product.fixed_metadata_search",
+            product=product.name,
+            sample_percentage=round(sample_percentage, 2),
+        )
+        result: List[RowProxy] = self._engine.execute(
+            select(
+                [
+                    (
+                        func.every(
+                            field.alchemy_expression == first_dataset_fields[field_name]
+                        )
+                    ).label(field_name)
+                    for field_name, field in candidate_fields
+                ]
+            )
+            .select_from(dataset_table)
+            .where(dataset_table.c.dataset_type_ref == product.id)
+            .where(dataset_table.c.archived == None)
+        ).fetchall()
+        assert len(result) == 1
+
+        fixed_fields = {
+            key: first_dataset_fields[key]
+            for key, is_fixed in result[0].items()
+            if is_fixed
+        }
+        _LOG.info(
+            "product.fixed_metadata_search.done",
+            product=product.name,
+            sample_percentage=round(sample_percentage, 2),
+            searched_field_count=len(result[0]),
+            found_field_count=len(fixed_fields),
+        )
+        return fixed_fields
+
+    def _get_linked_products(
+        self, product: DatasetType, kind="source", sample_percentage=0.05
+    ) -> List[str]:
         """
         Find products with upstream or downstream datasets from this product.
 
@@ -292,25 +509,25 @@ class SummaryStore:
         return date(year or 1900, month or 1, day or 1), period
 
     # These are cached to avoid repeated unnecessary DB queries.
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def all_dataset_types(self) -> Iterable[DatasetType]:
         return tuple(self.index.products.get_all())
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def get_dataset_type(self, name) -> DatasetType:
         for d in self.all_dataset_types():
             if d.name == name:
                 return d
         raise KeyError(f"Unknown dataset type {name!r}")
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _dataset_type_by_id(self, id_) -> DatasetType:
         for d in self.all_dataset_types():
             if d.id == id_:
                 return d
         raise KeyError(f"Unknown dataset type id {id_!r}")
 
-    @functools.lru_cache()
+    @ttl_cache(ttl=DEFAULT_TTL)
     def _product(self, name: str) -> ProductSummary:
         row = self._engine.execute(
             select(
@@ -322,6 +539,7 @@ class SummaryStore:
                     PRODUCT.c.id.label("id_"),
                     PRODUCT.c.source_product_refs,
                     PRODUCT.c.derived_product_refs,
+                    PRODUCT.c.fixed_metadata,
                 ]
             ).where(PRODUCT.c.name == name)
         ).fetchone()
@@ -344,6 +562,44 @@ class SummaryStore:
             **row,
         )
 
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def product_location_samples(self, name: str) -> List[ProductLocationSample]:
+        """
+        Sample some dataset locations for the given product, and return
+        the common location.
+
+        Returns one row for each uri scheme found (http, file etc).
+        """
+        # Sample 100 dataset uris
+        uri_samples = sorted(
+            [
+                uri
+                for [uri] in self.index.datasets.search_returning(
+                    ("uri",), product=name, limit=100
+                )
+            ]
+        )
+
+        def uri_scheme(uri: str):
+            return uri.split(":", 1)[0]
+
+        location_schemes = []
+        for scheme, uris in groupby(uri_samples, uri_scheme):
+            uris = list(uris)
+
+            # Use the first, last and middle as examples
+            # (they're sorted, so this shows diversity)
+            example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
+            #              ⮤ we use a set for when len < 3
+
+            location_schemes.append(
+                ProductLocationSample(
+                    scheme, os.path.commonpath(uris), sorted(example_uris)
+                )
+            )
+
+        return location_schemes
+
     def get_quality_stats(self) -> Iterable[Dict]:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))
         for row in stats:
@@ -365,7 +621,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _set_product_extent(self, product: ProductSummary):
+    def _set_product_extent(self, product: ProductSummary) -> int:
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -374,12 +630,12 @@ class SummaryStore:
             for name in product.derived_products
         ]
         fields = dict(
-            name=product.name,
             dataset_count=product.dataset_count,
             time_earliest=product.time_earliest,
             time_latest=product.time_latest,
             source_product_refs=source_product_ids,
             derived_product_refs=derived_product_ids,
+            fixed_metadata=product.fixed_metadata,
             # Deliberately do all age calculations with the DB clock rather than local.
             last_refresh=func.now(),
         )
@@ -402,7 +658,7 @@ class SummaryStore:
         else:
             # Product doesn't exist, so insert it
             row = self._engine.execute(
-                postgres.insert(PRODUCT).values(**fields)
+                postgres.insert(PRODUCT).values(**fields, name=product.name)
             ).inserted_primary_key
         self._product.cache_clear()
         return row[0]
@@ -552,7 +808,7 @@ class SummaryStore:
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
                 product_name=self.index.products.get(r.dataset_type_ref).name,
-                geometry=_get_shape(r.geometry),
+                geometry=_get_shape(r.geometry, self._get_srid_name(r.geometry.srid)),
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
@@ -570,7 +826,7 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """
         Get a cached summary if exists, otherwise generate one
 
@@ -599,7 +855,7 @@ class SummaryStore:
         day: Optional[int] = None,
         generate_missing_children: Optional[bool] = True,
         force_refresh: Optional[bool] = False,
-    ):
+    ) -> TimePeriodOverview:
         """Update the given summary and return the new one"""
         product = self._product(product_name)
         get_child = self.get_or_update if generate_missing_children else self.get
@@ -638,6 +894,13 @@ class SummaryStore:
         for listener in self._update_listeners:
             listener(product_name, year, month, day, summary)
         return summary
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def _get_srid_name(self, srid: int):
+        """
+        Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
+        """
+        return get_srid_name(self._engine, srid)
 
     def _do_put(self, product_name, year, month, day, summary):
         log = _LOG.bind(
@@ -703,6 +966,69 @@ class SummaryStore:
         return _extents.datasets_by_region(
             self._engine, self.index, product_name, region_code, time_range, limit
         )
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def _region_geoms(self, product_name: str) -> Dict[str, GeometryCollection]:
+        dt = self.get_dataset_type(product_name)
+        return {
+            code: to_shape(geom)
+            for code, geom in self._engine.execute(
+                select([REGION.c.region_code, REGION.c.footprint])
+                .where(REGION.c.dataset_type_ref == dt.id)
+                .order_by(REGION.c.region_code)
+            )
+            if geom is not None
+        }
+
+    def get_product_region_info(self, product_name: str) -> RegionInfo:
+        dt = self.get_dataset_type(product_name)
+        return RegionInfo.for_product(dt, self._region_geoms(product_name))
+
+    def get_dataset_footprint_region(self, dataset_id):
+        """
+        Get the recorded WGS84 footprint and region code for a given dataset.
+
+        Note that these will be None if the product has not been summarised.
+        """
+        rows = self._engine.execute(
+            select(
+                [
+                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).label(
+                        "footprint"
+                    ),
+                    DATASET_SPATIAL.c.region_code,
+                ]
+            ).where(DATASET_SPATIAL.c.id == dataset_id)
+        ).fetchall()
+        if not rows:
+            return None, None
+        row = rows[0]
+
+        footprint = row.footprint
+        return (
+            to_shape(footprint) if footprint is not None else None,
+            row.region_code,
+        )
+
+
+def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
+    """
+    Refresh product information after a schema update, plus the given kind of data.
+    """
+    recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
+
+    for dt in store.all_dataset_types():
+        _LOG.info("data.refreshing_extents", product=dt.name)
+        # Skip product if it's never been summarised at all.
+        if store.get_product_summary(dt.name) is None:
+            continue
+
+        store.refresh_product(
+            dt,
+            refresh_older_than=timedelta(minutes=-1),
+            force_dataset_extent_recompute=recompute_dataset_extents,
+        )
+    _LOG.info("data.refreshing_extents.complete")
 
 
 def _safe_read_date(d):
@@ -772,7 +1098,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         dataset_count=summary.dataset_count,
         timeline_dataset_start_days=day_values,
         timeline_dataset_counts=day_counts,
-        # TODO: SQLALchemy needs a bit of type help for some reason. Possible PgGridCell bug?
+        # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
         regions=func.cast(region_values, type_=postgres.ARRAY(String)),
         region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
@@ -793,7 +1119,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
     )
 
 
-def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
+def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple]:
     """
     Split counter into a keys sequence and a values sequence.
 
@@ -803,11 +1129,17 @@ def _counter_key_vals(counts: Counter) -> Tuple[Tuple, Tuple]:
     (('a', 'b'), (2, 1))
     >>> tuple(_counter_key_vals(Counter(['a'])))
     (('a',), (1,))
+    >>> tuple(_counter_key_vals(Counter(['a', None])))
+    (('a', None), (1, 1))
     >>> # Important! zip(*) doesn't do this.
     >>> tuple(_counter_key_vals(Counter()))
     ((), ())
     """
-    items = sorted(counts.items())
+    items = sorted(
+        counts.items(),
+        # Swap nulls if needed.
+        key=lambda t: (null_sort_key, t[1]) if t[0] is None else t,
+    )
     return tuple(k for k, v in items), tuple(v for k, v in items)
 
 
@@ -834,7 +1166,7 @@ def _dataset_to_feature(dataset: Dataset):
 
 
 _BOX2D_PATTERN = re.compile(
-    r"BOX\(([-0-9.]+)\s+([-0-9.]+)\s*,\s*([-0-9.]+)\s+([-0-9.]+)\)"
+    r"BOX\(([-0-9.e]+)\s+([-0-9.e]+)\s*,\s*([-0-9.e]+)\s+([-0-9.e]+)\)"
 )
 
 
@@ -846,14 +1178,22 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     ...     "BOX(134.806923200497 -17.7694714883835,135.769692610214 -16.8412669214876)"
     ... )
     (134.806923200497, -17.7694714883835, 135.769692610214, -16.8412669214876)
+    >>> # Scientific notation in numbers is sometimes given
+    >>> _box2d_to_bbox(
+    ...     "BOX(35.6948526641442 -0.992278901187827,36.3518945675102 -9.03173177994956e-06)"
+    ... )
+    (35.6948526641442, -0.992278901187827, 36.3518945675102, -9.03173177994956e-06)
     """
     m = _BOX2D_PATTERN.match(pg_box2d)
+    if m is None:
+        raise RuntimeError(f"Unexpected postgis box syntax {pg_box2d!r}")
+
     # We know there's exactly four groups, but type checker doesn't...
     # noinspection PyTypeChecker
     return tuple(float(m) for m in m.groups())
 
 
-def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
+def _get_shape(geometry: WKBElement, crs) -> Optional[Geometry]:
     """
     Our shapes are valid in the db, but can become invalid on
     reprojection. We buffer if needed.
@@ -865,8 +1205,7 @@ def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
     if geometry is None:
         return None
 
-    shape = to_shape(geometry)
-    shape = test_wrap_coordinates(shape)
+    shape = Geometry(to_shape(geometry), crs).to_crs("EPSG:4326", wrapdateline=True)
 
     if not shape.is_valid:
         newshape = shape.buffer(0)
@@ -875,3 +1214,16 @@ def _get_shape(geometry: WKBElement) -> Optional[BaseGeometry]:
         ), f"{shape.area} != {newshape.area}"
         shape = newshape
     return shape
+
+
+if __name__ == "__main__":
+    # For debugging store commands...
+    with Datacube() as dc:
+        from pprint import pprint
+
+        store = SummaryStore.create(dc.index)
+        pprint(
+            store._find_product_fixed_metadata(
+                dc.index.products.get_by_name("ls8_nbar_scene"), sample_percentage=50
+            )
+        )

@@ -125,8 +125,28 @@ h4 {
   color: #4f4f4f;
 }
 
+h2.followed, h3.followed {
+  display: inline-block;
+}
+
+.header-follow {
+  display: inline-block;
+}
+
 ul:last-child, ol:last-child {
   margin-bottom: 0;
+}
+
+ul {
+  padding-left: 20px;
+}
+@media (min-width: 800px) {
+  ul {
+    padding-left: 30px;
+  }
+}
+ul.quiet {
+  list-style: none;
 }
 
 .message-box {
@@ -177,6 +197,9 @@ ul:last-child, ol:last-child {
 }
 .panel.highlight a {
   color: #999;
+}
+.panel.overflowable {
+  overflow-x: auto;
 }
 
 .header-option {
@@ -313,6 +336,11 @@ ul:last-child, ol:last-child {
   padding: 0 15px;
   text-align: left;
   line-height: 30px;
+  vertical-align: top;
+}
+.data-table td.numeric, .data-table th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* lists of key-values */
@@ -326,11 +354,18 @@ ul:last-child, ol:last-child {
     grid-template-columns: 1fr 1fr;
   }
 }
+.query-param {
+  display: block;
+}
 .query-param > .value {
   color: #737373;
 }
 .query-param .value > .query-param {
   margin-left: 15px;
+}
+.query-param .missing-value {
+  text-decoration-style: wavy;
+  text-decoration-line: underline;
 }
 
 button {
@@ -418,15 +453,43 @@ label.disabled {
   color: #737373;
 }
 
+.addendum {
+  color: #737373;
+  font-size: 0.7em;
+}
+
+.badge {
+  font-size: 0.7em;
+  background-color: #ccc;
+  white-space: nowrap;
+  padding: 2px 4px;
+}
+.header-follow .badge {
+  margin: 0 10px;
+}
+.badge.header-badge {
+  font-size: inherit;
+}
+
+.uri-path {
+  font-family: monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .raw-metadata .property {
   word-wrap: break-word;
   font-family: "Courier New", monospace;
 }
-.raw-metadata .property .property {
+.raw-metadata .property .property, .raw-metadata .property .array, .raw-metadata .property .array-item {
   padding-left: 15px;
 }
 .raw-metadata .property > .key {
   font-weight: bold;
+}
+.raw-metadata .property summary {
+  font-style: italic;
+  color: #737373;
 }
 
 .dataset-info {
@@ -498,6 +561,10 @@ label.disabled {
   height: 40px;
   margin-top: 7px;
   padding-right: 20px;
+}
+
+details > summary {
+  cursor: pointer;
 }
 
 .grid-form *, .grid-form *:before, .grid-form *:after {

@@ -6,12 +6,28 @@ help: ## Display this help text
 .PHONY: install
 install: ## Install all requirements and explorer
 	pip install -U setuptools pip
-	pip install -U -r requirements-test.txt
 	pip install -e .[test]
+
+.PHONY: install-flake8
+install-flake8:
+	pipx install flake8
+	# Add the same plugins as the .pre-commit-config.yaml
+	pipx inject flake8 \
+		   dlint \
+		   flake8-broken-line \
+		   flake8-bugbear \
+		   flake8-builtins \
+		   flake8-coding \
+		   flake8-debugger \
+		   flake8-executable \
+		   flake8-logging-format \
+		   flake8-pep3101 \
+		   flake8-pytest-style \
+		   flake8-pytest \
+		   flake8-rst-docstrings
 
 .PHONY: format
 format: ## Reformat all Python code
-	isort -rc cubedash integration_tests
 	black cubedash integration_tests ./*.py
 
 .PHONY: lint
@@ -31,7 +47,7 @@ static: style js
 style: cubedash/static/base.css ## Compile SASS stylesheets to CSS
 
 cubedash/static/base.css: cubedash/static/base.sass
-	sass $< $@
+	npx sass $< $@
 
 node_modules:
 	npm install @types/geojson @types/leaflet

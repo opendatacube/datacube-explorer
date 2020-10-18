@@ -2,6 +2,7 @@
 [![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
 [![Tests](https://github.com/opendatacube/datacube-explorer/workflows/Tests/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ATests)
 [![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
+[![Scan](https://github.com/opendatacube/datacube-explorer/workflows/Scan/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3AScan)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 
 ![Explorer Screenshot](screenshot.png)
@@ -10,7 +11,7 @@
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
 
-Firstly, install Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
 is recommended.
 
 Test that you can run `datacube system check`, and that it's connecting
@@ -29,10 +30,11 @@ Now install the explorer dependencies:
 
 Initialise and create product summaries:
 
-    nohup cubedash-gen --init --all &>> summary-gen.log &
+    cubedash-gen --init --all
 
-(This can take a while the first time, depending on your datacube size. 
-We're using `nohup .. &` to run in the background.)
+(This can take a long time the first time, depending on your datacube size.)
+
+Other available options can be seen by running `cubedash-gen --help`.
 
 ### Run
 
@@ -123,13 +125,18 @@ Add a file to the current directory called `settings.env.py`
 
 You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 [Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings 
-(default "CACHE_TYPE: simple"), as well as some cubedash-specific settings:
+(default "CACHE_TYPE: null"), as well as some cubedash-specific settings:
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
     
-    # Which field should we use when grouping products in the top menu?
-    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
+    # Specify product grouping in the top menu.
+    # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
+    # anywhere in its name. Unmatched products have their own group.
+    # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )" 
+    CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
+    # Otherwise, group by a single metadata field in the products:
+    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type' 
     # Ungrouped products will be grouped together in this size.
     CUBEDASH_PRODUCT_GROUP_SIZE = 5
     
@@ -175,8 +182,9 @@ Install [npm](https://www.npmjs.com/get-npm), and then install them both:
 You can now run `make static` to rebuild all the static files, or
 individually with `make style` or `make js`.
 
-Alternatively, if using PyCharm, open a Sass file and you will be prompted 
-to enable a `File Watcher` to compile automatically.
+Alternatively, if using [PyCharm](https://www.jetbrains.com/pycharm), open a 
+Sass file and you will be prompted to enable a `File Watcher` to 
+compile automatically.
 
 PyCharm will also compile the Typescript automatically by ticking
 the "Recompile on changes" option in `Languages & Frameworks ->
@@ -207,6 +215,23 @@ Add a `.datacube_integration.conf` file to your home directory in the same forma
 Then run pytest: `pytest integration_tests`
 
 __Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+
+## Roles for production deployments
+
+The [roles](cubedash/summary/roles) directory contains sql files for creating
+Postgres roles for Explorer. These are suitable for running each Explorer 
+task with minimum needed security permissions.
+
+Three roles are created:
+
+- **explorer-viewer**: A read-only user of datacube and Explorer. Suitable for the web interface and cli (`cubedash-view`) commands.
+- **explorer-generator**: Suitable for generating and updating summaries (ie. Running `cubedash-gen`)
+- **explorer-owner**: For creating and updating the schema. (ie. Running `cubedash-gen --init`)
+
+Note that these roles extend the built-in datacube role `agdc_user`. If you
+created your datacube without permissions, a stand-alone creator of the `agdc_user`
+role is available as a prerequisite in the same [roles](cubedash/summary/roles) 
+directory.
 
 ## Docker for Development and running tests
 You need to have Docker and Docker Compose installed on your system.

@@ -7,6 +7,7 @@ from __future__ import absolute_import, division
 import calendar
 import logging
 from datetime import datetime
+from typing import Mapping
 
 import flask
 import rapidjson
@@ -14,11 +15,11 @@ from dateutil import tz
 from flask import Blueprint
 from jinja2 import Markup, escape
 from shapely.geometry import MultiPolygon
-
+from urllib.parse import quote_plus
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 
-from . import _utils as utils
+from . import _utils as utils, _utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -97,13 +98,18 @@ def _dataset_geojson(dataset):
 
 @bp.app_template_filter("product_link")
 def _product_link(product_name):
-    url = flask.url_for("overview_page", product_name=product_name)
+    url = flask.url_for("product.product_page", name=product_name)
     return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
 
 
 @bp.app_template_filter("dataset_created")
 def _dataset_created(dataset: Dataset):
     return utils.dataset_created(dataset)
+
+
+@bp.app_template_filter("all_values_none")
+def _all_values_none(d: Mapping):
+    return all(v is None for v in d.values())
 
 
 @bp.app_template_filter("dataset_day_link")
@@ -153,6 +159,18 @@ def _format_query_value(val):
     return str(val)
 
 
+@bp.app_template_filter("maybe_to_css_class_name")
+def _maybe_format_css_class(val: str, prefix: str = ""):
+    """
+    Create a CSS class name for the given string if it is safe to do so.
+
+    Otherwise return nothing
+    """
+    if val.replace("-", "_").isidentifier():
+        return f"{prefix}{val}"
+    return ""
+
+
 @bp.app_template_filter("month_name")
 def _format_month_name(val):
     return calendar.month_name[val]
@@ -180,6 +198,24 @@ def day_range(year_month):
 @bp.app_template_filter("max")
 def _max_val(ls):
     return max(ls)
+
+
+@bp.app_template_filter("product_license_link")
+def _product_license(product: DatasetType):
+    license_ = _utils.product_license(product)
+
+    if license_ is None:
+        return "-"
+
+    if license_ in ("various", "proprietry"):
+        return license_
+
+    return Markup(
+        f"<a href='https://spdx.org/licenses/"
+        f"{quote_plus(license_)}.html' "
+        f"class='spdx-license badge'>{license_}"
+        f"</a>"
+    )
 
 
 @bp.app_template_filter("searchable_fields")
