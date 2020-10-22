@@ -101,7 +101,15 @@ def stac_search():
         args = request.args
     else:
         args = TypeConversionDict(request.get_json())
-    return _utils.as_geojson(_handle_search_request(args))
+
+    products = args.get("collections", default=[], type=_array_arg)
+    if "collection" in args:
+        products.append(args.get("collection"))
+    # Fallback for legacy 'product' argument
+    elif "product" in args:
+        products.append(args.get("product"))
+
+    return _utils.as_geojson(_handle_search_request(args, products))
 
 
 def _array_arg(arg: str, expect_size=None) -> List:
@@ -131,19 +139,14 @@ def _array_arg(arg: str, expect_size=None) -> List:
 
 
 def _handle_search_request(
-    request_args: TypeConversionDict, route_name=".stac_search"
+    request_args: TypeConversionDict,
+    product_names: List[str],
+    route_name=".stac_search",
 ) -> Dict:
     bbox = request_args.get("bbox", type=partial(_array_arg, expect_size=4))
     time = request_args.get("time")
-    product_name = request_args.get("collection")
-
-    # Fallback for legacy 'product' argument
-    if not product_name and "product" in request_args:
-        product_name = request_args.get("product")
-
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
     ids = request_args.get("ids", default=None, type=_array_arg)
-
     offset = request_args.get("_o", default=0, type=int)
 
     if limit > PAGE_SIZE_LIMIT:
@@ -162,7 +165,7 @@ def _handle_search_request(
     def next_page_url(next_offset):
         return url_for(
             route_name,
-            collection=product_name,
+            collections=product_names,
             bbox="[{},{},{},{}]".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             ids=json.dumps(ids) if ids else None,
@@ -171,7 +174,7 @@ def _handle_search_request(
         )
 
     return search_stac_items(
-        product_name=product_name,
+        product_names=product_names,
         bbox=bbox,
         time=time,
         dataset_ids=ids,
@@ -186,7 +189,7 @@ def search_stac_items(
     limit: int = DEFAULT_PAGE_SIZE,
     offset: int = 0,
     dataset_ids: Optional[str] = None,
-    product_name: Optional[str] = None,
+    product_names: Optional[List[str]] = None,
     bbox: Optional[Tuple[float, float, float, float]] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
 ) -> Dict:
@@ -198,7 +201,7 @@ def search_stac_items(
     offset = offset or 0
     items = list(
         _model.STORE.search_items(
-            product_name=product_name,
+            product_names=product_names,
             time=time,
             bbox=bbox,
             limit=limit + 1,
@@ -299,13 +302,10 @@ def collection_items(collection: str):
     if not all_time_summary:
         abort(404, "Product not yet summarised")
 
-    # Maybe we shouldn't include total count, as it prevents some future optimisation?
-
-    args = TypeConversionDict(request.args)
-    args["collection"] = collection
-
     feature_collection = _handle_search_request(
-        request_args=args, route_name=".collection_items"
+        request_args=request.args,
+        product_names=[collection],
+        route_name=".collection_items",
     )
     feature_collection["context"]["matched"] = all_time_summary.dataset_count
     return _utils.as_geojson(feature_collection)

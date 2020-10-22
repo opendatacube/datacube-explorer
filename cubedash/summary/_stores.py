@@ -726,7 +726,7 @@ class SummaryStore:
     def search_items(
         self,
         *,
-        product_name: Optional[str] = None,
+        product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
         limit: int = 500,
@@ -792,13 +792,22 @@ class SummaryStore:
                     )
                 )
 
-            if product_name:
-                query = query.where(
-                    DATASET_SPATIAL.c.dataset_type_ref
-                    == select([ODC_DATASET_TYPE.c.id]).where(
-                        ODC_DATASET_TYPE.c.name == product_name
+            if product_names:
+                if len(product_names) == 1:
+                    query = query.where(
+                        DATASET_SPATIAL.c.dataset_type_ref
+                        == select([ODC_DATASET_TYPE.c.id]).where(
+                            ODC_DATASET_TYPE.c.name == product_names[0]
+                        )
                     )
-                )
+                else:
+                    query = query.where(
+                        DATASET_SPATIAL.c.dataset_type_ref.in_(
+                            select([ODC_DATASET_TYPE.c.id]).where(
+                                ODC_DATASET_TYPE.c.name.in_(product_names)
+                            )
+                        )
+                    )
 
         if require_geometry:
             query = query.where(DATASET_SPATIAL.c.footprint != None)
