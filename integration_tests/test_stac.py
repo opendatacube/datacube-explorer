@@ -388,6 +388,33 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     assert error_message_json["name"] == "Bad Request"
 
 
+def test_stac_search_collections(stac_client: FlaskClient):
+    """Can you query a list of multiple collections?"""
+
+    # Get all the datasets for two collections
+    geojson = get_items(
+        stac_client,
+        (
+            "/stac/search?"
+            '&collections=["ls7_nbart_scene", "ls7_nbar_scene"]'
+            "&limit=20"
+        ),
+    )
+    # Four datasets each.
+    assert len(geojson.get("features")) == 8
+    returned_feature_ids = sorted(f["id"] for f in geojson["features"])
+    assert returned_feature_ids == [
+        "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        "1649d316-7713-461e-b178-d41cc967e544",
+        "27482638-1208-427f-8420-6eecf41e8d0e",
+        "39543725-63cc-4e51-a0a1-b07fb66edfd9",
+        "47017789-c42d-451e-b268-591309a783c7",
+        "57c94973-7ab9-45db-a0b8-a51daf180cc2",
+        "74b8b54b-3985-4892-afd5-0efacbe59d2f",
+        "7da7db97-5ab9-44bf-b326-8a75f33fe2be",
+    ]
+
+
 def test_stac_search_bounds(stac_client: FlaskClient):
     # Outside the box there should be no results
     geojson = get_items(
