@@ -195,7 +195,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
     # Load one stac dataset from the test data.
     response = get_item(
         client,
-        "http://localhost/collections/ga_ls5t_ard_3/items/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
+        "http://localhost/stac/collections/ga_ls5t_ard_3/items/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
     )
 
     print(repr(response))
