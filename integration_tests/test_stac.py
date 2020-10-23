@@ -333,14 +333,14 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     # Can filter to an empty list. Nothing returned.
     geojson = get_items(
         stac_client,
-        "/stac/search?&collection=ls7_nbart_albers&ids=[]",
+        "/stac/search?&collection=ls7_nbart_albers&ids=",
     )
     assert len(geojson.get("features")) == 0
 
     # Can request one dataset
     geojson = get_items(
         stac_client,
-        '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]',
+        "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376",
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -348,7 +348,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     geojson = get_items(
         stac_client,
         (
-            '/stac/search?time=1975-01-01/1976-01-01&ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]'
+            "/stac/search?time=1975-01-01/1976-01-01&ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
         ),
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
@@ -358,9 +358,9 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
         stac_client,
         (
             "/stac/search?&collection=ls7_nbart_albers"
-            '&ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376", '
-            '"306a5281-02df-4d27-b1eb-b1cda81a35e3", '
-            '"696c2481-700e-4fec-b438-01396430a688"]'
+            "&ids=cab65f3f-bb38-4605-9d6a-eff5ea786376, "
+            "306a5281-02df-4d27-b1eb-b1cda81a35e3,"
+            "696c2481-700e-4fec-b438-01396430a688"
         ),
     )
     assert geojson_feature_ids(geojson) == [
@@ -372,17 +372,24 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     # Can filter using ids that don't exist.
     geojson = get_items(
         stac_client,
-        '/stac/search?&ids=["7afd04ad-6080-4ee8-a280-f64853b399ca"]',
+        "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca",
     )
     assert len(geojson.get("features")) == 0
 
-    # HTTP-Bad-Request should be returned when not a valid array
+    # Old JSON-like syntax should be supported for now.
+    # (Sat-api and the old code used this?)
+    geojson = get_items(
+        stac_client,
+        '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]',
+    )
+    assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
+
+    # HTTP-Bad-Request should be returned when not a valid uuid format
+    # TODO: perhaps ideally this should be treated as an unknown id... but this is at
+    #       least better than the old Postgres error
     error_message_json = get_json(
         stac_client,
-        (
-            "/stac/search?&collection=ls7_nbart_albers"
-            "&ids=7afd04ad-6080-4ee8-a280-f64853b399ca"
-        ),
+        ("/stac/search?&collection=ls7_nbart_albers" "&ids=7a[-fd04ad[-"),
         expect_status_code=400,
     )
     assert error_message_json["name"] == "Bad Request"
@@ -391,14 +398,17 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
 def test_stac_search_collections(stac_client: FlaskClient):
     """Can you query a list of multiple collections?"""
 
+    # Get all in one collection
+    geojson = get_items(
+        stac_client,
+        ("/stac/search?" "&collections=ls7_nbart_scene" "&limit=20"),
+    )
+    assert len(geojson.get("features")) == 4
+
     # Get all the datasets for two collections
     geojson = get_items(
         stac_client,
-        (
-            "/stac/search?"
-            '&collections=["ls7_nbart_scene", "ls7_nbar_scene"]'
-            "&limit=20"
-        ),
+        ("/stac/search?" "&collections=ls7_nbart_scene,ls7_nbar_scene" "&limit=20"),
     )
     # Four datasets each.
     assert len(geojson.get("features")) == 8
@@ -414,6 +424,14 @@ def test_stac_search_collections(stac_client: FlaskClient):
         "7da7db97-5ab9-44bf-b326-8a75f33fe2be",
     ]
 
+    # An empty URL parameter means it's unspecified.
+    # (its doesn't mean match-the-empty-list!)
+    geojson = get_items(
+        stac_client,
+        ("/stac/search?" "&collections=" "&limit=20"),
+    )
+    assert len(geojson.get("features")) > 0
+
 
 def test_stac_search_bounds(stac_client: FlaskClient):
     # Outside the box there should be no results
@@ -421,7 +439,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
         stac_client,
         (
             "/stac/search?"
-            "&bbox=[20,-5,25,10]"
+            "&bbox=20,-5,25,10"
             "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
@@ -432,7 +450,8 @@ def test_stac_search_bounds(stac_client: FlaskClient):
         stac_client,
         (
             "/stac/search?"
-            "collection=ls7_nbar_scene"
+            "collections=ls7_nbar_scene"
+            # Legacy json format of array
             "&bbox=[114, -33, 153, -10]"
             "&time=2017-04-20"
         ),
@@ -444,8 +463,8 @@ def test_stac_search_bounds(stac_client: FlaskClient):
         stac_client,
         (
             "/stac/search?"
-            "collection=ls7_nbar_scene"
-            "&bbox=[114, -33, 153, -10]"
+            "collections=ls7_nbar_scene"
+            "&bbox=114.0, -33.0, 153.0, -10.0"
             "&time=2017-04-22"
         ),
     )

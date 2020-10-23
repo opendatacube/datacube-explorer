@@ -1,11 +1,11 @@
 import json
 import logging
+import uuid
 from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
 from functools import partial
-from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple, List
 from urllib.parse import urljoin
@@ -112,7 +112,7 @@ def stac_search():
     return _utils.as_geojson(_handle_search_request(args, products))
 
 
-def _array_arg(arg: str, expect_size=None) -> List:
+def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
     """
     Parse an argument that should be a simple list.
     """
@@ -121,10 +121,18 @@ def _array_arg(arg: str, expect_size=None) -> List:
 
     # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
     try:
-        value = json.loads(arg)
-    except JSONDecodeError:
+        arg = arg.strip()
+        # Legacy json-like format. This is what sat-api seems to do too.
+        if arg.startswith("["):
+            value = json.loads(arg)
+        else:
+            # Otherwise OpenAPI non-exploded form style.
+            # Eg. "1, 2, 3" or "string1,string2" or "string1"
+            args = [a.strip() for a in arg.split(",")]
+            value = [expect_type(a.strip()) for a in args if a]
+    except ValueError:
         raise BadRequest(
-            f"Invalid argument syntax. Expected json-like list, got: {arg!r}"
+            f"Invalid argument syntax. Expected comma-separated list, got: {arg!r}"
         )
 
     if not isinstance(value, list):
@@ -143,10 +151,14 @@ def _handle_search_request(
     product_names: List[str],
     route_name=".stac_search",
 ) -> Dict:
-    bbox = request_args.get("bbox", type=partial(_array_arg, expect_size=4))
+    bbox = request_args.get(
+        "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
+    )
     time = request_args.get("time")
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
-    ids = request_args.get("ids", default=None, type=_array_arg)
+    ids = request_args.get(
+        "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
+    )
     offset = request_args.get("_o", default=0, type=int)
 
     if limit > PAGE_SIZE_LIMIT:
@@ -166,9 +178,9 @@ def _handle_search_request(
         return url_for(
             route_name,
             collections=product_names,
-            bbox="[{},{},{},{}]".format(*bbox) if bbox else None,
+            bbox="{},{},{},{}".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
-            ids=json.dumps(ids) if ids else None,
+            ids=",".join(map(str, ids)) if ids else None,
             limit=limit,
             _o=next_offset,
         )

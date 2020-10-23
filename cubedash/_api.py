@@ -32,7 +32,7 @@ def datasets_geojson(
             features=[
                 s.as_geojson()
                 for s in _model.STORE.search_items(
-                    product_name=product_name, time=time, limit=limit
+                    product_names=[product_name], time=time, limit=limit
                 )
                 if s.geom_geojson is not None
             ],
