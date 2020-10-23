@@ -12,7 +12,6 @@ on:
     types: [created, edited, published]
 
 env:
-  OLD_IMAGE_NAME: opendatacube/dashboard
   IMAGE_NAME: opendatacube/explorer
 
 jobs:
@@ -43,25 +42,6 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
-      - name: Build and Push unstable + latest Docker image (old name)
-        if: github.event_name != 'release'
-        uses: whoan/docker-build-with-cache-action@v4
-        with:
-          image_name: ${{ env.OLD_IMAGE_NAME }}
-          image_tag: ${{ env.UNSTABLE_TAG }},latest
-          username: gadockersvc
-          password: "${{ secrets.DockerPassword }}"
-          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
-
-      - name: Run vulnerability scanner
-        if: github.event_name != 'release'
-        uses: aquasecurity/trivy-action@0.0.6
-        with:
-          image-ref: "${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
-
       # This section is for releases
       - name: Get tag for this build if it exists
         if: github.event_name == 'release'
@@ -80,25 +60,6 @@ jobs:
           username: gadockersvc
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
-
-      - name: Build and Push release if we have a tag (old name)
-        uses: whoan/docker-build-with-cache-action@v4
-        if: github.event_name == 'release'
-        with:
-          image_name: ${{ env.OLD_IMAGE_NAME }}
-          image_tag: ${{ env.RELEASE }}
-          username: gadockersvc
-          password: "${{ secrets.DockerPassword }}"
-          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
-
-      - name: Run vulnerability scanner for Release
-        if: github.event_name == 'release'
-        uses: aquasecurity/trivy-action@0.0.6
-        with:
-          image-ref: "${{ env.IMAGE_NAME }}: ${{ env.RELEASE }}"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
 
       - name: Notify Slack for Failures
         uses: rtCamp/action-slack-notify@v2.0.0
