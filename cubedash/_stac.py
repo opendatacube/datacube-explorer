@@ -218,6 +218,10 @@ def search_stac_items(
         stac_extensions=["context"],
         type="FeatureCollection",
         features=[as_stac_item(f) for f in returned],
+        # Stac standard
+        numberReturned=len(returned),
+        # Compatibility with older implementation. Was removed from stac-api standard.
+        # (page numbers + limits are not ideal as they prevent some big db optimisations.)
         context=dict(page=offset // limit, limit=limit, returned=len(returned)),
         links=[],
     )
@@ -307,7 +311,13 @@ def collection_items(collection: str):
         product_names=[collection],
         route_name=".collection_items",
     )
-    feature_collection["context"]["matched"] = all_time_summary.dataset_count
+
+    # Maybe we shouldn't include total count, as it prevents some future optimisation?
+    if "numberMatched" not in feature_collection:
+        feature_collection["numberMatched"] = all_time_summary.dataset_count
+    # Backwards compatibility with older stac implementations.
+    feature_collection["context"]["matched"] = feature_collection["numberMatched"]
+
     return _utils.as_geojson(feature_collection)
 
 

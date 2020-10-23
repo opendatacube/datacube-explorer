@@ -333,14 +333,14 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     # Can filter to an empty list. Nothing returned.
     geojson = get_items(
         stac_client,
-        ("/stac/search?&collection=ls7_nbart_albers&ids=[]"),
+        "/stac/search?&collection=ls7_nbart_albers&ids=[]",
     )
     assert len(geojson.get("features")) == 0
 
     # Can request one dataset
     geojson = get_items(
         stac_client,
-        ('/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]'),
+        '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]',
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -513,6 +513,20 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
             # Validate stac item with jsonschema
             validate_item(feature)
+
+
+def test_huge_page_request(stac_client: FlaskClient):
+    """Return an error if they try to request beyond max-page-size limit"""
+    error_message_json = get_json(
+        stac_client,
+        f"/stac/search?&limit={OUR_DATASET_LIMIT+1}",
+        expect_status_code=400,
+    )
+    assert error_message_json == {
+        "code": 400,
+        "name": "Bad Request",
+        "description": f"Max page size is {OUR_DATASET_LIMIT}. Use the next links instead of a large limit.",
+    }
 
 
 def test_stac_collections(stac_client: FlaskClient):
