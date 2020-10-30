@@ -832,7 +832,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             {
                 "rel": "self",
                 "type": "application/json",
-                "href": "http://localhost/collections/ga_ls5t_ard_3/items/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
+                "href": "http://localhost/stac/collections/ga_ls5t_ard_3/items/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
             },
             {
                 "title": "ODC Dataset YAML",

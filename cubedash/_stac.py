@@ -149,7 +149,6 @@ def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
 def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
-    route_name=".stac_search",
 ) -> Dict:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
@@ -176,7 +175,7 @@ def _handle_search_request(
 
     def next_page_url(next_offset):
         return url_for(
-            route_name,
+            ".stac_search",
             collections=product_names,
             bbox="{},{},{},{}".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
@@ -321,7 +320,6 @@ def collection_items(collection: str):
     feature_collection = _handle_search_request(
         request_args=request.args,
         product_names=[collection],
-        route_name=".collection_items",
     )
 
     # Maybe we shouldn't include total count, as it prevents some future optimisation?
