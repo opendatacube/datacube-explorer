@@ -22,7 +22,7 @@ from datacube.utils import DocReader, parse_time
 from eodatasets3 import serialise
 from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryDoc
 from eodatasets3.properties import StacPropertyView
-from eodatasets3.scripts import tostac
+from eodatasets3 import stac as eo3stac
 from eodatasets3.utils import is_doc_eo3
 from . import _model, _utils
 
@@ -471,14 +471,14 @@ def as_stac_item(dataset: DatasetItem):
     if dataset_doc.label is None:
         dataset_doc.label = _utils.dataset_label(ds)
 
-    item_doc = tostac.dataset_as_stac_item(
+    item_doc = eo3stac.to_stac_item(
         dataset=dataset_doc,
-        input_metadata_url=url_for("dataset.raw_doc", id_=ds.id),
-        output_url=url_for(
+        stac_item_destination_url=url_for(
             ".item",
             collection=dataset.product_name,
             dataset_id=dataset.dataset_id,
         ),
+        odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=ds.id),
         explorer_base_url=url_for("default_redirect"),
     )
     # Add the region code that Explorer inferred.
