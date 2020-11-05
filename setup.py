@@ -6,6 +6,7 @@ tests_require = [
     "black",
     "docutils",
     "boltons",
+    "deepdiff",
     "digitalearthau",
     "flake8",
     "jsonschema > 3",
