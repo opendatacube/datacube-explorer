@@ -314,7 +314,7 @@ def refresh_product(
     if cleanup_invalid_geometry:
         change_count += engine.execute(
             DATASET_SPATIAL.delete().where(
-                func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True
+                func.ST_IsValid(DATASET_SPATIAL.c.footprint) is not True
             )
         ).rowcount
 
