@@ -559,9 +559,10 @@ def test_stac_collections(stac_client: FlaskClient):
     child_links = [r for r in response["links"] if r["rel"] == "child"]
     other_links = [r for r in response["links"] if r["rel"] != "child"]
 
-    # a "self" link.
-    assert len(other_links) == 1
-    assert other_links[0]["rel"] == "self"
+    assert other_links == [
+        {"href": "http://localhost/stac", "rel": "self"},
+        {"href": "http://localhost/stac", "rel": "root"},
+    ]
 
     # All expected products and their dataset counts.
     expected_product_counts = {
@@ -816,6 +817,10 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             {
                 "rel": "parent",
                 "href": stac_url("collections/ls7_nbar_scene"),
+            },
+            {
+                "rel": "root",
+                "href": "http://localhost/stac",
             },
         ],
     }

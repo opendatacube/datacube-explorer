@@ -318,7 +318,7 @@ def as_rich_json(o):
     return as_json(jsonify_document(o))
 
 
-def as_json(o, content_type="application/json"):
+def as_json(o, content_type="application/json") -> flask.Response:
     # Indent if they're loading directly in a browser.
     #   (Flask's Accept parsing is too smart, and sees html-acceptance in
     #    default ajax requests "accept: */*". So we do it raw.)
