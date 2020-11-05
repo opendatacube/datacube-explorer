@@ -12,7 +12,6 @@ from typing import Dict, Generator, Iterable, Optional, Union, List
 
 import jsonschema
 import pytest
-from boltons.iterutils import research
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -298,7 +297,7 @@ def _iter_items_across_pages(
     client: FlaskClient, url: str
 ) -> Generator[Dict, None, None]:
     """
-    Keep loading "next" pages and yield every stac Item in order
+    Keep loading "next" pages and yield every Stac Item in order
     """
     while url is not None:
         items = get_items(client, url)
@@ -892,13 +891,6 @@ def validate_item(item: Dict):
             "Polygon",
             "MultiPolygon",
         ), "Unexpected type of shape"
-
-    # href should never be blank if present
-    # -> The jsonschema enforces href as required, but it's not checking for emptiness.
-    #    (and we've had empty ones in previous prototypes)
-    for offset, value in research(item, lambda p, k, v: k == "href"):
-        viewable_offset = "→".join(map(repr, offset))
-        assert value.strip(), f"href has empty value: {repr(viewable_offset)}"
 
     assert_stac_extensions(item)
 
