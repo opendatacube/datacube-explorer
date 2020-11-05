@@ -271,6 +271,7 @@ def refresh_product(
     index: Index,
     product: DatasetType,
     recompute_all_extents=False,
+    cleanup_invalid_geometry=True,
     remove_archived_datasets=True,
     after_date: datetime = None,
 ):
@@ -305,14 +306,22 @@ def refresh_product(
         change_count += engine.execute(
             DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
         ).rowcount
+
         log.debug(
             "extent_removal.end",
             deleted_count=change_count,
         )
+    if cleanup_invalid_geometry:
+        change_count += engine.execute(
+            DATASET_SPATIAL.delete().where(
+                func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True
+            )
+        ).rowcount
 
     insert_count = _populate_missing_dataset_extents(
         engine, product, force_update_all=recompute_all_extents, after_date=after_date
     )
+
     change_count += insert_count
 
     # If we inserted data...
@@ -384,6 +393,7 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
+            .where(func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True)
         )
         # TODO: We could use the `updated` date for smarter updating,
         #       but it's optional on ODC at the moment!
@@ -397,6 +407,7 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
+            .where(func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True)
         )
         if after_date is not None:
             extent_selection = extent_selection.where(DATASET.c.added > after_date)
