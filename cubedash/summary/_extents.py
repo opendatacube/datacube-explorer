@@ -271,7 +271,6 @@ def refresh_product(
     index: Index,
     product: DatasetType,
     recompute_all_extents=False,
-    cleanup_invalid_geometry=True,
     remove_archived_datasets=True,
     after_date: datetime = None,
 ):
@@ -311,12 +310,6 @@ def refresh_product(
             "extent_removal.end",
             deleted_count=change_count,
         )
-    if cleanup_invalid_geometry:
-        change_count += engine.execute(
-            DATASET_SPATIAL.delete().where(
-                func.ST_IsValid(DATASET_SPATIAL.c.footprint) is not True
-            )
-        ).rowcount
 
     insert_count = _populate_missing_dataset_extents(
         engine, product, force_update_all=recompute_all_extents, after_date=after_date
