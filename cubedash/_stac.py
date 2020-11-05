@@ -35,7 +35,6 @@ DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
 _STAC_VERSION = "1.0.0-beta.2"
-_STAC_DEFAULTS = dict(stac_version=_STAC_VERSION)
 
 
 def url_for(*args, **kwargs):
@@ -65,14 +64,34 @@ def utc(d: datetime):
     return d.astimezone(tz.tzutc())
 
 
+def _stac_response(doc: Dict, content_type="application/json") -> flask.Response:
+    """Return a stac document as the flask response"""
+    # Any response without a links array already is a coding problem.
+    doc["links"].append(dict(rel="root", href=url_for(".root")))
+
+    return _utils.as_json(
+        {
+            # Always put stac version at the beginning for readability.
+            "stac_version": _STAC_VERSION,
+            # The given doc may override it too.
+            **doc,
+        },
+        content_type=content_type,
+    )
+
+
+def _stac_item_response(doc: Dict) -> flask.Response:
+    """Return a stac item"""
+    return _stac_response(doc, content_type="application/geo+json")
+
+
 @bp.route("")
 def root():
     """
     The root stac page links to each collection (product) catalog
     """
-    return _utils.as_json(
+    return _stac_response(
         dict(
-            **_STAC_DEFAULTS,
             **_endpoint_params(),
             links=[
                 *(
@@ -109,7 +128,7 @@ def stac_search():
     elif "product" in args:
         products.append(args.get("product"))
 
-    return _utils.as_geojson(_handle_search_request(args, products))
+    return _stac_response(_handle_search_request(args, products))
 
 
 def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
@@ -225,7 +244,6 @@ def search_stac_items(
     there_are_more = len(items) == limit + 1
 
     result = dict(
-        **_STAC_DEFAULTS,
         stac_extensions=["context"],
         type="FeatureCollection",
         features=[as_stac_item(f) for f in returned],
@@ -249,12 +267,9 @@ def list_collections():
     This is like the root "/", but has full information for each collection in
      an array (instead of just a link to each collection).
     """
-    return _utils.as_json(
+    return _stac_response(
         dict(
-            **_STAC_DEFAULTS,
-            links=[
-                # TODO: Link to... root, I guess?
-            ],
+            links=[],
             collections=[
                 _stac_collection(product.name)
                 for product, product_summary in _model.get_products_with_summaries()
@@ -268,7 +283,7 @@ def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
     """
-    return _utils.as_geojson(_stac_collection(collection))
+    return _stac_response(_stac_collection(collection))
 
 
 def _stac_collection(collection: str):
@@ -286,7 +301,6 @@ def _stac_collection(collection: str):
 
         summary_props["extent"] = extent
     stac_collection = dict(
-        **_STAC_DEFAULTS,
         id=summary.name,
         title=summary.name,
         license=_utils.product_license(dataset_type),
@@ -328,7 +342,7 @@ def collection_items(collection: str):
     # Backwards compatibility with older stac implementations.
     feature_collection["context"]["matched"] = feature_collection["numberMatched"]
 
-    return _utils.as_geojson(feature_collection)
+    return _stac_response(feature_collection)
 
 
 @bp.route("/collections/<collection>/items/<dataset_id>")
@@ -353,7 +367,7 @@ def item(collection, dataset_id):
             f"Perhaps you meant collection {actual_product_name}: {actual_url})",
         )
 
-    return _utils.as_geojson(as_stac_item(dataset))
+    return _stac_item_response(as_stac_item(dataset))
 
 
 def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
