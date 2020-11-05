@@ -271,6 +271,7 @@ def refresh_product(
     index: Index,
     product: DatasetType,
     recompute_all_extents=False,
+    cleanup_invalid_geometry=True,
     remove_archived_datasets=True,
     after_date: datetime = None,
 ):
