@@ -80,7 +80,7 @@ def _stac_response(doc: Dict, content_type="application/json") -> flask.Response
     )
 
 
-def _stac_item_response(doc: Dict) -> flask.Response:
+def _geojson_stac_response(doc: Dict) -> flask.Response:
     """Return a stac item"""
     return _stac_response(doc, content_type="application/geo+json")
 
@@ -128,7 +128,7 @@ def stac_search():
     elif "product" in args:
         products.append(args.get("product"))
 
-    return _stac_response(_handle_search_request(args, products))
+    return _geojson_stac_response(_handle_search_request(args, products))
 
 
 def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
@@ -342,11 +342,11 @@ def collection_items(collection: str):
     # Backwards compatibility with older stac implementations.
     feature_collection["context"]["matched"] = feature_collection["numberMatched"]
 
-    return _stac_response(feature_collection)
+    return _geojson_stac_response(feature_collection)
 
 
 @bp.route("/collections/<collection>/items/<dataset_id>")
-def item(collection, dataset_id):
+def item(collection: str, dataset_id: str):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
         abort(404, "No such dataset")
@@ -367,7 +367,7 @@ def item(collection, dataset_id):
             f"Perhaps you meant collection {actual_product_name}: {actual_url})",
         )
 
-    return _stac_item_response(as_stac_item(dataset))
+    return _geojson_stac_response(as_stac_item(dataset))
 
 
 def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
