@@ -856,5 +856,9 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "rel": "parent",
                 "href": "http://localhost/stac/collections/ga_ls5t_ard_3",
             },
+            {
+                "rel": "root",
+                "href": "http://localhost/stac",
+            },
         ],
     }

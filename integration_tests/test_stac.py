@@ -23,7 +23,7 @@ import cubedash._stac
 from cubedash import _model
 from datacube.index import Index
 from datacube.utils import read_documents
-from .asserts import DebugContext, get_geojson, get_json
+from integration_tests.asserts import DebugContext, get_geojson, get_json
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -637,7 +637,11 @@ def test_stac_collection_items(stac_client: FlaskClient):
             {
                 "href": stac_url("collections/high_tide_comp_20p/items"),
                 "rel": "items",
-            }
+            },
+            {
+                "rel": "root",
+                "href": "http://localhost/stac",
+            },
         ],
         "providers": [],
     }
