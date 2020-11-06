@@ -386,7 +386,7 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True)
+            .where(func.ST_IsValid(columns["footprint"]) == True)
         )
         # TODO: We could use the `updated` date for smarter updating,
         #       but it's optional on ODC at the moment!
@@ -400,7 +400,7 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(func.ST_IsValid(DATASET_SPATIAL.c.footprint) != True)
+            .where(func.ST_IsValid(columns["footprint"]) == True)
         )
         if after_date is not None:
             extent_selection = extent_selection.where(DATASET.c.added > after_date)
