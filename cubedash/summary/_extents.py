@@ -24,6 +24,7 @@ from sqlalchemy import (
     literal,
     null,
     select,
+    or_,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -386,7 +387,12 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(func.ST_IsValid(columns["footprint"]) == True)
+            .where(
+                or_(
+                    func.ST_IsValid(columns["footprint"]) == True,
+                    func.ST_IsValid(columns["footprint"]) == None,
+                )
+            )
         )
         # TODO: We could use the `updated` date for smarter updating,
         #       but it's optional on ODC at the moment!
@@ -400,7 +406,12 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(func.ST_IsValid(columns["footprint"]) == True)
+            .where(
+                or_(
+                    func.ST_IsValid(columns["footprint"]) == True,
+                    func.ST_IsValid(columns["footprint"]) == None,
+                )
+            )
         )
         if after_date is not None:
             extent_selection = extent_selection.where(DATASET.c.added > after_date)
