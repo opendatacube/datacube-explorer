@@ -28,10 +28,10 @@ jobs:
 
       - name: Run tests
         run: |
-          docker-compose up -d
+          make up-d
           make create-test-db-docker
           make test-docker
-          docker-compose down
+          make docker-clean
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
