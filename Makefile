@@ -88,6 +88,9 @@ clean:  ## Clean all working/temporary files
 
 # DOCKER STUFF
 up: ## Start server using Docker
+	docker-compose up
+
+up-d: ## Start server using Docker in background
 	docker-compose up -d
 
 build: ## Build the dev Docker image
