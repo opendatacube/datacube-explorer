@@ -133,7 +133,10 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 
 create-test-db-docker: ## Create a test database inside Docker
 	sleep 10
-	docker-compose run -T explorer \
+	docker-compose \
+		-f docker-compose.yml \
+		-f docker-compose.override.yml \
+		run -T explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
@@ -141,5 +144,8 @@ lint-docker: ## Run linting inside inside Docker
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose exec -T explorer \
+	docker-compose \
+		-f docker-compose.yml \
+		-f docker-compose.override.yml \
+		exec -T explorer \
 		make test
