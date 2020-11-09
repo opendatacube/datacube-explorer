@@ -9,7 +9,7 @@ tests_require = [
     "digitalearthau",
     "flake8",
     "jsonschema > 3",
-    "pytest",
+    "pytest==6.1.1",
     "pytest-benchmark",
     "pytest-cov",
     "requests-html",
