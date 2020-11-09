@@ -9,8 +9,6 @@ services:
     environment:
       - PROJ_LIB=/usr/share/proj  # This is to fix an odd issue with PyProj
       - prometheus_multiproc_dir=/tmp # Enable prometheus metrics
-      - DATACUBE_CONFIG_PATH=/root/.datacube_integration.conf # Enable test config
-      - DB_DATABASE=opendatacube_test
     volumes:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf

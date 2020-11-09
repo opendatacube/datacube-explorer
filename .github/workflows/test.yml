@@ -28,7 +28,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make up
+          make up-d
           make create-test-db-docker
           make test-docker
           make docker-clean
