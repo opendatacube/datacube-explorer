@@ -141,5 +141,5 @@ lint-docker: ## Run linting inside inside Docker
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose exec explorer \
+	docker-compose exec -T explorer \
 		make test
