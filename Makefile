@@ -88,22 +88,27 @@ clean:  ## Clean all working/temporary files
 
 # DOCKER STUFF
 up: ## Start server using Docker
-	docker-compose up
+	docker-compose \
+		-f docker-compose.yml \
+		-f docker-compose.override.yml \
+		up -d
 
 build: ## Build the dev Docker image
-	docker-compose build
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 
 docker-clean: ## Get rid of the local docker env and DB
-	docker-compose down
+	docker-compose -f docker-compose.yml \
+		-f docker-compose.override.yml \
+		down
 
 build-prod: ## Build the prod Docker image
 	docker-compose \
-		--file docker-compose.yml \
+		-f docker-compose.yml \
 		build
 
 up-prod: ## Start using the prod Docker image
 	docker-compose \
-		--file docker-compose.yml \
+		-f docker-compose.yml \
 		up
 
 init-odc: ## Initialise ODC Database
@@ -136,5 +141,5 @@ lint-docker: ## Run linting inside inside Docker
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose run explorer \
+	docker-compose exec explorer \
 		make test
