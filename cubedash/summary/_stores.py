@@ -29,7 +29,7 @@ from shapely.geometry import GeometryCollection
 from sqlalchemy import DDL, String, and_, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, RowProxy
 from sqlalchemy.sql import Select
 
 from cubedash import _utils
@@ -370,7 +370,7 @@ class SummaryStore:
             product=product.name,
             sample_percentage=round(sample_percentage, 2),
         )
-        result: List = self._engine.execute(
+        result: List[RowProxy] = self._engine.execute(
             select(
                 [
                     (
