@@ -31,7 +31,10 @@ from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
 from sqlalchemy.sql import Select
 
-from .._version import version as EXPLORER_VERSION
+try:
+    from .._version import version as EXPLORER_VERSION
+except ModuleNotFoundError:
+    EXPLORER_VERSION = "ci-test-pipeline"
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
