@@ -27,7 +27,7 @@ jobs:
 
       - name: Get unstable git tag
         run: >
-          echo ::set-env name=UNSTABLE_TAG::$(git describe --tags)
+          echo "UNSTABLE_TAG=$(git describe --tags)" >> $GITHUB_ENV
 
       - name: Log the unstable tag
         run: echo $UNSTABLE_TAG
@@ -46,7 +46,7 @@ jobs:
       - name: Get tag for this build if it exists
         if: github.event_name == 'release'
         run: >
-          echo ::set-env name=RELEASE::$(git describe --abbrev=0 --tags)
+          echo "RELEASE=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
 
       - name: Log the tag
         run: echo $RELEASE
