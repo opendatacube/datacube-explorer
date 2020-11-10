@@ -315,7 +315,6 @@ def refresh_product(
     insert_count = _populate_missing_dataset_extents(
         engine, product, force_update_all=recompute_all_extents, after_date=after_date
     )
-
     change_count += insert_count
 
     # If we inserted data...
@@ -455,10 +454,22 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
     # If they specify a resolution, we can simplify the geometry based on it.
     if footprint_expression is not None and dt.grid_spec and dt.grid_spec.resolution:
         resolution = min(abs(r) for r in dt.grid_spec.resolution)
-        footprint_expression = func.ST_SimplifyPreserveTopology(
-            footprint_expression, resolution / 4
+        footprint_expression = case(
+            [
+                (
+                    func.ST_IsValid(
+                        func.ST_SimplifyPreserveTopology(
+                            footprint_expression, resolution / 4
+                        )
+                    ).is_(True),
+                    func.ST_SimplifyPreserveTopology(
+                        footprint_expression, resolution / 4
+                    ),
+                ),
+            ],
+            else_=None,
         )
-
+    # print(footprint_expression)
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
     time = md_type.dataset_fields["time"].alchemy_expression
