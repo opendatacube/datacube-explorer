@@ -469,7 +469,7 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
             ],
             else_=None,
         )
-    # print(footprint_expression)
+
     # "expr == None" is valid in sqlalchemy:
     # pylint: disable=singleton-comparison
     time = md_type.dataset_fields["time"].alchemy_expression
