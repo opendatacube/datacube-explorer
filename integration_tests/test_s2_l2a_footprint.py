@@ -11,24 +11,36 @@ from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
 from datacube.model import Range
-from datacube.index import Index
+from datacube.utils import read_documents
+from datacube.index.hl import Doc2Dataset
 from integration_tests.asserts import expect_values, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="module", autouse=True)
-def populate_index(index: Index, dataset_loader, module_dea_index):
+def populate_index(dataset_loader, module_dea_index):
     """
     Index populated with example datasets. Assumes our tests wont modify the data!
 
     It's module-scoped as it's expensive to populate.
     """
-    index.metadata_types.add(
-        index.metadata_types.from_doc(TEST_DATA_DIR / "esa_s2_l2a.metadata.yaml")
-    )
-    loaded = dataset_loader("s2_l2a", TEST_DATA_DIR / "s2_l2a-sample.yaml")
-    assert loaded == 1
+    path, s2_product_doc = list(
+        read_documents(TEST_DATA_DIR / "esa_s2_l2a.product.yaml")
+    )[0]
+    product_ = module_dea_index.products.from_doc(s2_product_doc)
+    module_dea_index.products.add(product_)
+    create_dataset = Doc2Dataset(module_dea_index)
+    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
+        print(s2_dataset_doc)
+        try:
+            dataset, err = create_dataset(
+                s2_dataset_doc, "file://example.com/test_dataset/"
+            )
+            created = module_dea_index.datasets.add(dataset)
+            assert created.type.name == "s2_l2a"
+        except AttributeError as ae:
+            print(ae)
     return module_dea_index
 
 
