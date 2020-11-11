@@ -51,7 +51,15 @@ def populate_index(dataset_loader, module_dea_index):
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/s2_l2a")
+
     check_dataset_count(html, 1)
+
+
+def test_product_dataset(client: FlaskClient):
+    # Check if all datasets are available to be viewed
+    html = get_html(client, "/datasets/s2_l2a")
+
+    assert len(html.find(".search-result")) == 2
 
 
 def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
