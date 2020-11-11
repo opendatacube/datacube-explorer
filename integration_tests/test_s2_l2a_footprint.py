@@ -87,5 +87,5 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
         res.find(
             ".unavailable-metadata .search-result .missing-footprint", first=True
         ).attrs["title"]
-        == "1 of 2 missing footprint"
+        == "0 of 2 missing footprint"
     )

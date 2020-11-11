@@ -24,7 +24,6 @@ from sqlalchemy import (
     literal,
     null,
     select,
-    or_,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -306,7 +305,6 @@ def refresh_product(
         change_count += engine.execute(
             DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
         ).rowcount
-
         log.debug(
             "extent_removal.end",
             deleted_count=change_count,
@@ -375,6 +373,7 @@ def _populate_missing_dataset_extents(
     after_date: datetime = None,
 ):
     columns = {c.name: c for c in _select_dataset_extent_columns(product)}
+
     if force_update_all:
         query = (
             DATASET_SPATIAL.update()
@@ -385,12 +384,6 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(
-                or_(
-                    func.ST_IsValid(columns["footprint"]) == True,
-                    func.ST_IsValid(columns["footprint"]) == None,
-                )
-            )
         )
         # TODO: We could use the `updated` date for smarter updating,
         #       but it's optional on ODC at the moment!
@@ -404,12 +397,6 @@ def _populate_missing_dataset_extents(
                 == bindparam("product_ref", product.id, type_=SmallInteger)
             )
             .where(DATASET.c.archived == None)
-            .where(
-                or_(
-                    func.ST_IsValid(columns["footprint"]) == True,
-                    func.ST_IsValid(columns["footprint"]) == None,
-                )
-            )
         )
         if after_date is not None:
             extent_selection = extent_selection.where(DATASET.c.added > after_date)
@@ -453,30 +440,8 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
     # If they specify a resolution, we can simplify the geometry based on it.
     if footprint_expression is not None and dt.grid_spec and dt.grid_spec.resolution:
         resolution = min(abs(r) for r in dt.grid_spec.resolution)
-        footprint_expression = case(
-            [
-                (
-                    func.ST_IsValid(
-                        func.ST_SimplifyPreserveTopology(
-                            footprint_expression, resolution / 4
-                        )
-                    ).is_(True),
-                    func.ST_SimplifyPreserveTopology(
-                        footprint_expression, resolution / 4
-                    ),
-                ),
-            ],
-            else_=None,
-        )
-    else:
-        footprint_expression = case(
-            [
-                (
-                    func.ST_IsValid(footprint_expression).is_(True),
-                    footprint_expression,
-                )
-            ],
-            else_=None,
+        footprint_expression = func.ST_SimplifyPreserveTopology(
+            footprint_expression, resolution / 4
         )
 
     # "expr == None" is valid in sqlalchemy:
