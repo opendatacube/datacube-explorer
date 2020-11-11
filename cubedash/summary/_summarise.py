@@ -188,7 +188,7 @@ class Summariser:
             ),
             or_(
                 func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
-                func.st_isvalid(DATASET_SPATIAL.c.footprint) is None,
+                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
             ),
         )
         return begin_time, end_time, where_clause
