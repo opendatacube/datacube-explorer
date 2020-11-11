@@ -375,7 +375,6 @@ def _populate_missing_dataset_extents(
     after_date: datetime = None,
 ):
     columns = {c.name: c for c in _select_dataset_extent_columns(product)}
-
     if force_update_all:
         query = (
             DATASET_SPATIAL.update()
@@ -466,6 +465,16 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
                         footprint_expression, resolution / 4
                     ),
                 ),
+            ],
+            else_=None,
+        )
+    else:
+        footprint_expression = case(
+            [
+                (
+                    func.ST_IsValid(footprint_expression).is_(True),
+                    footprint_expression,
+                )
             ],
             else_=None,
         )

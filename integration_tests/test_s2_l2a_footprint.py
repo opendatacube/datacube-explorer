@@ -10,6 +10,7 @@ from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
 from datacube.model import Range
+from integration_tests.asserts import check_dataset_count
 from datacube.utils import read_documents
 from datacube.index.hl import Doc2Dataset
 from integration_tests.asserts import expect_values, get_html
@@ -32,15 +33,25 @@ def populate_index(dataset_loader, module_dea_index):
     module_dea_index.products.add(product_)
     create_dataset = Doc2Dataset(module_dea_index)
     for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
-        dataset, err = create_dataset(
-            s2_dataset_doc, "file://example.com/test_dataset/"
-        )
-        assert dataset is not None, err
-        created = module_dea_index.datasets.add(dataset)
-        assert created.type.name == "s2_l2a"
-        dataset_count += 1
+        try:
+            dataset, err = create_dataset(
+                s2_dataset_doc, "file://example.com/test_dataset/"
+            )
+            assert dataset is not None, err
+            created = module_dea_index.datasets.add(dataset)
+            assert created.type.name == "s2_l2a"
+            dataset_count += 1
+        except AttributeError as ae:
+            assert dataset_count == 2
+            print(ae)
     assert dataset_count == 2
     return module_dea_index
+
+
+def test_summary_product(client: FlaskClient):
+    # These datasets have gigantic footprints that can trip up postgis.
+    html = get_html(client, "/s2_l2a")
+    check_dataset_count(html, 1)
 
 
 def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
@@ -66,7 +77,7 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
     client = unpopulated_client
 
     res = get_html(client, "/product-audit/")
-    print(res.html)
+    # print(res.html)
 
     assert (
         res.find(".unavailable-metadata .search-result .product-name", first=True).text
@@ -76,5 +87,5 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
         res.find(
             ".unavailable-metadata .search-result .missing-footprint", first=True
         ).attrs["title"]
-        == "0 of 1 missing footprint"
+        == "1 of 2 missing footprint"
     )

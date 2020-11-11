@@ -9,7 +9,7 @@ from cachetools.func import lru_cache
 from dateutil import tz
 from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, or_
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 
 from cubedash._utils import ODC_DATASET_TYPE
@@ -185,6 +185,10 @@ class Summariser:
             DATASET_SPATIAL.c.dataset_type_ref
             == select([ODC_DATASET_TYPE.c.id]).where(
                 ODC_DATASET_TYPE.c.name == product_name
+            ),
+            or_(
+                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
+                func.st_isvalid(DATASET_SPATIAL.c.footprint) is None,
             ),
         )
         return begin_time, end_time, where_clause
