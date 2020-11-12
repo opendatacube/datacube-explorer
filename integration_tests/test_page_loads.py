@@ -117,6 +117,53 @@ def test_get_overview(client: FlaskClient):
     check_area("30,...km2", html)
 
 
+def test_get_overview_date_selector(client: FlaskClient):
+    # [1] = year, [2] = month, [3] = day
+    html = get_html(client, "/ls8_nbar_scene")
+    assert (
+        len(html.find("#product-headers .header-option")[1].find(".option-menu ul li"))
+        == 2
+    )
+
+    html = get_html(client, "/ls8_nbar_scene/2017")
+    assert (
+        len(html.find("#product-headers .header-option")[1].find(".option-menu ul li"))
+        == 2
+    )
+    assert (
+        len(html.find("#product-headers .header-option")[2].find(".option-menu ul li"))
+        == 3
+    )
+
+    html = get_html(client, "/ls8_nbar_scene/2017/5")
+    assert (
+        len(html.find("#product-headers .header-option")[1].find(".option-menu ul li"))
+        == 2
+    )
+    assert (
+        len(html.find("#product-headers .header-option")[2].find(".option-menu ul li"))
+        == 3
+    )
+    assert (
+        len(html.find("#product-headers .header-option")[3].find(".option-menu ul li"))
+        == 5
+    )
+
+    html = get_html(client, "/ls8_nbar_scene/2017/5/9")
+    assert (
+        len(html.find("#product-headers .header-option")[1].find(".option-menu ul li"))
+        == 2
+    )
+    assert (
+        len(html.find("#product-headers .header-option")[2].find(".option-menu ul li"))
+        == 3
+    )
+    assert (
+        len(html.find("#product-headers .header-option")[3].find(".option-menu ul li"))
+        == 5
+    )
+
+
 def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # This all-time overview has a valid footprint that becomes invalid
     # when reprojected to wgs84 by shapely.
