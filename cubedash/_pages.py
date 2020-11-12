@@ -47,7 +47,7 @@ if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
 def overview_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product, product_summary, selected_summary = _load_product(
+    product, product_summary, selected_summary, time_selector_summary = _load_product(
         product_name, year, month, day
     )
 
@@ -81,6 +81,7 @@ def overview_page(
         # Map defaults
         default_zoom=default_zoom,
         default_center=default_center,
+        time_selector_summary=time_selector_summary,
     )
 
 
@@ -92,7 +93,7 @@ def overview_page(
 def search_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product, product_summary, selected_summary = _load_product(
+    product, product_summary, selected_summary, time_selector_summary = _load_product(
         product_name, year, month, day
     )
     time_range = utils.as_time_range(
@@ -152,6 +153,7 @@ def search_page(
         datasets=datasets,
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT,
+        time_selector_summary=time_selector_summary,
     )
 
 
@@ -166,7 +168,7 @@ def region_page(
     month: int = None,
     day: int = None,
 ):
-    product, product_summary, selected_summary = _load_product(
+    product, product_summary, selected_summary, time_selector_summary = _load_product(
         product_name, year, month, day
     )
 
@@ -202,6 +204,7 @@ def region_page(
         selected_summary=selected_summary,
         datasets=datasets,
         result_limit=_HARD_SEARCH_LIMIT,
+        time_selector_summary=time_selector_summary,
     )
 
 
@@ -229,7 +232,8 @@ def _load_product(
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
-    return product, product_summary, time_summary
+    time_selector_summary = _model.get_time_summary(product_name, year, None, None)
+    return product, product_summary, time_summary, time_selector_summary
 
 
 def request_wants_json():
