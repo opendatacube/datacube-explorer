@@ -42,9 +42,9 @@ def populate_index(dataset_loader, module_dea_index):
             assert created.type.name == "s2_l2a"
             dataset_count += 1
         except AttributeError as ae:
-            assert dataset_count == 2
+            assert dataset_count == 5
             print(ae)
-    assert dataset_count == 2
+    assert dataset_count == 5
     return module_dea_index
 
 
@@ -52,30 +52,30 @@ def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/s2_l2a")
 
-    check_dataset_count(html, 1)
+    check_dataset_count(html, 4)
 
 
 def test_product_dataset(client: FlaskClient):
     # Check if all datasets are available to be viewed
     html = get_html(client, "/datasets/s2_l2a")
 
-    assert len(html.find(".search-result")) == 2
+    assert len(html.find(".search-result")) == 5
 
 
 def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2_l2a")
     expect_values(
         summary_store.update("s2_l2a"),
-        dataset_count=1,
-        footprint_count=1,
+        dataset_count=4,
+        footprint_count=4,
         time_range=Range(
-            begin=datetime(2019, 5, 31, 14, 30, tzinfo=tzutc()),
+            begin=datetime(2016, 10, 31, 14, 30, tzinfo=tzutc()),
             end=datetime(2019, 6, 30, 14, 30, tzinfo=tzutc()),
         ),
         newest_creation_time=datetime(2019, 6, 20, 11, 57, 34, tzinfo=tzutc()),
         timeline_period="day",
-        timeline_count=30,
-        crses={"EPSG:32627"},
+        timeline_count=91,
+        crses={"EPSG:32632", "EPSG:32630", "EPSG:32627"},
         size_bytes=0,
     )
 
@@ -95,5 +95,35 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
         res.find(
             ".unavailable-metadata .search-result .missing-footprint", first=True
         ).attrs["title"]
-        == "0 of 2 missing footprint"
+        == "0 of 5 missing footprint"
     )
+
+
+def test_get_overview_date_selector(client: FlaskClient):
+    # [1] = year, [2] = month, [3] = day
+    # check when no year, month, day has been selected
+    html = get_html(client, "/s2_l2a")
+    menu = html.find("#product-headers .header-option")
+    assert len(menu[1].find(".option-menu ul li")) == 3
+
+    # check only year has been selected
+    html = get_html(client, "/s2_l2a/2016")
+    menu = html.find("#product-headers .header-option")
+    assert len(menu[1].find(".option-menu ul li")) == 3
+    assert len(menu[2].find(".option-menu ul li")) == 3
+
+    # check month has been selected
+    html = get_html(client, "/s2_l2a/2016/11")
+    menu = html.find("#product-headers .header-option")
+
+    assert len(menu[1].find(".option-menu ul li")) == 3
+    assert len(menu[2].find(".option-menu ul li")) == 3
+    assert len(menu[3].find(".option-menu ul li")) == 3
+
+    # checking when day is selected
+    html = get_html(client, "/s2_l2a/2016/11/9")
+    menu = html.find("#product-headers .header-option")
+
+    assert len(menu[1].find(".option-menu ul li")) == 3
+    assert len(menu[2].find(".option-menu ul li")) == 3
+    assert len(menu[3].find(".option-menu ul li")) == 3

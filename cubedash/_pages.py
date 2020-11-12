@@ -232,7 +232,7 @@ def _load_product(
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
-    time_selector_summary = _model.get_time_summary(product_name, year, None, None)
+    time_selector_summary = _model.get_time_summary(product_name, None, None, None)
     return product, product_summary, time_summary, time_selector_summary
 
 
