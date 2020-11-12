@@ -1,0 +1,189 @@
+---
+# Dataset
+# url: https://explorer-af.digitalearth.africa/dataset/d50adeb2-15be-562b-86dd-24e30357bec7.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: d50adeb2-15be-562b-86dd-24e30357bec7
+
+label: S2A_MSIL2A_20200909T065031_N0214_R077_T39MXR_20200909T083937
+product:
+  name: s2_l2a
+
+crs: epsg:32739
+geometry:
+  type: Polygon
+  coordinates: [[[709791.0, 9551450.0], [709791.0, 9551499.0], [709791.0, 9551450.0],
+      [709791.0, 9551450.0]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 600000.0, 0.0, -20.0, 9600040.0, 0.0, 0.0, 1.0]
+  g60m:
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 600000.0, 0.0, -60.0, 9600040.0, 0.0, 0.0, 1.0]
+  g320m:
+    shape: [343, 343]
+    transform: [320.0, 0.0, 600000.0, 0.0, -320.0, 9600040.0, 0.0, 0.0, 1.0]
+  default:
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 600000.0, 0.0, -10.0, 9600040.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2020-09-09T06:50:53Z'
+  eo:cloud_cover: 73.46
+  eo:constellation: sentinel-2
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: msi
+  eo:off_nadir: 0
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-09-09T06:50:53Z'
+  odc:region_code: 39MXR
+  proj:epsg: 32739
+  sentinel:grid_square: XR
+  sentinel:latitude_band: M
+  sentinel:product_id: S2A_MSIL2A_20200909T065031_N0214_R077_T39MXR_20200909T083937
+  sentinel:sequence: '0'
+  sentinel:utm_zone: 39
+  sentinel:valid_cloud_cover: true
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+lineage: {}
+
+location: s3://deafrica-sentinel-2/sentinel-s2-l2a-cogs/39/M/XR/2020/9/S2A_39MXR_20200909_0_L2A/S2A_39MXR_20200909_0_L2A.json
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/45faa349-8b72-52a3-8575-06b502997187.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 45faa349-8b72-52a3-8575-06b502997187
+
+label: S2A_MSIL2A_20190620T115721_N0212_R123_T27PYR_20190620T153143
+product:
+  name: s2_l2a
+
+crs: epsg:32627
+geometry:
+  type: Polygon
+  coordinates: [[[793273.8096569027, 1595356.373850641], [776529.1304670286, 1599917.9437635662],
+      [776528.3747116427, 1599918.3933185583], [794254.8467928864, 1599889.2059331338],
+      [793273.8096569027, 1595356.373850641]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 699960.0, 0.0, -20.0, 1600020.0, 0.0, 0.0, 1.0]
+  g60m:
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 699960.0, 0.0, -60.0, 1600020.0, 0.0, 0.0, 1.0]
+  g320m:
+    shape: [343, 343]
+    transform: [320.0, 0.0, 699960.0, 0.0, -320.0, 1600020.0, 0.0, 0.0, 1.0]
+  default:
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 699960.0, 0.0, -10.0, 1600020.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2019-06-20T11:57:34Z'
+  eo:cloud_cover: 0
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: msi
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2019-06-20T11:57:34Z'
+  odc:region_code: 27PYR
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+lineage: {}
+
+location: s3://sentinel-cogs/sentinel-s2-l2a-cogs/2019/S2A_27PYR_20190620_0_L2A/S2A_27PYR_20190620_0_L2A.json
+...
