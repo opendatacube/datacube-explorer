@@ -117,7 +117,7 @@
                 </h2>
                 <div class="option-menu left">
                     {% set month_range=[] %}
-                    {% if selected_summary and selected_summary.timeline_dataset_counts %}
+                    {% if time_selector_summary and time_selector_summary.timeline_dataset_counts %}
                     {% for dataset_date, dataset_count in time_selector_summary.timeline_dataset_counts.items() %}
                             {% if dataset_count > 0 %}
                             {% do month_range.append(dataset_date.month) %}
@@ -166,6 +166,7 @@
                     {% if selected_summary and selected_summary.timeline_dataset_counts %}
                     {% for dataset_date, dataset_count in selected_summary.timeline_dataset_counts.items()%}
                             {% if dataset_count > 0 %}
+                            {% if time_selector_summary and time_selector_summary.timeline_dataset_counts%}
                             {% for time_selector_dataset_date, time_selector_dataset_count in time_selector_summary.timeline_dataset_counts.items() %}
                                 {% if time_selector_dataset_date.month == dataset_date.month %}
                                 {% if time_selector_dataset_count > 0 %}
@@ -173,6 +174,7 @@
                                 {% endif %}
                                 {% endif %}
                             {% endfor %}
+                            {% endif %}
                             {% endif %}
                     {% endfor %}
                     {% endif %}
