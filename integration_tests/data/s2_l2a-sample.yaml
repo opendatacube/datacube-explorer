@@ -186,4 +186,296 @@ measurements:
 lineage: {}
 
 location: s3://sentinel-cogs/sentinel-s2-l2a-cogs/2019/S2A_27PYR_20190620_0_L2A/S2A_27PYR_20190620_0_L2A.json
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/1e49ddc2-12ab-5673-9979-91a8cb795853.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 1e49ddc2-12ab-5673-9979-91a8cb795853
+
+label: S2A_MSIL2A_20161222T100422_N0001_R122_T32SPE_20190511T143535
+product:
+  name: s2_l2a
+
+crs: epsg:32632
+geometry:
+  type: Polygon
+  coordinates: [[[709799.0000000003, 3890221.0], [600001.0, 3890221.000000001], [
+        600001.0000000001, 4000019.0000000005], [709799.0, 4000019.0], [709799.0000000003,
+        3890221.0]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 600000.0, 0.0, -20.0, 4000020.0, 0.0, 0.0, 1.0]
+  g60m:
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 600000.0, 0.0, -60.0, 4000020.0, 0.0, 0.0, 1.0]
+  g320m:
+    shape: [343, 343]
+    transform: [320.0, 0.0, 600000.0, 0.0, -320.0, 4000020.0, 0.0, 0.0, 1.0]
+  default:
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 600000.0, 0.0, -10.0, 4000020.0, 0.0, 0.0, 1.0]
+
+properties:
+  created: '2020-09-01T04:23:36.078Z'
+  data_coverage: 100
+  datetime: '2016-12-22T10:09:06Z'
+  eo:cloud_cover: 93.25
+  eo:constellation: sentinel-2
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: msi
+  eo:off_nadir: 0
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2016-12-22T10:09:06Z'
+  odc:region_code: 32SPE
+  proj:epsg: 32632
+  sentinel:data_coverage: 100
+  sentinel:grid_square: PE
+  sentinel:latitude_band: S
+  sentinel:product_id: S2A_MSIL2A_20161222T100422_N0001_R122_T32SPE_20190511T143535
+  sentinel:sequence: '0'
+  sentinel:utm_zone: 32
+  sentinel:valid_cloud_cover: true
+  updated: '2020-09-01T04:23:36.078Z'
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+lineage: {}
+
+location: https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/32/S/PE/2016/12/S2A_32SPE_20161222_0_L2A/S2A_32SPE_20161222_0_L2A.json
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/a41e0e91-ddbf-522e-b7dd-8ff6fdea3578.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: a41e0e91-ddbf-522e-b7dd-8ff6fdea3578
+
+label: S2A_MSIL2A_20161109T095222_N0001_R079_T32SQF_20190504T225144
+product:
+  name: s2_l2a
+
+crs: epsg:32632
+geometry:
+  type: Polygon
+  coordinates: [[[809759.0, 4083924.688926865], [807098.1192086895, 4084167.068966879],
+      [781043.7204045965, 4088080.6990111694], [783351.5061154552, 4100039.0], [809759.0,
+        4100039.0], [809759.0, 4083924.688926865]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 699960.0, 0.0, -20.0, 4100040.0, 0.0, 0.0, 1.0]
+  g60m:
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 699960.0, 0.0, -60.0, 4100040.0, 0.0, 0.0, 1.0]
+  g320m:
+    shape: [343, 343]
+    transform: [320.0, 0.0, 699960.0, 0.0, -320.0, 4100040.0, 0.0, 0.0, 1.0]
+  default:
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 699960.0, 0.0, -10.0, 4100040.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2016-11-09T09:52:23Z'
+  eo:cloud_cover: 37.11
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: msi
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2016-11-09T09:52:23Z'
+  odc:region_code: 32SQF
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+lineage: {}
+
+location: https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/32/S/QF/2016/11/S2A_32SQF_20161109_1_L2A/S2A_32SQF_20161109_1_L2A.json
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/ac95b787-8e15-5d1c-a039-749afd0807e5.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: ac95b787-8e15-5d1c-a039-749afd0807e5
+
+label: S2A_MSIL2A_20161120T110342_N0001_R094_T30SWE_20190521T184010
+product:
+  name: s2_l2a
+
+crs: epsg:32630
+geometry:
+  type: Polygon
+  coordinates: [[[532842.035144254, 3890221.0], [499981.0, 3890221.000000001], [499981.0,
+        4000019.0], [560996.1319307877, 4000018.999999999], [532842.035144254, 3890221.0]]]
+grids:
+  g20m:
+    shape: [5490, 5490]
+    transform: [20.0, 0.0, 499980.0, 0.0, -20.0, 4000020.0, 0.0, 0.0, 1.0]
+  g60m:
+    shape: [1830, 1830]
+    transform: [60.0, 0.0, 499980.0, 0.0, -60.0, 4000020.0, 0.0, 0.0, 1.0]
+  g320m:
+    shape: [343, 343]
+    transform: [320.0, 0.0, 499980.0, 0.0, -320.0, 4000020.0, 0.0, 0.0, 1.0]
+  default:
+    shape: [10980, 10980]
+    transform: [10.0, 0.0, 499980.0, 0.0, -10.0, 4000020.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2016-11-20T11:03:50Z'
+  eo:cloud_cover: 100.0
+  eo:constellation: sentinel-2
+  eo:gsd: 10  # Ground sample distance (m)
+  eo:instrument: msi
+  eo:off_nadir: 0
+  eo:platform: sentinel-2a
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2016-11-20T11:03:50Z'
+  odc:region_code: 30SWE
+  proj:epsg: 32630
+  sentinel:data_coverage: 42.75
+  sentinel:grid_square: WE
+  sentinel:latitude_band: S
+  sentinel:product_id: S2A_MSIL2A_20161120T110342_N0001_R094_T30SWE_20190521T184010
+  sentinel:sequence: '0'
+  sentinel:utm_zone: 30
+  sentinel:valid_cloud_cover: true
+
+measurements:
+  AOT:
+    grid: g60m
+    path: AOT.tif
+  B01:
+    grid: g60m
+    path: B01.tif
+  B02:
+    path: B02.tif
+  B03:
+    path: B03.tif
+  B04:
+    path: B04.tif
+  B05:
+    grid: g20m
+    path: B05.tif
+  B06:
+    grid: g20m
+    path: B06.tif
+  B07:
+    grid: g20m
+    path: B07.tif
+  B08:
+    path: B08.tif
+  B09:
+    grid: g60m
+    path: B09.tif
+  B11:
+    grid: g20m
+    path: B11.tif
+  B12:
+    grid: g20m
+    path: B12.tif
+  B8A:
+    grid: g20m
+    path: B8A.tif
+  SCL:
+    grid: g20m
+    path: SCL.tif
+  WVP:
+    path: WVP.tif
+  visual:
+    path: TCI.tif
+  overview:
+    grid: g320m
+    path: L2A_PVI.tif
+
+lineage: {}
+
+location: https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/30/S/WE/2016/11/S2A_30SWE_20161120_0_L2A/S2A_30SWE_20161120_0_L2A.json
 ...
