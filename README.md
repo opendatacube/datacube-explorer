@@ -169,7 +169,8 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     # Should search results include the full properties for every stac item by default?
     # These searches are much slower because they use ODC's own raw metadata table.
-    # (Users can append "_full=true" to requests to manually ask for full metadata.)
+    # (Users can append "_full=true" to requests to manually ask for full metadata.
+    #  Or preferrably, follow the `self` link of the Item record to get the whole record)
     STAC_DEFAULT_FULL_ITEM_INFORMATION = False
 
 
