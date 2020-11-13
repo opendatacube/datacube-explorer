@@ -166,6 +166,11 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     
     STAC_DEFAULT_PAGE_SIZE = 20
     STAC_PAGE_SIZE_LIMIT = 1000
+    
+    # Should search results include the full properties for every stac item by default?
+    # These searches are much slower because they use ODC's own raw metadata table.
+    # (Users can append "_full=True" to requests to manually ask for full metadata.)
+    STAC_DEFAULT_FULL_ITEM_INFORMATION = False
 
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
