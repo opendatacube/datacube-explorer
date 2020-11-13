@@ -480,6 +480,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 "bbox": [114, -33, 153, -10],
                 "time": "2017-04-16T01:12:16/2017-05-10T00:24:21",
                 "limit": OUR_PAGE_SIZE,
+                "_full": True,
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},
@@ -487,6 +488,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
     assert rv.status_code == 200
     doc = rv.json
     assert len(doc.get("features")) == OUR_PAGE_SIZE
+    # We requested the full dataset, so band assets etc should be included.
     assert "water" in doc["features"][0]["assets"]
     assert doc["features"][0]["assets"]["water"].get("href")
 
@@ -499,6 +501,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 "bbox": [114, -40, 147, -32],
                 "time": "2000-01-01T00:00:00/2016-10-31T00:00:00",
                 "limit": 5,
+                "_full": True,
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},

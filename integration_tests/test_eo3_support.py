@@ -19,7 +19,7 @@ from cubedash.warmup import find_examples_of_all_public_urls
 from datacube.index import Index
 from datacube.utils import parse_time
 from integration_tests.test_pages_render import assert_all_urls_render
-from integration_tests.test_stac import get_item
+from integration_tests.test_stac import get_item, get_items
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 TEST_EO3_DATASET_L1 = (
@@ -189,6 +189,30 @@ def test_all_eo3_pages_render(eo3_index: Index, client: FlaskClient):
     Do all expected URLS render with HTTP OK response with our normal eo3 test data?
     """
     assert_all_urls_render(find_examples_of_all_public_urls(eo3_index), client)
+
+
+def test_can_search_eo3_items(eo3_index, client: FlaskClient):
+    """
+    Searching returns lightweight item records, so the conversion code is different.
+    """
+
+    # Lightweight records...
+    geojson = get_items(
+        client,
+        "http://localhost/stac/collections/ga_ls5t_ard_3/items",
+    )
+    assert len(geojson.get("features")) == 1
+    assert "gqa:iterative_stddev_xy" not in geojson["features"][0]["properties"]
+
+    # .... And full records
+    geojson = get_items(
+        client,
+        "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True",
+    )
+    assert len(geojson.get("features")) == 1
+    assert geojson["features"][0]["properties"][
+        "gqa:iterative_stddev_xy"
+    ] == pytest.approx(0.23252452200636467)
 
 
 def test_eo3_stac_item(eo3_index, client: FlaskClient):
