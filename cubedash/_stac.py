@@ -171,6 +171,17 @@ def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
     return value
 
 
+def _bool_argument(s: str):
+    """
+    Parse an argument that should be a bool
+    """
+    if isinstance(s, bool):
+        return s
+    # Copying FastAPI booleans:
+    # https://fastapi.tiangolo.com/tutorial/query-params
+    return s.strip().lower() in ("1", "true", "on", "yes")
+
+
 def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
@@ -188,7 +199,7 @@ def _handle_search_request(
     # Request the full Item information. This forces us to go to the
     # ODC dataset table for every record, which can be extremely slow.
     full_information = request_args.get(
-        "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=bool
+        "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=_bool_argument
     )
 
     if limit > PAGE_SIZE_LIMIT:
