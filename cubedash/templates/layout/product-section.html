@@ -80,8 +80,8 @@
                 <div class="option-menu">
 
                     {% set year_range=[] %}
-                    {% if time_selector_summary and time_selector_summary.timeline_dataset_counts %}
-                    {% for dataset_date, dataset_count in time_selector_summary.timeline_dataset_counts.items() %}
+                    {% if year_selector_summary and year_selector_summary.timeline_dataset_counts %}
+                    {% for dataset_date, dataset_count in year_selector_summary.timeline_dataset_counts.items() %}
                             {% if dataset_count > 0 %}
                             {% do year_range.append(dataset_date.year) %}
                             {% endif %}

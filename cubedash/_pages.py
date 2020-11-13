@@ -47,9 +47,13 @@ if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
 def overview_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product, product_summary, selected_summary, time_selector_summary = _load_product(
-        product_name, year, month, day
-    )
+    (
+        product,
+        product_summary,
+        selected_summary,
+        year_selector_summary,
+        time_selector_summary,
+    ) = _load_product(product_name, year, month, day)
 
     theme = app.theme_manager.themes[flask.current_app.config["CUBEDASH_THEME"]]
     _LOG.debug(
@@ -81,6 +85,7 @@ def overview_page(
         # Map defaults
         default_zoom=default_zoom,
         default_center=default_center,
+        year_selector_summary=year_selector_summary,
         time_selector_summary=time_selector_summary,
     )
 
@@ -93,9 +98,13 @@ def overview_page(
 def search_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
-    product, product_summary, selected_summary, time_selector_summary = _load_product(
-        product_name, year, month, day
-    )
+    (
+        product,
+        product_summary,
+        selected_summary,
+        year_selector_summary,
+        time_selector_summary,
+    ) = _load_product(product_name, year, month, day)
     time_range = utils.as_time_range(
         year, month, day, tzinfo=_model.STORE.grouping_timezone
     )
@@ -154,6 +163,7 @@ def search_page(
         query_params=query,
         result_limit=_HARD_SEARCH_LIMIT,
         time_selector_summary=time_selector_summary,
+        year_selector_summary=year_selector_summary,
     )
 
 
@@ -168,9 +178,13 @@ def region_page(
     month: int = None,
     day: int = None,
 ):
-    product, product_summary, selected_summary, time_selector_summary = _load_product(
-        product_name, year, month, day
-    )
+    (
+        product,
+        product_summary,
+        selected_summary,
+        year_selector_summary,
+        time_selector_summary,
+    ) = _load_product(product_name, year, month, day)
 
     region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:
@@ -205,6 +219,7 @@ def region_page(
         datasets=datasets,
         result_limit=_HARD_SEARCH_LIMIT,
         time_selector_summary=time_selector_summary,
+        year_selector_summary=year_selector_summary,
     )
 
 
@@ -232,8 +247,15 @@ def _load_product(
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
-    time_selector_summary = _model.get_time_summary(product_name, None, None, None)
-    return product, product_summary, time_summary, time_selector_summary
+    year_selector_summary = _model.get_time_summary(product_name, None, None, None)
+    time_selector_summary = _model.get_time_summary(product_name, year, None, None)
+    return (
+        product,
+        product_summary,
+        time_summary,
+        year_selector_summary,
+        time_selector_summary,
+    )
 
 
 def request_wants_json():

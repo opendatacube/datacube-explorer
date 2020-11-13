@@ -503,9 +503,9 @@ class SummaryStore:
             period = "year"
         if month:
             period = "month"
+
         if day:
             period = "day"
-
         return date(year or 1900, month or 1, day or 1), period
 
     # These are cached to avoid repeated unnecessary DB queries.
@@ -1053,7 +1053,6 @@ def _summary_from_row(res):
         if res["regions"]
         else None
     )
-
     return TimePeriodOverview(
         dataset_count=res["dataset_count"],
         # : Counter
