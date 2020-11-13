@@ -202,7 +202,7 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient):
         "http://localhost/stac/collections/ga_ls5t_ard_3/items",
     )
     assert len(geojson.get("features")) == 1
-    assert "gqa:iterative_stddev_xy" not in geojson["features"][0]["properties"]
+    assert "gqa:abs_iterative_mean_xy" not in geojson["features"][0]["properties"]
 
     # .... And full records
     geojson = get_items(
@@ -211,8 +211,8 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient):
     )
     assert len(geojson.get("features")) == 1
     assert geojson["features"][0]["properties"][
-        "gqa:iterative_stddev_xy"
-    ] == pytest.approx(0.23252452200636467)
+        "gqa:abs_iterative_mean_xy"
+    ] == pytest.approx(0.37)
 
 
 def test_eo3_stac_item(eo3_index, client: FlaskClient):
