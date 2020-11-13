@@ -91,7 +91,7 @@ def _geojson_stac_response(doc: Dict) -> flask.Response:
     return _stac_response(doc, content_type="application/geo+json")
 
 
-@bp.route("")
+@bp.route("", strict_slashes=False)
 def root():
     """
     The root stac page links to each collection (product) catalog
