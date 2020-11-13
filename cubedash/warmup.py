@@ -64,7 +64,7 @@ def find_examples_of_all_public_urls(index: Index):
 
             yield f"/dataset/{dataset.id}"
             yield f"/dataset/{dataset.id}.odc-metadata.yaml"
-            yield f"/collections/{name}/items/{dataset.id}"
+            yield f"/stac/collections/{name}/items/{dataset.id}"
 
 
 @click.command()
