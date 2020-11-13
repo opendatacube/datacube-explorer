@@ -34,6 +34,12 @@ DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
 # Should we force all URLs to include the full hostname?
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
+# Should searches return the full properties for every stac item by default?
+# These searches are much slower we're forced us to use ODC's own metadata table.
+DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
+    "STAC_DEFAULT_FULL_ITEM_INFORMATION", False
+)
+
 _STAC_VERSION = "1.0.0-beta.2"
 
 
@@ -179,6 +185,12 @@ def _handle_search_request(
     )
     offset = request_args.get("_o", default=0, type=int)
 
+    # Request the full Item information. This forces us to go to the
+    # ODC dataset table for every record, which can be extremely slow.
+    full_information = request_args.get(
+        "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=bool
+    )
+
     if limit > PAGE_SIZE_LIMIT:
         abort(
             400,
@@ -211,6 +223,7 @@ def _handle_search_request(
         limit=limit,
         offset=offset,
         get_next_url=next_page_url,
+        full_information=full_information,
     )
 
 
@@ -222,6 +235,7 @@ def search_stac_items(
     product_names: Optional[List[str]] = None,
     bbox: Optional[Tuple[float, float, float, float]] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
+    full_information: bool = False,
 ) -> Dict:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -237,7 +251,7 @@ def search_stac_items(
             limit=limit + 1,
             dataset_ids=dataset_ids,
             offset=offset,
-            full_dataset=True,
+            full_dataset=full_information,
         )
     )
     returned = items[:limit]
@@ -430,7 +444,7 @@ def as_stac_item(dataset: DatasetItem):
     """
     ds = dataset.odc_dataset
 
-    if is_doc_eo3(ds.metadata_doc):
+    if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
         dataset_doc.locations = ds.uris
 
@@ -457,11 +471,11 @@ def as_stac_item(dataset: DatasetItem):
     else:
         # eo1 to eo3
         dataset_doc = DatasetDoc(
-            id=ds.id,
+            id=dataset.dataset_id,
             # Filled-in below.
             label=None,
             product=ProductDoc(dataset.product_name),
-            locations=ds.uris,
+            locations=ds.uris if ds is not None else None,
             crs=dataset.geometry.crs.crs_str,
             geometry=dataset.geometry.geom,
             grids=None,
@@ -469,20 +483,24 @@ def as_stac_item(dataset: DatasetItem):
             properties=StacPropertyView(
                 {
                     "datetime": utc(dataset.center_time),
-                    **dict(_build_properties(dataset.odc_dataset.metadata)),
+                    **(dict(_build_properties(ds.metadata)) if ds else {}),
                     "odc:processing_datetime": utc(dataset.creation_time),
                 }
             ),
             measurements={
                 name: _band_to_measurement(b) for name, b in ds.measurements.items()
-            },
-            accessories=_accessories_from_eo1(ds.metadata_doc),
+            }
+            if ds is not None
+            else {},
+            accessories=_accessories_from_eo1(ds.metadata_doc)
+            if ds is not None
+            else {},
             # TODO: Fill in lineage. The datacube API only gives us full datasets, which is
             #       expensive. We only need a list of IDs here.
             lineage={},
         )
 
-    if dataset_doc.label is None:
+    if dataset_doc.label is None and ds is not None:
         dataset_doc.label = _utils.dataset_label(ds)
 
     item_doc = eo3stac.to_stac_item(
@@ -492,7 +510,7 @@ def as_stac_item(dataset: DatasetItem):
             collection=dataset.product_name,
             dataset_id=dataset.dataset_id,
         ),
-        odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=ds.id),
+        odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
         explorer_base_url=url_for("default_redirect"),
     )
     # Add the region code that Explorer inferred.
