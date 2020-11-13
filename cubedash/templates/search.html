@@ -41,7 +41,7 @@
                             </div>
                         </div>
                     {% elif field | is_date_field %}
-                        <div data-row-span="3"
+                        <div data-row-span="2"
                              id="search-row-{{ key }}"
                             {% if key not in query_params %}class="disabled"{% endif %}>
                             <div data-field-span="1">
@@ -96,7 +96,7 @@
                     name="add-search-field-type">
                 <option value="">-</option>
                 {% for key, field in field_list if key not in query_params %}
-                    <option value="{{ key }}">{{ key }}: {{ field.description }}</option>
+                    <option value="{{ key }}">{{ key }}: {{ field.description[:155] }}</option>
                 {% endfor %}
             </select>
         </p>
