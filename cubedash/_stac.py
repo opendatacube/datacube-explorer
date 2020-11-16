@@ -273,10 +273,10 @@ def search_stac_items(
         type="FeatureCollection",
         features=[as_stac_item(f) for f in returned],
         # Stac standard
-        numberReturned=len(returned),
+        numberMatched=len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
-        context=dict(page=offset // limit, limit=limit, returned=len(returned)),
+        context=dict(page=offset // limit, limit=limit, matched=len(returned)),
         links=[],
     )
 
