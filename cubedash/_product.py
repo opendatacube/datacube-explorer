@@ -21,7 +21,15 @@ def products_csv():
     out = io.StringIO()
     cw = csv.writer(out)
     cw.writerow(
-        ["name", "count", "locations", "license", "definition", "metadata_type"]
+        [
+            "name",
+            "count",
+            "locations",
+            "license",
+            "definition",
+            "summary_age",
+            "metadata_type",
+        ]
     )
     cw.writerows(
         (
@@ -33,6 +41,7 @@ def products_csv():
             ],
             _utils.product_license(product),
             url_for("product.raw_product_doc", name=product.name, _external=True),
+            summary.last_refresh_age,
             product.metadata_type.name,
         )
         for product, summary in _model.get_products_with_summaries()
