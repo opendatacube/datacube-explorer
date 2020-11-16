@@ -4,6 +4,7 @@ import csv
 import io
 import logging
 import re
+from datetime import timedelta
 
 import flask
 from flask import Blueprint, abort, url_for, redirect, Response
@@ -41,7 +42,7 @@ def products_csv():
             ],
             _utils.product_license(product),
             url_for("product.raw_product_doc", name=product.name, _external=True),
-            summary.last_refresh_age,
+            _iso8601_duration(summary.last_refresh_age),
             product.metadata_type.name,
         )
         for product, summary in _model.get_products_with_summaries()
@@ -150,3 +151,42 @@ def raw_metadata_type_doc(name):
         metadata_type.definition, "Metadata Type", include_source_url=True
     )
     return utils.as_yaml(ordered_metadata)
+
+
+def _iso8601_duration(tdelta: timedelta):
+    """
+    Format a timedelta as an iso8601 duration
+
+    >>> _iso8601_duration(timedelta(seconds=0))
+    'PT0S'
+    >>> _iso8601_duration(timedelta(seconds=1))
+    'PT1S'
+    >>> _iso8601_duration(timedelta(seconds=23423))
+    'PT6H30M23S'
+    >>> _iso8601_duration(timedelta(seconds=4564564556))
+    'P52830DT14H35M56S'
+    """
+    all_secs = tdelta.total_seconds()
+
+    secs = int(all_secs % 60)
+    h_m_s = (
+        int(all_secs // 3600 % 24),
+        int(all_secs // 60 % 60),
+        secs if secs % 1 != 0 else int(secs),
+    )
+
+    parts = ["P"]
+
+    days = int(all_secs // 86400)
+    if days:
+        parts.append(f"{days}D")
+    if any(h_m_s):
+        parts.append("T")
+    if all_secs:
+        for val, name in zip(h_m_s, ["H", "M", "S"]):
+            if val:
+                parts.append(f"{val}{name}")
+    else:
+        parts.append("T0S")
+
+    return "".join(parts)
