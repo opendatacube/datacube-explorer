@@ -43,7 +43,9 @@
                     <th>Location</th>
                     <th class="numeric">License</th>
                     <th>Definition</th>
+                    <th>Summary Age</th>
                     <th>Metadata Type</th>
+
                 </tr>
             </thead>
             <tbody>
@@ -62,11 +64,21 @@
                     </td>
                     <td class="numeric">{{ product | product_license_link }}</td>
                     <td><a href="{{url_for('product.raw_product_doc', name=product.name)}}" class="badge">doc</a></td>
+                                <td>
+                    {% if summary.last_refresh_age.days > 1 %}
+                        {{ summary.last_refresh_age.days }} days
+                    {% elif summary.last_refresh_age.seconds // 60 // 60 > 1 %}
+                        {{ summary.last_refresh_age.seconds // 60 // 60 }} hours
+                    {% else %}
+                        {{ summary.last_refresh_age.seconds // 60 }} minutes
+                    {% endif %}
+                </td>
                     <td>
                         <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
                             {{ product.metadata_type.name }}
                         </a>
                     </td>
+
                 </tr>
               {% endfor %}
             </tbody>
