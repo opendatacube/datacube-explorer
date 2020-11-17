@@ -268,15 +268,25 @@ def search_stac_items(
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
+    count_matching = _model.STORE.get_count(
+        product_names=product_names, time=time, bbox=bbox
+    )
+
     result = dict(
         stac_extensions=["context"],
         type="FeatureCollection",
         features=[as_stac_item(f) for f in returned],
         # Stac standard
-        numberMatched=len(returned),
+        numberMatched=count_matching,
+        numberReturned=len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
-        context=dict(page=offset // limit, limit=limit, matched=len(returned)),
+        context=dict(
+            page=offset // limit,
+            limit=limit,
+            returned=len(returned),
+            matched=count_matching,
+        ),
         links=[],
     )
 
