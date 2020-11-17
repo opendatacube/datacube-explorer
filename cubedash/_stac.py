@@ -272,6 +272,10 @@ def search_stac_items(
         product_names=product_names, time=time, bbox=bbox
     )
 
+    page = 0
+    if limit != 0:
+        page = offset // limit
+
     result = dict(
         stac_extensions=["context"],
         type="FeatureCollection",
@@ -282,7 +286,7 @@ def search_stac_items(
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
         context=dict(
-            page=offset // limit,
+            page=page,
             limit=limit,
             returned=len(returned),
             matched=count_matching,
