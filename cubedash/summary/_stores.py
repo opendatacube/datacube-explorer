@@ -793,7 +793,12 @@ class SummaryStore:
         query: Select = select([func.count()]).select_from(DATASET_SPATIAL)
 
         query = self._add_fields_to_query(
-            query, product_names=product_names, time=time, bbox=bbox
+            query,
+            product_names=product_names,
+            time=time,
+            bbox=bbox,
+            dataset_ids=dataset_ids,
+            require_geometry=require_geometry,
         )
 
         result = self._engine.execute(query).fetchall()
@@ -852,7 +857,12 @@ class SummaryStore:
 
         # Add all the filters
         query = self._add_fields_to_query(
-            query, product_names=product_names, time=time, bbox=bbox
+            query,
+            product_names=product_names,
+            time=time,
+            bbox=bbox,
+            dataset_ids=dataset_ids,
+            require_geometry=require_geometry,
         )
 
         # Maybe sort
