@@ -130,7 +130,6 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	sleep 10
 	docker-compose run -T explorer \
 		bash /code/.docker/create_db.sh
 
