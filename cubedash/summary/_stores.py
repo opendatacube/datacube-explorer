@@ -732,40 +732,50 @@ class SummaryStore:
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
+        dataset_ids: Sequence[UUID] = None,
+        require_geometry=True,
     ) -> Select:
-        if time:
-            query = query.where(
-                func.tstzrange(
-                    _utils.default_utc(time[0]),
-                    _utils.default_utc(time[1]),
-                    "[]",
-                    type_=TSTZRANGE,
-                ).contains(DATASET_SPATIAL.c.center_time)
-            )
-
-        if bbox:
-            query = query.where(
-                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
-                    func.ST_MakeEnvelope(*bbox)
-                )
-            )
-
-        if product_names:
-            if len(product_names) == 1:
+        # If they specify IDs, all other search parameters are ignored.
+        # (from Stac API spec)
+        if dataset_ids is not None:
+            query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
+        else:
+            if time:
                 query = query.where(
-                    DATASET_SPATIAL.c.dataset_type_ref
-                    == select([ODC_DATASET_TYPE.c.id]).where(
-                        ODC_DATASET_TYPE.c.name == product_names[0]
+                    func.tstzrange(
+                        _utils.default_utc(time[0]),
+                        _utils.default_utc(time[1]),
+                        "[]",
+                        type_=TSTZRANGE,
+                    ).contains(DATASET_SPATIAL.c.center_time)
+                )
+
+            if bbox:
+                query = query.where(
+                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                        func.ST_MakeEnvelope(*bbox)
                     )
                 )
-            else:
-                query = query.where(
-                    DATASET_SPATIAL.c.dataset_type_ref.in_(
-                        select([ODC_DATASET_TYPE.c.id]).where(
-                            ODC_DATASET_TYPE.c.name.in_(product_names)
+
+            if product_names:
+                if len(product_names) == 1:
+                    query = query.where(
+                        DATASET_SPATIAL.c.dataset_type_ref
+                        == select([ODC_DATASET_TYPE.c.id]).where(
+                            ODC_DATASET_TYPE.c.name == product_names[0]
                         )
                     )
-                )
+                else:
+                    query = query.where(
+                        DATASET_SPATIAL.c.dataset_type_ref.in_(
+                            select([ODC_DATASET_TYPE.c.id]).where(
+                                ODC_DATASET_TYPE.c.name.in_(product_names)
+                            )
+                        )
+                    )
+
+        if require_geometry:
+            query = query.where(DATASET_SPATIAL.c.footprint != None)
 
         return query
 
@@ -774,6 +784,8 @@ class SummaryStore:
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
+        dataset_ids: Sequence[UUID] = None,
+        require_geometry=True,
     ) -> int:
         """
         Do the most simple select query to get the count of matching datasets.
@@ -838,18 +850,12 @@ class SummaryStore:
                 (*columns, DATASET_SPATIAL.c.id, DATASET_SPATIAL.c.dataset_type_ref)
             ).select_from(DATASET_SPATIAL)
 
-        # If they specify IDs, all other search parameters are ignored.
-        # (from Stac API spec)
-        if dataset_ids is not None:
-            query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
-        else:
-            query = self._add_fields_to_query(
-                query, product_names=product_names, time=time, bbox=bbox
-            )
+        # Add all the filters
+        query = self._add_fields_to_query(
+            query, product_names=product_names, time=time, bbox=bbox
+        )
 
-        if require_geometry:
-            query = query.where(DATASET_SPATIAL.c.footprint != None)
-
+        # Maybe sort
         if ordered:
             query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
 
