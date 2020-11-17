@@ -329,8 +329,6 @@ def test_stac_search_zero(stac_client: FlaskClient):
     rv: Response = stac_client.get(f"/stac/search?&limit={zero_limit}")
     assert rv.status_code == 200
 
-    assert len(rv.get("features")) == zero_limit
-
 
 def test_stac_includes_total(stac_client: FlaskClient):
     geojson = get_items(
