@@ -35,6 +35,8 @@ _LOG = structlog.getLogger()
 _HARD_SEARCH_LIMIT = app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
 _DEFAULT_GROUP_NAME = app.config.get("CUBEDASH_DEFAULT_GROUP_NAME", "Other Products")
 
+_DEFAULT_ARRIVALS_DAYS: int = app.config.get("CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT", 14)
+
 # Add server timings to http headers.
 if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
     _monitoring.init_app_monitoring()
@@ -394,6 +396,18 @@ def chunks(ls: List, n: int):
     """
     for i in range(0, len(ls), n):
         yield ls[i : i + n]
+
+
+@app.route("/arrivals")
+def arrivals_page():
+
+    period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
+    arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
+    return utils.render(
+        "arrivals.html",
+        arrival_days=arrivals,
+        period_length=period_length,
+    )
 
 
 @app.route("/")
