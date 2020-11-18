@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 from setuptools import find_packages, setup
 
 tests_require = [
@@ -38,6 +38,10 @@ extras_require = {
     ],
 }
 
+packages = find_packages()
+if os.getenv("ENVIRONMENT") == "deployment":
+    packages = find_packages(exclude=("integration_tests",))
+
 setup(
     name="datacube-explorer",
     use_scm_version=True,
@@ -46,7 +50,7 @@ setup(
     url="https://github.com/opendatacube/datacube-explorer",
     author="Geoscience Australia",
     author_email="earth.observation@ga.gov.au",
-    packages=find_packages(),
+    packages=packages,
     include_package_data=True,
     install_requires=[
         "cachetools",

@@ -3,21 +3,19 @@ Tests that hit the stac api
 """
 
 import json
-import urllib.parse
-from collections import Counter
-from collections import defaultdict
-from pathlib import Path
-from pprint import pformat
-from typing import Dict, Generator, Iterable, Optional, Union, List
-
 import jsonschema
 import pytest
+import urllib.parse
+from collections import Counter, defaultdict
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
+from pathlib import Path
+from pprint import pformat
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
+from typing import Dict, Generator, Iterable, List, Optional, Union
 
 import cubedash._stac
 from cubedash import _model
@@ -325,6 +323,25 @@ def test_stac_search_limits(stac_client: FlaskClient):
     assert len(geojson.get("features")) == OUR_PAGE_SIZE
 
 
+def test_stac_search_zero(stac_client: FlaskClient):
+    # Zero limit is a valid query
+    zero_limit = 0
+    rv: Response = stac_client.get(f"/stac/search?&limit={zero_limit}")
+    assert rv.status_code == 200
+
+
+def test_stac_includes_total(stac_client: FlaskClient):
+    geojson = get_items(
+        stac_client,
+        (
+            "/stac/search?"
+            "&bbox=[114, -33, 153, -10]"
+            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+        ),
+    )
+    assert geojson.get("numberMatched") == 72
+
+
 def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
@@ -342,6 +359,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
         "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376",
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
+    assert geojson["numberMatched"] == 1
 
     # Other params are ignored when ids is specified (Matching the Stac API spec)
     geojson = get_items(
@@ -367,6 +385,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
         "696c2481-700e-4fec-b438-01396430a688",
         "cab65f3f-bb38-4605-9d6a-eff5ea786376",
     ]
+    assert geojson["numberMatched"] == 3
 
     # Can filter using ids that don't exist.
     geojson = get_items(
