@@ -324,8 +324,13 @@ ul
         // Numeric columns right-aligned for readability, like Excel.
         &.numeric
             text-align: right
-            font-variant-numeric: tabular-nums
 
+        // A column that we'd prefer not to be too tiny. Whitespace adds emphasis.
+        &.important-column
+            min-width: 90px
+
+.numeric
+    font-variant-numeric: tabular-nums
 
 /* lists of key-values
 

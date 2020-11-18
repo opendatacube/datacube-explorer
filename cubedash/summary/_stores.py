@@ -28,6 +28,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Iterator,
 )
 from uuid import UUID
 
@@ -38,7 +39,7 @@ except ModuleNotFoundError:
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
-from cubedash.summary._extents import RegionSummary
+from cubedash.summary._extents import RegionSummary, ProductArrival
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -778,6 +779,48 @@ class SummaryStore:
             query = query.where(DATASET_SPATIAL.c.footprint != None)
 
         return query
+
+    def get_arrivals(
+        self, period_length: timedelta
+    ) -> Iterator[Tuple[date, List[ProductArrival]]]:
+        """
+        Get a list of products with newly added datasets for the last few days.
+        """
+        latest_arrival_date: datetime = self._engine.execute(
+            "select max(added) from agdc.dataset;"
+        ).scalar()
+        if latest_arrival_date is None:
+            return
+
+        datasets_since_date = (latest_arrival_date - period_length).date()
+
+        current_day = None
+        products = []
+        for day, product_name, count, dataset_ids in self._engine.execute(
+            """
+            select
+               date_trunc('day', added) as arrival_date,
+               (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
+               count(*),
+               (array_agg(id))[0:3]
+            from agdc.dataset d
+            where d.added > %(datasets_since)s
+            group by arrival_date, product_name
+            order by arrival_date desc, product_name;
+        """,
+            datasets_since=datasets_since_date,
+        ):
+            if current_day is None:
+                current_day = day
+
+            if day != current_day:
+                yield current_day, products
+                products = []
+                current_day = day
+            products.append(ProductArrival(product_name, day, count, dataset_ids))
+
+        if products:
+            yield products[0].day, products
 
     def get_count(
         self,

@@ -147,6 +147,9 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Maximum number of source/derived datasets to show
     CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
     
+    # How many days of recent datasets to show on the "/arrivals" page?
+    CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT = 14
+    
     # Include load performance metrics in http response.
     CUBEDASH_SHOW_PERF_TIMES = False
     

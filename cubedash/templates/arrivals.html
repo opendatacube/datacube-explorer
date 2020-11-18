@@ -1,0 +1,41 @@
+{% extends "layout/base.html" %}
+{% set active_page = "arrivals" %}
+
+{% block title %}Recent Arrivals{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <h2 class="followed">Recent Dataset Arrivals</h2>
+        <span class="header-follow">over {{ period_length.days }} days</span>
+
+        <table class="data-table">
+            {% for day, arrivals in arrival_days %}
+                <thead>
+                    <tr>
+                        <th colspan="3">{{ day.strftime('%d %B %Y') }}</th>
+                    </tr>
+                </thead>
+                {% for arrival in arrivals %}
+                    <tbody>
+                        <tr>
+                        <td class="numeric important-column">{{  '{:,d}'.format(arrival.dataset_count) }}</td>
+                            <td>{{- arrival.product_name | product_link  -}}</td>
+                            <td>
+                                {%- for dataset_id in arrival.sample_dataset_ids -%}
+                                    <a href="{{ url_for('dataset.dataset_page', id_=dataset_id) }}"
+                                       class="muted">
+                                        {{- loop.index -}}
+                                    </a>,
+                                {% endfor %} ...
+                            </td>
+                        </tr>
+                    </tbody>
+                {% endfor %}
+            {% else %}
+                <tr><td>No datasets in index</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+{% endblock %}
+

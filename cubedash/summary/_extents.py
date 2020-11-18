@@ -3,7 +3,7 @@ import json
 import sys
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from typing import Dict, Iterable, Optional, List
 
@@ -590,6 +590,19 @@ class RegionSummary:
             "geometry": extent.__geo_interface__,
             "properties": {"region_code": self.region_code, "count": self.count},
         }
+
+
+@dataclass
+class ProductArrival:
+    """What arrived for a given product on a particular day?"""
+
+    product_name: str
+    day: date
+    # Count of datasets added on the given day.
+    dataset_count: int
+
+    # A few dataset ids among the arrivals
+    sample_dataset_ids: List[uuid.UUID]
 
 
 class RegionInfo:
