@@ -318,6 +318,9 @@ ul.quiet {
 .data-table td.numeric, .data-table th.numeric {
   text-align: right;
 }
+.data-table td.important-column, .data-table th.important-column {
+  min-width: 90px;
+}
 
 .numeric {
   font-variant-numeric: tabular-nums;

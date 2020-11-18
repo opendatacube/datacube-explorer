@@ -5,33 +5,37 @@
 
 {% block content %}
     <div class="panel">
-        <h2 class="followed">Recent Arrivals</h2>
-    <span class="header-follow">over {{ period_length.days }} days</span>
+        <h2 class="followed">Recent Dataset Arrivals</h2>
+        <span class="header-follow">over {{ period_length.days }} days</span>
+
+        <table class="data-table">
+            {% for day, arrivals in arrival_days %}
+                <thead>
+                    <tr>
+                        <th colspan="3">{{ day.strftime('%d %B %Y') }}</th>
+                    </tr>
+                </thead>
+                {% for arrival in arrivals %}
+                    <tbody>
+                        <tr>
+                        <td class="numeric important-column">{{  '{:,d}'.format(arrival.dataset_count) }}</td>
+                            <td>{{- arrival.product_name | product_link  -}}</td>
+                            <td>
+                                {%- for dataset_id in arrival.sample_dataset_ids -%}
+                                    <a href="{{ url_for('dataset.dataset_page', id_=dataset_id) }}"
+                                       class="muted">
+                                        {{- loop.index -}}
+                                    </a>,
+                                {% endfor %} ...
+                            </td>
+                        </tr>
+                    </tbody>
+                {% endfor %}
+            {% else %}
+                <tr><td>No datasets in index</td></tr>
+            {% endfor %}
+        </table>
     </div>
 
-    <div class="panel">
-        {% for day, arrivals in arrival_days %}
-            <h3>{{ day.strftime('%d %B %Y') }}</h3>
-            <ul>
-                {% for arrival in arrivals %}
-                    <li>
-                        <span class="numeric">
-                            {{- arrival.product_name | product_link  -}}
-                        </span>:
-                        {{  '{:,d}'.format(arrival.dataset_count) }}  datasets
-                        <span class="muted">
-                            ({%- for dataset_id in arrival.sample_dataset_ids -%}
-                                <a href="{{ url_for('dataset.dataset_page', id_=dataset_id) }}" class="muted">
-                                    {{- loop.index -}}
-                                </a>,
-                            {% endfor %} ...)
-                        </span>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            No datasets found
-        {% endfor %}
-    </div>
 {% endblock %}
 
