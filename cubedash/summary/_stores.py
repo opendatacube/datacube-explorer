@@ -789,6 +789,8 @@ class SummaryStore:
         latest_arrival_date: datetime = self._engine.execute(
             "select max(added) from agdc.dataset;"
         ).scalar()
+        if latest_arrival_date is None:
+            return
 
         datasets_since_date = (latest_arrival_date - period_length).date()
 
