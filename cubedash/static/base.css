@@ -317,6 +317,9 @@ ul.quiet {
 }
 .data-table td.numeric, .data-table th.numeric {
   text-align: right;
+}
+
+.numeric {
   font-variant-numeric: tabular-nums;
 }
 
