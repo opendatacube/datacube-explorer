@@ -68,6 +68,7 @@ def overview_page(
     default_center = theme.options["startCoords"]
 
     region_geojson = _model.get_regions_geojson(product_name, year, month, day)
+
     return utils.render(
         "overview.html",
         year=year,
@@ -291,6 +292,12 @@ def inject_globals():
         if product_summary:
             last_updated = datetime.now() - product_summary.last_refresh_age
 
+    rpath = request.path
+    breadcrumb = []
+    for element in rpath.split("/"):
+        if len(element) > 0:
+            breadcrumb.append((element, element, True))
+
     return dict(
         grouped_products=_get_grouped_products(),
         current_time=datetime.utcnow(),
@@ -301,6 +308,7 @@ def inject_globals():
         db_origin=app.config.get(
             "STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"
         ),
+        breadcrumb=breadcrumb,
     )
 
 
