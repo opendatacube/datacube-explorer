@@ -33,28 +33,30 @@ a {
 
 .content-wrapper {
   position: relative;
-  padding: 110px 0 0;
+}
+
+.header {
+  background: #2dace1;
+  width: 100%;
+  height: 50px;
+  display: block;
 }
 
 header {
-  margin-top: -30px;
   color: #efefef;
   padding: 0;
   display: flex;
   flex-direction: row;
+  background: #616161;
 }
 
 footer {
-  padding: 20px 20px 20px;
+  padding: 5px 10px;
   text-align: right;
-  color: #a6a6a6;
+  color: #fff;
+  background: #000;
   font-size: 0.7em;
   line-height: 2em;
-}
-@media (min-width: 800px) {
-  footer {
-    padding: 30px 30px 30px;
-  }
 }
 
 #content {
@@ -490,10 +492,8 @@ label.disabled {
 }
 
 #logo {
-  padding-right: 25px;
-  position: absolute;
-  top: 15px;
-  right: 0;
+  padding: 5px 25px;
+  color: #fff;
 }
 #logo img {
   vertical-align: middle;
@@ -502,6 +502,11 @@ label.disabled {
 #logo > a {
   text-decoration: none;
   color: #fff;
+}
+#logo > span.description {
+  border-left: 1px solid #fff;
+  padding-left: 10px;
+  margin-left: 10px;
 }
 
 .logo-text {

@@ -78,20 +78,26 @@ a
 
 .content-wrapper
     position: relative
-    padding: 110px 0 0
+
+.header
+    background: $header_stipe1
+    width: 100%
+    height: 50px
+    display: block
 
 // Pages with tabs: put the tabs in the margin.
 header
-    margin-top: -30px
     color: #efefef
     padding: 0
     display: flex
     flex-direction: row
+    background: $header_highlight_strong
 
 footer
-    @include square_padding
+    padding: 5px 10px
     text-align: right
-    color: #a6a6a6
+    color: #fff
+    background: #000
     font-size: 0.7em
     line-height: 2em
 
@@ -481,10 +487,8 @@ label
     padding: 0
 
 #logo
-    padding-right: 25px
-    position: absolute
-    top: 15px
-    right: 0
+    padding: 5px 25px
+    color: #fff
 
     img
         vertical-align: middle
@@ -493,6 +497,11 @@ label
     > a
         text-decoration: none
         color: #fff
+
+    > span.description
+        border-left: 1px solid #fff
+        padding-left: 10px
+        margin-left: 10px
 
 .logo-text
     display: inline-block
