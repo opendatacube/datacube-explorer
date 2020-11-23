@@ -298,6 +298,9 @@ def inject_globals():
         app_version=cubedash.__version__,
         grouping_timezone=_model.STORE.grouping_timezone,
         last_updated_time=last_updated,
+        db_origin=app.config.get(
+            "STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"
+        ),
     )
 
 
