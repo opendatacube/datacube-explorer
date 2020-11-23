@@ -42,6 +42,16 @@ a {
   display: block;
 }
 
+#breadcrumb {
+  background: #7fd0eb;
+  color: #efefef;
+  font-weight: bold;
+  padding: 15px 25px;
+}
+#breadcrumb .item {
+  color: #fff;
+}
+
 header {
   color: #efefef;
   padding: 0;

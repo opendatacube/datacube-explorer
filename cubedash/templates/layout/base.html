@@ -33,6 +33,18 @@
             </span>
         </div>
     </div>
+    <div id="breadcrumb">
+        <a class="item" href="/">Home</a>
+        {% if breadcrumb %}
+        {% for url, title, valid_link in breadcrumb %}
+        {% if valid_link %}
+        >> <a class="item" href="/{{url}}">{{title}}</a>
+        {% else %}
+        >> <span class="item">{{title}}</span>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
     {% block header %}{% endblock %}
     <div id="content">{% block content %}{% endblock %}</div>
 </div>
