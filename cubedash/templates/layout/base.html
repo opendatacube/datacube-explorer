@@ -32,13 +32,38 @@
                 {{ db_origin }}
             </span>
         </div>
+        <div id="menu-link">
+            <ul>
+                <li class="top-menu"><a href="{{ url_for('product.products_page') }}">Dashboard</a></li>
+                <li class="top-menu">
+                    Audit
+                    <ul>
+                        <li><a href="{{url_for('audit.product_audit_page')}}">Product Audit</a></li>
+                        <li><a href="{{url_for('arrivals_page')}}">Product Arrivals</a></li>
+                    </ul>
+                </li>
+                <li class="top-menu">API Endpoints
+                    <ul>
+                        <li><a href="{{ url_for('stac.root') }}">STAC API</a></li>
+                        <li><a href="{{ url_for('stac.list_collections') }}">Collection</a></li>
+                    </ul>
+                </li>
+                <li class="top-menu">Downloadable Resource
+                    <ul>
+                        <li><a href="{{ url_for('product.products_csv') }}">About.csv</a></li>
+                        <li><a href="{{ url_for('product.product_list_text') }}">products.txt</a></li>
+                        <li><a href="{{ url_for('audit.get_timings') }}">day-times.txt</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
     </div>
     <div id="breadcrumb">
         <a class="item" href="/">Home</a>
         {% if breadcrumb %}
         {% for url, title, valid_link in breadcrumb %}
         {% if valid_link %}
-        >> <a class="item" href="/{{url}}">{{title}}</a>
+        >> <a class="item" href="{{url}}">{{title}}</a>
         {% else %}
         >> <span class="item">{{title}}</span>
         {% endif %}

@@ -175,6 +175,16 @@ def test_get_day_overviews(client: FlaskClient):
     check_dataset_count(html, 0)
 
 
+def test_menu_items(client: FlaskClient):
+    # test all elements of menu items
+    html = get_html(client, "/ls7_nbar_scene")
+    menu_links = html.find("#menu-link", first=True)
+    # 4 visible top menus
+    assert len(menu_links.find("ul", first=True).find("li.top-menu")) == 4
+    # 7 sub-menu items
+    assert len(menu_links.find("ul", first=True).find("li ul li")) == 7
+
+
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/pq_count_summary")
