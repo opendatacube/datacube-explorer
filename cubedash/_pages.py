@@ -294,9 +294,12 @@ def inject_globals():
 
     rpath = request.path
     breadcrumb = []
+    i = 2
     for element in rpath.split("/"):
         if len(element) > 0:
-            breadcrumb.append((element, element, True))
+            link = "/".join(rpath.split("/")[:i])
+            breadcrumb.append((link, element, link == rpath))
+            i += 1
 
     return dict(
         grouped_products=_get_grouped_products(),

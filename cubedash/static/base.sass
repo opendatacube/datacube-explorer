@@ -85,6 +85,77 @@ a
     height: 50px
     display: block
 
+    #logo
+        padding: 5px 25px
+        color: #fff
+        float: left
+
+        img
+            vertical-align: middle
+            padding-right: 2px
+
+        > a
+            text-decoration: none
+            color: #fff
+
+        > span.description
+            border-left: 1px solid #fff
+            padding-left: 10px
+            margin-left: 10px
+
+    #menu-link
+        float: right
+        color: #fff
+
+
+        ul
+            padding: 0px
+            margin: 0px
+
+            > li
+                list-style: none
+                display: block
+                float: left
+                padding:15px
+                line-height: 20px
+                font-weight: bold
+                cursor: pointer
+                max-width: 175px
+                overflow: hidden
+                text-align: center
+
+                a
+                    color: #fff
+
+                &:hover
+                    color: $header_highlight_strong
+                    background: $header_stripe2
+
+                    > ul
+                        display: block
+                        background: $header_stripe2
+                        max-width: 175px
+                        position: absolute
+                        z-index: 999
+                        margin-left: -15px
+                        border-top:1px solid $header_stipe1
+
+                        > li
+                            color: #fff
+                            display: block
+                            float: none
+                            padding-left:10px
+
+                            &:hover
+                                a
+                                    color: $header_highlight_strong
+
+                > ul
+                        display: none
+
+
+
+
 #breadcrumb
     background: $header_stripe2
     color: #efefef
@@ -495,22 +566,6 @@ label
     margin: 0
     padding: 0
 
-#logo
-    padding: 5px 25px
-    color: #fff
-
-    img
-        vertical-align: middle
-        padding-right: 2px
-
-    > a
-        text-decoration: none
-        color: #fff
-
-    > span.description
-        border-left: 1px solid #fff
-        padding-left: 10px
-        margin-left: 10px
 
 .logo-text
     display: inline-block

@@ -41,6 +41,72 @@ a {
   height: 50px;
   display: block;
 }
+.header #logo {
+  padding: 5px 25px;
+  color: #fff;
+  float: left;
+}
+.header #logo img {
+  vertical-align: middle;
+  padding-right: 2px;
+}
+.header #logo > a {
+  text-decoration: none;
+  color: #fff;
+}
+.header #logo > span.description {
+  border-left: 1px solid #fff;
+  padding-left: 10px;
+  margin-left: 10px;
+}
+.header #menu-link {
+  float: right;
+  color: #fff;
+}
+.header #menu-link ul {
+  padding: 0px;
+  margin: 0px;
+}
+.header #menu-link ul > li {
+  list-style: none;
+  display: block;
+  float: left;
+  padding: 15px;
+  line-height: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  max-width: 175px;
+  overflow: hidden;
+  text-align: center;
+}
+.header #menu-link ul > li a {
+  color: #fff;
+}
+.header #menu-link ul > li:hover {
+  color: #616161;
+  background: #7fd0eb;
+}
+.header #menu-link ul > li:hover > ul {
+  display: block;
+  background: #7fd0eb;
+  max-width: 175px;
+  position: absolute;
+  z-index: 999;
+  margin-left: -15px;
+  border-top: 1px solid #2dace1;
+}
+.header #menu-link ul > li:hover > ul > li {
+  color: #fff;
+  display: block;
+  float: none;
+  padding-left: 10px;
+}
+.header #menu-link ul > li:hover > ul > li:hover a {
+  color: #616161;
+}
+.header #menu-link ul > li > ul {
+  display: none;
+}
 
 #breadcrumb {
   background: #7fd0eb;
@@ -499,24 +565,6 @@ label.disabled {
 .recenter-map {
   margin: 0;
   padding: 0;
-}
-
-#logo {
-  padding: 5px 25px;
-  color: #fff;
-}
-#logo img {
-  vertical-align: middle;
-  padding-right: 2px;
-}
-#logo > a {
-  text-decoration: none;
-  color: #fff;
-}
-#logo > span.description {
-  border-left: 1px solid #fff;
-  padding-left: 10px;
-  margin-left: 10px;
 }
 
 .logo-text {
