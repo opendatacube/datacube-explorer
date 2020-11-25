@@ -17,11 +17,14 @@ $highlight_alt2: #EEAF30
 
 $header_highlight: lighten($bold_highlight, 20%)
 $header_highlight_strong: lighten($bold_highlight, 25%)
+$header_background: lighten($bold_highlight, 30%)
 
 $muted_text: lighten($bold_highlight, 32%)
 
 $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
+
+$menu_background: $emphasis_strong
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1)
@@ -82,8 +85,10 @@ a
 .header
     background: $header_stipe1
     width: 100%
-    height: 50px
     display: block
+    text-align: right
+    &::after
+        clear: both
 
     #logo
         padding: 5px 25px
@@ -104,48 +109,42 @@ a
             margin-left: 10px
 
     #menu-link
-        float: right
-        color: #fff
-
+        display: inline-block
+        color: #b8d8e6
+        a
+            color: #b8d8e6
 
         ul
-            padding: 0px
-            margin: 0px
+            padding: 0
+            margin: 0
 
             > li
                 list-style: none
-                display: block
-                float: left
-                padding:15px
-                line-height: 20px
-                font-weight: bold
-                cursor: pointer
-                max-width: 175px
-                overflow: hidden
-                text-align: center
+                display: inline-block
+                position: relative
 
-                a
-                    color: #fff
+                > span, > a
+                    @include box_padding
+                    display: block
+                    white-space: nowrap
+
+                    text-decoration: none
+                    &:hover
+                        text-decoration: underline
 
                 &:hover
-                    color: $header_highlight_strong
-                    background: $header_stripe2
+                    color: #fff
+                    background-color: $menu_background
 
                     > ul
                         display: block
-                        background: $header_stripe2
-                        max-width: 175px
+                        background: $menu_background
                         position: absolute
+                        top: 100%
+                        left: 0
                         z-index: 999
-                        margin-left: -15px
-                        border-top:1px solid $header_stipe1
 
                         > li
-                            color: #fff
-                            display: block
-                            float: none
-                            padding-left:10px
-
                             &:hover
                                 a
                                     color: $header_highlight_strong
@@ -171,7 +170,7 @@ header
     padding: 0
     display: flex
     flex-direction: row
-    background: $header_highlight_strong
+    background: $header_background
 
 footer
     padding: 5px 10px
@@ -195,7 +194,6 @@ footer
 #map
     flex: 1 1
     height: calc(100vh - 100px)
-    border-top: 7px $header_stipe1 solid
 
 // show two columns on wide displays
 @media (min-width: 800px)
@@ -204,7 +202,6 @@ footer
 
     .info-panel
         width: 250px
-        border-top: 7px $header_stripe2 solid
 
 
 .info-panel
@@ -289,14 +286,17 @@ ul
 .header-option
     position: relative
     border-collapse: collapse
-    max-width: 60%
     vertical-align: bottom
 
     background-color: $header_highlight_strong
 
-    $menu_background: $emphasis_strong
     $hover_footer_size: 0px
     $hover_footer_color: $emphasis_light
+
+    // Has limited, short options. Like a year or month.
+    // So we never want them wrapping.
+    &.limited
+        white-space: nowrap
 
     &:hover
         background-color: lighten($header_highlight_strong, 5%)
