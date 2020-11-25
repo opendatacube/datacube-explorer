@@ -42,11 +42,24 @@ if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
     _monitoring.init_app_monitoring()
 
 
-# @app.route('/')
 @app.route("/<product_name>")
 @app.route("/<product_name>/<int:year>")
 @app.route("/<product_name>/<int:year>/<int:month>")
 @app.route("/<product_name>/<int:year>/<int:month>/<int:day>")
+def legacy_overview_page(
+    product_name: str = None, year: int = None, month: int = None, day: int = None
+):
+    return redirect(
+        url_for(
+            ".overview_page", product_name=product_name, year=year, month=month, day=day
+        )
+    )
+
+
+@app.route("/products/<product_name>/extents")
+@app.route("/products/<product_name>/extents/<int:year>")
+@app.route("/products/<product_name>/extents/<int:year>/<int:month>")
+@app.route("/products/<product_name>/extents/<int:year>/<int:month>/<int:day>")
 def overview_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
@@ -94,11 +107,24 @@ def overview_page(
     )
 
 
-# @app.route('/datasets')
 @app.route("/datasets/<product_name>")
 @app.route("/datasets/<product_name>/<int:year>")
 @app.route("/datasets/<product_name>/<int:year>/<int:month>")
 @app.route("/datasets/<product_name>/<int:year>/<int:month>/<int:day>")
+def legacy_search_page(
+    product_name: str = None, year: int = None, month: int = None, day: int = None
+):
+    return redirect(
+        url_for(
+            ".search_page", product_name=product_name, year=year, month=month, day=day
+        )
+    )
+
+
+@app.route("/products/<product_name>/datasets")
+@app.route("/products/<product_name>/datasets/<int:year>")
+@app.route("/products/<product_name>/datasets/<int:year>/<int:month>")
+@app.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
 def search_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
@@ -179,6 +205,31 @@ def search_page(
 @app.route("/region/<product_name>/<region_code>/<int:year>")
 @app.route("/region/<product_name>/<region_code>/<int:year>/<int:month>")
 @app.route("/region/<product_name>/<region_code>/<int:year>/<int:month>/<int:day>")
+def legacy_region_page(
+    product_name: str = None,
+    region_code: str = None,
+    year: int = None,
+    month: int = None,
+    day: int = None,
+):
+    return redirect(
+        url_for(
+            ".region_page",
+            product_name=product_name,
+            region_code=region_code,
+            year=year,
+            month=month,
+            day=day,
+        )
+    )
+
+
+@app.route("/product/<product_name>/regions/<region_code>")
+@app.route("/product/<product_name>/regions/<region_code>/<int:year>")
+@app.route("/product/<product_name>/regions/<region_code>/<int:year>/<int:month>")
+@app.route(
+    "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>"
+)
 def region_page(
     product_name: str = None,
     region_code: str = None,
@@ -292,27 +343,51 @@ def inject_globals():
         if product_summary:
             last_updated = datetime.now() - product_summary.last_refresh_age
 
-    rpath = request.path
-    breadcrumb = []
-    i = 2
-    for element in rpath.split("/"):
-        if len(element) > 0:
-            link = "/".join(rpath.split("/")[:i])
-            breadcrumb.append((link, element, link == rpath))
-            i += 1
-
     return dict(
+        # Only the known, summarised products in groups.
         grouped_products=_get_grouped_products(),
+        # All products in the datacube, summarised or not.
+        datacube_products=_model.STORE.index.products.get_all(),
+        datacube_metadata_types=_model.STORE.index.metadata_types.get_all(),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
         grouping_timezone=_model.STORE.grouping_timezone,
         last_updated_time=last_updated,
-        db_origin=app.config.get(
-            "STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"
-        ),
-        breadcrumb=breadcrumb,
+        explorer_instance_title=app.config.get(
+            "CUBEDASH_INSTANCE_TITLE",
+        )
+        or app.config.get("STAC_ENDPOINT_TITLE", ""),
+        breadcrumb=_get_breadcrumbs(request.path),
     )
+
+
+def _get_breadcrumbs(url: str):
+    """
+    >>> _get_breadcrumbs('/products/great_product')
+    [('/products', 'products', False), ('/products/great_product', 'great_product', True)]
+    >>> _get_breadcrumbs('/products/')
+    [('/products', 'products', False)]
+    >>> _get_breadcrumbs('/')
+    []
+    >>> _get_breadcrumbs('')
+    []
+    """
+    breadcrumb = []
+    i = 2
+    for part_name in url.split("/"):
+        if part_name:
+            part_href = "/".join(url.split("/")[:i])
+            breadcrumb.append(
+                (
+                    part_href,
+                    part_name,
+                    # Don't link to the current page.
+                    part_href != url,
+                )
+            )
+            i += 1
+    return breadcrumb
 
 
 def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:

@@ -1,22 +1,43 @@
 from __future__ import absolute_import
 
 import logging
+from uuid import UUID
 
-from flask import Blueprint, abort
+import flask
+from flask import Blueprint, abort, url_for
 
 from . import _model
 from . import _utils as utils
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint("dataset", __name__, url_prefix="/dataset")
+bp = Blueprint(
+    "dataset",
+    __name__,
+)
 
 PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
     "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", 25
 )
 
 
-@bp.route("/<uuid:id_>")
+@bp.route("/dataset/<uuid:id_>")
 def dataset_page(id_):
+
+    index = _model.STORE.index
+    dataset = index.datasets.get(id_, include_sources=True)
+
+    if dataset is None:
+        abort(404, f"No dataset found with id {id_}")
+
+    return flask.redirect(
+        url_for(
+            "dataset.dataset_full_page", product_name=dataset.type.name, id_=dataset.id
+        )
+    )
+
+
+@bp.route("/products/<product_name>/datasets/<uuid:id_>")
+def dataset_full_page(product_name: str, id_: UUID):
     derived_dataset_overflow = source_dataset_overflow = 0
 
     index = _model.STORE.index
@@ -24,6 +45,17 @@ def dataset_page(id_):
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
+
+    if product_name != dataset.type.name:
+        actual_url = url_for(
+            "dataset.dataset_full_page", product_name=dataset.type.name, id_=dataset.id
+        )
+        abort(
+            404,
+            f"No dataset found for product {product_name!r}, "
+            f"however one with that id was found in product {product_name!r}. "
+            f"Perhaps you meant to visit {actual_url!r}",
+        )
 
     source_list = list(dataset.metadata.sources.items())
     if len(source_list) > PROVENANCE_DISPLAY_LIMIT:
@@ -66,7 +98,7 @@ def dataset_page(id_):
     )
 
 
-@bp.route("/<uuid:id_>.odc-metadata.yaml")
+@bp.route("/dataset/<uuid:id_>.odc-metadata.yaml")
 def raw_doc(id_):
     index = _model.STORE.index
     dataset = index.datasets.get(id_, include_sources=True)

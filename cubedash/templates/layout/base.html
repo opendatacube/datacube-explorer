@@ -34,12 +34,28 @@
         </div>
         <div id="menu-link">
             <ul>
-                <li class="top-menu"><a href="{{ url_for('product.products_page') }}">Dashboard</a></li>
+                <li class="top-menu">
+                    Products
+                    <ul>
+                        {% for product in datacube_products %}
+                            <li><a href="{{ url_for('product.product_page', name=product.name) }}">{{ product.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li class="top-menu">
+                    Types
+                    <ul>
+                        {% for md_type in datacube_metadata_types %}
+                            <li><a href="{{ url_for('product.metadata_type_page', name=md_type.name) }}">{{ md_type.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
                 <li class="top-menu">
                     Audit
                     <ul>
-                        <li><a href="{{url_for('audit.product_audit_page')}}">Product Audit</a></li>
-                        <li><a href="{{url_for('arrivals_page')}}">Product Arrivals</a></li>
+                        <li><a href="{{ url_for('product.storage_page') }}">Storage</a></li>
+                        <li><a href="{{url_for('audit.product_audit_page')}}">Metadata Issues</a></li>
+                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
                     </ul>
                 </li>
                 <li class="top-menu">API Endpoints
@@ -50,7 +66,7 @@
                 </li>
                 <li class="top-menu">Downloadable Resource
                     <ul>
-                        <li><a href="{{ url_for('product.products_csv') }}">About.csv</a></li>
+                        <li><a href="{{ url_for('product.storage_csv') }}">About.csv</a></li>
                         <li><a href="{{ url_for('product.product_list_text') }}">products.txt</a></li>
                         <li><a href="{{ url_for('audit.get_timings') }}">day-times.txt</a></li>
                     </ul>
@@ -59,15 +75,15 @@
         </div>
     </div>
     <div id="breadcrumb">
-        <a class="item" href="/">Home</a>
+        <a class="item" href="/">home</a>
         {% if breadcrumb %}
-        {% for url, title, valid_link in breadcrumb %}
-        {% if valid_link %}
-        >> <a class="item" href="{{url}}">{{title}}</a>
-        {% else %}
-        >> <span class="item">{{title}}</span>
-        {% endif %}
-        {% endfor %}
+            {% for url, title, valid_link in breadcrumb %}
+                {% if valid_link %}
+                    >> <a class="item" href="{{url}}">{{title}}</a>
+                {% else %}
+                    >> <span class="item">{{title}}</span>
+                {% endif %}
+            {% endfor %}
         {% endif %}
     </div>
     {% block header %}{% endblock %}

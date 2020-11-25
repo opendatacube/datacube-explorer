@@ -1,0 +1,81 @@
+{% extends "layout/base.html" %}
+
+{% block title %}About Products{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+
+        a {
+            font-weight: bold;
+        }
+
+        body {
+            max-width: 100%;
+        }
+        .uri-path {
+            margin-bottom: 10px;
+        }
+
+        tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+    </style>
+{% endblock %}
+{% block panel %}
+
+{% endblock %}
+{% block content %}
+    <div class="panel">
+        <h2 class="followed">Storage of {{ product_summary_and_location | length }} products</h2>
+        <div class="header-follow">
+            Open Data Cube {{ datacube_version }}
+            {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
+            <a href="{{ url_for('product.storage_csv') }}" class="badge header-badge">csv <i class="fa fa-file-excel-o" aria-hidden="true"></i></a>
+        </div>
+    </div>
+    <div class="panel overflowable">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="numeric">Count</th>
+                    <th>Location</th>
+                    <th class="numeric">License</th>
+                    <th>Definition</th>
+                    <th>Summary Age</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product, summary, locations in product_summary_and_location %}
+                <tr>
+                    <td>{{ product.name | product_link }}</td>
+                    <td class="numeric">{{ '{:,d}'.format(summary.dataset_count) }}</td>
+                    <td>
+                        {% if locations -%}
+                            {%- for location in locations -%}
+                                <div class="uri-path">{{- location.common_prefix -}}</div>
+                            {%- endfor -%}
+                        {% else -%}
+                            -
+                        {%- endif %}
+                    </td>
+                    <td class="numeric">{{ product | product_license_link }}</td>
+                    <td><a href="{{url_for('product.raw_product_doc', name=product.name)}}" class="badge">doc</a></td>
+                                <td>
+                    {% if summary.last_refresh_age.days > 1 %}
+                        {{ summary.last_refresh_age.days }} days
+                    {% elif summary.last_refresh_age.seconds // 60 // 60 > 1 %}
+                        {{ summary.last_refresh_age.seconds // 60 // 60 }} hours
+                    {% else %}
+                        {{ summary.last_refresh_age.seconds // 60 }} minutes
+                    {% endif %}
+                </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+
+
+    </div>
+{% endblock %}
