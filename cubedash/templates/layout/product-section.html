@@ -75,9 +75,9 @@
             </div>
         </div>
         {% if product %}
-            <div class="header-option" onclick="">
+            <div class="header-option limited" onclick="">
                 <h2 class="option-title">{{ year or 'All years' }}</h2>
-                <div class="option-menu">
+                <div class="option-menu left">
 
                     {% set year_range=[] %}
                     {% if year_selector_summary and year_selector_summary.timeline_dataset_counts %}
@@ -110,7 +110,7 @@
             </div>
         {% endif %}
         {% if year %}
-            <div class="header-option" onclick="">
+            <div class="header-option limited" onclick="">
                 <h2 class="option-title">
                     {% if month %}
                         {{ month | month_name }}
@@ -156,7 +156,7 @@
         {% endif %}
 
         {% if month %}
-            <div class="header-option" onclick="">
+            <div class="header-option limited" onclick="">
                 <h2 class="option-title">
                     {% if day %}
                         {{ day | day_ordinal }}

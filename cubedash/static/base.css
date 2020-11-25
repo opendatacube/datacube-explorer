@@ -38,8 +38,11 @@ a {
 .header {
   background: #2dace1;
   width: 100%;
-  height: 50px;
   display: block;
+  text-align: right;
+}
+.header::after {
+  clear: both;
 }
 .header #logo {
   padding: 5px 25px;
@@ -60,46 +63,46 @@ a {
   margin-left: 10px;
 }
 .header #menu-link {
-  float: right;
-  color: #fff;
+  display: inline-block;
+  color: #b8d8e6;
+}
+.header #menu-link a {
+  color: #b8d8e6;
 }
 .header #menu-link ul {
-  padding: 0px;
-  margin: 0px;
+  padding: 0;
+  margin: 0;
 }
 .header #menu-link ul > li {
   list-style: none;
-  display: block;
-  float: left;
-  padding: 15px;
-  line-height: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  max-width: 175px;
-  overflow: hidden;
-  text-align: center;
+  display: inline-block;
+  position: relative;
 }
-.header #menu-link ul > li a {
-  color: #fff;
+.header #menu-link ul > li > span, .header #menu-link ul > li > a {
+  padding: 10px 20px 10px;
+  display: block;
+  white-space: nowrap;
+  text-decoration: none;
+}
+@media (min-width: 800px) {
+  .header #menu-link ul > li > span, .header #menu-link ul > li > a {
+    padding: 15px 30px 15px;
+  }
+}
+.header #menu-link ul > li > span:hover, .header #menu-link ul > li > a:hover {
+  text-decoration: underline;
 }
 .header #menu-link ul > li:hover {
-  color: #616161;
-  background: #7fd0eb;
+  color: #fff;
+  background-color: #008fc5;
 }
 .header #menu-link ul > li:hover > ul {
   display: block;
-  background: #7fd0eb;
-  max-width: 175px;
+  background: #008fc5;
   position: absolute;
+  top: 100%;
+  left: 0;
   z-index: 999;
-  margin-left: -15px;
-  border-top: 1px solid #2dace1;
-}
-.header #menu-link ul > li:hover > ul > li {
-  color: #fff;
-  display: block;
-  float: none;
-  padding-left: 10px;
 }
 .header #menu-link ul > li:hover > ul > li:hover a {
   color: #616161;
@@ -123,7 +126,7 @@ header {
   padding: 0;
   display: flex;
   flex-direction: row;
-  background: #616161;
+  background: #6e6e6e;
 }
 
 footer {
@@ -149,7 +152,6 @@ footer {
 #map {
   flex: 1 1;
   height: calc(100vh - 100px);
-  border-top: 7px #2dace1 solid;
 }
 
 @media (min-width: 800px) {
@@ -159,7 +161,6 @@ footer {
 
   .info-panel {
     width: 250px;
-    border-top: 7px #7fd0eb solid;
   }
 }
 .info-panel ul {
@@ -262,9 +263,11 @@ ul.quiet {
 .header-option {
   position: relative;
   border-collapse: collapse;
-  max-width: 60%;
   vertical-align: bottom;
   background-color: #616161;
+}
+.header-option.limited {
+  white-space: nowrap;
 }
 .header-option:hover {
   background-color: #6e6e6e;
