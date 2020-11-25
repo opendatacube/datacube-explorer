@@ -17,8 +17,13 @@ bp = Blueprint("product", __name__)
 
 
 @bp.route("/about.csv")
-def products_csv():
-    """Get the products table as a CSV"""
+def legacy_about_csv():
+    return redirect(".storage_csv")
+
+
+@bp.route("/storage.csv")
+def storage_csv():
+    """Get the product storage table as a CSV"""
     out = io.StringIO()
     cw = csv.writer(out)
     cw.writerow(
@@ -71,10 +76,10 @@ def _only_alphanumeric(s: str):
     return re.sub("[^0-9a-zA-Z]+", "-", s)
 
 
-@bp.route("/about")
-def products_page():
+@bp.route("/storage")
+def storage_page():
     return utils.render(
-        "about.html",
+        "storage.html",
         product_summary_and_location=[
             (product, summary, _model.STORE.product_location_samples(product.name))
             for product, summary in _model.get_products_with_summaries()
@@ -91,6 +96,11 @@ def product_redirect():
 
 
 @bp.route("/product/<name>")
+def legacy_product_page(name):
+    return redirect(url_for(".product_page", name=name))
+
+
+@bp.route("/products/<name>")
 def product_page(name):
     product = _model.STORE.index.products.get_by_name(name)
     if not product:
@@ -108,6 +118,11 @@ def product_page(name):
 
 
 @bp.route("/product/<name>.odc-product.yaml")
+def legacy_raw_product_doc(name):
+    return redirect(url_for(".raw_product_doc", name=name))
+
+
+@bp.route("/products/<name>.odc-product.yaml")
 def raw_product_doc(name):
     product = _model.STORE.index.products.get_by_name(name)
     if not product:
@@ -120,6 +135,11 @@ def raw_product_doc(name):
 
 
 @bp.route("/metadata-type/<name>")
+def legacy_metadata_type_page(name):
+    return redirect(url_for(".metadata_type_page", name=name))
+
+
+@bp.route("/metadata-types/<name>")
 def metadata_type_page(name):
     metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
     if not metadata_type:
@@ -143,6 +163,11 @@ def metadata_type_page(name):
 
 
 @bp.route("/metadata-type/<name>.odc-type.yaml")
+def legacy_metadata_type_doc(name):
+    return redirect(url_for(".metadata_type_doc", name=name))
+
+
+@bp.route("/metadata-types/<name>.odc-type.yaml")
 def raw_metadata_type_doc(name):
     metadata_type = _model.STORE.index.metadata_types.get_by_name(name)
     if not metadata_type:
