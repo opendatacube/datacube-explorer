@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 import flask
-from flask import Blueprint, Response
+from flask import Blueprint, Response, redirect, url_for
 
 from datacube.model import Range
 
@@ -15,7 +15,10 @@ from . import _model
 from . import _utils as utils
 
 _LOG = logging.getLogger(__name__)
-bp = Blueprint("audit", __name__, url_prefix="/product-audit")
+bp = Blueprint(
+    "audit",
+    __name__,
+)
 
 
 @dataclass
@@ -62,8 +65,13 @@ def cached_product_timings():
     )
 
 
-@bp.route("/")
-def product_audit_page():
+@bp.route("/product-audit/")
+def legacy_product_audit_page():
+    return redirect(url_for(".product_metadata_page"))
+
+
+@bp.route("/audit/product-metadata")
+def product_metadata_page():
     store = _model.STORE
     all_products = set(p.name for p in store.index.products.get_all())
     summarised_products = set(store.list_complete_products())
@@ -74,7 +82,7 @@ def product_audit_page():
         extra["product_timings_iter"] = cached_product_timings()
 
     return utils.render(
-        "product-audit.html",
+        "audit-metadata-issues.html",
         products_all=all_products,
         products_summarised=summarised_products,
         products_missing=unsummarised_product_names,
@@ -83,8 +91,13 @@ def product_audit_page():
     )
 
 
-@bp.route("/day-times.txt")
-def get_timings():
+@bp.route("/product-audit/day-times.txt")
+def get_legacy_timings():
+    return redirect(url_for(".get_timings_text"))
+
+
+@bp.route("/audit/day-query-times.txt")
+def get_timings_text():
     def respond():
         yield "product\tcount\ttime_ms\n"
         for f in product_timings():

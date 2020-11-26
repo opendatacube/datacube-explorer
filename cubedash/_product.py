@@ -21,7 +21,7 @@ def legacy_about_csv():
     return redirect(".storage_csv")
 
 
-@bp.route("/storage.csv")
+@bp.route("/audit/storage.csv")
 def storage_csv():
     """Get the product storage table as a CSV"""
     out = io.StringIO()
@@ -76,7 +76,7 @@ def _only_alphanumeric(s: str):
     return re.sub("[^0-9a-zA-Z]+", "-", s)
 
 
-@bp.route("/storage")
+@bp.route("/audit/storage")
 def storage_page():
     return utils.render(
         "storage.html",
@@ -93,6 +93,20 @@ def product_redirect():
     If people remove the name from a "/product/<name>" url, take them somewhere useful
     """
     return redirect(url_for(".products_page"))
+
+
+@bp.route("/products")
+def products_page():
+    return utils.render(
+        "products.html",
+    )
+
+
+@bp.route("/metadata-types")
+def metadata_types_page():
+    return utils.render(
+        "metadata-types.html",
+    )
 
 
 @bp.route("/product/<name>")

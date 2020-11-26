@@ -54,21 +54,21 @@
                     Audit
                     <ul>
                         <li><a href="{{ url_for('product.storage_page') }}">Storage</a></li>
-                        <li><a href="{{url_for('audit.product_audit_page')}}">Metadata Issues</a></li>
-                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
+                        <li><a href="{{url_for('audit.product_metadata_page')}}">Metadata Issues</a></li>
                     </ul>
                 </li>
-                <li class="top-menu">API Endpoints
+                <li class="top-menu">Explore
                     <ul>
+                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
                         <li><a href="{{ url_for('stac.root') }}">STAC API</a></li>
-                        <li><a href="{{ url_for('stac.list_collections') }}">Collection</a></li>
+                        <li><a href="{{ url_for('stac.list_collections') }}">Stac Collections</a></li>
                     </ul>
                 </li>
                 <li class="top-menu">Downloadable Resource
                     <ul>
                         <li><a href="{{ url_for('product.storage_csv') }}">About.csv</a></li>
                         <li><a href="{{ url_for('product.product_list_text') }}">products.txt</a></li>
-                        <li><a href="{{ url_for('audit.get_timings') }}">day-times.txt</a></li>
+                        <li><a href="{{ url_for('audit.get_timings_text') }}">day-times.txt</a></li>
                     </ul>
                 </li>
             </ul>
