@@ -1,0 +1,30 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Metadata Types{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .panel.odd > h3 {
+            margin-bottom: 10px;
+        }
+
+    </style>
+{% endblock %}
+
+
+{% block content %}
+<div class="panel odd">
+
+    {% for metadata_type in datacube_metadata_types %}
+
+        <h3 class="">
+            <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}">
+                {{ metadata_type.name }}
+            </a>
+        </h3>
+        <div>{{ metadata_type.definition.description }}</div>
+
+    {% endfor %}
+</div>
+{% endblock %}

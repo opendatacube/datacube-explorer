@@ -22,10 +22,10 @@
         <p>
                 <i class="fa fa-globe" aria-hidden="true"></i>
                 <a href="{{ url_for('overview_page', product_name=product.name) }}">
-                    {% if product_summary.time_earliest -%}
+                    Extending {% if product_summary.time_earliest -%}
                         {{ product_summary.time_earliest.strftime('%B %Y') }} to
                         {{ product_summary.time_latest.strftime('%B %Y') }}
-                    {%- endif -%}
+                    {%- endif %}
                 </a><br/>
                 <i class="fa fa-list" aria-hidden="true"></i>
                 <a href="{{ url_for('search_page', product_name=product.name) }}">

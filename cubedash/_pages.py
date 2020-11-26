@@ -224,6 +224,17 @@ def legacy_region_page(
     )
 
 
+@app.route("/product/<product_name>/regions")
+def regions_page(product_name: str):
+    # A map of regions is shown on the overview page.
+    return redirect(
+        url_for(
+            ".overview_page",
+            product_name=product_name,
+        )
+    )
+
+
 @app.route("/product/<product_name>/regions/<region_code>")
 @app.route("/product/<product_name>/regions/<region_code>/<int:year>")
 @app.route("/product/<product_name>/regions/<region_code>/<int:year>/<int:month>")
@@ -303,7 +314,13 @@ def timeline_page(product_name: str):
 
 def _load_product(
     product_name, year, month, day
-) -> Tuple[DatasetType, ProductSummary, TimePeriodOverview]:
+) -> Tuple[
+    DatasetType,
+    ProductSummary,
+    TimePeriodOverview,
+    TimePeriodOverview,
+    TimePeriodOverview,
+]:
     product = None
     if product_name:
         try:
@@ -347,8 +364,8 @@ def inject_globals():
         # Only the known, summarised products in groups.
         grouped_products=_get_grouped_products(),
         # All products in the datacube, summarised or not.
-        datacube_products=_model.STORE.index.products.get_all(),
-        datacube_metadata_types=_model.STORE.index.metadata_types.get_all(),
+        datacube_products=list(_model.STORE.index.products.get_all()),
+        datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
