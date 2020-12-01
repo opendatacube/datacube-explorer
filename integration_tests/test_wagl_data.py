@@ -86,7 +86,7 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
 
     assert len(res.find(".unavailable-metadata .search-result")) == 2
 
-    res: Response = client.get("/product-audit/day-times.txt")
+    res: Response = client.get("/audit/day-query-times.txt")
     plain_timing_results = res.data.decode("utf-8")
     print(plain_timing_results)
     assert '"s2a_ard_granule"\t8\t' in plain_timing_results
