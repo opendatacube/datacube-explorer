@@ -94,7 +94,7 @@ def test_prometheus(sentry_client: FlaskClient):
 def test_default_redirect(client: FlaskClient):
     rv: Response = client.get("/", follow_redirects=False)
     # Redirect to a default.
-    assert rv.location.endswith("/ls7_nbar_scene")
+    assert rv.location.endswith("/products/ls7_nbar_scene/extents")
 
 
 def test_get_overview(client: FlaskClient):
@@ -154,11 +154,15 @@ def test_get_overview_product_links(client: FlaskClient):
 
     product_links = html.find(".source-product a")
     assert [p.text for p in product_links] == ["ls7_level1_scene"]
-    assert [p.attrs["href"] for p in product_links] == ["/ls7_level1_scene/2017"]
+    assert [p.attrs["href"] for p in product_links] == [
+        "/products/ls7_level1_scene/extents/2017"
+    ]
 
     product_links = html.find(".derived-product a")
     assert [p.text for p in product_links] == ["ls7_pq_legacy_scene"]
-    assert [p.attrs["href"] for p in product_links] == ["/ls7_pq_legacy_scene/2017"]
+    assert [p.attrs["href"] for p in product_links] == [
+        "/products/ls7_pq_legacy_scene/extents/2017"
+    ]
 
 
 def test_get_day_overviews(client: FlaskClient):
@@ -173,16 +177,6 @@ def test_get_day_overviews(client: FlaskClient):
     # Empty day
     html = get_html(client, "/ls7_nbar_scene/2017/4/22")
     check_dataset_count(html, 0)
-
-
-def test_menu_items(client: FlaskClient):
-    # test all elements of menu items
-    html = get_html(client, "/ls7_nbar_scene")
-    menu_links = html.find("#menu-link", first=True)
-    # 4 visible top menus
-    assert len(menu_links.find("ul", first=True).find("li.top-menu")) == 4
-    # 7 sub-menu items
-    assert len(menu_links.find("ul", first=True).find("li ul li")) == 7
 
 
 def test_summary_product(client: FlaskClient):
@@ -273,14 +267,17 @@ def test_view_dataset(client: FlaskClient):
     )
 
     # wofs_albers dataset (has no label or location)
-    rv: Response = client.get("/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
-    assert b"-20.502 to -19.6" in rv.data
-    assert b"132.0 to 132.924" in rv.data
+    rv: HTML = get_html(client, "/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
+    assert "-20.502 to -19.6" in rv.text
+    assert "132.0 to 132.924" in rv.text
 
     # No dataset found: should return 404, not a server error.
-    rv: Response = client.get("/dataset/de071517-af92-4dd7-bf91-12b4e7c9a435")
+    rv: Response = client.get(
+        "/dataset/de071517-af92-4dd7-bf91-12b4e7c9a435", follow_redirects=True
+    )
+
     assert rv.status_code == 404
-    assert b"No dataset found" in rv.data
+    assert b"No dataset found" in rv.data, rv.data.decode("utf-8")
 
 
 def _h1_text(html):
@@ -288,8 +285,8 @@ def _h1_text(html):
 
 
 def test_view_product(client: FlaskClient):
-    rv: Response = client.get("/product/ls7_nbar_scene")
-    assert b"Landsat 7 NBAR 25 metre" in rv.data
+    rv: HTML = get_html(client, "/product/ls7_nbar_scene")
+    assert "Landsat 7 NBAR 25 metre" in rv.text
 
 
 def test_view_metadata_type(client: FlaskClient, populated_index: Index):
@@ -310,13 +307,13 @@ def test_view_metadata_type(client: FlaskClient, populated_index: Index):
     assert "ls8_nbar_albers" in products_using_it
 
 
-def test_about_page(client: FlaskClient, populated_index: Index):
-    html: HTML = get_html(client, "/about")
+def test_storage_page(client: FlaskClient, populated_index: Index):
+    html: HTML = get_html(client, "/audit/storage")
 
     assert html.find(".product-name", containing="wofs_albers")
 
     product_count = len(list(populated_index.products.get_all()))
-    assert f"{product_count} Products" in html.text
+    assert f"{product_count} products" in html.text
     assert len(html.find(".data-table tbody tr")) == product_count
 
 
@@ -440,9 +437,33 @@ def test_region_page(client: FlaskClient):
     assert result.text == "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502"
 
     # If "I'm feeling lucky", and only one result, redirect straight to it.
-    response: Response = client.get("/region/ls7_nbar_scene/96_82?feelinglucky")
+    assert_redirects_to(
+        client,
+        "/product/ls7_nbar_scene/regions/96_82?feelinglucky=",
+        "/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+    )
+
+
+def test_legacy_region_redirect(client: FlaskClient):
+
+    # Legacy redirect works, and maintains "feeling lucky"
+    assert_redirects_to(
+        client,
+        "/region/ls7_nbar_scene/96_82?feelinglucky",
+        "/product/ls7_nbar_scene/regions/96_82?feelinglucky=",
+    )
+
+
+def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str):
+    __tracebackhide__ = True
+    response: Response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
-    assert response.location.endswith("/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c")
+    assert response.location.endswith(redirects_to_url), (
+        f"Expected redirect to end with:\n"
+        f"    {redirects_to_url!r}\n"
+        f"but was redirected to:\n"
+        f"    {response.location!r}"
+    )
 
 
 def test_search_page(client: FlaskClient):
@@ -516,13 +537,44 @@ def test_no_data_pages(client: FlaskClient):
     check_dataset_count(html, 0)
 
 
+def test_general_dataset_redirect(client: FlaskClient):
+    """
+    When someone queries a dataset UUID, they should be redirected
+    to the real URL for the collection.
+    """
+    rv: Response = client.get(
+        "/dataset/57848615-2421-4d25-bfef-73f57de0574d", follow_redirects=False
+    )
+    # It should be a redirect
+    assert rv.status_code == 302
+    assert (
+        rv.location
+        == "http://localhost/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d"
+    )
+
+
 def test_missing_dataset(client: FlaskClient):
-    rv: Response = client.get("/datasets/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c")
+    rv: Response = client.get(
+        "/products/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c/datasets",
+        follow_redirects=False,
+    )
     assert rv.status_code == 404
 
+    # But a real dataset definitely works:
+    rv: Response = client.get(
+        "/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d",
+        follow_redirects=False,
+    )
+    assert rv.status_code == 200
 
-def test_invalid_product(client: FlaskClient):
-    rv: Response = client.get("/fake_test_product/2017")
+
+def test_invalid_product_returns_not_found(client: FlaskClient):
+    """
+    An invalid product should be "not found". No server errors.
+    """
+    rv: Response = client.get(
+        "/products/fake_test_product/2017", follow_redirects=False
+    )
     assert rv.status_code == 404
 
 
@@ -579,8 +631,8 @@ def test_with_timings(client: FlaskClient):
 
 
 def test_plain_product_list(client: FlaskClient):
-    rv: Response = client.get("/products.txt")
-    assert "ls7_nbar_scene\n" in rv.data.decode("utf-8")
+    text, rv = get_text_response(client, "/products.txt")
+    assert "ls7_nbar_scene\n" in text
 
 
 def test_raw_documents(client: FlaskClient):
@@ -606,10 +658,10 @@ def test_raw_documents(client: FlaskClient):
             raise AssertionError(f"Expected valid YAML document for url {url!r}") from e
 
     # Product
-    check_doc_start_has_hint("Product", "/product/ls8_nbar_albers.odc-product.yaml")
+    check_doc_start_has_hint("Product", "/products/ls8_nbar_albers.odc-product.yaml")
 
     # Metadata type
-    check_doc_start_has_hint("Metadata Type", "/metadata-type/eo3.odc-type.yaml")
+    check_doc_start_has_hint("Metadata Type", "/metadata-types/eo3.odc-type.yaml")
 
     # A legacy EO1 dataset
     check_doc_start_has_hint(
