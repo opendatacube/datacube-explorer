@@ -15,26 +15,29 @@ from datacube.ui.click import config_option, environment_option, pass_index
 def find_examples_of_all_public_urls(index: Index):
 
     yield "/"
-    yield "/about"
     yield "/arrivals"
-    yield "/about.csv"
+
     yield "/products.txt"
-    yield "/product-audit/"
-    yield "/product-audit/day-times.txt"
+
+    yield "/audit/storage"
+    yield "/audit/storage.csv"
+    yield "/audit/product-metadata"
+    yield "/audit/day-query-times.txt"
+
     yield "/stac"
     yield "/stac/collections"
 
     for mdt in index.metadata_types.get_all():
         name = mdt.name
-        yield f"/metadata-type/{name}"
-        yield f"/metadata-type/{name}.odc-type.yaml"
+        yield f"/metadata-types/{name}"
+        yield f"/metadata-types/{name}.odc-type.yaml"
 
     for dt in index.products.get_all():
         name = dt.name
         yield f"/{name}"
         yield f"/datasets/{name}"
-        yield f"/product/{name}"
-        yield f"/product/{name}.odc-product.yaml"
+        yield f"/products/{name}"
+        yield f"/products/{name}.odc-product.yaml"
 
         yield f"/stac/collections/{name}"
         yield f"/stac/collections/{name}/items"
@@ -44,12 +47,14 @@ def find_examples_of_all_public_urls(index: Index):
         if has_datasets:
             dataset = has_datasets[0]
             time = dataset.center_time
-            yield f"/{name}/{time:%Y}"
-            yield f"/{name}/{time:%Y/%m}"
-            yield f"/{name}/{time:%Y/%m/%d}"
-            yield f"/datasets/{name}/{time:%Y}"
-            yield f"/datasets/{name}/{time:%Y/%m}"
-            yield f"/datasets/{name}/{time:%Y/%m/%d}"
+
+            yield f"/products/{name}/extents/{time:%Y}"
+            yield f"/products/{name}/extents/{time:%Y/%m}"
+            yield f"/products/{name}/extents/{time:%Y/%m/%d}"
+
+            yield f"/products/{name}/datasets/{time:%Y}"
+            yield f"/products/{name}/datasets/{time:%Y/%m}"
+            yield f"/products/{name}/datasets/{time:%Y/%m/%d}"
 
             yield f"/api/datasets/{name}"
             yield f"/api/footprint/{name}/{time:%Y/%m/%d}"
