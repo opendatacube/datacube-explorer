@@ -35,20 +35,20 @@ def get_geojson(client: FlaskClient, url: str) -> Dict:
 
 
 def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
-    response: Response = client.get(url)
+    response: Response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
     html = HTML(html=response.data.decode("utf-8"))
     return html, response
 
 
 def get_text_response(client: FlaskClient, url: str) -> Tuple[str, Response]:
-    response: Response = client.get(url)
+    response: Response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
     return response.data.decode("utf-8"), response
 
 
 def get_json(client: FlaskClient, url: str, expect_status_code=200) -> Dict:
-    rv: Response = client.get(url)
+    rv: Response = client.get(url, follow_redirects=True)
     try:
         assert rv.status_code == expect_status_code, (
             f"Expected status {expect_status_code} not {rv.status_code}."

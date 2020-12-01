@@ -116,7 +116,12 @@ def legacy_search_page(
 ):
     return redirect(
         url_for(
-            ".search_page", product_name=product_name, year=year, month=month, day=day
+            ".search_page",
+            product_name=product_name,
+            year=year,
+            month=month,
+            day=day,
+            **request.args,
         )
     )
 
@@ -220,6 +225,7 @@ def legacy_region_page(
             year=year,
             month=month,
             day=day,
+            **request.args,
         )
     )
 
@@ -382,8 +388,8 @@ def inject_globals():
 def _get_breadcrumbs(url: str):
     """
     >>> _get_breadcrumbs('/products/great_product')
-    [('/products', 'products', False), ('/products/great_product', 'great_product', True)]
-    >>> _get_breadcrumbs('/products/')
+    [('/products', 'products', True), ('/products/great_product', 'great_product', False)]
+    >>> _get_breadcrumbs('/products')
     [('/products', 'products', False)]
     >>> _get_breadcrumbs('/')
     []

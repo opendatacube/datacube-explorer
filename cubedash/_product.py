@@ -178,7 +178,7 @@ def metadata_type_page(name):
 
 @bp.route("/metadata-type/<name>.odc-type.yaml")
 def legacy_metadata_type_doc(name):
-    return redirect(url_for(".metadata_type_doc", name=name))
+    return redirect(url_for(".raw_metadata_type_doc", name=name))
 
 
 @bp.route("/metadata-types/<name>.odc-type.yaml")
