@@ -189,7 +189,10 @@ def _handle_search_request(
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
     )
-    time = request_args.get("time")
+
+    # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
+    time = request_args.get("datetime") or request_args.get("time")
+
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
