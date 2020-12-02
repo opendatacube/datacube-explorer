@@ -51,26 +51,12 @@
                     </ul>
                 </li>
                 <li class="top-menu ex-menu">
-                    <span class="ex-menu-title">Audit</span>
-                    <ul>
+                    <span class="ex-menu-title">Explore</span>
+                    <ul class="left">
+                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
                         <li><a href="{{ url_for('product.storage_page') }}">Storage</a></li>
                         <li><a href="{{url_for('audit.product_metadata_page')}}">Metadata Issues</a></li>
-                    </ul>
-                </li>
-                <li class="top-menu ex-menu">
-                        <span class="ex-menu-title">Explore</span>
-                    <ul>
-                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
-                        <li><a href="{{ url_for('stac.root') }}">STAC API</a></li>
-                        <li><a href="{{ url_for('stac.list_collections') }}">Stac Collections</a></li>
-                    </ul>
-                </li>
-                <li class="top-menu ex-menu">
-                    <span class="ex-menu-title">Downloadable Resource</span>
-                    <ul>
-                        <li><a href="{{ url_for('product.storage_csv') }}">About.csv</a></li>
-                        <li><a href="{{ url_for('product.product_list_text') }}">products.txt</a></li>
-                        <li><a href="{{ url_for('audit.get_timings_text') }}">day-times.txt</a></li>
+                        <li><a href="{{ url_for('about_page') }}">About Explorer</a></li>
                     </ul>
                 </li>
             </ul>

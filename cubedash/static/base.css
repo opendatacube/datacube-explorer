@@ -132,6 +132,10 @@ a {
   left: 0;
   z-index: 10000;
 }
+.header #menu-link .ex-menu.is-open > ul.left {
+  left: initial;
+  right: 0;
+}
 
 .ex-menu-title {
   cursor: pointer;

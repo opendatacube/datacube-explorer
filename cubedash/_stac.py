@@ -40,7 +40,7 @@ DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
     "STAC_DEFAULT_FULL_ITEM_INFORMATION", False
 )
 
-_STAC_VERSION = "1.0.0-beta.2"
+STAC_VERSION = "1.0.0-beta.2"
 
 
 def url_for(*args, **kwargs):
@@ -49,7 +49,7 @@ def url_for(*args, **kwargs):
     return flask.url_for(*args, **kwargs)
 
 
-def _endpoint_params() -> Dict:
+def stac_endpoint_information() -> Dict:
     config = _model.app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
@@ -78,7 +78,7 @@ def _stac_response(doc: Dict, content_type="application/json") -> flask.Response
     return _utils.as_json(
         {
             # Always put stac version at the beginning for readability.
-            "stac_version": _STAC_VERSION,
+            "stac_version": STAC_VERSION,
             # The given doc may override it too.
             **doc,
         },
@@ -98,7 +98,7 @@ def root():
     """
     return _stac_response(
         dict(
-            **_endpoint_params(),
+            **stac_endpoint_information(),
             links=[
                 *(
                     dict(

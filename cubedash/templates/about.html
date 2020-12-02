@@ -1,0 +1,97 @@
+{% extends "layout/base.html" %}
+{% set active_page = "about" %}
+
+{% block title %}About Explorer{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+
+        .uri-path {
+            margin-bottom: 15px;
+            display: block;
+
+        }
+
+        .path-variable {
+            font-style: italic;
+            background-color: #ccc
+        }
+        .path-variable::before {
+            content: '['
+        }
+        .path-variable::after {
+            content: ']'
+        }
+
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="panel highlight">
+        <h2 class="followed">
+            Exploring {{ '{:,d}'.format(total_dataset_count) }} datasets
+        </h2>
+    </div>
+
+    <div class="panel odd">
+        <h3>Collection APIs</h3>
+        Explorer exposes the collections over a <span class="badge header-badge"><a href="https://stacspec.org/">Stac</a> {{ stac_version }}</span> API:
+        <p class="uri-path">
+            <a href="{{ url_for('stac.root') }}">{{ url_for('stac.root', _external=True) }}</a>
+        </p>
+    </div>
+
+    <div class="panel">
+        <h3>Datacube Resources</h3>
+
+        Datacube-ready config and metadata can be downloaded from Explorer programatically:
+
+        <ul>
+            <li>
+                Datasets:
+                <span class="uri-path">
+                     {{ explorer_root_url}}dataset/<span class="path-variable">Dataset UUID</span>.odc-metadata.yaml
+                </span>
+            </li>
+            <li>
+                Products:
+                <span class="uri-path">
+                    {{ explorer_root_url}}products/<span class="path-variable">Product Name</span>.odc-product.yaml
+                </span>
+            </li>
+            <li>
+                Metadata types:
+                <span class="uri-path">
+                    {{ explorer_root_url}}metadata-types/<span class="path-variable">Metadata Type Name</span>.odc-type.yaml
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="panel">
+         <h3>Audit and Summaries</h3>
+
+        Much of Explorer's audit pages are available in CSV or text format.
+
+        <ul>
+            <li>
+                <a href="{{ url_for('product.storage_page') }}">Storage</a> information:
+                <span class="uri-path">
+                    {{ url_for('product.storage_csv', _external=True) }}
+                </span>
+            </li>
+            <li>
+                Simple, bash-ready product list:
+                <span class="uri-path">
+                    {{ url_for('product.product_list_text', _external=True) }}
+                </span>
+            </li>
+            <li>
+                <a href="{{ url_for('product.storage_page') }}">Day query timing</a> information:
+                <span class="uri-path">
+                    {{ url_for('audit.get_timings_text', _external=True) }}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endblock %}
+
