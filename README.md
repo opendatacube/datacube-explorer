@@ -129,6 +129,11 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
+
+    # Optional title for this Explorer instance to put at the top of every page. 
+    # Eg. "NCI"
+    # If the STAC_ENDPOINT_TITLE is set (below), it will be the default for this value.
+    CUBEDASH_INSTANCE_TITLE = None
     
     # Specify product grouping in the top menu.
     # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
