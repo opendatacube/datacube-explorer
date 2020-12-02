@@ -14,17 +14,14 @@
 
 
 {% block content %}
-<div class="panel odd">
-
+<div class="panel">
     {% for metadata_type in datacube_metadata_types %}
-
-        <h3 class="">
+        <h3>
             <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}">
                 {{ metadata_type.name }}
             </a>
         </h3>
         <div>{{ metadata_type.definition.description }}</div>
-
     {% endfor %}
 </div>
 {% endblock %}
