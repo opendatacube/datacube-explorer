@@ -40,14 +40,26 @@ a {
   width: 100%;
   display: block;
   text-align: right;
+  padding-top: 10px;
+}
+@media (min-width: 800px) {
+  .header {
+    padding-top: 15px;
+  }
 }
 .header::after {
   clear: both;
 }
 .header #logo {
-  padding: 5px 25px;
+  padding-left: 20px;
+  padding-top: 5px;
   color: #fff;
   float: left;
+}
+@media (min-width: 800px) {
+  .header #logo {
+    padding-left: 30px;
+  }
 }
 .header #logo img {
   vertical-align: middle;
@@ -132,7 +144,12 @@ a {
   background: #7fd0eb;
   color: #efefef;
   font-weight: bold;
-  padding: 15px 25px;
+  padding: 10px 20px 10px;
+}
+@media (min-width: 800px) {
+  #breadcrumb {
+    padding: 15px 30px 15px;
+  }
 }
 #breadcrumb .item {
   color: #fff;
@@ -147,12 +164,17 @@ header {
 }
 
 footer {
-  padding: 5px 10px;
+  padding: 10px 20px 10px;
   text-align: right;
   color: #fff;
-  background: #000;
   font-size: 0.7em;
   line-height: 2em;
+  background-color: #545454;
+}
+@media (min-width: 800px) {
+  footer {
+    padding: 15px 30px 15px;
+  }
 }
 
 #content {

@@ -46,6 +46,12 @@ $menu_background: $emphasis_strong
 
     padding-left: 10px*$scale
 
+@mixin top_padding($scale:1)
+    @media (min-width: 800px)
+        padding-top: 15px*$scale
+
+    padding-top: 10px*$scale
+
 @mixin wide_padding
     @include box_padding(1)
 
@@ -93,13 +99,17 @@ a
     width: 100%
     display: block
     text-align: right
+    @include top_padding
 
     &::after
         clear: both
 
 
     #logo
-        padding: 5px 25px
+        @include left_padding($scale:2)
+        // We can't align vertically perfectly, as logos have different inner padding.
+        padding-top: 5px
+
         color: #fff
         float: left
 
@@ -181,7 +191,7 @@ a
     background: $header_stripe2
     color: #efefef
     font-weight: bold
-    padding: 15px 25px
+    @include wide_padding
 
     .item
         color: #fff
@@ -195,12 +205,12 @@ header
     background: $header_background
 
 footer
-    padding: 5px 10px
+    @include wide_padding
     text-align: right
     color: #fff
-    background: #000
     font-size: 0.7em
     line-height: 2em
+    background-color: $header_highlight
 
 #content
     clear: right
