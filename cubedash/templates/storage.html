@@ -19,7 +19,10 @@
         tbody tr:hover {
             background-color: #f0f0f0;
         }
-
+        li.lineage {
+            line-height: 15px !important;
+            list-style-type: none;
+        }
     </style>
 {% endblock %}
 {% block panel %}
@@ -44,6 +47,8 @@
                     <th class="numeric">License</th>
                     <th>Definition</th>
                     <th>Summary Age</th>
+                    <th>Derived Products</th>
+                    <th>Source Products</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,6 +74,24 @@
                         {{ summary.last_refresh_age.seconds // 60 // 60 }} hours
                     {% else %}
                         {{ summary.last_refresh_age.seconds // 60 }} minutes
+                    {% endif %}
+                </td>
+                <td>
+                    {% if summary.derived_products %}
+                        {% for p in summary.derived_products %}
+                            <li class="lineage">{{ p | product_link }}</li>
+                        {% endfor%}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if summary.source_products %}
+                        {% for p in summary.source_products %}
+                            <li class="lineage">{{ p | product_link}}</li>
+                        {% endfor%}
+                    {% else %}
+                        -
                     {% endif %}
                 </td>
                 </tr>
