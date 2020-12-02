@@ -63,11 +63,35 @@ a {
   margin-left: 10px;
 }
 .header #menu-link {
-  display: inline-block;
-  color: #b8d8e6;
+  text-align: left;
+  color: #fff;
+}
+.header #menu-link > ul {
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: row;
 }
 .header #menu-link a {
-  color: #b8d8e6;
+  font-weight: bold;
+  color: #fff;
+}
+.header #menu-link .ex-menu-title, .header #menu-link a {
+  cursor: pointer;
+  padding: 10px 10px 10px;
+  display: block;
+  white-space: nowrap;
+  text-decoration: none;
+}
+@media (min-width: 800px) {
+  .header #menu-link .ex-menu-title, .header #menu-link a {
+    padding: 15px 15px 15px;
+  }
+}
+.header #menu-link .ex-menu-title:hover, .header #menu-link .is-open > .ex-menu-title {
+  background-color: #008fc5;
+}
+.header #menu-link a:hover {
+  color: #616161;
 }
 .header #menu-link ul {
   padding: 0;
@@ -75,40 +99,33 @@ a {
 }
 .header #menu-link ul > li {
   list-style: none;
-  display: inline-block;
   position: relative;
 }
-.header #menu-link ul > li > span, .header #menu-link ul > li > a {
-  padding: 10px 20px 10px;
-  display: block;
-  white-space: nowrap;
-  text-decoration: none;
-}
-@media (min-width: 800px) {
-  .header #menu-link ul > li > span, .header #menu-link ul > li > a {
-    padding: 15px 30px 15px;
-  }
-}
-.header #menu-link ul > li > span:hover, .header #menu-link ul > li > a:hover {
-  text-decoration: underline;
-}
-.header #menu-link ul > li:hover {
-  color: #fff;
-  background-color: #008fc5;
-}
-.header #menu-link ul > li:hover > ul {
-  display: block;
+.header #menu-link ul > li > ul > li {
   background: #008fc5;
+}
+.header #menu-link ul > li > ul > li:hover {
+  background-color: #007cab;
+}
+.header #menu-link ul > li > ul > li:hover a {
+  color: #fff;
+}
+.header #menu-link .ex-menu > ul {
+  display: none;
+}
+.header #menu-link .ex-menu.is-open > ul {
+  display: block;
   position: absolute;
   top: 100%;
   left: 0;
-  z-index: 999;
+  z-index: 10000;
 }
-.header #menu-link ul > li:hover > ul > li:hover a {
-  color: #616161;
+
+.ex-menu-title {
+  cursor: pointer;
 }
-.header #menu-link ul > li > ul {
-  display: none;
+.ex-menu-title::after {
+  content: " ▾";
 }
 
 #breadcrumb {

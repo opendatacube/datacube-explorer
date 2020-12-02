@@ -41,8 +41,8 @@
         {# Go to current page with different product/year/month options#}
         {% set nav_endpoint=request.url_rule.endpoint %}
 
-        <div class="header-option primary product-selection-header">
-            <h2 class="option-title" onclick="">
+        <div class="header-option primary product-selection-header ex-menu">
+            <h2 class="option-title ex-menu-title" onclick="">
                 {% if product.definition.description %}
                     <strong>{{ product.name }}</strong><span class="option-description">: {{ product.definition.description}}</span>
                 {% else %}
@@ -75,8 +75,8 @@
             </div>
         </div>
         {% if product %}
-            <div class="header-option limited" onclick="">
-                <h2 class="option-title">{{ year or 'All years' }}</h2>
+            <div class="header-option limited ex-menu" onclick="">
+                <h2 class="option-title ex-menu-title">{{ year or 'All years' }}</h2>
                 <div class="option-menu left">
 
                     {% set year_range=[] %}
@@ -110,8 +110,8 @@
             </div>
         {% endif %}
         {% if year %}
-            <div class="header-option limited" onclick="">
-                <h2 class="option-title">
+            <div class="header-option limited ex-menu" onclick="">
+                <h2 class="option-title ex-menu-title">
                     {% if month %}
                         {{ month | month_name }}
                     {% else %}
@@ -156,8 +156,8 @@
         {% endif %}
 
         {% if month %}
-            <div class="header-option limited" onclick="">
-                <h2 class="option-title">
+            <div class="header-option limited ex-menu" onclick="">
+                <h2 class="option-title ex-menu-title">
                     {% if day %}
                         {{ day | day_ordinal }}
                     {% else %}
