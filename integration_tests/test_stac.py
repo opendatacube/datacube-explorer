@@ -215,7 +215,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
         (
             "/stac/search?"
             "&bbox=[114, -33, 153, -10]"
-            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
     validate_items(
@@ -317,7 +317,7 @@ def test_stac_search_limits(stac_client: FlaskClient):
         (
             "/stac/search?"
             "&bbox=[114, -33, 153, -10]"
-            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
     assert len(geojson.get("features")) == OUR_PAGE_SIZE
@@ -336,7 +336,7 @@ def test_stac_includes_total(stac_client: FlaskClient):
         (
             "/stac/search?"
             "&bbox=[114, -33, 153, -10]"
-            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
     assert geojson.get("numberMatched") == 72
@@ -365,7 +365,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     geojson = get_items(
         stac_client,
         (
-            "/stac/search?time=1975-01-01/1976-01-01&ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
+            "/stac/search?datetime=1975-01-01/1976-01-01&ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
         ),
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
@@ -458,7 +458,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
         (
             "/stac/search?"
             "&bbox=20,-5,25,10"
-            "&time=2017-04-16T01:12:16/2017-05-10T00:24:21"
+            "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
     assert len(geojson.get("features")) == 0
@@ -471,7 +471,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
             "collections=ls7_nbar_scene"
             # Legacy json format of array
             "&bbox=[114, -33, 153, -10]"
-            "&time=2017-04-20"
+            "&datetime=2017-04-20"
         ),
     )
     assert len(geojson.get("features")) == 1
@@ -483,7 +483,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
             "/stac/search?"
             "collections=ls7_nbar_scene"
             "&bbox=114.0, -33.0, 153.0, -10.0"
-            "&time=2017-04-22"
+            "&datetime=2017-04-22"
         ),
     )
     assert len(geojson.get("features")) == 0
