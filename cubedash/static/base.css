@@ -280,6 +280,10 @@ ul.quiet {
 .panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child, .panel p:last-child {
   margin-bottom: 0;
 }
+.panel h3 {
+  font-size: 1.3em;
+  color: #1d99cd;
+}
 .panel.odd {
   background-color: #f0f0f0;
   border-bottom: 0;

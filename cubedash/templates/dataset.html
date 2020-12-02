@@ -92,7 +92,7 @@
         </div>
     </div>
     <div class="panel odd">
-        <h2>Fields</h2>
+        <h3>Fields</h3>
         {{ query_param_list(
             dataset.metadata.fields,
             wide=true,
@@ -101,7 +101,7 @@
             ) }}
     </div>
     <div class="panel overflowable">
-        <h2>Locations</h2>
+        <h3>Locations</h3>
         {% for uri in dataset.uris %}
             <div class="dataset-location">
                 <div><strong>Active:</strong></div>
@@ -126,7 +126,7 @@
     {% endif %}
 
     <div class="panel odd">
-        <h2 class="followed">Metadata Document</h2>
+        <h3 class="followed">Metadata Document</h3>
         <div class="header-follow"><a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">View RAW</a></div>
         {{ show_raw_document(dataset_metadata) }}
     </div>

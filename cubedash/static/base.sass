@@ -21,8 +21,11 @@ $header_background: lighten($bold_highlight, 30%)
 
 $muted_text: lighten($bold_highlight, 32%)
 
+
 $header_stipe1: #2dace1
 $header_stripe2: #7fd0eb
+
+$header_text_spice: darken($header_stipe1, 7%)
 
 $menu_background: $emphasis_strong
 
@@ -297,6 +300,9 @@ ul
             margin-top: 0
         &:last-child
             margin-bottom: 0
+    h3
+        font-size: 1.3em
+        color: $header_text_spice
 
     &.odd
         background-color: $panel2_color
