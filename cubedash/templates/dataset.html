@@ -57,6 +57,7 @@
         </div>
     </div>
 
+    {% if source_datasets or derived_datasets %}
     <div class="panel">
         {% for classifier, s_dataset in source_datasets.items() %}
             <div>
@@ -91,6 +92,8 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
+
     <div class="panel odd">
         <h3>Fields</h3>
         {{ query_param_list(
