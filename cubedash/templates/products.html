@@ -4,9 +4,6 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .group-name {
-            text-transform: lowercase;
-        }
         .panel.odd > h3 {
             margin-bottom: 10px;
         }
@@ -14,22 +11,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="panel odd">
-        {% for group_name, product_summaries in grouped_products %}
-            {% if group_name %}
-                <h2 class="group-name">{{ group_name }}</h2>
-            {% endif %}
+    {% for group_name, product_summaries in grouped_products %}
+    <div class="panel">
+        {% if group_name %}
+            <h3 class="group-name">{{ group_name }}</h3>
+        {% endif %}
 
-            {% for product, summary in product_summaries %}
-                <h3 class="followed">
-                    <a href="{{ url_for('product.product_page', name=product.name) }}">
-                        {{ product.name }}
-                    </a>
-                </h3>
-                <div class="header-follow">({{ summary.dataset_count }} total datasets)</div>
-                    <div>{{ product.definition.description }}</div>
-            {% endfor %}
-
+        {% for product, summary in product_summaries %}
+            <h3 class="followed">
+                <a href="{{ url_for('product.product_page', name=product.name) }}">
+                    {{ product.name }}
+                </a>
+            </h3>
+            <div class="header-follow">({{ summary.dataset_count }} total datasets)</div>
+                <div>{{ product.definition.description }}</div>
         {% endfor %}
-</div>
+    </div>
+    {% endfor %}
 {% endblock %}
