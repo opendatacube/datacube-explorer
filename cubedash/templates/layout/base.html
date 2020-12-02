@@ -34,39 +34,39 @@
         </div>
         <div id="menu-link">
             <ul>
-                <li class="top-menu">
-                    Products
+                <li class="top-menu ex-menu">
+                    <span class="ex-menu-title">Products</span>
                     <ul>
                         {% for product in datacube_products %}
                             <li><a href="{{ url_for('product.product_page', name=product.name) }}">{{ product.name }}</a></li>
                         {% endfor %}
                     </ul>
                 </li>
-                <li class="top-menu">
-                    Types
+                <li class="top-menu ex-menu">
+                    <span class="ex-menu-title">Types</span>
                     <ul>
                         {% for md_type in datacube_metadata_types %}
                             <li><a href="{{ url_for('product.metadata_type_page', name=md_type.name) }}">{{ md_type.name }}</a></li>
                         {% endfor %}
                     </ul>
                 </li>
-                <li class="top-menu">
-                    <span>Audit</span>
+                <li class="top-menu ex-menu">
+                    <span class="ex-menu-title">Audit</span>
                     <ul>
                         <li><a href="{{ url_for('product.storage_page') }}">Storage</a></li>
                         <li><a href="{{url_for('audit.product_metadata_page')}}">Metadata Issues</a></li>
                     </ul>
                 </li>
-                <li class="top-menu">
-                        <span>Explore</span>
+                <li class="top-menu ex-menu">
+                        <span class="ex-menu-title">Explore</span>
                     <ul>
                         <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
                         <li><a href="{{ url_for('stac.root') }}">STAC API</a></li>
                         <li><a href="{{ url_for('stac.list_collections') }}">Stac Collections</a></li>
                     </ul>
                 </li>
-                <li class="top-menu">
-                    <span>Downloadable Resource</span>
+                <li class="top-menu ex-menu">
+                    <span class="ex-menu-title">Downloadable Resource</span>
                     <ul>
                         <li><a href="{{ url_for('product.storage_csv') }}">About.csv</a></li>
                         <li><a href="{{ url_for('product.product_list_text') }}">products.txt</a></li>
@@ -170,7 +170,7 @@
     // When clicking elsewhere on page, close any open menus.
     function outsideClickListener(event) {
         // If it's not part of a header menu
-        if (event.target.closest('.header-option') === null) {
+        if (event.target.closest('.ex-menu') === null) {
             closeAllMenus();
         }
     }
@@ -183,16 +183,16 @@
 
     function closeAllMenus() {
         Array.prototype.forEach.call(
-            document.querySelectorAll('.header-option.is-open'),
+            document.querySelectorAll('.ex-menu.is-open'),
             closeMenu
         )
     }
 
     // Click to open header menus.
     Array.prototype.forEach.call(
-        document.querySelectorAll('.header-option'),
+        document.querySelectorAll('.ex-menu'),
         function (el, i) {
-            el.querySelector('.option-title').addEventListener("click", function (event) {
+            el.querySelector('.ex-menu-title').addEventListener("click", function (event) {
                 if (this.parentNode.classList.contains("is-open")) {
                     closeMenu(this.parentNode);
                 } else {

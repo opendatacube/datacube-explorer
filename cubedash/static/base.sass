@@ -27,14 +27,20 @@ $header_stripe2: #7fd0eb
 $menu_background: $emphasis_strong
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
-@mixin box_padding($scale_top:1, $scale_bottom:1)
+@mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
     @media (min-width: 800px)
-        padding: 15px*$scale_top 30px 15px*$scale_bottom
+        padding: 15px*$scale_top 30px*$scale_horizontal 15px*$scale_bottom
 
-    padding: 10px*$scale_top 20px 10px*$scale_bottom
+    padding: 10px*$scale_top 20px*$scale_horizontal 10px*$scale_bottom
 
 // Add the standard padding multiples, but only on the left side.
 @mixin left_padding($scale:1)
+    @media (min-width: 800px)
+        padding-left: 15px*$scale
+
+    padding-left: 10px*$scale
+
+@mixin right_padding($scale:1)
     @media (min-width: 800px)
         padding-left: 15px*$scale
 
@@ -87,8 +93,10 @@ a
     width: 100%
     display: block
     text-align: right
+
     &::after
         clear: both
+
 
     #logo
         padding: 5px 25px
@@ -109,51 +117,65 @@ a
             margin-left: 10px
 
     #menu-link
-        display: inline-block
-        color: #b8d8e6
-        a
-            color: #b8d8e6
+        text-align: left
+        > ul
+            display: flex
+            justify-content: flex-end
+            flex-direction: row
 
+        color: #fff
+        a
+            font-weight: bold
+            color: #fff
+
+
+        .ex-menu-title, a
+            cursor: pointer
+            @include box_padding($scale_horizontal: 0.5)
+            display: block
+            white-space: nowrap
+            text-decoration: none
+
+        .ex-menu-title:hover, .is-open > .ex-menu-title
+            background-color: $menu_background
+
+        a:hover
+            color: $header_highlight_strong
         ul
             padding: 0
             margin: 0
-
             > li
                 list-style: none
-                display: inline-block
                 position: relative
 
-                > span, > a
-                    @include box_padding
-                    display: block
-                    white-space: nowrap
-
-                    text-decoration: none
+                > ul > li
+                    background: $menu_background
                     &:hover
-                        text-decoration: underline
-
-                &:hover
-                    color: #fff
-                    background-color: $menu_background
-
-                    > ul
-                        display: block
-                        background: $menu_background
-                        position: absolute
-                        top: 100%
-                        left: 0
-                        z-index: 999
-
-                        > li
-                            &:hover
-                                a
-                                    color: $header_highlight_strong
-
-                > ul
-                        display: none
+                        background-color: darken($menu_background, 5%)
+                        a
+                            color: #fff
 
 
 
+        .ex-menu > ul
+            display: none
+        .ex-menu.is-open > ul
+            display: block
+
+            position: absolute
+            top: 100%
+            left: 0
+            // Above maps etc.
+            z-index: 10000
+
+
+// Menus that are expandable
+.ex-menu-title
+    // This hints to touch devices (such as iPads) to trigger "hover" on click rather than select the text.
+    cursor: pointer
+
+    &::after
+        content: ' ▾'
 
 #breadcrumb
     background: $header_stripe2
