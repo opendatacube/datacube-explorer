@@ -522,6 +522,24 @@ def arrivals_page():
     )
 
 
+@app.route("/about")
+def about_page():
+    return utils.render(
+        "about.html",
+        total_dataset_count=(
+            sum(
+                [
+                    summary.dataset_count
+                    for product, summary in _model.get_products_with_summaries()
+                ]
+            )
+        ),
+        stac_version=_stac.STAC_VERSION,
+        stac_endpoint_config=_stac.stac_endpoint_information(),
+        explorer_root_url=url_for("default_redirect", _external=True),
+    )
+
+
 @app.route("/")
 def default_redirect():
     """Redirect to default starting page."""
