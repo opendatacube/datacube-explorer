@@ -1,23 +1,10 @@
-from dataclasses import dataclass
-
-import dateutil.parser
 import math
 import os
 import re
-import structlog
-from cachetools.func import ttl_cache
 from collections import Counter
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from dateutil import tz
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
 from itertools import groupby
-from sqlalchemy import DDL, String, and_, func, select
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine, RowProxy
-from sqlalchemy.sql import Select
 from typing import (
     Dict,
     Generator,
@@ -28,9 +15,21 @@ from typing import (
     Set,
     Tuple,
     Union,
-    Iterator,
 )
 from uuid import UUID
+
+import dateutil.parser
+import structlog
+from cachetools.func import ttl_cache
+from dateutil import tz
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine, RowProxy
+from sqlalchemy.sql import Select
 
 try:
     from .._version import version as EXPLORER_VERSION
@@ -780,9 +779,10 @@ class SummaryStore:
 
         return query
 
+    @ttl_cache(ttl=DEFAULT_TTL)
     def get_arrivals(
         self, period_length: timedelta
-    ) -> Iterator[Tuple[date, List[ProductArrival]]]:
+    ) -> List[Tuple[date, List[ProductArrival]]]:
         """
         Get a list of products with newly added datasets for the last few days.
         """
@@ -796,6 +796,7 @@ class SummaryStore:
 
         current_day = None
         products = []
+        out_groups = []
         for day, product_name, count, dataset_ids in self._engine.execute(
             """
             select
@@ -814,13 +815,15 @@ class SummaryStore:
                 current_day = day
 
             if day != current_day:
-                yield current_day, products
+                out_groups.append((current_day, products))
                 products = []
                 current_day = day
             products.append(ProductArrival(product_name, day, count, dataset_ids))
 
         if products:
-            yield products[0].day, products
+            out_groups.append((products[0].day, products))
+
+        return out_groups
 
     def get_count(
         self,
