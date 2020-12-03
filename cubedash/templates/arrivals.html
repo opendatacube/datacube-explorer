@@ -1,13 +1,22 @@
 {% extends "layout/base.html" %}
 {% set active_page = "arrivals" %}
-
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        /* The header-follow stops margin-collapse, and it's the only item on the page */
+        h2 {
+            margin-bottom: 0 !important;
+        }
+    </style>
+{% endblock %}
 {% block title %}Recent Arrivals{% endblock %}
 
 {% block content %}
-    <div class="panel">
+    <div class="panel highlight">
         <h2 class="followed">Recent Dataset Arrivals</h2>
         <span class="header-follow">over {{ period_length.days }} days</span>
-
+    </div>
+    <div class="panel">
         <table class="data-table">
             {% for day, arrivals in arrival_days %}
                 <thead>
