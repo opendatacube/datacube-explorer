@@ -423,18 +423,40 @@ def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
     return None
 
 
-def _parse_time_range(time: str) -> Tuple[datetime, datetime]:
+def _parse_time_range(time: str) -> Optional[Tuple[datetime, datetime]]:
     """
     >>> _parse_time_range('1986-04-16T01:12:16/2097-05-10T00:24:21')
     (datetime.datetime(1986, 4, 16, 1, 12, 16), datetime.datetime(2097, 5, 10, 0, 24, 21))
     >>> _parse_time_range('1986-04-16T01:12:16')
     (datetime.datetime(1986, 4, 16, 1, 12, 16), datetime.datetime(1986, 4, 16, 1, 12, 17))
+    >>> # Time is optional:
+    >>> _parse_time_range('2019-01-01/2019-01-01')
+    (datetime.datetime(2019, 1, 1, 0, 0), datetime.datetime(2019, 1, 1, 0, 0))
     >>> _parse_time_range('1986-04-16')
     (datetime.datetime(1986, 4, 16, 0, 0), datetime.datetime(1986, 4, 17, 0, 0))
+    >>> # Open ranges:
+    >>> _parse_time_range('2019-01-01/..')[0]
+    datetime.datetime(2019, 1, 1, 0, 0)
+    >>> _parse_time_range('2019-01-01/..')[1] > datetime.now()
+    True
+    >>> _parse_time_range('../2019-01-01')
+    (datetime.datetime(1971, 1, 1, 0, 0), datetime.datetime(2019, 1, 1, 0, 0))
+    >>> # Unbounded time is the same as no time filter. ("None")
+    >>> _parse_time_range('../..')
+    >>>
     """
     time_period = time.split("/")
     if len(time_period) == 2:
-        return parse_time(time_period[0]), parse_time(time_period[1])
+        start, end = time_period
+        if start == "..":
+            start = datetime(1971, 1, 1, 0, 0)
+        elif end == "..":
+            end = datetime.now() + timedelta(days=2)
+        # Were they both open? Treat it as no date filter.
+        if end == "..":
+            return None
+
+        return parse_time(start), parse_time(end)
     elif len(time_period) == 1:
         t: datetime = parse_time(time_period[0])
         if t.time() == dt_time():
