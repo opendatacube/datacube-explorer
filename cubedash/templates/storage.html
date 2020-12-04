@@ -16,9 +16,6 @@
             margin-bottom: 10px;
         }
 
-        tbody tr:hover {
-            background-color: #f0f0f0;
-        }
         li.lineage {
             line-height: 15px !important;
             list-style-type: none;
@@ -29,8 +26,8 @@
 
 {% endblock %}
 {% block content %}
-    <div class="panel">
-        <h2 class="followed">Storage of {{ product_summary_and_location | length }} products</h2>
+    <div class="panel highlight">
+        <h2 class="followed lonesome">Storage of {{ product_summary_and_location | length }} products</h2>
         <div class="header-follow">
             Open Data Cube {{ datacube_version }}
             {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}

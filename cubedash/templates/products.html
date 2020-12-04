@@ -4,28 +4,33 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .panel.odd > h3 {
-            margin-bottom: 10px;
+        .panel > h2 {
+            margin-bottom: 30px;
         }
+
+
     </style>
 {% endblock %}
 
 {% block content %}
+    <div class="panel highlight">
+        <h2>{{ datacube_products | count }} Local Products</h2>
+    </div>
     {% for group_name, product_summaries in grouped_products %}
     <div class="panel">
         {% if group_name %}
-            <h3 class="group-name">{{ group_name }}</h3>
+            <h2 class="group-name">{{ group_name }}</h2>
         {% endif %}
 
         {% for product, summary in product_summaries %}
-            <h3 class="followed">
-                <a href="{{ url_for('product.product_page', name=product.name) }}">
-                    {{ product.name }}
-                </a>
+            <h3>
+                <a href="{{ url_for('product.product_page', name=product.name) }}"
+                   class="{% if summary.dataset_count == 0 %}muted{% endif %}"
+                    >{{ product.name }}</a>
             </h3>
-            <div class="header-follow">({{ summary.dataset_count }} total datasets)</div>
-                <div>{{ product.definition.description }}</div>
+             <div>{{ product.definition.description }}</div>
         {% endfor %}
+
     </div>
     {% endfor %}
 {% endblock %}

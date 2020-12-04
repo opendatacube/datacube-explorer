@@ -1,45 +1,44 @@
 {% extends "layout/base.html" %}
 {% set active_page = "arrivals" %}
-{% block head %}
-    {{ super() }}
-    <style type="text/css">
-        /* The header-follow stops margin-collapse, and it's the only item on the page */
-        h2 {
-            margin-bottom: 0 !important;
-        }
-    </style>
-{% endblock %}
+
 {% block title %}Recent Arrivals{% endblock %}
 
 {% block content %}
     <div class="panel highlight">
-        <h2 class="followed">Recent Dataset Arrivals</h2>
+        <h2 class="followed lonesome">Recent Dataset Arrivals</h2>
         <span class="header-follow">over {{ period_length.days }} days</span>
     </div>
-    <div class="panel">
+    <div class="panel odd">
         <table class="data-table">
-            {% for day, arrivals in arrival_days %}
                 <thead>
                     <tr>
+                        <th>Product</th>
+                        <th class="numeric">New Datasets</th>
+                        <th>Examples</th>
+                    </tr>
+                </thead>
+            {% for day, arrivals in arrival_days %}
+                <thead>
+                    <tr class="section-header">
                         <th colspan="3">{{ day.strftime('%d %B %Y') }}</th>
                     </tr>
                 </thead>
-                {% for arrival in arrivals %}
-                    <tbody>
+                <tbody>
+                    {% for arrival in arrivals %}
                         <tr>
-                        <td class="numeric important-column">{{  '{:,d}'.format(arrival.dataset_count) }}</td>
                             <td>{{- arrival.product_name | product_link  -}}</td>
+                            <td class="numeric important-column">{{  '{:,d}'.format(arrival.dataset_count) }}</td>
                             <td>
-                                {%- for dataset_id in arrival.sample_dataset_ids -%}
+                                {% for dataset_id in arrival.sample_dataset_ids -%}
                                     <a href="{{ url_for('dataset.dataset_page', id_=dataset_id) }}"
-                                       class="muted">
-                                        {{- loop.index -}}
-                                    </a>,
-                                {% endfor %} ...
+                                       class="badge"
+                                       title="Example {{ arrival.product_name }} arrival {{ loop.index }}"
+                                    ><i class="fa fa-picture-o" aria-hidden="true"></i></a>&nbsp;
+                                {% endfor %}
                             </td>
                         </tr>
-                    </tbody>
-                {% endfor %}
+                    {% endfor %}
+                </tbody>
             {% else %}
                 <tr><td>No datasets in index</td></tr>
             {% endfor %}
