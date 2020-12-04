@@ -229,6 +229,9 @@ h4 {
 h2.followed, h3.followed {
   display: inline-block;
 }
+h2.followed.lonesome, h3.followed.lonesome {
+  margin-bottom: 0;
+}
 
 .header-follow {
   display: inline-block;
@@ -433,9 +436,18 @@ ul.quiet {
 .data-table {
   margin: 0 -15px 15px;
 }
+.data-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+.panel.odd .data-table tbody tr:hover {
+  background-color: #e5e5e5;
+}
 .data-table th {
   font-weight: bold;
   font-size: 0.8em;
+}
+.data-table tr.section-header th {
+  padding-top: 15px;
 }
 .data-table td, .data-table th {
   padding: 0 15px;
@@ -579,6 +591,10 @@ label.disabled {
   background-color: #ccc;
   white-space: nowrap;
   padding: 2px 4px;
+}
+.panel.highlight .badge {
+  background: #3b3b3b;
+  color: #efefef;
 }
 .header-follow .badge {
   margin: 0 10px;

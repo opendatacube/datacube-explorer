@@ -265,6 +265,12 @@ h4
 // A Header followed by smaller text on the same line
 h2.followed, h3.followed
     display: inline-block
+
+    // If the header is the only thing in the panel, the follower
+    // can stop normal margin collapse. So we'll manually do it.
+    &.lonesome
+        margin-bottom: 0
+
 .header-follow
     display: inline-block
 
@@ -440,9 +446,20 @@ ul
 .data-table
     margin: 0 -15px 15px
 
+    tbody tr
+        &:hover
+            background-color: $panel2_color
+
+            .panel.odd &
+                background-color: darken($panel2_color, 4%)
+
     th
         font-weight: bold
         font-size: 0.8em
+
+    tr.section-header th
+        padding-top: 15px
+
     td, th
         padding: 0 15px
         text-align: left
@@ -572,6 +589,11 @@ label
     background-color: #ccc
     white-space: nowrap
     padding: 2px 4px
+
+    // A highlighted panel is reverse contrast: dark background, light foreground.
+    .panel.highlight &
+        background: darken($header_highlight_strong, 15%)
+        color: #efefef
 
     // If it's in a header
     .header-follow &
