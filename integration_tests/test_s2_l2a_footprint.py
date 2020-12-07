@@ -129,13 +129,9 @@ def test_get_overview_date_selector(client: FlaskClient):
     assert len(menu[3].find(".option-menu ul li")) == 3
 
 
-def test_refresh_product(
-    empty_client: FlaskClient, summary_store: SummaryStore
-):
+def test_refresh_product(empty_client: FlaskClient, summary_store: SummaryStore):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
-    summary_store.refresh_product(
-        summary_store.index.products.get_by_name("s2_l2a")
-    )
+    summary_store.refresh_product(summary_store.index.products.get_by_name("s2_l2a"))
     summary_store.get_or_update("s2_l2a")
 
     # Then load a completely uninitialised product.
