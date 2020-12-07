@@ -127,3 +127,18 @@ def test_get_overview_date_selector(client: FlaskClient):
     assert len(menu[1].find(".option-menu ul li")) == 3
     assert len(menu[2].find(".option-menu ul li")) == 3
     assert len(menu[3].find(".option-menu ul li")) == 3
+
+
+def test_refresh_product(
+    empty_client: FlaskClient, summary_store: SummaryStore
+):
+    # Populate one product, so they don't get the usage error message ("run cubedash generate")
+    summary_store.refresh_product(
+        summary_store.index.products.get_by_name("s2_l2a")
+    )
+    summary_store.get_or_update("s2_l2a")
+
+    # Then load a completely uninitialised product.
+    html = get_html(empty_client, "/datasets/s2_l2a")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 5
