@@ -281,8 +281,8 @@ class SummaryStore:
                      count(*)                                                         as count
               from cubedash.dataset_spatial
               where cubedash.dataset_spatial.dataset_type_ref = %s
-                    AND
-                    ST_IsValid(cubedash.dataset_spatial.footprint)
+                    and
+                    st_isvalid(cubedash.dataset_spatial.footprint)
               group by cubedash.dataset_spatial.dataset_type_ref,
                        cubedash.dataset_spatial.region_code,
                        st_srid(cubedash.dataset_spatial.footprint)
