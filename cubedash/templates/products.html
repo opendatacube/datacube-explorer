@@ -14,7 +14,17 @@
 
 {% block content %}
     <div class="panel highlight">
-        <h2>{{ datacube_products | count }} Local Products</h2>
+        <h2 class="followed lonesome">{{ datacube_products | count }} Local Products</h2>
+        <div class="header-follow">
+            <a href="{{ url_for('product.product_list_text') }}"
+               class="badge header-badge">
+                Text <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+        </div>
+        <a href="{{ url_for('stac.collections') }}"
+               class="badge header-badge">
+            As Stac <i class="fa fa-file-text-o" aria-hidden="true"></i>
+        </a>
     </div>
     {% for group_name, product_summaries in grouped_products %}
     <div class="panel">

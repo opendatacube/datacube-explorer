@@ -304,7 +304,7 @@ def search_stac_items(
 
 
 @bp.route("/collections")
-def list_collections():
+def collections():
     """
     This is like the root "/", but has full information for each collection in
      an array (instead of just a link to each collection).

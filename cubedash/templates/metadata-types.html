@@ -15,7 +15,13 @@
 
 {% block content %}
     <div class="panel highlight">
-        <h2>{{ datacube_metadata_types | count }} Local Metadata Types</h2>
+    <h2 class="followed lonesome">{{ datacube_metadata_types | count }} Local Metadata Types</h2>
+        <div class="header-follow">
+            <a href="{{ url_for('product.metadata_type_list_text') }}"
+               class="badge header-badge">
+                Text <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+        </div>
     </div>
     <div class="panel">
     {% for metadata_type in datacube_metadata_types %}

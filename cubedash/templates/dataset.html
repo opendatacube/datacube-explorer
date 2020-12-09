@@ -130,7 +130,11 @@
 
     <div class="panel odd">
         <h3 class="followed">Metadata Document</h3>
-        <div class="header-follow"><a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">View RAW</a></div>
+        <div class="header-follow">
+            <a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">RAW <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+            <a href="{{ url_for('stac.item', collection=dataset.type.name, dataset_id=dataset.id) }}"
+               class="badge">As Stac <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+        </div>
         {{ show_raw_document(dataset_metadata) }}
     </div>
 {% endblock %}

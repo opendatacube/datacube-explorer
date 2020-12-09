@@ -525,6 +525,10 @@ class SummaryStore:
         return tuple(self.index.products.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
+    def all_metadata_types(self) -> Iterable[DatasetType]:
+        return tuple(self.index.metadata_types.get_all())
+
+    @ttl_cache(ttl=DEFAULT_TTL)
     def get_dataset_type(self, name) -> DatasetType:
         for d in self.all_dataset_types():
             if d.name == name:
