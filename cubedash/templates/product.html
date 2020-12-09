@@ -123,7 +123,13 @@
         <h3 class="followed">Definition</h3>
         <div class="header-follow">
             <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
-                View RAW
+                RAW
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('stac.collection', collection=product.name) }}"
+               class="badge">
+                As Stac
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
             </a>
         </div>
         {{ show_raw_document(metadata_doc) }}

@@ -592,12 +592,15 @@ label.disabled {
   white-space: nowrap;
   padding: 2px 4px;
 }
+.badge .fa {
+  font-size: 1.1em;
+}
 .panel.highlight .badge {
   background: #3b3b3b;
   color: #efefef;
 }
 .header-follow .badge {
-  margin: 0 10px;
+  margin-left: 10px;
 }
 .badge.header-badge {
   font-size: inherit;

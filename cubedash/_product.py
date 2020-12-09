@@ -68,7 +68,17 @@ def storage_csv():
 def product_list_text():
     # This is useful for bash scripts when we want to loop products :)
     return Response(
-        "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
+        "\n".join(t.name for t in _model.STORE.all_dataset_types()),
+        content_type="text/plain",
+    )
+
+
+@bp.route("/metadata-types.txt")
+def metadata_type_list_text():
+    # This is useful for bash scripts when we want to loop them :)
+    return Response(
+        "\n".join(t.name for t in _model.STORE.all_metadata_types()),
+        content_type="text/plain",
     )
 
 
