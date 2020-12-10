@@ -19,20 +19,36 @@
         <div>
             <em>{{ product.definition['description'] }}</em>
         </div>
+
+        {% if product_summary.dataset_count == 0 %}
+            <p>
+                <span class="badge header-badge">
+                    No datasets
+                </span>
+            </p>
+        {% else %}
         <p>
+            {%  if product_summary %}
                 <i class="fa fa-globe" aria-hidden="true"></i>
                 <a href="{{ url_for('overview_page', product_name=product.name) }}">
                     Extending {% if product_summary.time_earliest -%}
                         {{ product_summary.time_earliest.strftime('%B %Y') }} to
                         {{ product_summary.time_latest.strftime('%B %Y') }}
                     {%- endif %}
-                </a><br/>
-                <i class="fa fa-list" aria-hidden="true"></i>
-                <a href="{{ url_for('search_page', product_name=product.name) }}">
-                    {{ '{:,d}'.format(product_summary.dataset_count) if product_summary.dataset_count else '0' }} datasets
                 </a>
+            {% else %}
+                <span class="badge header-badge">Product not summarised</span> (unknown statistics)<br/>
+            {% endif %}
+            <br/>
+            <i class="fa fa-list" aria-hidden="true"></i>
+            <a href="{{ url_for('search_page', product_name=product.name) }}">
+                {{ '{:,d}'.format(product_summary.dataset_count) if product_summary else 'View ' }}
+                datasets
+            </a>
         </p>
+        {% endif %}
     </div>
+
     <div class="panel odd overflowable">
         <h3>Location{% if location_samples | length > 1 %}s{% endif %} <span class="addendum">(from sampling)</span></h3>
         {% for location in location_samples %}
