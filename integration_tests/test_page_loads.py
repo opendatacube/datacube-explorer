@@ -202,6 +202,11 @@ def test_uninitialised_overview(
 
 
 def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
+    """
+    An unsummarised product should still be viewable on the product page.
+
+    (but should be described as not summarised)
+    """
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
     summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
@@ -209,13 +214,13 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
 
     html = get_html(empty_client, "/products/ls7_nbar_scene")
 
-    # The page should load without error, but will display 'unknown' fields
+    # The page should load without error, but will mention its lack of information
     assert html.find("h2", first=True).text == "ls7_nbar_scene"
     assert (
         "Product not summarised" in one_element(html, ".header-stat-information").text
     )
 
-    # ... but the one we populated doesn't show it:
+    # ... and a product that we populated does not have the message:
     html = get_html(empty_client, "/products/ls7_nbar_albers")
     assert (
         "Product not summarised"
