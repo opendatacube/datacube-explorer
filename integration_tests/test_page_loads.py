@@ -201,6 +201,28 @@ def test_uninitialised_overview(
     assert "No data: not yet generated" in html.text
 
 
+def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
+    # Populate one product, so they don't get the usage error message ("run cubedash generate")
+    # Then load an unpopulated product.
+    summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
+    summary_store.get_or_update("ls7_nbar_albers")
+
+    html = get_html(empty_client, "/products/ls7_nbar_scene")
+
+    # The page should load without error, but will display 'unknown' fields
+    assert html.find("h2", first=True).text == "ls7_nbar_scene"
+    assert (
+        "Product not summarised" in one_element(html, ".header-stat-information").text
+    )
+
+    # ... but the one we populated doesn't show it:
+    html = get_html(empty_client, "/products/ls7_nbar_albers")
+    assert (
+        "Product not summarised"
+        not in one_element(html, ".header-stat-information").text
+    )
+
+
 def test_empty_product_overview(client: FlaskClient):
     """
     A page is still displayable without error when it has no datasets.
@@ -211,6 +233,19 @@ def test_empty_product_overview(client: FlaskClient):
     assert_is_text(html, ".query-param.key-platform .value", "LANDSAT_5")
     assert_is_text(html, ".query-param.key-instrument .value", "TM")
     assert_is_text(html, ".query-param.key-product_type .value", "nbar")
+
+
+def test_empty_product_page(client: FlaskClient):
+    """
+    A product page is displayable when summarised, but with 0 datasets.
+    """
+    html = get_html(client, "/products/ls5_nbar_scene")
+    assert "No datasets" in one_element(html, ".header-stat-information").text
+
+    # ... yet a normal product doesn't show the message:
+    html = get_html(client, "/products/ls7_nbar_scene")
+    assert "No datasets" not in one_element(html, ".header-stat-information").text
+    assert "4 datasets" in one_element(html, ".header-stat-information").text
 
 
 def one_element(html: HTML, selector: str) -> Element:

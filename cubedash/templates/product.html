@@ -20,14 +20,12 @@
             <em>{{ product.definition['description'] }}</em>
         </div>
 
+        <p class="header-stat-information">
         {% if product_summary.dataset_count == 0 %}
-            <p>
-                <span class="badge header-badge">
-                    No datasets
-                </span>
-            </p>
+            <span class="badge header-badge">
+                No datasets
+            </span>
         {% else %}
-        <p>
             {%  if product_summary %}
                 <i class="fa fa-globe" aria-hidden="true"></i>
                 <a href="{{ url_for('overview_page', product_name=product.name) }}">
@@ -45,8 +43,8 @@
                 {{ '{:,d}'.format(product_summary.dataset_count) if product_summary else 'View ' }}
                 datasets
             </a>
-        </p>
         {% endif %}
+        </p>
     </div>
 
     <div class="panel odd overflowable">
