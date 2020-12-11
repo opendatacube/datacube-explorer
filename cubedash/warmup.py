@@ -18,6 +18,7 @@ def find_examples_of_all_public_urls(index: Index):
     yield "/arrivals"
 
     yield "/products.txt"
+    yield "/metadata-types.txt"
 
     yield "/audit/storage"
     yield "/audit/storage.csv"
@@ -42,6 +43,7 @@ def find_examples_of_all_public_urls(index: Index):
         yield f"/stac/collections/{name}"
         yield f"/stac/collections/{name}/items"
         yield f"/stac/search?collection={name}&limit=1"
+        yield f"/stac/search?collection={name}&limit=1&_full=true"
 
         has_datasets = index.datasets.search_eager(product=name, limit=1)
         if has_datasets:
