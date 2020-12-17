@@ -227,6 +227,7 @@ def _handle_search_request(
             ids=",".join(map(str, ids)) if ids else None,
             limit=limit,
             _o=next_offset,
+            _full=full_information,
         )
 
     return search_stac_items(
