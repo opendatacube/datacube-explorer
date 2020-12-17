@@ -1,14 +1,11 @@
 import json
 import logging
 import uuid
-from collections import defaultdict
 from datetime import datetime
 from datetime import time as dt_time
 from datetime import timedelta
 from functools import partial
-from pathlib import Path
-from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple, List
-from urllib.parse import urljoin
+from typing import Callable, Dict, Optional, Sequence, Tuple, List
 
 import flask
 from dateutil.tz import tz
@@ -17,12 +14,12 @@ from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import HTTPException, BadRequest
 
 from cubedash.summary._stores import DatasetItem
-from datacube.model import Dataset, Range
+from datacube.model import Range
 from datacube.utils import DocReader, parse_time
 from eodatasets3 import serialise
+from eodatasets3 import stac as eo3stac
 from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryDoc
 from eodatasets3.properties import StacPropertyView
-from eodatasets3 import stac as eo3stac
 from eodatasets3.utils import is_doc_eo3
 from . import _model, _utils
 
@@ -595,58 +592,6 @@ def _accessories_from_eo1(metadata_doc: Dict) -> Dict[str, AccessoryDoc]:
     return accessories
 
 
-def _stac_item_assets(ds: Dataset) -> Iterable[Tuple[str, Dict]]:
-    """
-    A list of assets is the list of files for the dataset.
-
-    We group bands/measurements together if they're in the same file (eg. .nc)
-    """
-    # The main uri is what we use for expanding all relative paths.
-    main_uri = None
-    uris = list(ds.uris)
-    if uris:
-        # If one of the uris is a remote uri, make it the main one.
-        main_uri = uris.pop(_pick_remote_uri(ds.uris) or 0)
-
-    # Group measurements that have the same path, they should be listed as one asset.
-    assets_by_path = defaultdict(dict)
-
-    for name, data in ds.measurements.items():
-        path = uri_resolve(main_uri, data.get("path") or None)
-        if not path:
-            continue
-
-        asset = assets_by_path.get(path)
-        if asset:
-            asset["eo:bands"].append(name)
-        else:
-            assets_by_path[path] = {"eo:bands": [name], "href": path}
-
-    # Ensure there's an asset for the main uri/location.
-    if main_uri:
-        base_asset = assets_by_path.get(main_uri)
-        if not base_asset:
-            base_asset = {"href": main_uri}
-            assets_by_path[main_uri] = base_asset
-
-        base_asset["odc:secondary_hrefs"] = uris
-
-    # Now how do we name our assets?
-    for asset in assets_by_path.values():
-        # If there's one band, name it by that.
-        bands = asset.get("eo:bands")
-        if bands and len(bands) == 1:
-            (asset_name,) = bands
-        elif asset["href"] == main_uri:
-            asset_name = "location"
-        else:
-            # Otherwise extract the "stem" from the filename.
-            _, _, filename = asset["href"].rpartition("/")
-            asset_name, _, _ = filename.partition(".")
-
-        yield asset_name, asset
-
-
 def field_platform(key, value):
     yield "eo:platform", value.lower().replace("_", "-")
 
@@ -711,19 +656,6 @@ def _build_properties(d: DocReader):
         converter = _STAC_PROPERTY_MAP.get(key)
         if converter:
             yield from converter(key, val)
-
-
-def uri_resolve(base: str, path: Optional[str]) -> str:
-    """
-    Backport of datacube.utils.uris.uri_resolve(), which isn't
-    available on the stable release of datacube.
-    """
-    if path:
-        p = Path(path)
-        if p.is_absolute():
-            return p.as_uri()
-
-    return urljoin(base, path)
 
 
 @bp.errorhandler(HTTPException)
