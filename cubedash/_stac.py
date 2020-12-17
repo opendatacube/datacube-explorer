@@ -37,7 +37,7 @@ FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 # Should searches return the full properties for every stac item by default?
 # These searches are much slower we're forced us to use ODC's own metadata table.
 DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
-    "STAC_DEFAULT_FULL_ITEM_INFORMATION", False
+    "STAC_DEFAULT_FULL_ITEM_INFORMATION", True
 )
 
 STAC_VERSION = "1.0.0-beta.2"

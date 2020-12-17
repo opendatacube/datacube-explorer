@@ -179,7 +179,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Full searches are much slower because they use ODC's own raw metadata table.
     # (Users can append "_full=true" to requests to manually ask for full metadata.
     #  Or preferrably, follow the `self` link of the Item record to get the whole record)
-    STAC_DEFAULT_FULL_ITEM_INFORMATION = False
+    STAC_DEFAULT_FULL_ITEM_INFORMATION = True
 
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
