@@ -373,7 +373,7 @@ def collection_items(collection: str):
     """
     all_time_summary = _model.get_time_summary(collection)
     if not all_time_summary:
-        abort(404, "Product not yet summarised")
+        abort(404, f"Product {collection!r} not found among summaries.")
 
     feature_collection = _handle_search_request(
         request_args=request.args,
@@ -393,7 +393,7 @@ def collection_items(collection: str):
 def item(collection: str, dataset_id: str):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
-        abort(404, "No such dataset")
+        abort(404, f"No dataset found with id {dataset_id!r}")
 
     actual_product_name = dataset.product_name
     if collection != actual_product_name:

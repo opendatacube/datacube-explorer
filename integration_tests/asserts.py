@@ -41,9 +41,14 @@ def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
     return html, response
 
 
-def get_text_response(client: FlaskClient, url: str) -> Tuple[str, Response]:
+def get_text_response(
+    client: FlaskClient, url: str, expect_status_code=200
+) -> Tuple[str, Response]:
     response: Response = client.get(url, follow_redirects=True)
-    assert response.status_code == 200, response.data.decode("utf-8")
+    assert response.status_code == expect_status_code, (
+        f"Expected status {expect_status_code} not {response.status_code}."
+        f"\nGot:\n{indent(response.data.decode('utf-8'), ' ' * 6)}"
+    )
     return response.data.decode("utf-8"), response
 
 

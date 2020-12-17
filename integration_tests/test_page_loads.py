@@ -2,6 +2,7 @@
 Tests that load pages and check the contained text.
 """
 import json
+from datetime import datetime
 from io import StringIO
 from textwrap import indent
 
@@ -708,3 +709,43 @@ def test_raw_documents(client: FlaskClient):
         "EO1 Dataset",
         "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml",
     )
+
+
+def test_all_give_404s(client: FlaskClient):
+    """
+    We should get 404 messages, not exceptions, for missing things.
+    """
+
+    def expect_404(url: str, message_contains: str = None):
+        __tracebackhide__ = True
+        response = get_text_response(client, url, expect_status_code=404)
+        if message_contains and message_contains not in response:
+            raise AssertionError(
+                f"Expected {message_contains!r} in response {response!r}"
+            )
+
+    name = "does_not_exist"
+    time = datetime.utcnow()
+    region_code = "not_a_region"
+    dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
+
+    expect_404(f"/metadata-types/{name}")
+    expect_404(f"/metadata-types/{name}.odc-type.yaml")
+
+    expect_404(f"/datasets/{name}")
+    expect_404(f"/products/{name}")
+    expect_404(f"/products/{name}.odc-product.yaml")
+
+    expect_404(f"/products/{name}/extents/{time:%Y}")
+    expect_404(f"/products/{name}/extents/{time:%Y/%m}")
+    expect_404(f"/products/{name}/extents/{time:%Y/%m/%d}")
+
+    expect_404(f"/products/{name}/datasets/{time:%Y}")
+    expect_404(f"/products/{name}/datasets/{time:%Y/%m}")
+    expect_404(f"/products/{name}/datasets/{time:%Y/%m/%d}")
+
+    expect_404(f"/region/{name}/{region_code}")
+    expect_404(f"/region/{name}/{region_code}/{time:%Y/%m/%d}")
+
+    expect_404(f"/dataset/{dataset_id}")
+    expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")

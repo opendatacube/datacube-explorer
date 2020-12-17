@@ -3,19 +3,20 @@ Tests that hit the stac api
 """
 
 import json
-import jsonschema
-import pytest
 import urllib.parse
 from collections import Counter, defaultdict
+from pathlib import Path
+from pprint import pformat
+from typing import Dict, Generator, Iterable, List, Optional, Union
+
+import jsonschema
+import pytest
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
-from pathlib import Path
-from pprint import pformat
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
-from typing import Dict, Generator, Iterable, List, Optional, Union
 
 import cubedash._stac
 from cubedash import _model
@@ -670,6 +671,40 @@ def test_stac_collection_items(stac_client: FlaskClient):
 
     item_links = scene_collection["links"][0]["href"]
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
+
+
+def test_returns_404s(stac_client: FlaskClient):
+    """
+    We should get 404 messages, not exceptions, for missing things.
+
+    (and stac errors are expected in json)
+    """
+
+    def expect_404(url: str, message_contains: str = None):
+        __tracebackhide__ = True
+        data = get_json(stac_client, url, expect_status_code=404)
+        if message_contains and message_contains not in data.get("description", ""):
+            raise AssertionError(
+                f"Expected {message_contains!r} in description of response {data!r}"
+            )
+
+    # Product
+    expect_404(
+        "/stac/collections/does_not_exist", message_contains="Unknown collection"
+    )
+
+    # Product items
+    expect_404(
+        "/stac/collections/does_not_exist/items",
+        message_contains="Product 'does_not_exist' not found",
+    )
+
+    # Dataset
+    wrong_dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
+    expect_404(
+        f"/stac/collections/does_not_exist/items/{wrong_dataset_id}",
+        message_contains="No dataset found",
+    )
 
 
 def test_stac_item(stac_client: FlaskClient, populated_index: Index):
