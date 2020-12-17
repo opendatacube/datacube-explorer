@@ -331,7 +331,11 @@ def collection(collection: str):
 
 def _stac_collection(collection: str):
     summary = _model.get_product_summary(collection)
-    dataset_type = _model.STORE.get_dataset_type(collection)
+    try:
+        dataset_type = _model.STORE.get_dataset_type(collection)
+    except KeyError:
+        abort(404, f"Unknown collection {collection!r}")
+
     all_time_summary = _model.get_time_summary(collection)
 
     summary_props = {}
