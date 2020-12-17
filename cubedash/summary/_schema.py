@@ -84,6 +84,18 @@ DATASET_SPATIAL.indexes.add(
         postgresql_using="gist",
     )
 )
+# An index matching the default Stac API Item search and its sort order.
+_COLLECTION_ITEMS_INDEX = Index(
+    "dataset_spatial_collection_items_idx",
+    "dataset_type_ref",
+    "center_time",
+    "id",
+    # Stac API only returns datasets with a geoemtry -- it's mandatory in Stac Items.
+    postgresql_where=DATASET_SPATIAL.c.footprint.isnot(None),
+    _table=DATASET_SPATIAL,
+)
+
+DATASET_SPATIAL.indexes.add(_COLLECTION_ITEMS_INDEX)
 
 # Note that we deliberately don't foreign-key to datacube tables:
 # - We don't want to add an external dependency on datacube core
@@ -256,6 +268,13 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         """
         )
         refresh.add(PleaseRefresh.DATASET_EXTENTS)
+
+    if not pg_exists(
+        engine,
+        f"{CUBEDASH_SCHEMA}.{_COLLECTION_ITEMS_INDEX.name}",
+    ):
+        _LOG.info("schema.applying_update.add_collection_items_idx")
+        _COLLECTION_ITEMS_INDEX.create(engine)
 
     return refresh
 
