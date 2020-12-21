@@ -152,7 +152,7 @@ class SummaryStore:
         """
         Have all schema update been applied?
         """
-        _LOG.debug(
+        _LOG.info(
             "software.version",
             postgis=_schema.get_postgis_versions(self._engine),
             explorer=EXPLORER_VERSION,
