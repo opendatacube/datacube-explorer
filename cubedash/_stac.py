@@ -100,13 +100,15 @@ def root():
             **stac_endpoint_information(),
             links=[
                 dict(
-                    title="Product Collections",
+                    title="Collections",
+                    description="All product collections",
                     rel="children",
                     type="application/json",
                     href=url_for(".collections"),
                 ),
                 dict(
-                    title="Recently Added Items",
+                    title="Arrivals",
+                    description="Most recently added items",
                     rel="child",
                     type="application/json",
                     href=url_for(".recent_arrivals"),
@@ -119,6 +121,18 @@ def root():
                 ),
                 dict(rel="self", href=request.url),
                 dict(rel="root", href=request.url),
+                # Individual Product Collections
+                *(
+                    dict(
+                        title=product.name,
+                        description=product.definition.get("description"),
+                        rel="child",
+                        href=url_for(
+                            ".collection", collection=product.name, _external=True
+                        ),
+                    )
+                    for product, product_summary in _model.get_products_with_summaries()
+                ),
             ],
             conformsTo=[
                 "https://api.stacspec.org/v1.0.0-beta.1/core",
