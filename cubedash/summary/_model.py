@@ -90,29 +90,20 @@ class TimePeriodOverview:
             and p.footprint_geometry.is_valid
             and not p.footprint_geometry.is_empty
         ]
-
+        mpolygon = MultiPolygon([p.footprint_geometry for p in with_valid_geometries])
         try:
             geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry for p in with_valid_geometries]
-                )
-                if with_valid_geometries
-                else None
+                shapely.ops.unary_union(mpolygon) if with_valid_geometries else None
             )
         except ValueError:
             _LOG.warn("summary.footprint.union", exc_info=True)
             # Attempt 2 at union: Exaggerate the overlap *slightly* to
             # avoid non-noded intersection.
             # TODO: does shapely have a snap-to-grid?
-            mpolygon = MultiPolygon(
-                [p.footprint_geometry for p in with_valid_geometries]
-            )
-            if not mpolygon.is_valid:
-                # buffer invalid polygon
-                mpolygon.buffer(0.001)
-
             geometry_union = (
-                shapely.ops.unary_union(mpolygon) if with_valid_geometries else None
+                shapely.ops.unary_union(mpolygon.buffer(0.001))
+                if with_valid_geometries
+                else None
             )
 
         if footprint_tolerance is not None and geometry_union is not None:
