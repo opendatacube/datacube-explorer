@@ -90,7 +90,16 @@ _COLLECTION_ITEMS_INDEX = Index(
     "dataset_type_ref",
     "center_time",
     "id",
-    # Stac API only returns datasets with a geoemtry -- it's mandatory in Stac Items.
+    # Stac API only returns datasets with a geometry -- it's mandatory in Stac Items.
+    postgresql_where=DATASET_SPATIAL.c.footprint.isnot(None),
+    _table=DATASET_SPATIAL,
+)
+# An index matching the default return of '/stac/search' (ie, all collections.)
+_ALL_COLLECTIONS_ORDER_INDEX = Index(
+    "dataset_spatial_all_collections_order_idx",
+    "center_time",
+    "id",
+    # Stac API only returns datasets with a geometry -- it's mandatory in Stac Items.
     postgresql_where=DATASET_SPATIAL.c.footprint.isnot(None),
     _table=DATASET_SPATIAL,
 )
@@ -261,7 +270,7 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
     refresh = set()
 
     if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
-        _LOG.info("schema.applying_update.add_fixed_metadata")
+        _LOG.warn("schema.applying_update.add_fixed_metadata")
         engine.execute(
             f"""
         alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
@@ -273,8 +282,15 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         engine,
         f"{CUBEDASH_SCHEMA}.{_COLLECTION_ITEMS_INDEX.name}",
     ):
-        _LOG.info("schema.applying_update.add_collection_items_idx")
+        _LOG.warn("schema.applying_update.add_collection_items_idx")
         _COLLECTION_ITEMS_INDEX.create(engine)
+
+    if not pg_exists(
+        engine,
+        f"{CUBEDASH_SCHEMA}.{_ALL_COLLECTIONS_ORDER_INDEX.name}",
+    ):
+        _LOG.warn("schema.applying_update.add_all_collections_idx")
+        _ALL_COLLECTIONS_ORDER_INDEX.create(engine)
 
     return refresh
 
