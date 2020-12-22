@@ -112,11 +112,7 @@ class TimePeriodOverview:
                 mpolygon.buffer(0.001)
 
             geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
-                )
-                if with_valid_geometries
-                else None
+                shapely.ops.unary_union(mpolygon) if with_valid_geometries else None
             )
 
         if footprint_tolerance is not None and geometry_union is not None:
