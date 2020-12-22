@@ -108,7 +108,14 @@ def root():
                     )
                     for product, product_summary in _model.get_products_with_summaries()
                 ),
+                dict(
+                    rel="search", type="application/json", href=url_for(".stac_search")
+                ),
                 dict(rel="self", href=request.url),
+            ],
+            conformsTo=[
+                "https://api.stacspec.org/v1.0.0-beta.1/core",
+                "https://api.stacspec.org/v1.0.0-beta.1/item-search",
             ],
         )
     )
@@ -292,7 +299,22 @@ def search_stac_items(
             returned=len(returned),
             matched=count_matching,
         ),
-        links=[],
+        links=[
+            dict(
+                href=url_for(".stac_search"),
+                rel="search",
+                title="Search",
+                type="application/geo+json",
+                method="GET",
+            ),
+            dict(
+                href=url_for(".stac_search"),
+                rel="search",
+                title="Search",
+                type="application/geo+json",
+                method="POST",
+            ),
+        ],
     )
 
     if there_are_more:
