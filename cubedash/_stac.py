@@ -8,6 +8,7 @@ from functools import partial
 from typing import Callable, Dict, Optional, Sequence, Tuple, List
 
 import flask
+import werkzeug.exceptions
 from dateutil.tz import tz
 from flask import abort, request
 from werkzeug.datastructures import TypeConversionDict
@@ -208,6 +209,11 @@ def _handle_search_request(
     full_information = request_args.get(
         "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=_bool_argument
     )
+
+    if "intersects" in request_args:
+        raise werkzeug.exceptions.NotImplemented(
+            "'intersects' queries are not yet supported, sorry."
+        )
 
     if limit > PAGE_SIZE_LIMIT:
         abort(
