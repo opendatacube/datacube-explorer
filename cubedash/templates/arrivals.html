@@ -7,6 +7,10 @@
     <div class="panel highlight">
         <h2 class="followed lonesome">Recent Dataset Arrivals</h2>
         <span class="header-follow">over {{ period_length.days }} days</span>
+    <a href="{{ url_for('stac.arrivals_items') }}" class="badge header-badge">
+        As Stac Collection
+        <i class="fa fa-file-text-o" aria-hidden="true"></i>
+    </a>
     </div>
     <div class="panel odd">
         <table class="data-table">
