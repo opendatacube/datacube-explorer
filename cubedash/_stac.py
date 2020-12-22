@@ -111,7 +111,7 @@ def root():
                     description="Most recently added items",
                     rel="child",
                     type="application/json",
-                    href=url_for(".recent_arrivals"),
+                    href=url_for(".arrivals_items"),
                 ),
                 dict(
                     title="Item Search",
@@ -375,11 +375,16 @@ def collections():
     )
 
 
-@bp.route("/arrivals")
-def recent_arrivals():
+@bp.route("/arrivals/items")
+def arrivals_items():
     """
-    This is like the root "/", but has full information for each collection in
-     an array (instead of just a link to each collection).
+    Get the Items most recently indexed into this Open Data Cubee instance.
+
+    This returns a Stac FeatureCollection of complete Stac Items, with paging links.
+
+    (We may want to add a normal Stac Catalog of item links in the future,
+     as it could be significantly faster than returning full Item information?
+     We're reserving the '/arrivals' URL for that.)
     """
     limit = request.args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
     offset = request.args.get("_o", default=0, type=int)
@@ -392,7 +397,7 @@ def recent_arrivals():
 
     def next_page_url(next_offset):
         return url_for(
-            ".recent_arrivals",
+            ".arrivals_items",
             limit=limit,
             _o=next_offset,
         )
