@@ -110,6 +110,11 @@ def root():
                     for product, product_summary in _model.get_products_with_summaries()
                 ),
                 dict(
+                    rel="children",
+                    type="application/json",
+                    href=url_for(".collections"),
+                ),
+                dict(
                     rel="search", type="application/json", href=url_for(".stac_search")
                 ),
                 dict(rel="self", href=request.url),
