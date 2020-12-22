@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from enum import Enum, auto
 from itertools import groupby
 from typing import (
     Dict,
@@ -61,6 +62,16 @@ DEFAULT_TTL = 10
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
 _LOG = structlog.get_logger()
+
+
+class ItemSort(Enum):
+    # The fastest, but paging is unusable.
+    UNSORTED = auto()
+    # Sort by time then dataset id. Stable for paging.
+    DEFAULT_SORT = auto()
+    # Sort by time indexed into ODC, most recent first.
+    # (this doesn't work very efficiently with other filters, like bbox.)
+    RECENTLY_ADDED = auto()
 
 
 @dataclass
@@ -717,11 +728,17 @@ class SummaryStore:
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
-    def get_item(self, ids: UUID, full_dataset: bool = True) -> Optional[DatasetItem]:
+    def get_item(
+        self, id_: Union[UUID, str], full_dataset: bool = True
+    ) -> Optional[DatasetItem]:
         """
         Get a DatasetItem record for the given dataset UUID if it exists.
         """
-        items = list(self.search_items(dataset_ids=[ids], full_dataset=full_dataset))
+        items = list(
+            self.search_items(
+                dataset_ids=[id_], full_dataset=full_dataset, order=ItemSort.UNSORTED
+            )
+        )
         if not items:
             return None
         if len(items) > 1:
@@ -871,10 +888,10 @@ class SummaryStore:
         full_dataset: bool = False,
         dataset_ids: Sequence[UUID] = None,
         require_geometry=True,
-        ordered=True,
+        order: ItemSort = ItemSort.DEFAULT_SORT,
     ) -> Generator[DatasetItem, None, None]:
         """
-        Search datasets using Cubedash's spatial table
+        Search datasets using Explorer's spatial table
 
         Returned as DatasetItem records, with optional embedded full Datasets
         (if full_dataset==True)
@@ -918,8 +935,20 @@ class SummaryStore:
         )
 
         # Maybe sort
-        if ordered:
+        if order == ItemSort.DEFAULT_SORT:
             query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
+        elif order == ItemSort.UNSORTED:
+            ...  # Nothing! great!
+        elif order == ItemSort.RECENTLY_ADDED:
+            if not full_dataset:
+                raise NotImplementedError(
+                    "Only full-dataset searches can be sorted by recently added"
+                )
+            query = query.order_by(ODC_DATASET.c.added.desc())
+        else:
+            raise RuntimeError(
+                f"Unknown item sort order {order!r} (perhaps this is a bug?)"
+            )
 
         query = query.limit(limit).offset(
             # TODO: Offset/limit isn't particularly efficient for paging...

@@ -23,6 +23,7 @@ from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryD
 from eodatasets3.properties import StacPropertyView
 from eodatasets3.utils import is_doc_eo3
 from . import _model, _utils
+from .summary import ItemSort
 
 _LOG = logging.getLogger(__name__)
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
@@ -98,26 +99,26 @@ def root():
         dict(
             **stac_endpoint_information(),
             links=[
-                *(
-                    dict(
-                        rel="child",
-                        title=product.name,
-                        description=product.definition.get("description"),
-                        href=url_for(
-                            ".collection", collection=product.name, _external=True
-                        ),
-                    )
-                    for product, product_summary in _model.get_products_with_summaries()
-                ),
                 dict(
+                    title="Product Collections",
                     rel="children",
                     type="application/json",
                     href=url_for(".collections"),
                 ),
                 dict(
-                    rel="search", type="application/json", href=url_for(".stac_search")
+                    title="Recently Added Items",
+                    rel="child",
+                    type="application/json",
+                    href=url_for(".recent_arrivals"),
+                ),
+                dict(
+                    title="Item Search",
+                    rel="search",
+                    type="application/json",
+                    href=url_for(".stac_search"),
                 ),
                 dict(rel="self", href=request.url),
+                dict(rel="root", href=request.url),
             ],
             conformsTo=[
                 "https://api.stacspec.org/v1.0.0-beta.1/core",
@@ -195,6 +196,7 @@ def _bool_argument(s: str):
 def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
+    require_geometry: bool = True,
 ) -> Dict:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
@@ -245,7 +247,7 @@ def _handle_search_request(
             _full=full_information,
         )
 
-    return search_stac_items(
+    feature_collection = search_stac_items(
         product_names=product_names,
         bbox=bbox,
         time=time,
@@ -255,6 +257,25 @@ def _handle_search_request(
         get_next_url=next_page_url,
         full_information=full_information,
     )
+    feature_collection["links"].extend(
+        (
+            dict(
+                href=url_for(".stac_search"),
+                rel="search",
+                title="Search",
+                type="application/geo+json",
+                method="GET",
+            ),
+            dict(
+                href=url_for(".stac_search"),
+                rel="search",
+                title="Search",
+                type="application/geo+json",
+                method="POST",
+            ),
+        )
+    )
+    return feature_collection
 
 
 def search_stac_items(
@@ -266,6 +287,8 @@ def search_stac_items(
     bbox: Optional[Tuple[float, float, float, float]] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
     full_information: bool = False,
+    order: ItemSort = ItemSort.DEFAULT_SORT,
+    require_geometry: bool = True,
 ) -> Dict:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -282,6 +305,8 @@ def search_stac_items(
             dataset_ids=dataset_ids,
             offset=offset,
             full_dataset=full_information,
+            order=order,
+            require_geometry=require_geometry,
         )
     )
     returned = items[:limit]
@@ -310,22 +335,7 @@ def search_stac_items(
             returned=len(returned),
             matched=count_matching,
         ),
-        links=[
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="GET",
-            ),
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="POST",
-            ),
-        ],
+        links=[],
     )
 
     if there_are_more:
@@ -347,6 +357,40 @@ def collections():
                 _stac_collection(product.name)
                 for product, product_summary in _model.get_products_with_summaries()
             ],
+        )
+    )
+
+
+@bp.route("/arrivals")
+def recent_arrivals():
+    """
+    This is like the root "/", but has full information for each collection in
+     an array (instead of just a link to each collection).
+    """
+    limit = request.args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    offset = request.args.get("_o", default=0, type=int)
+    if limit > PAGE_SIZE_LIMIT:
+        abort(
+            400,
+            f"Max page size is {PAGE_SIZE_LIMIT}. "
+            f"Use the next links instead of a large limit.",
+        )
+
+    def next_page_url(next_offset):
+        return url_for(
+            ".recent_arrivals",
+            limit=limit,
+            _o=next_offset,
+        )
+
+    return _geojson_stac_response(
+        search_stac_items(
+            limit=limit,
+            offset=offset,
+            get_next_url=next_page_url,
+            full_information=True,
+            order=ItemSort.RECENTLY_ADDED,
+            require_geometry=False,
         )
     )
 

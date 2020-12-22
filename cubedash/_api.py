@@ -6,6 +6,7 @@ from cubedash import _utils
 
 from . import _model
 from ._utils import as_geojson
+from .summary import ItemSort
 
 _MAX_DATASET_RETURN = 2000
 
@@ -32,7 +33,10 @@ def datasets_geojson(
             features=[
                 s.as_geojson()
                 for s in _model.STORE.search_items(
-                    product_names=[product_name], time=time, limit=limit
+                    product_names=[product_name],
+                    time=time,
+                    limit=limit,
+                    order=ItemSort.UNSORTED,
                 )
                 if s.geom_geojson is not None
             ],
