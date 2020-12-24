@@ -92,7 +92,11 @@ class TimePeriodOverview:
         try:
 
             geometry_union = (
-                shapely.ops.unary_union([p.footprint_geometry for p in with_valid_geometries]) if with_valid_geometries else None
+                shapely.ops.unary_union(
+                    [p.footprint_geometry for p in with_valid_geometries]
+                )
+                if with_valid_geometries
+                else None
             )
         except ValueError:
             # Attempt 2 at union: Exaggerate the overlap *slightly* to
@@ -102,13 +106,19 @@ class TimePeriodOverview:
             try:
                 _LOG.warn("summary.footprint.union", exc_info=True)
                 geometry_union = (
-                    shapely.ops.unary_union([p.footprint_geometry.buffer(0.001) for p in with_valid_geometries])
+                    shapely.ops.unary_union(
+                        [
+                            p.footprint_geometry.buffer(0.001)
+                            for p in with_valid_geometries
+                        ]
+                    )
                     if with_valid_geometries
                     else None
                 )
             except:
                 _LOG.warn("summary.footprint.union.filtering", exc_info=True)
                 from shapely.geometry import Polygon
+
                 # print(mpolygon)
                 # form a multipolygon
                 polygonlist = []
@@ -118,8 +128,9 @@ class TimePeriodOverview:
                             polygonlist.append(p)
                     else:
                         polygonlist.append(poly.footprint_geometry)
-                print('original list length', len(polygonlist))
-                def filter_geom(geomlist, start = 0):
+                print("original list length", len(polygonlist))
+
+                def filter_geom(geomlist, start=0):
                     print("start index", start)
                     print("geom length", len(geomlist))
                     if start == len(geomlist):
@@ -128,7 +139,7 @@ class TimePeriodOverview:
                     else:
                         for i in range(len(geomlist) - start):
                             try:
-                                shapely.ops.unary_union(geomlist[0:i+start])
+                                shapely.ops.unary_union(geomlist[0 : i + start])
                             except:
                                 del geomlist[i + start]
                                 start = start + i
@@ -140,7 +151,7 @@ class TimePeriodOverview:
 
                 filtered_geom = filter_geom(polygonlist)
                 print(type(filtered_geom))
-                print('filtered list length', len(filtered_geom))
+                print("filtered list length", len(filtered_geom))
                 geometry_union = (
                     shapely.ops.unary_union(filtered_geom)
                     if with_valid_geometries
