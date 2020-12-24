@@ -120,7 +120,6 @@ def root():
                     href=url_for(".stac_search"),
                 ),
                 dict(rel="self", href=request.url),
-                dict(rel="root", href=request.url),
                 # Individual Product Collections
                 *(
                     dict(
