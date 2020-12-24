@@ -60,7 +60,6 @@ class TimePeriodOverview:
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
         crses = set(p.footprint_crs for p in periods)
-
         if not crses:
             footprint_crs = None
         elif len(crses) == 1:
@@ -90,27 +89,63 @@ class TimePeriodOverview:
             and p.footprint_geometry.is_valid
             and not p.footprint_geometry.is_empty
         ]
-
         try:
+
             geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry for p in with_valid_geometries]
-                )
-                if with_valid_geometries
-                else None
+                shapely.ops.unary_union([p.footprint_geometry for p in with_valid_geometries]) if with_valid_geometries else None
             )
         except ValueError:
-            _LOG.warn("summary.footprint.union", exc_info=True)
             # Attempt 2 at union: Exaggerate the overlap *slightly* to
             # avoid non-noded intersection.
             # TODO: does shapely have a snap-to-grid?
-            geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+            # mpolygon = MultiPolygon([polygon for polygon in [p.footprint_geometry for p in with_valid_geometries]])
+            try:
+                _LOG.warn("summary.footprint.union", exc_info=True)
+                geometry_union = (
+                    shapely.ops.unary_union([p.footprint_geometry.buffer(0.001) for p in with_valid_geometries])
+                    if with_valid_geometries
+                    else None
                 )
-                if with_valid_geometries
-                else None
-            )
+            except:
+                _LOG.warn("summary.footprint.union.filtering", exc_info=True)
+                from shapely.geometry import Polygon
+                # print(mpolygon)
+                # form a multipolygon
+                polygonlist = []
+                for poly in with_valid_geometries:
+                    if type(poly.footprint_geometry) is MultiPolygon:
+                        for p in list(poly.footprint_geometry):
+                            polygonlist.append(p)
+                    else:
+                        polygonlist.append(poly.footprint_geometry)
+                print('original list length', len(polygonlist))
+                def filter_geom(geomlist, start = 0):
+                    print("start index", start)
+                    print("geom length", len(geomlist))
+                    if start == len(geomlist):
+                        geomlist.pop()
+                        return geomlist
+                    else:
+                        for i in range(len(geomlist) - start):
+                            try:
+                                shapely.ops.unary_union(geomlist[0:i+start])
+                            except:
+                                del geomlist[i + start]
+                                start = start + i
+                                break
+                            if i == len(geomlist) - 1 - start:
+                                return geomlist
+                        filter_geom(geomlist, start)
+                    return geomlist
+
+                filtered_geom = filter_geom(polygonlist)
+                print(type(filtered_geom))
+                print('filtered list length', len(filtered_geom))
+                geometry_union = (
+                    shapely.ops.unary_union(filtered_geom)
+                    if with_valid_geometries
+                    else None
+                )
 
         if footprint_tolerance is not None and geometry_union is not None:
             geometry_union = geometry_union.simplify(footprint_tolerance)
