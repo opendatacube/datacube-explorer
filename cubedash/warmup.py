@@ -27,6 +27,7 @@ def find_examples_of_all_public_urls(index: Index):
 
     yield "/stac"
     yield "/stac/collections"
+    yield "/stac/arrivals"
     yield "/stac/arrivals/items"
 
     for mdt in index.metadata_types.get_all():
