@@ -210,6 +210,7 @@ def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
     require_geometry: bool = True,
+    include_total_count: bool = True,
 ) -> Dict:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
@@ -269,6 +270,8 @@ def _handle_search_request(
         offset=offset,
         get_next_url=next_page_url,
         full_information=full_information,
+        require_geometry=require_geometry,
+        include_total_count=include_total_count,
     )
     feature_collection["links"].extend(
         (
@@ -302,6 +305,7 @@ def search_stac_items(
     full_information: bool = False,
     order: ItemSort = ItemSort.DEFAULT_SORT,
     require_geometry: bool = True,
+    include_total_count: bool = False,
 ) -> Dict:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -325,20 +329,11 @@ def search_stac_items(
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    count_matching = _model.STORE.get_count(
-        product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
-    )
-
     page = 0
     if limit != 0:
         page = offset // limit
-
-    result = dict(
-        stac_extensions=["context"],
-        type="FeatureCollection",
-        features=[as_stac_item(f) for f in returned],
+    paging_properties = dict(
         # Stac standard
-        numberMatched=count_matching,
         numberReturned=len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
@@ -346,9 +341,21 @@ def search_stac_items(
             page=page,
             limit=limit,
             returned=len(returned),
-            matched=count_matching,
         ),
+    )
+    if include_total_count:
+        count_matching = _model.STORE.get_count(
+            product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
+        )
+        paging_properties["numberMatched"] = count_matching
+        paging_properties["context"]["matched"] = count_matching
+
+    result = dict(
+        stac_extensions=["context"],
+        type="FeatureCollection",
+        features=[as_stac_item(f) for f in returned],
         links=[],
+        **paging_properties,
     )
 
     if there_are_more:
@@ -409,6 +416,7 @@ def arrivals_items():
             full_information=True,
             order=ItemSort.RECENTLY_ADDED,
             require_geometry=False,
+            include_total_count=False,
         )
     )
 
