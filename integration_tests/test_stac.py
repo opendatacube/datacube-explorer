@@ -582,6 +582,19 @@ def test_stac_collections(stac_client: FlaskClient):
     other_links = [r for r in response["links"] if r["rel"] != "child"]
 
     assert other_links == [
+        {
+            "description": "All product collections",
+            "href": "http://localhost/stac/collections",
+            "rel": "children",
+            "title": "Collections",
+            "type": "application/json",
+        },
+        {
+            "href": "http://localhost/stac/search",
+            "rel": "search",
+            "title": "Item Search",
+            "type": "application/json",
+        },
         {"href": "http://localhost/stac", "rel": "self"},
         {"href": "http://localhost/stac", "rel": "root"},
     ]
@@ -592,10 +605,10 @@ def test_stac_collections(stac_client: FlaskClient):
         for dt in _model.STORE.all_dataset_types()
     }
 
-    found_products = set()
+    found_collection_ids = set()
     for child_link in child_links:
-        product_name = child_link["title"]
-        href = child_link["href"]
+        product_name: str = child_link["title"]
+        href: str = child_link["href"]
 
         print(f"Loading collection page for {product_name}: {repr(href)}")
 
@@ -605,16 +618,21 @@ def test_stac_collections(stac_client: FlaskClient):
             # FIXME/research: If there's no datasets in the product, we expect to fail validation
             #                 because we're missing the mandatory spatial/temporal fields
             #                 (there's no "empty polygon" concept I think?)
-            validate=expected_product_counts[product_name] > 0
+            validate=expected_product_counts.get(product_name, 0) > 0
             # Telemetry data also has no spatial properties as it hasn't been processed yet.
             and not product_name.endswith("telemetry_data"),
         )
         assert collection_data["id"] == product_name
         # TODO: assert items, properties, etc.
-        found_products.add(product_name)
+
+        found_collection_ids.add(product_name)
+
+    virtual_collections = ("Arrivals",)
 
     # We should have seen all products in the index
-    assert found_products == set(expected_product_counts)
+    assert sorted(found_collection_ids) == sorted(
+        virtual_collections + tuple(expected_product_counts.keys())
+    )
 
 
 def test_stac_collection_items(stac_client: FlaskClient):
