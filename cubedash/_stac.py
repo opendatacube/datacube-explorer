@@ -126,9 +126,7 @@ def root():
                         title=product.name,
                         description=product.definition.get("description"),
                         rel="child",
-                        href=url_for(
-                            ".collection", collection=product.name, _external=True
-                        ),
+                        href=url_for(".collection", collection=product.name),
                     )
                     for product, product_summary in _model.get_products_with_summaries()
                 ),
@@ -475,9 +473,7 @@ def _stac_collection(collection: str):
         links=[
             dict(
                 rel="items",
-                href=url_for(
-                    ".collection_items", collection=collection, _external=True
-                ),
+                href=url_for(".collection_items", collection=collection),
             )
         ],
     )
@@ -523,7 +519,6 @@ def item(collection: str, dataset_id: str):
             ".item",
             collection=actual_product_name,
             dataset_id=dataset_id,
-            _external=True,
         )
         abort(
             404,
