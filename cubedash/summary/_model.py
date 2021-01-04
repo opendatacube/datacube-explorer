@@ -106,21 +106,20 @@ class TimePeriodOverview:
             try:
                 _LOG.warn("summary.footprint.union", exc_info=True)
                 geometry_union = (
-                    shapely.ops.unary_union([p.footprint_geometry.buffer(0.001) for p in with_valid_geometries])
+                    shapely.ops.unary_union(
+                        [
+                            p.footprint_geometry.buffer(0.001)
+                            for p in with_valid_geometries
+                        ]
+                    )
                     if with_valid_geometries
                     else None
                 )
             except ValueError:
                 _LOG.warn("summary.footprint.union.filtering", exc_info=True)
-                # chain all the polygon within Multipolygon into a list
-                polygonlist = []
-                for poly in with_valid_geometries:
-                    if type(poly.footprint_geometry) is MultiPolygon:
-                        for p in list(poly.footprint_geometry):
-                            polygonlist.append(p)
-                    else:
-                        polygonlist.append(poly.footprint_geometry)
+
                 # run recursive filter to keep a clean polygon list
+                polygonlist = polygon_chain(with_valid_geometries)
                 filtered_geom = _filter_geom(polygonlist)
                 geometry_union = (
                     shapely.ops.unary_union(filtered_geom)
@@ -208,8 +207,21 @@ def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None
 
+
+# chain all the polygon within Multipolygon into a list
+def polygon_chain(valid_geometries):
+    polygonlist = []
+    for poly in valid_geometries:
+        if type(poly.footprint_geometry) is MultiPolygon:
+            for p in list(poly.footprint_geometry):
+                polygonlist.append(p)
+        else:
+            polygonlist.append(poly.footprint_geometry)
+    return polygonlist
+
+
 # Recursive filtering for non-noded intersection
-def _filter_geom(geomlist, start = 0):
+def _filter_geom(geomlist, start=0):
     print("start index", start)
     print("geom length", len(geomlist))
     if start == len(geomlist):
@@ -218,7 +230,7 @@ def _filter_geom(geomlist, start = 0):
     else:
         for i in range(len(geomlist) - start):
             try:
-                shapely.ops.unary_union(geomlist[0:i+start])
+                shapely.ops.unary_union(geomlist[0 : i + start])
             except ValueError:
                 del geomlist[i + start]
                 start = start + i
