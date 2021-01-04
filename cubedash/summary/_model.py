@@ -119,7 +119,7 @@ class TimePeriodOverview:
                 _LOG.warn("summary.footprint.union.filtering", exc_info=True)
 
                 # run recursive filter to keep a clean polygon list
-                polygonlist = polygon_chain(with_valid_geometries)
+                polygonlist = _polygon_chain(with_valid_geometries)
                 filtered_geom = _filter_geom(polygonlist)
                 geometry_union = (
                     shapely.ops.unary_union(filtered_geom)
@@ -209,7 +209,7 @@ def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
 
 
 # chain all the polygon within Multipolygon into a list
-def polygon_chain(valid_geometries):
+def _polygon_chain(valid_geometries):
     polygonlist = []
     for poly in valid_geometries:
         if type(poly.footprint_geometry) is MultiPolygon:
@@ -222,8 +222,6 @@ def polygon_chain(valid_geometries):
 
 # Recursive filtering for non-noded intersection
 def _filter_geom(geomlist, start=0):
-    print("start index", start)
-    print("geom length", len(geomlist))
     if start == len(geomlist):
         geomlist.pop()
         return geomlist
