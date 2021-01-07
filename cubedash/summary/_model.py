@@ -207,8 +207,8 @@ def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     return shape is not None
 
 
-# chain all the polygon within Multipolygon into a list
-def _polygon_chain(valid_geometries):
+def _polygon_chain(valid_geometries: Iterable[BaseGeometry]) -> list:
+    """Chain all the given [Mutli]Polygons into a single list."""
     polygonlist = []
     for poly in valid_geometries:
         if type(poly.footprint_geometry) is MultiPolygon:
