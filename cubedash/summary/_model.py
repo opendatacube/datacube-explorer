@@ -103,7 +103,7 @@ class TimePeriodOverview:
             # avoid non-noded intersection.
             # TODO: does shapely have a snap-to-grid?
             try:
-                _LOG.warn("summary.footprint.union", exc_info=True)
+                _LOG.warn("summary.footprint.invalid_union", exc_info=True)
                 geometry_union = (
                     shapely.ops.unary_union(
                         [
