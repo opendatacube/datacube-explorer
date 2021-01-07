@@ -225,6 +225,10 @@ def _filter_geom(geomlist: List[BaseGeometry], start=0) -> List[BaseGeometry]:
     Exhaustively searches for a run of polygons that cause a union error
     (eg. "non-noded intersection"), and cuts out the first one that it finds.
     """
+    # Pass through empty lists
+    if len(geomlist) == 0:
+        return geomlist
+    # Process non-empty lists
     if start == len(geomlist):
         geomlist.pop()
         return geomlist
