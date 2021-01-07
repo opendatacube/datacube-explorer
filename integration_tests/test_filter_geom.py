@@ -3,9 +3,10 @@ Unit test for re-cursive geometry filtering
 """
 import json
 
-from shapely.geometry import mapping, shape
+from shapely.geometry import shape
 
 from cubedash.summary._model import _filter_geom
+
 
 def test_filter_geom():
     assert _filter_geom([]) == []
