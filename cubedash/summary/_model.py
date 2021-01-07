@@ -117,7 +117,7 @@ class TimePeriodOverview:
             except ValueError:
                 _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
 
-                # run recursive filter to keep a clean polygon list
+                # Attempt 3 at union: Recursive filter bad polygons first
                 polygonlist = _polygon_chain(with_valid_geometries)
                 filtered_geom = _filter_geom(polygonlist)
                 geometry_union = (
