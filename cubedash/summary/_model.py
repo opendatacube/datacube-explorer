@@ -102,7 +102,6 @@ class TimePeriodOverview:
             # Attempt 2 at union: Exaggerate the overlap *slightly* to
             # avoid non-noded intersection.
             # TODO: does shapely have a snap-to-grid?
-            # mpolygon = MultiPolygon([polygon for polygon in [p.footprint_geometry for p in with_valid_geometries]])
             try:
                 _LOG.warn("summary.footprint.union", exc_info=True)
                 geometry_union = (
