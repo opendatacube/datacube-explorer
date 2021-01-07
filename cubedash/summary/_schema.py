@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import warnings
 from enum import Enum
+from textwrap import dedent
 from typing import Set
 
 import structlog
@@ -29,6 +30,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
+
+from cubedash._utils import ODC_DATASET
 
 _LOG = structlog.get_logger()
 
@@ -292,6 +296,31 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         _LOG.warn("schema.applying_update.add_all_collections_idx")
         _ALL_COLLECTIONS_ORDER_INDEX.create(engine)
 
+    # Add an optional index to AGDC if we have permission.
+    # (otherwise we warn the user that it may be slow, and how to add it themselves)
+    if not pg_index_exists(
+        engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_added"
+    ):
+        add_index_sql = (
+            f"create index ix_dataset_added on {ODC_DATASET.fullname}(added desc);"
+        )
+        try:
+            _LOG.warn("schema.applying_update.add_odc_added_index")
+            engine.execute(add_index_sql)
+        except ProgrammingError:
+            warnings.warn(
+                dedent(
+                    f"""No recently-added index.
+                Explorer recommends adding an index for recently-added datasets to your ODC,
+                but does not have permission to add it to the current ODC database.
+
+                It's recommended to add it manually in Postgres:
+
+                    {add_index_sql}
+            """
+                )
+            )
+
     return refresh
 
 
@@ -300,6 +329,32 @@ def pg_exists(conn, name: str) -> bool:
     Does a postgres object exist?
     """
     return conn.execute("select to_regclass(%s)", name).scalar() is not None
+
+
+def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) -> bool:
+    """
+    Does a postgres index exist?
+
+    Unlike pg_exists(), we don't need heightened permissions on the table.
+
+    So, for example, Explorer's limited-permission user can check agdc/ODC tables
+    that it doesn't own.
+    """
+    return (
+        conn.execute(
+            """
+        select indexname
+        from pg_indexes
+        where schemaname=%(schema_name)s and
+              tablename=%(table_name)s and
+              indexname=%(index_name)s
+              """,
+            schema_name=schema_name,
+            table_name=table_name,
+            index_name=index_name,
+        ).scalar()
+        is not None
+    )
 
 
 def get_postgis_versions(conn) -> str:
