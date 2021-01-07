@@ -2,7 +2,7 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, Optional, Set, Tuple, Union
+from typing import Iterable, Optional, Set, Tuple, Union, List
 
 import shapely
 import shapely.ops
@@ -222,7 +222,6 @@ def _polygon_chain(valid_geometries: Iterable[BaseGeometry]) -> list:
 def _filter_geom(geomlist: List[BaseGeometry], start=0) -> List[BaseGeometry]:
     """
     Recursive filtering of un-unionable polygons. Input list is modified in-place.
-    
     Exhaustively searches for a run of polygons that cause a union error 
     (eg. "non-noded intersection"), and cuts out the first one that it finds.
     """
