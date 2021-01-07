@@ -115,7 +115,7 @@ class TimePeriodOverview:
                     else None
                 )
             except ValueError:
-                _LOG.warn("summary.footprint.union.filtering", exc_info=True)
+                _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
 
                 # run recursive filter to keep a clean polygon list
                 polygonlist = _polygon_chain(with_valid_geometries)
