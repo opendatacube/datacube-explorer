@@ -53,9 +53,10 @@ def test_nested_exception(testing_polygon):
             geometry_union = shapely.ops.unary_union(
                 [ele.footprint_geometry.buffer(0.00) for ele in testing_polygon]
             )
-            assert geometry_union is None
 
         except ValueError:
+            assert geometry_union is None
+
             polygonlist = _polygon_chain(testing_polygon)
             assert type(polygonlist) is list
             assert len(polygonlist) == 472
