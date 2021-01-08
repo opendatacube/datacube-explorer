@@ -26,9 +26,10 @@ def testing_polygon():
     for line in sample_geometry_file:
         if len(line) > 1:
             line_c += 1
-            poly = shapely.wkt.loads(line)
-            shapely_polygon.append(Valid_geometries(poly))
-    assert len(shapely_polygon) == 56
+            if line_c > 16 and line_c < 50:  # min amount for testing
+                poly = shapely.wkt.loads(line)
+                shapely_polygon.append(Valid_geometries(poly))
+    assert len(shapely_polygon) == 33
     return shapely_polygon
 
 
@@ -56,12 +57,11 @@ def test_nested_exception(testing_polygon):
 
         except ValueError:
             assert geometry_union is None
-
             polygonlist = _polygon_chain(testing_polygon)
             assert type(polygonlist) is list
-            assert len(polygonlist) == 472
+            assert len(polygonlist) == 262
             filtered_geom = _filter_geom(polygonlist)
-            assert len(filtered_geom) == 222
+            assert len(filtered_geom) == 199
             geometry_union = shapely.ops.unary_union(filtered_geom)
 
             assert geometry_union.is_valid
