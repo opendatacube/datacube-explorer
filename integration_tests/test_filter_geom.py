@@ -45,14 +45,14 @@ def test_nested_exception(testing_polygon):
     """
     with pytest.raises(
         ValueError,
-        match="ValueError: No Shapely geometry can be created from null value",
+        match="No Shapely geometry can be created from null value",
     ):
         geometry_union = shapely.ops.unary_union(
             [ele.footprint_geometry for ele in testing_polygon]
         )
     with pytest.raises(
         ValueError,
-        match="ValueError: No Shapely geometry can be created from null value",
+        match="No Shapely geometry can be created from null value",
     ):
         geometry_union = shapely.ops.unary_union(
             [ele.footprint_geometry.buffer(0.00) for ele in testing_polygon]
