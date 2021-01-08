@@ -2,7 +2,7 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable, Optional, Set, Tuple, Union
+from typing import Iterable, Optional, Set, Tuple, Union, List
 
 import shapely
 import shapely.ops
@@ -60,7 +60,6 @@ class TimePeriodOverview:
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
         crses = set(p.footprint_crs for p in periods)
-
         if not crses:
             footprint_crs = None
         elif len(crses) == 1:
@@ -90,8 +89,8 @@ class TimePeriodOverview:
             and p.footprint_geometry.is_valid
             and not p.footprint_geometry.is_empty
         ]
-
         try:
+
             geometry_union = (
                 shapely.ops.unary_union(
                     [p.footprint_geometry for p in with_valid_geometries]
@@ -100,17 +99,32 @@ class TimePeriodOverview:
                 else None
             )
         except ValueError:
-            _LOG.warn("summary.footprint.union", exc_info=True)
             # Attempt 2 at union: Exaggerate the overlap *slightly* to
             # avoid non-noded intersection.
             # TODO: does shapely have a snap-to-grid?
-            geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+            try:
+                _LOG.warn("summary.footprint.invalid_union", exc_info=True)
+                geometry_union = (
+                    shapely.ops.unary_union(
+                        [
+                            p.footprint_geometry.buffer(0.001)
+                            for p in with_valid_geometries
+                        ]
+                    )
+                    if with_valid_geometries
+                    else None
                 )
-                if with_valid_geometries
-                else None
-            )
+            except ValueError:
+                _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
+
+                # Attempt 3 at union: Recursive filter bad polygons first
+                polygonlist = _polygon_chain(with_valid_geometries)
+                filtered_geom = _filter_geom(polygonlist)
+                geometry_union = (
+                    shapely.ops.unary_union(filtered_geom)
+                    if with_valid_geometries
+                    else None
+                )
 
         if footprint_tolerance is not None and geometry_union is not None:
             geometry_union = geometry_union.simplify(footprint_tolerance)
@@ -191,3 +205,42 @@ class TimePeriodOverview:
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None
+
+
+def _polygon_chain(valid_geometries: Iterable[BaseGeometry]) -> list:
+    """Chain all the given [Mutli]Polygons into a single list."""
+    polygonlist = []
+    for poly in valid_geometries:
+        if type(poly.footprint_geometry) is MultiPolygon:
+            for p in list(poly.footprint_geometry):
+                polygonlist.append(p)
+        else:
+            polygonlist.append(poly.footprint_geometry)
+    return polygonlist
+
+
+def _filter_geom(geomlist: List[BaseGeometry], start=0) -> List[BaseGeometry]:
+    """
+    Recursive filtering of un-unionable polygons. Input list is modified in-place.
+    Exhaustively searches for a run of polygons that cause a union error
+    (eg. "non-noded intersection"), and cuts out the first one that it finds.
+    """
+    # Pass through empty lists
+    if len(geomlist) == 0:
+        return geomlist
+    # Process non-empty lists
+    if start == len(geomlist):
+        geomlist.pop()
+        return geomlist
+    else:
+        for i in range(len(geomlist) - start):
+            try:
+                shapely.ops.unary_union(geomlist[0 : i + start])
+            except ValueError:
+                del geomlist[i + start]
+                start = start + i
+                break
+            if i == len(geomlist) - 1 - start:
+                return geomlist
+        _filter_geom(geomlist, start)
+    return geomlist
