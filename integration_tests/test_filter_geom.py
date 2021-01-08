@@ -39,7 +39,6 @@ def test_filter_geom():
     assert _filter_geom([geom])
 
 
-@pytest.mark.skip(reason="fail")
 def test_nested_exception(testing_polygon):
     """
     simulating the behaviour in _model.py
