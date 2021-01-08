@@ -4,9 +4,8 @@ Unit test for re-cursive geometry filtering
 import json
 from pathlib import Path
 
-from shapely.geometry import shape, MultiPolygon, Polygon
+from shapely.geometry import shape
 import shapely.wkt
-import csv
 import pytest
 
 from cubedash.summary._model import _filter_geom, _polygon_chain
@@ -19,7 +18,7 @@ class Valid_geometries:
         self.footprint_geometry = footprint_geometry
 
 
-@pytest.fixture
+@pytest.fixture()
 def testing_polygon():
     sample_geometry_file = open(TEST_DATA_DIR / "unary_union_fail_sample.txt")
     line_c = 0
@@ -31,6 +30,7 @@ def testing_polygon():
             shapely_polygon.append(Valid_geometries(poly))
     assert len(shapely_polygon) == 56
     return shapely_polygon
+
 
 def test_filter_geom():
     assert _filter_geom([]) == []
@@ -45,24 +45,22 @@ def test_nested_exception(testing_polygon):
     geometry_union = None
     try:
         geometry_union = shapely.ops.unary_union(
-            [ ele.footprint_geometry for ele in testing_polygon ]
-            )
+            [ele.footprint_geometry for ele in testing_polygon]
+        )
     except ValueError:
         assert geometry_union is None
         try:
             geometry_union = shapely.ops.unary_union(
-                [ ele.footprint_geometry.buffer(0.00) for ele in testing_polygon ]
-                )
+                [ele.footprint_geometry.buffer(0.00) for ele in testing_polygon]
+            )
             assert geometry_union is None
 
         except ValueError:
-               polygonlist =  _polygon_chain(testing_polygon)
-               assert type(polygonlist) is list
-               assert len(polygonlist) == 472
-               filtered_geom = _filter_geom(polygonlist)
-               assert len(filtered_geom) == 222
-               geometry_union = (
-                   shapely.ops.unary_union(filtered_geom)
-               )
+            polygonlist = _polygon_chain(testing_polygon)
+            assert type(polygonlist) is list
+            assert len(polygonlist) == 472
+            filtered_geom = _filter_geom(polygonlist)
+            assert len(filtered_geom) == 222
+            geometry_union = shapely.ops.unary_union(filtered_geom)
 
-               assert geometry_union.is_valid
+            assert geometry_union.is_valid
