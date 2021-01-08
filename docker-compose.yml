@@ -7,7 +7,7 @@ services:
       args:
         ENVIRONMENT: deployment
     ports:
-      - 8099:8080
+      - 80:8080
     environment:
       # - DB_HOSTNAME=host.docker.internal
       - DB_HOSTNAME=postgres
@@ -30,7 +30,7 @@ services:
       - POSTGRES_PASSWORD=opendatacubepassword
       - POSTGRES_USER=opendatacube
     ports:
-      - 5439:5432
+      - 5432:5432
     restart: always
 
   # Needed for testing HTTPS
