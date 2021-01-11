@@ -267,7 +267,7 @@ def _gis_point(doc, doc_offset):
 
 
 # noinspection PyComparisonWithNone
-def refresh_product(
+def refresh_spatial_extents(
     index: Index,
     product: DatasetType,
     recompute_all_extents=False,
@@ -444,19 +444,10 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
             footprint_expression, resolution / 4
         )
 
-    # "expr == None" is valid in sqlalchemy:
-    # pylint: disable=singleton-comparison
-    time = md_type.dataset_fields["time"].alchemy_expression
-
-    # Matches the logic in Dataset.center_time
-    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
-        "center_time"
-    )
-
     return [
         DATASET.c.id,
         DATASET.c.dataset_type_ref,
-        center_time,
+        center_time_expression(md_type),
         (null() if footprint_expression is None else footprint_expression).label(
             "footprint"
         ),
@@ -464,6 +455,17 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
         _size_bytes_field(dt).label("size_bytes"),
         _dataset_creation_expression(md_type).label("creation_time"),
     ]
+
+
+def center_time_expression(md_type: MetadataType):
+    # "expr == None" is valid in sqlalchemy:
+    # pylint: disable=singleton-comparison
+    time = md_type.dataset_fields["time"].alchemy_expression
+    # Matches the logic in Dataset.center_time
+    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+        "center_time"
+    )
+    return center_time
 
 
 def _default_crs(dt: DatasetType) -> Optional[str]:

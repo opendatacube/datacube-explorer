@@ -45,10 +45,10 @@ Drop all of Explorer’s additions to the database:
 
 
 """
-
+import collections
+import enum
 import multiprocessing
 import sys
-from datetime import timedelta
 from functools import partial
 from textwrap import dedent
 from typing import List, Sequence, Tuple, Optional
@@ -72,10 +72,21 @@ _LOG = structlog.get_logger()
 user_message = partial(click_secho, err=True)
 
 
+class GenerateResult(enum.Enum):
+    # Newly summarised, or a force-refresh recreation of everything.
+    CREATED = 2
+    # Updated only the changed months.
+    UPDATED = 3
+    # No new changes found.
+    SKIPPED = 1
+    # Exception was thrown
+    ERROR = 4
+
+
 # pylint: disable=broad-except
 def generate_report(
     item: Tuple[LocalConfig, str, bool, bool]
-) -> Tuple[str, Optional[TimePeriodOverview]]:
+) -> Tuple[str, GenerateResult, Optional[TimePeriodOverview]]:
     config, product_name, force_refresh, recreate_dataset_extents = item
     log = _LOG.bind(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
@@ -87,24 +98,65 @@ def generate_report(
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
 
-        log.info("generate.product.refresh")
-        store.refresh_product(
-            product,
-            refresh_older_than=(
-                timedelta(minutes=-1) if force_refresh else timedelta(days=1)
-            ),
-            force_dataset_extent_recompute=recreate_dataset_extents,
-        )
-        log.info("generate.product.refresh.done")
+        existing_summary = store.get_product_summary(product.name)
+        needs_refresh = store.needs_refresh(product)
+        if (existing_summary is None) or recreate_dataset_extents or needs_refresh:
+            log.info("generate.product.refresh")
+            store.refresh_product(
+                product,
+                force_dataset_extent_recompute=recreate_dataset_extents,
+            )
+            log.info("generate.product.refresh.done")
 
-        log.info("generate.product")
-        updated = store.get_or_update(product.name, force_refresh=force_refresh)
-        log.info("generate.product.done")
+        # !!! Uh-oh! if it fails now, it's already marked as refreshed!
+        # (add refresh time to summaries? Find months with refresh-time older than product refresh time)
+        #  ---  auto-populate column from current product.refresh_time.
+        #  ---  Add a per-product lock?
 
-        return product_name, updated
+        # If it's new (or we're forcing), recreate the whole tree recursively (depth-first).
+        if existing_summary is None or force_refresh:
+            log.info("generate.product")
+            if force_refresh:
+                log.warn("generate.product.force_refresh")
+            updated = store.get_or_update(product.name, force_refresh=force_refresh)
+            log.info("generate.product.done")
+            return product_name, GenerateResult.CREATED, updated
+
+        if not needs_refresh:
+            log.info("generate.product.no_changes")
+            return product_name, GenerateResult.SKIPPED, store.get(product_name)
+
+        # Otherwise, regenerate only the months that changed,
+        # (and parent nodes in the tree: month -> year -> whole-product)
+        log.info("generate.product.changes")
+        updated_years = set()
+
+        # Month
+        for change_month, new_count in store.find_months_changed_since(
+            product_name, existing_summary.last_refresh_time
+        ):
+            log.debug(
+                "generate.product.month_refresh",
+                product=product_name,
+                month=change_month,
+                change_count=new_count,
+            )
+            year = change_month.year
+            store.update(product_name, year, change_month.month, force_refresh=True)
+            updated_years.add(year)
+        # Year
+        for year in updated_years:
+            # Note we don't force refresh: we've just replaced the months that needed updating!
+            store.update(product_name, year)
+
+        # Whole product
+        updated = store.update(product_name)
+        log.info("generate.product.changes.done")
+        return product_name, GenerateResult.UPDATED, updated
+
     except Exception:
         log.exception("generate.product.error", exc_info=True)
-        return product_name, None
+        return product_name, GenerateResult.ERROR, None
     finally:
         store.index.close()
 
@@ -127,20 +179,26 @@ def run_generation(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
     )
 
-    counts = {"complete": 0, "failure": 0}
+    counts = collections.Counter()
 
     user_message("Generating product summaries...")
 
-    def on_complete(product_name: str, summary: TimePeriodOverview):
-        if summary is None:
-            user_message(f"{style(product_name, fg='yellow')} error (see log)")
-            counts["failure"] += 1
-        else:
-            user_message(
-                f"{style(product_name, fg='green')} done: "
-                f"({summary.dataset_count} datasets)",
-            )
-            counts["complete"] += 1
+    def on_complete(
+        product_name: str, result: GenerateResult, summary: TimePeriodOverview
+    ):
+        counts[result] += 1
+        result_color = {
+            GenerateResult.ERROR: "red",
+            GenerateResult.CREATED: "blue",
+            GenerateResult.UPDATED: "green",
+        }.get(result)
+        extra = ""
+        if summary is not None:
+            extra = f" (contains {summary.dataset_count} total datasets)"
+
+        user_message(
+            f"{style(product_name, fg=result_color)} {result.name.lower()}{extra}"
+        )
 
     # If one worker, avoid any subprocesses/forking.
     # This makes test tracing far easier.
@@ -155,7 +213,7 @@ def run_generation(
         with multiprocessing.Pool(workers) as pool:
             product: DatasetType
             summary: TimePeriodOverview
-            for product_name, summary in pool.imap_unordered(
+            for product_name, result, summary in pool.imap_unordered(
                 generate_report,
                 (
                     (config, p.name, force_refresh, recreate_dataset_extents)
@@ -163,22 +221,27 @@ def run_generation(
                 ),
                 chunksize=1,
             ):
-                on_complete(product_name, summary)
+                on_complete(product_name, result, summary)
 
         pool.close()
         pool.join()
 
-    # if completed > 0:
-    #     echo("\tregenerating totals....", nl=False, err=True)
-    #     store.update(None, None, None, None, generate_missing_children=False)
-
-    completed, failures = counts["complete"], counts["failure"]
-    user_message(
-        f"done. " f"{completed}/{len(products)} generated, " f"{failures} failures",
-        fg="red" if failures else "green",
+    status_messages = ", ".join(
+        f"{count_} {status.name.lower()}" for status, count_ in counts.items()
     )
-    _LOG.info("completed", count=len(products), generated=completed, failures=failures)
-    return completed, failures
+    failure_count = counts[GenerateResult.ERROR]
+    creation_count = counts[GenerateResult.CREATED] + counts[GenerateResult.UPDATED]
+
+    user_message(
+        f"finished. {status_messages}",
+        fg="red" if failure_count else "green" if creation_count else None,
+    )
+    _LOG.info(
+        "completed",
+        count=len(products),
+        **{f"status_{k}": count for k, count in counts.items()},
+    )
+    return creation_count, failure_count
 
 
 def _load_products(index: Index, product_names) -> List[DatasetType]:
@@ -187,8 +250,13 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
         if product:
             yield product
         else:
+            possible_product_names = "\n\t".join(
+                p.name for p in index.products.get_all()
+            )
             raise click.BadParameter(
-                f"Unknown product {repr(product_name)}", param_hint="product_names"
+                f"Unknown product {repr(product_name)}.\n\n"
+                f"Possibilities:\n\t{possible_product_names}",
+                param_hint="product_names",
             )
 
 
@@ -357,7 +425,7 @@ def cli(
     else:
         products = list(_load_products(store.index, product_names))
 
-    completed, failures = run_generation(
+    updated, failures = run_generation(
         config,
         products,
         workers=jobs,
