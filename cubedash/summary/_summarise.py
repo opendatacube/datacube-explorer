@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from collections import Counter
 from datetime import datetime
+from typing import Tuple
 
 import pandas as pd
 import structlog
@@ -11,6 +12,7 @@ from geoalchemy2 import Geometry
 from geoalchemy2 import shape as geo_shape
 from sqlalchemy import and_, func, select, or_
 from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.sql import ColumnElement
 
 from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
@@ -175,7 +177,9 @@ class Summariser:
             return d.replace(tzinfo=self._grouping_time_zone_tz)
         return d
 
-    def _where(self, product_name, time):
+    def _where(
+        self, product_name: str, time: Range
+    ) -> Tuple[datetime, datetime, ColumnElement]:
         begin_time = self._with_default_tz(time.begin)
         end_time = self._with_default_tz(time.end)
         where_clause = and_(

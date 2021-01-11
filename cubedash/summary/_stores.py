@@ -26,7 +26,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select
+from sqlalchemy import DDL, String, and_, func, select, column
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -39,7 +39,11 @@ except ModuleNotFoundError:
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
-from cubedash.summary._extents import RegionSummary, ProductArrival
+from cubedash.summary._extents import (
+    RegionSummary,
+    ProductArrival,
+    center_time_expression,
+)
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
     PRODUCT,
@@ -92,6 +96,8 @@ class ProductSummary:
     # How long ago the spatial extents for this product were last refreshed.
     # (Field comes from DB on load)
     last_refresh_age: Optional[timedelta] = None
+    # The db-server-local time when this product was refreshed.
+    last_refresh_time: datetime = None
 
     id_: Optional[int] = None
 
@@ -207,10 +213,81 @@ class SummaryStore:
             )
         self.refresh_stats()
 
+    def find_most_recent_change(self, product_name: str):
+        """Find the database-local time of the last dataset that changed for this product."""
+        dataset_type = self.get_dataset_type(product_name)
+
+        # create index dataset_type_changed on agdc.dataset (dataset_type_ref, max(added, updated, archived) desc);
+        return self._engine.execute(
+            select(
+                [
+                    # func.max(ODC_DATASET.c.added),
+                    func.max(
+                        func.greatest(
+                            ODC_DATASET.c.added,
+                            column("updated"),
+                            ODC_DATASET.c.archived,
+                        )
+                    ),
+                ]
+            ).where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+        ).scalar()
+
+    def find_months_changed_since(
+        self, product_name: str, time: datetime
+    ) -> Iterable[Tuple[datetime, int]]:
+        """What months of the given product have changed since the given database-local time?"""
+        dataset_type = self.get_dataset_type(product_name)
+
+        dataset_changed = func.greatest(
+            ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
+        )
+
+        # A common user error, given other APIs. So we wont give them an inscrutable database query error.
+        if time is None:
+            raise ValueError("Time can't be null")
+
+        return [
+            (month, count)
+            for month, count in self._engine.execute(
+                select(
+                    [
+                        func.date_trunc(
+                            "month", center_time_expression(dataset_type.metadata_type)
+                        ).label("month"),
+                        func.count(),
+                    ]
+                )
+                .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+                .where(dataset_changed > time)
+                .group_by("month")
+                .order_by("month")
+            )
+        ]
+
+    def needs_refresh(self, product: DatasetType) -> bool:
+        """Does the given product have changes since the last refresh?"""
+        existing_product_summary = self.get_product_summary(product.name)
+        if not existing_product_summary:
+            return True
+
+        most_recent_change = self.find_most_recent_change(product.name)
+        has_new_changes = (
+            most_recent_change > existing_product_summary.last_refresh_time
+        )
+        if has_new_changes:
+            _LOG.debug(
+                "product.has_changes",
+                product_name=product.name,
+                refresh_time=str(existing_product_summary.last_refresh_time),
+                most_recent_change=most_recent_change,
+                age=str(existing_product_summary.last_refresh_age),
+            )
+        return has_new_changes
+
     def refresh_product(
         self,
         product: DatasetType,
-        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         dataset_sample_size: int = 1000,
         force_dataset_extent_recompute=False,
     ) -> Optional[int]:
@@ -218,23 +295,8 @@ class SummaryStore:
         Update Explorer's computed extents for the given product, and record any new
         datasets into the spatial table.
         """
-        our_product = self.get_product_summary(product.name)
-
-        if (
-            not force_dataset_extent_recompute
-            and our_product is not None
-            and our_product.last_refresh_age < refresh_older_than
-        ):
-            _LOG.debug(
-                "init.product.skip.too_recent",
-                product_name=product.name,
-                age=str(our_product.last_refresh_age),
-                refresh_older_than=refresh_older_than,
-            )
-            return None
-
         _LOG.info("init.product", product_name=product.name)
-        change_count = _extents.refresh_product(
+        change_count = _extents.refresh_spatial_extents(
             self.index,
             product,
             recompute_all_extents=force_dataset_extent_recompute,
@@ -562,6 +624,7 @@ class SummaryStore:
                     PRODUCT.c.time_earliest,
                     PRODUCT.c.time_latest,
                     (func.now() - PRODUCT.c.last_refresh).label("last_refresh_age"),
+                    PRODUCT.c.last_refresh.label("last_refresh_time"),
                     PRODUCT.c.id.label("id_"),
                     PRODUCT.c.source_product_refs,
                     PRODUCT.c.derived_product_refs,
