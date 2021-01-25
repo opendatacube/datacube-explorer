@@ -109,6 +109,7 @@ _ALL_COLLECTIONS_ORDER_INDEX = Index(
 )
 
 DATASET_SPATIAL.indexes.add(_COLLECTION_ITEMS_INDEX)
+DATASET_SPATIAL.indexes.add(_ALL_COLLECTIONS_ORDER_INDEX)
 
 # Note that we deliberately don't foreign-key to datacube tables:
 # - We don't want to add an external dependency on datacube core
