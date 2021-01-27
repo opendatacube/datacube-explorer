@@ -4,7 +4,7 @@ Legacy redirects to maintain old stac api URLs
 import json
 
 import flask
-from flask import url_for, Response
+from flask import url_for, Response, request
 from werkzeug.urls import iri_to_uri
 
 bp = flask.Blueprint("stac_legacy", __name__)
@@ -13,20 +13,26 @@ bp = flask.Blueprint("stac_legacy", __name__)
 @bp.route("/collections/<collection>")
 def legacy_collection(collection: str):
     """Legacy redirect for non-stac prefixed offset"""
-    return legacy_redirect(url_for("stac.collection", collection=collection))
+    return legacy_redirect(
+        url_for("stac.collection", collection=collection, **request.args)
+    )
 
 
 @bp.route("/collections/<collection>/items")
 def legacy_collection_items(collection: str):
     """Legacy redirect for non-stac prefixed offset"""
-    return legacy_redirect(url_for("stac.collection_items", collection=collection))
+    return legacy_redirect(
+        url_for("stac.collection_items", collection=collection, **request.args)
+    )
 
 
 @bp.route("/collections/<collection>/items/<dataset_id>")
 def legacy_item(collection, dataset_id):
     """Legacy redirect for non-stac prefixed offset"""
     return legacy_redirect(
-        url_for("stac.item", collection=collection, dataset_id=dataset_id)
+        url_for(
+            "stac.item", collection=collection, dataset_id=dataset_id, **request.args
+        )
     )
 
 
