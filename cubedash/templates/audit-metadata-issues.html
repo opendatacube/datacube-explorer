@@ -97,8 +97,8 @@
         {% endif %}
     </div>
 
+    <div class="panel odd" id="query-timings">
     {% if product_timings_iter %}
-        <div class="panel odd" id="query-timings">
             <h3>Day query speed</h3>
             <p>Extremely slow queries usually indicate a misconfigured index for the product.</p>
             <ul>
@@ -115,13 +115,11 @@
                     </li>
                 {% endfor %}
             </ul>
-        </div>
     {% else %}
-        <div class="panel odd">
             <a href="{{ url_for('audit.product_metadata_page', timings=True) }}#query-timings">
-                View query timings (very slow)
-            </a>
-        </div>
+                <i class="fa fa-cogs" aria-hidden="true"></i>
+                View query timings</a> (very slow)
     {% endif %}
+    </div>
 
 {% endblock %}

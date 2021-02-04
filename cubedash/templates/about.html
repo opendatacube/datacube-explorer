@@ -86,7 +86,9 @@
                 </span>
             </li>
             <li>
-                <a href="{{ url_for('product.storage_page') }}">Day query timing</a> information:
+                <a href="{{ url_for('audit.product_metadata_page', _anchor='query-timings') }}">
+                    Day query timing
+                </a> information:
                 <span class="uri-path">
                     {{ url_for('audit.get_timings_text', _external=True) }}
                 </span>
