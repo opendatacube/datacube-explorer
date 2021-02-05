@@ -1,12 +1,8 @@
 from __future__ import absolute_import
 
-import csv
-import io
 import logging
-import re
 from datetime import timedelta
 
-import flask
 from flask import Blueprint, abort, url_for, redirect, Response
 
 from cubedash import _model, _utils
@@ -24,44 +20,33 @@ def legacy_about_csv():
 @bp.route("/audit/storage.csv")
 def storage_csv():
     """Get the product storage table as a CSV"""
-    out = io.StringIO()
-    cw = csv.writer(out)
-    cw.writerow(
-        [
+    return utils.as_csv(
+        filename_prefix="product-information",
+        headers=(
             "name",
             "count",
             "locations",
             "license",
             "definition",
-            "summary_age",
+            "summary_time",
             "metadata_type",
-        ]
+        ),
+        rows=(
+            (
+                product.name,
+                summary.dataset_count,
+                [
+                    location.common_prefix
+                    for location in _model.STORE.product_location_samples(product.name)
+                ],
+                _utils.product_license(product),
+                url_for("product.raw_product_doc", name=product.name, _external=True),
+                _iso8601_duration(summary.last_refresh_age),
+                product.metadata_type.name,
+            )
+            for product, summary in _model.get_products_with_summaries()
+        ),
     )
-    cw.writerows(
-        (
-            product.name,
-            summary.dataset_count,
-            [
-                location.common_prefix
-                for location in _model.STORE.product_location_samples(product.name)
-            ],
-            _utils.product_license(product),
-            url_for("product.raw_product_doc", name=product.name, _external=True),
-            _iso8601_duration(summary.last_refresh_age),
-            product.metadata_type.name,
-        )
-        for product, summary in _model.get_products_with_summaries()
-    )
-    this_explorer_id = _only_alphanumeric(
-        _model.app.config.get("STAC_ENDPOINT_ID", "explorer")
-    )
-
-    response = flask.make_response(out.getvalue())
-    response.headers[
-        "Content-Disposition"
-    ] = f"attachment; filename=product-information-{this_explorer_id}.csv"
-    response.headers["Content-type"] = "text/csv"
-    return response
 
 
 @bp.route("/products.txt")
@@ -80,10 +65,6 @@ def metadata_type_list_text():
         "\n".join(t.name for t in _model.STORE.all_metadata_types()),
         content_type="text/plain",
     )
-
-
-def _only_alphanumeric(s: str):
-    return re.sub("[^0-9a-zA-Z]+", "-", s)
 
 
 @bp.route("/audit/storage")
