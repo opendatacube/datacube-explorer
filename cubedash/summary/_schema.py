@@ -54,7 +54,7 @@ DATASET_SPATIAL = Table(
     Column(
         "dataset_type_ref",
         SmallInteger,
-        comment="The ODC dataset_type id)",
+        comment="The ODC dataset_type id",
         nullable=False,
     ),
     Column("center_time", DateTime(timezone=True), nullable=False),
@@ -128,6 +128,13 @@ PRODUCT = Table(
         server_default=func.now(),
         comment="Last refresh of this product in the dataset_spatial table",
     ),
+    Column(
+        "summary_refresh",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        comment="The 'last_refresh' date when summaries were last regenerated.",
+    ),
     Column("source_product_refs", postgres.ARRAY(SmallInteger)),
     Column("derived_product_refs", postgres.ARRAY(SmallInteger)),
     Column("time_earliest", DateTime(timezone=True)),
@@ -170,6 +177,14 @@ TIME_OVERVIEW = Table(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    ),
+    Column(
+        "product_refresh_time",
+        DateTime(timezone=True),
+        # This is nullable in migrated schemas, as the update time is unknown.
+        # (Those environments could be made non-null once everything is known to be refreshed)
+        nullable=False,
+        comment="The 'last_refresh' timestamp of the product at the time of generation.",
     ),
     Column("footprint_count", Integer, nullable=False),
     Column("footprint_geometry", Geometry(srid=FOOTPRINT_SRID, spatial_index=False)),
@@ -240,10 +255,9 @@ def is_compatible_schema(engine: Engine) -> bool:
     """Do we have the latest schema changes?"""
     is_latest = True
 
-    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
-        is_latest = False
-
-    if not pg_exists(engine, f"{CUBEDASH_SCHEMA}.region"):
+    if not pg_column_exists(
+        engine, f"{CUBEDASH_SCHEMA}.time_overview", "product_refresh_time"
+    ):
         is_latest = False
 
     if pg_exists(engine, f"{CUBEDASH_SCHEMA}.mv_region"):
@@ -253,6 +267,7 @@ def is_compatible_schema(engine: Engine) -> bool:
             "have been upgraded: "
             "    drop materialised view cubedash.mv_region"
         )
+
     return is_latest
 
 
@@ -296,6 +311,17 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
     ):
         _LOG.warn("schema.applying_update.add_all_collections_idx")
         _ALL_COLLECTIONS_ORDER_INDEX.create(engine)
+
+    if not pg_column_exists(
+        engine, f"{CUBEDASH_SCHEMA}.time_overview", "product_refresh_time"
+    ):
+        _LOG.warn("schema.applying_update.add_refresh_time")
+        engine.execute(
+            f"""
+            alter table {CUBEDASH_SCHEMA}.time_overview
+            add column product_refresh_time timestamp with time zone null
+        """
+        )
 
     # Add an optional index to AGDC if we have permission.
     # (otherwise we warn the user that it may be slow, and how to add it themselves)

@@ -93,9 +93,6 @@ class ProductSummary:
     # (on large products this is judged via sampling, so may not be 100%)
     fixed_metadata: Dict[str, Union[str, float, int, datetime]]
 
-    # How long ago the spatial extents for this product were last refreshed.
-    # (Field comes from DB on load)
-    last_refresh_age: Optional[timedelta] = None
     # The db-server-local time when this product was refreshed.
     last_refresh_time: datetime = None
 
@@ -202,13 +199,11 @@ class SummaryStore:
 
     def refresh_all_products(
         self,
-        refresh_older_than: timedelta = _DEFAULT_REFRESH_OLDER_THAN,
         force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
             self.refresh_product(
                 product,
-                refresh_older_than=refresh_older_than,
                 force_dataset_extent_recompute=force_dataset_extent_recompute,
             )
         self.refresh_stats()
@@ -217,7 +212,9 @@ class SummaryStore:
         """Find the database-local time of the last dataset that changed for this product."""
         dataset_type = self.get_dataset_type(product_name)
 
+        # TODO: Add this !!
         # create index dataset_type_changed on agdc.dataset (dataset_type_ref, max(added, updated, archived) desc);
+
         return self._engine.execute(
             select(
                 [
@@ -272,7 +269,7 @@ class SummaryStore:
             return True
 
         most_recent_change = self.find_most_recent_change(product.name)
-        has_new_changes = (
+        has_new_changes = most_recent_change and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
         if has_new_changes:
@@ -281,7 +278,6 @@ class SummaryStore:
                 product_name=product.name,
                 refresh_time=str(existing_product_summary.last_refresh_time),
                 most_recent_change=most_recent_change,
-                age=str(existing_product_summary.last_refresh_age),
             )
         return has_new_changes
 
@@ -290,10 +286,13 @@ class SummaryStore:
         product: DatasetType,
         dataset_sample_size: int = 1000,
         force_dataset_extent_recompute=False,
-    ) -> Optional[int]:
+    ) -> Tuple[int, ProductSummary]:
         """
         Update Explorer's computed extents for the given product, and record any new
         datasets into the spatial table.
+
+        Returns the count of changed dataset extents, and the
+        updated product summary.
         """
         _LOG.info("init.product", product_name=product.name)
         change_count = _extents.refresh_spatial_extents(
@@ -326,21 +325,22 @@ class SummaryStore:
                 product, sample_percentage=sample_percentage
             )
 
-        self._set_product_extent(
-            ProductSummary(
-                product.name,
-                total_count,
-                earliest,
-                latest,
-                source_products=source_products,
-                derived_products=derived_products,
-                fixed_metadata=fixed_metadata,
-            )
+        new_summary = ProductSummary(
+            product.name,
+            total_count,
+            earliest,
+            latest,
+            source_products=source_products,
+            derived_products=derived_products,
+            fixed_metadata=fixed_metadata,
         )
+        product_id, product_refresh_time = self._set_product_extent(new_summary)
+        new_summary.last_refresh_time = product_refresh_time
 
         self._refresh_product_regions(product)
         _LOG.info("init.regions.done", product_name=product.name)
-        return change_count
+
+        return change_count, new_summary
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
@@ -623,7 +623,6 @@ class SummaryStore:
                     PRODUCT.c.dataset_count,
                     PRODUCT.c.time_earliest,
                     PRODUCT.c.time_latest,
-                    (func.now() - PRODUCT.c.last_refresh).label("last_refresh_age"),
                     PRODUCT.c.last_refresh.label("last_refresh_time"),
                     PRODUCT.c.id.label("id_"),
                     PRODUCT.c.source_product_refs,
@@ -710,7 +709,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _set_product_extent(self, product: ProductSummary) -> int:
+    def _set_product_extent(self, product: ProductSummary) -> Tuple[int, datetime]:
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -736,21 +735,28 @@ class SummaryStore:
         # a couple of times! So, It appears that this update-else-insert must be done
         # in two transactions...
         row = self._engine.execute(
-            select([PRODUCT.c.id]).where(PRODUCT.c.name == product.name)
+            select([PRODUCT.c.id, PRODUCT.c.last_refresh]).where(
+                PRODUCT.c.name == product.name
+            )
         ).fetchone()
 
         if row:
             # Product already exists, so update it
             self._engine.execute(
-                PRODUCT.update().where(PRODUCT.c.id == row[0]).values(fields)
+                PRODUCT.update()
+                .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
+                .where(PRODUCT.c.id == row[0])
+                .values(fields)
             )
         else:
             # Product doesn't exist, so insert it
             row = self._engine.execute(
-                postgres.insert(PRODUCT).values(**fields, name=product.name)
-            ).inserted_primary_key
+                postgres.insert(PRODUCT)
+                .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
+                .values(**fields, name=product.name)
+            )
         self._product.cache_clear()
-        return row[0]
+        return row[0], row[1]
 
     def _put(
         self,
@@ -1255,7 +1261,6 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
 
         store.refresh_product(
             dt,
-            refresh_older_than=timedelta(minutes=-1),
             force_dataset_extent_recompute=recompute_dataset_extents,
         )
     _LOG.info("data.refreshing_extents.complete")

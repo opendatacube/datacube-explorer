@@ -64,15 +64,7 @@
                     </td>
                     <td class="numeric">{{ product | product_license_link }}</td>
                     <td><a href="{{url_for('product.raw_product_doc', name=product.name)}}" class="badge">doc</a></td>
-                                <td>
-                    {% if summary.last_refresh_age.days > 1 %}
-                        {{ summary.last_refresh_age.days }} days
-                    {% elif summary.last_refresh_age.seconds // 60 // 60 > 1 %}
-                        {{ summary.last_refresh_age.seconds // 60 // 60 }} hours
-                    {% else %}
-                        {{ summary.last_refresh_age.seconds // 60 }} minutes
-                    {% endif %}
-                </td>
+                    <td>{{ summary.last_refresh_time | timesince }}</td>
                 <td>
                     {% if summary.derived_products %}
                         {% for p in summary.derived_products %}

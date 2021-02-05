@@ -364,7 +364,7 @@ def inject_globals():
             flask.request.view_args["product_name"]
         )
         if product_summary:
-            last_updated = datetime.now() - product_summary.last_refresh_age
+            last_updated = product_summary.last_refresh_time
 
     return dict(
         # Only the known, summarised products in groups.
