@@ -6,11 +6,17 @@
 {% block content %}
     <div class="panel highlight">
         <h2 class="followed lonesome">Recent Dataset Arrivals</h2>
-        <span class="header-follow">over {{ period_length.days }} days</span>
-    <a href="{{ url_for('stac.arrivals') }}" class="badge header-badge">
-        As Stac Catalog
-        <i class="fa fa-file-text-o" aria-hidden="true"></i>
-    </a>
+        <span class="header-follow">
+            over {{ period_length.days }} days
+            <a href="{{ url_for('.arrivals_csv') }}" class="badge header-badge">
+                csv
+                <i class="fa fa-file-excel-o" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('stac.arrivals') }}" class="badge header-badge">
+                As Stac Catalog
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+        </span>
     </div>
     <div class="panel odd">
         <table class="data-table">

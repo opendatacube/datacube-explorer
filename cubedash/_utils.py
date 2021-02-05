@@ -4,12 +4,15 @@ Common global filters and util methods.
 
 from __future__ import absolute_import, division
 
+import csv
 import difflib
 import functools
+import io
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Iterable
 
 import flask
 import rapidjson
@@ -347,6 +350,36 @@ def as_yaml(o, content_type="text/yaml"):
         stream.getvalue(),
         content_type=content_type,
     )
+
+
+def _only_alphanumeric(s: str):
+    """
+    >>> _only_alphanumeric("guitar o'clock")
+    'guitar-o-clock'
+    """
+    return re.sub("[^0-9a-zA-Z]+", "-", s)
+
+
+def as_csv(
+    *,
+    filename_prefix: str,
+    headers: Tuple[str, ...],
+    rows: Iterable[Tuple[object, ...]],
+):
+    """Return a CSV Flask response."""
+    out = io.StringIO()
+    cw = csv.writer(out)
+    cw.writerow(headers)
+    cw.writerows(rows)
+    this_explorer_id = _only_alphanumeric(
+        flask.current_app.config.get("STAC_ENDPOINT_ID", "explorer")
+    )
+    response = flask.make_response(out.getvalue())
+    response.headers[
+        "Content-Disposition"
+    ] = f"attachment; filename={filename_prefix}-{this_explorer_id}.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
 
 
 def prepare_dataset_formatting(

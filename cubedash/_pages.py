@@ -522,6 +522,27 @@ def arrivals_page():
     )
 
 
+@app.route("/arrivals.csv")
+def arrivals_csv():
+    period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
+
+    def _flat_arrivals_rows():
+        for _, arrivals in _model.STORE.get_arrivals(period_length=period_length):
+            for arrival in arrivals:
+                yield (
+                    arrival.day,
+                    arrival.product_name,
+                    arrival.dataset_count,
+                    [str(dataset_id) for dataset_id in arrival.sample_dataset_ids],
+                )
+
+    return utils.as_csv(
+        filename_prefix="recent-arrivals",
+        headers=("day", "product_name", "dataset_count", "sample_dataset_ids"),
+        rows=_flat_arrivals_rows(),
+    )
+
+
 @app.route("/about")
 def about_page():
     return utils.render(
