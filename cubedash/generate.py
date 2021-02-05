@@ -102,13 +102,13 @@ def generate_report(
         needs_refresh = store.needs_refresh(product)
         if (existing_summary is None) or recreate_dataset_extents or needs_refresh:
             log.info("generate.product.refresh")
-            store.refresh_product(
+            _, refresh_timestamp = store.refresh_product(
                 product,
                 force_dataset_extent_recompute=recreate_dataset_extents,
             )
             log.info("generate.product.refresh.done")
 
-        # !!! Uh-oh! if it fails now, it's already marked as refreshed!
+        # TODO !!! Uh-oh! if it fails now, it's already marked as refreshed!
         # (add refresh time to summaries? Find months with refresh-time older than product refresh time)
         #  ---  auto-populate column from current product.refresh_time.
         #  ---  Add a per-product lock?

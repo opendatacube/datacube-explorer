@@ -41,7 +41,7 @@ def storage_csv():
                 ],
                 _utils.product_license(product),
                 url_for("product.raw_product_doc", name=product.name, _external=True),
-                _iso8601_duration(summary.last_refresh_age),
+                summary.last_refresh_time,
                 product.metadata_type.name,
             )
             for product, summary in _model.get_products_with_summaries()
