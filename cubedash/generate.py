@@ -129,7 +129,6 @@ def generate_report(
         # Otherwise, regenerate only the months that changed,
         # (and parent nodes in the tree: month -> year -> whole-product)
         log.info("generate.product.changes")
-        updated_years = set()
 
         # Month
         for change_month, new_count in store.find_months_changed_since(
@@ -143,9 +142,9 @@ def generate_report(
             )
             year = change_month.year
             store.update(product_name, year, change_month.month, force_refresh=True)
-            updated_years.add(year)
-        # Year
-        for year in updated_years:
+
+        # Find years who are older than their months
+        for year in store.find_years_needing_update(product_name):
             # Note we don't force refresh: we've just replaced the months that needed updating!
             store.update(product_name, year)
 

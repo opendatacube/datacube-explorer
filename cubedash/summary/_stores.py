@@ -26,7 +26,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select, column
+from sqlalchemy import DDL, String, and_, func, select, column, exists
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -259,6 +259,41 @@ class SummaryStore:
                 .where(dataset_changed > time)
                 .group_by("month")
                 .order_by("month")
+            )
+        ]
+
+    def find_years_needing_update(self, product_name: str):
+        """Find any years with newly-refreshed months"""
+        updated_months = TIME_OVERVIEW.alias("updated_months")
+        years = TIME_OVERVIEW.alias("years_needing_update")
+        product = self.get_product_summary(product_name)
+        if product is None:
+            # ? raise RuntimeError("Product is not yet summarised, no diff of years")
+            return []
+
+        return [
+            start_day.year
+            for start_day in self._engine.execute(
+                # Select years
+                select([years.c.start_day])
+                .where(years.c.period_type == "year")
+                .where(
+                    years.c.product_ref == product.id_,
+                )
+                # Where there exist months that are more newly created.
+                .where(
+                    exists(
+                        select([updated_months.c.start_day])
+                        .where(updated_months.c.period_type == "month")
+                        .where(
+                            updated_months.c.product_ref == product.id_,
+                        )
+                        .where(
+                            updated_months.c.product_refresh_time
+                            > years.c.product_refresh_time
+                        )
+                    )
+                )
             )
         ]
 
