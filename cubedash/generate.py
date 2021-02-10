@@ -94,6 +94,8 @@ def generate_report(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
     )
 
+    # TODO: Add a per-product lock to avoid concurrent generation?
+
     store = SummaryStore.create(_get_index(config, product_name), log=log)
     try:
         product = store.index.products.get_by_name(product_name)
@@ -101,36 +103,47 @@ def generate_report(
             raise ValueError(f"Unknown product: {product_name}")
 
         existing_summary = store.get_product_summary(product.name)
-        needs_refresh = store.needs_refresh(product)
-        if (existing_summary is None) or recreate_dataset_extents or needs_refresh:
+        if (
+            (existing_summary is None)
+            or recreate_dataset_extents
+            or store.needs_refresh(product)
+        ):
             log.info("generate.product.refresh")
-            _, refresh_timestamp = store.refresh_product(
+            _, current_summary = store.refresh_product(
                 product,
                 force_dataset_extent_recompute=recreate_dataset_extents,
             )
             log.info("generate.product.refresh.done")
+        else:
+            current_summary = existing_summary
 
-        # TODO !!! Uh-oh! if it fails now, it's already marked as refreshed!
-        # (add refresh time to summaries? Find months with refresh-time older than product refresh time)
-        #  ---  auto-populate column from current product.refresh_time.
-        #  ---  Add a per-product lock?
-
-        # If it's new (or we're forcing), recreate the whole tree recursively (depth-first).
+        # If it's new or we're force-creating, recreate the whole tree recursively (depth-first).
         if existing_summary is None or force_refresh:
-            log.info("generate.product")
+            log.info("generate.product.whole")
             if force_refresh:
-                log.warn("generate.product.force_refresh")
-            updated = store.get_or_update(product.name, force_refresh=force_refresh)
-            log.info("generate.product.done")
+                log.warn("generate.forcing_refresh")
+            updated = store.get_or_update(
+                product.name,
+                force_refresh=force_refresh,
+                product_refresh_time=current_summary.last_refresh_time,
+            )
+            log.info("generate.product.whole.done")
             return product_name, GenerateResult.CREATED, updated
 
-        if not needs_refresh:
+        time_summaries_are_completed = (
+            current_summary.last_successful_summary_time is not None
+            and (
+                current_summary.last_successful_summary_time
+                >= current_summary.last_refresh_time
+            )
+        )
+        if time_summaries_are_completed:
             log.info("generate.product.no_changes")
             return product_name, GenerateResult.SKIPPED, store.get(product_name)
 
         # Otherwise, regenerate only the months that changed,
         # (and parent nodes in the tree: month -> year -> whole-product)
-        log.info("generate.product.changes")
+        log.info("generate.product.updating_incrementally")
 
         # Month
         for change_month, new_count in store.find_months_changed_since(
@@ -143,16 +156,29 @@ def generate_report(
                 change_count=new_count,
             )
             year = change_month.year
-            store.update(product_name, year, change_month.month, force_refresh=True)
+            store.update(
+                product_name,
+                year,
+                change_month.month,
+                force_refresh=True,
+                product_refresh_time=current_summary.last_refresh_time,
+            )
 
         # Find years who are older than their months
         for year in store.find_years_needing_update(product_name):
             # Note we don't force refresh: we've just replaced the months that needed updating!
-            store.update(product_name, year)
+            store.update(
+                product_name,
+                year,
+                product_refresh_time=current_summary.last_refresh_time,
+            )
 
         # Whole product
-        updated = store.update(product_name)
-        log.info("generate.product.changes.done")
+        updated = store.update(
+            product_name, product_refresh_time=current_summary.last_refresh_time
+        )
+
+        store.time_summary_was_successful(current_summary)
         return product_name, GenerateResult.UPDATED, updated
 
     except Exception:
@@ -433,7 +459,7 @@ def cli(
         force_refresh=force_refresh,
         recreate_dataset_extents=recreate_dataset_extents,
     )
-    if refresh_stats:
+    if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)
         store.refresh_stats(concurrently=force_concurrently)
         user_message("done", color="green")
