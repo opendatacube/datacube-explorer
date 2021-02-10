@@ -73,9 +73,11 @@ user_message = partial(click_secho, err=True)
 
 
 class GenerateResult(enum.Enum):
-    # Newly summarised, or a force-refresh recreation of everything.
+    """What happened in a product generation task?"""
+
+    # Product was newly generated (or force-refreshed to recreate everything).
     CREATED = 2
-    # Updated only the changed months.
+    # Updated the existing summaries (for months that changed)
     UPDATED = 3
     # No new changes found.
     SKIPPED = 1
