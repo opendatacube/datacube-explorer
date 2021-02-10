@@ -119,6 +119,8 @@ def product_page(name):
         product_summary=product_summary,
         location_samples=_model.STORE.product_location_samples(name),
         metadata_doc=ordered_metadata,
+        # (Override the global default with a product-only time)
+        last_updated_time=product_summary.last_refresh_time,
     )
 
 

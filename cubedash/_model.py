@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
-import dateutil.parser
 import flask
 import flask_themes
 import structlog
@@ -77,19 +76,6 @@ def get_time_summary(
 
 def get_product_summary(product_name: str) -> ProductSummary:
     return STORE.get_product_summary(product_name)
-
-
-@cache.memoize(timeout=120)
-def get_last_updated():
-    # Drop a text file in to override the "updated time": for example, when we know it's an old clone of our DB.
-    path = BASE_DIR / "generated.txt"
-    if path.exists():
-        date_text = path.read_text()
-        try:
-            return dateutil.parser.parse(date_text)
-        except ValueError:
-            _LOG.warn("invalid.summary.generated.txt", text=date_text, path=path)
-    return STORE.get_last_updated()
 
 
 ProductWithSummary = Tuple[DatasetType, ProductSummary]
