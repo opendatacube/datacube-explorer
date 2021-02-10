@@ -104,6 +104,11 @@ def overview_page(
         default_center=default_center,
         year_selector_summary=year_selector_summary,
         time_selector_summary=time_selector_summary,
+        # Override the global "last updated" value: the chosen summary information
+        # may be older than the product.
+        last_updated_time=selected_summary.product_refresh_time
+        if selected_summary
+        else None,
     )
 
 
@@ -357,14 +362,15 @@ def request_wants_json():
 
 @app.context_processor
 def inject_globals():
-    last_updated = _model.get_last_updated()
-    # If there's no global data refresh time, show the time the current product was summarised.
-    if not last_updated and "product_name" in flask.request.view_args:
+    # The footer "Last updated" date.
+    # The default is the currently-viewed product's summary refresh date.
+    last_updated = None
+    if "product_name" in flask.request.view_args:
         product_summary = _model.STORE.get_product_summary(
             flask.request.view_args["product_name"]
         )
         if product_summary:
-            last_updated = product_summary.last_refresh_time
+            last_updated = product_summary.last_successful_summary_time
 
     return dict(
         # Only the known, summarised products in groups.
