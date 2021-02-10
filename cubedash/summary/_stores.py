@@ -5,6 +5,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum, auto
+from functools import partial
 from itertools import groupby
 from typing import (
     Dict,
@@ -26,7 +27,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select, column, exists
+from sqlalchemy import DDL, String, and_, func, select, column, exists, or_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -95,6 +96,11 @@ class ProductSummary:
 
     # The db-server-local time when this product was refreshed.
     last_refresh_time: datetime = None
+
+    # The `last_refresh_time` last time summary generation was completed successfully.
+    # (this is to judge how far summaries are out of date:
+    #  we'll scan any datasets newer than this date to find changes)
+    last_successful_summary_time: datetime = None
 
     # Not recommended for use by users, as ids are local and internal.
     # The 'name' is typically used as an identifier, and with ODC itself.
@@ -378,6 +384,33 @@ class SummaryStore:
         _LOG.info("init.regions.done", product_name=product.name)
 
         return change_count, new_summary
+
+    def time_summary_was_successful(self, product: ProductSummary):
+        """
+        Mark this product as finished summarisation.
+
+        (ie. bump the last-successful summary time to match it)
+
+        This means future time-summaries will only need to scan datasets
+        newer than it.
+        """
+        _LOG.info(
+            "product.complete!",
+            product_name=product.name,
+            previous_refresh_time=product.last_successful_summary_time,
+            new_refresh_time=product.last_refresh_time,
+        )
+        self._engine.execute(
+            PRODUCT.update()
+            .where(PRODUCT.c.id == product.id_)
+            .where(
+                or_(
+                    PRODUCT.c.last_successful_summary_time.is_(None),
+                    PRODUCT.c.last_successful_summary_time < product.last_refresh_time,
+                )
+            )
+            .values(last_successful_summary_time=product.last_refresh_time),
+        )
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
@@ -1084,6 +1117,7 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
         force_refresh: Optional[bool] = False,
+        product_refresh_time: datetime = None,
     ) -> TimePeriodOverview:
         """
         Get a cached summary if exists, otherwise generate one
@@ -1098,11 +1132,18 @@ class SummaryStore:
                 day,
                 generate_missing_children=True,
                 force_refresh=True,
+                product_refresh_time=product_refresh_time,
             )
         else:
             summary = self.get(product_name, year, month, day)
         if not summary:
-            summary = self.update(product_name, year, month, day)
+            summary = self.update(
+                product_name,
+                year,
+                month,
+                day,
+                product_refresh_time=product_refresh_time,
+            )
         return summary
 
     def update(
@@ -1113,19 +1154,28 @@ class SummaryStore:
         day: Optional[int] = None,
         generate_missing_children: Optional[bool] = True,
         force_refresh: Optional[bool] = False,
+        product_refresh_time: datetime = None,
     ) -> TimePeriodOverview:
         """Update the given summary and return the new one"""
         product = self._product(product_name)
-        get_child = self.get_or_update if generate_missing_children else self.get
+        get_child = (
+            partial(self.get_or_update, product_refresh_time=product_refresh_time)
+            if generate_missing_children
+            else self.get
+        )
 
         if year and month and day:
             # Don't store days, they're quick.
             return self._summariser.calculate_summary(
-                product_name, _utils.as_time_range(year, month, day)
+                product_name,
+                _utils.as_time_range(year, month, day),
+                product_refresh_time=product_refresh_time,
             )
         elif year and month:
             summary = self._summariser.calculate_summary(
-                product_name, _utils.as_time_range(year, month)
+                product_name,
+                _utils.as_time_range(year, month),
+                product_refresh_time=product_refresh_time,
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
@@ -1203,10 +1253,6 @@ class SummaryStore:
             )
         )
         return existing_products
-
-    def get_last_updated(self) -> Optional[datetime]:
-        """Time of last update, if known"""
-        return None
 
     def find_datasets_for_region(
         self,
@@ -1351,6 +1397,7 @@ def _summary_from_row(res):
         footprint_count=res["footprint_count"],
         # The most newly created dataset
         newest_dataset_creation_time=res["newest_dataset_creation_time"],
+        product_refresh_time=res["product_refresh_time"],
         # When this summary was last generated
         summary_gen_time=res["generation_time"],
         crses=set(res["crses"]) if res["crses"] is not None else None,
@@ -1377,6 +1424,7 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         time_earliest=begin,
         time_latest=end,
         size_bytes=summary.size_bytes,
+        product_refresh_time=summary.product_refresh_time,
         footprint_geometry=(
             None
             if summary.footprint_geometry is None

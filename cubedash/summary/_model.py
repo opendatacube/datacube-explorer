@@ -40,6 +40,9 @@ class TimePeriodOverview:
 
     size_bytes: int
 
+    # What version of our product table this was based on (the last_refresh_time on ProductSummary)
+    product_refresh_time: datetime
+
     # When this summary was generated. Set on the server.
     summary_gen_time: datetime = None
 
@@ -152,6 +155,14 @@ class TimePeriodOverview:
                 default=None,
             ),
             crses=set.union(*(o.crses for o in periods)) if periods else set(),
+            product_refresh_time=min(
+                (
+                    p.product_refresh_time
+                    for p in periods
+                    if p.product_refresh_time is not None
+                ),
+                default=None,
+            ),
             summary_gen_time=min(
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
                 default=None,

@@ -129,11 +129,11 @@ PRODUCT = Table(
         comment="Last refresh of this product in the dataset_spatial table",
     ),
     Column(
-        "summary_refresh",
+        "last_successful_summary",
         DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        comment="The 'last_refresh' date when summaries were last regenerated.",
+        nullable=True,
+        comment="The `last_refresh` time that was current when summaries "
+        "were last *fully* generated successfully.",
     ),
     Column("source_product_refs", postgres.ARRAY(SmallInteger)),
     Column("derived_product_refs", postgres.ARRAY(SmallInteger)),

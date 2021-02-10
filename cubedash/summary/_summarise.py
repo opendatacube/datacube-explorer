@@ -39,7 +39,9 @@ class Summariser:
         # EPSG code for all polygons to be converted to (for footprints).
         self.output_crs_epsg_code = FOOTPRINT_SRID
 
-    def calculate_summary(self, product_name: str, time: Range) -> TimePeriodOverview:
+    def calculate_summary(
+        self, product_name: str, time: Range, product_refresh_time: datetime
+    ) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
         """
@@ -155,8 +157,15 @@ class Summariser:
                 }
             )
 
+        if product_refresh_time is None:
+            raise RuntimeError(
+                "Internal error: Newly-made time summaries should "
+                "not have a null product refresh time."
+            )
+
         summary = TimePeriodOverview(
             **row,
+            product_refresh_time=product_refresh_time,
             timeline_period="day",
             time_range=Range(begin_time, end_time),
             timeline_dataset_counts=day_counts,
