@@ -96,6 +96,8 @@ class ProductSummary:
     # The db-server-local time when this product was refreshed.
     last_refresh_time: datetime = None
 
+    # Not recommended for use by users, as ids are local and internal.
+    # The 'name' is typically used as an identifier, and with ODC itself.
     id_: Optional[int] = None
 
 
