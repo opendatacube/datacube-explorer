@@ -276,7 +276,9 @@ class PleaseRefresh(Enum):
     What data should be refreshed/recomputed?
     """
 
-    # Refresh all calculated extents/geometry for datasets
+    # Refresh the product extents.
+    PRODUCTS = 2
+    # Recreate all dataset extents in the spatial table
     DATASET_EXTENTS = 1
 
 
