@@ -256,7 +256,7 @@ def is_compatible_schema(engine: Engine) -> bool:
     is_latest = True
 
     if not pg_column_exists(
-        engine, f"{CUBEDASH_SCHEMA}.time_overview", "product_refresh_time"
+        engine, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
     ):
         is_latest = False
 
@@ -320,6 +320,17 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
             f"""
             alter table {CUBEDASH_SCHEMA}.time_overview
             add column product_refresh_time timestamp with time zone null
+        """
+        )
+
+    if not pg_column_exists(
+        engine, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
+    ):
+        _LOG.warn("schema.applying_update.add_summary_success_time")
+        engine.execute(
+            f"""
+            alter table {CUBEDASH_SCHEMA}.product
+            add column last_successful_summary timestamp with time zone null
         """
         )
 
