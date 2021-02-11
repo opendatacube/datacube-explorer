@@ -187,13 +187,11 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        needed_update = not _schema.is_compatible_schema(self._engine)
-
         # Add any missing schema items or patches.
         _schema.create_schema(self._engine)
         refresh_also = _schema.update_schema(self._engine)
 
-        if needed_update or refresh_also:
+        if refresh_also:
             _refresh_data(refresh_also, store=self)
 
     @classmethod
@@ -1335,17 +1333,22 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
     Refresh product information after a schema update, plus the given kind of data.
     """
     recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
+    refresh_products = recompute_dataset_extents or (
+        PleaseRefresh.PRODUCTS in please_refresh
+    )
 
-    for dt in store.all_dataset_types():
-        _LOG.info("data.refreshing_extents", product=dt.name)
-        # Skip product if it's never been summarised at all.
-        if store.get_product_summary(dt.name) is None:
-            continue
+    if refresh_products:
+        for dt in store.all_dataset_types():
+            # Skip product if it's never been summarised at all.
+            if store.get_product_summary(dt.name) is None:
+                continue
 
-        store.refresh_product(
-            dt,
-            force_dataset_extent_recompute=recompute_dataset_extents,
-        )
+            if recompute_dataset_extents:
+                _LOG.info("data.refreshing_extents", product=dt.name)
+            store.refresh_product(
+                dt,
+                force_dataset_extent_recompute=recompute_dataset_extents,
+            )
     _LOG.info("data.refreshing_extents.complete")
 
 
