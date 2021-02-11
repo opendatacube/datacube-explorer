@@ -405,11 +405,11 @@ class SummaryStore:
             .where(PRODUCT.c.id == product.id_)
             .where(
                 or_(
-                    PRODUCT.c.last_successful_summary_time.is_(None),
-                    PRODUCT.c.last_successful_summary_time < product.last_refresh_time,
+                    PRODUCT.c.last_successful_summary.is_(None),
+                    PRODUCT.c.last_successful_summary < product.last_refresh_time,
                 )
             )
-            .values(last_successful_summary_time=product.last_refresh_time),
+            .values(last_successful_summary=product.last_refresh_time),
         )
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
