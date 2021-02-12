@@ -133,10 +133,11 @@ def generate_report(
                 log.warn("generate.forcing_refresh")
             updated = store.get_or_update(
                 product.name,
-                force_refresh=force_refresh,
+                force_refresh=True,
                 product_refresh_time=current_summary.last_refresh_time,
             )
             log.info("generate.product.whole.done")
+            store.time_summary_was_successful(current_summary)
             return product_name, GenerateResult.CREATED, updated
 
         time_summaries_are_completed = (
