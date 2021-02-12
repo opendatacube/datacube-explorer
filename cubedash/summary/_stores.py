@@ -276,7 +276,26 @@ class SummaryStore:
             # ? raise RuntimeError("Product is not yet summarised, no diff of years")
             return []
 
-        return [
+        # All years we are expected to have
+        expected_years = set(
+            range(product.time_earliest.year, product.time_latest.year + 1)
+        )
+
+        # Years that have already been summarised
+        summarised_years = set(
+            r[0].year
+            for r in self._engine.execute(
+                select([years.c.start_day])
+                .where(years.c.period_type == "year")
+                .where(
+                    years.c.product_ref == product.id_,
+                )
+            )
+        )
+        missing_years = expected_years.difference(summarised_years)
+
+        # Years who have month-records updated more recently than their own record.
+        outdated_years = set(
             start_day.year
             for start_day in self._engine.execute(
                 # Select years
@@ -300,7 +319,9 @@ class SummaryStore:
                     )
                 )
             )
-        ]
+        )
+
+        return sorted(missing_years.union(outdated_years))
 
     def needs_refresh(self, product: DatasetType) -> bool:
         """Does the given product have changes since the last refresh?"""
