@@ -118,7 +118,16 @@ def generate_report(
             current_summary = existing_summary
 
         # If it's new or we're force-creating, recreate the whole tree recursively (depth-first).
-        if existing_summary is None or force_refresh:
+        if (
+            # If it's a new product...
+            existing_summary is None
+            # ...or it was generated before incremental-updating was implemented.
+            or existing_summary.last_successful_summary_time is None
+            # ... or we're using brute force.
+            or force_refresh
+        ):
+            # Then regenerate every single summary.
+
             log.info("generate.product.whole")
             if force_refresh:
                 log.warn("generate.forcing_refresh")
