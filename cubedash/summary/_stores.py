@@ -95,7 +95,7 @@ class ProductSummary:
     fixed_metadata: Dict[str, Union[str, float, int, datetime]]
 
     # The db-server-local time when this product was refreshed.
-    last_refresh_time: datetime = None
+    last_refresh_time: datetime
 
     # The `last_refresh_time` last time summary generation was completed successfully.
     # (this is to judge how far summaries are out of date:
@@ -236,19 +236,18 @@ class SummaryStore:
             ).where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
         ).scalar()
 
-    def find_months_changed_since(
-        self, product_name: str, time: datetime
+    def find_months_needing_update(
+        self, product_name: str
     ) -> Iterable[Tuple[datetime, int]]:
-        """What months of the given product have changed since the given database-local time?"""
+        """What months of the given product may not be summarised with the latest data?"""
         dataset_type = self.get_dataset_type(product_name)
+        datasets_newer_than = self._product(
+            product_name
+        ).last_successful_summary_time - timedelta(minutes=5)
 
         dataset_changed = func.greatest(
             ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
         )
-
-        # A common user error, given other APIs. So we wont give them an inscrutable database query error.
-        if time is None:
-            raise ValueError("Time can't be null")
 
         return [
             (month, count)
@@ -262,7 +261,7 @@ class SummaryStore:
                     ]
                 )
                 .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
-                .where(dataset_changed > time)
+                .where(dataset_changed > datasets_newer_than)
                 .group_by("month")
                 .order_by("month")
             )
@@ -335,6 +334,10 @@ class SummaryStore:
         Returns the count of changed dataset extents, and the
         updated product summary.
         """
+        # Server-side-timestamp that we know covers all datasets we're summarising.
+        # We need to record this before we start filling any of our tables.
+        covers_up_to = self._engine.execute(select([func.now()])).scalar()
+
         _LOG.info("init.product", product_name=product.name)
         change_count = _extents.refresh_spatial_extents(
             self.index,
@@ -374,6 +377,7 @@ class SummaryStore:
             source_products=source_products,
             derived_products=derived_products,
             fixed_metadata=fixed_metadata,
+            last_refresh_time=covers_up_to,
         )
         product_id, product_refresh_time = self._set_product_extent(new_summary)
         new_summary.last_refresh_time = product_refresh_time
@@ -795,8 +799,7 @@ class SummaryStore:
             source_product_refs=source_product_ids,
             derived_product_refs=derived_product_ids,
             fixed_metadata=product.fixed_metadata,
-            # Deliberately do all age calculations with the DB clock rather than local.
-            last_refresh=func.now(),
+            last_refresh=product.last_refresh_time,
         )
 
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,

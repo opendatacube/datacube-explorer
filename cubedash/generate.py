@@ -117,7 +117,6 @@ def generate_report(
         else:
             current_summary = existing_summary
 
-        # If it's new or we're force-creating, recreate the whole tree recursively (depth-first).
         if (
             # If it's a new product...
             existing_summary is None
@@ -127,7 +126,6 @@ def generate_report(
             or force_refresh
         ):
             # Then regenerate every single summary.
-
             log.info("generate.product.whole")
             if force_refresh:
                 log.warn("generate.forcing_refresh")
@@ -156,9 +154,7 @@ def generate_report(
         log.info("generate.product.updating_incrementally")
 
         # Month
-        for change_month, new_count in store.find_months_changed_since(
-            product_name, existing_summary.last_refresh_time
-        ):
+        for change_month, new_count in store.find_months_needing_update(product_name):
             log.debug(
                 "generate.product.month_refresh",
                 product=product_name,
