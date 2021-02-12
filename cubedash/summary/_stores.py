@@ -692,6 +692,9 @@ class SummaryStore:
                     PRODUCT.c.time_earliest,
                     PRODUCT.c.time_latest,
                     PRODUCT.c.last_refresh.label("last_refresh_time"),
+                    PRODUCT.c.last_successful_summary.label(
+                        "last_successful_summary_time"
+                    ),
                     PRODUCT.c.id.label("id_"),
                     PRODUCT.c.source_product_refs,
                     PRODUCT.c.derived_product_refs,
