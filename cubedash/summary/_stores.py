@@ -813,19 +813,19 @@ class SummaryStore:
 
         if row:
             # Product already exists, so update it
-            self._engine.execute(
+            row = self._engine.execute(
                 PRODUCT.update()
                 .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
                 .where(PRODUCT.c.id == row[0])
                 .values(fields)
-            )
+            ).fetchone()
         else:
             # Product doesn't exist, so insert it
             row = self._engine.execute(
                 postgres.insert(PRODUCT)
                 .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
                 .values(**fields, name=product.name)
-            )
+            ).fetchone()
         self._product.cache_clear()
         return row[0], row[1]
 
