@@ -243,7 +243,19 @@ class SummaryStore:
         dataset_type = self.get_dataset_type(product_name)
         datasets_newer_than = self._product(
             product_name
-        ).last_successful_summary_time - timedelta(minutes=5)
+            # Why do we have an extra 15 minute fudge?
+            #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
+            #    But some earlier-timestamped datasets may not have been present last run if they were added
+            #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
+            #    no transaction was open longer than this buffer. (I doesn't matter at all if we repeat datasets).
+            #    Yes, this is not an ideal world of technical purity.
+            #
+            #    ODC's indexing does happen with quick, autocommitting transactions. So they're unlikely to actually
+            #    be open for more than a few milliseconds. And there are other issues with using timestamps so
+            #    this is, short-term, not likely our biggest priority.
+            #
+            #    tldr: "15 minutes == max expected transaction age of indexer"
+        ).last_successful_summary_time - timedelta(minutes=15)
 
         dataset_changed = func.greatest(
             ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
