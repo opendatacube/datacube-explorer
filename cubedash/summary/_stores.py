@@ -309,7 +309,7 @@ class SummaryStore:
         # Years who have month-records updated more recently than their own record.
         outdated_years = set(
             start_day.year
-            for start_day in self._engine.execute(
+            for [start_day] in self._engine.execute(
                 # Select years
                 select([years.c.start_day])
                 .where(years.c.period_type == "year")
