@@ -284,8 +284,8 @@ class SummaryStore:
         updated_months = TIME_OVERVIEW.alias("updated_months")
         years = TIME_OVERVIEW.alias("years_needing_update")
         product = self.get_product_summary(product_name)
-        if product is None:
-            # ? raise RuntimeError("Product is not yet summarised, no diff of years")
+        # Empty product? No years
+        if product.dataset_count == 0:
             return []
 
         # All years we are expected to have
