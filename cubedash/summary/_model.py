@@ -155,7 +155,9 @@ class TimePeriodOverview:
                 default=None,
             ),
             crses=set.union(*(o.crses for o in periods)) if periods else set(),
-            product_refresh_time=min(
+            # Why choose the max version? Because we assume older ones didn't need to be replaced,
+            # so the most recent refresh time is the version that we are current with.
+            product_refresh_time=max(
                 (
                     p.product_refresh_time
                     for p in periods
