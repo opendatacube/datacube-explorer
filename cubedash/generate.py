@@ -81,7 +81,13 @@ def generate_report(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
     )
 
+    def print_status(product_name=None, year=None, month=None, day=None, summary=None):
+        if year and (not month) and (not day):
+            click_secho(f"\t  {product_name} {year} done")
+
     store = SummaryStore.create(_get_index(config, product_name), log=log)
+    store.add_change_listener(print_status)
+
     try:
         product = store.index.products.get_by_name(product_name)
         if product is None:

@@ -201,6 +201,9 @@ class SummaryStore:
         self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
+    def add_change_listener(self, listener):
+        self._update_listeners.append(listener)
+
     def is_initialised(self) -> bool:
         """
         Do our DB schemas exist?
@@ -1218,7 +1221,13 @@ class SummaryStore:
         self._put(product.name, year, month, None, summary)
 
         for listener in self._update_listeners:
-            listener(product.name, year, month, None, summary)
+            listener(
+                product_name=product.name,
+                year=year,
+                month=month,
+                day=None,
+                summary=summary,
+            )
         return summary
 
     def refresh(
