@@ -374,6 +374,10 @@ class SummaryStore:
                         select([updated_months.c.start_day])
                         .where(updated_months.c.period_type == "month")
                         .where(
+                            func.extract("year", updated_months.c.start_day)
+                            == func.extract("year", years.c.start_day)
+                        )
+                        .where(
                             updated_months.c.product_ref == product.id_,
                         )
                         .where(
@@ -384,7 +388,6 @@ class SummaryStore:
                 )
             )
         )
-
         return sorted(missing_years.union(outdated_years))
 
     def needs_refresh(self, product_name: str) -> bool:
