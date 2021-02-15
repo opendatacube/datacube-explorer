@@ -890,6 +890,12 @@ class SummaryStore:
         day: Optional[int],
         summary: TimePeriodOverview,
     ):
+        log = _LOG.bind(
+            product_name=product_name,
+            time=(year, month, day),
+            summary_count=summary.dataset_count,
+        )
+        log.debug("product.put")
         product = self._product(product_name)
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
@@ -1164,13 +1170,14 @@ class SummaryStore:
                 ),
             )
 
-    def _calc_and_store(
+    def _recalculate_period(
         self,
         product: ProductSummary,
         year: Optional[int] = None,
         month: Optional[int] = None,
         product_refresh_time: datetime = None,
     ) -> TimePeriodOverview:
+        """Recalculate the given period and store it in the DB"""
         if year and month:
             summary = self._summariser.calculate_summary(
                 product.name,
@@ -1195,7 +1202,7 @@ class SummaryStore:
                 for product in self.all_dataset_types()
             )
 
-        self._do_put(product.name, year, month, None, summary)
+        self._put(product.name, year, month, None, summary)
 
         for listener in self._update_listeners:
             listener(product.name, year, month, None, summary)
@@ -1207,11 +1214,15 @@ class SummaryStore:
         force: bool = False,
         recreate_dataset_extents: bool = False,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
-        """Update all summary information for the given product, if it has changed."""
+        """
+        Update all information known about the product, if it has changed.
 
+        This will update the spatial tables (extents) and update
+        any outdated time summaries.
+        """
         # TODO: Add a per-product lock to avoid concurrent generation?
-
         log = _LOG
+
         old_product: ProductSummary = self.get_product_summary(product_name)
         if (
             (old_product is None)
@@ -1274,8 +1285,8 @@ class SummaryStore:
                 month=change_month,
                 change_count=new_count,
             )
-            self._calc_and_store(
-                old_product,
+            self._recalculate_period(
+                new_product,
                 change_month.year,
                 change_month.month,
                 product_refresh_time=refresh_timestamp,
@@ -1285,15 +1296,15 @@ class SummaryStore:
         #   (This find any months calculated above, as well
         #    as from previous interrupted runs.)
         for year in self.find_years_needing_update(product_name):
-            self._calc_and_store(
-                old_product,
+            self._recalculate_period(
+                new_product,
                 year,
                 product_refresh_time=refresh_timestamp,
             )
 
         # Update whole-product record
-        updated_summary = self._calc_and_store(
-            old_product,
+        updated_summary = self._recalculate_period(
+            new_product,
             product_refresh_time=refresh_timestamp,
         )
         _LOG.info(
@@ -1324,36 +1335,6 @@ class SummaryStore:
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """
         return get_srid_name(self._engine, srid)
-
-    def _do_put(self, product_name, year, month, day, summary):
-        log = _LOG.bind(
-            product_name=product_name,
-            time=(year, month, day),
-            summary_count=summary.dataset_count,
-        )
-        # Don't bother storing empty periods that are outside of the existing range.
-        # This doesn't have to be exact (note that someone may update in parallel too).
-        if summary.dataset_count == 0 and (year or month):
-            product = self.get_product_summary(product_name)
-            if (not product) or (not product.time_latest):
-                log.debug("product.empty")
-                return
-
-            timezone = tz.gettz(self._summariser.grouping_time_zone)
-            if (
-                datetime(year, month or 12, day or 28, tzinfo=timezone)
-                < product.time_earliest
-            ):
-                log.debug("product.skip.before_range")
-                return
-            if (
-                datetime(year, month or 1, day or 1, tzinfo=timezone)
-                > product.time_latest
-            ):
-                log.debug("product.skip.after_range")
-                return
-        log.debug("product.put")
-        self._put(product_name, year, month, day, summary)
 
     def list_complete_products(self) -> Iterable[str]:
         """
