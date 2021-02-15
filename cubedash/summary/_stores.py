@@ -1202,19 +1202,18 @@ class SummaryStore:
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year, month_, None) for month_ in range(1, 13)
             )
-        elif product.name:
-            if product.dataset_count > 0:
-                years = range(product.time_earliest.year, product.time_latest.year + 1)
-            else:
-                years = []
+        # Product. Does it have data?
+        elif product.dataset_count > 0:
             summary = TimePeriodOverview.add_periods(
-                self.get(product.name, year_, None, None) for year_ in years
+                self.get(product.name, year_, None, None)
+                for year_ in range(
+                    product.time_earliest.year, product.time_latest.year + 1
+                )
             )
         else:
-            summary = TimePeriodOverview.add_periods(
-                self.get(product.name, None, None, None)
-                for product in self.all_dataset_types()
-            )
+            # Empty product
+            summary = TimePeriodOverview.add_periods([])
+            summary.product_refresh_time = product_refresh_time
 
         self._put(product.name, year, month, None, summary)
 
@@ -1253,6 +1252,8 @@ class SummaryStore:
             new_product = old_product
 
         refresh_timestamp = new_product.last_refresh_time
+        if refresh_timestamp is None:
+            raise RuntimeError("Refresh time cannot be blank!?")
 
         # Do we need to regenerate everything?
         if (
@@ -1268,13 +1269,12 @@ class SummaryStore:
             if force:
                 log.warn("generate.forcing_refresh")
 
-            months_to_update = list(new_product.iter_months())
-            # Add the old months too, in case any have been deleted.
-            if old_product is not None:
-                months_to_update = set(old_product.iter_months()).union(
-                    months_to_update
-                )
+            # Regenerate the old months too, in case any have been deleted.
+            old_months = set(old_product.iter_months()) if old_product else set()
 
+            months_to_update = [
+                (month, "all") for month in old_months.union(new_product.iter_months())
+            ]
             refresh_type = GenerateResult.CREATED
 
         # Otherwise, only regenerate the things that changed.
@@ -1528,7 +1528,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
 
     if summary.footprint_geometry and summary.footprint_srid is None:
         raise ValueError("Geometry without srid", summary)
-
+    if summary.product_refresh_time is None:
+        raise ValueError("Product has no refresh time??", summary)
     return dict(
         dataset_count=summary.dataset_count,
         timeline_dataset_start_days=day_values,
