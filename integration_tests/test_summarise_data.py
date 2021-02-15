@@ -68,7 +68,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
     # One Month
     _expect_values(
-        summary_store.update("ls8_nbar_scene", 2017, 4, None),
+        summary_store.get("ls8_nbar_scene", 2017, 4, None),
         dataset_count=408,
         footprint_count=408,
         time_range=Range(
