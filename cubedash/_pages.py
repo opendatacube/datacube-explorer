@@ -104,11 +104,6 @@ def overview_page(
         default_center=default_center,
         year_selector_summary=year_selector_summary,
         time_selector_summary=time_selector_summary,
-        # Override the global "last updated" value: the chosen summary information
-        # may be older than the product.
-        last_updated_time=selected_summary.product_refresh_time
-        if selected_summary
-        else None,
     )
 
 
