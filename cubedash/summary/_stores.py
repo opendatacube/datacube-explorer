@@ -307,7 +307,7 @@ class SummaryStore:
         )
 
         # Find the most-recently updated datasets and group them by month.
-        return [
+        return sorted(
             (month, count)
             for month, count in self._engine.execute(
                 select(
@@ -323,7 +323,7 @@ class SummaryStore:
                 .group_by("month")
                 .order_by("month")
             )
-        ]
+        )
 
     def find_years_needing_update(self, product_name: str):
         """
@@ -1281,9 +1281,9 @@ class SummaryStore:
             # Regenerate the old months too, in case any have been deleted.
             old_months = set(old_product.iter_months()) if old_product else set()
 
-            months_to_update = [
+            months_to_update = sorted(
                 (month, "all") for month in old_months.union(new_product.iter_months())
-            ]
+            )
             refresh_type = GenerateResult.CREATED
 
         # Otherwise, only regenerate the things that changed.
