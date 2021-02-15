@@ -33,7 +33,7 @@ def populate_index(dataset_loader, module_dea_index):
 def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2a_ard_granule")
     expect_values(
-        summary_store.update("s2a_ard_granule"),
+        summary_store.get("s2a_ard_granule"),
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
@@ -51,7 +51,7 @@ def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
 def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2a_level1c_granule")
     expect_values(
-        summary_store.update("s2a_level1c_granule"),
+        summary_store.get("s2a_level1c_granule"),
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
