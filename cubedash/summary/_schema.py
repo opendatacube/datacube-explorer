@@ -336,30 +336,44 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         """
         )
 
-    # Add an optional index to AGDC if we have permission.
+    # Add optional indexes to AGDC if we have permission.
     # (otherwise we warn the user that it may be slow, and how to add it themselves)
-    if not pg_index_exists(
-        engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_added"
-    ):
-        add_index_sql = (
-            f"create index ix_dataset_added on {ODC_DATASET.fullname}(added desc);"
-        )
-        try:
+    statements = []
+    try:
+        if not pg_index_exists(
+            engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_added"
+        ):
             _LOG.warn("schema.applying_update.add_odc_added_index")
-            engine.execute(add_index_sql)
-        except ProgrammingError:
-            warnings.warn(
-                dedent(
-                    f"""No recently-added index.
-                Explorer recommends adding an index for recently-added datasets to your ODC,
-                but does not have permission to add it to the current ODC database.
-
-                It's recommended to add it manually in Postgres:
-
-                    {add_index_sql}
-            """
-                )
+            statements.append(
+                f"create index ix_dataset_added on {ODC_DATASET.fullname}(added desc);"
             )
+        if not pg_index_exists(
+            engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_type_changed"
+        ):
+            _LOG.warn("schema.applying_update.add_odc_changed_index")
+            statements.append(
+                f"create index ix_dataset_type_changed on "
+                f"{ODC_DATASET.fullname}(dataset_type_ref, greatest(added, updated, archived) desc);"
+            )
+        while statements:
+            engine.execute(statements[-1])
+            statements.pop()
+    except ProgrammingError:
+        unexecuted_sql = "\n                ".join(statements)
+        warnings.warn(
+            dedent(
+                f"""
+            No recently-added index.
+            Explorer recommends adding an index for recently-added datasets to your ODC,
+            but does not have permission to add it to the current ODC database.
+
+            It's recommended to add it manually in Postgres:
+
+                {unexecuted_sql}
+        """
+            )
+        )
+        raise
 
     return refresh
 
