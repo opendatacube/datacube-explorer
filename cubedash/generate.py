@@ -46,7 +46,6 @@ Drop all of Explorer’s additions to the database:
 
 """
 import collections
-import enum
 import multiprocessing
 import sys
 from functools import partial
@@ -60,6 +59,7 @@ from click import style
 
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary._stores import GenerateResult
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
@@ -72,19 +72,6 @@ _LOG = structlog.get_logger()
 user_message = partial(click_secho, err=True)
 
 
-class GenerateResult(enum.Enum):
-    """What happened in a product generation task?"""
-
-    # Product was newly generated (or force-refreshed to recreate everything).
-    CREATED = 2
-    # Updated the existing summaries (for months that changed)
-    UPDATED = 3
-    # No new changes found.
-    SKIPPED = 1
-    # Exception was thrown
-    ERROR = 4
-
-
 # pylint: disable=broad-except
 def generate_report(
     item: Tuple[LocalConfig, str, bool, bool]
@@ -94,99 +81,18 @@ def generate_report(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
     )
 
-    # TODO: Add a per-product lock to avoid concurrent generation?
-
     store = SummaryStore.create(_get_index(config, product_name), log=log)
     try:
         product = store.index.products.get_by_name(product_name)
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
 
-        existing_summary = store.get_product_summary(product.name)
-        if (
-            (existing_summary is None)
-            or recreate_dataset_extents
-            or store.needs_refresh(product)
-        ):
-            log.info("generate.product.refresh")
-            _, current_summary = store.refresh_product(
-                product,
-                force_dataset_extent_recompute=recreate_dataset_extents,
-            )
-            log.info("generate.product.refresh.done")
-        else:
-            current_summary = existing_summary
-
-        if (
-            # If it's a new product...
-            existing_summary is None
-            # ...or it was generated before incremental-updating was implemented.
-            or existing_summary.last_successful_summary_time is None
-            # ... or we're using brute force.
-            or force_refresh
-        ):
-            # Then regenerate every single summary.
-            log.info("generate.product.whole")
-            if force_refresh:
-                log.warn("generate.forcing_refresh")
-            updated = store.get_or_update(
-                product.name,
-                force_refresh=True,
-                product_refresh_time=current_summary.last_refresh_time,
-            )
-            log.info("generate.product.whole.done")
-            store.time_summary_was_successful(current_summary)
-            return product_name, GenerateResult.CREATED, updated
-
-        time_summaries_are_completed = (
-            current_summary.last_successful_summary_time is not None
-            and (
-                current_summary.last_successful_summary_time
-                >= current_summary.last_refresh_time
-            )
+        result, updated_summary = store.refresh(
+            product_name,
+            force=force_refresh,
+            recreate_dataset_extents=recreate_dataset_extents,
         )
-        if time_summaries_are_completed:
-            log.info("generate.product.no_changes")
-            return product_name, GenerateResult.SKIPPED, store.get(product_name)
-
-        # Otherwise, regenerate only the months that changed,
-        # (and parent nodes in the tree: month -> year -> whole-product)
-        log.info("generate.product.updating_incrementally")
-
-        # Month
-        for change_month, new_count in store.find_months_needing_update(product_name):
-            log.debug(
-                "generate.product.month_refresh",
-                product=product_name,
-                month=change_month,
-                change_count=new_count,
-            )
-            year = change_month.year
-            store.update(
-                product_name,
-                year,
-                change_month.month,
-                force_refresh=True,
-                product_refresh_time=current_summary.last_refresh_time,
-            )
-
-        # Find years who are older than their months
-        for year in store.find_years_needing_update(product_name):
-            # Note we don't force refresh: we've just replaced the months that needed updating!
-            store.update(
-                product_name,
-                year,
-                product_refresh_time=current_summary.last_refresh_time,
-            )
-
-        # Whole product
-        updated = store.update(
-            product_name, product_refresh_time=current_summary.last_refresh_time
-        )
-
-        store.time_summary_was_successful(current_summary)
-        return product_name, GenerateResult.UPDATED, updated
-
+        return product_name, result, updated_summary
     except Exception:
         log.exception("generate.product.error", exc_info=True)
         return product_name, GenerateResult.ERROR, None

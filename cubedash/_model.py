@@ -67,10 +67,6 @@ def get_time_summary(
     month: Optional[int] = None,
     day: Optional[int] = None,
 ) -> Optional[TimePeriodOverview]:
-    # If it's a day, feel free to update/generate it, because it's quick.
-    if day is not None:
-        return STORE.get_or_update(product_name, year, month, day)
-
     return STORE.get(product_name, year, month, day)
 
 

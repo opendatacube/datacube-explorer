@@ -219,7 +219,7 @@ def unpopulated_client(
     empty_client: FlaskClient, summary_store: SummaryStore
 ) -> FlaskClient:
     with disable_logging():
-        _model.STORE.refresh_all_products()
+        _model.STORE.refresh_all_product_extents()
     return empty_client
 
 
@@ -247,7 +247,7 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
 
     with disable_logging():
         for product in _model.STORE.index.products.get_all():
-            _model.STORE.get_or_update(product.name)
+            _model.STORE.refresh(product.name)
 
     return unpopulated_client
 

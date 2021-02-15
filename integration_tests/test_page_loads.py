@@ -191,8 +191,7 @@ def test_uninitialised_overview(
 ):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
-    summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
-    summary_store.get_or_update("ls7_nbar_albers")
+    summary_store.refresh("ls7_nbar_albers")
 
     html = get_html(unpopulated_client, "/ls7_nbar_scene/2017")
 
@@ -210,8 +209,7 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
     """
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
-    summary_store.refresh_product(summary_store.get_dataset_type("ls7_nbar_albers"))
-    summary_store.get_or_update("ls7_nbar_albers")
+    summary_store.refresh("ls7_nbar_albers")
 
     html = get_html(empty_client, "/products/ls7_nbar_scene")
 
@@ -286,10 +284,7 @@ def test_uninitialised_search_page(
     empty_client: FlaskClient, summary_store: SummaryStore
 ):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
-    summary_store.refresh_product(
-        summary_store.index.products.get_by_name("ls7_nbar_albers")
-    )
-    summary_store.get_or_update("ls7_nbar_albers")
+    summary_store.refresh("ls7_nbar_albers")
 
     # Then load a completely uninitialised product.
     html = get_html(empty_client, "/datasets/ls7_nbar_scene")

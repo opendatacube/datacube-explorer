@@ -5,7 +5,6 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum, auto
-from functools import partial
 from itertools import groupby
 from typing import (
     Dict,
@@ -79,6 +78,19 @@ class ItemSort(Enum):
     RECENTLY_ADDED = auto()
 
 
+class GenerateResult(Enum):
+    """What happened in a product refresh task?"""
+
+    # Product was newly generated (or force-refreshed to recreate everything).
+    CREATED = 2
+    # Updated the existing summaries (for months that changed)
+    UPDATED = 3
+    # No new changes found.
+    SKIPPED = 1
+    # Exception was thrown
+    ERROR = 4
+
+
 @dataclass
 class ProductSummary:
     name: str
@@ -105,6 +117,31 @@ class ProductSummary:
     # Not recommended for use by users, as ids are local and internal.
     # The 'name' is typically used as an identifier, and with ODC itself.
     id_: Optional[int] = None
+
+    def iter_months(self) -> Generator[datetime, None, None]:
+        """
+        Iterate through all months in its time range.
+        """
+        if self.dataset_count == 0:
+            return
+
+        start = self.time_earliest
+        end = self.time_latest
+        if start > end:
+            raise ValueError(f"Start date must precede end date ({start} < {end})")
+
+        year = start.year
+        month = start.month
+        while True:
+            yield datetime(year, month, 1)
+
+            month += 1
+            if month == 13:
+                month = 1
+                year += 1
+
+            if (year, month) > (end.year, end.month):
+                return
 
 
 @dataclass
@@ -203,13 +240,13 @@ class SummaryStore:
         self.index.close()
         self._engine.dispose()
 
-    def refresh_all_products(
+    def refresh_all_product_extents(
         self,
         force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
-            self.refresh_product(
-                product,
+            self.refresh_product_extent(
+                product.name,
                 force_dataset_extent_recompute=force_dataset_extent_recompute,
             )
         self.refresh_stats()
@@ -335,28 +372,28 @@ class SummaryStore:
 
         return sorted(missing_years.union(outdated_years))
 
-    def needs_refresh(self, product: DatasetType) -> bool:
+    def needs_refresh(self, product_name: str) -> bool:
         """Does the given product have changes since the last refresh?"""
-        existing_product_summary = self.get_product_summary(product.name)
+        existing_product_summary = self.get_product_summary(product_name)
         if not existing_product_summary:
             return True
 
-        most_recent_change = self.find_most_recent_change(product.name)
+        most_recent_change = self.find_most_recent_change(product_name)
         has_new_changes = most_recent_change and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
         if has_new_changes:
             _LOG.debug(
                 "product.has_changes",
-                product_name=product.name,
+                product_name=product_name,
                 refresh_time=str(existing_product_summary.last_refresh_time),
                 most_recent_change=most_recent_change,
             )
         return has_new_changes
 
-    def refresh_product(
+    def refresh_product_extent(
         self,
-        product: DatasetType,
+        product_name: str,
         dataset_sample_size: int = 1000,
         force_dataset_extent_recompute=False,
     ) -> Tuple[int, ProductSummary]:
@@ -370,6 +407,7 @@ class SummaryStore:
         # Server-side-timestamp that we know covers all datasets we're summarising.
         # We need to record this before we start filling any of our tables.
         covers_up_to = self._engine.execute(select([func.now()])).scalar()
+        product = self.index.products.get_by_name(product_name)
 
         _LOG.info("init.product", product_name=product.name)
         change_count = _extents.refresh_spatial_extents(
@@ -419,33 +457,6 @@ class SummaryStore:
         _LOG.info("init.regions.done", product_name=product.name)
 
         return change_count, new_summary
-
-    def time_summary_was_successful(self, product: ProductSummary):
-        """
-        Mark this product as finished summarisation.
-
-        (ie. bump the last-successful summary time to match it)
-
-        This means future time-summaries will only need to scan datasets
-        newer than it.
-        """
-        _LOG.info(
-            "product.complete!",
-            product_name=product.name,
-            previous_refresh_time=product.last_successful_summary_time,
-            new_refresh_time=product.last_refresh_time,
-        )
-        self._engine.execute(
-            PRODUCT.update()
-            .where(PRODUCT.c.id == product.id_)
-            .where(
-                or_(
-                    PRODUCT.c.last_successful_summary.is_(None),
-                    PRODUCT.c.last_successful_summary < product.last_refresh_time,
-                )
-            )
-            .values(last_successful_summary=product.last_refresh_time),
-        )
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
@@ -659,13 +670,19 @@ class SummaryStore:
 
     def get(
         self,
-        product_name: Optional[str],
+        product_name: str,
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
-        force_refresh: Optional[bool] = False,
     ) -> Optional[TimePeriodOverview]:
         start_day, period = self._start_day(year, month, day)
+        if year and month and day:
+            # We don't store days, they're quick.
+            return self._summariser.calculate_summary(
+                product_name,
+                _utils.as_time_range(year, month, day),
+                product_refresh_time=datetime.now(),
+            )
 
         product = self.get_product_summary(product_name)
         if not product:
@@ -1147,98 +1164,159 @@ class SummaryStore:
                 ),
             )
 
-    def get_or_update(
+    def _calc_and_store(
         self,
-        product_name: Optional[str],
+        product: ProductSummary,
         year: Optional[int] = None,
         month: Optional[int] = None,
-        day: Optional[int] = None,
-        force_refresh: Optional[bool] = False,
         product_refresh_time: datetime = None,
     ) -> TimePeriodOverview:
-        """
-        Get a cached summary if exists, otherwise generate one
-
-        Note that generating one can be *extremely* slow.
-        """
-        if force_refresh:
-            summary = self.update(
-                product_name,
-                year,
-                month,
-                day,
-                generate_missing_children=True,
-                force_refresh=True,
-                product_refresh_time=product_refresh_time,
-            )
-        else:
-            summary = self.get(product_name, year, month, day)
-        if not summary:
-            summary = self.update(
-                product_name,
-                year,
-                month,
-                day,
-                product_refresh_time=product_refresh_time,
-            )
-        return summary
-
-    def update(
-        self,
-        product_name: Optional[str],
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        day: Optional[int] = None,
-        generate_missing_children: Optional[bool] = True,
-        force_refresh: Optional[bool] = False,
-        product_refresh_time: datetime = None,
-    ) -> TimePeriodOverview:
-        """Update the given summary and return the new one"""
-        product = self._product(product_name)
-        get_child = (
-            partial(self.get_or_update, product_refresh_time=product_refresh_time)
-            if generate_missing_children
-            else self.get
-        )
-
-        if year and month and day:
-            # Don't store days, they're quick.
-            return self._summariser.calculate_summary(
-                product_name,
-                _utils.as_time_range(year, month, day),
-                product_refresh_time=product_refresh_time,
-            )
-        elif year and month:
+        if year and month:
             summary = self._summariser.calculate_summary(
-                product_name,
+                product.name,
                 _utils.as_time_range(year, month),
                 product_refresh_time=product_refresh_time,
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year, month_, None, force_refresh=force_refresh)
-                for month_ in range(1, 13)
+                self.get(product.name, year, month_, None) for month_ in range(1, 13)
             )
-        elif product_name:
+        elif product.name:
             if product.dataset_count > 0:
                 years = range(product.time_earliest.year, product.time_latest.year + 1)
             else:
                 years = []
             summary = TimePeriodOverview.add_periods(
-                get_child(product_name, year_, None, None, force_refresh=force_refresh)
-                for year_ in years
+                self.get(product.name, year_, None, None) for year_ in years
             )
         else:
             summary = TimePeriodOverview.add_periods(
-                get_child(product.name, None, None, None, force_refresh=force_refresh)
+                self.get(product.name, None, None, None)
                 for product in self.all_dataset_types()
             )
 
-        self._do_put(product_name, year, month, day, summary)
+        self._do_put(product.name, year, month, None, summary)
 
         for listener in self._update_listeners:
-            listener(product_name, year, month, day, summary)
+            listener(product.name, year, month, None, summary)
         return summary
+
+    def refresh(
+        self,
+        product_name: str,
+        force: bool = False,
+        recreate_dataset_extents: bool = False,
+    ) -> Tuple[GenerateResult, TimePeriodOverview]:
+        """Update all summary information for the given product, if it has changed."""
+
+        # TODO: Add a per-product lock to avoid concurrent generation?
+
+        log = _LOG
+        old_product: ProductSummary = self.get_product_summary(product_name)
+        if (
+            (old_product is None)
+            or recreate_dataset_extents
+            or self.needs_refresh(product_name)
+        ):
+            log.info("generate.product.refresh")
+            _, new_product = self.refresh_product_extent(
+                product_name,
+                force_dataset_extent_recompute=recreate_dataset_extents,
+            )
+            log.info("generate.product.refresh.done")
+        else:
+            new_product = old_product
+
+        refresh_timestamp = new_product.last_refresh_time
+
+        # Do we need to regenerate everything?
+        if (
+            # If it's a new product...
+            old_product is None
+            # ...or it was generated before incremental-updating was implemented.
+            or old_product.last_successful_summary_time is None
+            # ... or we're using brute force.
+            or force
+        ):
+            # Then regenerate every single summary.
+            log.info("generate.product.whole")
+            if force:
+                log.warn("generate.forcing_refresh")
+
+            months_to_update = list(new_product.iter_months())
+            # Add the old months too, in case any have been deleted.
+            if old_product is not None:
+                months_to_update = set(old_product.iter_months()).union(
+                    months_to_update
+                )
+
+            refresh_type = GenerateResult.CREATED
+
+        # Otherwise, only regenerate the things that changed.
+        else:
+            time_summaries_are_completed = (
+                new_product.last_successful_summary_time is not None
+                and (new_product.last_successful_summary_time >= refresh_timestamp)
+            )
+            if time_summaries_are_completed:
+                log.info("generate.product.no_changes")
+                return GenerateResult.SKIPPED, self.get(product_name)
+
+            log.info("generate.product.updating_incrementally")
+            months_to_update = self.find_months_needing_update(product_name)
+            refresh_type = GenerateResult.UPDATED
+
+        # Months
+        for change_month, new_count in months_to_update:
+            log.debug(
+                "generate.product.month_refresh",
+                product=product_name,
+                month=change_month,
+                change_count=new_count,
+            )
+            self._calc_and_store(
+                old_product,
+                change_month.year,
+                change_month.month,
+                product_refresh_time=refresh_timestamp,
+            )
+
+        # Find year records who are older than their month records
+        #   (This find any months calculated above, as well
+        #    as from previous interrupted runs.)
+        for year in self.find_years_needing_update(product_name):
+            self._calc_and_store(
+                old_product,
+                year,
+                product_refresh_time=refresh_timestamp,
+            )
+
+        # Update whole-product record
+        updated_summary = self._calc_and_store(
+            old_product,
+            product_refresh_time=refresh_timestamp,
+        )
+        _LOG.info(
+            "product.complete!",
+            product_name=new_product.name,
+            previous_refresh_time=new_product.last_successful_summary_time,
+            new_refresh_time=refresh_timestamp,
+        )
+
+        # Mark the product as successfully refreshed at this timestamp
+        # (so future runs will be incremental from this point onwards)
+        self._engine.execute(
+            PRODUCT.update()
+            .where(PRODUCT.c.id == new_product.id_)
+            .where(
+                or_(
+                    PRODUCT.c.last_successful_summary.is_(None),
+                    PRODUCT.c.last_successful_summary < refresh_timestamp,
+                )
+            )
+            .values(last_successful_summary=refresh_timestamp),
+        )
+        return refresh_type, updated_summary
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _get_srid_name(self, srid: int):
@@ -1378,14 +1456,15 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
 
     if refresh_products:
         for dt in store.all_dataset_types():
+            name = dt.name
             # Skip product if it's never been summarised at all.
-            if store.get_product_summary(dt.name) is None:
+            if store.get_product_summary(name) is None:
                 continue
 
             if recompute_dataset_extents:
-                _LOG.info("data.refreshing_extents", product=dt.name)
-            store.refresh_product(
-                dt,
+                _LOG.info("data.refreshing_extents", product=name)
+            store.refresh_product_extent(
+                name,
                 force_dataset_extent_recompute=recompute_dataset_extents,
             )
     _LOG.info("data.refreshing_extents.complete")
