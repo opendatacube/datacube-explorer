@@ -63,10 +63,7 @@ def cli(
     region_info = store.get_product_region_info(product_name)
 
     t = time.time()
-    if allow_cache:
-        summary = store.get_or_update(product_name, year, month, day)
-    else:
-        summary = store.update(product_name, year, month, day)
+    summary = store.get(product_name, year, month, day)
     t_end = time.time()
 
     echo(f"{summary.dataset_count} ", nl=False)

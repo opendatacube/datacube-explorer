@@ -228,9 +228,7 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
 
     # No datasets in 2018
-    summary = summary_store.get_or_update(
-        "ls8_nbar_albers", year=2018, month=None, day=None
-    )
+    summary = summary_store.get("ls8_nbar_albers", year=2018)
     assert summary.dataset_count == 0, "There should be no datasets in 2018"
     # assert len(summary.timeline_dataset_counts) == 365, "Empty regions should still show up in timeline histogram"
 
@@ -240,7 +238,7 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore):
 
 
 def test_calc_empty(summary_store: SummaryStore):
-    summary_store.refresh_all_products()
+    summary_store.refresh_all_product_extents()
 
     # Should not exist.
     summary = summary_store.get("ls8_fake_product", year=2006, month=None, day=None)
@@ -253,9 +251,8 @@ def test_generate_telemetry(run_generate, summary_store: SummaryStore):
     """
     run_generate("ls8_satellite_telemetry_data")
 
-    summary = summary_store.get_or_update("ls8_satellite_telemetry_data")
     _expect_values(
-        summary,
+        summary_store.get("ls8_satellite_telemetry_data"),
         dataset_count=1199,
         footprint_count=1199,
         time_range=Range(
@@ -305,7 +302,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
 
     _expect_values(
-        summary_store.get_or_update("ls8_nbar_albers", year=2017, month=5, day=2),
+        summary_store.get("ls8_nbar_albers", year=2017, month=5, day=2),
         dataset_count=29,
         footprint_count=29,
         time_range=Range(
@@ -362,7 +359,7 @@ def test_force_dataset_regeneration(
 
 
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
-    summary_store.refresh_all_products()
+    summary_store.refresh_all_product_extents()
 
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
@@ -371,9 +368,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert summary is None
 
     # Calculate overall summary
-    summary = summary_store.get_or_update(
-        "ls8_nbar_albers", year=2017, month=None, day=None
-    )
+    _, summary = summary_store.refresh("ls8_nbar_albers")
     _expect_values(
         summary,
         dataset_count=918,
@@ -392,10 +387,9 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         size_bytes=0,
     )
 
-    # get_or_update should now return the cached copy.
-    cached_s = summary_store.get_or_update(
-        "ls8_nbar_albers", year=2017, month=None, day=None
-    )
+    # It should now return the same copy, not rebuild it.
+    _, cached_s = summary_store.refresh("ls8_nbar_albers")
+
     assert cached_s.summary_gen_time is not None
     assert (
         cached_s.summary_gen_time == summary.summary_gen_time
@@ -435,7 +429,7 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore):
     The region code for all datasets should be computed identically when
     done in both SQL and Python.
     """
-    summary_store.refresh_all_products()
+    summary_store.refresh_all_product_extents()
 
     # Loop through all datasets in the test data to check that the the DB and Python
     # functions give identical region codes.

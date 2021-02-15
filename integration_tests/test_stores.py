@@ -1,13 +1,15 @@
+import operator
 import time
 from collections import Counter
 from datetime import datetime
+from typing import List
 
 import pytest
 from dateutil import tz
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import ProductSummary
+from cubedash.summary._stores import ProductSummary, GenerateResult
 from cubedash.summary._summarise import Summariser
 from datacube.model import Range
 
@@ -83,10 +85,60 @@ def test_add_no_periods(summary_store: SummaryStore):
     summary_store._set_product_extent(
         ProductSummary("test_empty_product", 0, None, None, [], [], {}, datetime.now())
     )
-    summary_store.get_or_update("test_empty_product", 2015, 7, 4)
-    summary_store.get_or_update("test_empty_product", 2015, 7, None)
-    summary_store.get_or_update("test_empty_product", 2015, None, None)
-    summary_store.get_or_update("test_empty_product", None, None, None)
+    assert summary_store.get("test_empty_product", 2015, 7, 4).dataset_count == 0
+
+    result, summary = summary_store.refresh("test_empty_product")
+    assert result == GenerateResult.CREATED
+    assert summary.dataset_count == 0
+
+    assert summary_store.get("test_empty_product", 2015, 7, None).dataset_count == 0
+    assert summary_store.get("test_empty_product", 2015, None, None).dataset_count == 0
+    assert summary_store.get("test_empty_product", None, None, None).dataset_count == 0
+
+
+def test_month_iteration():
+    def assert_month_iteration(
+        start: datetime, end: datetime, expected_months: List[datetime]
+    ):
+        __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+
+        product = ProductSummary(
+            "test_product", 5, start, end, [], [], {}, datetime.now()
+        )
+        got_months = list(product.iter_months())
+        assert got_months == expected_months, "Incorrect set of iterated months"
+
+    # Within same year
+    assert_month_iteration(
+        datetime(2003, 2, 2),
+        datetime(2003, 6, 2),
+        [
+            datetime(2003, 2, 1, 0, 0),
+            datetime(2003, 3, 1, 0, 0),
+            datetime(2003, 4, 1, 0, 0),
+            datetime(2003, 5, 1, 0, 0),
+            datetime(2003, 6, 1, 0, 0),
+        ],
+    )
+    # Across year bounds
+    assert_month_iteration(
+        datetime(2003, 11, 2),
+        datetime(2004, 2, 2),
+        [
+            datetime(2003, 11, 1, 0, 0),
+            datetime(2003, 12, 1, 0, 0),
+            datetime(2004, 1, 1, 0, 0),
+            datetime(2004, 2, 1, 0, 0),
+        ],
+    )
+    # Within same month
+    assert_month_iteration(
+        datetime(2003, 11, 1), datetime(2003, 11, 30), [datetime(2003, 11, 1, 0, 0)]
+    )
+    # Identical dates
+    assert_month_iteration(
+        datetime(2003, 11, 1), datetime(2003, 11, 1), [datetime(2003, 11, 1, 0, 0)]
+    )
 
 
 def test_get_null(summary_store: SummaryStore):
