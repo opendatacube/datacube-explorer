@@ -252,7 +252,9 @@ class SummaryStore:
         self.refresh_stats()
 
     def find_most_recent_change(self, product_name: str):
-        """Find the database-local time of the last dataset that changed for this product."""
+        """
+        Find the database-local time of the last dataset that changed for this product.
+        """
         dataset_type = self.get_dataset_type(product_name)
 
         # TODO: Add this !!
@@ -261,10 +263,10 @@ class SummaryStore:
         return self._engine.execute(
             select(
                 [
-                    # func.max(ODC_DATASET.c.added),
                     func.max(
                         func.greatest(
                             ODC_DATASET.c.added,
+                            # The 'updated' column doesn't exist on ODC's definition as it's optional.
                             column("updated"),
                             ODC_DATASET.c.archived,
                         )
@@ -276,7 +278,9 @@ class SummaryStore:
     def find_months_needing_update(
         self, product_name: str
     ) -> Iterable[Tuple[datetime, int]]:
-        """What months of the given product may not be summarised with the latest data?"""
+        """
+        What months have had dataset changes since they were last generated?
+        """
         dataset_type = self.get_dataset_type(product_name)
         datasets_newer_than = self._product(
             product_name
@@ -294,10 +298,12 @@ class SummaryStore:
             #    tldr: "15 minutes == max expected transaction age of indexer"
         ).last_successful_summary_time - timedelta(minutes=15)
 
+        # This expression matches our DB index, so we can scan it quickly.
         dataset_changed = func.greatest(
             ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
         )
 
+        # Find the most-recently updated datasets and group them by month.
         return [
             (month, count)
             for month, count in self._engine.execute(
@@ -317,7 +323,13 @@ class SummaryStore:
         ]
 
     def find_years_needing_update(self, product_name: str):
-        """Find any years with newly-refreshed months"""
+        """
+        Find any years that need to be generated.
+
+        Either:
+           1) They don't exist yet, or
+           2) They have month-records that are newer than our year-record.
+        """
         updated_months = TIME_OVERVIEW.alias("updated_months")
         years = TIME_OVERVIEW.alias("years_needing_update")
         product = self.get_product_summary(product_name)
@@ -373,7 +385,9 @@ class SummaryStore:
         return sorted(missing_years.union(outdated_years))
 
     def needs_refresh(self, product_name: str) -> bool:
-        """Does the given product have changes since the last refresh?"""
+        """
+        Does the given product have changes since the last refresh?
+        """
         existing_product_summary = self.get_product_summary(product_name)
         if not existing_product_summary:
             return True
