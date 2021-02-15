@@ -81,9 +81,13 @@ def generate_report(
         product=product_name, force=force_refresh, extents=recreate_dataset_extents
     )
 
+    started_years = set()
+
     def print_status(product_name=None, year=None, month=None, day=None, summary=None):
-        if year and (not month) and (not day):
-            click_secho(f"\t  {product_name} {year} done")
+        if year:
+            if (product_name, year) not in started_years:
+                user_message(f"\t  {product_name} {year}")
+                started_years.add((product_name, year))
 
     store = SummaryStore.create(_get_index(config, product_name), log=log)
     store.add_change_listener(print_status)
@@ -92,7 +96,7 @@ def generate_report(
         product = store.index.products.get_by_name(product_name)
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
-
+        user_message(f"{product_name} refresh")
         result, updated_summary = store.refresh(
             product_name,
             force=force_refresh,
