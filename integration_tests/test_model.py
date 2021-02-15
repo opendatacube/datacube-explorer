@@ -158,6 +158,7 @@ def _create_overview():
         crses=set(),
         summary_gen_time=datetime.now(),
         size_bytes=256,
+        product_refresh_time=datetime.now(),
     )
     return overview
 

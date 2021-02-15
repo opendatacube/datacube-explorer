@@ -1401,4 +1401,14 @@ wofs_time_summary = TimePeriodOverview(
         853_756,
         tzinfo=FixedOffsetTimezone(offset=660, name=None),
     ),
+    product_refresh_time=datetime(
+        2019,
+        2,
+        22,
+        21,
+        22,
+        16,
+        853_756,
+        tzinfo=FixedOffsetTimezone(offset=660, name=None),
+    ),
 )

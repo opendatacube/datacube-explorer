@@ -46,6 +46,7 @@ def _overview():
         newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
         crses={"epsg:1234"},
         size_bytes=123_400_000,
+        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=tz.tzutc()),
     )
     return orig
 
@@ -80,7 +81,7 @@ def test_add_no_periods(summary_store: SummaryStore):
     All the get/update methods should work on products with no datasets.
     """
     summary_store._set_product_extent(
-        ProductSummary("test_empty_product", 0, None, None, [], [], {})
+        ProductSummary("test_empty_product", 0, None, None, [], [], {}, datetime.now())
     )
     summary_store.get_or_update("test_empty_product", 2015, 7, 4)
     summary_store.get_or_update("test_empty_product", 2015, 7, None)
@@ -125,7 +126,14 @@ def test_put_get_summaries(summary_store: SummaryStore):
     product_name = "some_product"
     summary_store._set_product_extent(
         ProductSummary(
-            product_name, 4321, datetime(2017, 1, 1), datetime(2017, 4, 1), [], [], {}
+            product_name,
+            4321,
+            datetime(2017, 1, 1),
+            datetime(2017, 4, 1),
+            [],
+            [],
+            {},
+            datetime.now(),
         )
     )
 
