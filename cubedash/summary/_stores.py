@@ -1220,8 +1220,8 @@ class SummaryStore:
         else:
             # Empty product
             summary = TimePeriodOverview.add_periods([])
-            summary.product_refresh_time = product_refresh_time
 
+        summary.product_refresh_time = product_refresh_time
         self._put(product.name, year, month, None, summary)
 
         for listener in self._update_listeners:
