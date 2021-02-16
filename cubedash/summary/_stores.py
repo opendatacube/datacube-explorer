@@ -260,13 +260,12 @@ class SummaryStore:
         """
         dataset_type = self.get_dataset_type(product_name)
 
-        # TODO: Add this !!
-        # create index dataset_type_changed on agdc.dataset (dataset_type_ref, max(added, updated, archived) desc);
-
         return self._engine.execute(
             select(
                 [
                     func.max(
+                        # This expression matches the 'ix_dataset_type_changed' index,
+                        # so we can scan it efficiently.
                         func.greatest(
                             ODC_DATASET.c.added,
                             # The 'updated' column doesn't exist on ODC's definition as it's optional.
@@ -301,7 +300,7 @@ class SummaryStore:
             #    tldr: "15 minutes == max expected transaction age of indexer"
         ).last_successful_summary_time - timedelta(minutes=15)
 
-        # This expression matches our DB index, so we can scan it quickly.
+        # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
         dataset_changed = func.greatest(
             ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
         )
@@ -396,6 +395,7 @@ class SummaryStore:
         """
         existing_product_summary = self.get_product_summary(product_name)
         if not existing_product_summary:
+            # Never been summarised. So, yes!
             return True
 
         most_recent_change = self.find_most_recent_change(product_name)
@@ -424,8 +424,9 @@ class SummaryStore:
         Returns the count of changed dataset extents, and the
         updated product summary.
         """
-        # Server-side-timestamp that we know covers all datasets we're summarising.
-        # We need to record this before we start filling any of our tables.
+        # Server-side-timestamp of when we started scanning. We will
+        # later know that any dataset newer than this timestamp may not
+        # be in our summaries.
         covers_up_to = self._engine.execute(select([func.now()])).scalar()
         product = self.index.products.get_by_name(product_name)
 
@@ -1319,7 +1320,7 @@ class SummaryStore:
             )
 
         # Find year records who are older than their month records
-        #   (This find any months calculated above, as well
+        #   (This will find any months calculated above, as well
         #    as from previous interrupted runs.)
         for year in self.find_years_needing_update(product_name):
             self._recalculate_period(
@@ -1328,7 +1329,7 @@ class SummaryStore:
                 product_refresh_time=refresh_timestamp,
             )
 
-        # Update whole-product record
+        # Now update the whole-product record
         updated_summary = self._recalculate_period(
             new_product,
             product_refresh_time=refresh_timestamp,
@@ -1340,7 +1341,7 @@ class SummaryStore:
             new_refresh_time=refresh_timestamp,
         )
 
-        # Mark the product as successfully refreshed at this timestamp
+        # Mark the product as successfully refreshed at the start timestamp
         # (so future runs will be incremental from this point onwards)
         self._engine.execute(
             PRODUCT.update()
