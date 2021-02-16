@@ -226,11 +226,10 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
 
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
-
     # No datasets in 2018
-    summary = summary_store.get("ls8_nbar_albers", year=2018)
-    assert summary.dataset_count == 0, "There should be no datasets in 2018"
-    # assert len(summary.timeline_dataset_counts) == 365, "Empty regions should still show up in timeline histogram"
+    assert (
+        summary_store.get("ls8_nbar_albers", year=2018) is None
+    ), "There should be no datasets in 2018"
 
     # Year that does not exist for LS8
     summary = summary_store.get("ls8_nbar_albers", year=2006, month=None, day=None)
@@ -387,14 +386,18 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
         size_bytes=0,
     )
 
+    original = summary_store.get("ls8_nbar_albers", 2017)
+
     # It should now return the same copy, not rebuild it.
-    _, cached_s = summary_store.refresh("ls8_nbar_albers")
+    summary_store.refresh("ls8_nbar_albers")
+
+    cached_s = summary_store.get("ls8_nbar_albers", 2017)
 
     assert cached_s.summary_gen_time is not None
     assert (
-        cached_s.summary_gen_time == summary.summary_gen_time
+        cached_s.summary_gen_time == original.summary_gen_time
     ), "A new, rather than cached, summary was returned"
-    assert cached_s.dataset_count == summary.dataset_count
+    assert cached_s.dataset_count == original.dataset_count
 
 
 def test_cubedash_gen_refresh(run_generate, module_index: Index):

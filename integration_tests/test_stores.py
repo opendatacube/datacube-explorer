@@ -83,17 +83,16 @@ def test_add_no_periods(summary_store: SummaryStore):
     All the get/update methods should work on products with no datasets.
     """
     summary_store._set_product_extent(
-        ProductSummary("test_empty_product", 0, None, None, [], [], {}, datetime.now())
+        ProductSummary("ga_ls8c_level1_3", 0, None, None, [], [], {}, datetime.now())
     )
-    assert summary_store.get("test_empty_product", 2015, 7, 4).dataset_count == 0
+    assert summary_store.get("ga_ls8c_level1_3", 2015, 7, 4).dataset_count == 0
 
-    result, summary = summary_store.refresh("test_empty_product")
+    result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.CREATED
     assert summary.dataset_count == 0
 
-    assert summary_store.get("test_empty_product", 2015, 7, None).dataset_count == 0
-    assert summary_store.get("test_empty_product", 2015, None, None).dataset_count == 0
-    assert summary_store.get("test_empty_product", None, None, None).dataset_count == 0
+    assert summary_store.get("ga_ls8c_level1_3").dataset_count == 0
+    assert summary_store.get("ga_ls8c_level1_3", 2015, 7, None) is None
 
 
 def test_month_iteration():

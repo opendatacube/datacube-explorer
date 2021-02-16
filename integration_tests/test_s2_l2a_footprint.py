@@ -65,7 +65,7 @@ def test_product_dataset(client: FlaskClient):
 def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2_l2a")
     expect_values(
-        summary_store.update("s2_l2a"),
+        summary_store.get("s2_l2a"),
         dataset_count=4,
         footprint_count=4,
         time_range=Range(
