@@ -649,7 +649,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     else:
         raise AssertionError("high_tide_comp_20p not found in collection list")
 
-    scene_collection = get_collection(stac_client, collection_href)
+    scene_collection = get_collection(stac_client, collection_href, validate=False)
 
     assert scene_collection == {
         "stac_version": "1.0.0-beta.2",
@@ -685,7 +685,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
         ],
         "providers": [],
     }
-
+    assert_collection(scene_collection)
     item_links = scene_collection["links"][0]["href"]
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
