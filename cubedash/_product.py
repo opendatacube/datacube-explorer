@@ -113,15 +113,19 @@ def product_page(name):
     ordered_metadata = utils.prepare_document_formatting(product.definition)
     product_summary = _model.get_product_summary(name)
 
+    extras = {}
+    # (Override the global default with a product-only time.
+    #  It's more useful to the user on this page, as we only show general product info.)
+    if product_summary is not None:
+        extras["last_updated_time"] = product_summary.last_refresh_time
+
     return utils.render(
         "product.html",
         product=product,
         product_summary=product_summary,
         location_samples=_model.STORE.product_location_samples(name),
         metadata_doc=ordered_metadata,
-        # (Override the global default with a product-only time.
-        #  It's more useful to the user on this page, as we only show general product info.)
-        last_updated_time=product_summary.last_refresh_time,
+        **extras,
     )
 
 
