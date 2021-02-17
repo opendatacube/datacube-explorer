@@ -216,7 +216,7 @@ class SummaryStore:
         """
         Have all schema update been applied?
         """
-        _LOG.info(
+        _LOG.debug(
             "software.version",
             postgis=_schema.get_postgis_versions(self._engine),
             explorer=EXPLORER_VERSION,
@@ -476,7 +476,6 @@ class SummaryStore:
         new_summary.last_refresh_time = product_refresh_time
 
         self._refresh_product_regions(product)
-        _LOG.info("init.regions.done", product_name=product.name)
 
         return change_count, new_summary
 
@@ -1255,7 +1254,7 @@ class SummaryStore:
             force = True
 
         if force or (old_product is None) or self.needs_extent_refresh(product_name):
-            log.info("generate.product.refresh")
+            log.info("generate.extent.refresh")
             _, new_product = self.refresh_product_extent(
                 product_name,
                 force_recompute=recreate_dataset_extents,
@@ -1265,7 +1264,7 @@ class SummaryStore:
                     else old_product.last_refresh_time
                 ),
             )
-            log.info("generate.product.refresh.done")
+            log.info("generate.extent.refresh.done")
         else:
             new_product = old_product
 
@@ -1304,7 +1303,7 @@ class SummaryStore:
                 log.info("generate.product.no_changes")
                 return GenerateResult.SKIPPED, self.get(product_name)
 
-            log.info("generate.product.updating_incrementally")
+            log.info("generate.product.incremental_update")
             months_to_update = self.find_months_needing_update(product_name)
             refresh_type = GenerateResult.UPDATED
 
