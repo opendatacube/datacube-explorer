@@ -188,7 +188,7 @@ def run_generation(
     _LOG.info(
         "completed",
         count=len(products),
-        **{f"status_{k}": count for k, count in counts.items()},
+        **{f"was_{k.name.lower()}": count for k, count in counts.items()},
     )
     return creation_count, failure_count
 
@@ -221,9 +221,9 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     help="Refresh all products in the datacube, rather than the specified list.",
 )
 @click.option(
-    "-v",
     "--verbose",
-    is_flag=True,
+    "-v",
+    count=True,
     help=dedent(
         """\
         Enable all log messages, instead of just errors.
@@ -231,6 +231,8 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
         Logging goes to stdout unless `--event-log-file` is specified.
 
         Logging is coloured plain-text if going to a tty, and jsonl format otherwise.
+
+        Use twice to enable debug logging too.
         """
     ),
 )
@@ -336,13 +338,15 @@ def cli(
     event_log_file: str,
     refresh_stats: bool,
     force_concurrently: bool,
-    verbose: bool,
+    verbose: int,
     init_database: bool,
     drop_database: bool,
     force_refresh: bool,
     recreate_dataset_extents: bool,
 ):
-    init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
+    init_logging(
+        open(event_log_file, "a") if event_log_file else None, verbosity=verbose
+    )
 
     index = _get_index(config, "setup")
     store = SummaryStore.create(index)

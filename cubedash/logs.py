@@ -2,12 +2,13 @@ import datetime
 import pathlib
 import sys
 import uuid
+from functools import partial
 
 import rapidjson
 import structlog
 
 
-def init_logging(output_file=None, verbose=False, cache_logger_on_first_use=True):
+def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use=True):
     """
     Setup structlog for structured logging output.
 
@@ -42,8 +43,16 @@ def init_logging(output_file=None, verbose=False, cache_logger_on_first_use=True
         else structlog.processors.JSONRenderer(serializer=lenient_json_dump),
     ]
 
-    if not verbose:
-        processors.insert(0, _filter_informational)
+    hide_logging_levels = {
+        # Default: show only warnings/critical
+        0: ("info", "debug"),
+        # One '-v': Show info logging too.
+        1: ("debug",),
+        # Any more '-v's, show everything.
+        2: (),
+    }.get(verbosity, ())
+    if hide_logging_levels:
+        processors.insert(0, partial(_filter_levels, hide_levels=hide_logging_levels))
 
     structlog.configure(
         processors=processors,
@@ -53,8 +62,8 @@ def init_logging(output_file=None, verbose=False, cache_logger_on_first_use=True
     )
 
 
-def _filter_informational(logger, log_method, event_dict):
-    if log_method in ("debug", "info"):
+def _filter_levels(logger, log_method, event_dict, hide_levels=("debug", "info")):
+    if log_method in hide_levels:
         raise structlog.DropEvent
     return event_dict
 

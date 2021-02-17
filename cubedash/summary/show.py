@@ -7,6 +7,7 @@ scripts and the command-line.
 """
 import sys
 import time
+from textwrap import dedent
 
 import click
 import structlog
@@ -33,7 +34,22 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
 @environment_option
 @config_option
 @pass_config
-@click.option("-v", "--verbose", is_flag=True)
+@click.option(
+    "--verbose",
+    "-v",
+    count=True,
+    help=dedent(
+        """\
+        Enable all log messages, instead of just errors.
+
+        Logging goes to stdout unless `--event-log-file` is specified.
+
+        Logging is coloured plain-text if going to a tty, and jsonl format otherwise.
+
+        Use twice to enable debug logging too.
+        """
+    ),
+)
 @click.option(
     "-l",
     "--event-log-file",
@@ -58,7 +74,9 @@ def cli(
     """
     Print the recorded summary information for the given product
     """
-    init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
+    init_logging(
+        open(event_log_file, "a") if event_log_file else None, verbosity=verbose
+    )
 
     store = _get_store(config, "setup")
 

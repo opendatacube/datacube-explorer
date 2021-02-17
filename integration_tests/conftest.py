@@ -135,7 +135,7 @@ def summariser(summary_store: SummaryStore):
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig):
     logs.init_logging(
-        verbose=pytestconfig.getoption("verbose") > 0, cache_logger_on_first_use=False
+        verbosity=pytestconfig.getoption("verbose"), cache_logger_on_first_use=False
     )
 
 

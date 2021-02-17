@@ -294,20 +294,20 @@ def refresh_spatial_extents(
         datasets_to_delete = datasets_to_delete.where(
             DATASET.c.archived > assume_after_date
         )
-    log.debug(
+    log.info(
         "extent_archival_removal.start",
     )
     changed = engine.execute(
         DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
     ).rowcount
-    log.debug(
+    log.info(
         "extent_archival_removal.end",
         deleted_count=changed,
     )
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
     if thorough:
-        log.debug(
+        log.info(
             "extent_force_removal.start",
         )
         changed = engine.execute(
@@ -321,7 +321,7 @@ def refresh_spatial_extents(
                 )
             )
         ).rowcount
-        log.debug(
+        log.info(
             "extent_force_removal.end",
             deleted_count=changed,
         )
@@ -342,7 +342,7 @@ def refresh_spatial_extents(
         only_where.append(dataset_changed_expression() > assume_after_date)
 
     # Update any changed datasets
-    log.debug(
+    log.info(
         "spatial_update_query.start",
         product_name=product.name,
         after_date=assume_after_date,
@@ -353,12 +353,12 @@ def refresh_spatial_extents(
         .where(DATASET_SPATIAL.c.id == column_values["id"])
         .where(and_(*only_where))
     ).rowcount
-    log.debug(
+    log.info(
         "spatial_update_query.end", product_name=product.name, change_count=changed
     )
 
     # ... and insert new ones.
-    log.debug(
+    log.info(
         "spatial_insert_query.start",
         product_name=product.name,
         after_date=assume_after_date,
@@ -375,7 +375,7 @@ def refresh_spatial_extents(
             .on_conflict_do_nothing(index_elements=["id"])
         )
     ).rowcount
-    log.debug(
+    log.info(
         "spatial_insert_query.end", product_name=product.name, change_count=changed
     )
 
@@ -387,7 +387,7 @@ def refresh_spatial_extents(
             if "sat_path" in product.metadata_type.dataset_fields:
 
                 # We can synthesize the polygons!
-                log.debug(
+                log.info(
                     "spatial_synthesizing.start",
                 )
                 shapes = _get_path_row_shapes()
@@ -423,7 +423,7 @@ def refresh_spatial_extents(
                             for id_, sat_path, sat_row in rows
                         ],
                     )
-            log.debug(
+            log.info(
                 "spatial_synthesizing.done",
             )
 
