@@ -917,7 +917,7 @@ class SummaryStore:
             time=(year, month, day),
             summary_count=summary.dataset_count,
         )
-        log.debug("product.put")
+        log.info("product.put")
         product = self._product(product_name)
         start_day, period = self._start_day(year, month, day)
         row = _summary_to_row(summary)
