@@ -92,14 +92,26 @@ def cli(
         for k, v in product.fixed_metadata.items():
             echo(f"\t{k}: {v}")
 
+    echo()
+    secho(
+        f"Period: {year or 'all-year'} {month or 'all-monday'} {day or 'all-days'}",
+        fg="blue",
+    )
     if summary:
-        echo()
-        secho(f"Period: {year or 'all'} {month or 'all'} {day or 'all'}", fg="blue")
         if summary.size_bytes:
             echo(f"\tStorage size: {sizeof_fmt(summary.size_bytes)}")
 
         echo(f"\t{summary.dataset_count} datasets")
         echo(f"\tSummarised: {summary.summary_gen_time}")
+
+        if summary.footprint_geometry:
+            secho(f"\tFootprint area: {summary.footprint_geometry.area}")
+            if not summary.footprint_geometry.is_valid:
+                secho("\tInvalid Geometry", fg="red")
+        else:
+            secho("\tNo footprint")
+    elif year or month or day:
+        echo("\tNo summary for chosen period.")
 
     echo()
     echo(f"(fetched in {round(t_end - t, 2)} seconds)")
