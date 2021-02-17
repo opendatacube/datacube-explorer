@@ -18,13 +18,15 @@ from sqlalchemy import (
     BigInteger,
     Integer,
     SmallInteger,
-    String,
     bindparam,
     case,
     func,
     literal,
     null,
     select,
+    column,
+    and_,
+    String,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -266,57 +268,99 @@ def _gis_point(doc, doc_offset):
     )
 
 
-# noinspection PyComparisonWithNone
 def refresh_spatial_extents(
     index: Index,
     product: DatasetType,
-    recompute_all_extents=False,
-    remove_archived_datasets=True,
-    after_date: datetime = None,
+    thorough=False,
+    assume_after_date: datetime = None,
 ):
     """
-    Record the spatial extents for each dataset in a product.
+    Update the spatial extents to match any changes upstream in ODC.
 
-    By default, it will only add datasets that are currently missing, and remove
-    archived datasets.
-
-    :param after_date: Only scan datasets that have changed after the given (db server) time.
-    :param recompute_all_extents: replace/update all extents, even if already present.
+    :param assume_after_date: Only scan datasets that have changed after the given (db server) time.
+    :param thorough: Scan for any manually deleted rows too. Slow.
     """
     engine: Engine = alchemy_engine(index)
-    change_count = 0
 
-    log = _LOG.bind(product_name=product.name, after_date=after_date)
+    log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
-    if remove_archived_datasets:
-        # Remove any archived datasets from our spatial table.
-        datasets_to_delete = (
-            select([DATASET.c.id])
-            .where(DATASET.c.archived != None)
-            .where(DATASET.c.dataset_type_ref == product.id)
+    # First, remove any archived datasets from our spatial table.
+    datasets_to_delete = (
+        select([DATASET.c.id])
+        .where(DATASET.c.archived.isnot(None))
+        .where(DATASET.c.dataset_type_ref == product.id)
+    )
+    if assume_after_date is not None:
+        datasets_to_delete = datasets_to_delete.where(
+            DATASET.c.archived > assume_after_date
         )
-        if after_date is not None:
-            datasets_to_delete = datasets_to_delete.where(
-                DATASET.c.archived > after_date
-            )
+    log.debug(
+        "extent_archival_removal.start",
+    )
+    changed = engine.execute(
+        DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
+    ).rowcount
+    log.debug(
+        "extent_archival_removal.end",
+        deleted_count=changed,
+    )
+
+    # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
+    if thorough:
         log.debug(
-            "extent_removal.start",
+            "extent_force_removal.start",
         )
-        change_count += engine.execute(
-            DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
+        changed = engine.execute(
+            DATASET_SPATIAL.delete().where(DATASET.c.dataset_type_ref == product.id)
+            # Where it doesn't exist in the ODC dataset table.
+            .where(
+                ~DATASET_SPATIAL.c.id.in_(
+                    select([DATASET.c.id]).where(
+                        DATASET.c.dataset_type_ref == product.id
+                    )
+                )
+            )
         ).rowcount
         log.debug(
-            "extent_removal.end",
-            deleted_count=change_count,
+            "extent_force_removal.end",
+            deleted_count=changed,
         )
 
-    insert_count = _populate_missing_dataset_extents(
-        engine, product, force_update_all=recompute_all_extents, after_date=after_date
+    # Now upsert any changes or additions.
+    columns = {c.name: c for c in _select_dataset_extent_columns(product)}
+    limit_by = [
+        DATASET.c.dataset_type_ref
+        == bindparam("product_ref", product.id, type_=SmallInteger),
+        DATASET.c.archived.is_(None),
+    ]
+    if assume_after_date is not None:
+        limit_by.append(dataset_changed_expression() > assume_after_date)
+    query = (
+        postgres.insert(DATASET_SPATIAL)
+        .from_select(
+            columns.keys(),
+            select(columns.values())
+            .where(and_(*limit_by))
+            .order_by(columns["center_time"]),
+        )
+        .on_conflict_do_update(
+            index_elements=["id"],
+            set_=columns,
+        )
     )
-    change_count += insert_count
+    # print(as_sql(query))
+    log.debug(
+        "spatial_refresh_query.start",
+        product_name=product.name,
+        after_date=assume_after_date,
+    )
+    changed += engine.execute(query).rowcount
+    log.debug(
+        "spatial_refresh_query.end", product_name=product.name, change_count=changed
+    )
 
-    # If we inserted data...
-    if insert_count:
+    # If we changed data...
+    if changed:
         # And it's a non-spatial product...
         if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
             # And it has WRS path/rows...
@@ -363,63 +407,6 @@ def refresh_spatial_extents(
                 "spatial_synthesizing.done",
             )
 
-    return change_count
-
-
-def _populate_missing_dataset_extents(
-    engine: Engine,
-    product: DatasetType,
-    force_update_all=False,
-    after_date: datetime = None,
-):
-    columns = {c.name: c for c in _select_dataset_extent_columns(product)}
-
-    if force_update_all:
-        query = (
-            DATASET_SPATIAL.update()
-            .values(**columns)
-            .where(DATASET_SPATIAL.c.id == columns["id"])
-            .where(
-                DATASET.c.dataset_type_ref
-                == bindparam("product_ref", product.id, type_=SmallInteger)
-            )
-            .where(DATASET.c.archived == None)
-        )
-        # TODO: We could use the `updated` date for smarter updating,
-        #       but it's optional on ODC at the moment!
-        if after_date is not None:
-            query = query.where(DATASET.c.added > after_date)
-    else:
-        extent_selection = (
-            select(columns.values())
-            .where(
-                DATASET.c.dataset_type_ref
-                == bindparam("product_ref", product.id, type_=SmallInteger)
-            )
-            .where(DATASET.c.archived == None)
-        )
-        if after_date is not None:
-            extent_selection = extent_selection.where(DATASET.c.added > after_date)
-        query = (
-            postgres.insert(DATASET_SPATIAL)
-            .from_select(
-                columns.keys(),
-                extent_selection.order_by(columns["center_time"]),
-            )
-            .on_conflict_do_nothing(index_elements=["id"])
-        )
-    # print(as_sql(query))
-
-    _LOG.debug(
-        "spatial_insert_query.start",
-        product_name=product.name,
-        after_date=after_date,
-        force_update_all=force_update_all,
-    )
-    changed = engine.execute(query).rowcount
-    _LOG.debug(
-        "spatial_insert_query.end", product_name=product.name, change_count=changed
-    )
     return changed
 
 
@@ -466,6 +453,18 @@ def center_time_expression(md_type: MetadataType):
         "center_time"
     )
     return center_time
+
+
+def dataset_changed_expression(dataset=DATASET):
+    """Expression for the latest time a dataset was changed"""
+    # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
+    dataset_changed = func.greatest(
+        dataset.c.added,
+        # The 'updated' column doesn't exist on ODC's definition as it's optional.
+        column("updated"),
+        dataset.c.archived,
+    )
+    return dataset_changed
 
 
 def _default_crs(dt: DatasetType) -> Optional[str]:

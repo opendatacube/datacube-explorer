@@ -2,6 +2,7 @@ import math
 import os
 import re
 from collections import Counter
+from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum, auto
@@ -26,7 +27,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select, column, exists, or_
+from sqlalchemy import DDL, String, and_, func, select, exists, or_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine, RowProxy
@@ -43,6 +44,7 @@ from cubedash.summary._extents import (
     RegionSummary,
     ProductArrival,
     center_time_expression,
+    dataset_changed_expression,
 )
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -250,7 +252,7 @@ class SummaryStore:
         for product in self.all_dataset_types():
             self.refresh_product_extent(
                 product.name,
-                force_dataset_extent_recompute=force_dataset_extent_recompute,
+                force_recompute=force_dataset_extent_recompute,
             )
         self.refresh_stats()
 
@@ -263,16 +265,7 @@ class SummaryStore:
         return self._engine.execute(
             select(
                 [
-                    func.max(
-                        # This expression matches the 'ix_dataset_type_changed' index,
-                        # so we can scan it efficiently.
-                        func.greatest(
-                            ODC_DATASET.c.added,
-                            # The 'updated' column doesn't exist on ODC's definition as it's optional.
-                            column("updated"),
-                            ODC_DATASET.c.archived,
-                        )
-                    ),
+                    func.max(dataset_changed_expression()),
                 ]
             ).where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
         ).scalar()
@@ -300,11 +293,6 @@ class SummaryStore:
             #    tldr: "15 minutes == max expected transaction age of indexer"
         ).last_successful_summary_time - timedelta(minutes=15)
 
-        # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
-        dataset_changed = func.greatest(
-            ODC_DATASET.c.added, column("updated"), ODC_DATASET.c.archived
-        )
-
         # Find the most-recently updated datasets and group them by month.
         return sorted(
             (month, count)
@@ -318,7 +306,7 @@ class SummaryStore:
                     ]
                 )
                 .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
-                .where(dataset_changed > datasets_newer_than)
+                .where(dataset_changed_expression() > datasets_newer_than)
                 .group_by("month")
                 .order_by("month")
             )
@@ -415,7 +403,8 @@ class SummaryStore:
         self,
         product_name: str,
         dataset_sample_size: int = 1000,
-        force_dataset_extent_recompute=False,
+        force_recompute=False,
+        only_those_newer_than: datetime = None,
     ) -> Tuple[int, ProductSummary]:
         """
         Update Explorer's computed extents for the given product, and record any new
@@ -434,8 +423,19 @@ class SummaryStore:
         change_count = _extents.refresh_spatial_extents(
             self.index,
             product,
-            recompute_all_extents=force_dataset_extent_recompute,
+            thorough=force_recompute,
+            assume_after_date=only_those_newer_than,
         )
+
+        existing_summary = self.get_product_summary(product_name)
+        # Did nothing change at all? Just bump the refresh time.
+        if change_count == 0 and (not force_recompute) and existing_summary:
+            new_summary = copy(existing_summary)
+            new_summary.last_refresh_time = covers_up_to
+            self._set_product_extent(new_summary)
+            return 0, new_summary
+
+        # if change_count or force_dataset_extent_recompute:
         earliest, latest, total_count = self._engine.execute(
             select(
                 (
@@ -1250,15 +1250,19 @@ class SummaryStore:
         log = _LOG
 
         old_product: ProductSummary = self.get_product_summary(product_name)
-        if (
-            (old_product is None)
-            or recreate_dataset_extents
-            or self.needs_refresh(product_name)
-        ):
+        if recreate_dataset_extents:
+            force = True
+
+        if force or (old_product is None) or self.needs_refresh(product_name):
             log.info("generate.product.refresh")
             _, new_product = self.refresh_product_extent(
                 product_name,
-                force_dataset_extent_recompute=recreate_dataset_extents,
+                force_recompute=recreate_dataset_extents,
+                only_those_newer_than=(
+                    None
+                    if (force or (old_product is None))
+                    else old_product.last_refresh_time
+                ),
             )
             log.info("generate.product.refresh.done")
         else:
@@ -1473,7 +1477,7 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
                 _LOG.info("data.refreshing_extents", product=name)
             store.refresh_product_extent(
                 name,
-                force_dataset_extent_recompute=recompute_dataset_extents,
+                force_recompute=recompute_dataset_extents,
             )
     _LOG.info("data.refreshing_extents.complete")
 
