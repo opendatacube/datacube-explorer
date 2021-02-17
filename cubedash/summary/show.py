@@ -94,7 +94,7 @@ def cli(
 
     echo()
     secho(
-        f"Period: {year or 'all-year'} {month or 'all-monday'} {day or 'all-days'}",
+        f"Period: {year or 'all-years'} {month or 'all-months'} {day or 'all-days'}",
         fg="blue",
     )
     if summary:
