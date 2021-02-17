@@ -125,8 +125,7 @@ PRODUCT = Table(
         "last_refresh",
         DateTime(timezone=True),
         nullable=False,
-        server_default=func.now(),
-        comment="Last refresh of this product in the dataset_spatial table",
+        comment="Last refresh of this product's extents'",
     ),
     Column(
         "last_successful_summary",

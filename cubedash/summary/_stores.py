@@ -377,7 +377,7 @@ class SummaryStore:
         )
         return sorted(missing_years.union(outdated_years))
 
-    def needs_refresh(self, product_name: str) -> bool:
+    def needs_extent_refresh(self, product_name: str) -> bool:
         """
         Does the given product have changes since the last refresh?
         """
@@ -392,7 +392,7 @@ class SummaryStore:
         )
         if has_new_changes:
             _LOG.debug(
-                "product.has_changes",
+                "product.has_extent_changes",
                 product_name=product_name,
                 refresh_time=str(existing_product_summary.last_refresh_time),
                 most_recent_change=most_recent_change,
@@ -472,6 +472,7 @@ class SummaryStore:
             last_refresh_time=covers_up_to,
         )
         product_id, product_refresh_time = self._set_product_extent(new_summary)
+        new_summary.id_ = product_id
         new_summary.last_refresh_time = product_refresh_time
 
         self._refresh_product_regions(product)
@@ -1253,7 +1254,7 @@ class SummaryStore:
         if recreate_dataset_extents:
             force = True
 
-        if force or (old_product is None) or self.needs_refresh(product_name):
+        if force or (old_product is None) or self.needs_extent_refresh(product_name):
             log.info("generate.product.refresh")
             _, new_product = self.refresh_product_extent(
                 product_name,
@@ -1269,8 +1270,7 @@ class SummaryStore:
             new_product = old_product
 
         refresh_timestamp = new_product.last_refresh_time
-        if refresh_timestamp is None:
-            raise RuntimeError("Refresh time cannot be blank!?")
+        assert refresh_timestamp is not None
 
         # Do we need to regenerate everything?
         if (
@@ -1347,16 +1347,20 @@ class SummaryStore:
 
         # Mark the product as successfully refreshed at the start timestamp
         # (so future runs will be incremental from this point onwards)
+        assert new_product.id_ is not None
         self._engine.execute(
-            PRODUCT.update()
-            .where(PRODUCT.c.id == new_product.id_)
-            .where(
-                or_(
-                    PRODUCT.c.last_successful_summary.is_(None),
-                    PRODUCT.c.last_successful_summary < refresh_timestamp,
+            (
+                PRODUCT.update()
+                .where(PRODUCT.c.id == new_product.id_)
+                .where(
+                    or_(
+                        PRODUCT.c.last_successful_summary.is_(None),
+                        PRODUCT.c.last_successful_summary
+                        < refresh_timestamp.isoformat(),
+                    )
                 )
+                .values(last_successful_summary=refresh_timestamp.isoformat())
             )
-            .values(last_successful_summary=refresh_timestamp),
         )
         return refresh_type, updated_summary
 
