@@ -5,12 +5,13 @@ and time-periods.
 Useful for testing Explorer-generated summaries from
 scripts and the command-line.
 """
+import sys
 import time
-from typing import Counter
 
 import click
 import structlog
 from click import echo, secho
+
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
@@ -60,63 +61,48 @@ def cli(
     init_logging(open(event_log_file, "a") if event_log_file else None, verbose=verbose)
 
     store = _get_store(config, "setup")
-    region_info = store.get_product_region_info(product_name)
 
     t = time.time()
     summary = store.get(product_name, year, month, day)
     t_end = time.time()
+    product = store.get_product_summary(product_name)
+    if product is None:
+        echo(f"Unsummarised product {product_name}", err=True)
+        sys.exit(-1)
 
-    echo(f"{summary.dataset_count} ", nl=False)
-    secho(product_name, nl=False, bold=True)
-    echo(" datasets for ", nl=False)
-    secho(f"{year or 'all'} {month or 'all'} {day or 'all'}", fg="blue")
-    if summary.size_bytes is not None:
-        echo(sizeof_fmt(summary.size_bytes))
-    echo(f"{round(t_end - t, 2)} seconds")
+    secho(product_name, bold=True)
     echo()
+    dataset_count = summary.dataset_count if summary else product.dataset_count
+    echo(f"{dataset_count}  datasets")
 
-    if region_info is not None:
-        echo(region_info.description)
-        print_count_table(summary.region_dataset_counts)
+    if product.dataset_count:
+        echo(f"from {product.time_earliest.isoformat()} ")
+        echo(f"  to {product.time_latest.isoformat()} ")
 
-
-def print_count_table(cs: Counter[str]):
-    # TODO: this needs update for sentinel region code (which is not "x_y")
-    xs, ys = zip(*(tuple(map(int, c.split("_"))) for c, count in cs.items()))
-
-    count_range = min(cs.values()), max(cs.values())
-    x_range = min(xs), max(xs) + 1
-    y_range = min(ys), max(ys) + 1
-
-    # Find the "widest" number to print.
-    # (it could be the smallest number if there's a minus sign)
-    count_width = max(len(str(i)) for i in x_range + y_range + count_range)
-
-    def echo_head(s):
-        secho(f"%{count_width}d " % s, nl=False, bold=True)
-
-    def echo_cell(number):
-        if number:
-            secho(f"%{count_width}d " % number, nl=False)
-        else:
-            # Print empty space for zeroes
-            echo(" " * (count_width + 1), nl=False)
-
-    # Header of X values
-
-    # corner gap
-    echo_cell(None)
-    for x in range(*x_range):
-        echo_head(x)
     echo()
+    if store.needs_extent_refresh(product_name):
+        secho("Has changes", bold=True)
 
-    # Rows
-    for y in range(*y_range):
-        echo_head(y)
-        for x in range(*x_range):
-            count = cs.get(f"{x}_{y}") or 0
-            echo_cell(count)
+    echo(f"Last extent refresh:     {product.last_refresh_time}")
+    echo(f"Last summary completion: {product.last_successful_summary_time}")
+
+    if product.fixed_metadata:
         echo()
+        secho("Metadata", fg="blue")
+        for k, v in product.fixed_metadata.items():
+            echo(f"\t{k}: {v}")
+
+    if summary:
+        echo()
+        secho(f"Period: {year or 'all'} {month or 'all'} {day or 'all'}", fg="blue")
+        if summary.size_bytes:
+            echo(f"\tStorage size: {sizeof_fmt(summary.size_bytes)}")
+
+        echo(f"\t{summary.dataset_count} datasets")
+        echo(f"\tSummarised: {summary.summary_gen_time}")
+
+    echo()
+    echo(f"(fetched in {round(t_end - t, 2)} seconds)")
 
 
 if __name__ == "__main__":
