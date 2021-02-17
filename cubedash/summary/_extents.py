@@ -326,37 +326,57 @@ def refresh_spatial_extents(
             deleted_count=changed,
         )
 
-    # Now upsert any changes or additions.
-    columns = {c.name: c for c in _select_dataset_extent_columns(product)}
-    limit_by = [
+    # We'll apply updates, then insert new records.
+    # -> We do it in this order so that inserted records aren't immediately updated.
+    # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
+    #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
+    #        Maybe you can figure out a workaround, though?)
+
+    column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
+    only_where = [
         DATASET.c.dataset_type_ref
         == bindparam("product_ref", product.id, type_=SmallInteger),
         DATASET.c.archived.is_(None),
     ]
     if assume_after_date is not None:
-        limit_by.append(dataset_changed_expression() > assume_after_date)
-    query = (
-        postgres.insert(DATASET_SPATIAL)
-        .from_select(
-            columns.keys(),
-            select(columns.values())
-            .where(and_(*limit_by))
-            .order_by(columns["center_time"]),
-        )
-        .on_conflict_do_update(
-            index_elements=["id"],
-            set_=columns,
-        )
-    )
-    # print(as_sql(query))
+        only_where.append(dataset_changed_expression() > assume_after_date)
+
+    # Update any changed datasets
     log.debug(
-        "spatial_refresh_query.start",
+        "spatial_update_query.start",
         product_name=product.name,
         after_date=assume_after_date,
     )
-    changed += engine.execute(query).rowcount
+    changed += engine.execute(
+        DATASET_SPATIAL.update()
+        .values(**column_values)
+        .where(DATASET_SPATIAL.c.id == column_values["id"])
+        .where(and_(*only_where))
+    ).rowcount
     log.debug(
-        "spatial_refresh_query.end", product_name=product.name, change_count=changed
+        "spatial_update_query.end", product_name=product.name, change_count=changed
+    )
+
+    # ... and insert new ones.
+    log.debug(
+        "spatial_insert_query.start",
+        product_name=product.name,
+        after_date=assume_after_date,
+    )
+    changed += engine.execute(
+        (
+            postgres.insert(DATASET_SPATIAL)
+            .from_select(
+                column_values.keys(),
+                select(column_values.values())
+                .where(and_(*only_where))
+                .order_by(column_values["center_time"]),
+            )
+            .on_conflict_do_nothing(index_elements=["id"])
+        )
+    ).rowcount
+    log.debug(
+        "spatial_insert_query.end", product_name=product.name, change_count=changed
     )
 
     # If we changed data...
