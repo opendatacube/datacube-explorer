@@ -84,6 +84,19 @@ class TimePeriodOverview:
         for p in periods:
             region_counter.update(p.region_dataset_counts)
 
+        # Attempt to fix broken geometries.
+        # -> The 'high_tide_comp_20p' tests give an example of this: geometry is valid when
+        #    created, but after serialisation+deserialisation become invalid due to float
+        #    rounding.
+        for time_period in periods:
+            if (
+                time_period.footprint_geometry
+                and not time_period.footprint_geometry.is_valid
+            ):
+                time_period.footprint_geometry = time_period.footprint_geometry.buffer(
+                    0
+                )
+
         with_valid_geometries = [
             p
             for p in periods
