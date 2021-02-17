@@ -618,12 +618,38 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     # ls7_nbar_scene / 2017 / 05
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
     print(res.output)
-    assert "Landsat WRS2 scene-based product" in res.output
-    assert "3 ls7_nbar_scene datasets for 2017 5" in res.output
-    assert "727.4MiB" in res.output
-    assert (
-        "96  97  98  99 100 101 102 103 104 105" in res.output
-    ), "No list of paths displayed"
+
+    expected_header = "\n".join(
+        (
+            "ls7_nbar_scene",
+            "",
+            "3  datasets",
+            "from 2017-04-20T10:03:26+10:00 ",
+            "  to 2017-05-03T11:06:41.500000+10:00 ",
+        )
+    )
+    assert res.output.startswith(expected_header)
+    expected_metadata = "\n".join(
+        (
+            "Metadata",
+            "\tgsi: ASA",
+            "\torbit: None",
+            "\tformat: GeoTIFF",
+            "\tplatform: LANDSAT_7",
+            "\tinstrument: ETM",
+            "\tproduct_type: nbar",
+        )
+    )
+    assert expected_metadata in res.output
+    expected_period = "\n".join(
+        (
+            "Period: 2017 5 all-days",
+            "\tStorage size: 727.4MiB",
+            "\t3 datasets",
+            "",
+        )
+    )
+    assert expected_period in res.output
 
 
 def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
