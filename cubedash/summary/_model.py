@@ -173,46 +173,10 @@ class TimePeriodOverview:
             and p.footprint_geometry.is_valid
             and not p.footprint_geometry.is_empty
         ]
-        try:
 
-            geometry_union = (
-                shapely.ops.unary_union(
-                    [p.footprint_geometry for p in with_valid_geometries]
-                )
-                if with_valid_geometries
-                else None
-            )
-        except ValueError:
-            # Attempt 2 at union: Exaggerate the overlap *slightly* to
-            # avoid non-noded intersection.
-            # TODO: does shapely have a snap-to-grid?
-            try:
-                _LOG.warn("summary.footprint.invalid_union", exc_info=True)
-                geometry_union = (
-                    shapely.ops.unary_union(
-                        [
-                            p.footprint_geometry.buffer(0.001)
-                            for p in with_valid_geometries
-                        ]
-                    )
-                    if with_valid_geometries
-                    else None
-                )
-            except ValueError:
-                _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
-
-                # Attempt 3 at union: Recursive filter bad polygons first
-                polygonlist = _polygon_chain(with_valid_geometries)
-                filtered_geom = _filter_geom(polygonlist)
-                geometry_union = (
-                    shapely.ops.unary_union(filtered_geom)
-                    if with_valid_geometries
-                    else None
-                )
-
-        if footprint_tolerance is not None and geometry_union is not None:
-            geometry_union = geometry_union.simplify(footprint_tolerance)
-
+        geometry_union = _create_unified_footprint(
+            with_valid_geometries, footprint_tolerance
+        )
         total_datasets = sum(p.dataset_count for p in periods)
 
         # Non-null properties here are the ones that are the same across all inputs.
@@ -326,7 +290,43 @@ def _erase_elements_from(items: List, start_i: int):
     return items
 
 
-def _polygon_chain(valid_geometries: Iterable[BaseGeometry]) -> list:
+def _create_unified_footprint(
+    with_valid_geometries: List["TimePeriodOverview"], footprint_tolerance: float
+):
+    """
+    Union the given time period's footprints, trying to fix any invalid geometries.
+    """
+    if not with_valid_geometries:
+        return None
+
+    try:
+        geometry_union = shapely.ops.unary_union(
+            [p.footprint_geometry for p in with_valid_geometries]
+        )
+    except ValueError:
+        # Attempt 2 at union: Exaggerate the overlap *slightly* to
+        # avoid non-noded intersection.
+        # TODO: does shapely have a snap-to-grid?
+        try:
+            _LOG.warn("summary.footprint.invalid_union", exc_info=True)
+            geometry_union = shapely.ops.unary_union(
+                [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+            )
+        except ValueError:
+            _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
+
+            # Attempt 3 at union: Recursive filter bad polygons first
+            polygonlist = _polygon_chain(with_valid_geometries)
+            filtered_geom = _filter_geom(polygonlist)
+            geometry_union = shapely.ops.unary_union(filtered_geom)
+
+    if footprint_tolerance is not None:
+        geometry_union = geometry_union.simplify(footprint_tolerance)
+
+    return geometry_union
+
+
+def _polygon_chain(valid_geometries: Iterable[TimePeriodOverview]) -> list:
     """Chain all the given [Mutli]Polygons into a single list."""
     polygonlist = []
     for poly in valid_geometries:
