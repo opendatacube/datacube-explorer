@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from collections import Counter
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Optional
 
 import pandas as pd
 import structlog
@@ -14,6 +14,7 @@ from sqlalchemy import and_, func, select, or_
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
+from cubedash import _utils
 from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._schema import (
@@ -40,11 +41,15 @@ class Summariser:
         self.output_crs_epsg_code = FOOTPRINT_SRID
 
     def calculate_summary(
-        self, product_name: str, time: Range, product_refresh_time: datetime
+        self,
+        product_name: str,
+        year_month_day: Tuple[Optional[int], Optional[int], Optional[int]],
+        product_refresh_time: datetime,
     ) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
         """
+        time = _utils.as_time_range(*year_month_day)
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
@@ -163,8 +168,13 @@ class Summariser:
                 "not have a null product refresh time."
             )
 
+        year, month, day = year_month_day
         summary = TimePeriodOverview(
             **row,
+            product_name=product_name,
+            year=year,
+            month=month,
+            day=day,
             product_refresh_time=product_refresh_time,
             timeline_period="day",
             time_range=Range(begin_time, end_time),

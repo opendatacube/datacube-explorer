@@ -1,7 +1,7 @@
 import warnings
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date
 from typing import Iterable, Optional, Set, Tuple, Union, List
 
 import shapely
@@ -18,8 +18,15 @@ _LOG = structlog.get_logger()
 
 @dataclass
 class TimePeriodOverview:
-    dataset_count: int
+    # These four elements make up a pseudo-id of the time period we've summarised.
+    #
+    # -> None means "all"
+    product_name: str
+    year: Optional[int]
+    month: Optional[int]
+    day: Optional[int]
 
+    dataset_count: int
     timeline_dataset_counts: Counter
     region_dataset_counts: Counter
 
@@ -48,9 +55,57 @@ class TimePeriodOverview:
 
     def __str__(self):
         return (
-            f"{self.timeline_period}:{self.time_range.begin} "
-            f"({self.dataset_count} datasets)"
+            f"{self.label} "
+            f"({self.dataset_count} dataset{'s' if self.dataset_count > 1 else ''})"
         )
+
+    @property
+    def label(self):
+        return " ".join([(str(p) if p else "all") for p in self.period_tuple])
+
+    @property
+    def period_tuple(self):
+        """
+        This is the pseudo-id of the product time period we've summarised.
+
+        Any of them can be None to represent 'all'
+        """
+        return self.product_name, self.year, self.month, self.day
+
+    def as_flat_period(self):
+        """
+        How we "flatten" the time-slice for storage in DB columns. Must remain stable!
+
+        A "period type" enum, and a single date.
+        """
+        return self.flat_period_representation(self.year, self.month, self.day)
+
+    @classmethod
+    def flat_period_representation(
+        cls, year: Optional[int], month: Optional[int], day: Optional[int]
+    ):
+        period = "all"
+        if year:
+            period = "year"
+        if month:
+            period = "month"
+        if day:
+            period = "day"
+
+        return period, date(year or 1900, month or 1, day or 1)
+
+    @classmethod
+    def from_flat_period_representation(self, period_type: str, start_day: date):
+        year = None
+        month = None
+        day = None
+        if period_type != "all":
+            year = start_day.year
+            if period_type != "year":
+                month = start_day.month
+                if period_type != "month":
+                    day = start_day.day
+        return year, month, day
 
     @classmethod
     def add_periods(
@@ -80,22 +135,35 @@ class TimePeriodOverview:
             timeline_counter, period
         )
 
+        # The period elements that are the same across all of them.
+        # (it will be the period of the result)
+        common_time_period = list(periods[0].period_tuple) if periods else ([None] * 4)
         region_counter = Counter()
-        for p in periods:
-            region_counter.update(p.region_dataset_counts)
 
-        # Attempt to fix broken geometries.
-        # -> The 'high_tide_comp_20p' tests give an example of this: geometry is valid when
-        #    created, but after serialisation+deserialisation become invalid due to float
-        #    rounding.
         for time_period in periods:
+            region_counter.update(time_period.region_dataset_counts)
+
+            # Attempt to fix broken geometries.
+            # -> The 'high_tide_comp_20p' tests give an example of this: geometry is valid when
+            #    created, but after serialisation+deserialisation become invalid due to float
+            #    rounding.
             if (
                 time_period.footprint_geometry
                 and not time_period.footprint_geometry.is_valid
             ):
+                _LOG.info("invalid_stored_geometry", summary=time_period.period_tuple)
                 time_period.footprint_geometry = time_period.footprint_geometry.buffer(
                     0
                 )
+
+            # We're looking for the time period common to them all.
+            # Strike out any elements that differ between our periods.
+            this_period = time_period.period_tuple
+            for i, elem in enumerate(common_time_period):
+                if elem is not None and (elem != this_period[i]):
+                    # All following should be blank too, since this is a hierarchy.
+                    _erase_elements_from(common_time_period, i)
+                    break
 
         with_valid_geometries = [
             p
@@ -147,7 +215,14 @@ class TimePeriodOverview:
 
         total_datasets = sum(p.dataset_count for p in periods)
 
+        # Non-null properties here are the ones that are the same across all inputs.
+        product_name, year, month, day = common_time_period
+
         return TimePeriodOverview(
+            product_name=product_name,
+            year=year,
+            month=month,
+            day=day,
             dataset_count=total_datasets,
             timeline_dataset_counts=timeline_counter,
             timeline_period=period,
@@ -231,6 +306,24 @@ class TimePeriodOverview:
 def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
     dataset, (shape, was_valid) = datasets
     return shape is not None
+
+
+def _erase_elements_from(items: List, start_i: int):
+    """
+    Erase from the given 'i' onward
+
+    >>> _erase_elements_from([1, 2, 3], 0)
+    [None, None, None]
+    >>> _erase_elements_from([1, 2, 3], 1)
+    [1, None, None]
+    >>> _erase_elements_from([1, 2, 3], 2)
+    [1, 2, None]
+    >>> _erase_elements_from([1, 2, 3], 3)
+    [1, 2, 3]
+    """
+    items[start_i:] = [None] * (len(items) - start_i)
+    # Return the list just for convenience in doctest. It's actually mutable.
+    return items
 
 
 def _polygon_chain(valid_geometries: Iterable[BaseGeometry]) -> list:

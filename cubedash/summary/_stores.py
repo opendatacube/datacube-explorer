@@ -696,12 +696,14 @@ class SummaryStore:
         month: Optional[int] = None,
         day: Optional[int] = None,
     ) -> Optional[TimePeriodOverview]:
-        start_day, period = self._start_day(year, month, day)
+        period, start_day = TimePeriodOverview.flat_period_representation(
+            year, month, day
+        )
         if year and month and day:
             # We don't store days, they're quick.
             return self._summariser.calculate_summary(
                 product_name,
-                _utils.as_time_range(year, month, day),
+                year_month_day=(year, month, day),
                 product_refresh_time=datetime.now(),
             )
 
@@ -722,18 +724,7 @@ class SummaryStore:
         if not res:
             return None
 
-        return _summary_from_row(res)
-
-    def _start_day(self, year, month, day):
-        period = "all"
-        if year:
-            period = "year"
-        if month:
-            period = "month"
-        if day:
-            period = "day"
-
-        return date(year or 1900, month or 1, day or 1), period
+        return _summary_from_row(res, product_name=product_name)
 
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
@@ -905,20 +896,16 @@ class SummaryStore:
 
     def _put(
         self,
-        product_name: Optional[str],
-        year: Optional[int],
-        month: Optional[int],
-        day: Optional[int],
         summary: TimePeriodOverview,
     ):
         log = _LOG.bind(
-            product_name=product_name,
-            time=(year, month, day),
+            period=summary.period_tuple,
             summary_count=summary.dataset_count,
         )
         log.info("product.put")
-        product = self._product(product_name)
-        start_day, period = self._start_day(year, month, day)
+        product = self._product(summary.product_name)
+        period, start_day = summary.as_flat_period()
+
         row = _summary_to_row(summary)
         ret = self._engine.execute(
             postgres.insert(TIME_OVERVIEW)
@@ -1202,7 +1189,7 @@ class SummaryStore:
         if year and month:
             summary = self._summariser.calculate_summary(
                 product.name,
-                _utils.as_time_range(year, month),
+                year_month_day=(year, month, None),
                 product_refresh_time=product_refresh_time,
             )
         elif year:
@@ -1220,10 +1207,21 @@ class SummaryStore:
         else:
             # Empty product
             summary = TimePeriodOverview.add_periods([])
+            summary.product_name = product.name
 
         summary.product_refresh_time = product_refresh_time
-        self._put(product.name, year, month, None, summary)
 
+        # Dev sanity check:
+        #   all the above methods should have calculated our expected
+        #   period information correctly.
+        assert summary.period_tuple == (
+            product.name,
+            year,
+            month,
+            None,
+        ), f"{summary.period_tuple} != {(product.name, year, month, None)}"
+
+        self._put(summary)
         for listener in self._update_listeners:
             listener(
                 product_name=product.name,
@@ -1492,7 +1490,7 @@ def _safe_read_date(d):
     return None
 
 
-def _summary_from_row(res):
+def _summary_from_row(res, product_name):
     timeline_dataset_counts = (
         Counter(
             dict(
@@ -1507,8 +1505,16 @@ def _summary_from_row(res):
         if res["regions"]
         else None
     )
+    period_type = res["period_type"]
+    year, month, day = TimePeriodOverview.from_flat_period_representation(
+        period_type, res["start_day"]
+    )
 
     return TimePeriodOverview(
+        product_name=product_name,
+        year=year,
+        month=month,
+        day=day,
         dataset_count=res["dataset_count"],
         # : Counter
         timeline_dataset_counts=timeline_dataset_counts,

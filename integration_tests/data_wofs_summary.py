@@ -15,6 +15,10 @@ from datacube.model import Range
 # (perhaps the non-footprint data can be thrown away in the future if too unmaintable)
 #
 wofs_time_summary = TimePeriodOverview(
+    product_name="wofs_summary",
+    year=None,
+    month=None,
+    day=None,
     dataset_count=1244,
     timeline_dataset_counts=Counter(
         {
