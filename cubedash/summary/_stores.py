@@ -108,12 +108,11 @@ class ProductSummary:
     # (on large products this is judged via sampling, so may not be 100%)
     fixed_metadata: Dict[str, Union[str, float, int, datetime]]
 
-    # The db-server-local time when this product was refreshed.
+    # The db-server-local time when this product record+extent was refreshed.
     last_refresh_time: datetime
 
-    # The `last_refresh_time` last time summary generation was completed successfully.
-    # (this is to judge how far summaries are out of date:
-    #  we'll scan any datasets newer than this date to find changes)
+    # The `last_refresh_time` last time when summary generation was last fully completed.
+    # (To find changes, we'll scan any datasets newer than this date)
     last_successful_summary_time: datetime = None
 
     # Not recommended for use by users, as ids are local and internal.
@@ -433,7 +432,7 @@ class SummaryStore:
         if change_count == 0 and (not force_recompute) and existing_summary:
             new_summary = copy(existing_summary)
             new_summary.last_refresh_time = covers_up_to
-            self._set_product_extent(new_summary)
+            self._persist_product_extent(new_summary)
             return 0, new_summary
 
         # if change_count or force_dataset_extent_recompute:
@@ -472,12 +471,11 @@ class SummaryStore:
             fixed_metadata=fixed_metadata,
             last_refresh_time=covers_up_to,
         )
-        product_id, product_refresh_time = self._set_product_extent(new_summary)
-        new_summary.id_ = product_id
-        new_summary.last_refresh_time = product_refresh_time
 
+        # TODO: This is an expensive operation. We regenerate them all every time there are changes.
         self._refresh_product_regions(product)
 
+        self._persist_product_extent(new_summary)
         return change_count, new_summary
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
@@ -847,7 +845,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _set_product_extent(self, product: ProductSummary) -> Tuple[int, datetime]:
+    def _persist_product_extent(self, product: ProductSummary) -> Tuple[int, datetime]:
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -893,7 +891,9 @@ class SummaryStore:
                 .values(**fields, name=product.name)
             ).fetchone()
         self._product.cache_clear()
-        return row[0], row[1]
+        product_id, last_refresh_time = row
+
+        product.id_ = product_id
 
     def _put(
         self,
@@ -1243,20 +1243,17 @@ class SummaryStore:
         if recreate_dataset_extents:
             force = True
 
-        if force or (old_product is None) or self.needs_extent_refresh(product_name):
-            log.info("generate.extent.refresh")
-            _, new_product = self.refresh_product_extent(
-                product_name,
-                force_recompute=recreate_dataset_extents,
-                only_those_newer_than=(
-                    None
-                    if (force or (old_product is None))
-                    else old_product.last_refresh_time
-                ),
-            )
-            log.info("generate.extent.refresh.done")
-        else:
-            new_product = old_product
+        log.info("extent.refresh")
+        change_count, new_product = self.refresh_product_extent(
+            product_name,
+            force_recompute=recreate_dataset_extents,
+            only_those_newer_than=(
+                None
+                if (force or (old_product is None))
+                else old_product.last_successful_summary_time
+            ),
+        )
+        log.info("extent.refresh.done", changed=change_count)
 
         refresh_timestamp = new_product.last_refresh_time
         assert refresh_timestamp is not None
@@ -1271,9 +1268,9 @@ class SummaryStore:
             or force
         ):
             # Then regenerate every single summary.
-            log.info("generate.product.whole")
+            log.info("product.generate_whole")
             if force:
-                log.warn("generate.forcing_refresh")
+                log.warn("forcing_refresh")
 
             # Regenerate the old months too, in case any have been deleted.
             old_months = set(old_product.iter_months()) if old_product else set()
@@ -1285,22 +1282,19 @@ class SummaryStore:
 
         # Otherwise, only regenerate the things that changed.
         else:
-            time_summaries_are_completed = (
-                new_product.last_successful_summary_time is not None
-                and (new_product.last_successful_summary_time >= refresh_timestamp)
-            )
-            if time_summaries_are_completed:
-                log.info("generate.product.no_changes")
+            if change_count == 0:
+                log.info("product.no_changes")
+                self._mark_product_refresh_completed(new_product, refresh_timestamp)
                 return GenerateResult.SKIPPED, self.get(product_name)
 
-            log.info("generate.product.incremental_update")
+            log.info("product.incremental_update")
             months_to_update = self.find_months_needing_update(product_name)
             refresh_type = GenerateResult.UPDATED
 
         # Months
         for change_month, new_count in months_to_update:
             log.debug(
-                "generate.product.month_refresh",
+                "product.month_refresh",
                 product=product_name,
                 month=change_month,
                 change_count=new_count,
@@ -1333,14 +1327,19 @@ class SummaryStore:
             previous_refresh_time=new_product.last_successful_summary_time,
             new_refresh_time=refresh_timestamp,
         )
+        self._mark_product_refresh_completed(new_product, refresh_timestamp)
+        return refresh_type, updated_summary
 
+    def _mark_product_refresh_completed(
+        self, product: ProductSummary, refresh_timestamp: datetime
+    ):
+        assert product.id_ is not None
         # Mark the product as successfully refreshed at the start timestamp
         # (so future runs will be incremental from this point onwards)
-        assert new_product.id_ is not None
         self._engine.execute(
             (
                 PRODUCT.update()
-                .where(PRODUCT.c.id == new_product.id_)
+                .where(PRODUCT.c.id == product.id_)
                 .where(
                     or_(
                         PRODUCT.c.last_successful_summary.is_(None),
@@ -1351,7 +1350,6 @@ class SummaryStore:
                 .values(last_successful_summary=refresh_timestamp.isoformat())
             )
         )
-        return refresh_type, updated_summary
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _get_srid_name(self, srid: int):
