@@ -174,7 +174,7 @@ def run_generate(clirunner, summary_store, multi_processed=False):
 
 
 @pytest.fixture(scope="module")
-def dataset_loader(module_dea_index):
+def dataset_loader(module_dea_index: Index):
     def _populate_from_dump(expected_type: str, dump_path: Path):
         ls8_nbar_scene = module_dea_index.products.get_by_name(expected_type)
         dataset_count = 0

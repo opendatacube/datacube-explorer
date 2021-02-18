@@ -5,18 +5,20 @@ And then check their statistics match expected.
 """
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from dateutil import tz
 from dateutil.tz import tzutc
 
+from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
-from datacube.model import Range
+from datacube.model import Range, DatasetType
 from datacube.utils import read_documents
 from .asserts import expect_values as _expect_values
 
@@ -164,24 +166,96 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
     original_dataset_count = original_summary.dataset_count
 
     # ... and we archive one dataset ...
-    [[dataset_id]] = index.datasets.search_returning(
-        ("id",), product="ls8_nbar_scene", limit=1
-    )
-    index.datasets.archive([dataset_id])
+    product_name = "ls8_nbar_scene"
+    dataset_id = _one_dataset(index, product_name)
+    try:
+        index.datasets.archive([dataset_id])
 
-    # ... the next generation should catch it and update with one less dataset....
-    run_generate("ls8_nbar_scene")
-    assert (
-        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count - 1
-    ), "Expected dataset count to decrease after archival"
+        # ... the next generation should catch it and update with one less dataset....
+        run_generate("ls8_nbar_scene")
+        assert (
+            summary_store.get("ls8_nbar_scene").dataset_count
+            == original_dataset_count - 1
+        ), "Expected dataset count to decrease after archival"
+    finally:
+        # Now let's restore the dataset!
+        index.datasets.restore([dataset_id])
 
-    # Now let's restore the dataset! It should be in the count again.
-    index.datasets.restore([dataset_id])
+    # It should be in the count again.
     # (this change should work because the new 'updated' column will be bumped on restore)
     run_generate("ls8_nbar_scene")
     assert (
         summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
     ), "A dataset that was restored from archival was not refreshed by Explorer"
+
+
+def _one_dataset(index: Index, product_name: str):
+    [[dataset_id]] = index.datasets.search_returning(
+        ("id",), product=product_name, limit=1
+    )
+    return dataset_id
+
+
+def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
+    """
+    If a dataset it updated to be in a different product, Explorer should
+    correctly update its summaries.
+
+    (this really happened at NCI previously)
+
+    This is a trickier case than regular updates because everything in Explorer
+    is product-specific. Summarising one product at a time, etc.
+    """
+    run_generate("ls8_nbar_scene")
+    index = summary_store.index
+
+    dataset_id = _one_dataset(index, "ls8_nbar_scene")
+    our_product = index.products.get_by_name("ls8_nbar_scene")
+    other_product = index.products.get_by_name("ls8_nbar_albers")
+
+    # When we have a summarised product...
+    original_summary = summary_store.get("ls8_nbar_scene")
+    original_dataset_count = original_summary.dataset_count
+
+    try:
+        # Move the dataset to another product
+        _change_dataset_product(index, dataset_id, other_product)
+        assert index.datasets.get(dataset_id).type.name == "ls8_nbar_albers"
+
+        # Explorer should remove it too.
+        print(f"Test dataset: {dataset_id}")
+        # TODO: Make this work without a force-refresh.
+        #       It's hard because we're scanning for updated datasets in the product...
+        #       but it's not in the product. And the incremental updater misses it.
+        #       So we have to force the non-incremental updater.
+        run_generate("ls8_nbar_albers", "ls8_nbar_scene", "--force-refresh")
+
+        assert (
+            summary_store.get("ls8_nbar_scene").dataset_count
+            == original_dataset_count - 1
+        ), "Expected dataset to be removed after product change"
+
+    finally:
+        # Now change it back
+        _change_dataset_product(index, dataset_id, our_product)
+
+    run_generate("ls8_nbar_albers", "ls8_nbar_scene", "--force-refresh")
+    assert (
+        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
+    ), "Expected dataset to be added again after the product changed back"
+
+
+def _change_dataset_product(index: Index, dataset_id: UUID, other_product: DatasetType):
+    rows_changed = (
+        _utils.alchemy_engine(index)
+        .execute(
+            f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=%s where id=%s",
+            other_product.id,
+            dataset_id,
+        )
+        .rowcount
+    )
+    assert rows_changed == 1
 
 
 def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
