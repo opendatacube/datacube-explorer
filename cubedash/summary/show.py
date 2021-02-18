@@ -81,9 +81,13 @@ def cli(
     t = time.time()
     summary = store.get(product_name, year, month, day)
     t_end = time.time()
+
+    if not store.index.products.get_by_name(product_name):
+        echo(f"Unknown product {product_name!r}", err=True)
+        sys.exit(-1)
     product = store.get_product_summary(product_name)
     if product is None:
-        echo(f"Unsummarised product {product_name}", err=True)
+        echo(f"No info: product {product_name!r} has not been summarised", err=True)
         sys.exit(-1)
 
     secho(product_name, bold=True)
