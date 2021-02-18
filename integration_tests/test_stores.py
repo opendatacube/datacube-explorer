@@ -91,7 +91,7 @@ def test_add_no_periods(summary_store: SummaryStore):
     """
     All the get/update methods should work on products with no datasets.
     """
-    summary_store._set_product_extent(
+    summary_store._persist_product_extent(
         ProductSummary("ga_ls8c_level1_3", 0, None, None, [], [], {}, datetime.now())
     )
     assert summary_store.get("ga_ls8c_level1_3", 2015, 7, 4).dataset_count == 0
@@ -184,7 +184,7 @@ def test_put_get_summaries(summary_store: SummaryStore):
     o = _overview(product_name, 2017)
     assert o.summary_gen_time is None, "Generation time should be set by server"
 
-    summary_store._set_product_extent(
+    summary_store._persist_product_extent(
         ProductSummary(
             product_name,
             4321,
