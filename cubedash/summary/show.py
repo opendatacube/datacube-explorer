@@ -56,14 +56,12 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
     help="Output jsonl logs to file",
     type=click.Path(writable=True, dir_okay=True),
 )
-@click.option("--allow-cache/--no-cache", is_flag=True, default=True)
 @click.argument("product_name")
 @click.argument("year", type=int, required=False)
 @click.argument("month", type=int, required=False)
 @click.argument("day", type=int, required=False)
 def cli(
     config: LocalConfig,
-    allow_cache: bool,
     product_name: str,
     year: int,
     month: int,

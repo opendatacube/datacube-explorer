@@ -123,7 +123,7 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # when reprojected to wgs84 by shapely.
     from .data_wofs_summary import wofs_time_summary
 
-    _model.STORE._put("wofs_summary", None, None, None, wofs_time_summary)
+    _model.STORE._put(wofs_time_summary)
     html = get_html(client, "/wofs_summary")
     check_dataset_count(html, 1244)
 

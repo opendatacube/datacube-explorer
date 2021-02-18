@@ -3,7 +3,7 @@ Tests related to the store
 """
 import operator
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, date
 
 import pytest
 from shapely.geometry import shape
@@ -146,6 +146,10 @@ EXPECTED_CLEAN_POLY = shape(
 
 def _create_overview():
     overview = TimePeriodOverview(
+        product_name="test_model_product",
+        year=None,
+        month=None,
+        day=None,
         dataset_count=1,
         timeline_dataset_counts=Counter("abc"),
         region_dataset_counts=Counter("abc"),
@@ -229,3 +233,36 @@ def assert_shapes_mostly_equal(
     s1 = shape1.simplify(tolerance=threshold)
     s2 = shape2.simplify(tolerance=threshold)
     assert (s1 - s2).area < threshold, f"{s1} is not mostly equal to {s2}"
+
+
+def test_computed_properties():
+    o = _create_overview()
+    o.product_name = "test_product"
+
+    def check_flat_period(o, expected_period: str, expected_date: date):
+        assert o.as_flat_period() == (expected_period, expected_date)
+
+        # Converting the other way should also match.
+        unflattened = TimePeriodOverview.from_flat_period_representation(
+            *o.as_flat_period()
+        )
+        assert (o.year, o.month, o.day) == unflattened
+
+    assert o.label == "test_product all all all"
+    check_flat_period(o, "all", date(1900, 1, 1))
+    assert str(o) == "test_product all all all (1 dataset)"
+
+    o.year = 2018
+    assert o.label == "test_product 2018 all all"
+    check_flat_period(o, "year", date(2018, 1, 1))
+
+    o.month = 4
+    assert o.label == "test_product 2018 4 all"
+    check_flat_period(o, "month", date(2018, 4, 1))
+
+    o.day = 6
+    assert o.label == "test_product 2018 4 6"
+    check_flat_period(o, "day", date(2018, 4, 6))
+
+    o.dataset_count = 321
+    assert str(o) == "test_product 2018 4 6 (321 datasets)"

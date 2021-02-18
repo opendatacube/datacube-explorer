@@ -14,8 +14,17 @@ from cubedash.summary._summarise import Summariser
 from datacube.model import Range
 
 
-def _overview():
+def _overview(
+    product_name: str = "test_product",
+    year: int = None,
+    month: int = None,
+    day: int = None,
+):
     orig = TimePeriodOverview(
+        product_name=product_name,
+        year=year,
+        month=month,
+        day=day,
         dataset_count=4,
         timeline_dataset_counts=Counter(
             [
@@ -171,10 +180,10 @@ def test_put_get_summaries(summary_store: SummaryStore):
     """
     Test the serialisation/deserialisation from postgres
     """
-    o = _overview()
+    product_name = "some_product"
+    o = _overview(product_name, 2017)
     assert o.summary_gen_time is None, "Generation time should be set by server"
 
-    product_name = "some_product"
     summary_store._set_product_extent(
         ProductSummary(
             product_name,
@@ -188,7 +197,7 @@ def test_put_get_summaries(summary_store: SummaryStore):
         )
     )
 
-    summary_store._put(product_name, 2017, None, None, o)
+    summary_store._put(o)
     loaded = summary_store.get(product_name, 2017, None, None)
 
     assert o is not loaded, (
@@ -218,7 +227,7 @@ def test_put_get_summaries(summary_store: SummaryStore):
     o.dataset_count = 4321
     o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
     time.sleep(1)
-    summary_store._put(product_name, 2017, None, None, o)
+    summary_store._put(o)
     assert o.summary_gen_time != original_gen_time
 
     loaded = summary_store.get(product_name, 2017, None, None)
