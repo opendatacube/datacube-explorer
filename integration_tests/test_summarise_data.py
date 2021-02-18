@@ -150,6 +150,27 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     )
 
 
+def test_generate_incremental_archivals(run_generate, summary_store: SummaryStore):
+    run_generate("ls8_nbar_scene")
+    index = summary_store.index
+
+    # When we have a summarised product...
+    original_summary = summary_store.get("ls8_nbar_scene")
+
+    # ... and we archive one dataset ...
+    [[dataset_id]] = index.datasets.search_returning(
+        ("id",), product="ls8_nbar_scene", limit=1
+    )
+    index.datasets.archive([dataset_id])
+
+    # ... the next generation should catch it and update with one less dataset....
+    run_generate("ls8_nbar_scene")
+    updated_summary = summary_store.get("ls8_nbar_scene")
+    assert (
+        original_summary.dataset_count == updated_summary.dataset_count + 1
+    ), "Expected dataset count to decrease after archival"
+
+
 def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
     run_generate()
 
