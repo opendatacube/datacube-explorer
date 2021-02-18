@@ -619,13 +619,17 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
     print(res.output)
 
+    # It shows the dates in local timezone.
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc()).astimezone()
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc()).astimezone()
+
     expected_header = "\n".join(
         (
             "ls7_nbar_scene",
             "",
             "3  datasets",
-            "from 2017-04-20T10:03:26+10:00 ",
-            "  to 2017-05-03T11:06:41.500000+10:00 ",
+            f"from {expected_from.isoformat()} ",
+            f"  to {expected_to.isoformat()} ",
         )
     )
     assert res.output.startswith(expected_header)
