@@ -124,8 +124,13 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
 
     # All time
+    summary = summary_store.get("ls8_nbar_scene", year=None, month=None, day=None)
+    assert (
+        summary_store.index.datasets.count(product="ls8_nbar_scene")
+        == summary.dataset_count
+    )
     _expect_values(
-        summary_store.get("ls8_nbar_scene", year=None, month=None, day=None),
+        summary,
         dataset_count=3036,
         footprint_count=3036,
         time_range=Range(
