@@ -156,6 +156,7 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
 
     # When we have a summarised product...
     original_summary = summary_store.get("ls8_nbar_scene")
+    original_dataset_count = original_summary.dataset_count
 
     # ... and we archive one dataset ...
     [[dataset_id]] = index.datasets.search_returning(
@@ -165,10 +166,17 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
 
     # ... the next generation should catch it and update with one less dataset....
     run_generate("ls8_nbar_scene")
-    updated_summary = summary_store.get("ls8_nbar_scene")
     assert (
-        original_summary.dataset_count == updated_summary.dataset_count + 1
+        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count - 1
     ), "Expected dataset count to decrease after archival"
+
+    # Now let's restore the dataset! It should be in the count again.
+    index.datasets.restore([dataset_id])
+    # (this change should work because the new 'updated' column will be bumped on restore)
+    run_generate("ls8_nbar_scene")
+    assert (
+        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
+    ), "A dataset that was restored from archival was not refreshed by Explorer"
 
 
 def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
