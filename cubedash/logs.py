@@ -38,7 +38,7 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         # Coloured output if to terminal, otherwise json
-        structlog.dev.ConsoleRenderer()
+        BetterConsoleRenderer()
         if output_file.isatty()
         else structlog.processors.JSONRenderer(serializer=lenient_json_dump),
     ]
@@ -60,6 +60,15 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
         cache_logger_on_first_use=cache_logger_on_first_use,
         logger_factory=structlog.PrintLoggerFactory(file=output_file),
     )
+
+
+class BetterConsoleRenderer(structlog.dev.ConsoleRenderer):
+    """A console renderer that shows dates in a readable manner."""
+
+    def _repr(self, val):
+        if isinstance(val, datetime.datetime):
+            return val.isoformat()
+        return super()._repr(val)
 
 
 def _filter_levels(logger, log_method, event_dict, hide_levels=("debug", "info")):
