@@ -72,6 +72,10 @@ class TimePeriodOverview:
         """
         return self.product_name, self.year, self.month, self.day
 
+    @period_tuple.setter
+    def period_tuple(self, v: Tuple[str, Optional[int], Optional[int], Optional[int]]):
+        self.product_name, self.year, self.month, self.day = v
+
     def as_flat_period(self):
         """
         How we "flatten" the time-slice for storage in DB columns. Must remain stable!

@@ -390,13 +390,14 @@ class SummaryStore:
         has_new_changes = most_recent_change and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
-        if has_new_changes:
-            _LOG.debug(
-                "product.has_extent_changes",
-                product_name=product_name,
-                refresh_time=str(existing_product_summary.last_refresh_time),
-                most_recent_change=most_recent_change,
-            )
+
+        _LOG.debug(
+            "product.last_extent_changes",
+            product_name=product_name,
+            last_refresh_time=existing_product_summary.last_refresh_time,
+            most_recent_change=most_recent_change,
+            has_new_changes=has_new_changes,
+        )
         return has_new_changes
 
     def refresh_product_extent(
@@ -1210,16 +1211,7 @@ class SummaryStore:
             summary.product_name = product.name
 
         summary.product_refresh_time = product_refresh_time
-
-        # Dev sanity check:
-        #   all the above methods should have calculated our expected
-        #   period information correctly.
-        assert summary.period_tuple == (
-            product.name,
-            year,
-            month,
-            None,
-        ), f"{summary.period_tuple} != {(product.name, year, month, None)}"
+        summary.period_tuple = (product.name, year, month, None)
 
         self._put(summary)
         for listener in self._update_listeners:
