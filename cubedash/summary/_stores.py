@@ -1350,6 +1350,7 @@ class SummaryStore:
                 .values(last_successful_summary=refresh_timestamp.isoformat())
             )
         )
+        self._product.cache_clear()
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _get_srid_name(self, srid: int):

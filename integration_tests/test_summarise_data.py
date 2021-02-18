@@ -466,7 +466,6 @@ def test_force_dataset_regeneration(
 
 
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
-    summary_store.refresh_all_product_extents()
 
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
@@ -475,6 +474,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert summary is None
 
     # Calculate overall summary
+
     _, summary = summary_store.refresh("ls8_nbar_albers")
     _expect_values(
         summary,
@@ -500,12 +500,12 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     summary_store.refresh("ls8_nbar_albers")
 
     cached_s = summary_store.get("ls8_nbar_albers", 2017)
-
+    assert original is not cached_s
+    assert cached_s.dataset_count == original.dataset_count
     assert cached_s.summary_gen_time is not None
     assert (
         cached_s.summary_gen_time == original.summary_gen_time
     ), "A new, rather than cached, summary was returned"
-    assert cached_s.dataset_count == original.dataset_count
 
 
 def test_cubedash_gen_refresh(run_generate, module_index: Index):
