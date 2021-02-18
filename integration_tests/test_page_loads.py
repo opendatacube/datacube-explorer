@@ -615,11 +615,14 @@ def test_invalid_product_returns_not_found(client: FlaskClient):
 
 
 def test_show_summary_cli(clirunner, client: FlaskClient):
-    # ls7_nbar_scene / 2017 / 05
+    """
+    You should be able to view a product with cubedash-view command-line program.
+    """
+    # ls7_nbar_scene, 2017, May
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
     print(res.output)
 
-    # It shows the dates in local timezone.
+    # Expect it to show the dates in local timezone.
     expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc()).astimezone()
     expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc()).astimezone()
 
@@ -654,6 +657,30 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
         )
     )
     assert expected_period in res.output
+
+
+def test_show_summary_cli_missing_product(clirunner, client: FlaskClient):
+    """
+    A missing product should return a nice error message from cubedash-view.
+
+    (and error return code)
+    """
+    res: Result = clirunner(show.cli, ["does_not_exist"], expect_success=False)
+    output: str = res.output
+    assert output.strip().startswith("Unknown product 'does_not_exist'")
+    assert res.exit_code != 0
+
+
+def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskClient):
+    """
+    An unsummarised product should return a nice error message from cubedash-view.
+
+    (and error return code)
+    """
+    res: Result = clirunner(show.cli, ["ls7_nbar_scene"], expect_success=False)
+    out = res.output.strip()
+    assert out.startswith("No info: product 'ls7_nbar_scene' has not been summarised")
+    assert res.exit_code != 0
 
 
 def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
