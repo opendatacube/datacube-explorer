@@ -111,8 +111,10 @@ def generate_report(
 
 
 def _get_index(config: LocalConfig, variant: str) -> Index:
+    # Avoid long names as they will print warnings all the time.
+    short_name = variant.replace("_", "")[:20]
     index: Index = index_connect(
-        config, application_name=f"dashgen.{variant}", validate_connection=False
+        config, application_name=f"gen.{short_name}", validate_connection=False
     )
     return index
 
