@@ -8,10 +8,6 @@
         .panel.odd > h3 {
             margin-bottom: 10px;
         }
-
-        .strong {
-            font-weight: bold;
-        }
     </style>
 {% endblock %}
 
@@ -35,8 +31,7 @@
                 {% for metadata_type in datacube_metadata_types %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}"
-                               class="strong">
+                            <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}">
                                 {{ metadata_type.name }}
                             </a>
                         </td>
