@@ -291,8 +291,12 @@ def refresh_spatial_extents(
         .where(DATASET.c.dataset_type_ref == product.id)
     )
     if assume_after_date is not None:
+        # Note that we use "dataset_changed_expression" to scan the datasets,
+        # rather than "where archived > date", because the latter has no index!
+        # (.... and we're using dataset_changed_expression's index everywhere else,
+        #       so it's probably still in memory and super fast!)
         datasets_to_delete = datasets_to_delete.where(
-            DATASET.c.archived > assume_after_date
+            dataset_changed_expression() > assume_after_date
         )
     log.info(
         "extent_archival_removal.start",
