@@ -9,6 +9,9 @@
             margin-bottom: 10px;
         }
 
+        .strong {
+            font-weight: bold;
+        }
     </style>
 {% endblock %}
 
@@ -22,15 +25,28 @@
                 Text <i class="fa fa-file-text-o" aria-hidden="true"></i>
             </a>
         </div>
-    </div>
-    <div class="panel">
-    {% for metadata_type in datacube_metadata_types %}
-        <h3>
-            <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}">
-                {{ metadata_type.name }}
-            </a>
-        </h3>
-        <div>{{ metadata_type.definition.description }}</div>
-    {% endfor %}
+        <table class="data-table">
+            <thead>
+                <tr class="section-header">
+                    <th colspan="2" class="group-name">{{ group_name }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metadata_type in datacube_metadata_types %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('product.metadata_type_page', name=metadata_type.name) }}"
+                               class="strong">
+                                {{ metadata_type.name }}
+                            </a>
+                        </td>
+                        <td>{{ metadata_type.definition.description }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td>No metadata types</td></tr>
+                {% endfor %}
+            </tbody>
+    </table>
+
     </div>
 {% endblock %}

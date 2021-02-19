@@ -439,6 +439,9 @@ ul.quiet {
 .data-table tbody tr:hover {
   background-color: #f0f0f0;
 }
+.panel.highlight .data-table tbody tr:hover {
+  background-color: #575757;
+}
 .panel.odd .data-table tbody tr:hover {
   background-color: #e5e5e5;
 }
