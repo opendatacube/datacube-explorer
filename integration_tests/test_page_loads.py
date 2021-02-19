@@ -659,6 +659,17 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     assert expected_period in res.output
 
 
+def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient):
+    """
+    Can you view a date that doesn't exist?
+    """
+    # A period that's out of bounds.
+    res: Result = clirunner(
+        show.cli, ["ls7_nbar_scene", "2030", "5"], expect_success=False
+    )
+    assert "No summary for chosen period." in res.output
+
+
 def test_show_summary_cli_missing_product(clirunner, client: FlaskClient):
     """
     A missing product should return a nice error message from cubedash-view.
