@@ -2,9 +2,6 @@ $bold_highlight: #212121
 
 $content_background: lighten($bold_highlight, 75%)
 
-$panel_color: lighten($bold_highlight, 85%)
-$panel2_color: lighten($content_background, 6%)
-
 // The four colors in the dea style guide. Use sparingly (highlights).
 
 $emphasis_strong: darken(#00A1DE, 5%)
@@ -28,6 +25,10 @@ $header_stripe2: #7fd0eb
 $header_text_spice: darken($header_stipe1, 7%)
 
 $menu_background: $emphasis_strong
+
+$panel_color: lighten($bold_highlight, 85%)
+$panel2_color: lighten($content_background, 6%)
+$panel_highlighted: $header_highlight_strong
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
@@ -319,7 +320,7 @@ ul
         border-bottom: 0
 
     &.highlight
-        background: $header_highlight_strong
+        background: $panel_highlighted
         color: #efefef
         border-bottom: 0
         > h1
@@ -449,6 +450,9 @@ ul
     tbody tr
         &:hover
             background-color: $panel2_color
+
+            .panel.highlight &
+                background-color: darken($panel_highlighted, 4%)
 
             .panel.odd &
                 background-color: darken($panel2_color, 4%)
