@@ -306,7 +306,7 @@ def refresh_spatial_extents(
     ).rowcount
     log.info(
         "extent_archival_removal.end",
-        deleted_count=changed,
+        change_count=changed,
     )
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
@@ -314,7 +314,7 @@ def refresh_spatial_extents(
         log.info(
             "extent_force_removal.start",
         )
-        changed = engine.execute(
+        changed += engine.execute(
             DATASET_SPATIAL.delete().where(DATASET.c.dataset_type_ref == product.id)
             # Where it doesn't exist in the ODC dataset table.
             .where(
@@ -327,7 +327,7 @@ def refresh_spatial_extents(
         ).rowcount
         log.info(
             "extent_force_removal.end",
-            deleted_count=changed,
+            change_count=changed,
         )
 
     # We'll apply updates, then insert new records.
