@@ -1236,7 +1236,6 @@ class SummaryStore:
         This will update the spatial tables (extents) and update
         any outdated time summaries.
         """
-        # TODO: Add a per-product lock to avoid concurrent generation?
         log = _LOG
 
         old_product: ProductSummary = self.get_product_summary(product_name)
@@ -1333,9 +1332,12 @@ class SummaryStore:
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
     ):
+        """
+        Mark the product as successfully refreshed at the given product-table timestamp
+
+        (so future runs will be incremental from this point onwards)
+        """
         assert product.id_ is not None
-        # Mark the product as successfully refreshed at the start timestamp
-        # (so future runs will be incremental from this point onwards)
         self._engine.execute(
             (
                 PRODUCT.update()
@@ -1347,7 +1349,7 @@ class SummaryStore:
                         < refresh_timestamp.isoformat(),
                     )
                 )
-                .values(last_successful_summary=refresh_timestamp.isoformat())
+                .values(last_successful_summary=refresh_timestamp)
             )
         )
         self._product.cache_clear()
