@@ -330,7 +330,7 @@ def refresh_spatial_extents(
             change_count=changed,
         )
 
-    # We'll apply updates, then insert new records.
+    # We'll update first, then insert new records.
     # -> We do it in this order so that inserted records aren't immediately updated.
     # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
     #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
@@ -469,10 +469,12 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
 
 
 def center_time_expression(md_type: MetadataType):
-    # "expr == None" is valid in sqlalchemy:
-    # pylint: disable=singleton-comparison
+    """
+    The center time for the given metadata doc.
+
+    (Matches the logic in ODC's Dataset.center_time)
+    """
     time = md_type.dataset_fields["time"].alchemy_expression
-    # Matches the logic in Dataset.center_time
     center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
     )

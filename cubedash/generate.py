@@ -84,6 +84,7 @@ def generate_report(
     started_years = set()
 
     def print_status(product_name=None, year=None, month=None, day=None, summary=None):
+        """Print status each time we start a year."""
         if year:
             if (product_name, year) not in started_years:
                 user_message(f"\t  {product_name} {year}")
