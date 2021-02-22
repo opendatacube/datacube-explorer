@@ -211,7 +211,7 @@ class SummaryStore:
         """
         return _schema.has_schema(self._engine)
 
-    def is_schema_compatible(self) -> bool:
+    def is_schema_compatible(self, for_writing_operations_too=False) -> bool:
         """
         Have all schema update been applied?
         """
@@ -220,7 +220,10 @@ class SummaryStore:
             postgis=_schema.get_postgis_versions(self._engine),
             explorer=EXPLORER_VERSION,
         )
-        return _schema.is_compatible_schema(self._engine)
+        if for_writing_operations_too:
+            return _schema.is_compatible_generate_schema(self._engine)
+        else:
+            return _schema.is_compatible_schema(self._engine)
 
     def init(self):
         """

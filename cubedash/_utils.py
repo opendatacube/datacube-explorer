@@ -627,6 +627,17 @@ except AttributeError:
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
 
 
+try:
+    from datacube.drivers.postgres._core import install_timestamp_trigger
+except ImportError:
+
+    def install_timestamp_trigger(connection):
+        raise RuntimeError(
+            "ODC version does not contain update-trigger installation. "
+            "Cannot install dataset-update trigger."
+        )
+
+
 def get_mutable_dataset_search_fields(
     index: Index, md: MetadataType
 ) -> Dict[str, PgDocField]:
