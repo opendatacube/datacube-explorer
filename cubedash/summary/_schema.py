@@ -32,6 +32,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
+from cubedash import _utils
 from cubedash._utils import ODC_DATASET
 
 _LOG = structlog.get_logger()
@@ -270,6 +271,20 @@ def is_compatible_schema(engine: Engine) -> bool:
     return is_latest
 
 
+def is_compatible_generate_schema(engine: Engine) -> bool:
+    """Is the schema complete enough to run generate/refresh commands?"""
+    is_latest = is_compatible_schema(engine)
+
+    # Incremental update scanning requires the optional `update` column on ODC.
+    return is_latest and pg_column_exists(engine, ODC_DATASET.fullname, "updated")
+
+
+class SchemaNotRefreshable(Exception):
+    """The schema is not set-up for running product refreshes"""
+
+    ...
+
+
 class PleaseRefresh(Enum):
     """
     What data should be refreshed/recomputed?
@@ -335,6 +350,40 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         """
         )
 
+    check_or_update_odc_schema(engine)
+
+    return refresh
+
+
+def check_or_update_odc_schema(engine: Engine):
+    """
+    Check that the ODC schema is updated enough to run Explorer,
+
+    and either update it safely (if we have permission), or tell the user how.
+    """
+    # We need the `update` column on ODC's dataset table in order to run incremental product refreshes.
+    try:
+        # We can try to install it ourselves if we have permission, using ODC's code.
+        if not pg_column_exists(engine, ODC_DATASET.fullname, "updated"):
+            _LOG.warn("schema.applying_update.add_odc_change_triggers")
+            _utils.install_timestamp_trigger(engine)
+    except ProgrammingError as e:
+        # We don't have permission.
+        raise SchemaNotRefreshable(
+            dedent(
+                """
+            Missing update triggers.
+
+            No dataset-update triggers are installed on the ODC instance, and Explorer does
+            not have enough permissions to add them itself.
+
+            It's recommended to run `datacube system init` on your ODC instance to install them.
+
+            Then try this again.
+        """
+            )
+        ) from e
+
     # Add optional indexes to AGDC if we have permission.
     # (otherwise we warn the user that it may be slow, and how to add it themselves)
     statements = []
@@ -373,8 +422,6 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
             )
         )
         raise
-
-    return refresh
 
 
 def pg_exists(conn, name: str) -> bool:

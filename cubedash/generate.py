@@ -369,7 +369,7 @@ def cli(
             + "Please rerun with --init to create one",
         )
         sys.exit(-1)
-    elif not store.is_schema_compatible():
+    elif not store.is_schema_compatible(for_writing_operations_too=True):
         user_message(
             style("Cubedash schema is out of date. ", fg="red")
             + "Please rerun with --init to apply updates.",
