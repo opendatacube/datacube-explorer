@@ -881,6 +881,10 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
                 ),
             },
             {
+                "rel": "collection",
+                "href": stac_url("collections/ls7_nbar_scene"),
+            },
+            {
                 "title": "ODC Product Overview",
                 "rel": "product_overview",
                 "type": "text/html",
@@ -891,10 +895,6 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
                 "rel": "alternative",
                 "type": "text/html",
                 "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
-            },
-            {
-                "rel": "parent",
-                "href": stac_url("collections/ls7_nbar_scene"),
             },
             {
                 "rel": "root",
