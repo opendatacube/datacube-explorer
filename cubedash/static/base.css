@@ -304,7 +304,7 @@ ul.quiet {
   color: #fff;
 }
 .panel.highlight a {
-  color: #999;
+  color: #aeaeae;
 }
 .panel.overflowable {
   overflow-x: auto;
@@ -438,6 +438,9 @@ ul.quiet {
 }
 .data-table tbody tr:hover {
   background-color: #f0f0f0;
+}
+.panel.highlight .data-table tbody tr:hover {
+  background-color: #575757;
 }
 .panel.odd .data-table tbody tr:hover {
   background-color: #e5e5e5;
