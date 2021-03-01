@@ -9,8 +9,12 @@ to calculate this summary information ahead-of-time.
 The cubedash-gen command creates these summaries in a schema called
 `cubedash`, separate from datacube’s own schema.
 
-By default, only missing summaries will be added for the specified
-product names; and it will not recreate summaries that already exist.
+This can be re-run each time changes are made to an ODC product
+to show the updates in Explorer.
+
+The first run will be slow as it will scan all data, but later
+runs will be faster as it scans only modified data.
+(unless `--force-refresh` is specified)
 
 ---
 
@@ -29,12 +33,15 @@ See datacube’s own docs for this configuration handling.
 
 Examples
 
-Create Explorer's schemas and generate all summaries that don't exist:
+Create Explorer's schemas, then update (or create) all product summaries:
 
     cubedash-gen --init --all
 
+Update (or create) all product summaries:
 
-Recreate all summaries for two products:
+    cubedash-gen --all
+
+Recreate all information for two products:
 
     cubedash-gen --force-refresh ls8_nbart_scene ls8_level1_scene
 
@@ -278,7 +285,8 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     default=False,
     help=dedent(
         """\
-        Force all time periods to be regenerated, rather than just the missing ones.
+        Force all time periods to be regenerated, rather than just applying updates
+        to existing ones.
 
         (default: false)
         """
@@ -290,7 +298,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     default=False,
     help=dedent(
         """\
-        Rebuild Explorer's existing dataset extents rather than appending new datasets.
+        Rebuild Explorer's existing dataset extents even if they don't seem to be updated.
         (default: false)
 
         This is useful if you've patched datasets or products in-place with new geometry
@@ -317,7 +325,8 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     default=False,
     help=dedent(
         """\
-        Create Explorer's schemas, and prepare the database, before doing anything.
+        Check the Explorer schema and create it (or apply updates to it) if needed,
+        before doing anything else.
         """
     ),
 )
@@ -328,7 +337,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     default=False,
     help=dedent(
         """\
-        Drop all of Explorer's database additions and exit.
+        Drop all of Explorer's database schema+caches and exit.
         """
     ),
 )
