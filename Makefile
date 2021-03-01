@@ -33,8 +33,7 @@ format: ## Reformat all Python code
 .PHONY: lint
 lint: ## Run all Python linting checks
 	python3 setup.py check -rms
-	flake8 cubedash/ integration_tests/
-	black --check cubedash integration_tests ./*.py
+	pre-commit run -a
 
 .PHONY: weblint
 weblint: ## Run stylelint across HTML and SASS

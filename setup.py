@@ -10,6 +10,7 @@ tests_require = [
     "digitalearthau",
     "flake8",
     "jsonschema > 3",
+    "pre-commit",
     "pytest",
     "pytest-benchmark",
     "pytest-cov",
