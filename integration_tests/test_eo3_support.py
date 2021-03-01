@@ -864,6 +864,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "href": "http://localhost/dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14.odc-metadata.yaml",
             },
             {
+                "rel": "collection",
+                "href": "http://localhost/stac/collections/ga_ls5t_ard_3",
+            },
+            {
                 "title": "ODC Product Overview",
                 "rel": "product_overview",
                 "type": "text/html",
@@ -874,10 +878,6 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "rel": "alternative",
                 "type": "text/html",
                 "href": "http://localhost/dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
-            },
-            {
-                "rel": "parent",
-                "href": "http://localhost/stac/collections/ga_ls5t_ard_3",
             },
             {
                 "rel": "root",
