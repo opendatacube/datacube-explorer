@@ -1245,7 +1245,7 @@ class SummaryStore:
 
         change_count, new_product = self.refresh_product_extent(
             product_name,
-            scan_for_deleted=force or recreate_dataset_extents,
+            scan_for_deleted=recreate_dataset_extents,
             only_those_newer_than=(
                 None
                 if (force or (old_product is None))
