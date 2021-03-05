@@ -278,7 +278,8 @@ def refresh_spatial_extents(
     Update the spatial extents to match any changes upstream in ODC.
 
     :param assume_after_date: Only scan datasets that have changed after the given (db server) time.
-    :param thorough: Scan for any manually deleted rows too. Slow.
+                              If None, all datasets will be regenerated.
+    :param clean_up_deleted: Scan for any manually deleted rows too. Slow.
     """
     engine: Engine = alchemy_engine(index)
 
@@ -299,20 +300,20 @@ def refresh_spatial_extents(
             dataset_changed_expression() > assume_after_date
         )
     log.info(
-        "extent_archival_removal.start",
+        "spatial_archival",
     )
     changed = engine.execute(
         DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
     ).rowcount
     log.info(
-        "extent_archival_removal.end",
+        "spatial_archival.end",
         change_count=changed,
     )
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
     if clean_up_deleted:
-        log.info(
-            "extent_force_removal.start",
+        log.warning(
+            "spatial_deletion_full_scan",
         )
         changed += engine.execute(
             DATASET_SPATIAL.delete().where(
@@ -328,7 +329,7 @@ def refresh_spatial_extents(
             )
         ).rowcount
         log.info(
-            "extent_force_removal.end",
+            "spatial_deletion_scan.end",
             change_count=changed,
         )
 
@@ -346,10 +347,12 @@ def refresh_spatial_extents(
     ]
     if assume_after_date is not None:
         only_where.append(dataset_changed_expression() > assume_after_date)
+    else:
+        log.warning("spatial_update.recreating_everything")
 
     # Update any changed datasets
     log.info(
-        "spatial_update_query.start",
+        "spatial_update",
         product_name=product.name,
         after_date=assume_after_date,
     )
@@ -359,13 +362,11 @@ def refresh_spatial_extents(
         .where(DATASET_SPATIAL.c.id == column_values["id"])
         .where(and_(*only_where))
     ).rowcount
-    log.info(
-        "spatial_update_query.end", product_name=product.name, change_count=changed
-    )
+    log.info("spatial_update.end", product_name=product.name, change_count=changed)
 
     # ... and insert new ones.
     log.info(
-        "spatial_insert_query.start",
+        "spatial_insert",
         product_name=product.name,
         after_date=assume_after_date,
     )
@@ -381,9 +382,7 @@ def refresh_spatial_extents(
             .on_conflict_do_nothing(index_elements=["id"])
         )
     ).rowcount
-    log.info(
-        "spatial_insert_query.end", product_name=product.name, change_count=changed
-    )
+    log.info("spatial_insert.end", product_name=product.name, change_count=changed)
 
     # If we changed data...
     if changed:
@@ -394,7 +393,7 @@ def refresh_spatial_extents(
 
                 # We can synthesize the polygons!
                 log.info(
-                    "spatial_synthesizing.start",
+                    "spatial_synthesizing",
                 )
                 shapes = _get_path_row_shapes()
                 rows = [
@@ -430,7 +429,7 @@ def refresh_spatial_extents(
                         ],
                     )
             log.info(
-                "spatial_synthesizing.done",
+                "spatial_synthesizing.end",
             )
 
     return changed
