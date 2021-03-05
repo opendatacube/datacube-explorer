@@ -249,12 +249,10 @@ class SummaryStore:
 
     def refresh_all_product_extents(
         self,
-        force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
             self.refresh_product_extent(
                 product.name,
-                force_recompute=force_dataset_extent_recompute,
             )
         self.refresh_stats()
 
