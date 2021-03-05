@@ -1,11 +1,14 @@
+import socket
 import sys
+import time
 import urllib.request
 from textwrap import indent
+from typing import List, Tuple
 from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 import click
-from click import secho
+from click import secho, echo, style
 
 from cubedash.summary import RegionInfo
 from datacube.index import Index
@@ -95,6 +98,13 @@ def find_examples_of_all_public_urls(index: Index):
     help="URL of Explorer to call",
 )
 @click.option(
+    "--timeout",
+    "timeout_seconds",
+    default=120,
+    type=int,
+    help="Query timeout (seconds)",
+)
+@click.option(
     "-x",
     "--max-failures",
     "max_failures",
@@ -102,7 +112,14 @@ def find_examples_of_all_public_urls(index: Index):
     default=1,
     help="Exit immediately when reaching this many failures (-1 for never)",
 )
-def cli(index: Index, verbose: bool, max_failures: bool, explorer_url: str):
+def cli(
+    index: Index,
+    verbose: bool,
+    max_failures: int,
+    timeout_seconds: int,
+    explorer_url: str,
+    show_timings: int = 5,
+):
     """
     A tool to load an example of each Explorer page, reporting if any
     return errors.
@@ -111,27 +128,65 @@ def cli(index: Index, verbose: bool, max_failures: bool, explorer_url: str):
 
     Returns error count.
     """
-    failures = 0
     max_failure_line_count = sys.maxsize if verbose else 5
+    response_times: List[Tuple[float, str]] = []
+    failures: List[str] = []
 
     for url_offset in find_examples_of_all_public_urls(index):
         url = urljoin(explorer_url, url_offset)
         secho(f"get {url_offset} ", bold=True, nl=False, err=True)
+
         try:
-            with urllib.request.urlopen(url) as _:
-                secho("ok", fg="green", err=True)
+            start_time = time.time()
+            with urllib.request.urlopen(url, timeout=timeout_seconds) as _:
+                finished_in = time.time() - start_time
+                echo(
+                    f"{style('ok', fg='green')} ({_format_time(finished_in)})", err=True
+                )
+                response_times.append((finished_in, url))
+        except socket.timeout:
+            secho(f"timeout (> {timeout_seconds}s)", fg="purple", err=True)
+            failures.append(url)
         except HTTPError as e:
             secho(f"fail {e.code}", fg="red", err=True)
             page_sample = "\n".join(
                 s.decode("utf-8") for s in e.readlines()[:max_failure_line_count]
             )
             secho(indent(page_sample, " " * 4))
-            failures += 1
-            if failures == max_failures:
-                secho(f"(hit max failures {max_failures})", fg="yellow")
+            failures.append(url)
+
+        if len(failures) == max_failures:
+            secho(f"(hit max failures {max_failures})", fg="yellow")
+            break
+
+    if response_times:
+        secho()
+        secho("Slowest responses:")
+        for i, (response_secs, url) in enumerate(sorted(response_times, reverse=True)):
+            if i > show_timings:
                 break
+            secho(f"\t{_format_time(response_secs)}\t{url}")
 
     sys.exit(failures)
+
+
+def _format_time(t: float):
+    """
+    >>> _format_time(0.31)
+    '310ms'
+    >>> _format_time(3.0)
+    '3.0s'
+    >>> # A bit unix-specific? Show with red
+    >>> _format_time(90.3234234)
+    '\\x1b[33m90.3s\\x1b[0m'
+    """
+    if t > 5:
+        # More than five seconds? show orange
+        return style(f"{t:.1f}s", fg="yellow")
+    if t > 1:
+        return f"{t:.1f}s"
+    else:
+        return f"{int(t*1000)}ms"
 
 
 if __name__ == "__main__":
