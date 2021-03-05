@@ -4,7 +4,7 @@ import time
 import urllib.request
 from textwrap import indent
 from typing import List, Tuple
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
 
 import click
@@ -145,7 +145,10 @@ def cli(
                 )
                 response_times.append((finished_in, url))
         except socket.timeout:
-            secho(f"timeout (> {timeout_seconds}s)", fg="purple", err=True)
+            secho(f"timeout (> {timeout_seconds}s)", fg="magenta", err=True)
+            failures.append(url)
+        except URLError as e:
+            secho(f"connection error {e.reason}", fg="magenta", err=True)
             failures.append(url)
         except HTTPError as e:
             secho(f"fail {e.code}", fg="red", err=True)
@@ -167,7 +170,7 @@ def cli(
                 break
             secho(f"\t{_format_time(response_secs)}\t{url}")
 
-    sys.exit(failures)
+    sys.exit(len(failures))
 
 
 def _format_time(t: float):
