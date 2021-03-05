@@ -1243,7 +1243,6 @@ class SummaryStore:
 
         old_product: ProductSummary = self.get_product_summary(product_name)
 
-        log.info("extent.refresh")
         change_count, new_product = self.refresh_product_extent(
             product_name,
             scan_for_deleted=force or recreate_dataset_extents,
