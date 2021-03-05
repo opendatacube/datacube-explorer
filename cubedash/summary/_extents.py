@@ -271,7 +271,7 @@ def _gis_point(doc, doc_offset):
 def refresh_spatial_extents(
     index: Index,
     product: DatasetType,
-    thorough=False,
+    clean_up_deleted=False,
     assume_after_date: datetime = None,
 ):
     """
@@ -310,7 +310,7 @@ def refresh_spatial_extents(
     )
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
-    if thorough:
+    if clean_up_deleted:
         log.info(
             "extent_force_removal.start",
         )

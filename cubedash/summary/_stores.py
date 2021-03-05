@@ -406,7 +406,7 @@ class SummaryStore:
         self,
         product_name: str,
         dataset_sample_size: int = 1000,
-        force_recompute=False,
+        scan_for_deleted: bool = False,
         only_those_newer_than: datetime = None,
     ) -> Tuple[int, ProductSummary]:
         """
@@ -426,13 +426,13 @@ class SummaryStore:
         change_count = _extents.refresh_spatial_extents(
             self.index,
             product,
-            thorough=force_recompute,
+            clean_up_deleted=scan_for_deleted,
             assume_after_date=only_those_newer_than,
         )
 
         existing_summary = self.get_product_summary(product_name)
         # Did nothing change at all? Just bump the refresh time.
-        if change_count == 0 and (not force_recompute) and existing_summary:
+        if change_count == 0 and existing_summary:
             new_summary = copy(existing_summary)
             new_summary.last_refresh_time = covers_up_to
             self._persist_product_extent(new_summary)
@@ -1242,13 +1242,11 @@ class SummaryStore:
         log = _LOG
 
         old_product: ProductSummary = self.get_product_summary(product_name)
-        if recreate_dataset_extents:
-            force = True
 
         log.info("extent.refresh")
         change_count, new_product = self.refresh_product_extent(
             product_name,
-            force_recompute=recreate_dataset_extents,
+            scan_for_deleted=force or recreate_dataset_extents,
             only_those_newer_than=(
                 None
                 if (force or (old_product is None))
