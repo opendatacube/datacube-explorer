@@ -315,12 +315,14 @@ def refresh_spatial_extents(
             "extent_force_removal.start",
         )
         changed += engine.execute(
-            DATASET_SPATIAL.delete().where(DATASET.c.dataset_type_ref == product.id)
+            DATASET_SPATIAL.delete().where(
+                DATASET_SPATIAL.c.dataset_type_ref == product.id,
+            )
             # Where it doesn't exist in the ODC dataset table.
             .where(
                 ~DATASET_SPATIAL.c.id.in_(
                     select([DATASET.c.id]).where(
-                        DATASET.c.dataset_type_ref == product.id
+                        DATASET.c.dataset_type_ref == product.id,
                     )
                 )
             )
