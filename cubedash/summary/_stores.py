@@ -1246,7 +1246,7 @@ class SummaryStore:
             scan_for_deleted=recreate_dataset_extents,
             only_those_newer_than=(
                 None
-                if (force or (old_product is None))
+                if (force or recreate_dataset_extents or (old_product is None))
                 else old_product.last_successful_summary_time
             ),
         )
