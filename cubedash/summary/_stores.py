@@ -64,7 +64,7 @@ from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils.geometry import Geometry
 
-DEFAULT_TTL = 10
+DEFAULT_TTL = 90
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
