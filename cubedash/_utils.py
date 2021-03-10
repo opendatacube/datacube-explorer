@@ -626,6 +626,8 @@ except AttributeError:
 
 ODC_DATASET = datacube.drivers.postgres._schema.DATASET
 
+ODC_DATASET_LOCATION = datacube.drivers.postgres._schema.DATASET_LOCATION
+
 
 try:
     from datacube.drivers.postgres._core import install_timestamp_trigger
