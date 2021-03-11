@@ -89,7 +89,7 @@ class GenerateResult(Enum):
     # Updated the existing summaries (for months that changed)
     UPDATED = 3
     # No new changes found.
-    SKIPPED = 1
+    NO_CHANGES = 1
     # Exception was thrown
     ERROR = 4
 
@@ -300,7 +300,7 @@ class SummaryStore:
             )
         )
 
-    def find_years_needing_update(self, product_name: str):
+    def find_years_needing_update(self, product_name: str) -> List[int]:
         """
         Find any years that need to be generated.
 
@@ -1265,25 +1265,28 @@ class SummaryStore:
             #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
             #    But some earlier-timestamped datasets may not have been present last run if they were added
             #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
-            #    no transaction was open longer than this buffer. (I doesn't matter at all if we repeat datasets).
-            #    Yes, this is not an ideal world of technical purity.
+            #    no transaction was open longer than this buffer. (It doesn't matter at all if we repeat datasets).
             #
-            #    ODC's indexing does happen with quick, autocommitting transactions. So they're unlikely to actually
-            #    be open for more than a few milliseconds. And there are other issues with using timestamps so
-            #    this is, short-term, not likely our biggest priority.
+            #    This is not solution of perfection. But ODC's indexing does happen with quick, auto-committing
+            #    transactions, so they're unlikely to actually be open for more than a few milliseconds. Fifteen
+            #    minutes feels generous.
+            #
+            #    (You can judge if this assumption has failed by comparing our dataset_spatial
+            #     count(*) to ODC's dataset count(*) for the same product. They should match
+            #     for active datasets.)
             #
             #    tldr: "15 minutes == max expected transaction age of indexer"
             else old_product.last_successful_summary_time - timedelta(minutes=15)
         )
 
-        change_count, new_product = self.refresh_product_extent(
+        extent_changes, new_product = self.refresh_product_extent(
             product_name,
             scan_for_deleted=recreate_dataset_extents,
             only_those_newer_than=(
                 None if recreate_dataset_extents else only_datasets_newer_than
             ),
         )
-        log.info("extent.refresh.done", changed=change_count)
+        log.info("extent.refresh.done", changed=extent_changes)
 
         refresh_timestamp = new_product.last_refresh_time
         assert refresh_timestamp is not None
@@ -1312,17 +1315,11 @@ class SummaryStore:
 
         # Otherwise, only regenerate the things that changed.
         else:
-            if change_count == 0:
-                log.info("product.no_changes")
-                self._mark_product_refresh_completed(new_product, refresh_timestamp)
-                return GenerateResult.SKIPPED, self.get(product_name)
-
             log.info("product.incremental_update")
             months_to_update = self.find_months_needing_update(
                 product_name, only_datasets_newer_than
             )
             refresh_type = GenerateResult.UPDATED
-
         # Months
         for change_month, new_count in months_to_update:
             log.debug(
@@ -1341,7 +1338,8 @@ class SummaryStore:
         # Find year records who are older than their month records
         #   (This will find any months calculated above, as well
         #    as from previous interrupted runs.)
-        for year in self.find_years_needing_update(product_name):
+        years_to_update = self.find_years_needing_update(product_name)
+        for year in years_to_update:
             self._recalculate_period(
                 new_product,
                 year,
@@ -1360,6 +1358,9 @@ class SummaryStore:
             new_refresh_time=refresh_timestamp,
         )
         self._mark_product_refresh_completed(new_product, refresh_timestamp)
+        if (not extent_changes) and (not months_to_update) and (not years_to_update):
+            refresh_type = GenerateResult.NO_CHANGES
+
         return refresh_type, updated_summary
 
     def _mark_product_refresh_completed(
