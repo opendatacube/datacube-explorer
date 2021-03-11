@@ -271,27 +271,14 @@ class SummaryStore:
         ).scalar()
 
     def find_months_needing_update(
-        self, product_name: str
+        self,
+        product_name: str,
+        only_those_newer_than: datetime,
     ) -> Iterable[Tuple[datetime, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
         dataset_type = self.get_dataset_type(product_name)
-        datasets_newer_than = self._product(
-            product_name
-            # Why do we have an extra 15 minute fudge?
-            #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
-            #    But some earlier-timestamped datasets may not have been present last run if they were added
-            #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
-            #    no transaction was open longer than this buffer. (I doesn't matter at all if we repeat datasets).
-            #    Yes, this is not an ideal world of technical purity.
-            #
-            #    ODC's indexing does happen with quick, autocommitting transactions. So they're unlikely to actually
-            #    be open for more than a few milliseconds. And there are other issues with using timestamps so
-            #    this is, short-term, not likely our biggest priority.
-            #
-            #    tldr: "15 minutes == max expected transaction age of indexer"
-        ).last_successful_summary_time - timedelta(minutes=15)
 
         # Find the most-recently updated datasets and group them by month.
         return sorted(
@@ -306,7 +293,7 @@ class SummaryStore:
                     ]
                 )
                 .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
-                .where(dataset_changed_expression() > datasets_newer_than)
+                .where(dataset_changed_expression() > only_those_newer_than)
                 .group_by("month")
                 .order_by("month")
             )
@@ -846,7 +833,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _persist_product_extent(self, product: ProductSummary) -> Tuple[int, datetime]:
+    def _persist_product_extent(self, product: ProductSummary):
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -1241,13 +1228,33 @@ class SummaryStore:
 
         old_product: ProductSummary = self.get_product_summary(product_name)
 
+        # Which datasets to scan for updates?
+        only_datasets_newer_than = (
+            # None means "No limit". Recompute all.
+            None
+            if (force or (old_product is None))
+            # Otherwise only refresh datasets newer than the last successful run.
+            #
+            # Why do we have an extra 15 minute fudge?
+            #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
+            #    But some earlier-timestamped datasets may not have been present last run if they were added
+            #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
+            #    no transaction was open longer than this buffer. (I doesn't matter at all if we repeat datasets).
+            #    Yes, this is not an ideal world of technical purity.
+            #
+            #    ODC's indexing does happen with quick, autocommitting transactions. So they're unlikely to actually
+            #    be open for more than a few milliseconds. And there are other issues with using timestamps so
+            #    this is, short-term, not likely our biggest priority.
+            #
+            #    tldr: "15 minutes == max expected transaction age of indexer"
+            else old_product.last_successful_summary_time - timedelta(minutes=15)
+        )
+
         change_count, new_product = self.refresh_product_extent(
             product_name,
             scan_for_deleted=recreate_dataset_extents,
             only_those_newer_than=(
-                None
-                if (force or recreate_dataset_extents or (old_product is None))
-                else old_product.last_successful_summary_time
+                None if recreate_dataset_extents else only_datasets_newer_than
             ),
         )
         log.info("extent.refresh.done", changed=change_count)
@@ -1285,7 +1292,9 @@ class SummaryStore:
                 return GenerateResult.SKIPPED, self.get(product_name)
 
             log.info("product.incremental_update")
-            months_to_update = self.find_months_needing_update(product_name)
+            months_to_update = self.find_months_needing_update(
+                product_name, only_datasets_newer_than
+            )
             refresh_type = GenerateResult.UPDATED
 
         # Months
@@ -1469,7 +1478,7 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
                 _LOG.info("data.refreshing_extents", product=name)
             store.refresh_product_extent(
                 name,
-                force_recompute=recompute_dataset_extents,
+                scan_for_deleted=recompute_dataset_extents,
             )
     _LOG.info("data.refreshing_extents.complete")
 
