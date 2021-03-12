@@ -203,6 +203,24 @@ class SummaryStore:
         self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
+        # How much extra time to include in incremental update scans?
+        #    Incremental update are searching for any datasets with a a change-timestamp after our
+        #    last changes were applied. But some earlier-timestamped datasets may not have been
+        #    present last run if they were added in a concurrent, open transaction. And we don't
+        #    want to miss them! So we give a buffer assuming no transaction was open longer than
+        #    this buffer. (It doesn't matter at all if we repeat datasets).
+        #
+        #    This is not solution of perfection. But ODC's indexing does happen with quick,
+        #    auto-committing transactions, so they're unlikely to actually be open for more
+        #    than a few milliseconds. Fifteen minutes feels generous.
+        #
+        #    (You can judge if this assumption has failed by comparing our dataset_spatial
+        #     count(*) to ODC's dataset count(*) for the same product. They should match
+        #     for active datasets.)
+        #
+        #    tldr: "15 minutes == max expected transaction age of indexer"
+        self.dataset_overlap_carefulness = timedelta(minutes=15)
+
     def add_change_listener(self, listener):
         self._update_listeners.append(listener)
 
@@ -1279,24 +1297,9 @@ class SummaryStore:
             )
         else:
             # Otherwise only refresh datasets newer than the last successful run.
-            #
-            # Why do we have an extra 15 minute fudge?
-            #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
-            #    But some earlier-timestamped datasets may not have been present last run if they were added
-            #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
-            #    no transaction was open longer than this buffer. (It doesn't matter at all if we repeat datasets).
-            #
-            #    This is not solution of perfection. But ODC's indexing does happen with quick, auto-committing
-            #    transactions, so they're unlikely to actually be open for more than a few milliseconds. Fifteen
-            #    minutes feels generous.
-            #
-            #    (You can judge if this assumption has failed by comparing our dataset_spatial
-            #     count(*) to ODC's dataset count(*) for the same product. They should match
-            #     for active datasets.)
-            #
-            #    tldr: "15 minutes == max expected transaction age of indexer"
             only_datasets_newer_than = (
-                old_product.last_successful_summary_time - timedelta(minutes=15)
+                old_product.last_successful_summary_time
+                - self.dataset_overlap_carefulness
             )
 
         extent_changes, new_product = self.refresh_product_extent(
