@@ -1245,9 +1245,6 @@ class SummaryStore:
 
         old_product: ProductSummary = self.get_product_summary(product_name)
 
-        if force and reset_incremental_position:
-            raise ValueError("Cannot both force and reset the incremental position.")
-
         # Which datasets to scan for updates?
         if (
             # If they've never summarised this product before
