@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import timedelta
 from pathlib import Path
 from pprint import pformat
 from textwrap import indent
@@ -118,6 +119,10 @@ def summary_store(module_dea_index: Index) -> SummaryStore:
     store = SummaryStore.create(module_dea_index)
     store.drop_all()
     module_dea_index.close()
+
+    # In tests, we don't want it to add a few minutes overlap buffer,
+    # as tests will add datasets and refresh immediately.
+    summary_store.dataset_overlap_carefulness = timedelta(seconds=0)
 
     with disable_logging():
         store.init()
