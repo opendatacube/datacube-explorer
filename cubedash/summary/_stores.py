@@ -1259,10 +1259,27 @@ class SummaryStore:
             raise ValueError("Cannot both force and reset the incremental position.")
 
         # Which datasets to scan for updates?
-        only_datasets_newer_than = (
-            # None means "No limit". Recompute all.
-            None
-            if (force or (old_product is None))
+        if (
+            # If they've never summarised this product before
+            (old_product is None)
+            # ... Or it's an old Explorer from before incremental-updates were added.
+            or (old_product.last_successful_summary_time is None)
+            # Or we're using brute force
+            or force
+        ):
+            # "No limit". Recompute all.
+            only_datasets_newer_than = None
+
+        # Otherwise, do they want to reset the incremental position?
+        # -> Find the most recently indexed dataset that has touched our own spatial table,
+        #    and only scan changes from that time onward.
+        #    (this will be more expensive than normal incremental [below], as it may scan a
+        #     lot more datasets, not just the ones from the last generate run.)
+        elif reset_incremental_position:
+            only_datasets_newer_than = self._newest_known_dataset_addition_time(
+                product_name
+            )
+        else:
             # Otherwise only refresh datasets newer than the last successful run.
             #
             # Why do we have an extra 15 minute fudge?
@@ -1280,23 +1297,9 @@ class SummaryStore:
             #     for active datasets.)
             #
             #    tldr: "15 minutes == max expected transaction age of indexer"
-            else old_product.last_successful_summary_time - timedelta(minutes=15)
-        )
-
-        # Maybe they want to reset the incremental position?
-        # -> Find the most recently indexed dataset that exists in our own spatial table,
-        #    and use that time as the position to scan changes from.
-        if reset_incremental_position:
-            log.info("resetting_incremental_position")
-            only_datasets_newer_than = self._newest_known_dataset_addition_time(
-                product_name
+            only_datasets_newer_than = (
+                old_product.last_successful_summary_time - timedelta(minutes=15)
             )
-            if (
-                only_datasets_newer_than is None
-                and old_product
-                and old_product.dataset_count > 0
-            ):
-                raise RuntimeError("BUG? Non-empty product had no dataset change?")
 
         extent_changes, new_product = self.refresh_product_extent(
             product_name,
