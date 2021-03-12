@@ -1243,6 +1243,7 @@ class SummaryStore:
         product_name: str,
         force: bool = False,
         recreate_dataset_extents: bool = False,
+        reset_incremental_position: bool = False,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
         """
         Update all information known about the product, if it has changed.
@@ -1250,9 +1251,12 @@ class SummaryStore:
         This will update the spatial tables (extents) and update
         any outdated time summaries.
         """
-        log = _LOG
+        log = _LOG.bind(product_name=product_name)
 
         old_product: ProductSummary = self.get_product_summary(product_name)
+
+        if force and reset_incremental_position:
+            raise ValueError("Cannot both force and reset the incremental position.")
 
         # Which datasets to scan for updates?
         only_datasets_newer_than = (
@@ -1279,6 +1283,21 @@ class SummaryStore:
             else old_product.last_successful_summary_time - timedelta(minutes=15)
         )
 
+        # Maybe they want to reset the incremental position?
+        # -> Find the most recently indexed dataset that exists in our own spatial table,
+        #    and use that time as the position to scan changes from.
+        if reset_incremental_position:
+            log.info("resetting_incremental_position")
+            only_datasets_newer_than = self._newest_known_dataset_addition_time(
+                product_name
+            )
+            if (
+                only_datasets_newer_than is None
+                and old_product
+                and old_product.dataset_count > 0
+            ):
+                raise RuntimeError("BUG? Non-empty product had no dataset change?")
+
         extent_changes, new_product = self.refresh_product_extent(
             product_name,
             scan_for_deleted=recreate_dataset_extents,
@@ -1291,17 +1310,15 @@ class SummaryStore:
         refresh_timestamp = new_product.last_refresh_time
         assert refresh_timestamp is not None
 
-        # Do we need to regenerate everything?
+        # What month summaries do we need to generate?
         if (
-            # If it's a new product...
-            old_product is None
+            # If we're scanning all of them...
+            only_datasets_newer_than is None
             # ...or it was generated before incremental-updating was implemented.
             or old_product.last_successful_summary_time is None
-            # ... or we're using brute force.
-            or force
         ):
-            # Then regenerate every single summary.
-            log.info("product.generate_whole")
+            # Then choose the whole time range of the product to generate.
+            log.info("product.generate_whole_range")
             if force:
                 log.warn("forcing_refresh")
 
@@ -1313,13 +1330,14 @@ class SummaryStore:
             )
             refresh_type = GenerateResult.CREATED
 
-        # Otherwise, only regenerate the things that changed.
+        # Otherwise, only regenerate the ones that changed.
         else:
             log.info("product.incremental_update")
             months_to_update = self.find_months_needing_update(
                 product_name, only_datasets_newer_than
             )
             refresh_type = GenerateResult.UPDATED
+
         # Months
         for change_month, new_count in months_to_update:
             log.debug(
@@ -1362,6 +1380,24 @@ class SummaryStore:
             refresh_type = GenerateResult.NO_CHANGES
 
         return refresh_type, updated_summary
+
+    def _newest_known_dataset_addition_time(self, product_name) -> datetime:
+        """
+        Of all the datasets that are present in Explorer's own tables, when
+        was the most recent one added?
+        """
+        return self._engine.execute(
+            select([func.max(ODC_DATASET.c.added)])
+            .select_from(
+                DATASET_SPATIAL.join(
+                    ODC_DATASET, onclause=DATASET_SPATIAL.c.id == ODC_DATASET.c.id
+                )
+            )
+            .where(
+                DATASET_SPATIAL.c.dataset_type_ref
+                == self.get_dataset_type(product_name).id
+            )
+        ).scalar()
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
