@@ -153,7 +153,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
 
     # And does our original, pre-indexed document match exactly?
     with TEST_EO3_DATASET_ARD.open("r") as f:
-        raw_doc = yaml.load(f)
+        raw_doc = yaml.safe_load(f)
 
     assert (
         indexed_doc == raw_doc
