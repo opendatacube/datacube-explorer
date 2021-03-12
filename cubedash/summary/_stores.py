@@ -1194,9 +1194,7 @@ class SummaryStore:
                 )
             )
         else:
-            # Empty product
-            summary = TimePeriodOverview.add_periods([])
-            summary.product_name = product.name
+            summary = TimePeriodOverview.empty(product.name)
 
         summary.product_refresh_time = product_refresh_time
         summary.period_tuple = (product.name, year, month, None)
@@ -1353,7 +1351,15 @@ class SummaryStore:
             new_refresh_time=refresh_timestamp,
         )
         self._mark_product_refresh_completed(new_product, refresh_timestamp)
-        if (not extent_changes) and (not months_to_update) and (not years_to_update):
+
+        # If nothing changed?
+        if (
+            (not extent_changes)
+            and (not months_to_update)
+            and (not years_to_update)
+            # ... and it already existed:
+            and old_product
+        ):
             refresh_type = GenerateResult.NO_CHANGES
 
         return refresh_type, updated_summary

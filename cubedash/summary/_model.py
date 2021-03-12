@@ -112,6 +112,12 @@ class TimePeriodOverview:
         return year, month, day
 
     @classmethod
+    def empty(cls, product_name: str):
+        p = cls.add_periods([])
+        p.product_name = product_name
+        return p
+
+    @classmethod
     def add_periods(
         cls,
         periods: Iterable["TimePeriodOverview"],
