@@ -55,6 +55,7 @@ Drop all of Explorer’s additions to the database:
 import collections
 import multiprocessing
 import sys
+from dataclasses import dataclass
 from functools import partial
 from textwrap import dedent
 from typing import List, Sequence, Tuple, Optional
@@ -79,14 +80,20 @@ _LOG = structlog.get_logger()
 user_message = partial(click_secho, err=True)
 
 
+@dataclass
+class GenerateSettings:
+    config: LocalConfig
+    force_refresh: bool
+    recreate_dataset_extents: bool
+    reset_incremental_position: bool
+
+
 # pylint: disable=broad-except
 def generate_report(
-    item: Tuple[LocalConfig, str, bool, bool]
+    item: Tuple[str, GenerateSettings],
 ) -> Tuple[str, GenerateResult, Optional[TimePeriodOverview]]:
-    config, product_name, force_refresh, recreate_dataset_extents = item
-    log = _LOG.bind(
-        product=product_name, force=force_refresh, extents=recreate_dataset_extents
-    )
+    product_name, settings = item
+    log = _LOG.bind(product=product_name)
 
     started_years = set()
 
@@ -97,7 +104,7 @@ def generate_report(
                 user_message(f"\t  {product_name} {year}")
                 started_years.add((product_name, year))
 
-    store = SummaryStore.create(_get_index(config, product_name), log=log)
+    store = SummaryStore.create(_get_index(settings.config, product_name), log=log)
     store.add_change_listener(print_status)
 
     try:
@@ -107,8 +114,9 @@ def generate_report(
         user_message(f"{product_name} refresh")
         result, updated_summary = store.refresh(
             product_name,
-            force=force_refresh,
-            recreate_dataset_extents=recreate_dataset_extents,
+            force=settings.force_refresh,
+            recreate_dataset_extents=settings.recreate_dataset_extents,
+            reset_incremental_position=settings.reset_incremental_position,
         )
         return product_name, result, updated_summary
     except Exception:
@@ -133,6 +141,7 @@ def run_generation(
     workers=3,
     force_refresh: bool = False,
     recreate_dataset_extents: bool = False,
+    reset_incremental_position: bool = False,
 ) -> Tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
@@ -159,25 +168,25 @@ def run_generation(
             f"{style(product_name, fg=result_color)} {result.name.lower()}{extra}"
         )
 
+    settings = GenerateSettings(
+        config,
+        force_refresh,
+        recreate_dataset_extents,
+        reset_incremental_position,
+    )
+
     # If one worker, avoid any subprocesses/forking.
     # This makes test tracing far easier.
     if workers == 1:
         for p in products:
-            on_complete(
-                *generate_report(
-                    (config, p.name, force_refresh, recreate_dataset_extents)
-                )
-            )
+            on_complete(*generate_report((p.name, settings)))
     else:
         with multiprocessing.Pool(workers) as pool:
             product: DatasetType
             summary: TimePeriodOverview
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
-                (
-                    (config, p.name, force_refresh, recreate_dataset_extents)
-                    for p in products
-                ),
+                ((p.name, settings) for p in products),
                 chunksize=1,
             ):
                 on_complete(product_name, result, summary)
@@ -293,6 +302,23 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
     ),
 )
 @click.option(
+    "--reset-incremental-position/--no-reset-incremental-position",
+    is_flag=True,
+    default=False,
+    help=dedent(
+        """\
+        Reset the incremental-update position to the most recent known dataset
+        in Explorer's tables.
+
+        This is useful in development if copying an existing Explorer schema to
+        another database, as the incremental positions according to that new
+        database will be wrong.
+
+        (default: false)
+        """
+    ),
+)
+@click.option(
     "--recreate-dataset-extents/--append-dataset-extents",
     is_flag=True,
     default=False,
@@ -355,6 +381,7 @@ def cli(
     drop_database: bool,
     force_refresh: bool,
     recreate_dataset_extents: bool,
+    reset_incremental_position: bool,
 ):
     init_logging(
         open(event_log_file, "a") if event_log_file else None, verbosity=verbose
@@ -396,6 +423,7 @@ def cli(
         workers=jobs,
         force_refresh=force_refresh,
         recreate_dataset_extents=recreate_dataset_extents,
+        reset_incremental_position=reset_incremental_position,
     )
     if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)
