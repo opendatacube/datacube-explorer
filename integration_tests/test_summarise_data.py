@@ -3,7 +3,7 @@ Load a lot of real-world DEA datasets (very slow)
 
 And then check their statistics match expected.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -473,9 +473,13 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     summary = summary_store.get("ls8_nbar_albers", year=2017, month=None, day=None)
     assert summary is None
 
-    # Calculate overall summary
+    # We don't want it to add a few minutes overlap buffer,
+    # as we add datasets and refresh immediately.
+    summary_store.dataset_overlap_carefulness = timedelta(seconds=0)
 
+    # Calculate overall summary
     _, summary = summary_store.refresh("ls8_nbar_albers")
+
     _expect_values(
         summary,
         dataset_count=918,
