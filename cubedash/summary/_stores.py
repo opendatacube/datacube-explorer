@@ -203,15 +203,15 @@ class SummaryStore:
         self._summariser = summariser
 
         # How much extra time to include in incremental update scans?
-        #    Incremental update are searching for any datasets with a a change-timestamp after our
-        #    last changes were applied. But some earlier-timestamped datasets may not have been
+        #    The incremental-updater searches for any datasets with a newer change-timestamp than
+        #    its last successul run. But some earlier-timestamped datasets may not have been
         #    present last run if they were added in a concurrent, open transaction. And we don't
         #    want to miss them! So we give a buffer assuming no transaction was open longer than
         #    this buffer. (It doesn't matter at all if we repeat datasets).
         #
         #    This is not solution of perfection. But ODC's indexing does happen with quick,
         #    auto-committing transactions, so they're unlikely to actually be open for more
-        #    than a few milliseconds. Fifteen minutes feels generous.
+        #    than a few milliseconds. Fifteen minutes feels very generous.
         #
         #    (You can judge if this assumption has failed by comparing our dataset_spatial
         #     count(*) to ODC's dataset count(*) for the same product. They should match
@@ -1236,10 +1236,22 @@ class SummaryStore:
         reset_incremental_position: bool = False,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
         """
-        Update all information known about the product, if it has changed.
+        Update Explorer's information and summaries for a product.
 
-        This will update the spatial tables (extents) and update
-        any outdated time summaries.
+        This will scan for any changes since the last run, update
+        the spatial extents and any outdated time summaries.
+
+        :param product_name: ODC Product name
+        :param force: Recreate everything, even if it doesn't appear to have changed.
+        :param recreate_dataset_extents: Force-recreate just the spatial/extent table (including
+                       removing deleted datasets). This is significantly faster than "force", but
+                       doesn't update time summaries.
+        :param reset_incremental_position: Ignore the current incremental-update marker position,
+                       and run with a more conservative position: when the last dataset was
+                       added to Explorer's tables, rather than when the last refresh was successful.
+
+                       This is primarily useful for developers who restore from backups, whose Explorer
+                       tables will be out of sync with a restored, newer ODC database.
         """
         log = _LOG.bind(product_name=product_name)
 
@@ -1286,12 +1298,9 @@ class SummaryStore:
         assert refresh_timestamp is not None
 
         # What month summaries do we need to generate?
-        if (
-            # If we're scanning all of them...
-            only_datasets_newer_than is None
-            # ...or it was generated before incremental-updating was implemented.
-            or old_product.last_successful_summary_time is None
-        ):
+
+        # If we're scanning all of them...
+        if only_datasets_newer_than is None:
             # Then choose the whole time range of the product to generate.
             log.info("product.generate_whole_range")
             if force:
@@ -1367,7 +1376,7 @@ class SummaryStore:
     def _newest_known_dataset_addition_time(self, product_name) -> datetime:
         """
         Of all the datasets that are present in Explorer's own tables, when
-        was the most recent one added?
+        was the most recent one indexed to ODC?
         """
         return self._engine.execute(
             select([func.max(ODC_DATASET.c.added)])
