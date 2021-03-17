@@ -66,8 +66,12 @@ from click import secho as click_secho
 from click import style
 
 from cubedash.logs import init_logging
-from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import GenerateResult
+from cubedash.summary import (
+    SummaryStore,
+    TimePeriodOverview,
+    GenerateResult,
+    UnsupportedWKTProductCRS,
+)
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
@@ -119,8 +123,11 @@ def generate_report(
             reset_incremental_position=settings.reset_incremental_position,
         )
         return product_name, result, updated_summary
+    except UnsupportedWKTProductCRS as e:
+        log.warning("product.unsupported", reason=e.reason)
+        return product_name, GenerateResult.UNSUPPORTED, None
     except Exception:
-        log.exception("generate.product.error", exc_info=True)
+        log.exception("product.error", exc_info=True)
         return product_name, GenerateResult.ERROR, None
     finally:
         store.index.close()
@@ -157,6 +164,7 @@ def run_generation(
         counts[result] += 1
         result_color = {
             GenerateResult.ERROR: "red",
+            GenerateResult.UNSUPPORTED: "yellow",
             GenerateResult.CREATED: "blue",
             GenerateResult.UPDATED: "green",
         }.get(result)

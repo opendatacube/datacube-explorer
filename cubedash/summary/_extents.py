@@ -48,6 +48,13 @@ _WRS_PATH_ROW = [
 ]
 
 
+class UnsupportedWKTProductCRS(NotImplementedError):
+    """We can't, within Postgis, support arbitrary WKT CRSes at the moment."""
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+
+
 def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
     """
     Build an SQLAlchemy expression to get the extent for a dataset.
@@ -168,8 +175,11 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             # HACK: Change default CRS with inference
             inferred_crs = infer_crs(default_crs)
             if inferred_crs is None:
-                raise NotImplementedError(
-                    f"CRS expected in form of 'EPSG:1234'. Got: {default_crs!r}"
+                raise UnsupportedWKTProductCRS(
+                    f"WKT Product CRSes are not currently well supported, and "
+                    f"we can't infer this product's one. "
+                    f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
+                    f"Got: {default_crs!r}"
                 )
             default_crs = inferred_crs
 
