@@ -30,7 +30,7 @@ from geoalchemy2.shape import to_shape
 from sqlalchemy import DDL, String, and_, func, select, exists, or_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine, RowProxy
+from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 try:
@@ -598,7 +598,7 @@ class SummaryStore:
             product=product.name,
             sample_percentage=round(sample_percentage, 2),
         )
-        result: List[RowProxy] = self._engine.execute(
+        result = self._engine.execute(
             select(
                 [
                     (
@@ -611,7 +611,7 @@ class SummaryStore:
             )
             .select_from(dataset_table)
             .where(dataset_table.c.dataset_type_ref == product.id)
-            .where(dataset_table.c.archived == None)
+            .where(dataset_table.c.archived.is_(None))
         ).fetchall()
         assert len(result) == 1
 
