@@ -1,7 +1,7 @@
 import math
 import os
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -17,6 +17,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Iterator,
 )
 from uuid import UUID
 
@@ -27,7 +28,7 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select, exists, or_
+from sqlalchemy import DDL, String, and_, func, select, exists, or_, union_all, literal
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
@@ -38,7 +39,7 @@ try:
 except ModuleNotFoundError:
     EXPLORER_VERSION = "ci-test-pipeline"
 from cubedash import _utils
-from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
+from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, ODC_DATASET_LOCATION
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
     RegionSummary,
@@ -63,7 +64,7 @@ from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils.geometry import Geometry
 
-DEFAULT_TTL = 10
+DEFAULT_TTL = 90
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -795,7 +796,52 @@ class SummaryStore:
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def product_location_samples(self, name: str) -> List[ProductLocationSample]:
+    def products_location_samples_all(
+        self, sample_size: int = 100
+    ) -> Dict[str, List[ProductLocationSample]]:
+        """
+        Get sample locations of all products
+
+        This is the same as product_location_samples(), but will be significantly faster
+        if you need to fetch all products at once.
+
+        (It's faster because it does only one DB query round-trip instead of N (where N is
+         number of products). The latency of repeated round-trips adds up tremendously on
+         cloud instances.)
+        """
+        queries = []
+        for dataset_type in self.all_dataset_types():
+            subquery = (
+                select(
+                    [
+                        literal(dataset_type.name).label("name"),
+                        (
+                            ODC_DATASET_LOCATION.c.uri_scheme
+                            + ":"
+                            + ODC_DATASET_LOCATION.c.uri_body
+                        ).label("uri"),
+                    ]
+                )
+                .select_from(ODC_DATASET_LOCATION.join(ODC_DATASET))
+                .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+                .where(ODC_DATASET.c.archived.is_(None))
+                .limit(sample_size)
+            )
+            queries.append(subquery)
+
+        product_urls = defaultdict(list)
+        for product_name, uri in self._engine.execute(union_all(*queries)):
+            product_urls[product_name].append(uri)
+
+        return {
+            name: list(_common_paths_for_uris(uris))
+            for name, uris in product_urls.items()
+        }
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def product_location_samples(
+        self, name: str, sample_size: int = 100
+    ) -> List[ProductLocationSample]:
         """
         Sample some dataset locations for the given product, and return
         the common location.
@@ -804,33 +850,13 @@ class SummaryStore:
         """
         # Sample 100 dataset uris
         uri_samples = sorted(
-            [
-                uri
-                for [uri] in self.index.datasets.search_returning(
-                    ("uri",), product=name, limit=100
-                )
-            ]
+            uri
+            for [uri] in self.index.datasets.search_returning(
+                ("uri",), product=name, limit=sample_size
+            )
         )
 
-        def uri_scheme(uri: str):
-            return uri.split(":", 1)[0]
-
-        location_schemes = []
-        for scheme, uris in groupby(uri_samples, uri_scheme):
-            uris = list(uris)
-
-            # Use the first, last and middle as examples
-            # (they're sorted, so this shows diversity)
-            example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
-            #              ⮤ we use a set for when len < 3
-
-            location_schemes.append(
-                ProductLocationSample(
-                    scheme, os.path.commonpath(uris), sorted(example_uris)
-                )
-            )
-
-        return location_schemes
+        return list(_common_paths_for_uris(uri_samples))
 
     def get_quality_stats(self) -> Iterable[Dict]:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))
@@ -1425,19 +1451,17 @@ class SummaryStore:
         """
         return get_srid_name(self._engine, srid)
 
-    def list_complete_products(self) -> Iterable[str]:
+    def list_complete_products(self) -> List[str]:
         """
-        List products with summaries available.
+        List all names of products that have summaries available.
         """
-        all_products = self.all_dataset_types()
-        existing_products = sorted(
+        return sorted(
             (
                 product.name
-                for product in all_products
+                for product in self.all_dataset_types()
                 if self.has(product.name, None, None, None)
             )
         )
-        return existing_products
 
     def find_datasets_for_region(
         self,
@@ -1637,6 +1661,25 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses,
     )
+
+
+def _common_paths_for_uris(
+    uri_samples: Iterator[str],
+) -> Generator[ProductLocationSample, None, None]:
+    def uri_scheme(uri: str):
+        return uri.split(":", 1)[0]
+
+    for scheme, uris in groupby(sorted(uri_samples), uri_scheme):
+        uris = list(uris)
+
+        # Use the first, last and middle as examples
+        # (they're sorted, so this shows diversity)
+        example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
+        #              ⮤ we use a set for when len < 3
+
+        yield ProductLocationSample(
+            scheme, os.path.commonpath(uris), sorted(example_uris)
+        )
 
 
 def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple]:
