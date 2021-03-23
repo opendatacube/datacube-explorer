@@ -83,6 +83,7 @@ setup(
         "console_scripts": [
             "cubedash-gen = cubedash.generate:cli",
             "cubedash-view = cubedash.summary.show:cli",
+            "cubedash-run = cubedash.run:cli",
             "cubedash-page-test = cubedash.warmup:cli",
         ]
     },
