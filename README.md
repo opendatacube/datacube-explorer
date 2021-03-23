@@ -7,6 +7,25 @@
 
 ![Explorer Screenshot](screenshot.png)
 
+## Usage (quick-start)
+
+Assuming you already have an Open Data Cube instance, Explorer will use
+its existing settings.
+
+Install Explorer from pypi:
+
+    pip install datacube-explorer
+
+Generate summaries for all of your products
+
+    cubedash-gen --init --all
+
+Run Explorer locally:
+
+    cubedash-run
+
+It will now be viewable on [http://localhost:8090](https://localhost:8090)
+
 ## Developer Setup
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
