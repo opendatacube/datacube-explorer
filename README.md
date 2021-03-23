@@ -38,14 +38,17 @@ Other available options can be seen by running `cubedash-gen --help`.
 
 ### Run
 
-Explorer can be run using any typical python wsgi server, for example:
+A simple `cubedash-run` command is available to run Explorer locally:
+
+    $ cubedash-run
+        * Running on http://localhost:8080/ (Press CTRL+C to quit)
+
+(see `cubedash-run --help` for list of options)
+
+But Explorer can be run using any typical python wsgi server, for example gunicorn:
 
     pip install gunicorn
     gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
-
-Convenience scripts are available for running in development with hot-reload
-(`./run-dev.sh`) or gunicorn (`./run.sh`). Install the optional deployment
-dependencies for the latter: `pip install -e .[deployment]`
 
 Products will begin appearing one-by-one as the summaries are generated in the
 background.  If impatient, you can manually navigate to a product using
