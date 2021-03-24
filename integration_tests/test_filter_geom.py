@@ -13,7 +13,7 @@ from cubedash.summary._model import _filter_geom, _polygon_chain
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
-class Valid_geometries:
+class ValidGeometries:
     def __init__(self, footprint_geometry):
         self.footprint_geometry = footprint_geometry
 
@@ -26,9 +26,9 @@ def testing_polygon():
     for line in sample_geometry_file:
         if len(line) > 1:
             line_c += 1
-            if line_c > 16 and line_c < 50:  # min amount for testing
+            if 16 < line_c < 50:  # min amount for testing
                 poly = shapely.wkt.loads(line)
-                shapely_polygon.append(Valid_geometries(poly))
+                shapely_polygon.append(ValidGeometries(poly))
     assert len(shapely_polygon) == 33
     return shapely_polygon
 

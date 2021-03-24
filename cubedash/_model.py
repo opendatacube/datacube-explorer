@@ -234,17 +234,17 @@ def enable_sentry():
         from raven.contrib.flask import Sentry
 
         app.config["SENTRY_CONFIG"]["release"] = __version__
-        SENTRY = Sentry(app)
+        sentry = Sentry(app)
 
         @app.context_processor
         def inject_sentry_info():
             # For Javascript error reporting. See the base template (base.html) and 500.html
-            sentry_args = {"release": SENTRY.client.release}
-            if SENTRY.client.environment:
-                sentry_args["environment"] = SENTRY.client.environment
+            sentry_args = {"release": sentry.client.release}
+            if sentry.client.environment:
+                sentry_args["environment"] = sentry.client.environment
 
             return dict(
-                sentry_public_dsn=SENTRY.client.get_public_dsn("https"),
+                sentry_public_dsn=sentry.client.get_public_dsn("https"),
                 sentry_public_args=sentry_args,
             )
 
