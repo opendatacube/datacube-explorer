@@ -35,9 +35,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 try:
-    from .._version import version as EXPLORER_VERSION
+    from .._version import version as explorer_version
 except ModuleNotFoundError:
-    EXPLORER_VERSION = "ci-test-pipeline"
+    explorer_version = "ci-test-pipeline"
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, ODC_DATASET_LOCATION
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
@@ -239,7 +239,7 @@ class SummaryStore:
         _LOG.debug(
             "software.version",
             postgis=_schema.get_postgis_versions(self._engine),
-            explorer=EXPLORER_VERSION,
+            explorer=explorer_version,
         )
         if for_writing_operations_too:
             return _schema.is_compatible_generate_schema(self._engine)
@@ -553,7 +553,7 @@ class SummaryStore:
             product=product.name, limit=1
         )[0].metadata.fields
 
-        SIMPLE_FIELD_TYPES = {
+        simple_field_types = {
             "string": str,
             "numeric": (float, int),
             "double": (float, int),
@@ -566,7 +566,7 @@ class SummaryStore:
             for name, field in _utils.get_mutable_dataset_search_fields(
                 self.index, product.metadata_type
             ).items()
-            if field.type_name in SIMPLE_FIELD_TYPES and name in first_dataset_fields
+            if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
         if sample_percentage < 100:
@@ -584,7 +584,7 @@ class SummaryStore:
         # Give a friendlier error message when a product doesn't match the dataset.
         for name, field in candidate_fields:
             sample_value = first_dataset_fields[name]
-            expected_types = SIMPLE_FIELD_TYPES[field.type_name]
+            expected_types = simple_field_types[field.type_name]
             # noinspection PyTypeHints
             if sample_value is not None and not isinstance(
                 sample_value, expected_types
