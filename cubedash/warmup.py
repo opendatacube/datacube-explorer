@@ -105,18 +105,26 @@ def find_examples_of_all_public_urls(index: Index):
     help="Query timeout (seconds)",
 )
 @click.option(
+    "-s",
+    "--throttle-seconds",
+    default=0,
+    type=float,
+    help="Sleep for this long between requests (seconds)",
+)
+@click.option(
     "-x",
     "--max-failures",
     "max_failures",
     type=int,
-    default=1,
-    help="Exit immediately when reaching this many failures (-1 for never)",
+    default=3,
+    help="Exit immediately when reaching this many consecutive failures (-1 for never)",
 )
 def cli(
     index: Index,
     verbose: bool,
     max_failures: int,
     timeout_seconds: int,
+    throttle_seconds: float,
     explorer_url: str,
     show_timings: int = 5,
 ):
@@ -130,11 +138,19 @@ def cli(
     """
     max_failure_line_count = sys.maxsize if verbose else 5
     response_times: List[Tuple[float, str]] = []
-    failures: List[str] = []
+    failures = []
+    consecutive_failures = 0
 
     for url_offset in find_examples_of_all_public_urls(index):
         url = urljoin(explorer_url, url_offset)
         secho(f"get {url_offset} ", bold=True, nl=False, err=True)
+
+        def handle_failure():
+            nonlocal consecutive_failures
+            consecutive_failures += 1
+            failures.append(url)
+            # Back off slightly for network hiccups.
+            time.sleep(max(throttle_seconds, 1) * (consecutive_failures + 1))
 
         try:
             start_time = time.time()
@@ -143,23 +159,25 @@ def cli(
                 echo(
                     f"{style('ok', fg='green')} ({_format_time(finished_in)})", err=True
                 )
-                response_times.append((finished_in, url))
+            consecutive_failures = 0
+            response_times.append((finished_in, url))
+            time.sleep(throttle_seconds)
         except socket.timeout:
             secho(f"timeout (> {timeout_seconds}s)", fg="magenta", err=True)
-            failures.append(url)
-        except URLError as e:
-            secho(f"connection error {e.reason}", fg="magenta", err=True)
-            failures.append(url)
+            handle_failure()
         except HTTPError as e:
             secho(f"fail {e.code}", fg="red", err=True)
             page_sample = "\n".join(
                 s.decode("utf-8") for s in e.readlines()[:max_failure_line_count]
             )
             secho(indent(page_sample, " " * 4))
-            failures.append(url)
+            handle_failure()
+        except URLError as e:
+            secho(f"connection error {e.reason}", fg="magenta", err=True)
+            handle_failure()
 
-        if len(failures) == max_failures:
-            secho(f"(hit max failures {max_failures})", fg="yellow")
+        if consecutive_failures == max_failures:
+            secho(f"(hit max consecutive failures {max_failures})", fg="yellow")
             break
 
     if response_times:
@@ -170,6 +188,10 @@ def cli(
                 break
             secho(f"\t{_format_time(response_secs)}\t{url}")
 
+    if len(failures):
+        secho()
+        secho(f"{len(failures)} failures", fg="red")
+
     sys.exit(len(failures))
 
 
@@ -179,12 +201,15 @@ def _format_time(t: float):
     '310ms'
     >>> _format_time(3.0)
     '3.0s'
-    >>> # A bit unix-specific? Show with red
-    >>> _format_time(90.3234234)
-    '\\x1b[33m90.3s\\x1b[0m'
+    >>> # A bit unix-specific? Show with orange
+    >>> _format_time(30.3234234)
+    '\\x1b[33m30.3s\\x1b[0m'
     """
+    # More than a minute? red
+    if t > 60:
+        return style(f"{t:.1f}s", fg="red")
+    # More than five seconds? orange
     if t > 5:
-        # More than five seconds? show orange
         return style(f"{t:.1f}s", fg="yellow")
     if t > 1:
         return f"{t:.1f}s"
