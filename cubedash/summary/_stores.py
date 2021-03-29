@@ -376,8 +376,7 @@ class SummaryStore:
                             updated_months.c.product_ref == product.id_,
                         )
                         .where(
-                            updated_months.c.product_refresh_time
-                            > years.c.product_refresh_time
+                            updated_months.c.generation_time > years.c.generation_time
                         )
                     )
                 )
@@ -414,6 +413,7 @@ class SummaryStore:
         dataset_sample_size: int = 1000,
         scan_for_deleted: bool = False,
         only_those_newer_than: datetime = None,
+        force: bool = False,
     ) -> Tuple[int, ProductSummary]:
         """
         Update Explorer's computed extents for the given product, and record any new
@@ -438,7 +438,7 @@ class SummaryStore:
 
         existing_summary = self.get_product_summary(product_name)
         # Did nothing change at all? Just bump the refresh time.
-        if change_count == 0 and existing_summary:
+        if change_count == 0 and existing_summary and not force:
             new_summary = copy(existing_summary)
             new_summary.last_refresh_time = covers_up_to
             self._persist_product_extent(new_summary)
