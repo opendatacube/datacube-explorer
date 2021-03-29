@@ -481,14 +481,18 @@ _TIME_PERIOD_FORMAT = re.compile(
 
 def parse_timedelta(value: str) -> Optional[timedelta]:
     """
-    >>> parse_timedelta('4d')
-    datetime.timedelta(days=4)
-    >>> parse_timedelta('40h')
-    datetime.timedelta(days=1, seconds=57600)
-    >>> parse_timedelta('30m')
-    datetime.timedelta(seconds=1800)
-    >>> parse_timedelta('3h30m')
-    datetime.timedelta(seconds=12600)
+    Parse a string such as "30h40m" into a timedelta.
+
+    >>> # we have to use `total_seconds()`, because python 3.6
+    >>> #  has different repr() output to newer pythons (3.9, at least)
+    >>> parse_timedelta('4d').total_seconds()
+    345600.0
+    >>> parse_timedelta('40h').total_seconds()
+    144000.0
+    >>> parse_timedelta('30m').total_seconds()
+    1800.0
+    >>> parse_timedelta('3h30m').total_seconds()
+    12600.0
     >>> parse_timedelta('30')
     Traceback (most recent call last):
     ...
