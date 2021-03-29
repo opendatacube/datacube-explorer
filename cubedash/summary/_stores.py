@@ -425,7 +425,8 @@ class SummaryStore:
         # Server-side-timestamp of when we started scanning. We will
         # later know that any dataset newer than this timestamp may not
         # be in our summaries.
-        covers_up_to = self._engine.execute(select([func.now()])).scalar()
+        covers_up_to = self._database_time_now()
+
         product = self.index.products.get_by_name(product_name)
 
         _LOG.info("init.product", product_name=product.name)
@@ -1262,6 +1263,7 @@ class SummaryStore:
         force: bool = False,
         recreate_dataset_extents: bool = False,
         reset_incremental_position: bool = False,
+        minimum_change_scan_window: timedelta = None,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
         """
         Update Explorer's information and summaries for a product.
@@ -1269,6 +1271,11 @@ class SummaryStore:
         This will scan for any changes since the last run, update
         the spatial extents and any outdated time summaries.
 
+        :param minimum_change_scan_window: Always rescan this window of time for dataset changes,
+                    even if the refresh tool has run more recently.
+
+                    This is useful if you have something that doesn't make rows visible immediately,
+                    such as a sync service from another location.
         :param product_name: ODC Product name
         :param force: Recreate everything, even if it doesn't appear to have changed.
         :param recreate_dataset_extents: Force-recreate just the spatial/extent table (including
@@ -1311,6 +1318,13 @@ class SummaryStore:
             only_datasets_newer_than = (
                 old_product.last_successful_summary_time
                 - self.dataset_overlap_carefulness
+            )
+
+        # If there's a minimum window to scan, make sure we fill it.
+        if minimum_change_scan_window and only_datasets_newer_than:
+            only_datasets_newer_than = min(
+                only_datasets_newer_than,
+                self._database_time_now() - minimum_change_scan_window,
             )
 
         extent_changes, new_product = self.refresh_product_extent(
@@ -1400,6 +1414,15 @@ class SummaryStore:
             refresh_type = GenerateResult.NO_CHANGES
 
         return refresh_type, updated_summary
+
+    def _database_time_now(self) -> datetime:
+        """
+        What's the current time according to the database?
+
+        Any change timestamps stored in the database are using database-local
+        time, which could be different to the time on this current machine!
+        """
+        return self._engine.execute(select([func.now()])).scalar()
 
     def _newest_known_dataset_addition_time(self, product_name) -> datetime:
         """

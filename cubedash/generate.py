@@ -54,8 +54,10 @@ Drop all of Explorer’s additions to the database:
 """
 import collections
 import multiprocessing
+import re
 import sys
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import partial
 from textwrap import dedent
 from typing import List, Sequence, Tuple, Optional
@@ -90,6 +92,7 @@ class GenerateSettings:
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
+    minimum_change_scan_window: timedelta = None
 
 
 # pylint: disable=broad-except
@@ -121,6 +124,7 @@ def generate_report(
             force=settings.force_refresh,
             recreate_dataset_extents=settings.recreate_dataset_extents,
             reset_incremental_position=settings.reset_incremental_position,
+            minimum_change_scan_window=settings.minimum_change_scan_window,
         )
         return product_name, result, updated_summary
     except UnsupportedWKTProductCRS as e:
@@ -143,15 +147,13 @@ def _get_index(config: LocalConfig, variant: str) -> Index:
 
 
 def run_generation(
-    config: LocalConfig,
+    settings: GenerateSettings,
     products: Sequence[DatasetType],
     workers=3,
-    force_refresh: bool = False,
-    recreate_dataset_extents: bool = False,
-    reset_incremental_position: bool = False,
 ) -> Tuple[int, int]:
     user_message(
-        f"Updating {len(products)} products for " f"{style(str(config), bold=True)}",
+        f"Updating {len(products)} products for "
+        f"{style(str(settings.config), bold=True)}",
     )
 
     counts = collections.Counter()
@@ -175,13 +177,6 @@ def run_generation(
         user_message(
             f"{style(product_name, fg=result_color)} {result.name.lower()}{extra}"
         )
-
-    settings = GenerateSettings(
-        config,
-        force_refresh,
-        recreate_dataset_extents,
-        reset_incremental_position,
-    )
 
     # If one worker, avoid any subprocesses/forking.
     # This makes test tracing far easier.
@@ -234,6 +229,25 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
                 f"Possibilities:\n\t{possible_product_names}",
                 param_hint="product_names",
             )
+
+
+class TimeDeltaParam(click.ParamType):
+    """
+    A time period of hours and/or minutes.
+
+    Eg. '48h' or '30m' or '1h30m25s'
+    """
+
+    name = "time-length"
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, timedelta):
+            return value
+
+        try:
+            return parse_timedelta(value)
+        except ValueError as v:
+            self.fail(v.args[0])
 
 
 @click.command(help=__doc__)
@@ -293,6 +307,21 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
 
         This can be slow, and only needs to be done once (at the end) if calling
         cubedash-gen repeatedly
+        """
+    ),
+)
+@click.option(
+    "--minimum-scan-window",
+    type=TimeDeltaParam(),
+    help=dedent(
+        """\
+        Always rescan this window of time for dataset changes,
+        even if the refresh tool has run more recently.
+
+        This is useful if you have something that doesn't make rows visible immediately,
+        such as a sync service from another location.
+
+        Example values: '24h' or '1h30m'
         """
     ),
 )
@@ -390,6 +419,7 @@ def cli(
     force_refresh: bool,
     recreate_dataset_extents: bool,
     reset_incremental_position: bool,
+    minimum_scan_window: Optional[timedelta],
 ):
     init_logging(
         open(event_log_file, "a") if event_log_file else None, verbosity=verbose
@@ -426,12 +456,15 @@ def cli(
         products = list(_load_products(store.index, product_names))
 
     updated, failures = run_generation(
-        config,
+        GenerateSettings(
+            config,
+            force_refresh,
+            recreate_dataset_extents,
+            reset_incremental_position,
+            minimum_change_scan_window=minimum_scan_window,
+        ),
         products,
         workers=jobs,
-        force_refresh=force_refresh,
-        recreate_dataset_extents=recreate_dataset_extents,
-        reset_incremental_position=reset_incremental_position,
     )
     if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)
@@ -439,6 +472,43 @@ def cli(
         user_message("done", color="green")
         _LOG.info("stats.refresh")
     sys.exit(failures)
+
+
+_TIME_PERIOD_FORMAT = re.compile(
+    r"((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?"
+)
+
+
+def parse_timedelta(value: str) -> Optional[timedelta]:
+    """
+    >>> parse_timedelta('4d')
+    datetime.timedelta(days=4)
+    >>> parse_timedelta('40h')
+    datetime.timedelta(days=1, seconds=57600)
+    >>> parse_timedelta('30m')
+    datetime.timedelta(seconds=1800)
+    >>> parse_timedelta('3h30m')
+    datetime.timedelta(seconds=12600)
+    >>> parse_timedelta('30')
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid time period. Expected something like "24h" or "2h30m".
+    >>> parse_timedelta('4e30m')
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid time period. Expected something like "24h" or "2h30m".
+    """
+    parts = _TIME_PERIOD_FORMAT.match(value)
+    params = {}
+    for (name, param) in parts.groupdict().items():
+        if param:
+            params[name] = int(param)
+
+    if not params:
+        raise ValueError(
+            'Invalid time period. Expected something like "24h" or "2h30m".'
+        )
+    return timedelta(**params)
 
 
 if __name__ == "__main__":
