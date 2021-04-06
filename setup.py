@@ -62,6 +62,7 @@ setup(
         "fiona",
         "flask",
         "Flask-Caching",
+        "flask-cors",
         "flask_themes @ git+https://git@github.com/opendatacube/flask-themes@master",
         "geoalchemy2",
         "geographiclib",

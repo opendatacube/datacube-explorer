@@ -7,6 +7,7 @@ import flask
 import flask_themes
 import structlog
 from flask_caching import Cache
+from flask_cors import CORS
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -40,6 +41,9 @@ app.jinja_options["extensions"].append("jinja2.ext.do")
 
 app.config.setdefault("CACHE_TYPE", "null")
 cache = Cache(app=app, config=app.config)
+
+if app.config.get("CUBEDASH_CORS", False):
+    CORS(app)
 
 app.config.setdefault("CUBEDASH_THEME", "odc")
 flask_themes.setup_themes(app)
