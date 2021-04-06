@@ -1,7 +1,7 @@
 import math
 import os
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -17,6 +17,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Iterator,
 )
 from uuid import UUID
 
@@ -27,18 +28,18 @@ from dateutil import tz
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import to_shape
-from sqlalchemy import DDL, String, and_, func, select, exists, or_
+from sqlalchemy import DDL, String, and_, func, select, exists, or_, union_all, literal
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine, RowProxy
+from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 try:
-    from .._version import version as EXPLORER_VERSION
+    from .._version import version as explorer_version
 except ModuleNotFoundError:
-    EXPLORER_VERSION = "ci-test-pipeline"
+    explorer_version = "ci-test-pipeline"
 from cubedash import _utils
-from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE
+from cubedash._utils import ODC_DATASET, ODC_DATASET_TYPE, ODC_DATASET_LOCATION
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
     RegionSummary,
@@ -63,7 +64,7 @@ from datacube.index import Index
 from datacube.model import Dataset, DatasetType, Range
 from datacube.utils.geometry import Geometry
 
-DEFAULT_TTL = 10
+DEFAULT_TTL = 90
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
@@ -88,9 +89,11 @@ class GenerateResult(Enum):
     # Updated the existing summaries (for months that changed)
     UPDATED = 3
     # No new changes found.
-    SKIPPED = 1
+    NO_CHANGES = 1
     # Exception was thrown
     ERROR = 4
+    # A unsupported product (eg. Unsupported CRS)
+    UNSUPPORTED = 5
 
 
 @dataclass
@@ -202,6 +205,24 @@ class SummaryStore:
         self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
+        # How much extra time to include in incremental update scans?
+        #    The incremental-updater searches for any datasets with a newer change-timestamp than
+        #    its last successul run. But some earlier-timestamped datasets may not have been
+        #    present last run if they were added in a concurrent, open transaction. And we don't
+        #    want to miss them! So we give a buffer assuming no transaction was open longer than
+        #    this buffer. (It doesn't matter at all if we repeat datasets).
+        #
+        #    This is not solution of perfection. But ODC's indexing does happen with quick,
+        #    auto-committing transactions, so they're unlikely to actually be open for more
+        #    than a few milliseconds. Fifteen minutes feels very generous.
+        #
+        #    (You can judge if this assumption has failed by comparing our dataset_spatial
+        #     count(*) to ODC's dataset count(*) for the same product. They should match
+        #     for active datasets.)
+        #
+        #    tldr: "15 minutes == max expected transaction age of indexer"
+        self.dataset_overlap_carefulness = timedelta(minutes=15)
+
     def add_change_listener(self, listener):
         self._update_listeners.append(listener)
 
@@ -218,7 +239,7 @@ class SummaryStore:
         _LOG.debug(
             "software.version",
             postgis=_schema.get_postgis_versions(self._engine),
-            explorer=EXPLORER_VERSION,
+            explorer=explorer_version,
         )
         if for_writing_operations_too:
             return _schema.is_compatible_generate_schema(self._engine)
@@ -249,12 +270,10 @@ class SummaryStore:
 
     def refresh_all_product_extents(
         self,
-        force_dataset_extent_recompute=False,
     ):
         for product in self.all_dataset_types():
             self.refresh_product_extent(
                 product.name,
-                force_recompute=force_dataset_extent_recompute,
             )
         self.refresh_stats()
 
@@ -273,27 +292,14 @@ class SummaryStore:
         ).scalar()
 
     def find_months_needing_update(
-        self, product_name: str
+        self,
+        product_name: str,
+        only_those_newer_than: datetime,
     ) -> Iterable[Tuple[datetime, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
         dataset_type = self.get_dataset_type(product_name)
-        datasets_newer_than = self._product(
-            product_name
-            # Why do we have an extra 15 minute fudge?
-            #    We are searching for any datasets with a a change-timestamp after our last changes were applied.
-            #    But some earlier-timestamped datasets may not have been present last run if they were added
-            #    in a concurrent, open transaction. And we don't want to miss them! So we give a buffer assuming
-            #    no transaction was open longer than this buffer. (I doesn't matter at all if we repeat datasets).
-            #    Yes, this is not an ideal world of technical purity.
-            #
-            #    ODC's indexing does happen with quick, autocommitting transactions. So they're unlikely to actually
-            #    be open for more than a few milliseconds. And there are other issues with using timestamps so
-            #    this is, short-term, not likely our biggest priority.
-            #
-            #    tldr: "15 minutes == max expected transaction age of indexer"
-        ).last_successful_summary_time - timedelta(minutes=15)
 
         # Find the most-recently updated datasets and group them by month.
         return sorted(
@@ -308,13 +314,13 @@ class SummaryStore:
                     ]
                 )
                 .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
-                .where(dataset_changed_expression() > datasets_newer_than)
+                .where(dataset_changed_expression() > only_those_newer_than)
                 .group_by("month")
                 .order_by("month")
             )
         )
 
-    def find_years_needing_update(self, product_name: str):
+    def find_years_needing_update(self, product_name: str) -> List[int]:
         """
         Find any years that need to be generated.
 
@@ -370,8 +376,7 @@ class SummaryStore:
                             updated_months.c.product_ref == product.id_,
                         )
                         .where(
-                            updated_months.c.product_refresh_time
-                            > years.c.product_refresh_time
+                            updated_months.c.generation_time > years.c.generation_time
                         )
                     )
                 )
@@ -406,8 +411,9 @@ class SummaryStore:
         self,
         product_name: str,
         dataset_sample_size: int = 1000,
-        force_recompute=False,
+        scan_for_deleted: bool = False,
         only_those_newer_than: datetime = None,
+        force: bool = False,
     ) -> Tuple[int, ProductSummary]:
         """
         Update Explorer's computed extents for the given product, and record any new
@@ -419,20 +425,21 @@ class SummaryStore:
         # Server-side-timestamp of when we started scanning. We will
         # later know that any dataset newer than this timestamp may not
         # be in our summaries.
-        covers_up_to = self._engine.execute(select([func.now()])).scalar()
+        covers_up_to = self._database_time_now()
+
         product = self.index.products.get_by_name(product_name)
 
         _LOG.info("init.product", product_name=product.name)
         change_count = _extents.refresh_spatial_extents(
             self.index,
             product,
-            thorough=force_recompute,
+            clean_up_deleted=scan_for_deleted,
             assume_after_date=only_those_newer_than,
         )
 
         existing_summary = self.get_product_summary(product_name)
         # Did nothing change at all? Just bump the refresh time.
-        if change_count == 0 and (not force_recompute) and existing_summary:
+        if change_count == 0 and existing_summary and not force:
             new_summary = copy(existing_summary)
             new_summary.last_refresh_time = covers_up_to
             self._persist_product_extent(new_summary)
@@ -547,7 +554,7 @@ class SummaryStore:
             product=product.name, limit=1
         )[0].metadata.fields
 
-        SIMPLE_FIELD_TYPES = {
+        simple_field_types = {
             "string": str,
             "numeric": (float, int),
             "double": (float, int),
@@ -560,7 +567,7 @@ class SummaryStore:
             for name, field in _utils.get_mutable_dataset_search_fields(
                 self.index, product.metadata_type
             ).items()
-            if field.type_name in SIMPLE_FIELD_TYPES and name in first_dataset_fields
+            if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
         if sample_percentage < 100:
@@ -578,7 +585,7 @@ class SummaryStore:
         # Give a friendlier error message when a product doesn't match the dataset.
         for name, field in candidate_fields:
             sample_value = first_dataset_fields[name]
-            expected_types = SIMPLE_FIELD_TYPES[field.type_name]
+            expected_types = simple_field_types[field.type_name]
             # noinspection PyTypeHints
             if sample_value is not None and not isinstance(
                 sample_value, expected_types
@@ -593,7 +600,7 @@ class SummaryStore:
             product=product.name,
             sample_percentage=round(sample_percentage, 2),
         )
-        result: List[RowProxy] = self._engine.execute(
+        result = self._engine.execute(
             select(
                 [
                     (
@@ -606,7 +613,7 @@ class SummaryStore:
             )
             .select_from(dataset_table)
             .where(dataset_table.c.dataset_type_ref == product.id)
-            .where(dataset_table.c.archived == None)
+            .where(dataset_table.c.archived.is_(None))
         ).fetchall()
         assert len(result) == 1
 
@@ -790,7 +797,52 @@ class SummaryStore:
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def product_location_samples(self, name: str) -> List[ProductLocationSample]:
+    def products_location_samples_all(
+        self, sample_size: int = 100
+    ) -> Dict[str, List[ProductLocationSample]]:
+        """
+        Get sample locations of all products
+
+        This is the same as product_location_samples(), but will be significantly faster
+        if you need to fetch all products at once.
+
+        (It's faster because it does only one DB query round-trip instead of N (where N is
+         number of products). The latency of repeated round-trips adds up tremendously on
+         cloud instances.)
+        """
+        queries = []
+        for dataset_type in self.all_dataset_types():
+            subquery = (
+                select(
+                    [
+                        literal(dataset_type.name).label("name"),
+                        (
+                            ODC_DATASET_LOCATION.c.uri_scheme
+                            + ":"
+                            + ODC_DATASET_LOCATION.c.uri_body
+                        ).label("uri"),
+                    ]
+                )
+                .select_from(ODC_DATASET_LOCATION.join(ODC_DATASET))
+                .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+                .where(ODC_DATASET.c.archived.is_(None))
+                .limit(sample_size)
+            )
+            queries.append(subquery)
+
+        product_urls = defaultdict(list)
+        for product_name, uri in self._engine.execute(union_all(*queries)):
+            product_urls[product_name].append(uri)
+
+        return {
+            name: list(_common_paths_for_uris(uris))
+            for name, uris in product_urls.items()
+        }
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def product_location_samples(
+        self, name: str, sample_size: int = 100
+    ) -> List[ProductLocationSample]:
         """
         Sample some dataset locations for the given product, and return
         the common location.
@@ -799,33 +851,13 @@ class SummaryStore:
         """
         # Sample 100 dataset uris
         uri_samples = sorted(
-            [
-                uri
-                for [uri] in self.index.datasets.search_returning(
-                    ("uri",), product=name, limit=100
-                )
-            ]
+            uri
+            for [uri] in self.index.datasets.search_returning(
+                ("uri",), product=name, limit=sample_size
+            )
         )
 
-        def uri_scheme(uri: str):
-            return uri.split(":", 1)[0]
-
-        location_schemes = []
-        for scheme, uris in groupby(uri_samples, uri_scheme):
-            uris = list(uris)
-
-            # Use the first, last and middle as examples
-            # (they're sorted, so this shows diversity)
-            example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
-            #              ⮤ we use a set for when len < 3
-
-            location_schemes.append(
-                ProductLocationSample(
-                    scheme, os.path.commonpath(uris), sorted(example_uris)
-                )
-            )
-
-        return location_schemes
+        return list(_common_paths_for_uris(uri_samples))
 
     def get_quality_stats(self) -> Iterable[Dict]:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))
@@ -848,7 +880,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _persist_product_extent(self, product: ProductSummary) -> Tuple[int, datetime]:
+    def _persist_product_extent(self, product: ProductSummary):
         source_product_ids = [
             self.index.products.get_by_name(name).id for name in product.source_products
         ]
@@ -1209,9 +1241,7 @@ class SummaryStore:
                 )
             )
         else:
-            # Empty product
-            summary = TimePeriodOverview.add_periods([])
-            summary.product_name = product.name
+            summary = TimePeriodOverview.empty(product.name)
 
         summary.product_refresh_time = product_refresh_time
         summary.period_tuple = (product.name, year, month, None)
@@ -1232,45 +1262,89 @@ class SummaryStore:
         product_name: str,
         force: bool = False,
         recreate_dataset_extents: bool = False,
+        reset_incremental_position: bool = False,
+        minimum_change_scan_window: timedelta = None,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
         """
-        Update all information known about the product, if it has changed.
+        Update Explorer's information and summaries for a product.
 
-        This will update the spatial tables (extents) and update
-        any outdated time summaries.
+        This will scan for any changes since the last run, update
+        the spatial extents and any outdated time summaries.
+
+        :param minimum_change_scan_window: Always rescan this window of time for dataset changes,
+                    even if the refresh tool has run more recently.
+
+                    This is useful if you have something that doesn't make rows visible immediately,
+                    such as a sync service from another location.
+        :param product_name: ODC Product name
+        :param force: Recreate everything, even if it doesn't appear to have changed.
+        :param recreate_dataset_extents: Force-recreate just the spatial/extent table (including
+                       removing deleted datasets). This is significantly faster than "force", but
+                       doesn't update time summaries.
+        :param reset_incremental_position: Ignore the current incremental-update marker position,
+                       and run with a more conservative position: when the last dataset was
+                       added to Explorer's tables, rather than when the last refresh was successful.
+
+                       This is primarily useful for developers who restore from backups, whose Explorer
+                       tables will be out of sync with a restored, newer ODC database.
         """
-        log = _LOG
+        log = _LOG.bind(product_name=product_name)
 
         old_product: ProductSummary = self.get_product_summary(product_name)
-        if recreate_dataset_extents:
-            force = True
 
-        log.info("extent.refresh")
-        change_count, new_product = self.refresh_product_extent(
+        # Which datasets to scan for updates?
+        if (
+            # If they've never summarised this product before
+            (old_product is None)
+            # ... Or it's an old Explorer from before incremental-updates were added.
+            or (old_product.last_successful_summary_time is None)
+            # Or we're using brute force
+            or force
+        ):
+            # "No limit". Recompute all.
+            only_datasets_newer_than = None
+
+        # Otherwise, do they want to reset the incremental position?
+        # -> Find the most recently indexed dataset that has touched our own spatial table,
+        #    and only scan changes from that time onward.
+        #    (this will be more expensive than normal incremental [below], as it may scan a
+        #     lot more datasets, not just the ones from the last generate run.)
+        elif reset_incremental_position:
+            only_datasets_newer_than = self._newest_known_dataset_addition_time(
+                product_name
+            )
+        else:
+            # Otherwise only refresh datasets newer than the last successful run.
+            only_datasets_newer_than = (
+                old_product.last_successful_summary_time
+                - self.dataset_overlap_carefulness
+            )
+
+        # If there's a minimum window to scan, make sure we fill it.
+        if minimum_change_scan_window and only_datasets_newer_than:
+            only_datasets_newer_than = min(
+                only_datasets_newer_than,
+                self._database_time_now() - minimum_change_scan_window,
+            )
+
+        extent_changes, new_product = self.refresh_product_extent(
             product_name,
-            force_recompute=recreate_dataset_extents,
+            scan_for_deleted=recreate_dataset_extents,
             only_those_newer_than=(
-                None
-                if (force or (old_product is None))
-                else old_product.last_successful_summary_time
+                None if recreate_dataset_extents else only_datasets_newer_than
             ),
         )
-        log.info("extent.refresh.done", changed=change_count)
+        log.info("extent.refresh.done", changed=extent_changes)
 
         refresh_timestamp = new_product.last_refresh_time
         assert refresh_timestamp is not None
 
-        # Do we need to regenerate everything?
-        if (
-            # If it's a new product...
-            old_product is None
-            # ...or it was generated before incremental-updating was implemented.
-            or old_product.last_successful_summary_time is None
-            # ... or we're using brute force.
-            or force
-        ):
-            # Then regenerate every single summary.
-            log.info("product.generate_whole")
+        # What month summaries do we need to generate?
+
+        # If we're scanning all of them...
+        if only_datasets_newer_than is None:
+            # Then choose the whole time range of the product to generate.
+            log.info("product.generate_whole_range")
             if force:
                 log.warn("forcing_refresh")
 
@@ -1282,15 +1356,12 @@ class SummaryStore:
             )
             refresh_type = GenerateResult.CREATED
 
-        # Otherwise, only regenerate the things that changed.
+        # Otherwise, only regenerate the ones that changed.
         else:
-            if change_count == 0:
-                log.info("product.no_changes")
-                self._mark_product_refresh_completed(new_product, refresh_timestamp)
-                return GenerateResult.SKIPPED, self.get(product_name)
-
             log.info("product.incremental_update")
-            months_to_update = self.find_months_needing_update(product_name)
+            months_to_update = self.find_months_needing_update(
+                product_name, only_datasets_newer_than
+            )
             refresh_type = GenerateResult.UPDATED
 
         # Months
@@ -1311,7 +1382,8 @@ class SummaryStore:
         # Find year records who are older than their month records
         #   (This will find any months calculated above, as well
         #    as from previous interrupted runs.)
-        for year in self.find_years_needing_update(product_name):
+        years_to_update = self.find_years_needing_update(product_name)
+        for year in years_to_update:
             self._recalculate_period(
                 new_product,
                 year,
@@ -1330,7 +1402,45 @@ class SummaryStore:
             new_refresh_time=refresh_timestamp,
         )
         self._mark_product_refresh_completed(new_product, refresh_timestamp)
+
+        # If nothing changed?
+        if (
+            (not extent_changes)
+            and (not months_to_update)
+            and (not years_to_update)
+            # ... and it already existed:
+            and old_product
+        ):
+            refresh_type = GenerateResult.NO_CHANGES
+
         return refresh_type, updated_summary
+
+    def _database_time_now(self) -> datetime:
+        """
+        What's the current time according to the database?
+
+        Any change timestamps stored in the database are using database-local
+        time, which could be different to the time on this current machine!
+        """
+        return self._engine.execute(select([func.now()])).scalar()
+
+    def _newest_known_dataset_addition_time(self, product_name) -> datetime:
+        """
+        Of all the datasets that are present in Explorer's own tables, when
+        was the most recent one indexed to ODC?
+        """
+        return self._engine.execute(
+            select([func.max(ODC_DATASET.c.added)])
+            .select_from(
+                DATASET_SPATIAL.join(
+                    ODC_DATASET, onclause=DATASET_SPATIAL.c.id == ODC_DATASET.c.id
+                )
+            )
+            .where(
+                DATASET_SPATIAL.c.dataset_type_ref
+                == self.get_dataset_type(product_name).id
+            )
+        ).scalar()
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
@@ -1364,19 +1474,17 @@ class SummaryStore:
         """
         return get_srid_name(self._engine, srid)
 
-    def list_complete_products(self) -> Iterable[str]:
+    def list_complete_products(self) -> List[str]:
         """
-        List products with summaries available.
+        List all names of products that have summaries available.
         """
-        all_products = self.all_dataset_types()
-        existing_products = sorted(
+        return sorted(
             (
                 product.name
-                for product in all_products
+                for product in self.all_dataset_types()
                 if self.has(product.name, None, None, None)
             )
         )
-        return existing_products
 
     def find_datasets_for_region(
         self,
@@ -1474,7 +1582,7 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
                 _LOG.info("data.refreshing_extents", product=name)
             store.refresh_product_extent(
                 name,
-                force_recompute=recompute_dataset_extents,
+                scan_for_deleted=recompute_dataset_extents,
             )
     _LOG.info("data.refreshing_extents.complete")
 
@@ -1576,6 +1684,25 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses,
     )
+
+
+def _common_paths_for_uris(
+    uri_samples: Iterator[str],
+) -> Generator[ProductLocationSample, None, None]:
+    def uri_scheme(uri: str):
+        return uri.split(":", 1)[0]
+
+    for scheme, uris in groupby(sorted(uri_samples), uri_scheme):
+        uris = list(uris)
+
+        # Use the first, last and middle as examples
+        # (they're sorted, so this shows diversity)
+        example_uris = {uris[0], uris[-1], uris[int(len(uris) / 2)]}
+        #              ⮤ we use a set for when len < 3
+
+        yield ProductLocationSample(
+            scheme, os.path.commonpath(uris), sorted(example_uris)
+        )
 
 
 def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple]:

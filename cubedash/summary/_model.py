@@ -99,7 +99,7 @@ class TimePeriodOverview:
         return period, date(year or 1900, month or 1, day or 1)
 
     @classmethod
-    def from_flat_period_representation(self, period_type: str, start_day: date):
+    def from_flat_period_representation(cls, period_type: str, start_day: date):
         year = None
         month = None
         day = None
@@ -110,6 +110,12 @@ class TimePeriodOverview:
                 if period_type != "month":
                     day = start_day.day
         return year, month, day
+
+    @classmethod
+    def empty(cls, product_name: str):
+        p = cls.add_periods([])
+        p.product_name = product_name
+        return p
 
     @classmethod
     def add_periods(

@@ -6,12 +6,12 @@ repos:
       - id: black
   # Update the sha variable with the release version that you want, from the yamllint repo
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.24.2
+    rev: v1.26.0
     hooks:
       - id: yamllint
         args: [-s]
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.3
+    rev: 3.9.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -27,6 +27,7 @@ repos:
           - flake8-pytest-style # Avoid common pytest mistakes
           - flake8-pytest # Use plain assert, not unittest assertions
           - flake8-rst-docstrings # docstring should be valid ReST
+          - pep8-naming # Follow pep8 naming rules (eg. function names lowercase)
   # Flake8 python in markdown files
   - repo: https://github.com/johnfraney/flake8-markdown
     rev: v0.2.0

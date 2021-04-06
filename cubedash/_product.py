@@ -20,6 +20,8 @@ def legacy_about_csv():
 @bp.route("/audit/storage.csv")
 def storage_csv():
     """Get the product storage table as a CSV"""
+
+    product_locations = _model.STORE.products_location_samples_all()
     return utils.as_csv(
         filename_prefix="product-information",
         headers=(
@@ -37,7 +39,7 @@ def storage_csv():
                 summary.dataset_count,
                 [
                     location.common_prefix
-                    for location in _model.STORE.product_location_samples(product.name)
+                    for location in (product_locations.get(product.name) or [])
                 ],
                 _utils.product_license(product),
                 url_for("product.raw_product_doc", name=product.name, _external=True),
@@ -69,10 +71,12 @@ def metadata_type_list_text():
 
 @bp.route("/audit/storage")
 def storage_page():
+    product_locations = _model.STORE.products_location_samples_all()
+
     return utils.render(
         "storage.html",
         product_summary_and_location=[
-            (product, summary, _model.STORE.product_location_samples(product.name))
+            (product, summary, (product_locations.get(product.name) or []))
             for product, summary in _model.get_products_with_summaries()
         ],
     )

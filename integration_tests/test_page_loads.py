@@ -757,7 +757,7 @@ def test_raw_documents(client: FlaskClient):
         )
 
         try:
-            yaml.load(StringIO(doc))
+            yaml.safe_load(StringIO(doc))
         except YAMLError as e:
             raise AssertionError(f"Expected valid YAML document for url {url!r}") from e
 
