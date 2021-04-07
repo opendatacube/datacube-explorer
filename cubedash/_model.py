@@ -42,8 +42,7 @@ app.jinja_options["extensions"].append("jinja2.ext.do")
 app.config.setdefault("CACHE_TYPE", "null")
 cache = Cache(app=app, config=app.config)
 
-if app.config.get("CUBEDASH_CORS", False):
-    CORS(app)
+cors = CORS(app, resources=[r"/stac/*", r"/api/*"]) if app.config.get("CUBEDASH_CORS", True) else None
 
 app.config.setdefault("CUBEDASH_THEME", "odc")
 flask_themes.setup_themes(app)
