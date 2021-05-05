@@ -4,6 +4,8 @@
 
 {% set extent_geojson = dataset_footprint.__geo_interface__ %}
 
+{% set data_uris = data_uris %}
+
 {% block head %}
     {{ super() }}
     <style type="text/css">
@@ -126,6 +128,17 @@
 
     {% if extent_geojson %}
         <div id="dataset-map"></div>
+    {% endif %}
+
+    {% if data_uris %}
+    <div class="panel odd">
+      <h3>Data Links</h3>
+        <ul>
+        {% for name, uri in data_uris.items() %}
+          <li><strong>{{ name }}:</strong> <a href="{{ uri }}">{{ uri }}</a></li>
+        {% endfor %}
+        </ul>
+    </div>
     {% endif %}
 
     <div class="panel odd">
