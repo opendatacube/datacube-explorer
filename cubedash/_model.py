@@ -36,8 +36,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 
-# Enable do template extension
-app.jinja_options["extensions"].append("jinja2.ext.do")
+# Enable 'do' template extension
+app.jinja_env.add_extension("jinja2.ext.do")
 
 app.config.setdefault("CACHE_TYPE", "null")
 cache = Cache(app=app, config=app.config)
