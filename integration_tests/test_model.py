@@ -1,16 +1,16 @@
 """
 Tests related to the store
 """
-import operator
+
 from collections import Counter
 from datetime import datetime, date
 
-import pytest
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
 from cubedash._model import TimePeriodOverview
 from datacube.model import Range
+from integration_tests.asserts import assert_shapes_mostly_equal
 
 ANTIMERIDIAN_POLY = shape(
     {
@@ -218,21 +218,6 @@ def test_footprint_normal(benchmark):
     o.footprint_geometry = normal_poly
     res: BaseGeometry = benchmark(lambda: o.footprint_wgs84)
     assert_shapes_mostly_equal(res, expected_poly, 0.001)
-
-
-def assert_shapes_mostly_equal(
-    shape1: BaseGeometry, shape2: BaseGeometry, threshold: float
-):
-    __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
-
-    # Check area first, as it's a nicer error message when they're wildly different.
-    assert shape1.area == pytest.approx(
-        shape2.area, abs=threshold
-    ), "Shapes have different areas"
-
-    s1 = shape1.simplify(tolerance=threshold)
-    s2 = shape2.simplify(tolerance=threshold)
-    assert (s1 - s2).area < threshold, f"{s1} is not mostly equal to {s2}"
 
 
 def test_computed_properties():

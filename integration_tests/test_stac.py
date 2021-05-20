@@ -22,7 +22,12 @@ import cubedash._stac
 from cubedash import _model
 from datacube.index import Index
 from datacube.utils import read_documents
-from integration_tests.asserts import DebugContext, get_geojson, get_json
+from integration_tests.asserts import (
+    DebugContext,
+    get_geojson,
+    get_json,
+    assert_matching_eo3,
+)
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -750,8 +755,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
 
     # Our item document can still be improved.
     # This is ensuring changes are deliberate.
-
-    assert response == {
+    expected = {
         "stac_version": "1.0.0-beta.2",
         "stac_extensions": ["eo", "projection"],
         "type": "Feature",
@@ -902,6 +906,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             },
         ],
     }
+    assert_matching_eo3(response, expected)
 
 
 @pytest.mark.parametrize(
