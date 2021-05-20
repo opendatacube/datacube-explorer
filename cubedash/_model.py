@@ -20,8 +20,6 @@ from cubedash.summary._stores import ProductSummary
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
-from jinja2 import Environment
-
 try:
     from ._version import version as __version__
 except ImportError:
