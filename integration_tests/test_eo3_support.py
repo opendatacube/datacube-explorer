@@ -18,6 +18,7 @@ from cubedash.summary import _extents, SummaryStore
 from cubedash.warmup import find_examples_of_all_public_urls
 from datacube.index import Index
 from datacube.utils import parse_time
+from integration_tests.asserts import assert_matching_eo3
 from integration_tests.test_pages_render import assert_all_urls_render
 from integration_tests.test_stac import get_item, get_items
 
@@ -221,9 +222,8 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
         "http://localhost/stac/collections/ga_ls5t_ard_3/items/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
     )
 
-    print(repr(response))
     # Our item document can still be improved. This is ensuring changes are deliberate.
-    assert response == {
+    expected = {
         "stac_version": "1.0.0-beta.2",
         "stac_extensions": ["eo", "projection", "view"],
         "type": "Feature",
@@ -885,3 +885,4 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             },
         ],
     }
+    assert_matching_eo3(response, expected)

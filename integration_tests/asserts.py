@@ -1,4 +1,5 @@
 import json
+import operator
 import re
 from datetime import datetime
 from pathlib import Path
@@ -7,10 +8,13 @@ from textwrap import indent
 from typing import Dict, Optional, Set, Tuple
 
 import jsonschema
+import pytest
 from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML
+from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
@@ -22,6 +26,46 @@ _FEATURE_COLLECTION_SCHEMA_PATH = (
     Path(__file__).parent / "schemas/geojson.org/schema/FeatureCollection.json"
 )
 _FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open("r"))
+
+
+def assert_shapes_mostly_equal(
+    shape1: BaseGeometry, shape2: BaseGeometry, threshold: float
+):
+    __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+
+    # Check area first, as it's a nicer error message when they're wildly different.
+    assert shape1.area == pytest.approx(
+        shape2.area, abs=threshold
+    ), "Shapes have different areas"
+
+    s1 = shape1.simplify(tolerance=threshold)
+    s2 = shape2.simplify(tolerance=threshold)
+    assert (s1 - s2).area < threshold, f"{s1} is not mostly equal to {s2}"
+
+
+def assert_matching_eo3(actual_doc: Dict, expected_doc: Dict):
+    """
+    Assert an EO3 document matches an expected document,
+
+    (without caring about float precision etc.)
+    """
+    __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+
+    actual_doc = dict(actual_doc)
+    expected_doc = dict(expected_doc)
+
+    # Compare geometry separately (as a parsed shape)
+    actual_geom = shape(actual_doc.pop("geometry"))
+    expected_geom = shape(expected_doc.pop("geometry"))
+    assert_shapes_mostly_equal(actual_geom, expected_geom, 0.00000001)
+
+    # Replace expected bbox points with approximates.
+    # (We don't worry about float rounding issues)
+    expected_doc["bbox"] = [pytest.approx(p) for p in expected_doc["bbox"]]
+
+    # Do the remaining fields match?
+    # (note that we have installed a nicer dict comparison in our pytest config)
+    assert actual_doc == expected_doc
 
 
 def get_geojson(client: FlaskClient, url: str) -> Dict:

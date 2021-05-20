@@ -20,6 +20,8 @@ from cubedash.summary._stores import ProductSummary
 from datacube.index import index_connect
 from datacube.model import DatasetType
 
+from jinja2 import Environment
+
 try:
     from ._version import version as __version__
 except ImportError:
@@ -37,7 +39,7 @@ app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
 app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 
 # Enable do template extension
-app.jinja_options["extensions"].append("jinja2.ext.do")
+app.jinja_env.add_extension("jinja2.ext.do")
 
 app.config.setdefault("CACHE_TYPE", "null")
 cache = Cache(app=app, config=app.config)

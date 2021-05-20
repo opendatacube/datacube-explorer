@@ -64,10 +64,17 @@ _LOG = structlog.get_logger()
 
 def infer_crs(crs_str: str) -> Optional[str]:
     plausible_list = [PJCRS.from_epsg(code).to_wkt() for code in DEFAULT_CRS_INFERENCES]
-    closest_wkt = difflib.get_close_matches(crs_str, plausible_list, cutoff=0.38)
-    if len(closest_wkt) == 0:
-        return
-    epsg = PJCRS.from_wkt(closest_wkt[0]).to_epsg()
+    closest_wkt = difflib.get_close_matches(crs_str, plausible_list, cutoff=0.2)
+    sorted_closest_wkt = sorted(
+        closest_wkt,
+        key=lambda x: difflib.SequenceMatcher(None, x, crs_str).ratio(),
+        reverse=False,
+    )
+
+    if len(sorted_closest_wkt) == 0:
+        return None
+
+    epsg = PJCRS.from_wkt(sorted_closest_wkt[0]).to_epsg()
     return f"epsg:{epsg}"
 
 

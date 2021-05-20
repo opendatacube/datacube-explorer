@@ -39,6 +39,7 @@ def test_filter_geom():
     assert _filter_geom([geom])
 
 
+@pytest.mark.skip("Skipping because the newer Shapely is handling geometry better.")
 def test_nested_exception(testing_polygon):
     """
     simulating the behaviour in _model.py
