@@ -138,4 +138,4 @@ lint-docker: ## Run linting inside inside Docker
 
 test-docker: ## Run tests inside Docker
 	docker-compose run explorer \
-		make test
+		pytest --cov=cubedash --cov-report=xml -r sx --durations=5

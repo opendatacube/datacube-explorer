@@ -7,7 +7,6 @@ services:
       args:
         ENVIRONMENT: test
     environment:
-      - PROJ_LIB=/usr/share/proj  # This is to fix an odd issue with PyProj
       - prometheus_multiproc_dir=/tmp # Enable prometheus metrics
     volumes:
       - ./:/code
