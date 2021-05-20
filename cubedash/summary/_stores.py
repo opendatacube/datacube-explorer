@@ -1585,7 +1585,7 @@ class SummaryStore:
 
             uri_list.update(
                 {
-                    name: urljoin(dataset_location, a.math)
+                    name: urljoin(dataset_location, a.path)
                     for name, a in dataset_doc.accessories.items()
                 }
             )
