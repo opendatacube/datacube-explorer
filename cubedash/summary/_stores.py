@@ -1574,19 +1574,21 @@ class SummaryStore:
 
         if is_doc_eo3(dataset.metadata_doc):
             dataset_doc = serialise.from_doc(dataset.metadata_doc, skip_validation=True)
-            dataset_location = dataset_doc.locations[0] if dataset_doc.locations else None
+            dataset_location = (
+                dataset_doc.locations[0] if dataset_doc.locations else None
+            )
 
             uri_list = {
                 name: urljoin(dataset_location, m.path)
                 for name, m in dataset_doc.measurements.items()
             }
 
-            uri_list.update({
-                name: urljoin(dataset_location, a.math)
-                for name, a in dataset_doc.accessories.items()
-            })
-
-
+            uri_list.update(
+                {
+                    name: urljoin(dataset_location, a.math)
+                    for name, a in dataset_doc.accessories.items()
+                }
+            )
 
         return uri_list
 
