@@ -1,9 +1,12 @@
-FROM opendatacube/geobase:wheels as env_builder
+ARG V_BASE=3.3.0
 
-COPY requirements-docker.txt /
-RUN env-build-tool new /requirements-docker.txt /env
+FROM opendatacube/geobase-builder:${V_BASE} as env_builder
 
-FROM opendatacube/geobase:runner
+COPY requirements-docker.txt constraints-docker.txt /
+RUN env-build-tool new /requirements-docker.txt /constraints-docker.txt /env
+
+# Copy the environment in
+FROM opendatacube/geobase-runner:${V_BASE}
 COPY --from=env_builder /env /env
 ENV LC_ALL=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,19 +14,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
 ARG ENVIRONMENT=deployment
-RUN echo "Environment is: $ENVIRONMENT"
 
 # Do the apt install process, including more recent Postgres/PostGIS
-RUN apt-get update && apt-get install -y wget gnupg \
+RUN apt-get update && apt-get install -y make curl wget gnupg git \
     && rm -rf /var/lib/apt/lists/*
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-    apt-key add - \
-    && echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" \
-    >> /etc/apt/sources.list.d/postgresql.list
 
-ADD requirements-apt.txt /tmp/
-RUN apt-get update \
-    && sed 's/#.*//' /tmp/requirements-apt.txt | xargs apt-get install -y \
+# Install postgres client 11
+RUN curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
+    apt-get update && apt-get install -y \
+    postgresql-client-11 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/env/bin:${PATH}"
