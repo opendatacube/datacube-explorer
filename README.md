@@ -181,10 +181,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     #  Or preferrably, follow the `self` link of the Item record to get the whole record)
     STAC_DEFAULT_FULL_ITEM_INFORMATION = True
 
+    # If you'd like S3 URIs to be transformed to HTTPS links then
+    # set this to a valid AWS region string. Otherwise set it to None to not do this.
+    DATA_URI_TRANSFORM_S3_REGION = "ap-southeast-2"
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
-
 
 ### How do I modify the css/javascript?
 
@@ -207,7 +209,7 @@ the "Recompile on changes" option in `Languages & Frameworks ->
 Typescript`.
 
 ### How do I run the integration tests?
-    
+
 The integration tests run against a real postgres database, which is dropped and 
 recreated between each test method:
 
@@ -250,6 +252,7 @@ role is available as a prerequisite in the same [roles](cubedash/summary/roles)
 directory.
 
 ## Docker for Development and running tests
+
 You need to have Docker and Docker Compose installed on your system.
 
 To create your environment, run `make up` or `docker-compose up`.
@@ -262,4 +265,4 @@ Once Explorer indexes have been created, you can browse the running application 
 
 You can run tests by first creating a test database `make create-test-db-docker` and then running tests with `make test-docker`.
 
-And you can run a single test in Docker using a command like this: ` docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`
+And you can run a single test in Docker using a command like this: `docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`

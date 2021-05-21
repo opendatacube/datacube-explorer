@@ -4,8 +4,6 @@
 
 {% set extent_geojson = dataset_footprint.__geo_interface__ %}
 
-{% set data_uris = data_uris %}
-
 {% block head %}
     {{ super() }}
     <style type="text/css">
@@ -135,7 +133,7 @@
       <h3>Data Links</h3>
         <ul>
         {% for name, uri in data_uris.items() %}
-          <li><strong>{{ name }}:</strong> <a href="{{ uri }}">{{ uri }}</a></li>
+          <li><a href="{{ uri }}">{{ name }}</a></li>
         {% endfor %}
         </ul>
     </div>

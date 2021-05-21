@@ -64,6 +64,11 @@ DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
     "ls5_nbar_scene",
 )
 
+# Data URI Transforms
+DATA_URI_TRANSFORM_S3_REGION = (
+    app.config.get("CUBEDASH_DATA_URI_TRANSFORM_S3_REGION") or "ap-southeast-2"
+)
+
 _LOG = structlog.get_logger()
 
 
