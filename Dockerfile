@@ -16,15 +16,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG ENVIRONMENT=deployment
 
 # Do the apt install process, including more recent Postgres/PostGIS
-RUN apt-get update && apt-get install -y make curl wget gnupg git \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+  make curl gnupg git build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install postgres client 11
 RUN curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-    sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
-    apt-get update && apt-get install -y \
-    postgresql-client-11 \
-    && rm -rf /var/lib/apt/lists/*
+  sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && \
+  apt-get update && apt-get install -y \
+  postgresql-client-11 \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/env/bin:${PATH}"
 
@@ -38,8 +39,8 @@ ADD . /code
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then FLAG='' ; else FLAG='-e'; fi \
-    && /env/bin/pip install ${FLAG} .[${ENVIRONMENT}] \
-    && rm -rf $HOME/.cache/pip
+  && /env/bin/pip install ${FLAG} .[${ENVIRONMENT}] \
+  && rm -rf $HOME/.cache/pip
 
 # Delete code from the /code folder if we're in a prod build
 RUN if [ "$ENVIRONMENT" = "deployment" ]; then rm -rf /code/*; fi
