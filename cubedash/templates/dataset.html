@@ -7,8 +7,11 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .tree-node, .indent {
+        .tree-node, details {
             margin-left: 30px;
+        }
+        summary {
+            padding: 5px 0;
         }
 
         .dataset-location + .dataset-location {
@@ -22,6 +25,7 @@
         td, th {
             vertical-align: top;
         }
+
     </style>
 {% endblock %}
 {% block panel %}
@@ -115,8 +119,11 @@
                 <div class="uri-path"><a href="{{ uri | resolve_remote_url }}">{{ uri }}</a></div>
                 {% set dataset_paths = dataset | dataset_file_paths %}
                 {% if dataset_paths %}
-                    <details class="indent">
-                        <summary>{{ dataset_paths | length }} path{{ 's' if dataset_paths | length > 1 else '' }}</summary>
+                    <details>
+                        <summary>
+                            {{- dataset_paths | length }}
+                            path{{ 's' if dataset_paths | length > 1 else '' -}}
+                        </summary>
                         <table class="data-table">
                             {% for name, offset in dataset_paths | dictsort %}
                                 <tr>
