@@ -107,6 +107,16 @@ def _dataset_created(dataset: Dataset):
     return utils.dataset_created(dataset)
 
 
+@bp.app_template_filter("dataset_file_paths")
+def _dataset_file_paths(dataset: Dataset):
+    return utils.get_dataset_file_offsets(dataset)
+
+
+@bp.app_template_filter("resolve_remote_url")
+def _to_remote_url(offset: str, base_uri: str = None):
+    return utils.as_resolved_remote_url(base_uri, offset)
+
+
 @bp.app_template_filter("all_values_none")
 def _all_values_none(d: Mapping):
     return all(v is None for v in d.values())

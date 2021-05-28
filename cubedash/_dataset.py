@@ -84,8 +84,6 @@ def dataset_full_page(product_name: str, id_: UUID):
     if not footprint:
         footprint, is_valid = utils.dataset_shape(dataset)
 
-    data_uris = _model.STORE.get_dataset_uris(dataset)
-
     return utils.render(
         "dataset.html",
         dataset=dataset,
@@ -97,7 +95,6 @@ def dataset_full_page(product_name: str, id_: UUID):
         archive_location_times=archived_location_times,
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
-        data_uris=data_uris,
     )
 
 
