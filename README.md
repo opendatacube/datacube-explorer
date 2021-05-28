@@ -183,7 +183,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
     # If you'd like S3 URIs to be transformed to HTTPS links then
     # set this to a valid AWS region string. Otherwise set it to None to not do this.
-    DATA_URI_TRANSFORM_S3_REGION = "ap-southeast-2"
+    CUBEDASH_DATA_S3_REGION = "ap-southeast-2"
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  

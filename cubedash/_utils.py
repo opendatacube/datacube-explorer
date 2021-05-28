@@ -112,11 +112,7 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
     """
     return as_external_url(
         urljoin(location, offset),
-        (
-            flask.current_app.config.get(
-                "CUBEDASH_DATA_URI_TRANSFORM_S3_REGION", "ap-southeast-2"
-            )
-        ),
+        (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
     )
 
 
