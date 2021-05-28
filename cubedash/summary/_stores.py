@@ -1,27 +1,12 @@
-from dataclasses import dataclass
-
-import dateutil.parser
 import math
 import os
 import re
-import structlog
-from cachetools.func import ttl_cache
 from collections import Counter, defaultdict
 from copy import copy
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from dateutil import tz
 from enum import Enum, auto
-from eodatasets3 import serialise
-from eodatasets3.utils import is_doc_eo3
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
-from geoalchemy2.shape import to_shape
 from itertools import groupby
-from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
-from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
-from sqlalchemy.sql import Select
 from typing import (
     Dict,
     Generator,
@@ -34,14 +19,26 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urljoin, urlparse
 from uuid import UUID
+
+import dateutil.parser
+import structlog
+from cachetools.func import ttl_cache
+from dateutil import tz
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
+from geoalchemy2.shape import to_shape
+from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
+from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql import Select
 
 try:
     from .._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
-from cubedash import _model, _utils
+from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_LOCATION, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
@@ -1563,41 +1560,6 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
-
-    def get_dataset_uris(self, dataset: Dataset):
-        """
-        Get a representation of the data URIs so that they
-        can be linked to to download them.
-        """
-
-        uri_list = {}
-
-        if is_doc_eo3(dataset.metadata_doc):
-            dataset_doc = serialise.from_doc(dataset.metadata_doc, skip_validation=True)
-            dataset_location = dataset.uris[0] if dataset.uris else None
-
-            uri_list = {
-                name: urljoin(dataset_location, m.path)
-                for name, m in dataset_doc.measurements.items()
-            }
-
-            uri_list.update(
-                {
-                    name: urljoin(dataset_location, a.path)
-                    for name, a in dataset_doc.accessories.items()
-                }
-            )
-        region = _model.DATA_URI_TRANSFORM_S3_REGION
-        print(f"REGION IS: {region}")
-        if region is not None:
-            for n, uri in uri_list.items():
-                if "s3://" in uri:
-                    parsed = urlparse(uri, allow_fragments=False)
-                    uri_list[
-                        n
-                    ] = f"https://{parsed.netloc}.s3-{region}.amazonaws.com{parsed.path}"
-
-        return uri_list
 
 
 def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):

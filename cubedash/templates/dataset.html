@@ -7,7 +7,7 @@
 {% block head %}
     {{ super() }}
     <style type="text/css">
-        .tree-node {
+        .tree-node, .indent {
             margin-left: 30px;
         }
 
@@ -17,6 +17,10 @@
 
         #dataset-map {
             height: 500px;
+        }
+
+        td, th {
+            vertical-align: top;
         }
     </style>
 {% endblock %}
@@ -108,8 +112,28 @@
         {% for uri in dataset.uris %}
             <div class="dataset-location">
                 <div><strong>Active:</strong></div>
-                <span class="uri-path">{{ uri }}</span>
+                <div class="uri-path"><a href="{{ uri | resolve_remote_url }}">{{ uri }}</a></div>
+                {% set dataset_paths = dataset | dataset_file_paths %}
+                {% if dataset_paths %}
+                    <details class="indent">
+                        <summary>{{ dataset_paths | length }} path{{ 's' if dataset_paths | length > 1 else '' }}</summary>
+                        <table class="data-table">
+                            {% for name, offset in dataset_paths | dictsort %}
+                                <tr>
+                                    <th style="text-align: right">{{ name }} </th>
+                                    <td>
+                                        <a href="{{ offset | resolve_remote_url(uri) }}"
+                                           class="uri-path">
+                                            {{ offset }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </details>
+                {% endif %}
             </div>
+
         {% else %}
             No known active locations
         {% endfor %}
@@ -128,16 +152,6 @@
         <div id="dataset-map"></div>
     {% endif %}
 
-    {% if data_uris %}
-    <div class="panel odd">
-      <h3>Data Links</h3>
-        <ul>
-        {% for name, uri in data_uris.items() %}
-          <li><a href="{{ uri }}">{{ name }}</a></li>
-        {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
 
     <div class="panel odd">
         <h3 class="followed">Metadata Document</h3>

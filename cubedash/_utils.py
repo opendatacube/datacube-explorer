@@ -13,6 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
 from typing import Optional, Tuple, Dict, List, Iterable
+from urllib.parse import urlparse, urljoin
 
 import flask
 import rapidjson
@@ -39,6 +40,7 @@ from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range, MetadataType
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
+from eodatasets3 import serialise
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -82,6 +84,62 @@ def render(template, **context):
     return render_theme_template(
         flask.current_app.config["CUBEDASH_THEME"], template, **context
     )
+
+
+def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
+    """
+    Get (usually relative) paths for all known files of a dataset.
+
+    Returns {name, url}
+    """
+
+    # Get paths to measurements (usually relative, but may not be)
+    uri_list = {
+        name: m["path"] for name, m in dataset.measurements.items() if m.get("path")
+    }
+
+    # Add accessories too, if possible
+    if is_doc_eo3(dataset.metadata_doc):
+        dataset_doc = serialise.from_doc(dataset.metadata_doc, skip_validation=True)
+        uri_list.update({name: a.path for name, a in dataset_doc.accessories.items()})
+
+    return uri_list
+
+
+def as_resolved_remote_url(location: str, offset: str) -> str:
+    """
+    Convert a dataset location and file offset to a full remote URL.
+    """
+    return as_external_url(
+        urljoin(location, offset),
+        (
+            flask.current_app.config.get(
+                "CUBEDASH_DATA_URI_TRANSFORM_S3_REGION", "ap-southeast-2"
+            )
+        ),
+    )
+
+
+def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
+    """
+    Convert a URL to an externally-visible one.
+
+    >>> # Converts s3 to http
+    >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
+    'https://some-data.s3-ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
+    >>> # Other URLs are left as-is
+    >>> unconvertable_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
+    >>> unconvertable_url == as_external_url(unconvertable_url)
+    True
+    >>> as_external_url('some/relative/path.txt')
+    'some/relative/path.txt'
+    """
+    parsed = urlparse(url)
+
+    if s3_region and parsed.scheme == "s3":
+        return f"https://{parsed.netloc}.s3-{s3_region}.amazonaws.com{parsed.path}"
+
+    return url
 
 
 def group_field_names(request: dict) -> dict:
