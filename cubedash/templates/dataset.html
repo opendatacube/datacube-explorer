@@ -122,7 +122,7 @@
                     <details>
                         <summary>
                             {{- dataset_paths | length }}
-                            path{{ 's' if dataset_paths | length > 1 else '' -}}
+                            link{{ 's' if dataset_paths | length > 1 else '' -}}
                         </summary>
                         <table class="data-table">
                             {% for name, offset in dataset_paths | dictsort %}
