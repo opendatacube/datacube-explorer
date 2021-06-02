@@ -42,3 +42,22 @@ jobs:
           SLACK_TITLE: Lint failure
           SLACK_USERNAME: Explorer linter
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+
+  jinja-template-lint:
+    runs-on: ubuntu-latest
+    name: lint html templates
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: setup python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install curlylint
+        run: |
+          python3 -m pip install curlylint
+      - name: Lint with curlylint
+        run: |
+          python3 -m curlylint cubedash/templates/
+          python3 -m curlylint cubedash/templates/layout/
