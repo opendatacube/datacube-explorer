@@ -33,3 +33,8 @@ repos:
     rev: v0.2.0
     hooks:
       - id: flake8-markdown
+  # Lint Jinja2 templates
+  - repo: https://github.com/thibaudcolas/curlylint
+    rev: "v0.13.0"
+    hooks:
+    - id: curlylint
