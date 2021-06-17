@@ -122,7 +122,7 @@ def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
 
     >>> # Converts s3 to http
     >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
-    'https://some-data.s3-ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
+    'https://some-data.s3.ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
     >>> # Other URLs are left as-is
     >>> unconvertable_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
     >>> unconvertable_url == as_external_url(unconvertable_url)
