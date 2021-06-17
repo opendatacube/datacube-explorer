@@ -133,7 +133,7 @@ def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
     parsed = urlparse(url)
 
     if s3_region and parsed.scheme == "s3":
-        return f"https://{parsed.netloc}.s3-{s3_region}.amazonaws.com{parsed.path}"
+        return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
 
     return url
 
