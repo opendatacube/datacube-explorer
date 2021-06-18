@@ -35,7 +35,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 try:
-    from .._version import version as explorer_version
+    from cubedash._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from cubedash import _utils
@@ -1145,7 +1145,7 @@ class SummaryStore:
 
         columns = [
             geom.label("geometry"),
-            func.Box2D(geom).label("bbox"),
+            func.Box2D(geom).cast(String).label("bbox"),
             # TODO: dataset label?
             DATASET_SPATIAL.c.region_code.label("region_code"),
             DATASET_SPATIAL.c.creation_time,
