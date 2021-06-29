@@ -58,7 +58,7 @@ setup(
         "click",
         "dataclasses>=0.6;python_version<'3.7'",
         "datacube>=1.8",
-        "eodatasets3>=0.17.0",
+        "eodatasets3>=0.21.1",
         "fiona",
         "flask",
         "Flask-Caching",
