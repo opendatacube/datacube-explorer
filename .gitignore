@@ -75,3 +75,6 @@ certs
 
 # Let setuptools_scm manage the _version.py file
 cubedash/_version.py
+
+# Ignore vscode
+.vscode
