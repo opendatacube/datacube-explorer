@@ -206,8 +206,10 @@ class Summariser:
                 DATASET_SPATIAL.c.center_time
             ),
             DATASET_SPATIAL.c.dataset_type_ref
-            == select([ODC_DATASET_TYPE.c.id]).where(
-                ODC_DATASET_TYPE.c.name == product_name
+            == (
+                select([ODC_DATASET_TYPE.c.id])
+                .where(ODC_DATASET_TYPE.c.name == product_name)
+                .scalar_subquery()
             ),
             or_(
                 func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
