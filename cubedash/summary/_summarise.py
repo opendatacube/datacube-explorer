@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Tuple, Optional
 
 import pandas as pd
+import sqlalchemy
 import structlog
 from cachetools.func import lru_cache
 from dateutil import tz
@@ -26,6 +27,22 @@ from cubedash.summary._schema import (
 from datacube.model import Range
 
 _LOG = structlog.get_logger()
+
+
+_NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
+
+
+def _scalar_subquery(selectable):
+    """
+    Make select statement into a scalar subquery.
+
+    We want to support SQLAlchemy 1.3 (which doesn't have `scalar_subquery()`,
+    and avoid deprecation warnings on SQLAlchemy 1.4 (which wants you to use `scalar_subquery()`)
+    """
+    if _NEWER_SQLALCHEMY:
+        return selectable.scalar_subquery()
+    else:
+        return selectable.as_scalar()
 
 
 class Summariser:
@@ -206,10 +223,10 @@ class Summariser:
                 DATASET_SPATIAL.c.center_time
             ),
             DATASET_SPATIAL.c.dataset_type_ref
-            == (
-                select([ODC_DATASET_TYPE.c.id])
-                .where(ODC_DATASET_TYPE.c.name == product_name)
-                .scalar_subquery()
+            == _scalar_subquery(
+                select([ODC_DATASET_TYPE.c.id]).where(
+                    ODC_DATASET_TYPE.c.name == product_name
+                )
             ),
             or_(
                 func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),

@@ -73,7 +73,7 @@ setup(
         "python-rapidjson",
         "shapely",
         "simplekml",
-        "sqlalchemy",
+        "sqlalchemy>=1.3",
         "structlog",
     ],
     tests_require=tests_require,
