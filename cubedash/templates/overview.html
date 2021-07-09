@@ -55,6 +55,7 @@
                                    {% if not show_individual_datasets %}disabled="disabled"{% endif %}
                                    title="Show individual datasets">Datasets</label>
                         </div>
+
                     {% endif %}
 
                     <h1><strong>{{ product.name }}</strong>{{ product_args_label }}</h1>
@@ -141,9 +142,10 @@
                     {% endif %}
 
                     <h4>
-                        <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-                            {{ product.metadata_type.name }}</a>
-                        metadata:
+                        Common Metadata
+                        (<a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                            {{- product.metadata_type.name -}}
+                        </a>)
                     </h4>
 
                     {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
@@ -158,6 +160,34 @@
                                 Unknown (needs refresh)
                             </em>
                         {% endif %}
+                    {% endif %}
+
+                    {% if have_displayable_data %}
+                    <h4>GeoJSON</h4>
+                    <ul>
+                        {% if product_region_info %}
+                        <li>
+                            <a href="{{ url_for('api.regions_geojson', **product_args) }}">
+                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                <span style="text-transform: capitalize">{{ product_region_info.units_label }}</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a href="{{ url_for('api.footprint_geojson', **product_args) }}" >
+                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                Footprint
+                            </a>
+                        </li>
+                        {% if show_individual_datasets %}
+                        <li>
+                            <a href="{{ url_for('api.datasets_geojson', limit=dataset_limit, **product_args)}}" >
+                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                Datasets
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
                     {% endif %}
 
                     {% if product_summary.derived_products %}
