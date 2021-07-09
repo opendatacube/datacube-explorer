@@ -12,7 +12,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Optional, Tuple, Dict, List, Iterable
+from typing import Optional, Tuple, Dict, List, Iterable, Union
 from urllib.parse import urlparse, urljoin
 
 import flask
@@ -404,9 +404,14 @@ def as_geojson(o):
     return as_json(o, content_type="application/geo+json")
 
 
-def as_yaml(o, content_type="text/yaml"):
+def as_yaml(*o, content_type="text/yaml"):
+    """
+    Return a yaml response.
+
+    Multiple args will return a multi-doc yaml file.
+    """
     stream = StringIO()
-    eodatasets3.serialise.dumps_yaml(stream, o)
+    eodatasets3.serialise.dumps_yaml(stream, *o)
     return flask.Response(
         stream.getvalue(),
         content_type=content_type,
@@ -484,7 +489,7 @@ def prepare_dataset_formatting(
 def prepare_document_formatting(
     metadata_doc: Dict,
     doc_friendly_label: str = "",
-    include_source_url=False,
+    include_source_url: Union[bool, str] = False,
 ):
     """
     Try to format a raw document for readability.
@@ -502,7 +507,9 @@ def prepare_document_formatting(
     if doc_friendly_label:
         header_comments.append(doc_friendly_label)
     if include_source_url:
-        header_comments.append(f"url: {flask.request.url}")
+        if include_source_url is True:
+            include_source_url = flask.request.url
+        header_comments.append(f"url: {include_source_url}")
 
     # Give the document the same order as eo-datasets. It's far more readable (ID/names first, sources last etc.)
     ordered_metadata = CommentedMap(
@@ -634,7 +641,6 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     if extent is None:
         log.warn("invalid_dataset.empty_extent")
         return None, False
-
     geom = shapely.geometry.asShape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not geom.is_valid:
