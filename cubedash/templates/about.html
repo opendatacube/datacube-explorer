@@ -41,27 +41,49 @@
     </div>
 
     <div class="panel">
+        <h3>Extents and summaries</h3>
+    </div>
+
+    <div class="panel">
         <h3>Datacube Resources</h3>
 
         Datacube-ready config and metadata can be downloaded from Explorer programatically:
 
+        <h4>Individual</h4>
         <ul>
             <li>
-                Datasets:
+                A dataset:
                 <span class="uri-path">
                      {{ explorer_root_url}}dataset/<span class="path-variable">Dataset UUID</span>.odc-metadata.yaml
                 </span>
             </li>
             <li>
-                Products:
+                A Product:
                 <span class="uri-path">
                     {{ explorer_root_url}}products/<span class="path-variable">Product Name</span>.odc-product.yaml
                 </span>
             </li>
             <li>
-                Metadata types:
+                A Metadata Type:
                 <span class="uri-path">
                     {{ explorer_root_url}}metadata-types/<span class="path-variable">Metadata Type Name</span>.odc-type.yaml
+                </span>
+            </li>
+        </ul>
+
+
+        <h4>All</h4>
+        <ul>
+            <li>
+                All Product definitions:
+                <span class="uri-path">
+                    <a href="{{ url_for('product.raw_all_products_doc', _external=True) }}">{{ url_for('product.raw_all_products_doc', _external=True) }}</a>
+                </span>
+            </li>
+            <li>
+                All Metadata Type definitions:
+                <span class="uri-path">
+                    <a href="{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}">{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}</a>
                 </span>
             </li>
         </ul>
@@ -86,7 +108,7 @@
                 </span>
             </li>
             <li>
-                Simple, bash-ready contents:
+                Simple, bash-ready list of names:
                 <span class="uri-path">
                     {{ url_for('product.product_list_text', _external=True) }}<br/>
                     {{ url_for('product.metadata_type_list_text', _external=True) }}

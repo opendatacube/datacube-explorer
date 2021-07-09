@@ -194,6 +194,38 @@ def raw_metadata_type_doc(name):
     return utils.as_yaml(ordered_metadata)
 
 
+@bp.route("/products.odc-product.yaml")
+def raw_all_products_doc():
+    return utils.as_yaml(
+        *(
+            utils.prepare_document_formatting(
+                product.definition,
+                f"Product {product.name}",
+                include_source_url=url_for(
+                    ".raw_product_doc", name=product.name, _external=True
+                ),
+            )
+            for product in _model.STORE.all_dataset_types()
+        )
+    )
+
+
+@bp.route("/metadata-types.odc-type.yaml")
+def raw_all_metadata_types_doc():
+    return utils.as_yaml(
+        *(
+            utils.prepare_document_formatting(
+                type_.definition,
+                f"Metadata Type {type_.name}",
+                include_source_url=url_for(
+                    ".raw_metadata_type_doc", name=type_.name, _external=True
+                ),
+            )
+            for type_ in _model.STORE.all_metadata_types()
+        )
+    )
+
+
 def _iso8601_duration(tdelta: timedelta):
     """
     Format a timedelta as an iso8601 duration

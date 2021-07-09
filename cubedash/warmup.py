@@ -22,7 +22,9 @@ def find_examples_of_all_public_urls(index: Index):
     yield "/arrivals.csv"
 
     yield "/products.txt"
+    yield "/products.odc-product.yaml"
     yield "/metadata-types.txt"
+    yield "/metadata-types.odc-type.yaml"
 
     yield "/audit/storage"
     yield "/audit/storage.csv"
