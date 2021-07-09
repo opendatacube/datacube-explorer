@@ -18,11 +18,15 @@
                class="badge header-badge">
                 Text <i class="fa fa-file-text-o" aria-hidden="true"></i>
             </a>
-        </div>
-        <a href="{{ url_for('stac.collections') }}"
+            <a href="{{ url_for('stac.collections') }}"
                class="badge header-badge">
-            As Stac <i class="fa fa-file-text-o" aria-hidden="true"></i>
-        </a>
+                Stac <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('product.raw_all_metadata_types_doc') }}"
+               class="badge header-badge">
+                Yaml <i class="fa fa-file-text" aria-hidden="true"></i>
+            </a>
+        </div>
 
     <table class="data-table">
         {% for group_name, product_summaries in grouped_products %}
