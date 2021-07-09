@@ -196,7 +196,7 @@ def raw_metadata_type_doc(name):
 
 @bp.route("/products.odc-product.yaml")
 def raw_all_products_doc():
-    return utils.as_yaml(
+    resp = utils.as_yaml(
         *(
             utils.prepare_document_formatting(
                 product.definition,
@@ -208,11 +208,19 @@ def raw_all_products_doc():
             for product in _model.STORE.all_dataset_types()
         )
     )
+    # Add Explorer ID to the download filename if they have one.
+    utils.suggest_download_filename(
+        resp,
+        prefix="products",
+        suffix=".odc-product.yaml",
+    )
+
+    return resp
 
 
 @bp.route("/metadata-types.odc-type.yaml")
 def raw_all_metadata_types_doc():
-    return utils.as_yaml(
+    resp = utils.as_yaml(
         *(
             utils.prepare_document_formatting(
                 type_.definition,
@@ -222,8 +230,15 @@ def raw_all_metadata_types_doc():
                 ),
             )
             for type_ in _model.STORE.all_metadata_types()
-        )
+        ),
     )
+    # Add Explorer ID to the download filename if they have one.
+    utils.suggest_download_filename(
+        resp,
+        prefix="metadata-types",
+        suffix=".odc-type.yaml",
+    )
+    return resp
 
 
 def _iso8601_duration(tdelta: timedelta):

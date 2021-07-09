@@ -12,7 +12,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Optional, Tuple, Dict, List, Iterable, Union
+from typing import Optional, Tuple, Dict, List, Iterable, Union, Mapping
 from urllib.parse import urlparse, urljoin
 
 import flask
@@ -408,19 +408,27 @@ def as_geojson(o, downloadable_filename_prefix: str = None):
     it on click with that filename.
     """
     response = as_json(o, content_type="application/geo+json")
+
     if downloadable_filename_prefix:
-        explorer_id = _only_alphanumeric(
-            flask.current_app.config.get("STAC_ENDPOINT_ID", "")
-        )
-        if explorer_id:
-            downloadable_filename_prefix += f"-{explorer_id}"
-        response.headers[
-            "Content-Disposition"
-        ] = f"attachment; filename={downloadable_filename_prefix}.geojson"
+        suggest_download_filename(response, downloadable_filename_prefix, ".geojson")
     return response
 
 
-def as_yaml(*o, content_type="text/yaml"):
+def suggest_download_filename(response: flask.Response, prefix: str, suffix: str):
+    """
+    Give the Browser a hint to download the file with the given filename
+    (rather than display it in-line).
+    """
+    explorer_id = _only_alphanumeric(
+        flask.current_app.config.get("STAC_ENDPOINT_ID", "")
+    )
+    if explorer_id:
+        prefix += f"-{explorer_id.lower()}"
+
+    response.headers["Content-Disposition"] = f"attachment; filename={prefix}{suffix}"
+
+
+def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = None):
     """
     Return a yaml response.
 
@@ -428,10 +436,14 @@ def as_yaml(*o, content_type="text/yaml"):
     """
     stream = StringIO()
     eodatasets3.serialise.dumps_yaml(stream, *o)
-    return flask.Response(
+    response = flask.Response(
         stream.getvalue(),
         content_type=content_type,
     )
+    if downloadable_filename_prefix:
+        suggest_download_filename(response, downloadable_filename_prefix, ".yaml")
+
+    return response
 
 
 def _only_alphanumeric(s: str):
@@ -453,13 +465,12 @@ def as_csv(
     cw = csv.writer(out)
     cw.writerow(headers)
     cw.writerows(rows)
-    this_explorer_id = _only_alphanumeric(
-        flask.current_app.config.get("STAC_ENDPOINT_ID", "explorer")
-    )
     response = flask.make_response(out.getvalue())
-    response.headers[
-        "Content-Disposition"
-    ] = f"attachment; filename={filename_prefix}-{this_explorer_id}.csv"
+    suggest_download_filename(
+        response,
+        filename_prefix,
+        ".csv",
+    )
     response.headers["Content-type"] = "text/csv"
     return response
 
@@ -503,7 +514,7 @@ def prepare_dataset_formatting(
 
 
 def prepare_document_formatting(
-    metadata_doc: Dict,
+    metadata_doc: Mapping,
     doc_friendly_label: str = "",
     include_source_url: Union[bool, str] = False,
 ):
