@@ -1,5 +1,6 @@
 import logging
 
+import flask
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
@@ -12,6 +13,25 @@ _MAX_DATASET_RETURN = 2000
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
+
+
+def _api_path_as_filename_prefix():
+    """
+    Get a usable filename prefix for the given API offset.
+
+    Eg:
+
+        "/api/datasets/ls7_albers/2017"
+
+    Becomes filename:
+
+        "ls7_albers-2017-datasets.geojson"
+
+    (the suffix is added by the response)
+    """
+
+    api, kind, *period = flask.request.path.strip("/").split("/")
+    return "-".join([*period, kind])
 
 
 @bp.route("/datasets/<product_name>")
@@ -40,7 +60,8 @@ def datasets_geojson(
                 )
                 if s.geom_geojson is not None
             ],
-        )
+        ),
+        downloadable_filename_prefix=_api_path_as_filename_prefix(),
     )
 
     # TODO: replace this api with stac?
@@ -64,7 +85,10 @@ def datasets_geojson(
 def footprint_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    return as_geojson(_model.get_footprint_geojson(product_name, year, month, day))
+    return as_geojson(
+        _model.get_footprint_geojson(product_name, year, month, day),
+        downloadable_filename_prefix=_api_path_as_filename_prefix(),
+    )
 
 
 @bp.route("/regions/<product_name>")
@@ -77,4 +101,6 @@ def regions_geojson(
     regions = _model.get_regions_geojson(product_name, year, month, day)
     if regions is None:
         abort(404, f"{product_name} does not have regions")
-    return as_geojson(regions)
+    return as_geojson(
+        regions, downloadable_filename_prefix=_api_path_as_filename_prefix()
+    )

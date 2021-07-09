@@ -400,8 +400,24 @@ def as_json(o, content_type="application/json") -> flask.Response:
     )
 
 
-def as_geojson(o):
-    return as_json(o, content_type="application/geo+json")
+def as_geojson(o, downloadable_filename_prefix: str = None):
+    """
+    Serialise the given object into a GeoJSON flask response.
+
+    Optionally provide a filename, to tell web-browsers to download
+    it on click with that filename.
+    """
+    response = as_json(o, content_type="application/geo+json")
+    if downloadable_filename_prefix:
+        explorer_id = _only_alphanumeric(
+            flask.current_app.config.get("STAC_ENDPOINT_ID", "")
+        )
+        if explorer_id:
+            downloadable_filename_prefix += f"-{explorer_id}"
+        response.headers[
+            "Content-Disposition"
+        ] = f"attachment; filename={downloadable_filename_prefix}.geojson"
+    return response
 
 
 def as_yaml(*o, content_type="text/yaml"):
