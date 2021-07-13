@@ -40,9 +40,7 @@
         </p>
     </div>
 
-    <div class="panel">
-        <h3>Extents and summaries</h3>
-    </div>
+
 
     <div class="panel">
         <h3>Datacube Resources</h3>
@@ -84,6 +82,44 @@
                 All Metadata Type definitions:
                 <span class="uri-path">
                     <a href="{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}">{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}</a>
+                </span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="panel">
+        <h3>Extents and summaries</h3>
+        Extent data displayed by Explorer can be downloaded as GeoJSON
+        <ul>
+            <li>
+                Total footprint
+                <span class="uri-path">
+                    {{ explorer_root_url}}api/footprint/<span class="path-variable">Product Name</span><br/>
+                    {{ explorer_root_url}}api/footprint/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span><br/>
+                    {{ explorer_root_url}}api/footprint/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span><br/>
+                    {{ explorer_root_url}}api/footprint/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span>/<span class="path-variable">Day</span><br/>
+                </span>
+            </li>
+            <li>
+                Region footprints
+                <span class="uri-path">
+                    {{ explorer_root_url}}api/regions/<span class="path-variable">Product Name</span><br/>
+                    {{ explorer_root_url}}api/regions/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span><br/>
+                    {{ explorer_root_url}}api/regions/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span><br/>
+                    {{ explorer_root_url}}api/regions/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span>/<span class="path-variable">Day</span><br/>
+                </span>
+            </li>
+            <li>
+                Dataset footprints
+                <span class="muted">
+                    (<tt>?limit={{ config['CUBEDASH_DEFAULT_API_DATASETS'] }}</tt> by default,
+                    can be increased up to {{ config["CUBEDASH_MAX_API_DATASETS"] }} on this host)
+                </span>
+                <span class="uri-path">
+                    {{ explorer_root_url}}api/datasets/<span class="path-variable">Product Name</span><br/>
+                    {{ explorer_root_url}}api/datasets/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span><br/>
+                    {{ explorer_root_url}}api/datasets/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span><br/>
+                    {{ explorer_root_url}}api/datasets/<span class="path-variable">Product Name</span>/<span class="path-variable">Year</span>/<span class="path-variable">Month</span>/<span class="path-variable">Day</span><br/>
                 </span>
             </li>
         </ul>
