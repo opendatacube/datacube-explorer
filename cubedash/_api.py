@@ -9,7 +9,6 @@ from . import _model
 from ._utils import as_geojson
 from .summary import ItemSort
 
-_MAX_DATASET_RETURN = 2000
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
@@ -41,9 +40,14 @@ def _api_path_as_filename_prefix():
 def datasets_geojson(
     product_name: str, year: int = None, month: int = None, day: int = None
 ):
-    limit = request.args.get("limit", default=500, type=int)
-    if limit > _MAX_DATASET_RETURN:
-        limit = _MAX_DATASET_RETURN
+    limit = request.args.get(
+        "limit",
+        default=flask.current_app.config["CUBEDASH_DEFAULT_API_DATASETS"],
+        type=int,
+    )
+    hard_limit = flask.current_app.config["CUBEDASH_MAX_API_DATASETS"]
+    if limit > hard_limit:
+        limit = hard_limit
 
     time = _utils.as_time_range(year, month, day, tzinfo=_model.STORE.grouping_timezone)
 
