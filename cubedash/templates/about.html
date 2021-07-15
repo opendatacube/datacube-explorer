@@ -4,12 +4,11 @@
 {% block title %}About Explorer{% endblock %}
 {% block head %}
     {{ super() }}
-    <style type="text/css">
+    <style>
 
         .uri-path {
             margin-bottom: 15px;
             display: block;
-
         }
 
         .path-variable {
@@ -47,7 +46,6 @@
 
         Datacube-ready config and metadata can be downloaded from Explorer programatically:
 
-        <h4>Individual</h4>
         <ul>
             <li>
                 A dataset:
@@ -67,28 +65,23 @@
                     {{ explorer_root_url}}metadata-types/<span class="path-variable">Metadata Type Name</span>.odc-type.yaml
                 </span>
             </li>
-        </ul>
-
-
-        <h4>All</h4>
-        <ul>
             <li>
-                All Product definitions:
+                All Products:
                 <span class="uri-path">
-                    <a href="{{ url_for('product.raw_all_products_doc', _external=True) }}">{{ url_for('product.raw_all_products_doc', _external=True) }}</a>
+                    {{ url_for('product.raw_all_products_doc', _external=True) }}
                 </span>
             </li>
             <li>
-                All Metadata Type definitions:
+                All Metadata Types:
                 <span class="uri-path">
-                    <a href="{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}">{{ url_for('product.raw_all_metadata_types_doc', _external=True) }}</a>
+                    {{ url_for('product.raw_all_metadata_types_doc', _external=True) }}
                 </span>
             </li>
         </ul>
     </div>
 
-    <div class="panel">
-        <h3>Extents and summaries</h3>
+    <div class="panel odd">
+        <h3>Extents</h3>
         Extent data displayed by Explorer can be downloaded as GeoJSON
         <ul>
             <li>
@@ -126,7 +119,7 @@
     </div>
 
     <div class="panel">
-         <h3>Audit and Summaries</h3>
+         <h3>Audit and Examine</h3>
 
         Much of Explorer's audit pages are available in CSV or text format.
 
