@@ -105,8 +105,8 @@
             <li>
                 Dataset footprints
                 <span class="muted">
-                    (<tt>?limit={{ config['CUBEDASH_DEFAULT_API_DATASETS'] }}</tt> by default,
-                    can be increased up to {{ config["CUBEDASH_MAX_API_DATASETS"] }} on this host)
+                    (<tt>?limit={{ config['CUBEDASH_DEFAULT_API_LIMIT'] }}</tt> by default,
+                    can be increased up to {{ config["CUBEDASH_HARD_API_LIMIT"] }} on this host)
                 </span>
                 <span class="uri-path">
                     {{ explorer_root_url}}api/datasets/<span class="path-variable">Product Name</span><br/>

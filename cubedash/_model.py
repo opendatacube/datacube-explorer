@@ -44,8 +44,8 @@ app.config.setdefault("CACHE_TYPE", "null")
 # Global defaults
 app.config.from_mapping(
     dict(
-        CUBEDASH_DEFAULT_API_DATASETS=500,
-        CUBEDASH_MAX_API_DATASETS=4000,
+        CUBEDASH_DEFAULT_API_LIMIT=500,
+        CUBEDASH_HARD_API_LIMIT=4000,
     )
 )
 

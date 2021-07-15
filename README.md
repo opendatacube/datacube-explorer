@@ -149,8 +149,9 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     CUBEDASH_DEFAULT_GROUP_NAME = 'Other Products'
     # Maximum search results
     CUBEDASH_HARD_SEARCH_LIMIT = 100
-    CUBEDASH_DEFAULT_API_DATASETS = 500
-    CUBEDASH_MAX_API_DATASETS = 4000
+    # Dataset records returned by '/api'
+    CUBEDASH_DEFAULT_API_LIMIT = 500
+    CUBEDASH_HARD_API_LIMIT = 4000
     # Maximum number of source/derived datasets to show
     CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
     

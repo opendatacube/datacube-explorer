@@ -42,10 +42,10 @@ def datasets_geojson(
 ):
     limit = request.args.get(
         "limit",
-        default=flask.current_app.config["CUBEDASH_DEFAULT_API_DATASETS"],
+        default=flask.current_app.config["CUBEDASH_DEFAULT_API_LIMIT"],
         type=int,
     )
-    hard_limit = flask.current_app.config["CUBEDASH_MAX_API_DATASETS"]
+    hard_limit = flask.current_app.config["CUBEDASH_HARD_API_LIMIT"]
     if limit > hard_limit:
         limit = hard_limit
 
