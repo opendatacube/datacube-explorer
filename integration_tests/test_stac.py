@@ -1,33 +1,36 @@
 """
 Tests that hit the stac api
 """
-
+import functools
 import json
 import urllib.parse
 from collections import Counter, defaultdict
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, Generator, Iterable, List, Optional, Union
+from urllib.request import urlopen
 
 import jsonschema
 import pytest
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from jsonschema import SchemaError
+from jsonschema import SchemaError, ValidationError
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
 import cubedash._stac
 from cubedash import _model
 from datacube.index import Index
-from datacube.utils import read_documents
+from datacube.utils import read_documents, is_url
 from integration_tests.asserts import (
     DebugContext,
     get_geojson,
     get_json,
     assert_matching_eo3,
 )
+
+ALLOW_INTERNET = True
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -36,7 +39,9 @@ OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
-_STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac"
+_STAC_SCHEMA_BASE = (
+    _SCHEMA_BASE / f"schemas.stacspec.org/v{cubedash._stac.STAC_VERSION}"
+)
 
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
@@ -65,46 +70,52 @@ def read_document(path: Path) -> dict:
     return doc
 
 
-def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
+def _web_reference(ref: str):
+    """
+    A reference to a schema via a URL
 
-    # Allow schemas to reference other schemas in the same folder.
-    def local_reference(ref):
-        relative_path = schema_location.parent.joinpath(ref)
-        if relative_path.exists():
-            return read_document(relative_path)
-
-        # This is a sloppy workaround.
-        # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
-        # paths in stac work. We fallback to matching based on filename.
-        similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
-        if similar_schemas:
-            if len(similar_schemas) > 1:
-                raise NotImplementedError(
-                    f"cannot distinguish schema {ref!r} (within {schema_location}"
-                )
-            [presumed_schema] = similar_schemas
-            return read_document(presumed_schema)
-        raise ValueError(
-            f"Schema reference not found: {ref!r} (within {schema_location})"
-        )
-
-    def web_reference(ref: str):
-        """
-        A reference to a schema via a URL
-
-        eg http://geojson.org/schemas/Features.json'
-        """
-        (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
-        # We used `wget -r` to download the remote schemas locally.
-        # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
-        path = _SCHEMA_BASE / f"{netloc}{offset}"
-        if not path.exists():
+    eg http://geojson.org/schemas/Features.json'
+    """
+    if not is_url(ref):
+        raise ValueError(f"Expected URL? Got {ref!r}")
+    (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
+    # We used `wget -r` to download the remote schemas locally.
+    # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
+    path = _SCHEMA_BASE / f"{netloc}{offset}"
+    if not path.exists():
+        if ALLOW_INTERNET:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(urlopen(ref).read())
+        else:
             raise ValueError(
                 f"No local copy exists of schema {ref!r}.\n"
                 f"\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
                 f"\t(looked in {path})"
             )
-        return read_document(path)
+    return read_document(path)
+
+
+# Allow schemas to reference other schemas in the same folder.
+def _local_reference(schema_location: Path, ref):
+    relative_path = schema_location.parent.joinpath(ref)
+    if relative_path.exists():
+        return read_document(relative_path)
+
+    # This is a sloppy workaround.
+    # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
+    # paths in stac work. We fallback to matching based on filename.
+    similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
+    if similar_schemas:
+        if len(similar_schemas) > 1:
+            raise NotImplementedError(
+                f"cannot distinguish schema {ref!r} (within {schema_location}"
+            )
+        [presumed_schema] = similar_schemas
+        return read_document(presumed_schema)
+    raise ValueError(f"Schema reference not found: {ref!r} (within {schema_location})")
+
+
+def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
 
     if not schema_location.exists():
         raise ValueError(f"No jsonschema file found at {schema_location}")
@@ -117,15 +128,24 @@ def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
             raise RuntimeError(
                 f"Invalid json, cannot load schema {schema_location}"
             ) from e
+    return load_schema_doc(schema, location=schema_location)
 
+
+def load_schema_doc(
+    schema: Dict, location: Union[str, Path]
+) -> jsonschema.Draft7Validator:
     try:
         jsonschema.Draft7Validator.check_schema(schema)
     except SchemaError as e:
-        raise RuntimeError(f"Invalid schema {schema_location}") from e
+        raise RuntimeError(f"Invalid schema {location}") from e
 
     ref_resolver = jsonschema.RefResolver.from_schema(
         schema,
-        handlers={"": local_reference, "https": web_reference, "http": web_reference},
+        handlers={
+            "": functools.partial(_local_reference, location),
+            "https": _web_reference,
+            "http": _web_reference,
+        },
     )
     return jsonschema.Draft7Validator(schema, resolver=ref_resolver)
 
@@ -138,15 +158,16 @@ _COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
 )
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
-)
+_ITEM_COLLECTION_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "itemcollection.json")
 
-_STAC_EXTENSIONS = dict(
-    (extension.name, load_validator(extension / "json-schema" / "schema.json"))
-    for extension_dir in _SCHEMA_BASE.rglob("extensions")
-    for extension in extension_dir.iterdir()
-)
+
+@functools.cache
+def get_extension(url: str) -> jsonschema.Draft7Validator:
+    if not is_url(url):
+        raise ValueError(
+            f"stac extensions are now expected to be URLs in 1.0.0. " f"Got {url!r}"
+        )
+    return load_schema_doc(_web_reference(url), location=url)
 
 
 def get_collection(client: FlaskClient, url: str, validate=True) -> Dict:
@@ -550,10 +571,11 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 band_d = feature["assets"][band]
                 assert band_d["roles"] == ["data"]
                 assert band_d["eo:bands"] == [{"name": band}]
-                # These have no path, so they should be the dataset location itself.
+                # These have no path, so they should be the dataset location itself with a layer.
                 # (this is a .nc file in reality, but our test data loading creates weird locations)
                 assert (
-                    band_d["href"] == f'file://example.com/test_dataset/{feature["id"]}'
+                    band_d["href"]
+                    == f'file://example.com/test_dataset/{feature["id"]}?layer=swir2'
                 )
 
             # Validate stac item with jsonschema
@@ -948,18 +970,16 @@ def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: s
 
 def assert_stac_extensions(doc: Dict):
     stac_extensions = doc.get("stac_extensions", ())
-
     for extension_name in stac_extensions:
-        assert (
-            extension_name in _STAC_EXTENSIONS
-        ), f"Unknown stac extension? No schema for {extension_name}"
-
-        _STAC_EXTENSIONS[extension_name].validate(doc)
+        get_extension(extension_name).validate(doc)
 
 
 def assert_item_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
-    _ITEM_COLLECTION_SCHEMA.validate(collection)
+    try:
+        _ITEM_COLLECTION_SCHEMA.validate(collection)
+    except ValidationError:
+        print(repr(collection))
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
