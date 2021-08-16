@@ -464,6 +464,7 @@ def _stac_collection(collection: str):
     stac_collection = dict(
         id=summary.name,
         title=summary.name,
+        type="Collection",
         license=_utils.product_license(dataset_type),
         description=dataset_type.definition.get("description"),
         properties=dict(_build_properties(dataset_type.metadata)),

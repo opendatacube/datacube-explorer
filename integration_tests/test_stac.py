@@ -283,7 +283,7 @@ def validate_items(
         id_ = item["id"]
         with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
             validate_item(item)
-        product_counts[item["properties"]["odc:product"]] += 1
+        product_counts[item["properties"].get("odc:product", item["collection"])] += 1
 
         # Assert there's no duplicates
         assert (
@@ -679,7 +679,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
     scene_collection = get_collection(stac_client, collection_href, validate=False)
 
     assert scene_collection == {
-        "stac_version": "1.0.0-beta.2",
+        "stac_version": "1.0.0",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
         "license": "CC-BY-4.0",
@@ -778,9 +778,13 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
     # Our item document can still be improved.
     # This is ensuring changes are deliberate.
     expected = {
-        "stac_version": "1.0.0-beta.2",
-        "stac_extensions": ["eo", "projection"],
+        "stac_version": "1.0.0",
+        "stac_extensions": [
+            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+        ],
         "type": "Feature",
+        "collection": "ls7_nbar_scene",
         "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
         "bbox": [
             140.03596008297276,
@@ -813,61 +817,66 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             ],
         },
         "properties": {
-            "created": "2017-07-11T01:32:22+00:00",
-            "datetime": "2017-05-02T00:29:01+00:00",
+            "created": "2017-07-11T01:32:22Z",
+            "datetime": "2017-05-02T00:29:01Z",
             "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
             "platform": "landsat-7",
             "instruments": ["etm"],
             "landsat:wrs_path": 96,
             "landsat:wrs_row": 82,
             "cubedash:region_code": "96_82",
-            "odc:product": "ls7_nbar_scene",
             "proj:epsg": 4326,
         },
         "assets": {
             "1": {
+                "title": "1",
                 "eo:bands": [{"name": "1"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
                 ),
             },
             "2": {
+                "title": "2",
                 "eo:bands": [{"name": "2"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
                 ),
             },
             "3": {
+                "title": "3",
                 "eo:bands": [{"name": "3"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
                 ),
             },
             "4": {
+                "title": "4",
                 "eo:bands": [{"name": "4"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
                 ),
             },
             "5": {
+                "title": "5",
                 "eo:bands": [{"name": "5"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
                 ),
             },
             "7": {
+                "title": "7",
                 "eo:bands": [{"name": "7"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
@@ -888,6 +897,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             "checksum:sha1": {
                 "type": "text/plain",
                 "href": dataset_url("package.sha1"),
+                "roles": ["metadata"],
             },
         },
         "links": [
