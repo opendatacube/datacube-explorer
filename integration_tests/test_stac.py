@@ -15,7 +15,7 @@ import pytest
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from jsonschema import SchemaError, ValidationError
+from jsonschema import SchemaError
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -574,8 +574,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 # These have no path, so they should be the dataset location itself with a layer.
                 # (this is a .nc file in reality, but our test data loading creates weird locations)
                 assert (
-                    band_d["href"]
-                    == f'file://example.com/test_dataset/{feature["id"]}?layer=swir2'
+                    band_d["href"] == f'file://example.com/test_dataset/{feature["id"]}'
                 )
 
             # Validate stac item with jsonschema
@@ -986,10 +985,7 @@ def assert_stac_extensions(doc: Dict):
 
 def assert_item_collection(collection: Dict):
     assert "features" in collection, "No features in collection"
-    try:
-        _ITEM_COLLECTION_SCHEMA.validate(collection)
-    except ValidationError:
-        print(repr(collection))
+    _ITEM_COLLECTION_SCHEMA.validate(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
