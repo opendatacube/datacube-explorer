@@ -224,7 +224,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
 
     # Our item document can still be improved. This is ensuring changes are deliberate.
     expected = {
-        "stac_version": "1.0.0-beta.2",
+        "stac_version": "1.0.0",
         "stac_extensions": ["eo", "projection", "view"],
         "type": "Feature",
         "id": "5b2f2c50-e618-4bef-ba1f-3d436d9aed14",

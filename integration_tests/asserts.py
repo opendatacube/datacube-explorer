@@ -5,11 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 from textwrap import indent
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple, Iterable
 
 import jsonschema
 import pytest
 from dateutil.tz import tzutc
+from deepdiff import DeepDiff
+from deepdiff.model import DiffLevel
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML
@@ -22,6 +24,8 @@ from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 
 # GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
+
+
 _FEATURE_COLLECTION_SCHEMA_PATH = (
     Path(__file__).parent / "schemas/geojson.org/schema/FeatureCollection.json"
 )
@@ -65,7 +69,9 @@ def assert_matching_eo3(actual_doc: Dict, expected_doc: Dict):
 
     # Do the remaining fields match?
     # (note that we have installed a nicer dict comparison in our pytest config)
-    assert actual_doc == expected_doc
+    assert actual_doc == expected_doc, "\n".join(
+        format_doc_diffs(actual_doc, expected_doc)
+    )
 
 
 def get_geojson(client: FlaskClient, url: str) -> Dict:
@@ -301,3 +307,47 @@ def _add_context(e: AssertionError, context_message: str):
 
     args[0] = full_error
     e.args = tuple(args)
+
+
+def format_doc_diffs(left: Dict, right: Dict) -> Iterable[str]:
+    """
+    Get a human-readable list of differences in the given documents.
+
+    Returns a list of lines to print.
+    """
+    doc_diffs = DeepDiff(left, right, significant_digits=6)
+    out = []
+    if doc_diffs:
+        out.append("Documents differ:")
+    else:
+        out.append("Doc differs in minor float precision:")
+        doc_diffs = DeepDiff(left, right)
+
+    def clean_offset(offset: str):
+        if offset.startswith("root"):
+            return offset[len("root") :]
+        return offset
+
+    if "values_changed" in doc_diffs:
+        for offset, change in doc_diffs["values_changed"].items():
+            out.extend(
+                (
+                    f"   {clean_offset(offset)}: ",
+                    f'          {change["old_value"]!r}',
+                    f'       != {change["new_value"]!r}',
+                )
+            )
+    if "dictionary_item_added" in doc_diffs:
+        out.append("Added fields:")
+        for offset in doc_diffs.tree["dictionary_item_added"].items:
+            offset: DiffLevel
+            out.append(f"    {clean_offset(offset.path())} = {repr(offset.t2)}")
+    if "dictionary_item_removed" in doc_diffs:
+        out.append("Removed fields:")
+        for offset in doc_diffs.tree["dictionary_item_removed"].items:
+            offset: DiffLevel
+            out.append(f"    {clean_offset(offset.path())} = {repr(offset.t1)}")
+
+    # If pytest verbose:
+    out.extend(("Full output document: ", repr(left)))
+    return out
