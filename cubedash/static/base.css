@@ -621,8 +621,8 @@ label.disabled {
 .raw-metadata .property .property, .raw-metadata .property .array, .raw-metadata .property .array-item {
   padding-left: 15px;
 }
-.raw-metadata .property > .key {
-  font-weight: bold;
+.raw-metadata .property > .value {
+  color: #737373;
 }
 .raw-metadata .property summary {
   font-style: italic;
