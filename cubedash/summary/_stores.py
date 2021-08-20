@@ -1361,7 +1361,7 @@ class SummaryStore:
 
         extent_changes, new_product = self.refresh_product_extent(
             product_name,
-            scan_for_deleted=recreate_dataset_extents,
+            scan_for_deleted=recreate_dataset_extents or force,
             only_those_newer_than=(
                 None if recreate_dataset_extents else only_datasets_newer_than
             ),
