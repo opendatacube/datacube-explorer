@@ -1,10 +1,11 @@
 """
 Tests that hit the stac api
 """
-import functools
+
 import json
 import urllib.parse
 from collections import Counter, defaultdict
+from functools import partial, lru_cache
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, Generator, Iterable, List, Optional, Union
@@ -142,7 +143,7 @@ def load_schema_doc(
     ref_resolver = jsonschema.RefResolver.from_schema(
         schema,
         handlers={
-            "": functools.partial(_local_reference, location),
+            "": partial(_local_reference, location),
             "https": _web_reference,
             "http": _web_reference,
         },
@@ -161,7 +162,7 @@ _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.js
 _ITEM_COLLECTION_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "itemcollection.json")
 
 
-@functools.cache
+@lru_cache
 def get_extension(url: str) -> jsonschema.Draft7Validator:
     if not is_url(url):
         raise ValueError(
