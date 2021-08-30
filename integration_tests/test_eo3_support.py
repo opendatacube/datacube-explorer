@@ -225,9 +225,14 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
     # Our item document can still be improved. This is ensuring changes are deliberate.
     expected = {
         "stac_version": "1.0.0",
-        "stac_extensions": ["eo", "projection", "view"],
+        "stac_extensions": [
+            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+        ],
         "type": "Feature",
         "id": "5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
+        "collection": "ga_ls5t_ard_3",
         "bbox": [
             114.21535558993006,
             -31.250437923368555,
@@ -261,14 +266,14 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             ],
         },
         "properties": {
-            "datetime": "1988-03-30 01:41:16.892044Z",
-            "created": "2020-06-05 07:15:26.599544Z",
+            "datetime": "1988-03-30T01:41:16.892044Z",
+            "created": "2020-06-05T07:15:26.599544Z",
             "title": "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final",
             "platform": "landsat-5",
             "instruments": ["tm"],
             "gsd": 30.0,
-            "start_datetime": "1988-03-30 01:41:03.171855Z",
-            "end_datetime": "1988-03-30 01:41:30.539592Z",
+            "start_datetime": "1988-03-30T01:41:03.171855Z",
+            "end_datetime": "1988-03-30T01:41:30.539592Z",
             "cubedash:region_code": "113081",
             "dea:dataset_maturity": "final",
             "eo:cloud_cover": 0.23252452200636467,
@@ -306,28 +311,17 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "odc:file_format": "GeoTIFF",
             "odc:producer": "ga.gov.au",
             "odc:product_family": "ard",
-            "odc:product": "ga_ls5t_ard_3",
             "odc:region_code": "113081",
             "proj:epsg": 32650,
-            "proj:shape": [6981, 7791],
-            "proj:transform": [
-                30.0,
-                0.0,
-                233985.0,
-                0.0,
-                -30.0,
-                -3248685.0,
-                0.0,
-                0.0,
-                1.0,
-            ],
             "view:sun_azimuth": 55.71404191,
             "view:sun_elevation": 38.53058787,
         },
         "assets": {
             "nbar_nir": {
+                "title": "nbar_nir",
                 "eo:bands": [{"name": "nbar_nir"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band04.tif",
                 "proj:shape": [6981, 7791],
@@ -344,8 +338,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbar_red": {
+                "title": "nbar_red",
                 "eo:bands": [{"name": "nbar_red"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band03.tif",
                 "proj:shape": [6981, 7791],
@@ -362,8 +358,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_fmask": {
+                "title": "oa_fmask",
                 "eo:bands": [{"name": "oa_fmask"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_fmask.tif",
                 "proj:shape": [6981, 7791],
@@ -380,8 +378,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbar_blue": {
+                "title": "nbar_blue",
                 "eo:bands": [{"name": "nbar_blue"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band01.tif",
                 "proj:shape": [6981, 7791],
@@ -398,8 +398,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_nir": {
+                "title": "nbart_nir",
                 "eo:bands": [{"name": "nbart_nir"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band04.tif",
                 "proj:shape": [6981, 7791],
@@ -416,8 +418,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_red": {
+                "title": "nbart_red",
                 "eo:bands": [{"name": "nbart_red"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band03.tif",
                 "proj:shape": [6981, 7791],
@@ -434,8 +438,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbar_green": {
+                "title": "nbar_green",
                 "eo:bands": [{"name": "nbar_green"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band02.tif",
                 "proj:shape": [6981, 7791],
@@ -452,8 +458,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_blue": {
+                "title": "nbart_blue",
                 "eo:bands": [{"name": "nbart_blue"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band01.tif",
                 "proj:shape": [6981, 7791],
@@ -470,8 +478,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbar_swir_1": {
+                "title": "nbar_swir_1",
                 "eo:bands": [{"name": "nbar_swir_1"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band05.tif",
                 "proj:shape": [6981, 7791],
@@ -488,8 +498,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbar_swir_2": {
+                "title": "nbar_swir_2",
                 "eo:bands": [{"name": "nbar_swir_2"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band07.tif",
                 "proj:shape": [6981, 7791],
@@ -506,8 +518,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_green": {
+                "title": "nbart_green",
                 "eo:bands": [{"name": "nbart_green"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band02.tif",
                 "proj:shape": [6981, 7791],
@@ -524,8 +538,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_swir_1": {
+                "title": "nbart_swir_1",
                 "eo:bands": [{"name": "nbart_swir_1"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band05.tif",
                 "proj:shape": [6981, 7791],
@@ -542,8 +558,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "nbart_swir_2": {
+                "title": "nbart_swir_2",
                 "eo:bands": [{"name": "nbart_swir_2"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band07.tif",
@@ -561,8 +579,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_time_delta": {
+                "title": "oa_time_delta",
                 "eo:bands": [{"name": "oa_time_delta"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_time-delta.tif",
@@ -580,8 +600,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_solar_zenith": {
+                "title": "oa_solar_zenith",
                 "eo:bands": [{"name": "oa_solar_zenith"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_solar-zenith.tif",
@@ -599,8 +621,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_exiting_angle": {
+                "title": "oa_exiting_angle",
                 "eo:bands": [{"name": "oa_exiting_angle"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_exiting-angle.tif",
@@ -618,8 +642,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_solar_azimuth": {
+                "title": "oa_solar_azimuth",
                 "eo:bands": [{"name": "oa_solar_azimuth"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_solar-azimuth.tif",
@@ -637,8 +663,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_incident_angle": {
+                "title": "oa_incident_angle",
                 "eo:bands": [{"name": "oa_incident_angle"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_incident-angle.tif",
@@ -656,8 +684,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_relative_slope": {
+                "title": "oa_relative_slope",
                 "eo:bands": [{"name": "oa_relative_slope"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_relative-slope.tif",
@@ -675,8 +705,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_satellite_view": {
+                "title": "oa_satellite_view",
                 "eo:bands": [{"name": "oa_satellite_view"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_satellite-view.tif",
@@ -694,8 +726,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_nbar_contiguity": {
+                "title": "oa_nbar_contiguity",
                 "eo:bands": [{"name": "oa_nbar_contiguity"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_nbar-contiguity.tif",
@@ -713,8 +747,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_nbart_contiguity": {
+                "title": "oa_nbart_contiguity",
                 "eo:bands": [{"name": "oa_nbart_contiguity"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_nbart-contiguity.tif",
@@ -732,8 +768,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_relative_azimuth": {
+                "title": "oa_relative_azimuth",
                 "eo:bands": [{"name": "oa_relative_azimuth"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_relative-azimuth.tif",
@@ -751,8 +789,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_azimuthal_exiting": {
+                "title": "oa_azimuthal_exiting",
                 "eo:bands": [{"name": "oa_azimuthal_exiting"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_azimuthal-exiting.tif",
@@ -770,8 +810,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_satellite_azimuth": {
+                "title": "oa_satellite_azimuth",
                 "eo:bands": [{"name": "oa_satellite_azimuth"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_satellite-azimuth.tif",
@@ -789,8 +831,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_azimuthal_incident": {
+                "title": "oa_azimuthal_incident",
                 "eo:bands": [{"name": "oa_azimuthal_incident"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_azimuthal-incident.tif",
@@ -808,8 +852,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 ],
             },
             "oa_combined_terrain_shadow": {
+                "title": "oa_combined_terrain_shadow",
                 "eo:bands": [{"name": "oa_combined_terrain_shadow"}],
-                "type": "image/tiff; application=geotiff",
+                "proj:epsg": 32650,
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
                 "ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_combined-terrain-shadow.tif",
@@ -829,6 +875,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "checksum:sha1": {
                 "type": "text/plain",
                 "href": "file://example.com/test_dataset/ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.sha1",
+                "roles": ["metadata"],
             },
             "thumbnail:nbar": {
                 "title": "Thumbnail image",
