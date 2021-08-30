@@ -11,7 +11,7 @@ from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
-from ruamel import yaml
+from ruamel.yaml import YAML
 
 from cubedash import _utils
 from cubedash.summary import _extents, SummaryStore
@@ -154,7 +154,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
 
     # And does our original, pre-indexed document match exactly?
     with TEST_EO3_DATASET_ARD.open("r") as f:
-        raw_doc = yaml.safe_load(f)
+        raw_doc = YAML(typ="safe", pure=True).load(f)
 
     assert (
         indexed_doc == raw_doc

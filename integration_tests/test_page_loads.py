@@ -12,8 +12,7 @@ from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML, Element
-from ruamel import yaml
-from ruamel.yaml import YAMLError
+from ruamel.yaml import YAMLError, YAML
 
 import cubedash
 from cubedash import _model, _monitoring
@@ -757,7 +756,7 @@ def test_raw_documents(client: FlaskClient):
         )
 
         try:
-            yaml.safe_load(StringIO(doc))
+            YAML(typ="safe", pure=True).load(StringIO(doc))
         except YAMLError as e:
             raise AssertionError(f"Expected valid YAML document for url {url!r}") from e
 
