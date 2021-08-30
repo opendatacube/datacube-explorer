@@ -32,7 +32,10 @@ def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
     __tracebackhide__ = True
 
     for url in all_urls:
-        response: Response = client.get(url, follow_redirects=True)
+        try:
+            response: Response = client.get(url, follow_redirects=True)
+        except Exception as e:
+            raise AssertionError(f"Error rendering url f{url}.") from e
 
         if response.status_code != 200:
             max_failure_line_count = 5
