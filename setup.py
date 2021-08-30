@@ -67,6 +67,7 @@ setup(
         "geoalchemy2",
         "geographiclib",
         "jinja2",
+        "markupsafe",
         "pyorbital",
         "pyproj",
         "python-dateutil",
