@@ -680,6 +680,7 @@ def test_stac_collection_items(stac_client: FlaskClient):
 
     assert scene_collection == {
         "stac_version": "1.0.0",
+        "type": "Collection",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
         "license": "CC-BY-4.0",
