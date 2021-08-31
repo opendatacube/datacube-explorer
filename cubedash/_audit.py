@@ -91,6 +91,26 @@ def product_metadata_page():
     )
 
 
+@bp.route("/audit/dataset-counts")
+def dscount_report_page():
+    return utils.render(
+        "dscount-report.html",
+        products_period_dscount=_model.get_time_summary_all_products(),
+    )
+
+
+@bp.route("/audit/dataset-counts.csv")
+def dsreport_csv():
+    return utils.as_csv(
+        filename_prefix="datasets-period-report",
+        headers=("product_name", "year", "month", "dataset_count"),
+        rows=[
+            (*period, count)
+            for period, count in _model.get_time_summary_all_products().items()
+        ],
+    )
+
+
 @bp.route("/product-audit/day-times.txt")
 def get_legacy_timings():
     return redirect(url_for(".get_timings_text"))

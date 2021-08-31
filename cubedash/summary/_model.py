@@ -87,7 +87,7 @@ class TimePeriodOverview:
     @classmethod
     def flat_period_representation(
         cls, year: Optional[int], month: Optional[int], day: Optional[int]
-    ):
+    ) -> Tuple[str, datetime.date]:
         period = "all"
         if year:
             period = "year"
@@ -99,7 +99,9 @@ class TimePeriodOverview:
         return period, date(year or 1900, month or 1, day or 1)
 
     @classmethod
-    def from_flat_period_representation(cls, period_type: str, start_day: date):
+    def from_flat_period_representation(
+        cls, period_type: str, start_day: date
+    ) -> Tuple[int, int, int]:
         year = None
         month = None
         day = None
