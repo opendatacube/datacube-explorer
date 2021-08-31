@@ -544,6 +544,34 @@ def arrivals_csv():
     )
 
 
+@app.route("/dsreport")
+def dscount_report_page():
+
+    products_period_dscount = _model.get_time_summary_all_products()
+    return utils.render(
+        "dscount-report.html",
+        products_period_dscount=products_period_dscount,
+    )
+
+
+@app.route("/dsreport.csv")
+def dsreport_csv():
+    def _flat_rows():
+        for products_period_dscount in _model.get_time_summary_all_products():
+            yield (
+                products_period_dscount.name,
+                products_period_dscount.dataset_count,
+                products_period_dscount.period_type,
+                products_period_dscount.start_day,
+            )
+
+    return utils.as_csv(
+        filename_prefix="products-datasets-period-report",
+        headers=("product_name", "dataset_count", "period_type", "date"),
+        rows=_flat_rows(),
+    )
+
+
 @app.route("/about")
 def about_page():
     return utils.render(

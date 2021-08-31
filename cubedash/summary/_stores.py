@@ -735,6 +735,25 @@ class SummaryStore:
 
         return _summary_from_row(res, product_name=product_name)
 
+    def get_all(
+        self,
+    ) -> Optional[TimePeriodOverview]:
+        res = self._engine.execute(
+            select(
+                [
+                    TIME_OVERVIEW.c.dataset_count,
+                    TIME_OVERVIEW.c.period_type,
+                    PRODUCT.c.name,
+                    TIME_OVERVIEW.c.start_day,
+                ]
+            )
+            .select_from(TIME_OVERVIEW.join(PRODUCT))
+            .where(TIME_OVERVIEW.c.product_ref == PRODUCT.c.id)
+            .order_by(PRODUCT.c.name.desc(), TIME_OVERVIEW.c.start_day.desc())
+        ).fetchall()
+
+        return res
+
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
     def all_dataset_types(self) -> Iterable[DatasetType]:
