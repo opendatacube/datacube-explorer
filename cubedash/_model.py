@@ -86,6 +86,11 @@ def get_time_summary(
     return STORE.get(product_name, year, month, day)
 
 
+@cache.memoize(timeout=60)
+def get_time_summary_all_products() -> Optional[TimePeriodOverview]:
+    return STORE.get_all()
+
+
 def get_product_summary(product_name: str) -> ProductSummary:
     return STORE.get_product_summary(product_name)
 

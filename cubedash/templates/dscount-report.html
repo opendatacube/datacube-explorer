@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% set active_page = "arrivals" %}
+
+{% block title %}Dataset count report{% endblock %}
+
+{% block content %}
+    <div class="panel highlight">
+        <h2 class="followed lonesome">Dataset count report</h2>
+        <span class="header-follow">
+            <a href="{{ url_for('.dsreport_csv') }}" class="badge header-badge">
+                csv
+                <i class="fa fa-file-excel-o" aria-hidden="true"></i>
+            </a>
+        </span>
+    </div>
+    <div class="panel odd">
+        <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th class="numeric">Datasets Count</th>
+                        <th>Period Type</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for period_dscount in products_period_dscount %}
+                        <tr>
+                            <td>{{ period_dscount.name }}</td>
+                            <td>{{ period_dscount.dataset_count }}</td>
+                            <td>{{ period_dscount.period_type }}</td>
+                            <td>{{ period_dscount.start_day }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+        </table>
+    </div>
+
+{% endblock %}
