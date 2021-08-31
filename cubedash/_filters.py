@@ -13,7 +13,7 @@ import flask
 import rapidjson
 from dateutil import tz
 from flask import Blueprint
-from jinja2 import Markup, escape
+from markupsafe import Markup, escape
 from shapely.geometry import MultiPolygon
 from urllib.parse import quote_plus
 from datacube.index.fields import Field

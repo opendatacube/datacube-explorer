@@ -15,7 +15,7 @@ from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import HTTPException, BadRequest
 
 from cubedash.summary._stores import DatasetItem
-from datacube.model import Range
+from datacube.model import Range, Dataset
 from datacube.utils import DocReader, parse_time
 from eodatasets3 import serialise
 from eodatasets3 import stac as eo3stac
@@ -39,7 +39,7 @@ DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
     "STAC_DEFAULT_FULL_ITEM_INFORMATION", True
 )
 
-STAC_VERSION = "1.0.0-beta.2"
+STAC_VERSION = "1.0.0"
 
 
 def url_for(*args, **kwargs):
@@ -349,7 +349,6 @@ def search_stac_items(
         paging_properties["context"]["matched"] = count_matching
 
     result = dict(
-        stac_extensions=["context"],
         type="FeatureCollection",
         features=[as_stac_item(f) for f in returned],
         links=[],
@@ -465,6 +464,7 @@ def _stac_collection(collection: str):
     stac_collection = dict(
         id=summary.name,
         title=summary.name,
+        type="Collection",
         license=_utils.product_license(dataset_type),
         description=dataset_type.definition.get("description"),
         properties=dict(_build_properties(dataset_type.metadata)),
@@ -594,7 +594,7 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
     return f"{start_time.isoformat()}/{end_time.isoformat()}"
 
 
-def _band_to_measurement(band: Dict) -> MeasurementDoc:
+def _band_to_measurement(band: Dict, dataset_location: str) -> MeasurementDoc:
     """Create EO3 measurement from an EO1 band dict"""
     return MeasurementDoc(
         path=band.get("path"),
@@ -609,7 +609,7 @@ def as_stac_item(dataset: DatasetItem):
     """
     Get a dict corresponding to a stac item
     """
-    ds = dataset.odc_dataset
+    ds: Dataset = dataset.odc_dataset
 
     if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
@@ -637,6 +637,7 @@ def as_stac_item(dataset: DatasetItem):
 
     else:
         # eo1 to eo3
+
         dataset_doc = DatasetDoc(
             id=dataset.dataset_id,
             # Filled-in below.
@@ -655,7 +656,11 @@ def as_stac_item(dataset: DatasetItem):
                 }
             ),
             measurements={
-                name: _band_to_measurement(b) for name, b in ds.measurements.items()
+                name: _band_to_measurement(
+                    b,
+                    dataset_location=ds.uris[0] if ds is not None and ds.uris else None,
+                )
+                for name, b in ds.measurements.items()
             }
             if ds is not None
             else {},

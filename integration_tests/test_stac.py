@@ -5,9 +5,11 @@ Tests that hit the stac api
 import json
 import urllib.parse
 from collections import Counter, defaultdict
+from functools import partial, lru_cache
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, Generator, Iterable, List, Optional, Union
+from urllib.request import urlopen
 
 import jsonschema
 import pytest
@@ -21,13 +23,15 @@ from shapely.validation import explain_validity
 import cubedash._stac
 from cubedash import _model
 from datacube.index import Index
-from datacube.utils import read_documents
+from datacube.utils import read_documents, is_url
 from integration_tests.asserts import (
     DebugContext,
     get_geojson,
     get_json,
     assert_matching_eo3,
 )
+
+ALLOW_INTERNET = True
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
@@ -36,7 +40,9 @@ OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
-_STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac"
+_STAC_SCHEMA_BASE = (
+    _SCHEMA_BASE / f"schemas.stacspec.org/v{cubedash._stac.STAC_VERSION}"
+)
 
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
@@ -65,46 +71,52 @@ def read_document(path: Path) -> dict:
     return doc
 
 
-def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
+def _web_reference(ref: str):
+    """
+    A reference to a schema via a URL
 
-    # Allow schemas to reference other schemas in the same folder.
-    def local_reference(ref):
-        relative_path = schema_location.parent.joinpath(ref)
-        if relative_path.exists():
-            return read_document(relative_path)
-
-        # This is a sloppy workaround.
-        # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
-        # paths in stac work. We fallback to matching based on filename.
-        similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
-        if similar_schemas:
-            if len(similar_schemas) > 1:
-                raise NotImplementedError(
-                    f"cannot distinguish schema {ref!r} (within {schema_location}"
-                )
-            [presumed_schema] = similar_schemas
-            return read_document(presumed_schema)
-        raise ValueError(
-            f"Schema reference not found: {ref!r} (within {schema_location})"
-        )
-
-    def web_reference(ref: str):
-        """
-        A reference to a schema via a URL
-
-        eg http://geojson.org/schemas/Features.json'
-        """
-        (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
-        # We used `wget -r` to download the remote schemas locally.
-        # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
-        path = _SCHEMA_BASE / f"{netloc}{offset}"
-        if not path.exists():
+    eg http://geojson.org/schemas/Features.json'
+    """
+    if not is_url(ref):
+        raise ValueError(f"Expected URL? Got {ref!r}")
+    (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
+    # We used `wget -r` to download the remote schemas locally.
+    # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
+    path = _SCHEMA_BASE / f"{netloc}{offset}"
+    if not path.exists():
+        if ALLOW_INTERNET:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(urlopen(ref).read())
+        else:
             raise ValueError(
                 f"No local copy exists of schema {ref!r}.\n"
                 f"\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
                 f"\t(looked in {path})"
             )
-        return read_document(path)
+    return read_document(path)
+
+
+# Allow schemas to reference other schemas in the same folder.
+def _local_reference(schema_location: Path, ref):
+    relative_path = schema_location.parent.joinpath(ref)
+    if relative_path.exists():
+        return read_document(relative_path)
+
+    # This is a sloppy workaround.
+    # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
+    # paths in stac work. We fallback to matching based on filename.
+    similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
+    if similar_schemas:
+        if len(similar_schemas) > 1:
+            raise NotImplementedError(
+                f"cannot distinguish schema {ref!r} (within {schema_location}"
+            )
+        [presumed_schema] = similar_schemas
+        return read_document(presumed_schema)
+    raise ValueError(f"Schema reference not found: {ref!r} (within {schema_location})")
+
+
+def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
 
     if not schema_location.exists():
         raise ValueError(f"No jsonschema file found at {schema_location}")
@@ -117,15 +129,24 @@ def load_validator(schema_location: Path) -> jsonschema.Draft4Validator:
             raise RuntimeError(
                 f"Invalid json, cannot load schema {schema_location}"
             ) from e
+    return load_schema_doc(schema, location=schema_location)
 
+
+def load_schema_doc(
+    schema: Dict, location: Union[str, Path]
+) -> jsonschema.Draft7Validator:
     try:
         jsonschema.Draft7Validator.check_schema(schema)
     except SchemaError as e:
-        raise RuntimeError(f"Invalid schema {schema_location}") from e
+        raise RuntimeError(f"Invalid schema {location}") from e
 
     ref_resolver = jsonschema.RefResolver.from_schema(
         schema,
-        handlers={"": local_reference, "https": web_reference, "http": web_reference},
+        handlers={
+            "": partial(_local_reference, location),
+            "https": _web_reference,
+            "http": _web_reference,
+        },
     )
     return jsonschema.Draft7Validator(schema, resolver=ref_resolver)
 
@@ -138,15 +159,16 @@ _COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
 )
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
-)
+_ITEM_COLLECTION_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "itemcollection.json")
 
-_STAC_EXTENSIONS = dict(
-    (extension.name, load_validator(extension / "json-schema" / "schema.json"))
-    for extension_dir in _SCHEMA_BASE.rglob("extensions")
-    for extension in extension_dir.iterdir()
-)
+
+@lru_cache
+def get_extension(url: str) -> jsonschema.Draft7Validator:
+    if not is_url(url):
+        raise ValueError(
+            f"stac extensions are now expected to be URLs in 1.0.0. " f"Got {url!r}"
+        )
+    return load_schema_doc(_web_reference(url), location=url)
 
 
 def get_collection(client: FlaskClient, url: str, validate=True) -> Dict:
@@ -262,7 +284,7 @@ def validate_items(
         id_ = item["id"]
         with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
             validate_item(item)
-        product_counts[item["properties"]["odc:product"]] += 1
+        product_counts[item["properties"].get("odc:product", item["collection"])] += 1
 
         # Assert there's no duplicates
         assert (
@@ -550,7 +572,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 band_d = feature["assets"][band]
                 assert band_d["roles"] == ["data"]
                 assert band_d["eo:bands"] == [{"name": band}]
-                # These have no path, so they should be the dataset location itself.
+                # These have no path, so they should be the dataset location itself with a layer.
                 # (this is a .nc file in reality, but our test data loading creates weird locations)
                 assert (
                     band_d["href"] == f'file://example.com/test_dataset/{feature["id"]}'
@@ -657,7 +679,8 @@ def test_stac_collection_items(stac_client: FlaskClient):
     scene_collection = get_collection(stac_client, collection_href, validate=False)
 
     assert scene_collection == {
-        "stac_version": "1.0.0-beta.2",
+        "stac_version": "1.0.0",
+        "type": "Collection",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
         "license": "CC-BY-4.0",
@@ -756,9 +779,13 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
     # Our item document can still be improved.
     # This is ensuring changes are deliberate.
     expected = {
-        "stac_version": "1.0.0-beta.2",
-        "stac_extensions": ["eo", "projection"],
+        "stac_version": "1.0.0",
+        "stac_extensions": [
+            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+        ],
         "type": "Feature",
+        "collection": "ls7_nbar_scene",
         "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
         "bbox": [
             140.03596008297276,
@@ -791,61 +818,66 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             ],
         },
         "properties": {
-            "created": "2017-07-11T01:32:22+00:00",
-            "datetime": "2017-05-02T00:29:01+00:00",
+            "created": "2017-07-11T01:32:22Z",
+            "datetime": "2017-05-02T00:29:01Z",
             "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
             "platform": "landsat-7",
             "instruments": ["etm"],
             "landsat:wrs_path": 96,
             "landsat:wrs_row": 82,
             "cubedash:region_code": "96_82",
-            "odc:product": "ls7_nbar_scene",
             "proj:epsg": 4326,
         },
         "assets": {
             "1": {
+                "title": "1",
                 "eo:bands": [{"name": "1"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
                 ),
             },
             "2": {
+                "title": "2",
                 "eo:bands": [{"name": "2"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
                 ),
             },
             "3": {
+                "title": "3",
                 "eo:bands": [{"name": "3"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
                 ),
             },
             "4": {
+                "title": "4",
                 "eo:bands": [{"name": "4"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
                 ),
             },
             "5": {
+                "title": "5",
                 "eo:bands": [{"name": "5"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
                 ),
             },
             "7": {
+                "title": "7",
                 "eo:bands": [{"name": "7"}],
-                "type": "image/tiff; application=geotiff",
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
@@ -866,6 +898,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             "checksum:sha1": {
                 "type": "text/plain",
                 "href": dataset_url("package.sha1"),
+                "roles": ["metadata"],
             },
         },
         "links": [
@@ -948,13 +981,8 @@ def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: s
 
 def assert_stac_extensions(doc: Dict):
     stac_extensions = doc.get("stac_extensions", ())
-
     for extension_name in stac_extensions:
-        assert (
-            extension_name in _STAC_EXTENSIONS
-        ), f"Unknown stac extension? No schema for {extension_name}"
-
-        _STAC_EXTENSIONS[extension_name].validate(doc)
+        get_extension(extension_name).validate(doc)
 
 
 def assert_item_collection(collection: Dict):

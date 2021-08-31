@@ -1,14 +1,12 @@
 from contextlib import contextmanager
 from pathlib import Path
-from pprint import pformat
 from textwrap import indent
-from typing import Tuple, Iterable, Dict
+from typing import Tuple
 
 import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
-from deepdiff import DeepDiff
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
@@ -30,37 +28,9 @@ from digitalearthau.testing import factories
 # -> Note: Since we're reusing the default config unchanged, we can't use the
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
+from integration_tests.asserts import format_doc_diffs
+
 module_vanilla_db = factories.db_fixture("local_config", scope="module")
-
-
-def format_doc_diffs(left: Dict, right: Dict) -> Iterable[str]:
-    """
-    Get a human-readable list of differences in the given documents.
-
-    Returns a list of lines to print.
-    """
-    doc_diffs = DeepDiff(left, right, significant_digits=6)
-    out = []
-    if doc_diffs:
-        out.append("Documents differ:")
-    else:
-        out.append("Doc differs in minor float precision:")
-        doc_diffs = DeepDiff(left, right)
-    if "values_changed" not in doc_diffs:
-        # Shouldn't happen?
-        return [pformat(doc_diffs)]
-
-    for offset, change in doc_diffs["values_changed"].items():
-        if offset.startswith("root"):
-            offset: str = offset[len("root") :]
-        out.extend(
-            (
-                f"   {offset}: ",
-                f'          {change["old_value"]!r}',
-                f'       != {change["new_value"]!r}',
-            )
-        )
-    return out
 
 
 def pytest_assertrepr_compare(op, left, right):
@@ -77,7 +47,7 @@ def pytest_assertrepr_compare(op, left, right):
         """
         Is it a dict that's not printable on one line?
         """
-        return isinstance(o, dict) and len(repr(o)) > 88
+        return isinstance(o, dict) and len(repr(o)) > 79
 
     if (is_a_doc(left) or is_a_doc(right)) and op == "==":
         return format_doc_diffs(left, right)
@@ -190,7 +160,7 @@ def dataset_loader(module_dea_index: Index):
             assert dataset is not None, err
             assert dataset.type.name == expected_type
             created = module_dea_index.datasets.add(dataset)
-
+            assert created.uris
             assert created.type.name == ls8_nbar_scene.name
             dataset_count += 1
 

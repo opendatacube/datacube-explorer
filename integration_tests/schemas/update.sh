@@ -3,7 +3,7 @@
 set -eu
 
 
-stac_tag='v1.0.0-beta.2'
+stac_tag='v1.0.0'
 stac_api_tag='master'
 
 
@@ -21,11 +21,13 @@ get 'http://geojson.org/schema/Feature.json'
 stac_version="${stac_tag#v}"
 subfolder="stac-spec-${stac_version}"
 
+set -x
+
 wget https://github.com/radiantearth/stac-spec/archive/${stac_tag}.tar.gz
 tar -xvf ${stac_tag}.tar.gz --wildcards "${subfolder}/*/json-schema/*.json"
 rm ${stac_tag}.tar.gz
 mv ${subfolder} "schemas.stacspec.org/${stac_tag}"
-rm -f stac
+# rm -f stac
 ln -s "schemas.stacspec.org/${stac_version}" stac
 
 api_subfolder="stac-api-spec-${stac_api_tag}"
@@ -33,7 +35,7 @@ wget https://github.com/radiantearth/stac-api-spec/archive/${stac_api_tag}.tar.g
 tar -xvf ${stac_api_tag}.tar.gz --wildcards "${api_subfolder}/*/json-schema/*.json"
 rm ${stac_api_tag}.tar.gz
 mv ${api_subfolder} "schemas.stacspec.org/${stac_api_tag}"
-rm -f stac-api
+# rm -f stac-api
 ln -s "schemas.stacspec.org/${stac_api_tag}" stac-api
 
 # The ItemCollection was removed from core stac, but is used by stac-api.
