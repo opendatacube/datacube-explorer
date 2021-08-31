@@ -1,13 +1,14 @@
+import json
 import os
 import time
 from pathlib import Path
 from typing import Counter, Dict, Iterable, Optional, Tuple
 
 import flask
-import flask_themes
 import structlog
 from flask_caching import Cache
 from flask_cors import CORS
+from flask_themer import Themer
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -58,7 +59,20 @@ cors = (
 )
 
 app.config.setdefault("CUBEDASH_THEME", "odc")
-flask_themes.setup_themes(app)
+themer = Themer(app)
+
+
+@themer.current_theme_loader
+def get_current_theme():
+    return app.config["CUBEDASH_THEME"]
+
+
+# The theme can set its own default config options.
+with (Path(app.root_path) / "themes" / themer.current_theme / "info.json").open(
+    "r"
+) as f:
+    for key, value in json.load(f)["defaults"].items():
+        app.config.setdefault(key, value)
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking

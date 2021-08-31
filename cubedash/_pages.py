@@ -71,14 +71,12 @@ def overview_page(
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
 
-    theme = app.theme_manager.themes[flask.current_app.config["CUBEDASH_THEME"]]
     _LOG.debug(
         "overview.page.theme",
         theme=flask.current_app.config["CUBEDASH_THEME"],
-        options=theme.options,
     )
-    default_zoom = theme.options["startZoom"]
-    default_center = theme.options["startCoords"]
+    default_zoom = flask.current_app.config["default_map_zoom"]
+    default_center = flask.current_app.config["default_map_center"]
 
     region_geojson = _model.get_regions_geojson(product_name, year, month, day)
 

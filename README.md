@@ -210,6 +210,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # set this to a valid AWS region string. Otherwise set it to None to not do this.
     CUBEDASH_DATA_S3_REGION = "ap-southeast-2"
 
+    # Default map view when no data is loaded.
+    # The default values will depend on the CUBEDASH_THEME (eg. 'africa' theme defults to Africa)
+    default_map_zoom = 3
+    default_map_center = [-26.2756326, 134.9387844]
+
+
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
 
