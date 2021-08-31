@@ -87,8 +87,8 @@ def get_time_summary(
 
 
 @cache.memoize(timeout=60)
-def get_time_summary_all_products() -> Optional[TimePeriodOverview]:
-    return STORE.get_all()
+def get_time_summary_all_products() -> Dict[Tuple[str, int, int], int]:
+    return STORE.get_all_dataset_counts()
 
 
 def get_product_summary(product_name: str) -> ProductSummary:

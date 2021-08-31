@@ -735,24 +735,37 @@ class SummaryStore:
 
         return _summary_from_row(res, product_name=product_name)
 
-    def get_all(
+    def get_all_dataset_counts(
         self,
-    ) -> Optional[TimePeriodOverview]:
+    ) -> Dict[Tuple[str, int, int], int]:
+        """
+        Get dataset count for all (product, year, month) combinations.
+        """
         res = self._engine.execute(
             select(
                 [
-                    TIME_OVERVIEW.c.dataset_count,
-                    TIME_OVERVIEW.c.period_type,
                     PRODUCT.c.name,
                     TIME_OVERVIEW.c.start_day,
+                    TIME_OVERVIEW.c.period_type,
+                    TIME_OVERVIEW.c.dataset_count,
                 ]
             )
             .select_from(TIME_OVERVIEW.join(PRODUCT))
             .where(TIME_OVERVIEW.c.product_ref == PRODUCT.c.id)
-            .order_by(PRODUCT.c.name.desc(), TIME_OVERVIEW.c.start_day.desc())
-        ).fetchall()
+            .order_by(
+                PRODUCT.c.name, TIME_OVERVIEW.c.start_day, TIME_OVERVIEW.c.period_type
+            )
+        )
 
-        return res
+        return {
+            (
+                r.name,
+                *TimePeriodOverview.from_flat_period_representation(
+                    r.period_type, r.start_day
+                )[:2],
+            ): r.dataset_count
+            for r in res
+        }
 
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)

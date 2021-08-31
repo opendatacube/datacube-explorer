@@ -1,11 +1,11 @@
 {% extends "layout/base.html" %}
 {% set active_page = "dsreport" %}
 
-{% block title %}Dataset count report{% endblock %}
+{% block title %}Dataset Count Report{% endblock %}
 
 {% block content %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Dataset count report</h2>
+        <h2 class="followed lonesome">Dataset Count Report</h2>
         <span class="header-follow">
             <a href="{{ url_for('.dsreport_csv') }}" class="badge header-badge">
                 csv
@@ -18,18 +18,28 @@
                 <thead>
                     <tr>
                         <th>Product Name</th>
-                        <th class="numeric">Datasets Count</th>
-                        <th>Period Type</th>
-                        <th>Date</th>
+                        <th>Year</th>
+                        <th>Month</th>
+                        <th class="numeric">Count</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {% for period_dscount in products_period_dscount %}
+                    {% for period, count in products_period_dscount.items() %}
                         <tr>
-                            <td>{{ period_dscount.name }}</td>
-                            <td>{{ period_dscount.dataset_count }}</td>
-                            <td>{{ period_dscount.period_type }}</td>
-                            <td>{{ period_dscount.start_day }}</td>
+                            <td>{{ period[0] }}</td>
+                            <td>{{ period[1] or '' }}</td>
+                            <td>{{ period[2] | month_name if period[2] else '' }}</td>
+                            <td class="numeric {% if count == 0 %}muted{% endif %}">
+                                <a href="{{ url_for('overview_page',
+                                                product_name=period[0],
+                                                year=period[1],
+                                                month=period[2])
+                                    }}">
+                                    {{ count }}
+                                </a>
+                            </td>
+
                         </tr>
                     {% endfor %}
                 </tbody>
