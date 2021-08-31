@@ -22,7 +22,7 @@ import shapely.validation
 import structlog
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
-from flask_themes import render_theme_template
+from flask_themer import render_template
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
@@ -81,9 +81,7 @@ def infer_crs(crs_str: str) -> Optional[str]:
 
 
 def render(template, **context):
-    return render_theme_template(
-        flask.current_app.config["CUBEDASH_THEME"], template, **context
-    )
+    return render_template(template, **context)
 
 
 def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:

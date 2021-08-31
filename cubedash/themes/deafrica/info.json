@@ -1,12 +1,9 @@
 {
-    "application": "cubedash",
-    "identifier": "deafrica",
     "name": "deafrica",
     "author": "Geoscience Australia",
-    "license": "Apache 2",
     "description": "Digital Earth Africa Theme",
-    "options": {
-        "startZoom": 3,
-        "startCoords": [-1.5660, 10.4445]
+    "defaults": {
+        "default_map_zoom": 3,
+        "default_map_center": [-1.5660, 10.4445]
     }
 }
