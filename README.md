@@ -12,9 +12,9 @@
 Assuming you already have an Open Data Cube instance, Explorer will use
 its existing settings.
 
-Install Explorer from pypi:
+Install Explorer:
 
-    pip install datacube-explorer
+    pip install 'git+https://github.com/opendatacube/datacube-explorer.git@stable'
 
 Generate summaries for all of your products
 
