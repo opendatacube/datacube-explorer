@@ -14,25 +14,6 @@ _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 
-def _api_path_as_filename_prefix():
-    """
-    Get a usable filename prefix for the given API offset.
-
-    Eg:
-
-        "/api/datasets/ls7_albers/2017"
-
-    Becomes filename:
-
-        "ls7_albers-2017-datasets.geojson"
-
-    (the suffix is added by the response)
-    """
-
-    api, kind, *period = flask.request.path.strip("/").split("/")
-    return "-".join([*period, kind])
-
-
 @bp.route("/datasets/<product_name>")
 @bp.route("/datasets/<product_name>/<int:year>")
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>")
@@ -65,7 +46,7 @@ def datasets_geojson(
                 if s.geom_geojson is not None
             ],
         ),
-        downloadable_filename_prefix=_api_path_as_filename_prefix(),
+        downloadable_filename_prefix=_utils.api_path_as_filename_prefix(),
     )
 
     # TODO: replace this api with stac?
@@ -91,7 +72,7 @@ def footprint_geojson(
 ):
     return as_geojson(
         _model.get_footprint_geojson(product_name, year, month, day),
-        downloadable_filename_prefix=_api_path_as_filename_prefix(),
+        downloadable_filename_prefix=_utils.api_path_as_filename_prefix(),
     )
 
 
@@ -106,5 +87,5 @@ def regions_geojson(
     if regions is None:
         abort(404, f"{product_name} does not have regions")
     return as_geojson(
-        regions, downloadable_filename_prefix=_api_path_as_filename_prefix()
+        regions, downloadable_filename_prefix=_utils.api_path_as_filename_prefix()
     )

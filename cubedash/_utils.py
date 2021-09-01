@@ -580,6 +580,25 @@ def prepare_document_formatting(
     return ordered_metadata
 
 
+def api_path_as_filename_prefix():
+    """
+    Get a usable filename prefix for the given API offset.
+
+    Eg:
+
+        "/api/datasets/ls7_albers/2017"
+
+    Becomes filename:
+
+        "ls7_albers-2017-datasets.geojson"
+
+    (the suffix is added by the response)
+    """
+    stem = flask.request.path.split(".")[0]
+    api, kind, *period = stem.strip("/").split("/")
+    return "-".join([*period, kind])
+
+
 def undo_eo3_compatibility(doc):
     """
     In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
