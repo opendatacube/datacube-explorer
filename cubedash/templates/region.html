@@ -6,7 +6,7 @@
 
 {% block head %}
     {{ super() }}
-    <style type="text/css">
+    <style>
         #region-map {
             position: absolute;
             right: 0;
@@ -27,6 +27,7 @@
 
         <div id="region-map"></div>
         <h1><strong>{{ product_region_info.region_label(region_code) }}</strong> {{ product_args_label }}</h1>
+
         {% if datasets %}
             <p>
                 {% if there_are_more_results %}First {% endif %}
@@ -39,6 +40,14 @@
         {% else %}
             <p>No datasets.</p>
         {% endif %}
+
+        <div>
+            <a href="{{ url_for('region_geojson', region_code=region_code, **product_args) }}"
+                class="badge">
+                GeoJSON
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+        </div>
     </div>
     <div class="panel odd">
         {% if datasets %}
@@ -51,7 +60,7 @@
                     <tr class="search-result">
                         <td>{{ dataset.center_time | printable_time }}</td>
                         <td>
-                            <a href='{{ url_for('dataset.dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
+                            <a href="{{ url_for('dataset.dataset_page', id_=dataset.id) }}">{{ dataset | printable_dataset }}</a>
                         </td>
                     </tr>
                 {% endfor %}
