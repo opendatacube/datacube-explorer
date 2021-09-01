@@ -76,6 +76,7 @@ def find_examples_of_all_public_urls(index: Index):
                     yield f"/api/regions/{name}/{time:%Y/%m/%d}"
 
                     yield f"/region/{name}/{region_code}"
+                    yield f"/region/{name}/{region_code}.geojson"
                     yield f"/region/{name}/{region_code}/{time:%Y/%m/%d}"
 
             yield f"/dataset/{dataset.id}"
