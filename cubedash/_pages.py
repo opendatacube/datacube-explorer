@@ -304,6 +304,41 @@ def region_page(
     )
 
 
+@app.route("/product/<product_name>/regions/<region_code>.geojson")
+@app.route("/product/<product_name>/regions/<region_code>/<int:year>.geojson")
+@app.route(
+    "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>.geojson"
+)
+@app.route(
+    "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>.geojson"
+)
+def region_geojson(
+    product_name: str = None,
+    region_code: str = None,
+    year: int = None,
+    month: int = None,
+    day: int = None,
+):
+    region_info = _model.STORE.get_product_region_info(product_name)
+    if not region_info:
+        abort(404, f"Product {product_name!r} has no region specification.")
+
+    if region_info.region(region_code) is None:
+        abort(404, f"Product {product_name!r} has no {region_code!r} region.")
+
+    geojson = region_info.region(region_code).footprint_geojson
+    geojson["properties"].update(
+        dict(
+            product_name=product_name,
+            year_month_day_filter=[year, month, day],
+        )
+    )
+    return utils.as_geojson(
+        geojson,
+        downloadable_filename_prefix=utils.api_path_as_filename_prefix(),
+    )
+
+
 @app.route("/<product_name>/spatial")
 def spatial_page(product_name: str):
     """Legacy redirect to maintain old bookmarks"""
