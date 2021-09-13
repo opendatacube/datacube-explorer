@@ -1752,4 +1752,19 @@ details > summary {
   padding-left: 0.5em;
 }
 
+.leaflet-tooltip {
+  position: absolute;
+  padding: 10px 15px;
+  background-color: #fff;
+  border: 0;
+  border-radius: 0;
+  color: #212121;
+  box-shadow: unset;
+  font-size: 1.1em;
+}
+.leaflet-tooltip.regions-tooltip {
+  color: #fff;
+  background-color: #008fc5;
+}
+
 /*# sourceMappingURL=base.css.map */
