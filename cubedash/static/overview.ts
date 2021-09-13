@@ -72,28 +72,6 @@ class RecenterMapControl extends L.Control {
     }
 }
 
-
-class DatasetInfoControl extends L.Control {
-    _div = L.DomUtil.create('div', 'dataset-info');
-
-    constructor() {
-        super({position: "bottomleft"})
-    }
-
-    public onAdd(map: L.Map) {
-        this.update();
-        return this._div;
-    };
-
-    public update(template?: string) {
-        if (template) {
-            this._div.innerHTML = template;
-        } else {
-            this._div.innerHTML = '';
-        }
-    }
-}
-
 class FootprintLayer extends L.GeoJSON {
     constructor(footprintData: GeoJSON.Feature,
                 showAlone = false) {
@@ -116,7 +94,6 @@ class FootprintLayer extends L.GeoJSON {
 
 class RegionsLayer extends L.GeoJSON {
     constructor(regionData: GeoJSON.Feature,
-                control: DatasetInfoControl,
                 routes: ApplicationRoutes) {
 
         function getBin(v: number,
@@ -164,6 +141,15 @@ class RegionsLayer extends L.GeoJSON {
                 };
             },
             onEachFeature: (feature, layer) => {
+                let props = feature.properties,
+                    template = `<div>
+                                    <strong>${props.label || props.region_code}</strong>
+                                </div>
+                                ${props.count} dataset${props.count === 1 ? '' : 's'}`;
+                layer.bindTooltip(template, {
+                    className: 'regions-tooltip',
+                    opacity: 1,
+                })
                 layer.on({
                     mouseover: function (e) {
                         const layer = e.target;
@@ -171,18 +157,10 @@ class RegionsLayer extends L.GeoJSON {
                         layer.setStyle({
                             color: '#375400',
                         });
-
-                        let props = layer.feature.properties,
-                            template = `<div>
-                                            <strong>${props.label || props.region_code}</strong>
-                                        </div>
-                                        ${props.count} dataset${props.count === 1 ? '' : 's'}`;
-                        control.update(template);
                     }
                     ,
                     mouseout: (e) => {
                         this.resetStyle(e.target);
-                        control.update();
                     },
                     click: (e) => {
                         let props = e.target.feature.properties;
@@ -201,8 +179,7 @@ class RegionsLayer extends L.GeoJSON {
 
 
 class DatasetsLayer extends L.GeoJSON {
-    constructor(infoControl: DatasetInfoControl,
-                routes: ApplicationRoutes) {
+    constructor(routes: ApplicationRoutes) {
         super(undefined, {
             style: function (feature) {
                 return {
@@ -215,27 +192,28 @@ class DatasetsLayer extends L.GeoJSON {
                 };
             },
             onEachFeature: (feature, layer) => {
+                const props = feature.properties,
+                      template = `<div>
+                                    <strong>
+                                        ${props.label || props['cubedash:region_code'] || ''}
+                                    </strong>
+                                    <div>${props['datetime']}</div>
+                                  </div>`;
+                layer.bindTooltip(template, {
+                    className: 'datasets-tooltip',
+                    opacity: 1,
+                })
+
                 layer.on({
                     mouseover: function (e) {
                         const layer = e.target;
-
                         layer.setStyle({
                             color: '#375400',
                             fillOpacity: 0.6,
                         });
-
-                        const props = layer.feature.properties,
-                            template = `<div>
-                                            <strong>
-                                                ${props.label || props['cubedash:region_code'] || ''}
-                                            </strong>
-                                            <div>${props['datetime']}</div>
-                                        </div>`;
-                        infoControl.update(template);
                     },
                     mouseout: (e) => {
                         this.resetStyle(e.target);
-                        infoControl.update();
                     },
                     click: function (e) {
                         let feature = e.target.feature;
@@ -320,7 +298,6 @@ function initPage(hasDisplayableData: boolean,
 
     const layers = [];
     let activeLayer = null;
-    const infoControl = new DatasetInfoControl();
 
     if (hasDisplayableData) {
         const footprint = new DataLayer(
@@ -335,7 +312,6 @@ function initPage(hasDisplayableData: boolean,
                 new DataLayer('regions', routes.geojsonRegionsURL,
                     new RegionsLayer(
                         regionData,
-                        infoControl,
                         routes,
                     ),
                     regionData,
@@ -350,16 +326,11 @@ function initPage(hasDisplayableData: boolean,
             layers.push(new DataLayer(
                 'datasets',
                 routes.geojsonDatasetsURL,
-                new DatasetsLayer(infoControl, routes)
+                new DatasetsLayer(routes)
             ));
         }
     }
-
-    const map = new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
-    if (hasDisplayableData) {
-        infoControl.addTo(map);
-    }
-    return map;
+    return new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
 }
 
 function getViewToggle(name: string): HTMLOptionElement {
