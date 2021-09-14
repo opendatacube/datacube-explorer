@@ -14,9 +14,9 @@ its existing settings.
 
 Install Explorer:
 
-    pip install 'git+https://github.com/opendatacube/datacube-explorer.git@stable'
+    pip install datacube-explorer
 
-Generate summaries for all of your products
+Generate summaries for all of your products:
 
     cubedash-gen --init --all
 
