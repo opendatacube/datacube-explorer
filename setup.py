@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import pathlib
 
 from setuptools import find_packages, setup
@@ -45,9 +44,6 @@ extras_require = {
     ],
 }
 
-packages = find_packages()
-if os.getenv("ENVIRONMENT") == "deployment":
-    packages = find_packages(exclude=("integration_tests",))
 
 setup(
     name="datacube-explorer",
@@ -61,7 +57,7 @@ setup(
     author="Geoscience Australia",
     author_email="earth.observation@ga.gov.au",
     license="Apache Software License 2.0",
-    packages=packages,
+    packages=find_packages(exclude=("integration_tests",)),
     project_urls={
         "Bug Reports": "https://github.com/opendatacube/datacube-explorer/issues",
         "Source": "https://github.com/opendatacube/datacube-explorer",
