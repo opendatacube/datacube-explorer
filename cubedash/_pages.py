@@ -267,15 +267,28 @@ def region_page(
     if region_info.region(region_code) is None:
         abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
+    offset = flask.request.args.get("_o", default=0, type=int)
+    limit = _HARD_SEARCH_LIMIT
     datasets = list(
         _model.STORE.find_datasets_for_region(
-            product_name, region_code, year, month, day, limit=_HARD_SEARCH_LIMIT + 1
+            product_name, region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
-    more_datasets_exist = False
-    if len(datasets) > _HARD_SEARCH_LIMIT:
-        more_datasets_exist = True
-        datasets = datasets[:_HARD_SEARCH_LIMIT]
+
+    def url_with_offset(new_offset: int):
+        """Currently request url with a different offset."""
+        page_args = dict(flask.request.view_args)
+        page_args["_o"] = new_offset
+        return url_for(".region_page", **page_args)
+
+    next_page_url = None
+    if len(datasets) > limit:
+        datasets = datasets[:limit]
+        next_page_url = url_with_offset(offset + limit)
+
+    previous_page_url = None
+    if offset > 0:
+        previous_page_url = url_with_offset(max(offset - _HARD_SEARCH_LIMIT, 0))
 
     if len(datasets) == 1 and "feelinglucky" in flask.request.args:
         return flask.redirect(url_for("dataset.dataset_page", id_=datasets[0].id))
@@ -298,7 +311,8 @@ def region_page(
         # Summary for the users' currently selected filters.
         selected_summary=selected_summary,
         datasets=datasets,
-        there_are_more_results=more_datasets_exist,
+        previous_page_url=previous_page_url,
+        next_page_url=next_page_url,
         time_selector_summary=time_selector_summary,
         year_selector_summary=year_selector_summary,
     )
