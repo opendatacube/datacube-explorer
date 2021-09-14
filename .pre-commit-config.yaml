@@ -38,3 +38,27 @@ repos:
     rev: "v0.13.0"
     hooks:
     - id: curlylint
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-added-large-files # We don't want huge files. (Cut down test data!)
+        args: ['--maxkb=2000']
+      - id: check-case-conflict # Don't allow files that differ by case sensitivity.
+      - id: check-docstring-first # Avoid common error of code before docstring.
+      - id: check-json # Check json file syntax
+        # Typescript's config requires json5 extensions
+        exclude: 'tsconfig.json'
+      - id: check-merge-conflict
+      - id: check-symlinks # Symlinks that don't point to anything?
+      - id: check-yaml # Check Yaml file syntax
+        args: [--allow-multiple-documents]
+      - id: debug-statements # Avoid commiting debug/breakpoints
+      - id: end-of-file-fixer # Normalise on exactly one newline
+      - id: fix-byte-order-marker # No UTF-8 byte order marks
+      - id: mixed-line-ending # Don't allow mixed line endings
+      - id: pretty-format-json
+        args: ['--no-sort-keys', '--indent=4', '--autofix']
+        # Typescript's config requires json5 extensions
+        exclude: 'tsconfig.json'
+      - id: requirements-txt-fixer # Keep requirements files sorted.
+      - id: trailing-whitespace # Auto remove trailing whitespace
