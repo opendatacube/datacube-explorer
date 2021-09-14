@@ -18,4 +18,3 @@ exclude_lines =
 
 [run]
 omit = cubedash/_version.py
-

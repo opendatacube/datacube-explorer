@@ -374,4 +374,3 @@ function requestData(name: string,
     };
     request.send();
 }
-

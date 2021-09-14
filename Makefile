@@ -111,7 +111,7 @@ up-prod: ## Start using the prod Docker image
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
 		datacube system init
-		
+
 docker-shell: ## Get a shell into local Docker environ
 	docker-compose exec explorer \
 		bash
