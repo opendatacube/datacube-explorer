@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, date
 from pathlib import Path
-from typing import Dict, Iterable, Optional, List
+from typing import Dict, Iterable, Optional, List, Generator
 
 import fiona
 import shapely.ops
@@ -38,7 +38,7 @@ from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
 from datacube.index import Index
-from datacube.model import DatasetType, Field, MetadataType, Dataset
+from datacube.model import DatasetType, Field, MetadataType, Dataset, Range
 
 _LOG = structlog.get_logger()
 
@@ -583,7 +583,15 @@ def _as_json(obj):
 # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
 # When region_code is integrated into core (as is being discussed) this can be replaced.
 # pylint: disable=protected-access
-def datasets_by_region(engine, index, product_name, region_code, time_range, limit):
+def datasets_by_region(
+    engine: Engine,
+    index: Index,
+    product_name: str,
+    region_code: str,
+    time_range: Range,
+    limit: int,
+    offset: int = 0,
+) -> Generator[Dataset, None, None]:
     product = index.products.get_by_name(product_name)
     query = (
         select(postgres_api._DATASET_SELECT_FIELDS)
@@ -600,8 +608,10 @@ def datasets_by_region(engine, index, product_name, region_code, time_range, lim
         query = query.where(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-    query = query.order_by(DATASET_SPATIAL.c.center_time).limit(
-        bindparam("limit", limit)
+    query = (
+        query.order_by(DATASET_SPATIAL.c.center_time)
+        .limit(bindparam("limit", limit))
+        .offset(bindparam("offset", offset))
     )
 
     return (

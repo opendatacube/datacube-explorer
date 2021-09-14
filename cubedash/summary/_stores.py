@@ -1526,13 +1526,20 @@ class SummaryStore:
         month: int,
         day: int,
         limit: int,
+        offset: int = 0,
     ) -> Iterable[Dataset]:
 
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
         return _extents.datasets_by_region(
-            self._engine, self.index, product_name, region_code, time_range, limit
+            self._engine,
+            self.index,
+            product_name,
+            region_code,
+            time_range,
+            limit,
+            offset=offset,
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)

@@ -25,7 +25,6 @@
 
 {% set back_to_product_overview %}
     <div>
-        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
         <a href="{{ url_for('overview_page', **product_args) }}">
             Return to {{ product.name }} {{ product_args_label }} overview
         </a>

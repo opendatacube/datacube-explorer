@@ -29,14 +29,14 @@
         <h1><strong>{{ product_region_info.region_label(region_code) }}</strong> {{ product_args_label }}</h1>
 
         {% if datasets %}
+            <!-- The total count is only recorded for the whole time period.
+                 Cannot show it when a month/day is chosen -->
+            {% if not year %}
             <p>
-                {% if there_are_more_results %}First {% endif %}
-                {{ datasets | length }}
-                {% if there_are_more_results %}
-                    {% if not day %}(of {{ product_region_info.region(region_code).count }} total){% endif %}
-                {% endif %}
+                {{ product_region_info.region(region_code).count }} total
                 dataset{% if datasets | length > 1 %}s{% endif %}
             </p>
+            {% endif %}
         {% else %}
             <p>No datasets.</p>
         {% endif %}
@@ -51,6 +51,16 @@
     </div>
     <div class="panel odd">
         {% if datasets %}
+
+            {% if previous_page_url %}
+                <p>
+                    <a href="{{ previous_page_url }}" class="muted">
+                        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+                        Previous
+                    </a>
+                </p>
+            {% endif %}
+
             <table class="data-table">
                 <thead>
                 <th>Time</th>
@@ -65,6 +75,15 @@
                     </tr>
                 {% endfor %}
             </table>
+
+            {% if next_page_url %}
+                <p>
+                    <a href="{{ next_page_url }}" class="muted">
+                        Next
+                        <i class="fa fa-arrow-circle-right" aria-hidden="true"></i>
+                    </a>
+                </p>
+            {% endif %}
         {% endif %}
         {{ back_to_product_overview }}
     </div>
