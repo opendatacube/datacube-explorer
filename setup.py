@@ -63,7 +63,7 @@ setup(
         "flask",
         "Flask-Caching",
         "flask-cors",
-        "flask-themer @ git+https://github.com/TkTech/flask-themer.git@b19024bfad0f9d3b40077a2db9b33165a031ebc5",
+        "flask-themer>=1.4.3",
         "geoalchemy2",
         "geographiclib",
         "jinja2",
