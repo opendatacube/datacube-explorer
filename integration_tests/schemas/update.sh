@@ -44,5 +44,3 @@ wget https://raw.githubusercontent.com/radiantearth/stac-spec/568a04821935cc92de
 
 echo "Success"
 echo "If git status shows any changes, rerun tests, and commit them"
-
-

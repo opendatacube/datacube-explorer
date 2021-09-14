@@ -27,4 +27,3 @@ create user explorer_owner inherit in role explorer_generator;
 comment on role explorer_owner is 'Explorer schema creator and updater';
 
 commit;
-

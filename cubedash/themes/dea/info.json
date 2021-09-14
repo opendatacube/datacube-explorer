@@ -4,6 +4,9 @@
     "description": "Digital Earth Australia Theme",
     "defaults": {
         "default_map_zoom": 3,
-        "default_map_center": [-26.2756326, 134.9387844]
+        "default_map_center": [
+            -26.2756326,
+            134.9387844
+        ]
     }
 }

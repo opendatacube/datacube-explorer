@@ -4,6 +4,9 @@
     "description": "Digital Earth Africa Theme",
     "defaults": {
         "default_map_zoom": 3,
-        "default_map_center": [-1.5660, 10.4445]
+        "default_map_center": [
+            -1.566,
+            10.4445
+        ]
     }
 }

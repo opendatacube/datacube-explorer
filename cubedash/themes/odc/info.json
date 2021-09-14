@@ -4,6 +4,9 @@
     "description": "Open Data Cube Theme",
     "defaults": {
         "default_map_zoom": 2,
-        "default_map_center": [0.0, 60.0]
+        "default_map_center": [
+            0.0,
+            60.0
+        ]
     }
 }

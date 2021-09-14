@@ -28,7 +28,7 @@ It will now be viewable on [http://localhost:8090](https://localhost:8090)
 
 ## Developer Setup
 
-These directions are for running from a local folder in development. But it will run from any typical Python WSGI server. 
+These directions are for running from a local folder in development. But it will run from any typical Python WSGI server.
 
 Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
 is recommended.
@@ -42,7 +42,7 @@ Now install the explorer dependencies:
 
     # These two should come from conda if you're using it, not pypi
     conda install fiona shapely
-    
+
     pip install -e .
 
 ### Summary generation
@@ -81,7 +81,7 @@ with [pyflakes](https://github.com/PyCQA/pyflakes).
 They are included when installing the test dependencies:
 
     pip install --upgrade --no-deps --extra-index-url https://packages.dea.ga.gov.au/ 'datacube' 'digitalearthau'
-    
+
     pip install -e .[test]
 
 Run `make lint` to check your changes, and `make format` to format your code
@@ -124,7 +124,7 @@ Set ODC's environment variable before running the server:
 
 You can always see which environment/settings will be used by running `datacube system check`.
 
-See the ODC documentation for config and [datacube environments](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config) 
+See the ODC documentation for config and [datacube environments](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config)
 
 ### Can I add custom scripts or text to the page (such as analytics)?
 
@@ -135,10 +135,10 @@ Create one of the following `*.env.html` files:
       cubedash/templates/include-global.env.html
 
 - Footer text include. For human text such as Copyright statements.
-  
+
       echo "Server <strong>staging-1.test</strong>" > cubedash/templates/include-footer.env.html
 
-(`*.env.html` is the naming convention used for environment-specific templates: they are ignored by 
+(`*.env.html` is the naming convention used for environment-specific templates: they are ignored by
 Git)
 
 ### How can I configure the deployment?
@@ -146,25 +146,25 @@ Git)
 Add a file to the current directory called `settings.env.py`
 
 You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
-[Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings 
+[Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings
 (default "CACHE_TYPE: null"), as well as some cubedash-specific settings:
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
 
-    # Optional title for this Explorer instance to put at the top of every page. 
+    # Optional title for this Explorer instance to put at the top of every page.
     # Eg. "NCI"
     # If the STAC_ENDPOINT_TITLE is set (below), it will be the default for this value.
     CUBEDASH_INSTANCE_TITLE = None
-    
+
     # Specify product grouping in the top menu.
     # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
     # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't
-    include the default name.  
-    # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )" 
+    include the default name.
+    # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )"
     CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
     # Otherwise, group by a single metadata field in the products:
-    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type' 
+    CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
     # Ungrouped products will be grouped together in this size.
     CUBEDASH_PRODUCT_GROUP_SIZE = 5
     # Ungrouped products will be grouped together using this name
@@ -176,30 +176,30 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     CUBEDASH_HARD_API_LIMIT = 4000
     # Maximum number of source/derived datasets to show
     CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
-    
+
     # How many days of recent datasets to show on the "/arrivals" page?
     CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT = 14
-    
+
     # Include load performance metrics in http response.
     CUBEDASH_SHOW_PERF_TIMES = False
-    
+
     # Which theme to use (in the cubedash/themes folder)
     CUBEDASH_THEME = 'odc'
-    
+
     # The default license to show for products that don't have one.
     #     license is optional, but the stac API collections will not pass validation if it's null)
     #     Either a SPDX License identifier, 'various' or 'proprietary'
     #     Example value: "CC-BY-SA-4.0"
     CUBEDASH_DEFAULT_LICENSE = None
-    
+
     # Customise '/stac' endpoint information
     STAC_ENDPOINT_ID = 'my-odc-explorer'
     STAC_ENDPOINT_TITLE = 'My ODC Explorer'
     STAC_ENDPOINT_DESCRIPTION = 'Optional Longer description of this endpoint'
-    
+
     STAC_DEFAULT_PAGE_SIZE = 20
     STAC_PAGE_SIZE_LIMIT = 1000
-    
+
     # Should search results include the full properties of every Stac Item by default?
     # Full searches are much slower because they use ODC's own raw metadata table.
     # (Users can append "_full=true" to requests to manually ask for full metadata.
@@ -217,11 +217,11 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
-See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).  
+See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).
 
 ### How do I modify the css/javascript?
 
-The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from 
+The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from
 [Typescript](https://www.typescriptlang.org/).
 
 Install [npm](https://www.npmjs.com/get-npm), and then install them both:
@@ -231,8 +231,8 @@ Install [npm](https://www.npmjs.com/get-npm), and then install them both:
 You can now run `make static` to rebuild all the static files, or
 individually with `make style` or `make js`.
 
-Alternatively, if using [PyCharm](https://www.jetbrains.com/pycharm), open a 
-Sass file and you will be prompted to enable a `File Watcher` to 
+Alternatively, if using [PyCharm](https://www.jetbrains.com/pycharm), open a
+Sass file and you will be prompted to enable a `File Watcher` to
 compile automatically.
 
 PyCharm will also compile the Typescript automatically by ticking
@@ -241,7 +241,7 @@ Typescript`.
 
 ### How do I run the integration tests?
 
-The integration tests run against a real postgres database, which is dropped and 
+The integration tests run against a real postgres database, which is dropped and
 recreated between each test method:
 
 Install the test dependencies: `pip install -e .[test]`
@@ -256,7 +256,7 @@ And the tests should be runnable with no configuration: `pytest integration_test
 
 #### Custom test configuration (using other hosts, postgres servers)
 
-Add a `.datacube_integration.conf` file to your home directory in the same format as 
+Add a `.datacube_integration.conf` file to your home directory in the same format as
 [datacube config files](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config).
 
 (You might already have one if you run datacube's integration tests)
@@ -268,7 +268,7 @@ __Warning__ All data in this database will be dropped while running tests. Use a
 ## Roles for production deployments
 
 The [roles](cubedash/summary/roles) directory contains sql files for creating
-Postgres roles for Explorer. These are suitable for running each Explorer 
+Postgres roles for Explorer. These are suitable for running each Explorer
 task with minimum needed security permissions.
 
 Three roles are created:
@@ -279,7 +279,7 @@ Three roles are created:
 
 Note that these roles extend the built-in datacube role `agdc_user`. If you
 created your datacube without permissions, a stand-alone creator of the `agdc_user`
-role is available as a prerequisite in the same [roles](cubedash/summary/roles) 
+role is available as a prerequisite in the same [roles](cubedash/summary/roles)
 directory.
 
 ## Docker for Development and running tests
