@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 import os
+import pathlib
+
 from setuptools import find_packages, setup
+
+HERE = pathlib.Path(__file__).parent.resolve()
+
+README = (HERE / "README.md").read_text()
 
 tests_require = [
     "black",
@@ -45,13 +51,28 @@ if os.getenv("ENVIRONMENT") == "deployment":
 
 setup(
     name="datacube-explorer",
+    description="Web-based exploration of Open Data Cube collections",
+    long_description=README,
+    long_description_content_type="text/markdown",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     python_requires=">=3.6",
     url="https://github.com/opendatacube/datacube-explorer",
     author="Geoscience Australia",
     author_email="earth.observation@ga.gov.au",
+    license="Apache Software License 2.0",
     packages=packages,
+    project_urls={
+        "Bug Reports": "https://github.com/opendatacube/datacube-explorer/issues",
+        "Source": "https://github.com/opendatacube/datacube-explorer",
+    },
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Operating System :: OS Independent",
+    ],
     include_package_data=True,
     install_requires=[
         "cachetools",
