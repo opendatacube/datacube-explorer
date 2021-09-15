@@ -5,12 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from datacube.model import Range
 from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
-from datacube.model import Range
 from integration_tests.asserts import expect_values, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"

@@ -4,9 +4,9 @@ Unit test for re-cursive geometry filtering
 import json
 from pathlib import Path
 
-from shapely.geometry import shape
-import shapely.wkt
 import pytest
+import shapely.wkt
+from shapely.geometry import shape
 
 from cubedash.summary._model import _filter_geom, _polygon_chain
 

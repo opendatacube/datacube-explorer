@@ -2,24 +2,23 @@
 Common global filters for templates.
 """
 
-from __future__ import absolute_import, division
 
 import calendar
 import logging
 from datetime import datetime
 from typing import Mapping
+from urllib.parse import quote_plus
 
 import flask
 import rapidjson
+from datacube.index.fields import Field
+from datacube.model import Dataset, DatasetType, Range
 from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
 from shapely.geometry import MultiPolygon
-from urllib.parse import quote_plus
-from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
 
-from . import _utils as utils, _utils
+from . import _utils, _utils as utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -47,7 +46,7 @@ def _dataset_label(dataset):
     label = utils.dataset_label(dataset)
     # If archived, strike out the label.
     if dataset.archived_time:
-        return Markup("<del>{}</del>".format(escape(label)))
+        return Markup(f"<del>{escape(label)}</del>")
 
     return label
 
@@ -75,7 +74,7 @@ def percent_fmt(val, total, show_zero=False):
     if val == total:
         return CROSS_SYMBOL
     o = 100 * (val / total)
-    return "{:.2f}%".format(o)
+    return f"{o:.2f}%"
 
 
 @bp.app_template_filter("dataset_geojson")
@@ -237,11 +236,9 @@ def _searchable_fields(product: DatasetType):
     skippable_product_keys = [k for k, v in product.fields.items() if v is not None]
 
     return sorted(
-        [
-            (key, field)
-            for key, field in product.metadata_type.dataset_fields.items()
-            if key not in skippable_product_keys and key != "product"
-        ]
+        (key, field)
+        for key, field in product.metadata_type.dataset_fields.items()
+        if key not in skippable_product_keys and key != "product"
     )
 
 

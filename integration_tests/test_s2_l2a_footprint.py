@@ -5,15 +5,14 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from datacube.index.hl import Doc2Dataset
+from datacube.model import Range
+from datacube.utils import read_documents
 from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
-from datacube.model import Range
-from integration_tests.asserts import check_dataset_count
-from datacube.utils import read_documents
-from datacube.index.hl import Doc2Dataset
-from integration_tests.asserts import expect_values, get_html
+from integration_tests.asserts import check_dataset_count, expect_values, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 

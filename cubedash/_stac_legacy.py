@@ -4,7 +4,7 @@ Legacy redirects to maintain old stac api URLs
 import json
 
 import flask
-from flask import url_for, Response, request
+from flask import Response, request, url_for
 from werkzeug.urls import iri_to_uri
 
 bp = flask.Blueprint("stac_legacy", __name__)

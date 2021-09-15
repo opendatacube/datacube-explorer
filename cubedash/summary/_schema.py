@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import warnings
 from enum import Enum
 from textwrap import dedent
@@ -24,9 +22,9 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Table,
+    bindparam,
     func,
     select,
-    bindparam,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine

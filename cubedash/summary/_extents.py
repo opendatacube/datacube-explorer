@@ -3,42 +3,42 @@ import json
 import sys
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, Optional, List, Generator
+from typing import Dict, Generator, Iterable, List, Optional
 
+import datacube.drivers.postgres._api as postgres_api
 import fiona
 import shapely.ops
 import structlog
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField, RangeDocField
+from datacube.index import Index
+from datacube.model import Dataset, DatasetType, Field, MetadataType, Range
 from geoalchemy2 import Geometry, WKBElement
-from geoalchemy2.shape import to_shape, from_shape
+from geoalchemy2.shape import from_shape, to_shape
 from psycopg2._range import Range as PgRange
 from shapely.geometry import shape
 from sqlalchemy import (
     BigInteger,
     Integer,
     SmallInteger,
+    String,
+    and_,
     bindparam,
     case,
+    column,
     func,
     literal,
     null,
     select,
-    column,
-    and_,
-    String,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-import datacube.drivers.postgres._api as postgres_api
-from cubedash._utils import alchemy_engine, infer_crs, ODC_DATASET as DATASET
+from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.index import Index
-from datacube.model import DatasetType, Field, MetadataType, Dataset, Range
 
 _LOG = structlog.get_logger()
 
@@ -381,16 +381,14 @@ def refresh_spatial_extents(
         after_date=assume_after_date,
     )
     changed += engine.execute(
-        (
-            postgres.insert(DATASET_SPATIAL)
-            .from_select(
-                column_values.keys(),
-                select(column_values.values())
-                .where(and_(*only_where))
-                .order_by(column_values["center_time"]),
-            )
-            .on_conflict_do_nothing(index_elements=["id"])
+        postgres.insert(DATASET_SPATIAL)
+        .from_select(
+            column_values.keys(),
+            select(column_values.values())
+            .where(and_(*only_where))
+            .order_by(column_values["center_time"]),
         )
+        .on_conflict_do_nothing(index_elements=["id"])
     ).rowcount
     log.info("spatial_insert.end", product_name=product.name, change_count=changed)
 

@@ -1,11 +1,11 @@
 from datetime import datetime
 
 import pytest
+from datacube.index import Index
+from datacube.model import Range
 from werkzeug.datastructures import MultiDict
 
 from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
-from datacube.index import Index
-from datacube.model import Range
 
 
 def test_parse_query_args(dea_index: Index):

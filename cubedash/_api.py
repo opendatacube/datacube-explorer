@@ -9,7 +9,6 @@ from . import _model
 from ._utils import as_geojson
 from .summary import ItemSort
 
-
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
 

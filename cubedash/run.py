@@ -19,8 +19,9 @@ def _print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    import cubedash
     import datacube
+
+    import cubedash
 
     click.echo(
         f"Open Data Cube:\n"

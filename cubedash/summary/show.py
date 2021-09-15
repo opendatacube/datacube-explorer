@@ -12,13 +12,13 @@ from textwrap import dedent
 import click
 import structlog
 from click import echo, secho
+from datacube.config import LocalConfig
+from datacube.index import Index, index_connect
+from datacube.ui.click import config_option, environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
-from datacube.config import LocalConfig
-from datacube.index import Index, index_connect
-from datacube.ui.click import config_option, environment_option, pass_config
 
 _LOG = structlog.get_logger()
 

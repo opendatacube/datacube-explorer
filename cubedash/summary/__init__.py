@@ -1,12 +1,12 @@
 from ._extents import RegionInfo, UnsupportedWKTProductCRS
 from ._model import TimePeriodOverview
 from ._stores import (
+    DatasetItem,
     GenerateResult,
-    SummaryStore,
     ItemSort,
     ProductLocationSample,
     ProductSummary,
-    DatasetItem,
+    SummaryStore,
 )
 
 __all__ = (

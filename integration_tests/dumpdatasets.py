@@ -8,7 +8,6 @@ from pathlib import Path
 
 import click
 import yaml
-
 from datacube import Datacube
 from datacube.model import Dataset, Range
 

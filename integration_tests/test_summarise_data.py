@@ -8,6 +8,10 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from datacube.index import Index
+from datacube.index.hl import Doc2Dataset
+from datacube.model import DatasetType, Range
+from datacube.utils import read_documents
 from dateutil import tz
 from dateutil.tz import tzutc
 
@@ -16,10 +20,7 @@ from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
-from datacube.index import Index
-from datacube.index.hl import Doc2Dataset
-from datacube.model import Range, DatasetType
-from datacube.utils import read_documents
+
 from .asserts import expect_values as _expect_values
 
 TEST_DATA_DIR = Path(__file__).parent / "data"

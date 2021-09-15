@@ -3,21 +3,31 @@ import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
+import datacube
 import flask
 import structlog
+from datacube.model import DatasetType, Range
+from datacube.scripts.dataset import build_dataset_info
 from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 
 import cubedash
-import datacube
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
-from datacube.model import DatasetType, Range
-from datacube.scripts.dataset import build_dataset_info
-from . import _api, _dataset, _filters, _model, _platform, _product, _stac, _stac_legacy
-from . import _utils as utils
+
+from . import (
+    _api,
+    _dataset,
+    _filters,
+    _model,
+    _platform,
+    _product,
+    _stac,
+    _stac_legacy,
+    _utils as utils,
+)
 from ._utils import as_rich_json
 
 app = _model.app
@@ -597,10 +607,8 @@ def about_page():
         "about.html",
         total_dataset_count=(
             sum(
-                [
-                    summary.dataset_count
-                    for product, summary in _model.get_products_with_summaries()
-                ]
+                summary.dataset_count
+                for product, summary in _model.get_products_with_summaries()
             )
         ),
         stac_version=_stac.STAC_VERSION,

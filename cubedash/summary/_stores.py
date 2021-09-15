@@ -25,8 +25,7 @@ import dateutil.parser
 import structlog
 from cachetools.func import ttl_cache
 from dateutil import tz
-from geoalchemy2 import WKBElement
-from geoalchemy2 import shape as geo_shape
+from geoalchemy2 import WKBElement, shape as geo_shape
 from geoalchemy2.shape import to_shape
 from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
 from sqlalchemy.dialects import postgresql as postgres
@@ -38,6 +37,12 @@ try:
     from cubedash._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
+from datacube import Datacube
+from datacube.drivers.postgres._fields import PgDocField
+from datacube.index import Index
+from datacube.model import Dataset, DatasetType, Range
+from datacube.utils.geometry import Geometry
+
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_LOCATION, ODC_DATASET_TYPE
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
@@ -58,11 +63,6 @@ from cubedash.summary._schema import (
     refresh_supporting_views,
 )
 from cubedash.summary._summarise import Summariser
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField
-from datacube.index import Index
-from datacube.model import Dataset, DatasetType, Range
-from datacube.utils.geometry import Geometry
 
 DEFAULT_TTL = 90
 
@@ -341,7 +341,7 @@ class SummaryStore:
         )
 
         # Years that have already been summarised
-        summarised_years = set(
+        summarised_years = {
             r[0].year
             for r in self._engine.execute(
                 select([years.c.start_day])
@@ -350,11 +350,11 @@ class SummaryStore:
                     years.c.product_ref == product.id_,
                 )
             )
-        )
+        }
         missing_years = expected_years.difference(summarised_years)
 
         # Years who have month-records updated more recently than their own record.
-        outdated_years = set(
+        outdated_years = {
             start_day.year
             for [start_day] in self._engine.execute(
                 # Select years
@@ -381,7 +381,7 @@ class SummaryStore:
                     )
                 )
             )
-        )
+        }
         return sorted(missing_years.union(outdated_years))
 
     def needs_extent_refresh(self, product_name: str) -> bool:
@@ -1484,18 +1484,15 @@ class SummaryStore:
         """
         assert product.id_ is not None
         self._engine.execute(
-            (
-                PRODUCT.update()
-                .where(PRODUCT.c.id == product.id_)
-                .where(
-                    or_(
-                        PRODUCT.c.last_successful_summary.is_(None),
-                        PRODUCT.c.last_successful_summary
-                        < refresh_timestamp.isoformat(),
-                    )
+            PRODUCT.update()
+            .where(PRODUCT.c.id == product.id_)
+            .where(
+                or_(
+                    PRODUCT.c.last_successful_summary.is_(None),
+                    PRODUCT.c.last_successful_summary < refresh_timestamp.isoformat(),
                 )
-                .values(last_successful_summary=refresh_timestamp)
             )
+            .values(last_successful_summary=refresh_timestamp)
         )
         self._product.cache_clear()
 
@@ -1511,11 +1508,9 @@ class SummaryStore:
         List all names of products that have summaries available.
         """
         return sorted(
-            (
-                product.name
-                for product in self.all_dataset_types()
-                if self.has(product.name, None, None, None)
-            )
+            product.name
+            for product in self.all_dataset_types()
+            if self.has(product.name, None, None, None)
         )
 
     def find_datasets_for_region(

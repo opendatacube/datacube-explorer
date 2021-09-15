@@ -5,7 +5,7 @@ Tests that hit the stac api
 import json
 import urllib.parse
 from collections import Counter, defaultdict
-from functools import partial, lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, Generator, Iterable, List, Optional, Union
@@ -13,6 +13,8 @@ from urllib.request import urlopen
 
 import jsonschema
 import pytest
+from datacube.index import Index
+from datacube.utils import is_url, read_documents
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -22,13 +24,11 @@ from shapely.validation import explain_validity
 
 import cubedash._stac
 from cubedash import _model
-from datacube.index import Index
-from datacube.utils import read_documents, is_url
 from integration_tests.asserts import (
     DebugContext,
+    assert_matching_eo3,
     get_geojson,
     get_json,
-    assert_matching_eo3,
 )
 
 ALLOW_INTERNET = True

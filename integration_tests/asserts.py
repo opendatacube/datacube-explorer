@@ -5,10 +5,12 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pprint
 from textwrap import indent
-from typing import Dict, Optional, Set, Tuple, Iterable
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 import jsonschema
 import pytest
+from datacube.model import Range
+from datacube.utils import InvalidDocException, validate_document
 from dateutil.tz import tzutc
 from deepdiff import DeepDiff
 from deepdiff.model import DiffLevel
@@ -20,8 +22,6 @@ from shapely.geometry.base import BaseGeometry
 
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
-from datacube.model import Range
-from datacube.utils import InvalidDocException, validate_document
 
 # GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
 
@@ -140,7 +140,7 @@ def check_last_processed(html, time):
 def check_dataset_count(html, count: int):
     __tracebackhide__ = True
     actual = html.find(".dataset-count", first=True).text
-    expected = "{:,d}".format(count)
+    expected = f"{count:,d}"
     assert (
         f"{expected} dataset" in actual
     ), f"Incorrect dataset count: found {actual} instead of {expected}"

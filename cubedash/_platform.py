@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 
 from flask import Blueprint, redirect, url_for

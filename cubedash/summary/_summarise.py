@@ -1,17 +1,15 @@
-from __future__ import absolute_import
-
 from collections import Counter
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 import sqlalchemy
 import structlog
 from cachetools.func import lru_cache
+from datacube.model import Range
 from dateutil import tz
-from geoalchemy2 import Geometry
-from geoalchemy2 import shape as geo_shape
-from sqlalchemy import and_, func, select, or_
+from geoalchemy2 import Geometry, shape as geo_shape
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
@@ -24,7 +22,6 @@ from cubedash.summary._schema import (
     SPATIAL_REF_SYS,
     get_srid_name,
 )
-from datacube.model import Range
 
 _LOG = structlog.get_logger()
 
