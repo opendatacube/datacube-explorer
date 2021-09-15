@@ -2,7 +2,7 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 0.3.10
+    rev: 0.4.0
     hooks:
     - id: shed
   # Update the sha variable with the release version that you want, from the yamllint repo
