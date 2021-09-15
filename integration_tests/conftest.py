@@ -7,14 +7,6 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
-from flask.testing import FlaskClient
-from structlog import DropEvent
-
-import cubedash
-from cubedash import _model, generate, logs, _utils
-from cubedash.summary import SummaryStore
-from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
-from cubedash.warmup import find_examples_of_all_public_urls
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index
@@ -22,6 +14,14 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.utils import read_documents
 from digitalearthau.testing import factories
+from flask.testing import FlaskClient
+from structlog import DropEvent
+
+import cubedash
+from cubedash import _model, _utils, generate, logs
+from cubedash.summary import SummaryStore
+from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
+from cubedash.warmup import find_examples_of_all_public_urls
 
 # Use module-scoped databases, as it takes a while to populate with
 # our data, and we're treating it as read-only in tests.

@@ -1,27 +1,25 @@
 import json
 import logging
 import uuid
-from datetime import datetime
-from datetime import time as dt_time
-from datetime import timedelta
+from datetime import datetime, time as dt_time, timedelta
 from functools import partial
-from typing import Callable, Dict, Optional, Sequence, Tuple, List
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import flask
 import werkzeug.exceptions
-from dateutil.tz import tz
-from flask import abort, request
-from werkzeug.datastructures import TypeConversionDict
-from werkzeug.exceptions import HTTPException, BadRequest
-
-from cubedash.summary._stores import DatasetItem
-from datacube.model import Range, Dataset
+from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
-from eodatasets3 import serialise
-from eodatasets3 import stac as eo3stac
-from eodatasets3.model import DatasetDoc, ProductDoc, MeasurementDoc, AccessoryDoc
+from dateutil.tz import tz
+from eodatasets3 import serialise, stac as eo3stac
+from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import StacPropertyView
 from eodatasets3.utils import is_doc_eo3
+from flask import abort, request
+from werkzeug.datastructures import TypeConversionDict
+from werkzeug.exceptions import BadRequest, HTTPException
+
+from cubedash.summary._stores import DatasetItem
+
 from . import _model, _utils
 from .summary import ItemSort
 

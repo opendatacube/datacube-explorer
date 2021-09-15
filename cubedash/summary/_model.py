@@ -1,17 +1,16 @@
 import warnings
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, date
-from typing import Iterable, Optional, Set, Tuple, Union, List
+from datetime import date, datetime
+from typing import Iterable, List, Optional, Set, Tuple, Union
 
 import shapely
 import shapely.ops
 import structlog
-from shapely.geometry import MultiPolygon
-from shapely.geometry.base import BaseGeometry
-
 from datacube.model import Dataset, Range
 from datacube.utils.geometry import Geometry
+from shapely.geometry import MultiPolygon
+from shapely.geometry.base import BaseGeometry
 
 _LOG = structlog.get_logger()
 
@@ -129,7 +128,7 @@ class TimePeriodOverview:
     ):
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
-        crses = set(p.footprint_crs for p in periods)
+        crses = {p.footprint_crs for p in periods}
         if not crses:
             footprint_crs = None
         elif len(crses) == 1:

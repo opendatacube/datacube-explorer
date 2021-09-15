@@ -60,24 +60,23 @@ from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
 from textwrap import dedent
-from typing import List, Sequence, Tuple, Optional
+from typing import List, Optional, Sequence, Tuple
 
 import click
 import structlog
-from click import secho as click_secho
-from click import style
-
-from cubedash.logs import init_logging
-from cubedash.summary import (
-    SummaryStore,
-    TimePeriodOverview,
-    GenerateResult,
-    UnsupportedWKTProductCRS,
-)
+from click import secho as click_secho, style
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
 from datacube.ui.click import config_option, environment_option, pass_config
+
+from cubedash.logs import init_logging
+from cubedash.summary import (
+    GenerateResult,
+    SummaryStore,
+    TimePeriodOverview,
+    UnsupportedWKTProductCRS,
+)
 
 # Machine (json) logging.
 _LOG = structlog.get_logger()

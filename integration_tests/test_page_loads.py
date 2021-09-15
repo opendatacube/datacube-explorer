@@ -8,16 +8,16 @@ from textwrap import indent
 
 import pytest
 from click.testing import Result
+from datacube.index import Index
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML, Element
-from ruamel.yaml import YAMLError, YAML
+from ruamel.yaml import YAML, YAMLError
 
 import cubedash
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
-from datacube.index import Index
 from integration_tests.asserts import (
     check_area,
     check_dataset_count,
@@ -135,10 +135,7 @@ def test_all_products_are_shown(client: FlaskClient):
 
     # We use a sorted array instead of a Set to detect duplicates too.
     found_product_names = sorted(
-        [
-            a.text.strip()
-            for a in html.find(".product-selection-header .option-menu-link")
-        ]
+        a.text.strip() for a in html.find(".product-selection-header .option-menu-link")
     )
     indexed_product_names = sorted(p.name for p in _model.STORE.all_dataset_types())
     assert (

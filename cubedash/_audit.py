@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import logging
 import time
 from dataclasses import dataclass
@@ -7,12 +5,10 @@ from datetime import datetime, timedelta
 from typing import Iterable
 
 import flask
+from datacube.model import Range
 from flask import Blueprint, Response, redirect, url_for
 
-from datacube.model import Range
-
-from . import _model
-from . import _utils as utils
+from . import _model, _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint(
@@ -73,7 +69,7 @@ def legacy_product_audit_page():
 @bp.route("/audit/product-metadata")
 def product_metadata_page():
     store = _model.STORE
-    all_products = set(p.name for p in store.index.products.get_all())
+    all_products = {p.name for p in store.index.products.get_all()}
     summarised_products = set(store.list_complete_products())
     unsummarised_product_names = all_products - summarised_products
 

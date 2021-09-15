@@ -6,6 +6,8 @@ from typing import Dict
 from uuid import UUID
 
 import pytest
+from datacube.index import Index
+from datacube.utils import parse_time
 from dateutil import tz
 from dateutil.tz import tzutc
 from flask import Response
@@ -14,10 +16,8 @@ from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
 
 from cubedash import _utils
-from cubedash.summary import _extents, SummaryStore
+from cubedash.summary import SummaryStore, _extents
 from cubedash.warmup import find_examples_of_all_public_urls
-from datacube.index import Index
-from datacube.utils import parse_time
 from integration_tests.asserts import assert_matching_eo3
 from integration_tests.test_pages_render import assert_all_urls_render
 from integration_tests.test_stac import get_item, get_items

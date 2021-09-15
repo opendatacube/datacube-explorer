@@ -3,13 +3,13 @@ Tests related to the store
 """
 
 from collections import Counter
-from datetime import datetime, date
+from datetime import date, datetime
 
+from datacube.model import Range
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
 from cubedash._model import TimePeriodOverview
-from datacube.model import Range
 from integration_tests.asserts import assert_shapes_mostly_equal
 
 ANTIMERIDIAN_POLY = shape(

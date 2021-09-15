@@ -5,13 +5,13 @@ from datetime import datetime
 from typing import List
 
 import pytest
+from datacube.model import Range
 from dateutil import tz
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import ProductSummary, GenerateResult
+from cubedash.summary._stores import GenerateResult, ProductSummary
 from cubedash.summary._summarise import Summariser
-from datacube.model import Range
 
 
 def _overview(

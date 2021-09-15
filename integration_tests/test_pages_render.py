@@ -1,13 +1,12 @@
 from textwrap import indent
 from typing import List
 
+from datacube.index import Index
 from flask import Response
 from flask.testing import FlaskClient
 
 from cubedash import _utils
-from cubedash.summary import SummaryStore
-from cubedash.summary import _schema
-from datacube.index import Index
+from cubedash.summary import SummaryStore, _schema
 
 
 def assert_all_urls_render(all_urls: List[str], client: FlaskClient):

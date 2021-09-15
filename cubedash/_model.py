@@ -6,6 +6,8 @@ from typing import Counter, Dict, Iterable, Optional, Tuple
 
 import flask
 import structlog
+from datacube.index import index_connect
+from datacube.model import DatasetType
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
@@ -18,8 +20,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
 from cubedash.summary._stores import ProductSummary
-from datacube.index import index_connect
-from datacube.model import DatasetType
 
 try:
     from ._version import version as __version__

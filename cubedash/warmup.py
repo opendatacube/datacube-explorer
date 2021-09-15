@@ -8,11 +8,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
 
 import click
-from click import secho, echo, style
-
-from cubedash.summary import RegionInfo
+from click import echo, secho, style
 from datacube.index import Index
 from datacube.ui.click import config_option, environment_option, pass_index
+
+from cubedash.summary import RegionInfo
 
 
 def find_examples_of_all_public_urls(index: Index):

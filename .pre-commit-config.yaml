@@ -1,9 +1,10 @@
 ---
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 21.8b0
+  # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
+  - repo: https://github.com/Zac-HD/shed
+    rev: 0.3.10
     hooks:
-      - id: black
+    - id: shed
   # Update the sha variable with the release version that you want, from the yamllint repo
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.26.3

@@ -3,10 +3,10 @@ from datetime import datetime
 from pathlib import Path
 
 import shapely.wkt
+from datacube.model import Range
 from psycopg2.tz import FixedOffsetTimezone
 
 from cubedash.summary import TimePeriodOverview
-from datacube.model import Range
 
 #
 # This is a dump of the wofs_summary overview for all-time.

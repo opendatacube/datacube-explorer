@@ -2,7 +2,6 @@
 Common global filters and util methods.
 """
 
-from __future__ import absolute_import, division
 
 import csv
 import difflib
@@ -12,35 +11,34 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Optional, Tuple, Dict, List, Iterable, Union, Mapping
-from urllib.parse import urlparse, urljoin
+from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from urllib.parse import urljoin, urlparse
 
+import datacube.drivers.postgres._schema
+import eodatasets3.serialise
 import flask
 import rapidjson
 import shapely.geometry
 import shapely.validation
 import structlog
-from dateutil import tz
-from dateutil.relativedelta import relativedelta
-from flask_themer import render_template
-from pyproj import CRS as PJCRS
-from ruamel.yaml.comments import CommentedMap
-from shapely.geometry import Polygon, shape
-from sqlalchemy.engine import Engine
-from werkzeug.datastructures import MultiDict
-
-import datacube.drivers.postgres._schema
-import eodatasets3.serialise
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range, MetadataType
+from datacube.model import Dataset, DatasetType, MetadataType, Range
 from datacube.utils import jsonify_document
 from datacube.utils.geometry import CRS
+from dateutil import tz
+from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
+from flask_themer import render_template
+from pyproj import CRS as PJCRS
+from ruamel.yaml.comments import CommentedMap
+from shapely.geometry import Polygon, shape
+from sqlalchemy.engine import Engine
+from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
 
