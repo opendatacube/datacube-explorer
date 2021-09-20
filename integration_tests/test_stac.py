@@ -598,6 +598,7 @@ def test_huge_page_request(stac_client: FlaskClient):
 
 def test_stac_collections(stac_client: FlaskClient):
     response = get_json(stac_client, "/stac")
+    _CATALOG_SCHEMA.validate(response)
 
     assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
     assert (

@@ -96,6 +96,7 @@ def root():
     return _stac_response(
         dict(
             **stac_endpoint_information(),
+            type="Catalog",
             links=[
                 dict(
                     title="Collections",
