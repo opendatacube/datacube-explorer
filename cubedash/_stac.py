@@ -384,6 +384,7 @@ def arrivals():
         dict(
             id="Arrivals",
             title="Dataset Arrivals",
+            type="Catalog",
             license="various",
             description="The most recently added Items to this index",
             properties={},

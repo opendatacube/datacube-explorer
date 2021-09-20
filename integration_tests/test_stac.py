@@ -663,6 +663,22 @@ def test_stac_collections(stac_client: FlaskClient):
     )
 
 
+def test_arrivals_page_validation(stac_client: FlaskClient):
+    # Does the virtual 'arrivals' catalog validate?
+    # (this is actually not tested in the above root-catalog, surprisingly, as it has no expected dataset count.)
+    arrivals_collection = get_json(stac_client, "/stac/arrivals")
+    _CATALOG_SCHEMA.validate(arrivals_collection)
+
+    [items_page_url] = [
+        i["href"] for i in arrivals_collection["links"] if i["rel"] == "items"
+    ]
+
+    # Get and validate items.
+    response = get_items(stac_client, items_page_url)
+    # Sanity check.
+    assert len(response["features"]) == OUR_PAGE_SIZE
+
+
 def test_stac_collection_items(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
