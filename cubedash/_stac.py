@@ -69,18 +69,21 @@ def utc(d: datetime):
 
 def _stac_response(doc: Dict, content_type="application/json") -> flask.Response:
     """Return a stac document as the flask response"""
-    # Any response without a links array already is a coding problem.
-    doc["links"].append(dict(rel="root", href=url_for(".root")))
-
     return _utils.as_json(
-        {
-            # Always put stac version at the beginning for readability.
-            "stac_version": STAC_VERSION,
-            # The given doc may override it too.
-            **doc,
-        },
+        _with_stac_properties(doc),
         content_type=content_type,
     )
+
+
+def _with_stac_properties(doc):
+    # Any response without a links array already is a coding problem.
+    doc["links"].append(dict(rel="root", href=url_for(".root")))
+    return {
+        # Always put stac version at the beginning for readability.
+        "stac_version": STAC_VERSION,
+        # The given doc may override it too.
+        **doc,
+    }
 
 
 def _geojson_stac_response(doc: Dict) -> flask.Response:
@@ -133,6 +136,8 @@ def root():
             conformsTo=[
                 "https://api.stacspec.org/v1.0.0-beta.1/core",
                 "https://api.stacspec.org/v1.0.0-beta.1/item-search",
+                # Incomplete:
+                # "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
             ],
         )
     )
@@ -370,7 +375,7 @@ def collections():
         dict(
             links=[],
             collections=[
-                _stac_collection(product.name)
+                _with_stac_properties(_stac_collection(product.name))
                 for product, product_summary in _model.get_products_with_summaries()
             ],
         )
@@ -379,16 +384,24 @@ def collections():
 
 @bp.route("/arrivals")
 def arrivals():
-    """Collection of the items most recently indexed into this index"""
+    """
+    Virtual collection of the items most recently indexed into this index
+    """
     return _stac_response(
         dict(
             id="Arrivals",
             title="Dataset Arrivals",
-            type="Catalog",
+            type="Collection",
             license="various",
             description="The most recently added Items to this index",
             properties={},
             providers=[],
+            # Covers all products, so all possible extent. We *could* be smart and show the whole
+            # server's extent range, but that wouldn't be too useful either. ?
+            extent=dict(
+                temporal=dict(interval=[[None, None]]),
+                spatial=dict(bbox=[[-180.0, -90.0, 180.0, 90.0]]),
+            ),
             links=[
                 dict(
                     rel="items",
@@ -452,15 +465,10 @@ def _stac_collection(collection: str):
 
     all_time_summary = _model.get_time_summary(collection)
 
-    summary_props = {}
-    if summary and summary.time_earliest:
-        begin, end = utc(summary.time_earliest), utc(summary.time_latest)
-        extent = {"temporal": {"interval": [[begin, end]]}}
-        footprint = all_time_summary.footprint_wgs84
-        if footprint:
-            extent["spatial"] = {"bbox": [footprint.bounds]}
-
-        summary_props["extent"] = extent
+    begin, end = (
+        (summary.time_earliest, summary.time_latest) if summary else (None, None)
+    )
+    footprint = all_time_summary.footprint_wgs84
     stac_collection = dict(
         id=summary.name,
         title=summary.name,
@@ -469,7 +477,19 @@ def _stac_collection(collection: str):
         description=dataset_type.definition.get("description"),
         properties=dict(_build_properties(dataset_type.metadata)),
         providers=[],
-        **summary_props,
+        extent=dict(
+            temporal=dict(
+                interval=[
+                    [
+                        utc(begin) if begin else None,
+                        utc(end) if end else None,
+                    ]
+                ]
+            ),
+            spatial=dict(
+                bbox=[footprint.bounds if footprint else [-180.0, -90.0, 180.0, 90.0]]
+            ),
+        ),
         links=[
             dict(
                 rel="items",

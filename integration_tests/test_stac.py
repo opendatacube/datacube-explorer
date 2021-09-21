@@ -640,16 +640,7 @@ def test_stac_collections(stac_client: FlaskClient):
 
         print(f"Loading collection page for {product_name}: {repr(href)}")
 
-        collection_data = get_collection(
-            stac_client,
-            href,
-            # FIXME/research: If there's no datasets in the product, we expect to fail validation
-            #                 because we're missing the mandatory spatial/temporal fields
-            #                 (there's no "empty polygon" concept I think?)
-            validate=expected_product_counts.get(product_name, 0) > 0
-            # Telemetry data also has no spatial properties as it hasn't been processed yet.
-            and not product_name.endswith("telemetry_data"),
-        )
+        collection_data = get_collection(stac_client, href, validate=True)
         assert collection_data["id"] == product_name
         # TODO: assert items, properties, etc.
 
@@ -664,10 +655,8 @@ def test_stac_collections(stac_client: FlaskClient):
 
 
 def test_arrivals_page_validation(stac_client: FlaskClient):
-    # Does the virtual 'arrivals' catalog validate?
-    # (this is actually not tested in the above root-catalog, surprisingly, as it has no expected dataset count.)
-    arrivals_collection = get_json(stac_client, "/stac/arrivals")
-    _CATALOG_SCHEMA.validate(arrivals_collection)
+    # Do the virtual 'arrivals' catalog and items validate?
+    arrivals_collection = get_collection(stac_client, "/stac/arrivals")
 
     [items_page_url] = [
         i["href"] for i in arrivals_collection["links"] if i["rel"] == "items"
