@@ -10,12 +10,12 @@ from typing import Mapping
 from urllib.parse import quote_plus
 
 import flask
-import rapidjson
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
+from orjson import orjson
 from shapely.geometry import MultiPolygon
 
 from . import _utils, _utils as utils
@@ -53,7 +53,7 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter("torapidjson")
 def _fast_tojson(obj):
-    return Markup(rapidjson.dumps(obj))
+    return Markup(orjson.dumps(obj))
 
 
 @bp.app_template_filter("printable_data_size")

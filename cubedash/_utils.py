@@ -17,7 +17,6 @@ from urllib.parse import urljoin, urlparse
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
 import flask
-import rapidjson
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -34,6 +33,7 @@ from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
+from orjson import orjson
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
@@ -385,12 +385,9 @@ def as_json(o, content_type="application/json") -> flask.Response:
     prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
 
     return flask.Response(
-        rapidjson.dumps(
+        orjson.dumps(
             o,
-            datetime_mode=rapidjson.DM_ISO8601,
-            uuid_mode=rapidjson.UM_CANONICAL,
-            number_mode=rapidjson.NM_NATIVE,
-            indent=4 if prefer_formatted else None,
+            option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
         ),
         content_type=content_type,
     )
