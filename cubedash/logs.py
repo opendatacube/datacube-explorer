@@ -4,8 +4,8 @@ import sys
 import uuid
 from functools import partial
 
-import rapidjson
 import structlog
+from orjson import orjson
 
 
 def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use=True):
@@ -22,12 +22,9 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
     # Note that we can't use functools.partial: it JSONRendering will pass its
     # own 'default' property that overrides our own.
     def lenient_json_dump(obj, *args, **kwargs):
-        return rapidjson.dumps(
+        return orjson.dumps(
             obj,
-            datetime_mode=rapidjson.DM_ISO8601,
-            uuid_mode=rapidjson.UM_CANONICAL,
-            number_mode=rapidjson.NM_NATIVE,
-            sort_keys=True,
+            option=orjson.OPT_SORT_KEYS,
             default=lenient_json_fallback,
         )
 
