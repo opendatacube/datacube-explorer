@@ -20,6 +20,7 @@ import flask
 import shapely.geometry
 import shapely.validation
 import structlog
+from affine import Affine
 from datacube import utils as dc_utils
 from datacube.drivers.postgres import _api as pgapi
 from datacube.drivers.postgres._fields import PgDocField
@@ -27,7 +28,7 @@ from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, MetadataType, Range
-from datacube.utils import jsonify_document
+from datacube.utils import geometry, jsonify_document
 from datacube.utils.geometry import CRS
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
@@ -388,8 +389,20 @@ def as_json(o, content_type="application/json") -> flask.Response:
         orjson.dumps(
             o,
             option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
+            default=_json_fallback,
         ),
         content_type=content_type,
+    )
+
+
+def _json_fallback(o, *args, **kwargs):
+    if isinstance(o, (geometry.BoundingBox, Affine)):
+        return tuple(o)
+
+    # I think orjson swallows our nicer error message?
+    raise TypeError(
+        f"Cannot (yet) serialise object type to json: "
+        f"{o.__module__}.{type(o).__qualname__}"
     )
 
 
