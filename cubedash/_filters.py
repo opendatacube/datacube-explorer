@@ -53,7 +53,7 @@ def _dataset_label(dataset):
 
 @bp.app_template_filter("torapidjson")
 def _fast_tojson(obj):
-    return Markup(orjson.dumps(obj))
+    return Markup(orjson.dumps(obj).decode("utf-8"))
 
 
 @bp.app_template_filter("printable_data_size")
