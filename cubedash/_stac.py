@@ -12,7 +12,7 @@ from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
 from eodatasets3 import serialise, stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
-from eodatasets3.properties import StacPropertyView
+from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, request
 from werkzeug.datastructures import TypeConversionDict
@@ -668,7 +668,7 @@ def as_stac_item(dataset: DatasetItem):
             geometry=dataset.geometry.geom,
             grids=None,
             # TODO: Convert these from stac to eo3
-            properties=StacPropertyView(
+            properties=Eo3Dict(
                 {
                     "datetime": utc(dataset.center_time),
                     **(dict(_build_properties(ds.metadata)) if ds else {}),
@@ -760,7 +760,7 @@ def field_path_row(key, value):
             yield kind, int(value.begin)
         else:
             # Our questionable output. Only present in telemetry products?
-            yield f"odc:{key}", f"{value.begin}/{value.end}"
+            yield f"odc:{key}", [value.begin, value.end]
 
 
 # Other Property examples:
