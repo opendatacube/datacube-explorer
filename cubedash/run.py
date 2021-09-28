@@ -79,7 +79,7 @@ def cli(
     from cubedash.logs import init_logging
 
     init_logging(
-        open(event_log_file, "a") if event_log_file else None, verbosity=verbose
+        open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
     if debug_mode:

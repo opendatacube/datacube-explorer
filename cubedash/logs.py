@@ -1,4 +1,5 @@
 import datetime
+import io
 import pathlib
 import sys
 import uuid
@@ -6,9 +7,15 @@ from functools import partial
 
 import structlog
 from orjson import orjson
+from structlog.types import EventDict, WrappedLogger
 
 
-def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use=True):
+def init_logging(
+    output_file: io.BytesIO = None,
+    verbosity: int = 0,
+    cache_logger_on_first_use=True,
+    write_as_json: bool = None,
+):
     """
     Setup structlog for structured logging output.
 
@@ -17,7 +24,12 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
     """
 
     if output_file is None:
-        output_file = sys.stdout
+        output_file = sys.stdout.buffer
+        if write_as_json is None:
+            write_as_json = not sys.stdout.isatty()
+
+    if write_as_json is None:
+        write_as_json = not output_file.isatty()
 
     # Note that we can't use functools.partial: it JSONRendering will pass its
     # own 'default' property that overrides our own.
@@ -35,8 +47,8 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         # Coloured output if to terminal, otherwise json
-        BetterConsoleRenderer()
-        if output_file.isatty()
+        BytesConsoleRenderer()
+        if not write_as_json
         else structlog.processors.JSONRenderer(serializer=lenient_json_dump),
     ]
 
@@ -54,18 +66,30 @@ def init_logging(output_file=None, verbosity: int = 0, cache_logger_on_first_use
     structlog.configure(
         processors=processors,
         context_class=dict,
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=cache_logger_on_first_use,
-        logger_factory=structlog.PrintLoggerFactory(file=output_file),
+        logger_factory=(structlog.BytesLoggerFactory(file=output_file)),
     )
 
 
-class BetterConsoleRenderer(structlog.dev.ConsoleRenderer):
-    """A console renderer that shows dates in a readable manner."""
+class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
+    """
+    A console renderer that shows types in a readable manner, and emits bytes.
+
+    (orjson emits bytes, so we want to be consistent)
+    """
 
     def _repr(self, val):
         if isinstance(val, datetime.datetime):
             return val.isoformat()
+        if isinstance(val, pathlib.PurePath):
+            return val.as_posix()
         return super()._repr(val)
+
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> bytes:
+        return super().__call__(logger, name, event_dict).encode("utf-8")
 
 
 def _filter_levels(logger, log_method, event_dict, hide_levels=("debug", "info")):

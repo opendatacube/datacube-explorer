@@ -73,7 +73,7 @@ def cli(
     Print the recorded summary information for the given product
     """
     init_logging(
-        open(event_log_file, "a") if event_log_file else None, verbosity=verbose
+        open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
     store = _get_store(config, "setup")
