@@ -14,6 +14,7 @@ RUN apt-get update && \
       nano \
       tini \
       wget \
+      postgresql-client \
       python3-pip \
       # For Psycopg2
       libpq-dev python-dev \
