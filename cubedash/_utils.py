@@ -57,25 +57,40 @@ NEAR_ANTIMERIDIAN = shape(
 )
 
 # CRS's we use as inference results
-DEFAULT_CRS_INFERENCES = [4283, 4326]
+DEFAULT_CRS_INFERENCES = [
+    PJCRS.from_epsg(4283).to_wkt(),
+    PJCRS.from_epsg(4326).to_wkt(),
+]
 MATCH_CUTOFF = 0.38
 
 _LOG = structlog.get_logger()
 
 
 def infer_crs(crs_str: str) -> Optional[str]:
-    plausible_list = [PJCRS.from_epsg(code).to_wkt() for code in DEFAULT_CRS_INFERENCES]
-    closest_wkt = difflib.get_close_matches(crs_str, plausible_list, cutoff=0.2)
+    plausible_list = [
+        code
+        for code in DEFAULT_CRS_INFERENCES
+        if difflib.SequenceMatcher(None, code.lower(), crs_str.lower()).ratio() >= 0.2
+    ]
+
+    def chars_in_common(s: str):
+        return sum(
+            b.size
+            for b in difflib.SequenceMatcher(
+                None, s.lower(), crs_str.lower()
+            ).get_matching_blocks()
+        )
+
     sorted_closest_wkt = sorted(
-        closest_wkt,
-        key=lambda x: difflib.SequenceMatcher(None, x, crs_str).ratio(),
+        plausible_list,
+        key=chars_in_common,
         reverse=False,
     )
 
     if len(sorted_closest_wkt) == 0:
         return None
 
-    epsg = PJCRS.from_wkt(sorted_closest_wkt[0]).to_epsg()
+    epsg = PJCRS.from_wkt(sorted_closest_wkt[-1]).to_epsg()
     return f"epsg:{epsg}"
 
 
