@@ -3,7 +3,7 @@ import operator
 import re
 from datetime import datetime
 from pathlib import Path
-from pprint import pprint
+from pprint import pformat, pprint
 from textwrap import indent
 from typing import Dict, Iterable, Optional, Set, Tuple
 
@@ -13,7 +13,6 @@ from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 from dateutil.tz import tzutc
 from deepdiff import DeepDiff
-from deepdiff.model import DiffLevel
 from flask import Response
 from flask.testing import FlaskClient
 from requests_html import HTML
@@ -323,30 +322,7 @@ def format_doc_diffs(left: Dict, right: Dict) -> Iterable[str]:
         out.append("Doc differs in minor float precision:")
         doc_diffs = DeepDiff(left, right)
 
-    def clean_offset(offset: str):
-        if offset.startswith("root"):
-            return offset[len("root") :]
-        return offset
-
-    if "values_changed" in doc_diffs:
-        for offset, change in doc_diffs["values_changed"].items():
-            out.extend(
-                (
-                    f"   {clean_offset(offset)}: ",
-                    f'          {change["old_value"]!r}',
-                    f'       != {change["new_value"]!r}',
-                )
-            )
-    if "dictionary_item_added" in doc_diffs:
-        out.append("Added fields:")
-        for offset in doc_diffs.tree["dictionary_item_added"].items:
-            offset: DiffLevel
-            out.append(f"    {clean_offset(offset.path())} = {repr(offset.t2)}")
-    if "dictionary_item_removed" in doc_diffs:
-        out.append("Removed fields:")
-        for offset in doc_diffs.tree["dictionary_item_removed"].items:
-            offset: DiffLevel
-            out.append(f"    {clean_offset(offset.path())} = {repr(offset.t1)}")
+    out.append(indent(pformat(doc_diffs), " " * 4))
 
     # If pytest verbose:
     out.extend(("Full output document: ", repr(left)))
