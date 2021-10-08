@@ -696,10 +696,10 @@ def test_stac_collection_items(stac_client: FlaskClient):
             "spatial": {
                 "bbox": [
                     [
-                        pytest.approx(112.223_058_990_767_51),
-                        pytest.approx(-43.829_196_553_065_4),
-                        pytest.approx(153.985_054_424_922_77),
-                        pytest.approx(-10.237_104_814_250_783),
+                        pytest.approx(112.223_058_990_767_51, abs=0.0001),
+                        pytest.approx(-43.829_196_553_065_4, abs=0.0001),
+                        pytest.approx(153.985_054_424_922_77, abs=0.0001),
+                        pytest.approx(-10.237_104_814_250_783, abs=0.0001),
                     ]
                 ]
             },
