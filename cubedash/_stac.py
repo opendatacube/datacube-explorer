@@ -6,7 +6,6 @@ from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import flask
-import werkzeug.exceptions
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
@@ -15,6 +14,8 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, request
+from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
@@ -197,6 +198,18 @@ def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
     return value
 
 
+def _geojson_arg(arg: dict) -> BaseGeometry:
+    if not isinstance(arg, dict):
+        raise BadRequest(
+            "The 'intersects' argument must be a JSON object (and sent over a POST request)"
+        )
+
+    try:
+        return shape(arg)
+    except ValueError:
+        raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
+
+
 def _bool_argument(s: str):
     """
     Parse an argument that should be a bool
@@ -233,10 +246,7 @@ def _handle_search_request(
         "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=_bool_argument
     )
 
-    if "intersects" in request_args:
-        raise werkzeug.exceptions.NotImplemented(
-            "'intersects' queries are not yet supported, sorry."
-        )
+    intersects = request_args.get("intersects", default=None, type=_geojson_arg)
 
     if limit > PAGE_SIZE_LIMIT:
         abort(
@@ -270,6 +280,9 @@ def _handle_search_request(
         dataset_ids=ids,
         limit=limit,
         offset=offset,
+        intersects=intersects,
+        # The /stac/search api only supports intersects over post requests.
+        use_post_request=intersects is not None,
         get_next_url=next_page_url,
         full_information=full_information,
         require_geometry=require_geometry,
@@ -303,11 +316,13 @@ def search_stac_items(
     dataset_ids: Optional[str] = None,
     product_names: Optional[List[str]] = None,
     bbox: Optional[Tuple[float, float, float, float]] = None,
+    intersects: Optional[BaseGeometry] = None,
     time: Optional[Tuple[datetime, datetime]] = None,
     full_information: bool = False,
     order: ItemSort = ItemSort.DEFAULT_SORT,
     require_geometry: bool = True,
     include_total_count: bool = False,
+    use_post_request: bool = False,
 ) -> Dict:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -322,6 +337,7 @@ def search_stac_items(
             bbox=bbox,
             limit=limit + 1,
             dataset_ids=dataset_ids,
+            intersects=intersects,
             offset=offset,
             full_dataset=full_information,
             order=order,
@@ -360,7 +376,25 @@ def search_stac_items(
     )
 
     if there_are_more:
-        result["links"].append(dict(rel="next", href=get_next_url(offset + limit)))
+        if use_post_request:
+            # With post requests, we can tell them to just repeat the request args ("merge),
+            # with one different field.
+            next_link = dict(
+                rel="next",
+                method="POST",
+                merge=True,
+                # Same URL.
+                href=flask.request.url,
+                # ... with a new offset.
+                body=dict(
+                    _o=offset + limit,
+                ),
+            )
+        else:
+            # Otherwise, let the route create the next url.
+            next_link = dict(rel="next", href=get_next_url(offset + limit))
+
+        result["links"].append(next_link)
 
     return result
 
