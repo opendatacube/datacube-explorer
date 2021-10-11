@@ -26,7 +26,8 @@ import structlog
 from cachetools.func import ttl_cache
 from dateutil import tz
 from geoalchemy2 import WKBElement, shape as geo_shape
-from geoalchemy2.shape import to_shape
+from geoalchemy2.shape import from_shape, to_shape
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
@@ -1030,6 +1031,7 @@ class SummaryStore:
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
+        intersects: BaseGeometry = None,
         dataset_ids: Sequence[UUID] = None,
         require_geometry=True,
     ) -> Select:
@@ -1054,7 +1056,12 @@ class SummaryStore:
                         func.ST_MakeEnvelope(*bbox)
                     )
                 )
-
+            if intersects:
+                query = query.where(
+                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                        from_shape(intersects)
+                    )
+                )
             if product_names:
                 if len(product_names) == 1:
                     query = query.where(
@@ -1158,6 +1165,7 @@ class SummaryStore:
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
+        intersects: BaseGeometry = None,
         limit: int = 500,
         offset: int = 0,
         full_dataset: bool = False,
@@ -1205,6 +1213,7 @@ class SummaryStore:
             product_names=product_names,
             time=time,
             bbox=bbox,
+            intersects=intersects,
             dataset_ids=dataset_ids,
             require_geometry=require_geometry,
         )
