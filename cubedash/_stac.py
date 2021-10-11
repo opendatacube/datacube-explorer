@@ -377,13 +377,14 @@ def search_stac_items(
 
     if there_are_more:
         if use_post_request:
-            # With post requests, we can tell them to just repeat the request args ("merge),
-            # with one different field.
             next_link = dict(
                 rel="next",
                 method="POST",
                 merge=True,
-                # Same URL.
+                # Unlike GET requests, we can tell them to repeat their same request args
+                # themselves.
+                #
+                # Same URL:
                 href=flask.request.url,
                 # ... with a new offset.
                 body=dict(
