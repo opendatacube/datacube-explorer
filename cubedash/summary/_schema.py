@@ -197,7 +197,7 @@ TIME_OVERVIEW = Table(
 )
 
 # An SQLAlchemy expression to read the configured SRID.
-FOOTPRINT_SRID_EXPRESSION = func.FindSRID(
+FOOTPRINT_SRID_EXPRESSION = func.Find_SRID(
     TIME_OVERVIEW.schema, TIME_OVERVIEW.name, "footprint_geometry"
 )
 

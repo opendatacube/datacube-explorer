@@ -203,6 +203,9 @@ class ProductLocationSample:
     example_uris: List[str]
 
 
+_NOT_SET = object()
+
+
 class SummaryStore:
     def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
@@ -253,7 +256,7 @@ class SummaryStore:
         else:
             return _schema.is_compatible_schema(self._engine)
 
-    def init(self, grouping_epsg_code: int = DEFAULT_EPSG):
+    def init(self, grouping_epsg_code: int = None):
         """
         Initialise any schema elements that don't exist.
 
@@ -261,8 +264,34 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
+
         # Add any missing schema items or patches.
-        _schema.create_schema(self._engine, epsg_code=grouping_epsg_code)
+        _schema.create_schema(
+            self._engine, epsg_code=grouping_epsg_code or DEFAULT_EPSG
+        )
+
+        # If they specified an epsg code, make sure the existing schema uses it.
+        if grouping_epsg_code:
+            crs_used_by_schema = self.grouping_crs
+            if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
+                raise RuntimeError(
+                    f"""
+                Tried to initialise with EPSG:{grouping_epsg_code!r},
+                but the schema is already using {crs_used_by_schema}.
+
+                To change the CRS, you need to recreate Explorer's schema.
+
+                Eg.
+
+                    cubedash-gen --drop
+
+                And create with the new code:
+
+                    cubedash-gen --init --epsg {grouping_epsg_code} --all
+
+                (Warning: this can take a long time!)
+                """
+                )
         refresh_also = _schema.update_schema(self._engine)
 
         if refresh_also:
