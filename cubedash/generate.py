@@ -77,6 +77,7 @@ from cubedash.summary import (
     TimePeriodOverview,
     UnsupportedWKTProductCRS,
 )
+from cubedash.summary._stores import DEFAULT_EPSG
 
 # Machine (json) logging.
 _LOG = structlog.get_logger()
@@ -261,6 +262,14 @@ class TimeDeltaParam(click.ParamType):
     help="Refresh all products in the datacube, rather than the specified list.",
 )
 @click.option(
+    "--epsg",
+    "epsg_code",
+    type=int,
+    default=DEFAULT_EPSG,
+    show_default=True,
+    help="The equal-area epsg code to use internally for grouping spatial data",
+)
+@click.option(
     "--verbose",
     "-v",
     count=True,
@@ -416,6 +425,7 @@ def cli(
     init_database: bool,
     drop_database: bool,
     force_refresh: bool,
+    epsg_code: int,
     recreate_dataset_extents: bool,
     reset_incremental_position: bool,
     minimum_scan_window: Optional[timedelta],
@@ -435,7 +445,7 @@ def cli(
 
     if init_database:
         user_message("Initialising schema")
-        store.init()
+        store.init(grouping_epsg_code=epsg_code)
     elif not store.is_initialised():
         user_message(
             style("No cubedash schema exists. ", fg="red")
