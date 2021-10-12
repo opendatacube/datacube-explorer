@@ -11,7 +11,6 @@ from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._stores import GenerateResult, ProductSummary
-from cubedash.summary._summarise import Summariser
 
 
 def _overview(
@@ -160,20 +159,8 @@ def test_get_null(summary_store: SummaryStore):
     assert loaded is None
 
 
-def test_srid_lookup(summariser: Summariser):
-    srid = summariser._target_srid()
-    assert srid is not None
-    assert isinstance(srid, int)
-
-    srid2 = summariser._target_srid()
-    assert srid == srid2
-
-    assert summariser._get_srid_name(srid) == "EPSG:3577"
-
-    # Cached?
-    cache_hits = summariser._get_srid_name.cache_info().hits
-    assert summariser._get_srid_name(srid) == "EPSG:3577"
-    assert summariser._get_srid_name.cache_info().hits > cache_hits
+def test_srid_lookup(summary_store: SummaryStore):
+    assert summary_store.grouping_crs == "EPSG:3577"
 
 
 def test_put_get_summaries(summary_store: SummaryStore):
