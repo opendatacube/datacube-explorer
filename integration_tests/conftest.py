@@ -90,7 +90,9 @@ def summary_store(module_dea_index: Index) -> SummaryStore:
     module_dea_index.close()
 
     with disable_logging():
-        store.init()
+        # Some CRS/storage tests use test data that is 3577
+        store.init(grouping_epsg_code=3577)
+
     _make_all_tables_unlogged(
         _utils.alchemy_engine(module_dea_index), CUBEDASH_METADATA
     )
