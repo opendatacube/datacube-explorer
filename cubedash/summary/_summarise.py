@@ -95,7 +95,7 @@ class Summariser:
                     func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
                     func.ST_Union(
                         func.ST_Buffer(select_by_srid.c.footprint_geometry, 0),
-                        type_=Geometry(srid=FOOTPRINT_SRID_EXPRESSION),
+                        type_=Geometry(),
                     ).label("footprint_geometry"),
                     func.max(select_by_srid.c.newest_dataset_creation_time).label(
                         "newest_dataset_creation_time"
