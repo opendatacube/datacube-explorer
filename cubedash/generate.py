@@ -445,7 +445,7 @@ def cli(
         sys.exit(0)
 
     if init_database:
-        user_message("Initialising schema")
+        user_message(f"Initialising schema (EPSG:{epsg_code or DEFAULT_EPSG})")
         store.init(grouping_epsg_code=epsg_code)
     elif not store.is_initialised():
         user_message(
