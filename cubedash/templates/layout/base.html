@@ -64,7 +64,7 @@
         </div>
     </div>
     <div id="breadcrumb">
-        <a class="item" href="/">home</a>
+        <a class="item" href="{{url_for('default_redirect')}}">home</a>
         {% if breadcrumb %}
             {% for url, title, valid_link in breadcrumb %}
                 {% if valid_link %}
