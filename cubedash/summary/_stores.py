@@ -202,9 +202,6 @@ class ProductLocationSample:
     example_uris: List[str]
 
 
-_NOT_SET = object()
-
-
 class SummaryStore:
     def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
         self.index = index
@@ -282,13 +279,13 @@ class SummaryStore:
 
                 Eg.
 
+                    # Drop schema
                     cubedash-gen --drop
 
-                And create with the new code:
-
+                    # Create schema with new epsg, and summarise all products again.
                     cubedash-gen --init --epsg {grouping_epsg_code} --all
 
-                (Warning: this can take a long time!)
+                (Warning: Resummarising all of your products may take a long time!)
                 """
                 )
         refresh_also = _schema.update_schema(self._engine)
@@ -300,6 +297,7 @@ class SummaryStore:
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
         return cls(index, Summariser(_utils.alchemy_engine(index)), log=log)
 
+    @property
     def grouping_crs(self):
         """
         Get the crs name used for grouping summaries.
