@@ -6,7 +6,6 @@ from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum, auto
-from functools import cached_property
 from itertools import groupby
 from typing import (
     Dict,
@@ -301,7 +300,6 @@ class SummaryStore:
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
         return cls(index, Summariser(_utils.alchemy_engine(index)), log=log)
 
-    @cached_property
     def grouping_crs(self):
         """
         Get the crs name used for grouping summaries.
