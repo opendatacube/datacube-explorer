@@ -439,29 +439,41 @@ def inject_globals():
             "CUBEDASH_INSTANCE_TITLE",
         )
         or app.config.get("STAC_ENDPOINT_TITLE", ""),
-        breadcrumb=_get_breadcrumbs(request.path),
+        breadcrumb=_get_breadcrumbs(request.path, request.script_root),
     )
 
 
-def _get_breadcrumbs(url: str):
+HREF = str
+SHOULD_LINK = bool
+
+
+def _get_breadcrumbs(url: str, script_root: str) -> List[Tuple[HREF, str, SHOULD_LINK]]:
     """
-    >>> _get_breadcrumbs('/products/great_product')
+    >>> _get_breadcrumbs('/products/great_product', '/')
     [('/products', 'products', True), ('/products/great_product', 'great_product', False)]
-    >>> _get_breadcrumbs('/products')
+    >>> _get_breadcrumbs('/products/great_product', '/prefix')
+    [('/prefix/products', 'products', True), ('/prefix/products/great_product', 'great_product', False)]
+    >>> _get_breadcrumbs('/products', '/')
     [('/products', 'products', False)]
-    >>> _get_breadcrumbs('/')
+    >>> _get_breadcrumbs('/products', '/pref')
+    [('/pref/products', 'products', False)]
+    >>> _get_breadcrumbs('/', '/')
     []
-    >>> _get_breadcrumbs('')
+    >>> _get_breadcrumbs('/', '/pref')
+    []
+    >>> _get_breadcrumbs('', '/')
     []
     """
     breadcrumb = []
     i = 2
+    script_root = script_root.rstrip("/")
+
     for part_name in url.split("/"):
         if part_name:
             part_href = "/".join(url.split("/")[:i])
             breadcrumb.append(
                 (
-                    part_href,
+                    f"{script_root}{part_href}",
                     part_name,
                     # Don't link to the current page.
                     part_href != url,
