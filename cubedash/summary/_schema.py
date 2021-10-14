@@ -39,9 +39,6 @@ CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
 
-# Albers equal area. Allows us to show coverage in m^2 easily.
-FOOTPRINT_SRID = 3577
-
 DATASET_SPATIAL = Table(
     "dataset_spatial",
     METADATA,
@@ -79,6 +76,7 @@ DATASET_SPATIAL = Table(
         postgresql_ops={"region_code": "text_pattern_ops"},
     ),
 )
+
 
 DATASET_SPATIAL.indexes.add(
     Index(
@@ -185,7 +183,8 @@ TIME_OVERVIEW = Table(
         comment="The 'last_refresh' timestamp of the product at the time of generation.",
     ),
     Column("footprint_count", Integer, nullable=False),
-    Column("footprint_geometry", Geometry(srid=FOOTPRINT_SRID, spatial_index=False)),
+    # SRID is overridden via config.
+    Column("footprint_geometry", Geometry(srid=-999, spatial_index=False)),
     Column("crses", postgres.ARRAY(String)),
     # Size of this dataset in bytes, if the product includes it.
     Column("size_bytes", BigInteger),
@@ -195,6 +194,11 @@ TIME_OVERVIEW = Table(
         r"array_length(timeline_dataset_counts, 1)",
         name="timeline_lengths_equal",
     ),
+)
+
+# An SQLAlchemy expression to read the configured SRID.
+FOOTPRINT_SRID_EXPRESSION = func.Find_SRID(
+    TIME_OVERVIEW.schema, TIME_OVERVIEW.name, "footprint_geometry"
 )
 
 # The geometry of each unique 'region' for a product.
@@ -480,7 +484,20 @@ def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
     )
 
 
-def create_schema(engine: Engine):
+def _epsg_to_srid(engine: Engine, code: int) -> int:
+    """
+    Convert an epsg code to Postgis' srid number.
+
+    They're usually the same in Postgis' default srid table... but they don't
+    have to be. We'll do this lookup anyway to be good citizens.
+    """
+    return engine.execute(
+        "select srid from spatial_ref_sys where auth_name = 'EPSG' and auth_srid=%(epsg_code)s",
+        epsg_code=code,
+    ).scalar()
+
+
+def create_schema(engine: Engine, epsg_code: int):
     """
     Create any missing parts of the cubedash schema
     """
@@ -505,6 +522,15 @@ def create_schema(engine: Engine):
         == 0
     ):
         engine.execute(DDL("create extension postgis"))
+
+    srid = _epsg_to_srid(engine, epsg_code)
+    if srid is None:
+        raise RuntimeError(
+            f"Postgis doesn't seem to know about epsg code {epsg_code!r}."
+        )
+
+    # Our global SRID.
+    TIME_OVERVIEW.c.footprint_geometry.type.srid = srid
 
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.

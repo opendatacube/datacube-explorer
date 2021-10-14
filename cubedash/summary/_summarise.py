@@ -18,8 +18,7 @@ from cubedash._utils import ODC_DATASET_TYPE
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
-    FOOTPRINT_SRID,
-    SPATIAL_REF_SYS,
+    FOOTPRINT_SRID_EXPRESSION,
     get_srid_name,
 )
 
@@ -51,8 +50,6 @@ class Summariser:
         self.grouping_time_zone = grouping_time_zone
         # cache
         self._grouping_time_zone_tz = tz.gettz(self.grouping_time_zone)
-        # EPSG code for all polygons to be converted to (for footprints).
-        self.output_crs_epsg_code = FOOTPRINT_SRID
 
     def calculate_summary(
         self,
@@ -75,7 +72,7 @@ class Summariser:
                     func.count().label("dataset_count"),
                     func.ST_Transform(
                         func.ST_Union(DATASET_SPATIAL.c.footprint),
-                        self._target_srid(),
+                        FOOTPRINT_SRID_EXPRESSION,
                         type_=Geometry(),
                     ).label("footprint_geometry"),
                     func.sum(DATASET_SPATIAL.c.size_bytes).label("size_bytes"),
@@ -98,7 +95,7 @@ class Summariser:
                     func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
                     func.ST_Union(
                         func.ST_Buffer(select_by_srid.c.footprint_geometry, 0),
-                        type_=Geometry(srid=self._target_srid()),
+                        type_=Geometry(),
                     ).label("footprint_geometry"),
                     func.max(select_by_srid.c.newest_dataset_creation_time).label(
                         "newest_dataset_creation_time"
@@ -231,20 +228,6 @@ class Summariser:
             ),
         )
         return begin_time, end_time, where_clause
-
-    @lru_cache(1)
-    def _target_srid(self):
-        """
-        Get the srid key for our target CRS (that all geometry is returned as)
-
-        The pre-populated srid primary keys in postgis all default to the epsg code,
-        but we'll do the lookup anyway to be good citizens.
-        """
-        return self._engine.execute(
-            select([SPATIAL_REF_SYS.c.srid])
-            .where(SPATIAL_REF_SYS.c.auth_name == "EPSG")
-            .where(SPATIAL_REF_SYS.c.auth_srid == self.output_crs_epsg_code)
-        ).scalar()
 
     @lru_cache()
     def _get_srid_name(self, srid: int):

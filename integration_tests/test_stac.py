@@ -440,6 +440,101 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     assert error_message_json["name"] == "Bad Request"
 
 
+def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index: Index):
+    """
+    We have the polygon for region 16,-33.
+
+    Lets do an 'intersects' GeoJSON polygon search.
+
+    ... and we should only get the one dataset in that region.
+    """
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "wofs_albers",
+                # Does it intersect the region 16_-33 geojson?
+                "intersects": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [148.72461549555535, -29.391767542831246],
+                            [148.65670313473439, -28.94873478955442],
+                            [148.58964759480034, -28.507789084391693],
+                            [148.7948853750446, -28.48453447807445],
+                            [148.99881736640228, -28.461136468290533],
+                            [149.30557553957937, -28.425393085381657],
+                            [149.61378885630688, -28.388816565923616],
+                            [149.75688045708, -29.27179937570222],
+                            [149.3116110723344, -29.32445502185201],
+                            [149.2401198887219, -29.332780925452646],
+                            [148.9851375703057, -29.362187515640972],
+                            [148.72461549555535, -29.391767542831246],
+                        ]
+                    ],
+                },
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200, f"Error response: {rv.data}"
+    doc = rv.json
+
+    features = doc.get("features")
+
+    # We only returned the feature of that region code?
+    assert len(features) == 1
+    assert features[0]["properties"]["cubedash:region_code"] == "16_-33"
+
+
+def test_stac_search_by_intersects_paging(
+    stac_client: FlaskClient, populated_index: Index
+):
+    """
+    When we search by 'intersects', the next page link should use a correct POST request.
+
+    (Stac only supports 'intersects' for POST requests.)
+    """
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                # Roughly the whole region of Australia.
+                "intersects": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [112.1484375, -43.32517767999294],
+                            [153.6328125, -43.32517767999294],
+                            [153.6328125, -8.407168163601076],
+                            [112.1484375, -8.407168163601076],
+                            [112.1484375, -43.32517767999294],
+                        ]
+                    ],
+                },
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200, f"Error response: {rv.data}"
+    doc = rv.json
+
+    # We got a whole page of features.
+    assert len(doc.get("features")) == OUR_PAGE_SIZE
+
+    # And a POST link to the next page.
+    [next_link] = [link for link in doc.get("links", []) if link["rel"] == "next"]
+
+    assert next_link == {
+        "rel": "next",
+        "method": "POST",
+        "href": "http://localhost/stac/search",
+        # Tell the client to merge with their original params, but set a new offset.
+        "merge": True,
+        "body": {"_o": OUR_PAGE_SIZE},
+    }
+
+
 def test_stac_search_collections(stac_client: FlaskClient):
     """Can you query a list of multiple collections?"""
 

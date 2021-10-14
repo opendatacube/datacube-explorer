@@ -35,7 +35,6 @@ extras_require = {
         # The default run.sh and docs use gunicorn+meinheld
         "gunicorn",
         "setproctitle",
-        "meinheld",
         "gevent",
         # Monitoring
         "raven",
@@ -44,6 +43,7 @@ extras_require = {
     ],
 }
 
+extras_require["test"].extend(extras_require["deployment"])
 
 setup(
     name="datacube-explorer",
