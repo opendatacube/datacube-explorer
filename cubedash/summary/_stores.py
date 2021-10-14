@@ -23,7 +23,7 @@ from uuid import UUID
 
 import dateutil.parser
 import structlog
-from cachetools.func import ttl_cache
+from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
 from geoalchemy2 import WKBElement, shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
@@ -55,6 +55,7 @@ from cubedash.summary._extents import (
 )
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
+    FOOTPRINT_SRID_EXPRESSION,
     PRODUCT,
     REGION,
     SPATIAL_QUALITY_STATS,
@@ -70,6 +71,11 @@ DEFAULT_TTL = 90
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
 _LOG = structlog.get_logger()
+
+# The default grouping epsg code to use on init of a new Explorer schema.
+#
+# We'll use a global equal area.
+DEFAULT_EPSG = 6933
 
 
 class ItemSort(Enum):
@@ -247,14 +253,42 @@ class SummaryStore:
         else:
             return _schema.is_compatible_schema(self._engine)
 
-    def init(self):
+    def init(self, grouping_epsg_code: int = None):
         """
         Initialise any schema elements that don't exist.
 
+        Takes an epsg_code, of the CRS used internally for summaries.
+
         (Requires `create` permissions in the db)
         """
+
         # Add any missing schema items or patches.
-        _schema.create_schema(self._engine)
+        _schema.create_schema(
+            self._engine, epsg_code=grouping_epsg_code or DEFAULT_EPSG
+        )
+
+        # If they specified an epsg code, make sure the existing schema uses it.
+        if grouping_epsg_code:
+            crs_used_by_schema = self.grouping_crs
+            if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
+                raise RuntimeError(
+                    f"""
+                Tried to initialise with EPSG:{grouping_epsg_code!r},
+                but the schema is already using {crs_used_by_schema}.
+
+                To change the CRS, you need to recreate Explorer's schema.
+
+                Eg.
+
+                    # Drop schema
+                    cubedash-gen --drop
+
+                    # Create schema with new epsg, and summarise all products again.
+                    cubedash-gen --init --epsg {grouping_epsg_code} --all
+
+                (Warning: Resummarising all of your products may take a long time!)
+                """
+                )
         refresh_also = _schema.update_schema(self._engine)
 
         if refresh_also:
@@ -263,6 +297,17 @@ class SummaryStore:
     @classmethod
     def create(cls, index: Index, log=_LOG) -> "SummaryStore":
         return cls(index, Summariser(_utils.alchemy_engine(index)), log=log)
+
+    @property
+    def grouping_crs(self):
+        """
+        Get the crs name used for grouping summaries.
+
+        (the value that was set on ``init()`` of the schema)
+        """
+        return self._get_srid_name(
+            self._engine.execute(select([FOOTPRINT_SRID_EXPRESSION])).scalar()
+        )
 
     def close(self):
         """Close any pooled/open connections. Necessary before forking."""
@@ -1505,7 +1550,7 @@ class SummaryStore:
         )
         self._product.cache_clear()
 
-    @ttl_cache(ttl=DEFAULT_TTL)
+    @lru_cache()
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'

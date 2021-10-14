@@ -47,7 +47,9 @@ def eo3_index(module_dea_index: Index, dataset_loader):
     assert loaded == 1
 
     # We need postgis and some support tables (eg. srid lookup).
-    SummaryStore.create(module_dea_index).init()
+    store = SummaryStore.create(module_dea_index)
+    store.drop_all()
+    store.init(grouping_epsg_code=3577)
 
     return module_dea_index
 
