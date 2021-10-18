@@ -508,14 +508,14 @@ def prepare_dataset_formatting(
     """
     doc = dict(dataset.metadata_doc)
 
+    if include_locations:
+        if len(dataset.uris) == 1:
+            doc["location"] = dataset.uris[0]
+        else:
+            doc["locations"] = dataset.uris
+
     # If it's EO3, use eodatasets's formatting. It's better.
     if is_doc_eo3(doc):
-        if include_locations:
-            if len(dataset.uris) == 1:
-                doc["location"] = dataset.uris[0]
-            else:
-                doc["locations"] = dataset.uris
-
         doc = eodatasets3.serialise.prepare_formatting(doc)
         if include_source_url:
             doc.yaml_set_comment_before_after_key(
