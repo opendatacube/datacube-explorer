@@ -547,17 +547,12 @@ label.disabled {
   height: 50px;
   white-space: nowrap;
   display: flex;
-}
-
-.chart-timeline-bars-year {
-  display: flex;
   align-items: flex-end;
 }
 
 .chart-timeline-bar {
   opacity: 0.5;
   display: block;
-  flex: 1;
   min-width: 2px;
   background-color: #0a8abb;
 }
@@ -577,11 +572,12 @@ label.disabled {
 .chart-timeline-year {
   display: inline-block;
   font-size: 10px;
-  text-align: center;
+  text-align: left;
   transform: rotate(45deg);
   transform-origin: top left;
   vertical-align: bottom;
   height: 24px;
+  min-width: 24px;
 }
 
 .relative {

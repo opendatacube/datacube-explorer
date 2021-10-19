@@ -553,16 +553,13 @@ label
     height: 50px
     white-space: nowrap
     display: flex
-
-.chart-timeline-bars-year
-    //width: 24px
-    display: flex
     align-items: flex-end
+
 
 .chart-timeline-bar
     opacity: 0.5
     display: block
-    flex: 1
+    //flex: 1
     min-width: 2px
     $graph_highlight: $emphasis_weak
     background-color: $graph_highlight
@@ -579,14 +576,15 @@ label
 
 
 .chart-timeline-year
-    //width: 24px
     display: inline-block
     font-size: 10px
-    text-align: center
+    text-align: left
     transform: rotate(45deg)
     transform-origin: top left
     vertical-align: bottom
     height: 24px
+    // Match the month 2px min-width
+    min-width: 24px
 
 .relative
     position: relative
