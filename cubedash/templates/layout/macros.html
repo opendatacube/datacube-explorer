@@ -3,7 +3,13 @@
         {% if timeline %}
             {% set max_count = timeline.most_common(1)[0][1] %}
             <div class="chart-timeline-bars">
+                {% set last = namespace(year=False, count=0) %}
+                <div class="chart-timeline-bars-year year-width">
                 {% for start_time, count in timeline.items() | sort %}
+                   {% if last.year and (start_time.year != last.year) %}
+                        </div><div class="chart-timeline-bars-year year-width">
+                        {% set last.count = last.count + 1 %}
+                    {% endif %}
                     <a href="{{ url_for('overview_page',
                             product_name=product.name,
                             **{
@@ -16,11 +22,21 @@
                        title="View the {{ count }} datasets for
 {{ start_time.day|string + ' ' if period == 'day' else '' }}{{ start_time.month | month_name }} {{ start_time.year }}"
                     ></a>
+                    {% set last.year = start_time.year %}
                 {% endfor %}
+
+                <!-- We're assuming only 1 control per page, sorry.-->
+                <style>
+                    .year-width {
+                        width: {{650/last.count}}px;
+                    }
+                </style>
+
+                </div>
             </div>
             <div class="chart-timeline-years">
                 {% for group in timeline | groupby('year') %}
-                    <span class="chart-timeline-year">{{ group.grouper }}</span>
+                    <span class="chart-timeline-year year-width">{{ group.grouper }}</span>
                 {% endfor %}
             </div>
         {% endif %}
