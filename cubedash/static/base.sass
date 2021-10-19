@@ -547,14 +547,23 @@ label
 .chart-timeline
     padding: 15px
 
+
 .chart-timeline-bars
     font-size: 0
     height: 50px
     white-space: nowrap
+    display: flex
+
+.chart-timeline-bars-year
+    //width: 24px
+    display: flex
+    align-items: flex-end
 
 .chart-timeline-bar
-    width: 2px
-    display: inline-block
+    opacity: 0.5
+    display: block
+    flex: 1
+    min-width: 2px
     $graph_highlight: $emphasis_weak
     background-color: $graph_highlight
 
@@ -566,9 +575,11 @@ label
 .chart-timeline-years
     font-size: 0
     white-space: nowrap
+    display: flex
+
 
 .chart-timeline-year
-    width: 24px
+    //width: 24px
     display: inline-block
     font-size: 10px
     text-align: center
