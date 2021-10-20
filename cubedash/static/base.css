@@ -551,9 +551,7 @@ label.disabled {
 }
 
 .chart-timeline-bar {
-  opacity: 0.5;
   display: block;
-  min-width: 2px;
   background-color: #0a8abb;
 }
 .chart-timeline-bar.new-year {
@@ -570,14 +568,14 @@ label.disabled {
 }
 
 .chart-timeline-year {
-  display: inline-block;
+  position: absolute;
+  bottom: 0;
   font-size: 10px;
   text-align: left;
   transform: rotate(45deg);
   transform-origin: top left;
   vertical-align: bottom;
-  height: 24px;
-  min-width: 24px;
+  color: #333;
 }
 
 .relative {
