@@ -1,8 +1,14 @@
 {% macro chart_timeline(timeline, product, period='month') -%}
     <div class="chart-timeline">
         {% if timeline %}
+            {% set month_width = 650 / timeline | length %}
+            {% if month_width > 5 %}
+                {% set month_width = 5 %}
+            {%endif%}
+
             {% set max_count = timeline.most_common(1)[0][1] %}
             <div class="chart-timeline-bars">
+                {% set last = namespace(year=False, bars_this_year=0) %}
                 {% for start_time, count in timeline.items() | sort %}
                     <a href="{{ url_for('overview_page',
                             product_name=product.name,
@@ -11,30 +17,26 @@
                                 'month':start_time.month,
                                 'day': start_time.day if period=='day' else None}
                             ) }}"
-                       class="chart-timeline-bar month-width {% if start_time[period] == 1 %}new-year{% endif %}"
+                       class="chart-timeline-bar {% if start_time[period] == 1 %}new-year{% endif %}"
                        style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%"
                        title="View the {{ count }} datasets for
 {{ start_time.day|string + ' ' if period == 'day' else '' }}{{ start_time.month | month_name }} {{ start_time.year }}"
-                    ></a>
+                    >
+                        {# If this is a new year, and enough horizontal space has passed, add a label. #}
+                        {%- if last.year != start_time.year and (last.bars_this_year * month_width) > 20 -%}
+                            <span class="chart-timeline-year">{{start_time.year}}</span>
+                            {% set last.bars_this_year = 0 %}
+                        {%-endif-%}
+                    </a>
+                    {% set last.bars_this_year = last.bars_this_year + 1 %}
+                    {% set last.year = start_time.year %}
                 {% endfor %}
             </div>
-            <div class="chart-timeline-years">
-                {% set years = namespace(count=0) %}
-                {% for group in timeline | groupby('year') %}
-                    <span class="chart-timeline-year year-width">{{ group.grouper }}</span>
-                    {% set years.count = years.count + 1 %}
-                {% endfor %}
-            </div>
-            <!-- We're assuming only 1 control per page, sorry.-->
-            {% set year_width = 650 / years.count %}
-            {% set month_width = 650 / timeline | length %}
 
+            {# We're assuming only 1 control per page, sorry. #}
             <style>
-                .month-width {
+                .chart-timeline-bar {
                     width: {{month_width}}px;
-                }
-                .year-width {
-                    width: {{year_width}}px;
                 }
             </style>
         {% endif %}
