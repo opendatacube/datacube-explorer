@@ -554,10 +554,12 @@ label
     white-space: nowrap
     display: flex
     align-items: flex-end
+    border-bottom: 1px solid desaturate(lighten($emphasis_weak, 10%), 50%)
 
 
 .chart-timeline-bar
     display: block
+    position: relative
     $graph_highlight: $emphasis_weak
     background-color: $graph_highlight
 
@@ -566,21 +568,29 @@ label
     &:hover
         background-color: darken($graph_highlight, 10%)
 
-.chart-timeline-years
-    font-size: 0
-    white-space: nowrap
-    display: flex
-
+        .chart-timeline-year.tooltip
+            display: block
 
 .chart-timeline-year
+    z-index: 1
     position: absolute
     bottom: 0
-    font-size: 10px
     text-align: left
-    transform: rotate(45deg)
-    transform-origin: top left
-    vertical-align: bottom
+    font-size: 10px
+    font-weight: normal
     color: #333
+    transform: translateY(calc(100% + 5px)) rotate(45deg)
+
+    transform-origin: top left
+
+    &.tooltip
+        z-index: 2
+        font-size: 12px
+        padding: 5px 10px
+        color: #fff
+        background-color: $emphasis_strong
+        display: none
+
 
 .relative
     position: relative
@@ -668,13 +678,13 @@ details > summary
 
 .leaflet-tooltip
     position: absolute
-    padding: 10px 15px
+    padding: 5px 10px
     background-color: #fff
     border: 0
     border-radius: 0
     color: $bold_highlight
     box-shadow: unset
-    font-size: 1.1em
+    font-size: 12px
 
     &.regions-tooltip
         color: #fff
