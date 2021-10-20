@@ -8,7 +8,7 @@
 
             {% set max_count = timeline.most_common(1)[0][1] %}
             <div class="chart-timeline-bars">
-                {% set last = namespace(year=False, bars_this_year=0) %}
+                {% set last = namespace(year=False, bars_this_year=100) %}
                 {% for start_time, count in timeline.items() | sort %}
                     <a href="{{ url_for('overview_page',
                             product_name=product.name,
@@ -23,13 +23,16 @@
 {{ start_time.day|string + ' ' if period == 'day' else '' }}{{ start_time.month | month_name }} {{ start_time.year }}"
                     >
                         {# If this is a new year, and enough horizontal space has passed, add a label. #}
-                        {%- if last.year != start_time.year and (last.bars_this_year * month_width) > 20 -%}
-                            <span class="chart-timeline-year">{{start_time.year}}</span>
+                        {%- if last.year != start_time.year and (last.bars_this_year * month_width) > 16 and count -%}
+                            <span class="chart-timeline-year">
+                                {% if period == 'day' -%}{{- start_time.day | day_ordinal }} {% endif -%}
+                                {{-start_time.strftime('%b %Y')-}}
+                            </span>
                             {% set last.bars_this_year = 0 %}
+                            {% set last.year = start_time.year %}
                         {%-endif-%}
                     </a>
                     {% set last.bars_this_year = last.bars_this_year + 1 %}
-                    {% set last.year = start_time.year %}
                 {% endfor %}
             </div>
 
