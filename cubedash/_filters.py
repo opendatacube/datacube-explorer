@@ -97,7 +97,7 @@ def _dataset_geojson(dataset):
 
 @bp.app_template_filter("product_link")
 def _product_link(product_name):
-    url = flask.url_for("product.product_page", name=product_name)
+    url = flask.url_for("product_page", product_name=product_name)
     return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
 
 
@@ -129,7 +129,7 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
     if timezone:
         t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for(
-        "overview_page",
+        "product_page",
         product_name=dataset.type.name,
         year=t.year,
         month=t.month,

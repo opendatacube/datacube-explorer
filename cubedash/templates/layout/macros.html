@@ -11,7 +11,7 @@
                 {% set last = namespace(year=False, bars_this_year=100) %}
                 {% set timeline_items = timeline.items() | sort %}
                 {% for start_time, count in timeline_items  %}
-                    <a href="{{ url_for('overview_page',
+                    <a href="{{ url_for('product_page',
                             product_name=product.name,
                             **{
                                 'year': start_time.year,

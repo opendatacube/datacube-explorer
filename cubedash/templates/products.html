@@ -41,7 +41,7 @@
                 {% for product, summary in product_summaries %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('product.product_page', name=product.name) }}"
+                            <a href="{{ url_for('product_page', product_name=product.name) }}"
                                class="{% if summary.dataset_count == 0 %}muted{% endif %}"
                                 >{{ product.name }}</a>
                         </td>
