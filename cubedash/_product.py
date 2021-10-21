@@ -101,35 +101,6 @@ def metadata_types_page():
     )
 
 
-@bp.route("/product/<name>")
-def legacy_product_page(name):
-    return redirect(url_for(".product_page", name=name))
-
-
-@bp.route("/products/<name>")
-def product_page(name):
-    product = _model.STORE.index.products.get_by_name(name)
-    if not product:
-        abort(404, f"Unknown product {name!r}")
-    ordered_metadata = utils.prepare_document_formatting(product.definition)
-    product_summary = _model.get_product_summary(name)
-
-    extras = {}
-    # (Override the global default with a product-only time.
-    #  It's more useful to the user on this page, as we only show general product info.)
-    if product_summary is not None:
-        extras["last_updated_time"] = product_summary.last_refresh_time
-
-    return utils.render(
-        "product.html",
-        product=product,
-        product_summary=product_summary,
-        location_samples=_model.STORE.product_location_samples(name),
-        metadata_doc=ordered_metadata,
-        **extras,
-    )
-
-
 @bp.route("/product/<name>.odc-product.yaml")
 def legacy_raw_product_doc(name):
     return redirect(url_for(".raw_product_doc", name=name))

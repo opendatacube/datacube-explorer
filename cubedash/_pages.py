@@ -56,21 +56,26 @@ if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
 @app.route("/<product_name>/<int:year>")
 @app.route("/<product_name>/<int:year>/<int:month>")
 @app.route("/<product_name>/<int:year>/<int:month>/<int:day>")
-def legacy_overview_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
-):
-    return redirect(
-        url_for(
-            ".overview_page", product_name=product_name, year=year, month=month, day=day
-        )
-    )
-
-
+@app.route("/product/<product_name>")
 @app.route("/products/<product_name>/extents")
 @app.route("/products/<product_name>/extents/<int:year>")
 @app.route("/products/<product_name>/extents/<int:year>/<int:month>")
 @app.route("/products/<product_name>/extents/<int:year>/<int:month>/<int:day>")
-def overview_page(
+def legacy_product_page(
+    product_name: str = None, year: int = None, month: int = None, day: int = None
+):
+    return redirect(
+        url_for(
+            ".product_page", product_name=product_name, year=year, month=month, day=day
+        )
+    )
+
+
+@app.route("/products/<product_name>")
+@app.route("/products/<product_name>/<int:year>")
+@app.route("/products/<product_name>/<int:year>/<int:month>")
+@app.route("/products/<product_name>/<int:year>/<int:month>/<int:day>")
+def product_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     (
@@ -81,10 +86,6 @@ def overview_page(
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
 
-    _LOG.debug(
-        "overview.page.theme",
-        theme=flask.current_app.config["CUBEDASH_THEME"],
-    )
     default_zoom = flask.current_app.config["default_map_zoom"]
     default_center = flask.current_app.config["default_map_center"]
 
@@ -112,6 +113,8 @@ def overview_page(
         default_center=default_center,
         year_selector_summary=year_selector_summary,
         time_selector_summary=time_selector_summary,
+        location_samples=_model.STORE.product_location_samples(product.name),
+        metadata_doc=(utils.prepare_document_formatting(product.definition)),
     )
 
 
@@ -243,7 +246,7 @@ def regions_page(product_name: str):
     # A map of regions is shown on the overview page.
     return redirect(
         url_for(
-            ".overview_page",
+            ".product_page",
             product_name=product_name,
         )
     )
@@ -366,13 +369,13 @@ def region_geojson(
 @app.route("/<product_name>/spatial")
 def spatial_page(product_name: str):
     """Legacy redirect to maintain old bookmarks"""
-    return redirect(url_for("overview_page", product_name=product_name))
+    return redirect(url_for("product_page", product_name=product_name))
 
 
 @app.route("/<product_name>/timeline")
 def timeline_page(product_name: str):
     """Legacy redirect to maintain old bookmarks"""
-    return redirect(url_for("overview_page", product_name=product_name))
+    return redirect(url_for("product_page", product_name=product_name))
 
 
 def _load_product(
@@ -641,4 +644,4 @@ def default_redirect():
     else:
         default_product = available_product_names[0]
 
-    return flask.redirect(flask.url_for("overview_page", product_name=default_product))
+    return flask.redirect(flask.url_for("product_page", product_name=default_product))

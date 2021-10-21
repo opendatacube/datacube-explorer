@@ -4,11 +4,12 @@
 {% set have_data = selected_summary and selected_summary.dataset_count > 0 %}
 {% set have_displayable_data = selected_summary and selected_summary.footprint_count > 0 %}
 {% set dataset_limit = 500 %}
+{% set fixed_metadata = product_summary.fixed_metadata or {} %}
+
 {% set show_individual_datasets = have_data and selected_summary.dataset_count < dataset_limit %}
 
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
-
     <div class="panels">
         <div class="map-panel relative">
             {% if not selected_summary.footprint_count %}
@@ -141,26 +142,20 @@
                         </ul>
                     {% endif %}
 
-                    <h4>
-                        Common Metadata
-                        (<a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-                            {{- product.metadata_type.name -}}
-                        </a>)
-                    </h4>
-
-                    {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
-                        <em>No common values</em>
-                    {% else %}
-                        {{ query_param_list(product.fields,
-                                        show_nulls=false,
-                                        descriptions=product.metadata_type.dataset_fields,
-                                        fallback_dict=product_summary.fixed_metadata or {}) }}
-                        {% if product_summary.fixed_metadata is none %}
-                            <em class="muted" title="Generated summaries are out of date">
-                                Unknown (needs refresh)
-                            </em>
-                        {% endif %}
+                    {% if product_summary.derived_products %}
+                        <h4>Derived</h4>
+                        <ul>
+                            {% for product_name in product_summary.derived_products %}
+                                <li class="derived-product">
+                                    <i class="fa fa-level-down" aria-hidden="true"></i>
+                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
+                                        {{ product_name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% endif %}
+
 
                     {% if have_displayable_data %}
                     <h4>GeoJSON</h4>
@@ -190,23 +185,9 @@
                     </ul>
                     {% endif %}
 
-                    {% if product_summary.derived_products %}
-                        <h4>Derived</h4>
-                        <ul>
-                            {% for product_name in product_summary.derived_products %}
-                                <li class="derived-product">
-                                    <i class="fa fa-level-down" aria-hidden="true"></i>
-                                    <a href="{{ url_for(request.url_rule.endpoint, product_name=product_name, year=year, month=month, day=day) }}">
-                                        {{ product_name }}
-                                    </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-
                     <p>
-                        <a href="{{ url_for('product.product_page', name=product.name) }}"
-                           class="muted">Product information</a>
+                        <a href="#raw-doc"
+                           class="muted">Document</a>
                     </p>
 
                     {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}
@@ -217,6 +198,122 @@
 
         {% endif %}
     </div>
+    {% from "layout/macros.html" import query_param_list, show_raw_document %}
+
+
+    <div class="panel odd overflowable">
+        <h3>Location{% if location_samples | length > 1 %}s{% endif %} <span class="addendum">(from sampling)</span></h3>
+        {% for location in location_samples %}
+            <div class="dataset-location">
+                <div class="uri-path">{{ location.common_prefix }}</div>
+                <ul class="quiet">
+                    {% for example_uris in location.example_uris %}
+                        <li class="uri-path muted">{{ example_uris }}</li>
+                    {% endfor %}
+                    <span title="Only samples are shown">…</span>
+                </ul>
+            </div>
+        {% else %}
+            <p>No recorded locations</p>
+        {% endfor %}
+    </div>
+
+    <div class="panel">
+
+        <h3  class="followed">Metadata</h3>
+        <div class="header-follow">
+            type
+            <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                {{ product.metadata_type.name }}
+            </a>
+        </div>
+
+        {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
+            <em>No common values</em>
+        {% else %}
+            {{ query_param_list(product.fields,
+                            show_nulls=false,
+                            wide=true,
+                            descriptions=product.metadata_type.dataset_fields,
+                            fallback_dict=product_summary.fixed_metadata or {}) }}
+            {% if product_summary.fixed_metadata is none %}
+                <em title="Generated summaries are out of date">
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    Unknown fixed fields
+                </em>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="panel odd">
+
+        {% if product.definition.measurements %}
+            <h3>Measurements</h3>
+
+            {% for measurement in product.definition.measurements %}
+                <div>
+
+                    <span>{{ measurement.name }}</span>
+                    {%- for a in measurement.aliases %}
+                        / <span class="muted">{{ a }}</span>
+                    {%- endfor %}
+
+                    <span class="badge">{{ measurement.dtype }}</span>
+                    <span class="muted">
+                        with units {{ measurement.units }} and nodata {{ measurement.nodata }}
+                        </span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+
+
+    <div class="panel">
+        <h3>Searchable fields</h3>
+        {% for key, value in product.fields | dictsort if (value is none and key not in fixed_metadata) %}
+            <div>
+                {% set field = product.metadata_type.dataset_fields[key] %}
+                {{ key }}
+
+                <span class="badge">
+                    {{- field.type_name -}}
+                    {%- if field.indexed is true %}
+                        <span title="indexed"><i class="fa fa-square" aria-hidden="true"></i></span>
+                    {%- endif -%}
+                </span>
+                {% if field.description and ('TODO' not in field.description) %}
+                    <span class="muted">{{ field.description }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+
+    {% if product.definition.storage %}
+        <div class="panel">
+            {# These fields are enforced by dataset-type-schema.yaml#}
+            <h3>Storage Parameters</h3>
+            {{ query_param_list(product.definition.storage, show_dicts=true) }}
+        </div>
+    {% endif %}
+
+    <div class="panel odd" id="raw-doc">
+        <h3 class="followed">Definition</h3>
+        <div class="header-follow">
+            <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
+                RAW
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('stac.collection', collection=product.name) }}"
+               class="badge">
+                As Stac
+                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            </a>
+        </div>
+        {{ show_raw_document(metadata_doc) }}
+    </div>
+
 {% endblock %}
 
 

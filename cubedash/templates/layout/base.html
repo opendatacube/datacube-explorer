@@ -38,7 +38,7 @@
                     <span class="ex-menu-title">Products</span>
                     <ul>
                         {% for product in datacube_products %}
-                            <li><a href="{{ url_for('product.product_page', name=product.name) }}">{{ product.name }}</a></li>
+                            <li><a href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
                         {% endfor %}
                     </ul>
                 </li>
