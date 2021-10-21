@@ -92,7 +92,7 @@ def product_page(
     region_geojson = _model.get_regions_geojson(product_name, year, month, day)
 
     return utils.render(
-        "overview.html",
+        "product.html",
         year=year,
         month=month,
         day=day,
