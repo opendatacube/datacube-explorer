@@ -292,7 +292,7 @@ def enable_prometheus():
             GunicornInternalPrometheusMetrics,
         )
 
-        metrics = GunicornInternalPrometheusMetrics(app)
+        metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
         _LOG.info(f"Prometheus metrics enabled : {metrics}")
 
 
