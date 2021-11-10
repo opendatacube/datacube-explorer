@@ -7,7 +7,7 @@ services:
       args:
         ENVIRONMENT: test
     environment:
-      - prometheus_multiproc_dir=/tmp # Enable prometheus metrics
+      - PROMETHEUS_MULTIPROC_DIR=/dev/shm # Enable prometheus metrics
     volumes:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf

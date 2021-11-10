@@ -287,7 +287,7 @@ def enable_sentry():
 @app.before_first_request
 def enable_prometheus():
     # Enable deployment specific code for Prometheus metrics
-    if os.environ.get("prometheus_multiproc_dir", False):
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
         from prometheus_flask_exporter.multiprocess import (
             GunicornInternalPrometheusMetrics,
         )
