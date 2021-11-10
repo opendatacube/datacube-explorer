@@ -142,6 +142,30 @@
                         </ul>
                     {% endif %}
 
+
+        <h4  class="followed">Metadata</h4>
+        <div class="header-follow">
+            type
+            <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
+                {{ product.metadata_type.name }}
+            </a>
+        </div>
+
+        {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
+            <em>No common values</em>
+        {% else %}
+            {{ query_param_list(product.fields,
+                            show_nulls=false,
+                            descriptions=product.metadata_type.dataset_fields,
+                            fallback_dict=product_summary.fixed_metadata or {}) }}
+            {% if product_summary.fixed_metadata is none %}
+                <em title="Generated summaries are out of date">
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    Unknown fixed fields
+                </em>
+            {% endif %}
+        {% endif %}
+
                     {% if product_summary.derived_products %}
                         <h4>Derived</h4>
                         <ul>
@@ -185,11 +209,6 @@
                     </ul>
                     {% endif %}
 
-                    <p>
-                        <a href="#raw-doc"
-                           class="muted">Document</a>
-                    </p>
-
                     {# Mostly useful for debugging: hide in page source code. Users should look at page footer instead. #}
                     {% if selected_summary.newest_dataset_creation_time %}
                         <!-- Summarised {{ selected_summary.summary_gen_time | timesince }} -->
@@ -218,32 +237,6 @@
         {% endfor %}
     </div>
 
-    <div class="panel">
-
-        <h3  class="followed">Metadata</h3>
-        <div class="header-follow">
-            type
-            <a href="{{ url_for('product.metadata_type_page', name=product.metadata_type.name) }}">
-                {{ product.metadata_type.name }}
-            </a>
-        </div>
-
-        {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
-            <em>No common values</em>
-        {% else %}
-            {{ query_param_list(product.fields,
-                            show_nulls=false,
-                            wide=true,
-                            descriptions=product.metadata_type.dataset_fields,
-                            fallback_dict=product_summary.fixed_metadata or {}) }}
-            {% if product_summary.fixed_metadata is none %}
-                <em title="Generated summaries are out of date">
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                    Unknown fixed fields
-                </em>
-            {% endif %}
-        {% endif %}
-    </div>
 
     <div class="panel odd">
 
