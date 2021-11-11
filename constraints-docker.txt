@@ -1,2 +1,1 @@
 datacube==1.8.6
-eodatasets3==0.22.2
