@@ -74,7 +74,7 @@ setup(
         "cachetools",
         "click",
         "datacube>=1.8",
-        "eodatasets3>=0.22.1",
+        "eodatasets3>=0.23.1",
         "fiona",
         "flask",
         "Flask-Caching",
