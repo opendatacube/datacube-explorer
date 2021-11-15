@@ -65,9 +65,12 @@ def test_eo3_extents(eo3_index: Index):
 
     assert dataset_extent_row["id"] == UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14")
 
+    # On older products, the center time was calculated from the range.
+    # But on EO3 we have a singular 'datetime' to use directly.
     assert dataset_extent_row["center_time"] == datetime(
-        1988, 3, 30, 1, 41, 16, 855723, tzinfo=tz.tzutc()
+        1988, 3, 30, 1, 41, 16, 892044, tzinfo=tz.tzutc()
     )
+
     assert dataset_extent_row["creation_time"] == datetime(
         2020, 6, 5, 7, 15, 26, 599544, tzinfo=tz.tzutc()
     )
