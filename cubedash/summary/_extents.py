@@ -112,7 +112,7 @@ def expects_eo3_metadata_type(md: MetadataType) -> bool:
     """
     # We don't have a clean way to say that a product expects EO3
 
-    measurements_offset = md.definition["dataset"]["measurements"]
+    measurements_offset = md.definition["dataset"].get("measurements")
 
     # In EO3, the measurements are in ['measurments'],
     # In EO1, they are in ['image', 'bands'].
