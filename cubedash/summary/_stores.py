@@ -50,8 +50,8 @@ from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
     ProductArrival,
     RegionSummary,
-    center_time_expression,
     dataset_changed_expression,
+    datetime_expression,
 )
 from cubedash.summary._schema import (
     DATASET_SPATIAL,
@@ -354,7 +354,7 @@ class SummaryStore:
                 select(
                     [
                         func.date_trunc(
-                            "month", center_time_expression(dataset_type.metadata_type)
+                            "month", datetime_expression(dataset_type.metadata_type)
                         ).label("month"),
                         func.count(),
                     ]

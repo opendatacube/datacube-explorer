@@ -20,6 +20,7 @@ from geoalchemy2.shape import from_shape, to_shape
 from psycopg2._range import Range as PgRange
 from shapely.geometry import shape
 from sqlalchemy import (
+    TIMESTAMP,
     BigInteger,
     Integer,
     SmallInteger,
@@ -467,7 +468,7 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
     return [
         DATASET.c.id,
         DATASET.c.dataset_type_ref,
-        center_time_expression(md_type),
+        datetime_expression(md_type),
         (null() if footprint_expression is None else footprint_expression).label(
             "footprint"
         ),
@@ -477,12 +478,21 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
     ]
 
 
-def center_time_expression(md_type: MetadataType):
+def datetime_expression(md_type: MetadataType):
     """
-    The center time for the given metadata doc.
+    Get an Alchemy expression for a timestamp of datasets of the given metadata type.
+    """
+    # If EO3 format, there's already has a plain 'datetime' field,
+    # So we can use it directly.
+    if expects_eo3_metadata_type(md_type):
+        return (
+            _jsonb_doc_expression(md_type)["properties"]["datetime"]
+            .astext.cast(TIMESTAMP(timezone=True))
+            .label("center_time")
+        )
 
-    (Matches the logic in ODC's Dataset.center_time)
-    """
+    # On older EO datasets, there's only a time range, so we take the center time.
+    # (This matches the logic in ODC's Dataset.center_time)
     time = md_type.dataset_fields["time"].alchemy_expression
     center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
