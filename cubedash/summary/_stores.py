@@ -129,7 +129,7 @@ class ProductSummary:
     # The 'name' is typically used as an identifier, and with ODC itself.
     id_: Optional[int] = None
 
-    def iter_months(self) -> Generator[datetime, None, None]:
+    def iter_months(self) -> Generator[date, None, None]:
         """
         Iterate through all months in its time range.
         """
@@ -144,7 +144,7 @@ class ProductSummary:
         year = start.year
         month = start.month
         while True:
-            yield datetime(year, month, 1)
+            yield date(year, month, 1)
 
             month += 1
             if month == 13:
@@ -341,7 +341,7 @@ class SummaryStore:
         self,
         product_name: str,
         only_those_newer_than: datetime,
-    ) -> Iterable[Tuple[datetime, int]]:
+    ) -> Iterable[Tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
@@ -349,7 +349,7 @@ class SummaryStore:
 
         # Find the most-recently updated datasets and group them by month.
         return sorted(
-            (month, count)
+            (month.date(), count)
             for month, count in self._engine.execute(
                 select(
                     [
@@ -1435,7 +1435,7 @@ class SummaryStore:
                 log.warn("forcing_refresh")
 
             # Regenerate the old months too, in case any have been deleted.
-            old_months = set(old_product.iter_months()) if old_product else set()
+            old_months = self._already_summarised_months(product_name)
 
             months_to_update = sorted(
                 (month, "all") for month in old_months.union(new_product.iter_months())
@@ -1500,6 +1500,22 @@ class SummaryStore:
             refresh_type = GenerateResult.NO_CHANGES
 
         return refresh_type, updated_summary
+
+    def _already_summarised_months(self, product_name: str) -> Set[date]:
+        """Get all months that have a recorded summary already for this product"""
+
+        existing_product = self.get_product_summary(product_name)
+        if not existing_product:
+            return set()
+
+        return {
+            r.start_day
+            for r in self._engine.execute(
+                select([TIME_OVERVIEW.c.start_day]).where(
+                    TIME_OVERVIEW.c.product_ref == existing_product.id_
+                )
+            )
+        }
 
     def _database_time_now(self) -> datetime:
         """
