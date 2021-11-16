@@ -1,7 +1,7 @@
 import operator
 import time
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime
 from typing import List
 
 import pytest
@@ -105,7 +105,7 @@ def test_add_no_periods(summary_store: SummaryStore):
 
 def test_month_iteration():
     def assert_month_iteration(
-        start: datetime, end: datetime, expected_months: List[datetime]
+        start: datetime, end: datetime, expected_months: List[date]
     ):
         __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
@@ -120,11 +120,11 @@ def test_month_iteration():
         datetime(2003, 2, 2),
         datetime(2003, 6, 2),
         [
-            datetime(2003, 2, 1, 0, 0),
-            datetime(2003, 3, 1, 0, 0),
-            datetime(2003, 4, 1, 0, 0),
-            datetime(2003, 5, 1, 0, 0),
-            datetime(2003, 6, 1, 0, 0),
+            date(2003, 2, 1),
+            date(2003, 3, 1),
+            date(2003, 4, 1),
+            date(2003, 5, 1),
+            date(2003, 6, 1),
         ],
     )
     # Across year bounds
@@ -132,19 +132,19 @@ def test_month_iteration():
         datetime(2003, 11, 2),
         datetime(2004, 2, 2),
         [
-            datetime(2003, 11, 1, 0, 0),
-            datetime(2003, 12, 1, 0, 0),
-            datetime(2004, 1, 1, 0, 0),
-            datetime(2004, 2, 1, 0, 0),
+            date(2003, 11, 1),
+            date(2003, 12, 1),
+            date(2004, 1, 1),
+            date(2004, 2, 1),
         ],
     )
     # Within same month
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 30), [datetime(2003, 11, 1, 0, 0)]
+        datetime(2003, 11, 1), datetime(2003, 11, 30), [date(2003, 11, 1)]
     )
     # Identical dates
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 1), [datetime(2003, 11, 1, 0, 0)]
+        datetime(2003, 11, 1), datetime(2003, 11, 1), [date(2003, 11, 1)]
     )
 
 
