@@ -151,10 +151,10 @@ def test_eo3_dateless_extents(eo3_index: Index):
 
     assert dataset_extent_row["id"] == UUID("856e45bf-cd50-5a5a-b1cd-12b85df99b24")
 
-    # Since it has no datetime, the chosen one should default to a calculated center time.
-    center_time: datetime = dataset_extent_row["center_time"]
-    assert center_time.astimezone(tz.tzutc()) == datetime(
-        2017, 9, 30, 23, 59, 59, 500000, tzinfo=tz.tzutc()
+    # Since it has no datetime, the chosen one should default to the start
+    time_record: datetime = dataset_extent_row["center_time"]
+    assert time_record.astimezone(tz.tzutc()) == datetime(
+        2017, 7, 1, 0, 0, tzinfo=tz.tzutc()
     )
 
     # Dataset has no creation time, but will fall back to index time.
