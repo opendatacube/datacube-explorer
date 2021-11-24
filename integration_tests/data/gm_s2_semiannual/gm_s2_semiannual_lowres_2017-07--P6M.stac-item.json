@@ -1,0 +1,203 @@
+{
+    "type": "Feature",
+    "stac_version": "1.0.0",
+    "id": "gm_s2_semiannual_2017-07--P6M",
+    "properties": {
+        "odc:product": "gm_s2_semiannual_lowres",
+        "start_datetime": "2017-07-01T00:00:00Z",
+        "end_datetime": "2017-12-31T23:59:59Z",
+        "proj:epsg": 6933,
+        "proj:geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [
+                        -2688000.0,
+                        4608000.0
+                    ],
+                    [
+                        -2688000.0,
+                        -5472000.0
+                    ],
+                    [
+                        6240000.0,
+                        -5472000.0
+                    ],
+                    [
+                        6240000.0,
+                        4608000.0
+                    ],
+                    [
+                        -2688000.0,
+                        4608000.0
+                    ]
+                ]
+            ]
+        },
+        "proj:bbox": [
+            -2688000.0,
+            -5472000.0,
+            6240000.0,
+            4608000.0
+        ],
+        "proj:shape": [
+            84000,
+            74400
+        ],
+        "proj:transform": [
+            120.0,
+            0.0,
+            -2688000.0,
+            0.0,
+            -120.0,
+            4608000.0,
+            0.0,
+            0.0,
+            1.0
+        ],
+        "datetime": null
+    },
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -27.858883076540035,
+                    38.99888289900373
+                ],
+                [
+                    -27.858883076540035,
+                    -48.31042171670349
+                ],
+                [
+                    64.67240714196794,
+                    -48.31042171670349
+                ],
+                [
+                    64.67240714196794,
+                    38.99888289900373
+                ],
+                [
+                    -27.858883076540035,
+                    38.99888289900373
+                ]
+            ]
+        ]
+    },
+    "links": [
+        {
+            "rel": "self",
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M.stac-item.json",
+            "type": "application/json"
+        }
+    ],
+    "assets": {
+        "B02": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B02.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B03": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B03.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B04": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B04.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B05": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B05.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B06": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B06.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B07": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B07.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B08": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B08.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B8A": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B8A.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B11": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B11.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "B12": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_B12.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "EMAD": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_EMAD.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "SMAD": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_SMAD.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "BCMAD": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_BCMAD.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        },
+        "COUNT": {
+            "href": "s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M_COUNT.tif",
+            "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+            "roles": [
+                "data"
+            ]
+        }
+    },
+    "bbox": [
+        -27.858883076540035,
+        -48.31042171670349,
+        64.67240714196794,
+        38.99888289900373
+    ],
+    "stac_extensions": [
+        "https://stac-extensions.github.io/projection/v1.0.0/schema.json"
+    ]
+}

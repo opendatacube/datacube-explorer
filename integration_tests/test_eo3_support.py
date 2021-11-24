@@ -13,6 +13,7 @@ from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
+from ruamel import yaml
 from ruamel.yaml import YAML
 
 from cubedash import _utils
@@ -33,6 +34,20 @@ TEST_EO3_DATASET_ARD = (
 
 @pytest.fixture(scope="module")
 def eo3_index(module_dea_index: Index, dataset_loader):
+    def _add_from_dir(
+        path: Path, expected_product_name: str, expected_dataset_count: int
+    ):
+        """Add any product definitions and datasets from the given directory."""
+
+        for product in path.glob("*.odc-product.yaml"):
+            module_dea_index.products.add_document(yaml.load(product.open()))
+        loaded = 0
+        for dataset in path.glob("*.odc-metadata.yaml"):
+            loaded += dataset_loader(
+                expected_product_name,
+                dataset,
+            )
+        assert loaded == expected_dataset_count
 
     loaded = dataset_loader(
         "usgs_ls5t_level1_1",
@@ -45,6 +60,12 @@ def eo3_index(module_dea_index: Index, dataset_loader):
         TEST_EO3_DATASET_ARD,
     )
     assert loaded == 1
+
+    _add_from_dir(
+        TEST_DATA_DIR / "gm_s2_semiannual",
+        expected_product_name="gm_s2_semiannual_lowres",
+        expected_dataset_count=1,
+    )
 
     # We need postgis and some support tables (eg. srid lookup).
     store = SummaryStore.create(module_dea_index)
@@ -115,6 +136,31 @@ def test_eo3_extents(eo3_index: Index):
 
     assert dataset_extent_row["region_code"] == "113081"
     assert dataset_extent_row["size_bytes"] is None
+
+
+def test_eo3_dateless_extents(eo3_index: Index):
+    """
+    Can we support datasets with no datetime field?
+
+    (Stac makes it optional if you have a start/end date)
+    """
+    [dataset_extent_row] = _extents.get_sample_dataset(
+        "gm_s2_semiannual_lowres", index=eo3_index
+    )
+    pprint(dataset_extent_row)
+
+    assert dataset_extent_row["id"] == UUID("856e45bf-cd50-5a5a-b1cd-12b85df99b24")
+
+    # Since it has no datetime, the chosen one should default to a calculated center time.
+    center_time: datetime = dataset_extent_row["center_time"]
+    assert center_time.astimezone(tz.tzutc()) == datetime(
+        2017, 9, 30, 23, 59, 59, 500000, tzinfo=tz.tzutc()
+    )
+
+    # Dataset has no creation time, but will fall back to index time.
+    assert dataset_extent_row["creation_time"] is not None
+    # ... and no region code either. We do nothing.
+    assert dataset_extent_row["region_code"] is None
 
 
 def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
