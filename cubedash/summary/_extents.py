@@ -488,15 +488,13 @@ def datetime_expression(md_type: MetadataType):
         props = _jsonb_doc_expression(md_type)["properties"]
 
         # .... but in newer Stac, datetime is optional.
-        # .... in which case we fall back to a calculated center.
-        main_datetime = props["datetime"].astext.cast(TIMESTAMP(timezone=True))
-        start_datetime = props["dtr:start_datetime"].astext.cast(
-            TIMESTAMP(timezone=True)
+        # .... in which case we fall back to the start time.
+        #      (which I think makes more sense in large ranges than a calculated center time)
+        return (
+            func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
+            .cast(TIMESTAMP(timezone=True))
+            .label("center_time")
         )
-        end_datetime = props["dtr:end_datetime"].astext.cast(TIMESTAMP(timezone=True))
-        return func.coalesce(
-            main_datetime, (start_datetime + ((end_datetime - start_datetime) / 2))
-        ).label("center_time")
 
     # On older EO datasets, there's only a time range, so we take the center time.
     # (This matches the logic in ODC's Dataset.center_time)
