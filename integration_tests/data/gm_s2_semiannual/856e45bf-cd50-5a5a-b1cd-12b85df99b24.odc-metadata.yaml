@@ -1,0 +1,95 @@
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/856e45bf-cd50-5a5a-b1cd-12b85df99b24.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 856e45bf-cd50-5a5a-b1cd-12b85df99b24
+
+label: gm_s2_semiannual_2017-07--P6M
+product:
+  name: gm_s2_semiannual_lowres
+
+location: s3://deafrica-services/gm_s2_semiannual_lowres/2017-07--P6M/gm_s2_semiannual_lowres_2017-07--P6M.stac-item.json
+
+crs: epsg:6933
+geometry:
+  type: Polygon
+  coordinates: [[[-2688000.0, 4608000.0], [-2688000.0, -5472000.0], [6240000.0, -5472000.0],
+      [6240000.0, 4608000.0], [-2688000.0, 4608000.0]]]
+grids:
+  default:
+    shape: [84000, 74400]
+    transform: [120.0, 0.0, -2688000.0, 0.0, -120.0, 4608000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime:
+  dtr:end_datetime: '2017-12-31T23:59:59Z'
+  dtr:start_datetime: '2017-07-01T00:00:00Z'
+  odc:file_format: GeoTIFF
+  odc:product: gm_s2_semiannual_lowres
+  proj:bbox:
+  - -2688000.0
+  - -5472000.0
+  - 6240000.0
+  - 4608000.0
+  proj:epsg: 6933
+  proj:geometry:
+    type: Polygon
+    coordinates:
+    - - - -2688000.0
+        - 4608000.0
+      - - -2688000.0
+        - -5472000.0
+      - - 6240000.0
+        - -5472000.0
+      - - 6240000.0
+        - 4608000.0
+      - - -2688000.0
+        - 4608000.0
+  proj:shape:
+  - 84000
+  - 74400
+  proj:transform:
+  - 120.0
+  - 0.0
+  - -2688000.0
+  - 0.0
+  - -120.0
+  - 4608000.0
+  - 0.0
+  - 0.0
+  - 1.0
+
+measurements:
+  B02:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B02.tif
+  B03:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B03.tif
+  B04:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B04.tif
+  B05:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B05.tif
+  B06:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B06.tif
+  B07:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B07.tif
+  B08:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B08.tif
+  B11:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B11.tif
+  B12:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B12.tif
+  B8A:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_B8A.tif
+  EMAD:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_EMAD.tif
+  SMAD:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_SMAD.tif
+  BCMAD:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_BCMAD.tif
+  COUNT:
+    path: gm_s2_semiannual_lowres_2017-07--P6M_COUNT.tif
+
+accessories: {}
+
+lineage: {}
+...

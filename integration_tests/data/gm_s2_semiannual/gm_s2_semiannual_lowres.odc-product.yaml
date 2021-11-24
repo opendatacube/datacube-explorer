@@ -1,0 +1,122 @@
+---
+# Product
+# url: https://explorer.digitalearth.africa/products/gm_s2_semiannual_lowres.odc-product.yaml
+name: gm_s2_semiannual_lowres
+license: CC-BY-4.0
+metadata_type: eo3
+description: Surface Reflectance Semiannual Geometric Median and Median Absolute Deviations,
+  Sentinel-2. Low resolution version used for visualisations.
+metadata:
+  product:
+    name: gm_s2_semiannual_lowres
+measurements:
+- name: B02
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_02
+  - blue
+- name: B03
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_03
+  - green
+- name: B04
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_04
+  - red
+- name: B05
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_05
+  - red_edge_1
+- name: B06
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_06
+  - red_edge_2
+- name: B07
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_07
+  - red_edge_3
+- name: B08
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_08
+  - nir
+  - nir_1
+- name: B8A
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_8a
+  - nir_narrow
+  - nir_2
+- name: B11
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_11
+  - swir_1
+  - swir_16
+- name: B12
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_12
+  - swir_2
+  - swir_22
+- name: SMAD
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - smad
+  - sdev
+  - SDEV
+- name: EMAD
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - emad
+  - edev
+  - EDEV
+- name: BCMAD
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - bcmad
+  - bcdev
+  - BCDEV
+- name: COUNT
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - count
+storage:
+  crs: EPSG:6933
+  resolution:
+    x: 120
+    y: -120
+...
