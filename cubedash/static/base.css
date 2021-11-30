@@ -194,7 +194,8 @@ footer {
 
 #map {
   flex: 1 1;
-  height: calc(100vh - 100px);
+  height: 100%;
+  width: 100%;
 }
 
 @media (min-width: 800px) {
@@ -279,7 +280,7 @@ ul.quiet {
   }
 }
 .panel h1, .panel h2, .panel h3, .panel h4, .panel p {
-  margin: 15px 0;
+  margin: 30px 0 15px;
 }
 .panel h1:first-child, .panel h2:first-child, .panel h3:first-child, .panel h4:first-child, .panel p:first-child {
   margin-top: 0;
@@ -308,6 +309,10 @@ ul.quiet {
 }
 .panel.overflowable {
   overflow-x: auto;
+}
+
+.columned {
+  column-count: 2;
 }
 
 .header-option {
