@@ -22,10 +22,10 @@
         </em></div>
 
     </div>
-    <div class="panel">
-        <h3>Usage</h3>
+    <div class="panel odd">
+        <h3>Used by Products</h3>
         {% if products_using_it %}
-            <div class="type-usage-list">
+            <div class="type-usage-list {% if products_using_it | length > 4 %}columned{% endif %}">
                 {% for product in products_using_it %}
                     <div class="type-usage-item">{{ product.name | product_link }}</div>
                 {% endfor %}
@@ -34,6 +34,29 @@
             <em>None</em>
         {% endif %}
     </div>
+
+
+    <div class="panel">
+        <h3>Searchable fields</h3>
+        <div class="{% if metadata_type.dataset_fields | length > 8 %}columned{% endif %}">
+        {% for key, field in metadata_type.dataset_fields | dictsort %}
+            <div>
+                {{ key }}
+
+                <span class="badge">
+                    {{- field.type_name -}}
+                    {%- if field.indexed is true %}
+                        <span title="indexed"><i class="fa fa-square" aria-hidden="true"></i></span>
+                    {%- endif -%}
+                </span>
+                {% if field.description and ('TODO' not in field.description) %}
+                    <span class="muted">{{ field.description }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
 
     <div class="panel odd">
         <h3 class="followed">Definition</h3>
