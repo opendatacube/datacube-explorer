@@ -2,7 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Counter, Dict, Iterable, Optional, Tuple
+from typing import Counter, Dict, List, Optional, Tuple
 
 import flask
 import structlog
@@ -109,11 +109,13 @@ def get_product_summary(product_name: str) -> ProductSummary:
     return STORE.get_product_summary(product_name)
 
 
-ProductWithSummary = Tuple[DatasetType, ProductSummary]
+ProductWithSummary = Tuple[DatasetType, Optional[ProductSummary]]
 
 
 @cache.memoize(timeout=120)
-def get_products_with_summaries() -> Iterable[ProductWithSummary]:
+def get_products_with_summaries(
+    only_summarised_ones: bool = True,
+) -> List[ProductWithSummary]:
     """
     The list of products that we have generated reports for.
     """
