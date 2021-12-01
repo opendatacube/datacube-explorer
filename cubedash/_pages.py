@@ -493,7 +493,7 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     Anything left ungrouped will be placed at the end in groups of
     configurable max size.
     """
-    product_summaries = _model.get_products_with_summaries()
+    product_summaries = _model.get_products()
     # Which field should we use when grouping products in the top menu?
     group_by_field = app.config.get("CUBEDASH_PRODUCT_GROUP_BY_FIELD", "product_type")
     group_field_size = app.config.get("CUBEDASH_PRODUCT_GROUP_SIZE", 5)
@@ -555,7 +555,7 @@ def _partition_default(
 
     there_are_groups = len(grouped_product_summarise) > 0
 
-    lonely_products = sorted(lonely_products, key=lambda p: p[1].name)
+    lonely_products = sorted(lonely_products, key=lambda p: p[0].name)
     for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
         group_name = ""
         if i == 0:

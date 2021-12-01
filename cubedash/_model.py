@@ -113,24 +113,28 @@ ProductWithSummary = Tuple[DatasetType, Optional[ProductSummary]]
 
 
 @cache.memoize(timeout=120)
-def get_products_with_summaries(
-    only_summarised_ones: bool = True,
-) -> List[ProductWithSummary]:
+def get_products() -> List[ProductWithSummary]:
     """
-    The list of products that we have generated reports for.
+    The list of all products that we have generated reports for.
     """
-    index_products = {p.name: p for p in STORE.all_dataset_types()}
     products = [
-        (index_products[product_name], get_product_summary(product_name))
-        for product_name in STORE.list_complete_products()
+        (product, get_product_summary(product.name))
+        for product in STORE.all_dataset_types()
     ]
-    if not products:
+    if products and not STORE.list_complete_products():
         raise RuntimeError(
-            "No product reports. "
-            "Run `python -m cubedash.generate --all` to generate some."
+            "No products are summarised. " "Run `cubedash-gen --all` to generate some."
         )
 
     return products
+
+
+@cache.memoize(timeout=120)
+def get_products_with_summaries() -> List[ProductWithSummary]:
+    """The list of products that we have generated summaries for."""
+    return [
+        (product, summary) for product, summary in get_products() if summary is not None
+    ]
 
 
 @cache.memoize(timeout=60)
