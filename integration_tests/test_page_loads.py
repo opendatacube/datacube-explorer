@@ -93,8 +93,8 @@ def test_prometheus(sentry_client: FlaskClient):
 
 def test_default_redirect(client: FlaskClient):
     rv: Response = client.get("/", follow_redirects=False)
-    # Redirect to a default.
-    assert rv.location.endswith("/products/ls7_nbar_scene/extents")
+    # The products page is the default.
+    assert rv.location.endswith("/products")
 
 
 def test_get_overview(client: FlaskClient):
@@ -152,13 +152,13 @@ def test_get_overview_product_links(client: FlaskClient):
     product_links = html.find(".source-product a")
     assert [p.text for p in product_links] == ["ls7_level1_scene"]
     assert [p.attrs["href"] for p in product_links] == [
-        "/products/ls7_level1_scene/extents/2017"
+        "/products/ls7_level1_scene/2017"
     ]
 
     product_links = html.find(".derived-product a")
     assert [p.text for p in product_links] == ["ls7_pq_legacy_scene"]
     assert [p.attrs["href"] for p in product_links] == [
-        "/products/ls7_pq_legacy_scene/extents/2017"
+        "/products/ls7_pq_legacy_scene/2017"
     ]
 
 
@@ -210,7 +210,7 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
     html = get_html(empty_client, "/products/ls7_nbar_scene")
 
     # The page should load without error, but will mention its lack of information
-    assert html.find("h2", first=True).text == "ls7_nbar_scene"
+    assert "ls7_nbar_scene" in html.find("h2", first=True).text
     assert (
         "Product not summarised" in one_element(html, ".header-stat-information").text
     )
@@ -240,12 +240,12 @@ def test_empty_product_page(client: FlaskClient):
     A product page is displayable when summarised, but with 0 datasets.
     """
     html = get_html(client, "/products/ls5_nbar_scene")
-    assert "No datasets" in one_element(html, ".header-stat-information").text
+    assert "0 datasets" in one_element(html, ".dataset-count").text
 
     # ... yet a normal product doesn't show the message:
     html = get_html(client, "/products/ls7_nbar_scene")
-    assert "No datasets" not in one_element(html, ".header-stat-information").text
-    assert "4 datasets" in one_element(html, ".header-stat-information").text
+    assert "0 datasets" not in one_element(html, ".dataset-count").text
+    assert "4 datasets" in one_element(html, ".dataset-count").text
 
 
 def one_element(html: HTML, selector: str) -> Element:
