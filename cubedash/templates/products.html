@@ -42,10 +42,11 @@
                     <tr>
                         <td>
                             <a href="{{ url_for('product_page', product_name=product.name) }}"
-                               class="{% if summary.dataset_count == 0 %}muted{% endif %}"
                                 >{{ product.name }}</a>
                         </td>
-                        <td>{{ product.definition.description }}</td>
+                        <td class="{% if (not summary) or summary.dataset_count == 0 %}muted{% endif %}">
+                            {{- product.definition.description -}}
+                        </td>
                     </tr>
                 {% else %}
                     <tr><td>No products in index</td></tr>

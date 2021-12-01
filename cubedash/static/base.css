@@ -307,6 +307,9 @@ ul.quiet {
 .panel.highlight a {
   color: #aeaeae;
 }
+.panel.highlight .muted {
+  color: #bcbcbc;
+}
 .panel.overflowable {
   overflow-x: auto;
 }
