@@ -553,7 +553,7 @@ label.disabled {
 }
 
 .chart-timeline {
-  padding: 15px;
+  padding: 15px 45px 15px 0;
 }
 
 .chart-timeline-bars {
@@ -592,7 +592,7 @@ label.disabled {
   transform-origin: top left;
 }
 .chart-timeline-year.tooltip {
-  z-index: 2;
+  z-index: 100;
   font-size: 12px;
   padding: 5px 10px;
   color: #fff;
