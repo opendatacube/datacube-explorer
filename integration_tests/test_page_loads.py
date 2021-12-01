@@ -194,7 +194,7 @@ def test_uninitialised_overview(
     # The page should load without error, but will display 'unknown' fields
     assert html.find("h2", first=True).text == "ls7_nbar_scene: Landsat 7 NBAR 25 metre"
     assert "Unknown number of datasets" in html.text
-    assert "No data: not yet generated" in html.text
+    assert "No data: not yet summarised" in html.text
 
 
 def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
@@ -211,16 +211,11 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
 
     # The page should load without error, but will mention its lack of information
     assert "ls7_nbar_scene" in html.find("h2", first=True).text
-    assert (
-        "Product not summarised" in one_element(html, ".header-stat-information").text
-    )
+    assert "not yet summarised" in one_element(html, ".content").text
 
     # ... and a product that we populated does not have the message:
     html = get_html(empty_client, "/products/ls7_nbar_albers")
-    assert (
-        "Product not summarised"
-        not in one_element(html, ".header-stat-information").text
-    )
+    assert "not yet summarised" not in one_element(html, ".content").text
 
 
 def test_empty_product_overview(client: FlaskClient):
@@ -356,7 +351,7 @@ def test_out_of_date_range(client: FlaskClient):
     """
     html = get_html(client, "/wofs_albers/2010")
 
-    # The common error here is to say "No data: not yet generated" rather than "0 datasets"
+    # The common error here is to say "No data: not yet summarised" rather than "0 datasets"
     assert check_dataset_count(html, 0)
     assert "Historic Flood Mapping Water Observations from Space" in html.text
 
@@ -557,11 +552,11 @@ def test_no_data_pages(client: FlaskClient):
     (these should load with "empty" messages: not throw exceptions)
     """
     html = get_html(client, "/ls8_nbar_albers/2017")
-    assert "No data: not yet generated" in html.text
+    assert "No data: not yet summarised" in html.text
     assert "Unknown number of datasets" in html.text
 
     html = get_html(client, "/ls8_nbar_albers/2017/5")
-    assert "No data: not yet generated" in html.text
+    assert "No data: not yet summarised" in html.text
     assert "Unknown number of datasets" in html.text
 
     # Days are generated on demand: it should query and see that there are no datasets.
