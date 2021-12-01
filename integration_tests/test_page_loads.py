@@ -211,11 +211,11 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
 
     # The page should load without error, but will mention its lack of information
     assert "ls7_nbar_scene" in html.find("h2", first=True).text
-    assert "not yet summarised" in one_element(html, ".content").text
+    assert "not yet summarised" in one_element(html, "#content").text
 
     # ... and a product that we populated does not have the message:
     html = get_html(empty_client, "/products/ls7_nbar_albers")
-    assert "not yet summarised" not in one_element(html, ".content").text
+    assert "not yet summarised" not in one_element(html, "#content").text
 
 
 def test_empty_product_overview(client: FlaskClient):
