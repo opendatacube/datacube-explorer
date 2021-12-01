@@ -235,20 +235,29 @@
 
     <div class="panel">
         {% if product.definition.measurements %}
-            <h3>Measurements</h3>
-            {% for measurement in product.definition.measurements %}
-                <div>
-                    <span>{{ measurement.name }}</span>
-                    {%- for a in measurement.aliases %}
-                        / <span class="muted">{{ a }}</span>
-                    {%- endfor %}
+            <table class="collapsed-head">
+                <thead>
+                    <th colspan="2"><h3>Measurements</h3></th>
+                    <th>nodata</th>
+                </thead>
+                <tbody>
+                    {% for measurement in product.definition.measurements %}
+                        <tr>
+                            <td><span class="badge">{{ measurement.dtype }}</span></td>
+                            <td>
+                            <span>{{ measurement.name }}</span>
+                            {%- for a in measurement.aliases %}
+                                / <span class="muted">{{ a }}</span>
+                            {%- endfor %}
 
-                    <span class="badge">{{ measurement.dtype }}</span>
-                    <span class="muted">
-                        with units {{ measurement.units }} and nodata {{ measurement.nodata }}
-                        </span>
-                </div>
-            {% endfor %}
+                            </td>
+                        <td>
+                            <span class="muted"> {{ measurement.nodata }}</span>
+                        </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% endif %}
 
         {% if product.definition.storage %}
