@@ -30,7 +30,7 @@
                 <div class="panel highlight product-description">
                     {{ product.definition.description }}
                 </div>
-                <div class="panel info-panel">
+                <div class="panel odd info-panel">
                     {% if have_displayable_data %}
                         <div>
                             {# Show regions if available, otherwise a plain footprint #}
@@ -216,7 +216,7 @@
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
 
-    <div class="panel odd overflowable">
+    <div class="panel overflowable">
         <h3>
             Location{% if location_samples | length > 1 %}s{% endif %}
             {{ hanchor('locations') }}
@@ -229,17 +229,15 @@
                     {% for example_uris in location.example_uris %}
                         <li class="uri-path muted">{{ example_uris }}</li>
                     {% endfor %}
-                    <span title="Only samples are shown">…</span>
+                    <li title="Only samples are shown">…</li>
                 </ul>
             </div>
         {% else %}
             <p>No recorded locations</p>
         {% endfor %}
-    </div>
 
-
-    <div class="panel">
         {% if product.definition.measurements %}
+            <br/>
             <table class="collapsed-head">
                 <thead>
                     <th colspan="2">

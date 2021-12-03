@@ -31,7 +31,7 @@
             {% endfor %}
         </div>
     </div>
-    <div class="panel odd">
+    <div class="panel">
         {% if spatial_quality_stats %}
             <table class="data-table unavailable-metadata" id="missing-metadata">
                 <thead>
@@ -70,7 +70,7 @@
             <span class="primary-error">Spatial quality view not populated</span>
         {% endif %}
     </div>
-    <div class="panel" id="largest-footprint-size">
+    <div class="panel odd" id="largest-footprint-size">
         {% if spatial_quality_stats %}
             <h3>
                 Largest footprint size
@@ -100,7 +100,7 @@
         {% endif %}
     </div>
 
-    <div class="panel odd" id="query-timings">
+    <div class="panel" id="query-timings">
     {% if product_timings_iter %}
             <h3>Day query speed</h3>
             <p>Extremely slow queries usually indicate a misconfigured index for the product.</p>

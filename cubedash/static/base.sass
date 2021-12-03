@@ -2,33 +2,27 @@ $bold_highlight: #212121
 
 $content_background: lighten($bold_highlight, 75%)
 
-// The four colors in the dea style guide. Use sparingly (highlights).
+$header_base: lighten(#082e41, 5%)
+$breadcrumb_base: #00718b
+$menu_base: lighten($breadcrumb_base, 5%)
 
-$emphasis_strong: darken(#00A1DE, 5%)
-$emphasis_weak: desaturate($emphasis_strong, 10%)
+// Timeline widget on main map
+$timeline_base: lighten($header_base, 10%)
+// Color of buttons, popups, tooltips etc.
+$widget_base: $timeline_base
 
-$emphasis_light: #8FCAE7
+// The color of the little header in each panel
+$section_header_base: darken($header_base, 5%)
 
-$highlight_alt: #7AB800
-$highlight_alt2: #EEAF30
-
-$header_highlight: lighten($bold_highlight, 20%)
-$header_highlight_strong: lighten($bold_highlight, 25%)
+$header_highlight: lighten($bold_highlight, 12%)
+$panel_highlight: lighten($bold_highlight, 15%)
 $header_background: lighten($bold_highlight, 30%)
 
 $muted_text: lighten($bold_highlight, 32%)
 
+$panel_color: #e6edef
+$panel_odd_color: #fafafa
 
-$header_stipe1: #2dace1
-$header_stripe2: #7fd0eb
-
-$header_text_spice: darken($header_stipe1, 7%)
-
-$menu_background: $emphasis_strong
-
-$panel_color: lighten($bold_highlight, 85%)
-$panel2_color: lighten($content_background, 6%)
-$panel_highlighted: $header_highlight_strong
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
@@ -80,7 +74,8 @@ $panel_highlighted: $header_highlight_strong
 
 body
     font-family: Helvetica, Arial, sans-serif
-    background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px)
+    //background: linear-gradient(to bottom, desaturate(lighten($header_base, 10%), 100%) 90px, desaturate(lighten($header_base, 20%), 100%) 800px)
+    background: linear-gradient(to bottom, $header_base 90px, lighten($header_base, 15%) 800px)
 
     min-height: calc(100vh - 50px)
     color: $bold_highlight
@@ -99,11 +94,11 @@ a
     position: relative
 
 .header
-    background: $header_stipe1
+    background: $header_base
     width: 100%
     display: block
     text-align: right
-    @include top_padding
+    @include top_padding(3)
 
     &::after
         clear: both
@@ -111,8 +106,6 @@ a
 
     #logo
         @include left_padding($scale:2)
-        // We can't align vertically perfectly, as logos have different inner padding.
-        padding-top: 5px
 
         color: #fff
         float: left
@@ -151,10 +144,10 @@ a
             text-decoration: none
 
         .ex-menu-title:hover, .is-open > .ex-menu-title
-            background-color: $menu_background
+            background-color: $menu_base
 
         a:hover
-            color: $header_highlight_strong
+            color: $panel_highlight
         ul
             padding: 0
             margin: 0
@@ -163,9 +156,9 @@ a
                 position: relative
 
                 > ul > li
-                    background: $menu_background
+                    background: $menu_base
                     &:hover
-                        background-color: darken($menu_background, 5%)
+                        background-color: darken($menu_base, 5%)
                         a
                             color: #fff
 
@@ -196,7 +189,7 @@ a
         content: ' ▾'
 
 #breadcrumb
-    background: $header_stripe2
+    background: $breadcrumb_base
     color: #efefef
     font-weight: bold
     @include wide_padding
@@ -218,14 +211,12 @@ footer
     color: #fff
     font-size: 0.7em
     line-height: 2em
-    background-color: $header_highlight
+    background-color: $header_base
 
 #content
     clear: right
     position: relative
     width: auto
-
-    background-color: $content_background
 
 .map-panel
     width: 100%
@@ -294,12 +285,12 @@ ul
     width: 200px
     text-align: center
     z-index: 9999
-    background: $header_highlight_strong
+    background: $panel_highlight
     padding: 13px 15px
     color: #fff
 
     a
-        color: lighten($emphasis_strong, 10%)
+        color: lighten($widget_base, 10%)
 
 h1, h2, h3, h4, th
     .header-anchor
@@ -325,14 +316,14 @@ h1, h2, h3, h4, th
 
     h3
         font-size: 1.3em
-        color: $header_text_spice
+        color: $section_header_base
 
     &.odd
-        background-color: $panel2_color
+        background-color: $panel_odd_color
         border-bottom: 0
 
     &.highlight
-        background: $panel_highlighted
+        background: $panel_highlight
         color: #efefef
         border-bottom: 0
         > h1
@@ -355,10 +346,7 @@ h1, h2, h3, h4, th
     border-collapse: collapse
     vertical-align: bottom
 
-    background-color: $header_highlight_strong
-
-    $hover_footer_size: 0px
-    $hover_footer_color: $emphasis_light
+    background-color: $panel_highlight
 
     // Has limited, short options. Like a year or month.
     // So we never want them wrapping.
@@ -366,23 +354,23 @@ h1, h2, h3, h4, th
         white-space: nowrap
 
     &:hover
-        background-color: lighten($header_highlight_strong, 5%)
+        background-color: lighten($panel_highlight, 5%)
     &.primary
         background-color: $header_highlight
         &:hover
             background-color: lighten($header_highlight, 10%)
 
     &.is-open
-        background-color: $menu_background
+        background-color: $menu_base
         &:hover
-            background-color: $menu_background
+            background-color: $menu_base
 
         .option-title
             &:hover
                 color: #fff
 
         .option-menu
-            background-color: $menu_background
+            background-color: $menu_base
             display: table
 
     .option-title
@@ -425,10 +413,10 @@ h1, h2, h3, h4, th
         font-weight: bold
 
         &.active
-            background-color: lighten($menu_background, 5%)
+            background-color: lighten($menu_base, 5%)
 
         &:hover
-            background-color: lighten($menu_background, 10%)
+            background-color: lighten($menu_base, 10%)
             text-decoration: underline
             color: #fff
 
@@ -473,13 +461,13 @@ table.collapsed-head
 
     tbody tr
         &:hover
-            background-color: $panel2_color
+            background-color: darken($panel_color, 4%)
 
             .panel.highlight &
-                background-color: darken($panel_highlighted, 4%)
+                background-color: darken($panel_highlight, 4%)
 
             .panel.odd &
-                background-color: darken($panel2_color, 4%)
+                background-color: darken($panel_odd_color, 4%)
 
     th
         font-weight: bold
@@ -529,7 +517,7 @@ table.collapsed-head
 
 button
     margin: 5px 0
-    background-color: $emphasis_strong
+    background-color: $widget_base
     border: 0
     color: #fff
     padding: 10px 15px
@@ -538,12 +526,12 @@ button
     font-size: inherit
 
     &:hover
-        background-color: $emphasis_strong
+        background-color: $widget_base
 
     &.small
         margin: 0
         font-size: 12px
-        background-color: $header_highlight_strong
+        background-color: $panel_highlight
 
 // Similar to gridforms style
 label
@@ -578,13 +566,13 @@ label
     white-space: nowrap
     display: flex
     align-items: flex-end
-    border-bottom: 1px solid desaturate(lighten($emphasis_weak, 10%), 50%)
+    border-bottom: 1px solid desaturate(lighten($timeline_base, 10%), 50%)
 
 
 .chart-timeline-bar
     display: block
     position: relative
-    $graph_highlight: $emphasis_weak
+    $graph_highlight: $timeline_base
     background-color: $graph_highlight
 
     &.new-year
@@ -612,7 +600,7 @@ label
         font-size: 12px
         padding: 5px 10px
         color: #fff
-        background-color: $emphasis_strong
+        background-color: $widget_base
         display: none
 
 
@@ -639,7 +627,7 @@ label
 
     // A highlighted panel is reverse contrast: dark background, light foreground.
     .panel.highlight &
-        background: darken($header_highlight_strong, 15%)
+        background: darken($panel_highlight, 15%)
         color: #efefef
 
     // If it's in a header
@@ -670,7 +658,7 @@ label
 
 // Information box shown when hovering a map dataset
 .dataset-info
-    background-color: $panel2_color
+    background-color: $panel_odd_color
     margin: 10px
     padding: 15px
 
@@ -712,4 +700,4 @@ details > summary
 
     &.regions-tooltip
         color: #fff
-        background-color: $emphasis_strong
+        background-color: $widget_base
