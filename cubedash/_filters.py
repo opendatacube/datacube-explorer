@@ -257,6 +257,11 @@ def _field_step(field: Field):
     return NUMERIC_STEP_SIZE.get(field.type_name, 1)
 
 
+@bp.app_template_filter("only_alnum")
+def only_alphanumeric(s):
+    return _utils.only_alphanumeric(s)
+
+
 @bp.app_template_filter("timesince")
 def timesince(dt, default="just now"):
     """

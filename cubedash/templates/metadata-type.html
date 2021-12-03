@@ -23,7 +23,10 @@
 
     </div>
     <div class="panel odd">
-        <h3>Used by Products</h3>
+        <h3>
+            Used by Products
+            {{ hanchor('products') }}
+        </h3>
         {% if products_using_it %}
             <div class="type-usage-list {% if products_using_it | length > 4 %}columned{% endif %}">
                 {% for product in products_using_it %}
@@ -37,7 +40,10 @@
 
 
     <div class="panel">
-        <h3>Searchable Fields</h3>
+        <h3>
+            Searchable Fields
+            {{ hanchor('searchable-fields') }}
+        </h3>
         <div class="{% if metadata_type.dataset_fields | length > 8 %}columned{% endif %}">
         {% for key, field in metadata_type.dataset_fields | dictsort %}
             <div>
@@ -59,7 +65,10 @@
 
 
     <div class="panel odd">
-        <h3 class="followed">Definition</h3>
+        <h3 class="followed">
+            Definition
+            {{ hanchor('definition-doc') }}
+        </h3>
         <div class="header-follow">
             <a href="{{ url_for('product.raw_metadata_type_doc', name=metadata_type.name) }}"
                class="badge">
