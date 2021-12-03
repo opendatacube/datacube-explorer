@@ -14,7 +14,7 @@
 }
 body {
   font-family: Helvetica, Arial, sans-serif;
-  background: linear-gradient(to bottom, #bababa 90px, #e0e0e0 800px);
+  background: linear-gradient(to bottom, #0b3e58 90px, #136e9c 800px);
   min-height: calc(100vh - 50px);
   color: #212121;
   font-size: 0.86em;
@@ -36,15 +36,15 @@ a {
 }
 
 .header {
-  background: #2dace1;
+  background: #0b3e58;
   width: 100%;
   display: block;
   text-align: right;
-  padding-top: 10px;
+  padding-top: 30px;
 }
 @media (min-width: 800px) {
   .header {
-    padding-top: 15px;
+    padding-top: 45px;
   }
 }
 .header::after {
@@ -52,7 +52,6 @@ a {
 }
 .header #logo {
   padding-left: 20px;
-  padding-top: 5px;
   color: #fff;
   float: left;
 }
@@ -100,10 +99,10 @@ a {
   }
 }
 .header #menu-link .ex-menu-title:hover, .header #menu-link .is-open > .ex-menu-title {
-  background-color: #008fc5;
+  background-color: #0086a5;
 }
 .header #menu-link a:hover {
-  color: #616161;
+  color: #474747;
 }
 .header #menu-link ul {
   padding: 0;
@@ -114,10 +113,10 @@ a {
   position: relative;
 }
 .header #menu-link ul > li > ul > li {
-  background: #008fc5;
+  background: #0086a5;
 }
 .header #menu-link ul > li > ul > li:hover {
-  background-color: #007cab;
+  background-color: #00718b;
 }
 .header #menu-link ul > li > ul > li:hover a {
   color: #fff;
@@ -145,7 +144,7 @@ a {
 }
 
 #breadcrumb {
-  background: #7fd0eb;
+  background: #00718b;
   color: #efefef;
   font-weight: bold;
   padding: 10px 20px 10px;
@@ -173,7 +172,7 @@ footer {
   color: #fff;
   font-size: 0.7em;
   line-height: 2em;
-  background-color: #545454;
+  background-color: #0b3e58;
 }
 @media (min-width: 800px) {
   footer {
@@ -185,7 +184,6 @@ footer {
   clear: right;
   position: relative;
   width: auto;
-  background-color: #e0e0e0;
 }
 
 .map-panel {
@@ -261,17 +259,17 @@ ul.quiet {
   width: 200px;
   text-align: center;
   z-index: 9999;
-  background: #616161;
+  background: #474747;
   padding: 13px 15px;
   color: #fff;
 }
 .message-box a {
-  color: #00b3f8;
+  color: #167eb3;
 }
 
 h1 .header-anchor, h2 .header-anchor, h3 .header-anchor, h4 .header-anchor, th .header-anchor {
   text-decoration: none;
-  font-size: 0.8em;
+  font-size: 0.7em;
   opacity: 0.6;
   display: none;
 }
@@ -282,7 +280,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .panel {
   padding: 20px 20px 20px;
   line-height: 1.7em;
-  background: #fafafa;
+  background: #e6edef;
 }
 @media (min-width: 800px) {
   .panel {
@@ -300,14 +298,14 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 }
 .panel h3 {
   font-size: 1.3em;
-  color: #1d99cd;
+  color: #082e41;
 }
 .panel.odd {
-  background-color: #f0f0f0;
+  background-color: #fafafa;
   border-bottom: 0;
 }
 .panel.highlight {
-  background: #616161;
+  background: #474747;
   color: #efefef;
   border-bottom: 0;
 }
@@ -332,31 +330,31 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
   position: relative;
   border-collapse: collapse;
   vertical-align: bottom;
-  background-color: #616161;
+  background-color: #474747;
 }
 .header-option.limited {
   white-space: nowrap;
 }
 .header-option:hover {
-  background-color: #6e6e6e;
-}
-.header-option.primary {
   background-color: #545454;
 }
+.header-option.primary {
+  background-color: #404040;
+}
 .header-option.primary:hover {
-  background-color: #6e6e6e;
+  background-color: #595959;
 }
 .header-option.is-open {
-  background-color: #008fc5;
+  background-color: #0086a5;
 }
 .header-option.is-open:hover {
-  background-color: #008fc5;
+  background-color: #0086a5;
 }
 .header-option.is-open .option-title:hover {
   color: #fff;
 }
 .header-option.is-open .option-menu {
-  background-color: #008fc5;
+  background-color: #0086a5;
   display: table;
 }
 .header-option .option-title {
@@ -411,10 +409,10 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
   }
 }
 .header-option a.option-menu-link.active {
-  background-color: #00a1de;
+  background-color: #009abe;
 }
 .header-option a.option-menu-link:hover {
-  background-color: #00b3f8;
+  background-color: #00afd8;
   text-decoration: underline;
   color: #fff;
 }
@@ -461,13 +459,13 @@ table.collapsed-head th {
   margin: 0 -15px 15px;
 }
 .data-table tbody tr:hover {
-  background-color: #f0f0f0;
+  background-color: #dae4e7;
 }
 .panel.highlight .data-table tbody tr:hover {
-  background-color: #575757;
+  background-color: #3d3d3d;
 }
 .panel.odd .data-table tbody tr:hover {
-  background-color: #e5e5e5;
+  background-color: #f0f0f0;
 }
 .data-table th {
   font-weight: bold;
@@ -520,7 +518,7 @@ table.collapsed-head th {
 
 button {
   margin: 5px 0;
-  background-color: #008fc5;
+  background-color: #105e85;
   border: 0;
   color: #fff;
   padding: 10px 15px;
@@ -529,12 +527,12 @@ button {
   font-size: inherit;
 }
 button:hover {
-  background-color: #008fc5;
+  background-color: #105e85;
 }
 button.small {
   margin: 0;
   font-size: 12px;
-  background-color: #616161;
+  background-color: #474747;
 }
 
 label {
@@ -572,19 +570,19 @@ label.disabled {
   white-space: nowrap;
   display: flex;
   align-items: flex-end;
-  border-bottom: 1px solid #4a92ad;
+  border-bottom: 1px solid #486e80;
 }
 
 .chart-timeline-bar {
   display: block;
   position: relative;
-  background-color: #0a8abb;
+  background-color: #105e85;
 }
 .chart-timeline-bar.new-year {
-  background-color: #0978a2;
+  background-color: #0e4e6e;
 }
 .chart-timeline-bar:hover {
-  background-color: #07668a;
+  background-color: #0b3e58;
 }
 .chart-timeline-bar:hover .chart-timeline-year.tooltip {
   display: block;
@@ -606,7 +604,7 @@ label.disabled {
   font-size: 12px;
   padding: 5px 10px;
   color: #fff;
-  background-color: #008fc5;
+  background-color: #105e85;
   display: none;
 }
 
@@ -633,7 +631,7 @@ label.disabled {
   font-size: 1.1em;
 }
 .panel.highlight .badge {
-  background: #3b3b3b;
+  background: #212121;
   color: #efefef;
 }
 .header-follow .badge {
@@ -664,7 +662,7 @@ label.disabled {
 }
 
 .dataset-info {
-  background-color: #f0f0f0;
+  background-color: #fafafa;
   margin: 10px;
   padding: 15px;
 }
@@ -1798,7 +1796,7 @@ details > summary {
 }
 .leaflet-tooltip.regions-tooltip {
   color: #fff;
-  background-color: #008fc5;
+  background-color: #105e85;
 }
 
 /*# sourceMappingURL=base.css.map */
