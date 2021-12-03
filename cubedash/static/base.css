@@ -287,13 +287,22 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
     padding: 30px 30px 30px;
   }
 }
-.panel h1, .panel h2, .panel h3, .panel h4, .panel p {
+.panel h1, .panel h2, .panel h3, .panel h4 {
   margin: 30px 0 15px;
 }
-.panel h1:first-child, .panel h2:first-child, .panel h3:first-child, .panel h4:first-child, .panel p:first-child {
+.panel h1:first-child, .panel h2:first-child, .panel h3:first-child, .panel h4:first-child {
   margin-top: 0;
 }
-.panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child, .panel p:last-child {
+.panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child {
+  margin-bottom: 0;
+}
+.panel p {
+  margin: 15px 0;
+}
+.panel p:first-child {
+  margin-top: 0;
+}
+.panel p:last-child {
   margin-bottom: 0;
 }
 .panel h3 {
