@@ -274,9 +274,11 @@ ul:last-child, ol:last-child
 ul
     @include left_padding(2)
 
-    // Quiet list: no bullets, the indent is enough.
+    // Quiet list: not adorned with bullets or anything.
     &.quiet
         list-style: none
+        padding-left: 0
+        margin: 0
 
 .message-box
     position: absolute
@@ -619,6 +621,7 @@ label
 .addendum
     color: $muted_text
     font-size: 0.7em
+    font-weight: normal
 
 // An adornment to a title. Such as the data type.
 .badge
