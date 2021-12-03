@@ -33,7 +33,10 @@
             {% if group_name %}
                 <thead>
                     <tr class="section-header">
-                        <th colspan="3" class="group-name">{{ group_name }}</th>
+                        <th colspan="3" class="group-name">
+                            {{ group_name }}
+                            {{ hanchor(group_name + '-group') }}
+                        </th>
                     </tr>
                 </thead>
             {% endif %}

@@ -440,7 +440,7 @@ def suggest_download_filename(response: flask.Response, prefix: str, suffix: str
     Give the Browser a hint to download the file with the given filename
     (rather than display it in-line).
     """
-    explorer_id = _only_alphanumeric(
+    explorer_id = only_alphanumeric(
         flask.current_app.config.get("STAC_ENDPOINT_ID", "")
     )
     if explorer_id:
@@ -467,12 +467,19 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
     return response
 
 
-def _only_alphanumeric(s: str):
+_ALNUM_PATTERN = re.compile("[^0-9a-zA-Z]+")
+
+
+def only_alphanumeric(s: str):
     """
-    >>> _only_alphanumeric("guitar o'clock")
+    Strip any chars that aren't simple alphanumeric.
+
+    Useful for using strings as still-slightly-human-readbale identifiers.
+
+    >>> only_alphanumeric("Guitar o'clock")
     'guitar-o-clock'
     """
-    return re.sub("[^0-9a-zA-Z]+", "-", s)
+    return _ALNUM_PATTERN.sub("-", s).lower()
 
 
 def as_csv(

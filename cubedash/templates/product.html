@@ -10,6 +10,7 @@
 
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
+
     <div class="panels">
         <div class="map-panel relative">
             {% if not selected_summary.footprint_count %}
@@ -216,7 +217,11 @@
 
 
     <div class="panel odd overflowable">
-        <h3>Location{% if location_samples | length > 1 %}s{% endif %} <span class="addendum">(from sampling)</span></h3>
+        <h3>
+            Location{% if location_samples | length > 1 %}s{% endif %}
+            {{ hanchor('locations') }}
+            <span class="addendum">(from sampling)</span>
+        </h3>
         {% for location in location_samples %}
             <div class="dataset-location">
                 <div class="uri-path">{{ location.common_prefix }}</div>
@@ -237,7 +242,12 @@
         {% if product.definition.measurements %}
             <table class="collapsed-head">
                 <thead>
-                    <th colspan="2"><h3>Measurements</h3></th>
+                    <th colspan="2">
+                        <h3>
+                            Measurements
+                            {{ hanchor('measurements') }}
+                        </h3>
+                    </th>
                     <th>nodata</th>
                 </thead>
                 <tbody>
@@ -262,14 +272,20 @@
 
         {% if product.definition.storage %}
                 {# These fields are enforced by dataset-type-schema.yaml#}
-                <h3>Storage Parameters</h3>
+                <h3>
+                    Storage Parameters
+                    {{ hanchor('storage-parameters') }}
+                </h3>
                 {{ query_param_list(product.definition.storage, show_dicts=true) }}
 
         {% endif %}
     </div>
 
     <div class="panel odd" id="raw-doc">
-        <h3 class="followed">Definition</h3>
+        <h3 class="followed">
+            Definition
+            {{ hanchor('definition-doc') }}
+        </h3>
         <div class="header-follow">
             <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
                 RAW

@@ -301,6 +301,16 @@ ul
     a
         color: lighten($emphasis_strong, 10%)
 
+h1, h2, h3, h4, th
+    .header-anchor
+        text-decoration: none
+        font-size: 0.7em
+        opacity: 0.6
+        // Displayed on hover (below)
+        display: none
+    &:hover .header-anchor
+        display: inline
+
 .panel
     @include square_padding
     line-height: 1.7em
@@ -312,6 +322,7 @@ ul
             margin-top: 0
         &:last-child
             margin-bottom: 0
+
     h3
         font-size: 1.3em
         color: $header_text_spice

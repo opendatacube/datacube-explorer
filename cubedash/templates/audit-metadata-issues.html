@@ -72,7 +72,10 @@
     </div>
     <div class="panel" id="largest-footprint-size">
         {% if spatial_quality_stats %}
-            <h3>Largest footprint size</h3>
+            <h3>
+                Largest footprint size
+                {{ hanchor('largest-footprints') }}
+            </h3>
             Measured from binary storage. JSON/Metadata representation is much larger.
             <table class="data-table footprint-size">
                 <thead>

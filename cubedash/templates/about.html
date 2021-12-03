@@ -32,7 +32,10 @@
     </div>
 
     <div class="panel odd">
-        <h3>Collection APIs</h3>
+        <h3>
+            Collection APIs
+            {{ hanchor('apis') }}
+        </h3>
         Explorer exposes the collections over a <span class="badge header-badge"><a href="https://stacspec.org/">Stac</a> {{ stac_version }}</span> API:
         <p class="uri-path">
             <a href="{{ url_for('stac.root') }}">{{ url_for('stac.root', _external=True) }}</a>
@@ -42,7 +45,10 @@
 
 
     <div class="panel">
-        <h3>Datacube Resources</h3>
+        <h3>
+            Datacube Resources
+            {{ hanchor('datacube-resources') }}
+        </h3>
 
         Datacube-ready config and metadata can be downloaded from Explorer programatically:
 
@@ -81,7 +87,10 @@
     </div>
 
     <div class="panel odd">
-        <h3>Extents and Summaries</h3>
+        <h3>
+            Extents and Summaries
+            {{ hanchor('extent-apis') }}
+        </h3>
         Extent data displayed by Explorer can be downloaded as GeoJSON
         <ul>
             <li>
@@ -119,7 +128,10 @@
     </div>
 
     <div class="panel">
-         <h3>Audit and Examine</h3>
+         <h3>
+             Audit and Examine
+             {{ hanchor('audit-apis') }}
+         </h3>
 
         Much of Explorer's audit pages are available in CSV or text format.
 

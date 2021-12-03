@@ -10,6 +10,10 @@
     <link rel="icon" href="{{ theme_static('favicon.ico') }}">
     {% block head %}{% endblock %}
 </head>
+{% macro hanchor(name) -%}
+    {% set _anchor=name | only_alnum %}
+    <a href="#{{ _anchor }}" class="header-anchor" id="{{ _anchor }}">🔗</a>
+{%- endmacro %}
 <body>
 <!--[if IE]>
 <div class='message-box'>
