@@ -169,10 +169,9 @@ header {
 footer {
   padding: 10px 20px 10px;
   text-align: right;
-  color: #fff;
+  color: #efefef;
   font-size: 0.7em;
   line-height: 2em;
-  background-color: #0b3e58;
 }
 @media (min-width: 800px) {
   footer {
