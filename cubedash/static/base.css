@@ -1811,4 +1811,20 @@ details > summary {
   background-color: #105e85;
 }
 
+.leaflet-tooltip-top:before {
+  border-top-color: #105e85;
+}
+
+.leaflet-tooltip-bottom:before {
+  border-bottom-color: #105e85;
+}
+
+.leaflet-tooltip-left:before {
+  border-left-color: #105e85;
+}
+
+.leaflet-tooltip-right:before {
+  border-right-color: #105e85;
+}
+
 /*# sourceMappingURL=base.css.map */
