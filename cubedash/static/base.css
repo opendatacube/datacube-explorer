@@ -505,6 +505,10 @@ table.collapsed-head th {
   min-width: 90px;
 }
 
+.right {
+  text-align: right;
+}
+
 .numeric {
   font-variant-numeric: tabular-nums;
 }

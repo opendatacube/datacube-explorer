@@ -116,6 +116,11 @@
             descriptions=dataset.type.metadata_type.dataset_fields
             ) }}
     </div>
+
+    {% if extent_geojson %}
+        <div id="dataset-map"></div>
+    {% endif %}
+
     <div class="panel overflowable">
         <h3>
             Locations
@@ -123,29 +128,25 @@
         </h3>
         {% for uri in dataset.uris %}
             <div class="dataset-location">
-                <div><strong>Active:</strong></div>
-                <div class="uri-path"><a href="{{ uri | resolve_remote_url }}">{{ uri }}</a></div>
+                <p class="uri-path"><a href="{{ uri | resolve_remote_url }}">{{ uri }}</a></p>
                 {% set dataset_paths = dataset | dataset_file_paths %}
                 {% if dataset_paths %}
-                    <details>
-                        <summary>
-                            {{- dataset_paths | length }}
-                            link{{ 's' if dataset_paths | length > 1 else '' -}}
-                        </summary>
-                        <table class="data-table">
-                            {% for name, offset in dataset_paths | dictsort %}
-                                <tr>
-                                    <th style="text-align: right">{{ name }} </th>
-                                    <td>
-                                        <a href="{{ offset | resolve_remote_url(uri) }}"
-                                           class="uri-path">
-                                            {{ offset }}
-                                        </a>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </table>
-                    </details>
+                    <table>
+                        {% for name, offset in dataset_paths | dictsort %}
+                            <tr>
+                                <th class="right">
+                                    {{ name }}
+                                    <i class="fa fa-caret-right" aria-hidden="true"></i>
+                                </th>
+                                <td>
+                                    <a href="{{ offset | resolve_remote_url(uri) }}"
+                                       class="uri-path">
+                                        {{ offset }}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
                 {% endif %}
             </div>
 
@@ -155,17 +156,14 @@
 
         {% if archive_location_times %}
             {% for uri, archive_time in archive_location_times %}
-                <div class="dataset-location">
+                <div class="dataset-location p">
                     <div><strong>Archived {{ archive_time | timesince }}:</strong></div>
-                    <span class="uri-path archived">{{ uri }}</span>
+                    <a class="uri-path archived" href="{{ uri | resolve_remote_url }}">{{ uri }}</a>
                 </div>
             {% endfor %}
         {% endif %}
     </div>
 
-    {% if extent_geojson %}
-        <div id="dataset-map"></div>
-    {% endif %}
 
 
     <div class="panel odd">
