@@ -253,7 +253,8 @@ ul {
   }
 }
 ul.quiet {
-  list-style: square;
+  list-style: none;
+  padding-left: 0;
   margin: 0;
 }
 ul.quiet li::marker {
