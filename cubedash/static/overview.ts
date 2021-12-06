@@ -5,7 +5,7 @@ class DataLayer {
     constructor(public name: string,
                 public dataURL: string,
                 public layer: L.GeoJSON,
-                public data: GeoJSON.FeatureCollection | null = null,
+                public data: GeoJSON.Feature | null = null,
                 public showAlongside: DataLayer[] = []) {
     }
 }
@@ -21,15 +21,15 @@ class ApplicationRoutes {
     ) {
     }
 
-    public getRegionSearchURL(regionCode) {
+    public getRegionSearchURL(regionCode:string) {
         return this.regionSearchURLPattern.replace('__REGION_CODE__', regionCode);
     }
 
-    public getRegionViewURL(regionCode) {
+    public getRegionViewURL(regionCode:string) {
         return this.regionViewURLPattern.replace('__REGION_CODE__', regionCode);
     }
 
-    public getDatasetViewURL(datasetId) {
+    public getDatasetViewURL(datasetId:string) {
         return this.datasetURLPattern.replace('__DATASET_ID__', datasetId);
     }
 }
@@ -119,16 +119,14 @@ class RegionsLayer extends L.GeoJSON {
                 bin = getBin(count, colorSteps.length - 1, min_count, max_count);
             return colorSteps[bin];
         }
-
-        // @ts-ignore (https://github.com/DefinitelyTyped/DefinitelyTyped/issues/9257)
         super(regionData, {
-            style: function (feature: GeoJSON.Feature) {
+            style: (feature): L.PathOptions => {
                 if (!regionData.properties) {
                     throw Error("Invalid data: no properties")
                 }
                 const min_v = regionData.properties.min_count,
                     max_v = regionData.properties.max_count,
-                    count = feature.properties.count,
+                    count = feature?.properties?.count,
                     color = getColor(count, min_v, max_v);
                 return {
                     color: "#f2f2f2",
@@ -137,7 +135,6 @@ class RegionsLayer extends L.GeoJSON {
                     opacity: 0.6,
                     fillOpacity: 0.4,
                     weight: 1,
-                    clickable: true
                 };
             },
             onEachFeature: (feature, layer) => {
@@ -183,9 +180,9 @@ class DatasetsLayer extends L.GeoJSON {
         super(undefined, {
             style: function (feature) {
                 return {
-                    color: "#7AB800",
+                    color: "#637c6b",
                     fill: true,
-                    fillColor: "#9aee00",
+                    fillColor: "#082e41",
                     opacity: 0.3,
                     weight: 2,
                     clickable: true
@@ -229,7 +226,7 @@ class OverviewMap extends L.Map {
     constructor(private dataLayers: DataLayer[],
                 activeLayer: DataLayer | null,
                 defaultZoom: number,
-                defaultCenter: number[]) {
+                defaultCenter: L.LatLngTuple) {
         super("map", {
             zoom: defaultZoom,
             center: defaultCenter,
@@ -291,10 +288,10 @@ class OverviewMap extends L.Map {
 function initPage(hasDisplayableData: boolean,
                   showIndividualDatasets: boolean,
                   routes: ApplicationRoutes,
-                  regionData: GeoJSON.FeatureCollection,
-                  footprintData: GeoJSON.FeatureCollection,
+                  regionData: GeoJSON.Feature,
+                  footprintData: GeoJSON.Feature,
                   defaultZoom:number,
-                  defaultCenter:number[]) {
+                  defaultCenter: L.LatLngTuple) {
 
     const layers = [];
     let activeLayer = null;
@@ -338,7 +335,7 @@ function getViewToggle(name: string): HTMLOptionElement {
     if (!el) {
         throw new Error(`No option box on page for ${name}`)
     }
-    return el
+    return <HTMLOptionElement>el
 }
 
 
@@ -349,7 +346,10 @@ function requestData(name: string,
 
     function showError(msg: string) {
         // TODO: message box?
-        document.getElementById('quiet-page-errors').innerHTML += msg + '<br/>';
+        let er = document.getElementById('quiet-page-errors');
+        if (er) {
+            er.innerHTML += msg + '<br/>';
+        }
     }
 
     const request = new XMLHttpRequest();
