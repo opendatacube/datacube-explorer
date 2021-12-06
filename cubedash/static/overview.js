@@ -1,3 +1,4 @@
+"use strict";
 /// <reference path="../../node_modules/@types/leaflet/index.d.ts"/>
 /// <reference path="../../node_modules/@types/geojson/index.d.ts"/>
 var __extends = (this && this.__extends) || (function () {
@@ -124,13 +125,13 @@ var RegionsLayer = /** @class */ (function (_super) {
             var colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'], bin = getBin(count, colorSteps.length - 1, min_count, max_count);
             return colorSteps[bin];
         }
-        // @ts-ignore (https://github.com/DefinitelyTyped/DefinitelyTyped/issues/9257)
         _this = _super.call(this, regionData, {
             style: function (feature) {
+                var _a;
                 if (!regionData.properties) {
                     throw Error("Invalid data: no properties");
                 }
-                var min_v = regionData.properties.min_count, max_v = regionData.properties.max_count, count = feature.properties.count, color = getColor(count, min_v, max_v);
+                var min_v = regionData.properties.min_count, max_v = regionData.properties.max_count, count = (_a = feature === null || feature === void 0 ? void 0 : feature.properties) === null || _a === void 0 ? void 0 : _a.count, color = getColor(count, min_v, max_v);
                 return {
                     color: "#f2f2f2",
                     fill: true,
@@ -138,20 +139,19 @@ var RegionsLayer = /** @class */ (function (_super) {
                     opacity: 0.6,
                     fillOpacity: 0.4,
                     weight: 1,
-                    clickable: true
                 };
             },
             onEachFeature: function (feature, layer) {
                 var props = feature.properties, template = "<div>\n                                    <strong>" + (props.label || props.region_code) + "</strong>\n                                </div>\n                                " + props.count + " dataset" + (props.count === 1 ? '' : 's');
                 layer.bindTooltip(template, {
                     className: 'regions-tooltip',
-                    opacity: 1
+                    opacity: 1,
                 });
                 layer.on({
                     mouseover: function (e) {
                         var layer = e.target;
                         layer.setStyle({
-                            color: '#375400'
+                            color: '#375400',
                         });
                     },
                     mouseout: function (e) {
@@ -180,9 +180,9 @@ var DatasetsLayer = /** @class */ (function (_super) {
         var _this = _super.call(this, undefined, {
             style: function (feature) {
                 return {
-                    color: "#7AB800",
+                    color: "#637c6b",
                     fill: true,
-                    fillColor: "#9aee00",
+                    fillColor: "#082e41",
                     opacity: 0.3,
                     weight: 2,
                     clickable: true
@@ -192,14 +192,14 @@ var DatasetsLayer = /** @class */ (function (_super) {
                 var props = feature.properties, template = "<div>\n                                    <strong>\n                                        " + (props.label || props['cubedash:region_code'] || '') + "\n                                    </strong>\n                                    <div>" + props['datetime'] + "</div>\n                                  </div>";
                 layer.bindTooltip(template, {
                     className: 'datasets-tooltip',
-                    opacity: 1
+                    opacity: 1,
                 });
                 layer.on({
                     mouseover: function (e) {
                         var layer = e.target;
                         layer.setStyle({
                             color: '#375400',
-                            fillOpacity: 0.6
+                            fillOpacity: 0.6,
                         });
                     },
                     mouseout: function (e) {
@@ -305,7 +305,10 @@ function getViewToggle(name) {
 function requestData(name, url, setEnabled, dataLayer) {
     function showError(msg) {
         // TODO: message box?
-        document.getElementById('quiet-page-errors').innerHTML += msg + '<br/>';
+        var er = document.getElementById('quiet-page-errors');
+        if (er) {
+            er.innerHTML += msg + '<br/>';
+        }
     }
     var request = new XMLHttpRequest();
     setEnabled(false);
@@ -329,3 +332,4 @@ function requestData(name, url, setEnabled, dataLayer) {
     };
     request.send();
 }
+//# sourceMappingURL=overview.js.map
