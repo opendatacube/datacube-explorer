@@ -21,6 +21,8 @@
 //  THE SOFTWARE.
 //
 
+@use "sass:math"
+
 =_placeholder
     &::-webkit-input-placeholder
         @content
@@ -151,7 +153,7 @@
                 & > [data-field-span="#{$span_i}"]
                     // Divide the grid by $grid_i columns
                     // Set the width for this particular field span
-                    width: percentage($span_i/$grid_i)
+                    width: percentage(math.div($span_i, $grid_i))
 
 // These are set by the importing file instead.
 // Create Grid Form
