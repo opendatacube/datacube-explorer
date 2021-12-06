@@ -123,7 +123,7 @@
 
     <div class="panel overflowable">
         <h3>
-            Locations
+            Location{% if dataset.uris | length > 1 %}s{% endif %}
             {{ hanchor('locations') }}
         </h3>
         {% for uri in dataset.uris %}
