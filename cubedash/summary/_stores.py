@@ -919,7 +919,13 @@ class SummaryStore:
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def product_location_samples(
-        self, name: str, sample_size: int = 100
+        self,
+        name: str,
+        year: Optional[int] = None,
+        month: Optional[int] = None,
+        day: Optional[int] = None,
+        *,
+        sample_size: int = 100,
     ) -> List[ProductLocationSample]:
         """
         Sample some dataset locations for the given product, and return
@@ -927,11 +933,15 @@ class SummaryStore:
 
         Returns one row for each uri scheme found (http, file etc).
         """
+        search_args = dict()
+        if year or month or day:
+            search_args["time"] = _utils.as_time_range(year, month, day)
+
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
             for [uri] in self.index.datasets.search_returning(
-                ("uri",), product=name, limit=sample_size
+                ("uri",), product=name, **search_args, limit=sample_size
             )
         )
 
