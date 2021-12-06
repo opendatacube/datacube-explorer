@@ -31,6 +31,10 @@ a {
   color: #2b2b2b;
 }
 
+ul {
+  list-style: square;
+}
+
 .content-wrapper {
   position: relative;
 }
@@ -249,9 +253,11 @@ ul {
   }
 }
 ul.quiet {
-  list-style: none;
-  padding-left: 0;
+  list-style: square;
   margin: 0;
+}
+ul.quiet li::marker {
+  color: #737373;
 }
 
 .message-box {
@@ -298,13 +304,13 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child {
   margin-bottom: 0;
 }
-.panel p {
+.panel p, .panel .p {
   margin: 15px 0;
 }
-.panel p:first-child {
+.panel p:first-child, .panel .p:first-child {
   margin-top: 0;
 }
-.panel p:last-child {
+.panel p:last-child, .panel .p:last-child {
   margin-bottom: 0;
 }
 .panel h3 {
