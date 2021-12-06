@@ -224,7 +224,10 @@
         </h3>
         {% for location in location_samples %}
             <div class="dataset-location p">
-                <span class="uri-path">{{ location.common_prefix }}</span>
+                {# Only show a header if there's differing examples #}
+                {% if location.example_uris | length > 1 %}
+                    <span class="uri-path">{{ location.common_prefix }}</span>
+                {% endif %}
                 <ul class="quiet">
                     {% for uri in location.example_uris %}
                         <li class="uri-path">
