@@ -90,6 +90,9 @@ html
 a
     color: #2b2b2b
 
+ul
+    list-style: square
+
 .content-wrapper
     position: relative
 
@@ -276,9 +279,13 @@ ul
 
     // Quiet list: not adorned with bullets or anything.
     &.quiet
-        list-style: none
-        padding-left: 0
+        list-style: square
+        //padding-left: 0
         margin: 0
+
+        li::marker
+            color: $muted_text
+            //content: "►"
 
 .message-box
     position: absolute
@@ -315,7 +322,7 @@ h1, h2, h3, h4, th
             margin-top: 0
         &:last-child
             margin-bottom: 0
-    p
+    p, .p
         margin: 15px 0
         &:first-child
             margin-top: 0

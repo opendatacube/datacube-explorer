@@ -218,13 +218,13 @@
 
     <div class="panel overflowable">
         <h3>
-            Location
+            Location{% if location_samples | length > 1 %}s{% endif %}
             {{ hanchor('location') }}
             <span class="addendum">(samples)</span>
         </h3>
         {% for location in location_samples %}
-            <div class="dataset-location">
-                <div class="uri-path">{{ location.common_prefix }}</div>
+            <div class="dataset-location p">
+                <span class="uri-path">{{ location.common_prefix }}</span>
                 <ul class="quiet">
                     {% for uri in location.example_uris %}
                         <li class="uri-path">
