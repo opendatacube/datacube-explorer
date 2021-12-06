@@ -218,18 +218,23 @@
 
     <div class="panel overflowable">
         <h3>
-            Locations
-            {{ hanchor('locations') }}
-            <span class="addendum">(from sampling)</span>
+            Location
+            {{ hanchor('location') }}
+            <span class="addendum">(samples)</span>
         </h3>
         {% for location in location_samples %}
             <div class="dataset-location">
                 <div class="uri-path">{{ location.common_prefix }}</div>
                 <ul class="quiet">
-                    {% for example_uris in location.example_uris %}
-                        <li class="uri-path muted">{{ example_uris }}</li>
+                    {% for uri in location.example_uris %}
+                        <li class="uri-path">
+                            <a href="{{ uri | resolve_remote_url }}"
+                               class='muted'>
+                                {{- uri -}}
+                            </a>
+                        </li>
                     {% endfor %}
-                    <li title="Only samples are shown">…</li>
+
                 </ul>
             </div>
         {% else %}
