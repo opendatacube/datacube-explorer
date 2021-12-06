@@ -1814,15 +1814,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .leaflet-tooltip {
   position: absolute;
   padding: 5px 10px;
-  background-color: #fff;
+  color: #fff;
+  background-color: #637c6b;
   border: 0;
   border-radius: 0;
-  color: #212121;
   box-shadow: unset;
   font-size: 12px;
 }
 .leaflet-tooltip.regions-tooltip {
-  color: #fff;
   background-color: #105e85;
 }
 
