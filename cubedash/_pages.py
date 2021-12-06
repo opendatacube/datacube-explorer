@@ -113,7 +113,9 @@ def product_page(
         default_center=default_center,
         year_selector_summary=year_selector_summary,
         time_selector_summary=time_selector_summary,
-        location_samples=_model.STORE.product_location_samples(product.name),
+        location_samples=_model.STORE.product_location_samples(
+            product.name, year, month, day
+        ),
         metadata_doc=(utils.prepare_document_formatting(product.definition)),
     )
 
