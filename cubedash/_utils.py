@@ -11,7 +11,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
 
 import datacube.drivers.postgres._schema
@@ -433,6 +433,46 @@ def as_geojson(o, downloadable_filename_prefix: str = None):
     if downloadable_filename_prefix:
         suggest_download_filename(response, downloadable_filename_prefix, ".geojson")
     return response
+
+
+def common_uri_prefix(uris: Sequence[str]):
+    """
+    This is like `os.path.commonpath()`, but always expects URL paths.
+    (ie. forward slashes in all environments, and wont strip double slashes '//')
+
+    >>> common_uri_prefix(['file:///a/thing-1.txt'])
+    'file:///a/thing-1.txt'
+    >>> common_uri_prefix(['file:///a/1.txt', 'file:///a/2.txt', 'file:///a/3.txt'])
+    'file:///a/'
+    >>> # Returns the common directory, not a partial filename:
+    >>> common_uri_prefix(['file:///a/thing-1.txt', 'file:///a/thing-2.txt', 'file:///a/thing-3.txt'])
+    'file:///a/'
+    >>> common_uri_prefix(['http://example.com/things/'])
+    'http://example.com/things/'
+    >>> common_uri_prefix(['http://example.com/things/'] * 4)
+    'http://example.com/things/'
+    >>> common_uri_prefix(['http://example.com/things/', 'http://example.com/others/'])
+    'http://example.com/'
+    >>> common_uri_prefix([])
+    ''
+    """
+    if not uris:
+        return ""
+    first_possibility = min(uris)
+    last_possibility = max(uris)
+
+    if first_possibility == last_possibility:
+        # All are the same
+        return first_possibility
+
+    for i, c in enumerate(first_possibility):
+        if c != last_possibility[i]:
+            result = first_possibility[:i]
+            break
+    else:
+        result = first_possibility
+
+    return result[: result.rfind("/") + 1]
 
 
 def suggest_download_filename(response: flask.Response, prefix: str, suffix: str):

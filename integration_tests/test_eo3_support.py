@@ -163,6 +163,12 @@ def test_eo3_dateless_extents(eo3_index: Index):
     assert dataset_extent_row["region_code"] is None
 
 
+def test_location_sampling(eo3_index: Index):
+    summary_store = SummaryStore.create(eo3_index)
+
+    assert summary_store.product_location_samples("ls8_nbar_albers") == []
+
+
 def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
     response: Response = client.get(
         "/dataset/9989545f-906d-5090-a38e-cdbfbfc1afca.odc-metadata.yaml"

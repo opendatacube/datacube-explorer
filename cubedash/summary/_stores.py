@@ -1,5 +1,4 @@
 import math
-import os
 import re
 from collections import Counter, defaultdict
 from copy import copy
@@ -1803,6 +1802,12 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
 def _common_paths_for_uris(
     uri_samples: Iterator[str],
 ) -> Generator[ProductLocationSample, None, None]:
+    """
+    >>> list(_common_paths_for_uris(['file:///a/thing-1.txt', 'file:///a/thing-2.txt', 'file:///a/thing-3.txt']))
+    [ProductLocationSample(uri_scheme='file', common_prefix='file:///a/', example_uris=['file:///a/thing-1.txt', \
+'file:///a/thing-2.txt', 'file:///a/thing-3.txt'])]
+    """
+
     def uri_scheme(uri: str):
         return uri.split(":", 1)[0]
 
@@ -1815,7 +1820,7 @@ def _common_paths_for_uris(
         #              ⮤ we use a set for when len < 3
 
         yield ProductLocationSample(
-            scheme, os.path.commonpath(uris), sorted(example_uris)
+            scheme, _utils.common_uri_prefix(uris), sorted(example_uris)
         )
 
 
