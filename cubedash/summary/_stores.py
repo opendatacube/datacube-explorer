@@ -875,7 +875,7 @@ class SummaryStore:
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def products_location_samples_all(
-        self, sample_size: int = 100
+        self, sample_size: int = 50
     ) -> Dict[str, List[ProductLocationSample]]:
         """
         Get sample locations of all products
