@@ -259,6 +259,20 @@ def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Datas
     assert rows_changed == 1
 
 
+def test_location_sampling(run_generate, summary_store: SummaryStore):
+    location_samples = summary_store.product_location_samples("ls8_nbar_albers")
+    assert len(location_samples) == 1
+
+    [sample] = location_samples
+    assert sample.uri_scheme == "file"
+    assert sample.common_prefix == "file://example.com/test_dataset/"
+    assert len(sample.example_uris) == 3
+    assert all(
+        uri.startswith("file://example.com/test_dataset/")
+        for uri in sample.example_uris
+    )
+
+
 def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
     run_generate()
 
