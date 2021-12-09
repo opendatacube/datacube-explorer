@@ -87,21 +87,17 @@ DATASET_SPATIAL.indexes.add(
 )
 # An index matching the default Stac API Item search and its sort order.
 _COLLECTION_ITEMS_INDEX = Index(
-    "dataset_spatial_collection_items_idx",
+    "dataset_spatial_collection_items_all_idx",
     "dataset_type_ref",
     "center_time",
     "id",
-    # Stac API only returns datasets with a geometry -- it's mandatory in Stac Items.
-    postgresql_where=DATASET_SPATIAL.c.footprint.isnot(None),
     _table=DATASET_SPATIAL,
 )
 # An index matching the default return of '/stac/search' (ie, all collections.)
 _ALL_COLLECTIONS_ORDER_INDEX = Index(
-    "dataset_spatial_all_collections_order_idx",
+    "dataset_spatial_all_collections_order_all_idx",
     "center_time",
     "id",
-    # Stac API only returns datasets with a geometry -- it's mandatory in Stac Items.
-    postgresql_where=DATASET_SPATIAL.c.footprint.isnot(None),
     _table=DATASET_SPATIAL,
 )
 
