@@ -224,7 +224,6 @@ def _bool_argument(s: str):
 def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
-    require_geometry: bool = True,
     include_total_count: bool = True,
 ) -> Dict:
     bbox = request_args.get(
@@ -285,7 +284,6 @@ def _handle_search_request(
         use_post_request=intersects is not None,
         get_next_url=next_page_url,
         full_information=full_information,
-        require_geometry=require_geometry,
         include_total_count=include_total_count,
     )
     feature_collection["links"].extend(
@@ -320,7 +318,6 @@ def search_stac_items(
     time: Optional[Tuple[datetime, datetime]] = None,
     full_information: bool = False,
     order: ItemSort = ItemSort.DEFAULT_SORT,
-    require_geometry: bool = True,
     include_total_count: bool = False,
     use_post_request: bool = False,
 ) -> Dict:
@@ -341,7 +338,6 @@ def search_stac_items(
             offset=offset,
             full_dataset=full_information,
             order=order,
-            require_geometry=require_geometry,
         )
     )
     returned = items[:limit]
@@ -477,7 +473,6 @@ def arrivals_items():
             get_next_url=next_page_url,
             full_information=True,
             order=ItemSort.RECENTLY_ADDED,
-            require_geometry=False,
             include_total_count=False,
         )
     )

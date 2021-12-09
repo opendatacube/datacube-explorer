@@ -1087,7 +1087,6 @@ class SummaryStore:
         bbox: Tuple[float, float, float, float] = None,
         intersects: BaseGeometry = None,
         dataset_ids: Sequence[UUID] = None,
-        require_geometry=True,
     ) -> Select:
         # If they specify IDs, all other search parameters are ignored.
         # (from Stac API spec)
@@ -1132,9 +1131,6 @@ class SummaryStore:
                             .scalar_subquery()
                         )
                     )
-
-        if require_geometry:
-            query = query.where(DATASET_SPATIAL.c.footprint != None)
 
         return query
 
@@ -1190,7 +1186,6 @@ class SummaryStore:
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
         dataset_ids: Sequence[UUID] = None,
-        require_geometry=True,
     ) -> int:
         """
         Do the most simple select query to get the count of matching datasets.
@@ -1203,7 +1198,6 @@ class SummaryStore:
             time=time,
             bbox=bbox,
             dataset_ids=dataset_ids,
-            require_geometry=require_geometry,
         )
 
         result = self._engine.execute(query).fetchall()
@@ -1224,7 +1218,6 @@ class SummaryStore:
         offset: int = 0,
         full_dataset: bool = False,
         dataset_ids: Sequence[UUID] = None,
-        require_geometry=True,
         order: ItemSort = ItemSort.DEFAULT_SORT,
     ) -> Generator[DatasetItem, None, None]:
         """
@@ -1269,7 +1262,6 @@ class SummaryStore:
             bbox=bbox,
             intersects=intersects,
             dataset_ids=dataset_ids,
-            require_geometry=require_geometry,
         )
 
         # Maybe sort
