@@ -694,8 +694,8 @@ def as_stac_item(dataset: DatasetItem):
             label=None,
             product=ProductDoc(dataset.product_name),
             locations=ds.uris if ds is not None else None,
-            crs=str(dataset.geometry.crs),
-            geometry=dataset.geometry.geom,
+            crs=str(dataset.geometry.crs) if dataset.geometry is not None else None,
+            geometry=dataset.geometry.geom if dataset.geometry is not None else None,
             grids=None,
             # TODO: Convert these from stac to eo3
             properties=Eo3Dict(
