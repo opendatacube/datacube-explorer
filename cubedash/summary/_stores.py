@@ -1290,7 +1290,9 @@ class SummaryStore:
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
                 product_name=self.index.products.get(r.dataset_type_ref).name,
-                geometry=_get_shape(r.geometry, self._get_srid_name(r.geometry.srid)),
+                geometry=_get_shape(r.geometry, self._get_srid_name(r.geometry.srid))
+                if r.geometry is not None
+                else None,
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
