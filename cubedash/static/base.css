@@ -42,13 +42,13 @@ ul {
 .header {
   background: #0b3e58;
   width: 100%;
-  display: block;
-  text-align: right;
-  padding-top: 30px;
+  padding: 20px 0px 10px;
+  display: flex;
+  justify-content: space-between;
 }
 @media (min-width: 800px) {
   .header {
-    padding-top: 45px;
+    padding: 30px 0px 15px;
   }
 }
 .header::after {
@@ -57,7 +57,6 @@ ul {
 .header #logo {
   padding-left: 20px;
   color: #fff;
-  float: left;
 }
 @media (min-width: 800px) {
   .header #logo {
@@ -67,19 +66,27 @@ ul {
 .header #logo img {
   vertical-align: middle;
   padding-right: 2px;
+  display: inline-block;
+  margin: -10px 0;
 }
 .header #logo > a {
+  display: inline-block;
   text-decoration: none;
   color: #fff;
+  white-space: nowrap;
 }
-.header #logo > span.description {
-  border-left: 1px solid #fff;
+.header #logo > .instance-title {
   padding-left: 10px;
   margin-left: 10px;
+  white-space: nowrap;
+}
+.header #logo > .instance-title::before {
+  display: inline-block;
+  border-left: 1px solid #fff;
 }
 .header #menu-link {
   text-align: left;
-  color: #fff;
+  color: #dedede;
 }
 .header #menu-link > ul {
   display: flex;
@@ -88,7 +95,7 @@ ul {
 }
 .header #menu-link a {
   font-weight: bold;
-  color: #fff;
+  color: #dedede;
 }
 .header #menu-link .ex-menu-title, .header #menu-link a {
   cursor: pointer;
@@ -140,11 +147,22 @@ ul {
   right: 0;
 }
 
+.logo-text, .instance-title {
+  display: inline-block;
+  padding: 10px 0px 10px;
+}
+@media (min-width: 800px) {
+  .logo-text, .instance-title {
+    padding: 15px 0px 15px;
+  }
+}
+
 .ex-menu-title {
   cursor: pointer;
 }
 .ex-menu-title::after {
   content: " ▾";
+  font-size: 0.8em;
 }
 
 #breadcrumb {
@@ -159,7 +177,7 @@ ul {
   }
 }
 #breadcrumb .item {
-  color: #fff;
+  color: #efefef;
 }
 
 header {
@@ -692,10 +710,6 @@ label.disabled {
 .recenter-map {
   margin: 0;
   padding: 0;
-}
-
-.logo-text {
-  display: inline-block;
 }
 
 details > summary {

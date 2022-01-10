@@ -99,9 +99,11 @@ ul
 .header
     background: $header_base
     width: 100%
-    display: block
-    text-align: right
-    @include top_padding(3)
+
+    @include box_padding($scale_top:2, $scale_bottom:1, $scale_horizontal:0)
+
+    display: flex
+    justify-content: space-between
 
     &::after
         clear: both
@@ -111,20 +113,31 @@ ul
         @include left_padding($scale:2)
 
         color: #fff
-        float: left
 
         img
             vertical-align: middle
             padding-right: 2px
+            display: inline-block
+            // We don't want a tall image (Africa!) to shift our text height calculation.
+            // So make the space small and let it overflow.
+            margin: -10px 0
 
         > a
+            display: inline-block
             text-decoration: none
             color: #fff
+            white-space: nowrap
 
-        > span.description
-            border-left: 1px solid #fff
+
+        > .instance-title
             padding-left: 10px
             margin-left: 10px
+            white-space: nowrap
+
+            &::before
+                display: inline-block
+                border-left: 1px solid #fff
+
 
     #menu-link
         text-align: left
@@ -133,10 +146,10 @@ ul
             justify-content: flex-end
             flex-direction: row
 
-        color: #fff
+        color: #dedede
         a
             font-weight: bold
-            color: #fff
+            color: #dedede
 
 
         .ex-menu-title, a
@@ -182,6 +195,9 @@ ul
             // Above maps etc.
             z-index: 10000
 
+.logo-text, .instance-title
+    display: inline-block
+    @include box_padding(1, 1, 0)
 
 // Menus that are expandable
 .ex-menu-title
@@ -190,6 +206,7 @@ ul
 
     &::after
         content: ' ▾'
+        font-size: 0.8em
 
 #breadcrumb
     background: $breadcrumb_base
@@ -198,7 +215,7 @@ ul
     @include wide_padding
 
     .item
-        color: #fff
+        color: #efefef
 
 // Pages with tabs: put the tabs in the margin.
 header
@@ -682,9 +699,6 @@ label
     margin: 0
     padding: 0
 
-
-.logo-text
-    display: inline-block
 
 details > summary
   cursor: pointer
