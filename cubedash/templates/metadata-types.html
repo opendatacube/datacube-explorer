@@ -1,6 +1,8 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Metadata Types{% endblock %}
+{% block title -%}
+    {{- explorer_instance_title or 'ODC' }} Metadata Types
+{%- endblock %}
 
 {% block head %}
     {{ super() }}
