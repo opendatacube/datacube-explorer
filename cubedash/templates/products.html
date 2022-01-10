@@ -1,6 +1,8 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Products, {{ explorer_instance_title }}{% endblock %}
+{% block title -%}
+    {{- explorer_instance_title or 'ODC' }} Products
+{%- endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">

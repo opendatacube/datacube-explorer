@@ -32,9 +32,11 @@
             <a href="{{ url_for('default_redirect') }}">
                 {% include theme('logo.html') %}
             </a>
-            <span class="description">
-                {{ explorer_instance_title }}
-            </span>
+            {%- if explorer_instance_title -%}
+                <span class="instance-title">
+                    {{ explorer_instance_title }}
+                </span>
+            {%- endif -%}
         </div>
         <div id="menu-link">
             <ul>
