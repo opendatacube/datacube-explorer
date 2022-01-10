@@ -38,11 +38,11 @@ $panel_odd_color: #fafafa
 
     padding-left: 10px*$scale
 
-@mixin right_padding($scale:1)
+@mixin right_margin($scale:1)
     @media (min-width: 800px)
-        padding-left: 15px*$scale
+        margin-right: 15px*$scale
 
-    padding-left: 10px*$scale
+    margin-right: 10px*$scale
 
 @mixin top_padding($scale:1)
     @media (min-width: 800px)
@@ -98,9 +98,8 @@ ul
 
 .header
     background: $header_base
-    width: 100%
 
-    @include box_padding($scale_top:2, $scale_bottom:1, $scale_horizontal:0)
+    @include box_padding($scale_top:2, $scale_bottom:1, $scale_horizontal:1)
 
     display: flex
     justify-content: space-between
@@ -110,8 +109,6 @@ ul
 
 
     #logo
-        @include left_padding($scale:2)
-
         color: #fff
 
         img
@@ -141,6 +138,10 @@ ul
 
     #menu-link
         text-align: left
+
+        // Negative offset for the padding on the buttons.
+        @include right_margin($scale:-1)
+
         > ul
             display: flex
             justify-content: flex-end
@@ -158,8 +159,9 @@ ul
             display: block
             white-space: nowrap
             text-decoration: none
-
-        .ex-menu-title:hover, .is-open > .ex-menu-title
+        .ex-menu-title:hover
+            background-color: $menu_base
+        .is-open > .ex-menu-title
             background-color: $menu_base
 
         a:hover
