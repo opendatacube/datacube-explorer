@@ -41,27 +41,20 @@ ul {
 
 .header {
   background: #0b3e58;
-  width: 100%;
-  padding: 20px 0px 10px;
+  padding: 20px 20px 10px;
   display: flex;
   justify-content: space-between;
 }
 @media (min-width: 800px) {
   .header {
-    padding: 30px 0px 15px;
+    padding: 30px 30px 15px;
   }
 }
 .header::after {
   clear: both;
 }
 .header #logo {
-  padding-left: 20px;
   color: #fff;
-}
-@media (min-width: 800px) {
-  .header #logo {
-    padding-left: 30px;
-  }
 }
 .header #logo img {
   vertical-align: middle;
@@ -86,7 +79,13 @@ ul {
 }
 .header #menu-link {
   text-align: left;
+  margin-right: -10px;
   color: #dedede;
+}
+@media (min-width: 800px) {
+  .header #menu-link {
+    margin-right: -15px;
+  }
 }
 .header #menu-link > ul {
   display: flex;
@@ -109,7 +108,10 @@ ul {
     padding: 15px 15px 15px;
   }
 }
-.header #menu-link .ex-menu-title:hover, .header #menu-link .is-open > .ex-menu-title {
+.header #menu-link .ex-menu-title:hover {
+  background-color: #0086a5;
+}
+.header #menu-link .is-open > .ex-menu-title {
   background-color: #0086a5;
 }
 .header #menu-link a:hover {
