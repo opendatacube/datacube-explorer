@@ -1,4 +1,13 @@
 @charset "UTF-8";
+:root {
+  --s: 15px;
+}
+@media (max-width: 750px) {
+  :root {
+    --s: 10px;
+  }
+}
+
 .product-description {
   display: none;
 }
@@ -41,14 +50,9 @@ ul {
 
 .header {
   background: #0b3e58;
-  padding: 20px 20px 10px;
+  padding: calc(var(--s)*2) calc(2*var(--s)*1) calc(var(--s)*1);
   display: flex;
   justify-content: space-between;
-}
-@media (min-width: 800px) {
-  .header {
-    padding: 30px 30px 15px;
-  }
 }
 .header::after {
   clear: both;
@@ -79,13 +83,8 @@ ul {
 }
 .header #menu-link {
   text-align: left;
-  margin-right: -10px;
+  margin-right: calc(var(--s)*-1);
   color: #dedede;
-}
-@media (min-width: 800px) {
-  .header #menu-link {
-    margin-right: -15px;
-  }
 }
 .header #menu-link > ul {
   display: flex;
@@ -98,15 +97,10 @@ ul {
 }
 .header #menu-link .ex-menu-title, .header #menu-link a {
   cursor: pointer;
-  padding: 10px 10px 10px;
+  padding: calc(var(--s)*1) calc(2*var(--s)*0.5) calc(var(--s)*1);
   display: block;
   white-space: nowrap;
   text-decoration: none;
-}
-@media (min-width: 800px) {
-  .header #menu-link .ex-menu-title, .header #menu-link a {
-    padding: 15px 15px 15px;
-  }
 }
 .header #menu-link .ex-menu-title:hover {
   background-color: #0086a5;
@@ -151,12 +145,7 @@ ul {
 
 .logo-text, .instance-title {
   display: inline-block;
-  padding: 10px 0px 10px;
-}
-@media (min-width: 800px) {
-  .logo-text, .instance-title {
-    padding: 15px 0px 15px;
-  }
+  padding: calc(var(--s)*1) calc(2*var(--s)*0) calc(var(--s)*1);
 }
 
 .ex-menu-title {
@@ -171,12 +160,7 @@ ul {
   background: #00718b;
   color: #efefef;
   font-weight: bold;
-  padding: 10px 20px 10px;
-}
-@media (min-width: 800px) {
-  #breadcrumb {
-    padding: 15px 30px 15px;
-  }
+  padding: calc(var(--s)*1) calc(2*var(--s)*1) calc(var(--s)*1);
 }
 #breadcrumb .item {
   color: #efefef;
@@ -191,16 +175,11 @@ header {
 }
 
 footer {
-  padding: 10px 20px 10px;
+  padding: calc(var(--s)*1) calc(2*var(--s)*1) calc(var(--s)*1);
   text-align: right;
   color: #efefef;
   font-size: 0.7em;
   line-height: 2em;
-}
-@media (min-width: 800px) {
-  footer {
-    padding: 15px 30px 15px;
-  }
 }
 
 #content {
@@ -251,6 +230,7 @@ h4 {
 
 h2.followed, h3.followed {
   display: inline-block;
+  margin-right: 10px;
 }
 h2.followed.lonesome, h3.followed.lonesome {
   margin-bottom: 0;
@@ -258,6 +238,7 @@ h2.followed.lonesome, h3.followed.lonesome {
 
 .header-follow {
   display: inline-block;
+  margin-top: 5px;
 }
 
 ul:last-child, ol:last-child {
@@ -265,12 +246,7 @@ ul:last-child, ol:last-child {
 }
 
 ul {
-  padding-left: 20px;
-}
-@media (min-width: 800px) {
-  ul {
-    padding-left: 30px;
-  }
+  padding-left: calc(var(--s)*2);
 }
 ul.quiet {
   list-style: none;
@@ -307,14 +283,9 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 }
 
 .panel {
-  padding: 20px 20px 20px;
+  padding: calc(var(--s)*2) calc(2*var(--s)*1) calc(var(--s)*2);
   line-height: 1.7em;
   background: #e6edef;
-}
-@media (min-width: 800px) {
-  .panel {
-    padding: 30px 30px 30px;
-  }
 }
 .panel h1, .panel h2, .panel h3, .panel h4 {
   margin: 30px 0 15px;
@@ -401,27 +372,17 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 }
 .header-option .group-name {
   margin: 0;
-  padding: 20px 20px 10px;
+  padding: calc(var(--s)*2) calc(2*var(--s)*1) calc(var(--s)*1);
   font-size: 0.8em;
   color: #212121;
   text-transform: lowercase;
 }
-@media (min-width: 800px) {
-  .header-option .group-name {
-    padding: 30px 30px 15px;
-  }
-}
 .header-option > .option-title {
-  padding: 10px 20px 10px;
+  padding: calc(var(--s)*1) calc(2*var(--s)*1) calc(var(--s)*1);
   margin: 0;
   line-height: 1.75em;
   flex: 1 1;
   cursor: pointer;
-}
-@media (min-width: 800px) {
-  .header-option > .option-title {
-    padding: 15px 30px 15px;
-  }
 }
 .header-option > .option-title::after {
   content: " ▾";
@@ -437,14 +398,9 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .header-option a.option-menu-link {
   display: block;
   text-decoration: none;
-  padding: 10px 20px 10px;
+  padding: calc(var(--s)*1) calc(2*var(--s)*1) calc(var(--s)*1);
   color: #fcfcfc;
   font-weight: bold;
-}
-@media (min-width: 800px) {
-  .header-option a.option-menu-link {
-    padding: 15px 30px 15px;
-  }
 }
 .header-option a.option-menu-link.active {
   background-color: #009abe;
@@ -475,12 +431,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
   display: table-cell;
 }
 .header-option .option-menu > .footer {
-  padding: 10px 20px 10px;
-}
-@media (min-width: 800px) {
-  .header-option .option-menu > .footer {
-    padding: 15px 30px 15px;
-  }
+  padding: calc(var(--s)*1) calc(2*var(--s)*1) calc(var(--s)*1);
 }
 .header-option .wildcard {
   font-weight: bold;
@@ -494,7 +445,7 @@ table.collapsed-head th {
 }
 
 .data-table {
-  margin: 0 -15px 15px;
+  margin: 0 calc(-1 * var(--s)) var(--s);
 }
 .data-table tbody tr:hover {
   background-color: #dae4e7;
@@ -513,7 +464,7 @@ table.collapsed-head th {
   padding-top: 15px;
 }
 .data-table td, .data-table th {
-  padding: 0 15px;
+  padding: 0 var(--s);
   text-align: left;
   line-height: 30px;
   vertical-align: top;
@@ -676,7 +627,7 @@ label.disabled {
   background: #212121;
   color: #efefef;
 }
-.header-follow .badge {
+.header-follow .badge:not(:first-child) {
   margin-left: 10px;
 }
 .badge.header-badge {
