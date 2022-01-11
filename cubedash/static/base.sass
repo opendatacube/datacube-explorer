@@ -24,31 +24,26 @@ $panel_color: #e6edef
 $panel_odd_color: #fafafa
 
 
+:root
+    --s: 15px
+
+    @media (max-width: 750px)
+        --s: 10px
+
+
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
-    @media (min-width: 800px)
-        padding: 15px*$scale_top 30px*$scale_horizontal 15px*$scale_bottom
-
-    padding: 10px*$scale_top 20px*$scale_horizontal 10px*$scale_bottom
+    padding: calc(var(--s)*#{$scale_top}) calc(2*var(--s)*#{$scale_horizontal}) calc(var(--s)*#{$scale_bottom})
 
 // Add the standard padding multiples, but only on the left side.
 @mixin left_padding($scale:1)
-    @media (min-width: 800px)
-        padding-left: 15px*$scale
-
-    padding-left: 10px*$scale
+    padding-left: calc(var(--s)*#{$scale})
 
 @mixin right_margin($scale:1)
-    @media (min-width: 800px)
-        margin-right: 15px*$scale
-
-    margin-right: 10px*$scale
+    margin-right: calc(var(--s)*#{$scale})
 
 @mixin top_padding($scale:1)
-    @media (min-width: 800px)
-        padding-top: 15px*$scale
-
-    padding-top: 10px*$scale
+    padding-top: calc(var(--s)*#{$scale})
 
 @mixin wide_padding
     @include box_padding(1)
@@ -286,8 +281,11 @@ h2.followed, h3.followed
     &.lonesome
         margin-bottom: 0
 
+    margin-right: 10px
+
 .header-follow
     display: inline-block
+    margin-top: 5px
 
 ul:last-child, ol:last-child
     margin-bottom: 0
@@ -491,7 +489,8 @@ table.collapsed-head
         padding-bottom: 15px
 
 .data-table
-    margin: 0 -15px 15px
+    // Negate the horizontal margin as we have our own cell padding.
+    margin: 0 calc(-1*var(--s)) var(--s)
 
     tbody tr
         &:hover
@@ -511,7 +510,8 @@ table.collapsed-head
         padding-top: 15px
 
     td, th
-        padding: 0 15px
+        padding: 0 var(--s)
+
         text-align: left
         line-height: 30px
         vertical-align: top
@@ -666,7 +666,7 @@ label
         color: #efefef
 
     // If it's in a header
-    .header-follow &
+    .header-follow &:not(:first-child)
         margin-left: 10px
 
     &.header-badge
