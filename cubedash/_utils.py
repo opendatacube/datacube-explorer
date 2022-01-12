@@ -756,7 +756,7 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     if extent is None:
         log.warn("invalid_dataset.empty_extent")
         return None, False
-    geom = shapely.geometry.asShape(extent.to_crs(CRS(_TARGET_CRS)))
+    geom = shape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not geom.is_valid:
         log.warn(
