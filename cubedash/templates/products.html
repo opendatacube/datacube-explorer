@@ -44,7 +44,7 @@
             {% endif %}
             <tbody>
                 {% for product, summary in product_summaries %}
-                    <tr>
+                    <tr class="collapse-when-small">
                         <td>
                             <a href="{{ url_for('product_page', product_name=product.name) }}"
                                 >{{ product.name }}</a>

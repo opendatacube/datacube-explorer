@@ -25,8 +25,11 @@ $panel_odd_color: #fafafa
 
 
 :root
+    // "s" is the default spacing throughout our layout.
+    // Margins, gaps, paddings are calculated as a multiple of it.
     --s: 15px
 
+    // On a narrow screen, make spacing smaller.
     @media (max-width: 750px)
         --s: 10px
 
@@ -240,9 +243,8 @@ footer
 
 // Spatial page
 #map
-    flex: 1 1
-    height: 100%
-    width: 100%
+    // Overridden below for wider displays.
+    height: 400px
 
 // show two columns on wide displays
 @media (min-width: 800px)
@@ -252,6 +254,10 @@ footer
     .info-panel
         width: 250px
 
+    #map
+        flex: 1 1
+        height: 100%
+        width: 100%
 
 .info-panel
     ul
@@ -487,6 +493,17 @@ table.collapsed-head
         text-align: left
         font-weight: normal
         padding-bottom: 15px
+
+
+@media (max-width: 750px)
+    // On a small screen (eg: phone), these cells can
+    // be collapsed to a vertical list.
+    .collapse-when-small
+        display: block
+        margin-top: var(--s)
+
+        td
+            display: block
 
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
