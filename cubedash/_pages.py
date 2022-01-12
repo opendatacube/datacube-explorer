@@ -10,6 +10,7 @@ from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
+from werkzeug.exceptions import HTTPException
 
 import cubedash
 from cubedash import _audit, _monitoring
@@ -50,6 +51,19 @@ _DEFAULT_ARRIVALS_DAYS: int = app.config.get("CUBEDASH_DEFAULT_ARRIVALS_DAY_COUN
 # Add server timings to http headers.
 if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
     _monitoring.init_app_monitoring()
+
+
+@app.errorhandler(HTTPException)
+def handle_exception(e: HTTPException):
+    return (
+        utils.render(
+            "message.html",
+            title=e.code,
+            message=e.description,
+            e=e,
+        ),
+        e.code,
+    )
 
 
 @app.route("/<product_name>")
