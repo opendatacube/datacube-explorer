@@ -100,6 +100,10 @@ ul
     @include box_padding($scale_top:2, $scale_bottom:1, $scale_horizontal:1)
 
     display: flex
+    // On a phone, stack the header vertically.
+    @media (max-width: 750px)
+        flex-direction: column
+
     justify-content: space-between
 
     &::after
@@ -128,6 +132,10 @@ ul
             padding-left: 10px
             margin-left: 10px
             white-space: nowrap
+            @media (max-width: 800px)
+                position: absolute
+                bottom: 0
+                left: 0
 
             &::before
                 display: inline-block
@@ -495,19 +503,20 @@ table.collapsed-head
         padding-bottom: 15px
 
 
-@media (max-width: 750px)
-    // On a small screen (eg: phone), these cells can
-    // be collapsed to a vertical list.
-    .collapse-when-small
-        display: block
-        margin-top: var(--s)
-
-        td
-            display: block
 
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
     margin: 0 calc(-1*var(--s)) var(--s)
+
+    // On a small screen (eg: phone), these cells can
+    // be collapsed to a vertical list.
+    @media (max-width: 750px)
+        .collapse-when-small
+            display: block
+            margin-top: var(--s)
+
+            td
+                display: block
 
     tbody tr
         &:hover
