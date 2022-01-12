@@ -1,0 +1,19 @@
+{% extends "layout/base.html" %}
+
+{#
+A simple page for showing a message to the user.
+
+Such as a 404.
+
+#}
+
+{% set active_page = "message" %}
+
+{% block title %}{{ title }}: {{ message }}{% endblock %}
+
+{% block content %}
+    <div class="panel highlight">
+        <h2>{{ title }}</h2>
+        <p>{{ message }}</p>
+    </div>
+{% endblock %}
