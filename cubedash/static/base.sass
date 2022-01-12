@@ -501,7 +501,7 @@ table.collapsed-head
     th
         text-align: left
         font-weight: normal
-        padding-bottom: 15px
+        padding-bottom: var(--s)
 
 
 
@@ -534,13 +534,14 @@ table.collapsed-head
         font-size: 0.8em
 
     tr.section-header th
-        padding-top: 15px
+        padding-top: var(--s)
 
     td, th
         padding: 0 var(--s)
 
         text-align: left
-        line-height: 30px
+        @media (min-width: 800px)
+            line-height: calc(var(--s)*2)
         vertical-align: top
 
         // Numeric columns right-aligned for readability, like Excel.
@@ -619,8 +620,7 @@ label
             text-overflow: ellipsis
 
 .chart-timeline
-    padding: 15px 45px 15px 0
-
+    padding: var(--s) calc(3*var(--s)) var(--s) 0
 
 .chart-timeline-bars
     font-size: 0
@@ -709,7 +709,7 @@ label
         font-family: 'Courier New', monospace
 
         .property, .array, .array-item
-            padding-left: 15px
+            padding-left: var(--s)
 
         & > .value
             color: $muted_text
