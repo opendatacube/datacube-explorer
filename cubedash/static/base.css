@@ -458,7 +458,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 table.collapsed-head th {
   text-align: left;
   font-weight: normal;
-  padding-bottom: 15px;
+  padding-bottom: var(--s);
 }
 
 .data-table {
@@ -487,13 +487,17 @@ table.collapsed-head th {
   font-size: 0.8em;
 }
 .data-table tr.section-header th {
-  padding-top: 15px;
+  padding-top: var(--s);
 }
 .data-table td, .data-table th {
   padding: 0 var(--s);
   text-align: left;
-  line-height: 30px;
   vertical-align: top;
+}
+@media (min-width: 800px) {
+  .data-table td, .data-table th {
+    line-height: calc(var(--s) * 2);
+  }
 }
 .data-table td.numeric, .data-table th.numeric {
   text-align: right;
@@ -580,7 +584,7 @@ label.disabled {
 }
 
 .chart-timeline {
-  padding: 15px 45px 15px 0;
+  padding: var(--s) calc(3 * var(--s)) var(--s) 0;
 }
 
 .chart-timeline-bars {
@@ -670,7 +674,7 @@ label.disabled {
   font-family: "Courier New", monospace;
 }
 .raw-metadata .property .property, .raw-metadata .property .array, .raw-metadata .property .array-item {
-  padding-left: 15px;
+  padding-left: var(--s);
 }
 .raw-metadata .property > .value {
   color: #737373;
