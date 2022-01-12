@@ -194,9 +194,7 @@ footer {
 }
 
 #map {
-  flex: 1 1;
-  height: 100%;
-  width: 100%;
+  height: 400px;
 }
 
 @media (min-width: 800px) {
@@ -206,6 +204,12 @@ footer {
 
   .info-panel {
     width: 250px;
+  }
+
+  #map {
+    flex: 1 1;
+    height: 100%;
+    width: 100%;
   }
 }
 .info-panel ul {
@@ -444,6 +448,15 @@ table.collapsed-head th {
   padding-bottom: 15px;
 }
 
+@media (max-width: 750px) {
+  .collapse-when-small {
+    display: block;
+    margin-top: var(--s);
+  }
+  .collapse-when-small td {
+    display: block;
+  }
+}
 .data-table {
   margin: 0 calc(-1 * var(--s)) var(--s);
 }
