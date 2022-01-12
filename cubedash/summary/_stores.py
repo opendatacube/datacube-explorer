@@ -1120,16 +1120,16 @@ class SummaryStore:
                 if len(product_names) == 1:
                     query = query.where(
                         DATASET_SPATIAL.c.dataset_type_ref
-                        == select([ODC_DATASET_TYPE.c.id]).where(
-                            ODC_DATASET_TYPE.c.name == product_names[0]
-                        )
+                        == select([ODC_DATASET_TYPE.c.id])
+                        .where(ODC_DATASET_TYPE.c.name == product_names[0])
+                        .scalar_subquery()
                     )
                 else:
                     query = query.where(
                         DATASET_SPATIAL.c.dataset_type_ref.in_(
-                            select([ODC_DATASET_TYPE.c.id]).where(
-                                ODC_DATASET_TYPE.c.name.in_(product_names)
-                            )
+                            select([ODC_DATASET_TYPE.c.id])
+                            .where(ODC_DATASET_TYPE.c.name.in_(product_names))
+                            .scalar_subquery()
                         )
                     )
 
