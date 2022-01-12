@@ -54,6 +54,11 @@ ul {
   display: flex;
   justify-content: space-between;
 }
+@media (max-width: 750px) {
+  .header {
+    flex-direction: column;
+  }
+}
 .header::after {
   clear: both;
 }
@@ -76,6 +81,13 @@ ul {
   padding-left: 10px;
   margin-left: 10px;
   white-space: nowrap;
+}
+@media (max-width: 800px) {
+  .header #logo > .instance-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
 }
 .header #logo > .instance-title::before {
   display: inline-block;
@@ -448,17 +460,17 @@ table.collapsed-head th {
   padding-bottom: 15px;
 }
 
+.data-table {
+  margin: 0 calc(-1 * var(--s)) var(--s);
+}
 @media (max-width: 750px) {
-  .collapse-when-small {
+  .data-table .collapse-when-small {
     display: block;
     margin-top: var(--s);
   }
-  .collapse-when-small td {
+  .data-table .collapse-when-small td {
     display: block;
   }
-}
-.data-table {
-  margin: 0 calc(-1 * var(--s)) var(--s);
 }
 .data-table tbody tr:hover {
   background-color: #dae4e7;
