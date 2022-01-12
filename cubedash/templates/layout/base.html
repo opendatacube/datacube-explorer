@@ -170,7 +170,7 @@
 
     function closeMenu(headerOption) {
         headerOption.classList.remove('is-open');
-        headerOption.querySelector('.option-title').setAttribute('aria-expanded', "false");
+        headerOption.querySelector('.ex-menu-title').setAttribute('aria-expanded', "false");
         document.removeEventListener('click', outsideClickListener);
     }
 
