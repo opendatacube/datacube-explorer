@@ -83,7 +83,7 @@ CMD ["gunicorn", \
      "-k", \
      "gthread", \
      "--timeout", \
-     "60", \
+     "90", \
      "--config", \
      "python:cubedash.gunicorn_config", \
      "cubedash:app"]
