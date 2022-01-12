@@ -96,6 +96,7 @@ ul {
 .header #menu-link {
   text-align: left;
   margin-right: calc(var(--s)*-1);
+  margin-left: calc(var(--s)*-1);
   color: #dedede;
 }
 .header #menu-link > ul {

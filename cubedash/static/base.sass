@@ -42,8 +42,9 @@ $panel_odd_color: #fafafa
 @mixin left_padding($scale:1)
     padding-left: calc(var(--s)*#{$scale})
 
-@mixin right_margin($scale:1)
+@mixin horiz_margin($scale:1)
     margin-right: calc(var(--s)*#{$scale})
+    margin-left: calc(var(--s)*#{$scale})
 
 @mixin top_padding($scale:1)
     padding-top: calc(var(--s)*#{$scale})
@@ -146,7 +147,7 @@ ul
         text-align: left
 
         // Negative offset for the padding on the buttons.
-        @include right_margin($scale:-1)
+        @include horiz_margin($scale:-1)
 
         > ul
             display: flex
