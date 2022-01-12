@@ -2,7 +2,6 @@
 Common global filters and util methods.
 """
 
-
 import csv
 import difflib
 import functools
@@ -13,6 +12,7 @@ from datetime import datetime, timedelta
 from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
+from uuid import UUID
 
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
@@ -38,6 +38,7 @@ from orjson import orjson
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
+from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
@@ -809,7 +810,6 @@ ODC_DATASET = datacube.drivers.postgres._schema.DATASET
 
 ODC_DATASET_LOCATION = datacube.drivers.postgres._schema.DATASET_LOCATION
 
-
 try:
     from datacube.drivers.postgres._core import install_timestamp_trigger
 except ImportError:
@@ -830,3 +830,50 @@ def get_mutable_dataset_search_fields(
     (the ones returned by the Index are cached and so may be shared among callers)
     """
     return index._db.get_dataset_fields(md.definition)
+
+
+def get_dataset_sources(
+    index: Index, dataset_id: UUID, limit=None
+) -> Tuple[Dict[str, Dataset], int]:
+    """
+    Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
+
+    This is a lighter alternative to doing `index.datasets.get(include_source=True)`
+
+    A limit can also be specified.
+
+    Returns a source dict and how many more sources exist beyond the limit.
+    """
+    dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
+    query = select(
+        [dataset_source.c.source_dataset_ref, dataset_source.c.classifier]
+    ).where(dataset_source.c.dataset_ref == dataset_id)
+    if limit:
+        # We add one to detect if there are more records after out limit.
+        query = query.limit(limit + 1)
+
+    engine = alchemy_engine(index)
+    dataset_classifier = engine.execute(query).fetchall()
+
+    if not dataset_classifier:
+        return {}, 0
+
+    remaining_records = 0
+    if limit and len(dataset_classifier) > limit:
+        dataset_classifier = dataset_classifier[:limit]
+        remaining_records = (
+            engine.execute(
+                select(func.count())
+                .select_from(dataset_source)
+                .where(dataset_source.c.dataset_ref == dataset_id)
+            ).scalar()
+            - limit
+        )
+
+    classifier = dict(dataset_classifier)
+    return {
+        classifier[d.id]: d
+        for d in (
+            index.datasets.bulk_get(dataset_id for dataset_id, _ in dataset_classifier)
+        )
+    }, remaining_records
