@@ -21,7 +21,7 @@ PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
 def dataset_page(id_):
 
     index = _model.STORE.index
-    dataset = index.datasets.get(id_, include_sources=True)
+    dataset = index.datasets.get(id_)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
@@ -38,7 +38,7 @@ def dataset_full_page(product_name: str, id_: UUID):
     derived_dataset_overflow = source_dataset_overflow = 0
 
     index = _model.STORE.index
-    dataset = index.datasets.get(id_, include_sources=True)
+    dataset = index.datasets.get(id_, include_sources=False)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
@@ -54,14 +54,9 @@ def dataset_full_page(product_name: str, id_: UUID):
             f"Perhaps you meant to visit {actual_url!r}",
         )
 
-    source_list = list(dataset.metadata.sources.items())
-    if len(source_list) > PROVENANCE_DISPLAY_LIMIT:
-        source_dataset_overflow = len(source_list) - PROVENANCE_DISPLAY_LIMIT
-        source_list = source_list[:PROVENANCE_DISPLAY_LIMIT]
-
-    source_datasets = {
-        type_: index.datasets.get(dataset_d["id"]) for type_, dataset_d in source_list
-    }
+    source_datasets, source_dataset_overflow = utils.get_dataset_sources(
+        index, id_, limit=PROVENANCE_DISPLAY_LIMIT
+    )
 
     archived_location_times = index.datasets.get_archived_location_times(id_)
 
