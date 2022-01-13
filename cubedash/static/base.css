@@ -247,7 +247,6 @@ h4 {
 
 h2.followed, h3.followed {
   display: inline-block;
-  margin-right: 10px;
 }
 h2.followed.lonesome, h3.followed.lonesome {
   margin-bottom: 0;
@@ -312,6 +311,9 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 }
 .panel h1:last-child, .panel h2:last-child, .panel h3:last-child, .panel h4:last-child {
   margin-bottom: 0;
+}
+.panel h1.followed, .panel h2.followed, .panel h3.followed, .panel h4.followed {
+  margin-right: 10px;
 }
 .panel p, .panel .p {
   margin: 15px 0;
