@@ -134,7 +134,7 @@
                     <table>
                         {% for name, offset in dataset_paths | dictsort %}
                             <tr>
-                                <th class="right">
+                                <th class="right nowrap">
                                     {{ name }}
                                     <i class="fa fa-caret-right" aria-hidden="true"></i>
                                 </th>
@@ -166,7 +166,7 @@
 
 
 
-    <div class="panel odd">
+    <div class="panel odd overflowable">
         <h3 class="followed">
             Metadata Document
             {{ hanchor('metadata-doc') }}

@@ -304,7 +304,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
   background: #e6edef;
 }
 .panel h1, .panel h2, .panel h3, .panel h4 {
-  margin: 30px 0 15px;
+  margin: calc(2 * var(--s)) 0 var(--s);
 }
 .panel h1:first-child, .panel h2:first-child, .panel h3:first-child, .panel h4:first-child {
   margin-top: 0;
@@ -316,7 +316,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
   margin-right: 10px;
 }
 .panel p, .panel .p {
-  margin: 15px 0;
+  margin: var(--s) 0;
 }
 .panel p:first-child, .panel .p:first-child {
   margin-top: 0;
@@ -461,6 +461,10 @@ table.collapsed-head th {
   text-align: left;
   font-weight: normal;
   padding-bottom: var(--s);
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .data-table {

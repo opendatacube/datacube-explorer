@@ -348,7 +348,7 @@ h1, h2, h3, h4, th
     background: $panel_color
 
     h1, h2, h3, h4
-        margin: 30px 0 15px
+        margin: calc(2*var(--s)) 0 var(--s)
         &:first-child
             margin-top: 0
         &:last-child
@@ -357,7 +357,7 @@ h1, h2, h3, h4, th
           margin-right: 10px
 
     p, .p
-        margin: 15px 0
+        margin: var(--s) 0
         &:first-child
             margin-top: 0
         &:last-child
@@ -505,7 +505,8 @@ table.collapsed-head
         font-weight: normal
         padding-bottom: var(--s)
 
-
+.nowrap
+    white-space: nowrap
 
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
