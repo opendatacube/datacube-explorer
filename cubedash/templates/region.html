@@ -49,7 +49,7 @@
             </a>
         </div>
     </div>
-    <div class="panel odd">
+    <div class="panel odd overflowable">
         {% if datasets %}
 
             {% if previous_page_url %}
@@ -62,12 +62,8 @@
             {% endif %}
 
             <table class="data-table">
-                <thead>
-                <th>Time</th>
-                <th>Label</th>
-                </thead>
                 {% for dataset in datasets %}
-                    <tr class="search-result">
+                    <tr class="search-result collapse-when-small">
                         <td>{{ dataset.center_time | printable_time }}</td>
                         <td>
                             <a href="{{ url_for('dataset.dataset_page', id_=dataset.id) }}">{{ dataset | printable_dataset }}</a>
