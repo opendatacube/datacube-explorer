@@ -143,6 +143,12 @@
                 </span>
             </li>
             <li>
+                Raw, bulk <a href="{{ url_for('audit.dscount_report_page') }}">dataset counts</a>:
+                <span class="uri-path">
+                    {{ url_for('audit.dsreport_csv', _external=True) }}
+                </span>
+            </li>
+            <li>
                 <a href="{{ url_for('arrivals_page') }}">Arriving data</a> summary:
                 <span class="uri-path">
                     {{ url_for('arrivals_csv', _external=True) }}
