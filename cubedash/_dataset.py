@@ -63,10 +63,10 @@ def dataset_full_page(product_name: str, id_: UUID):
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
-    derived_datasets = sorted(index.datasets.get_derived(id_), key=utils.dataset_label)
-    if len(derived_datasets) > PROVENANCE_DISPLAY_LIMIT:
-        derived_dataset_overflow = len(derived_datasets) - PROVENANCE_DISPLAY_LIMIT
-        derived_datasets = derived_datasets[:PROVENANCE_DISPLAY_LIMIT]
+    derived_datasets, derived_dataset_overflow = utils.get_datasets_derived(
+        index, id_, limit=PROVENANCE_DISPLAY_LIMIT
+    )
+    derived_datasets.sort(key=utils.dataset_label)
 
     footprint, region_code = _model.STORE.get_dataset_footprint_region(id_)
     # We only have a footprint in the spatial table above if summarisation has been
