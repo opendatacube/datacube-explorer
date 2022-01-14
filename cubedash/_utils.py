@@ -196,10 +196,9 @@ def query_to_search(request: MultiDict, product: DatasetType) -> dict:
     return args
 
 
-def dataset_label(dataset):
+def dataset_label(dataset: Dataset) -> str:
     """
-    :type dataset: datacube.model.Dataset
-    :rtype: str
+    Get a human-readable label for the dataset
     """
     # Identify by label if they have one
     label = dataset.metadata.fields.get("label")
@@ -794,7 +793,7 @@ def alchemy_engine(index: Index) -> Engine:
 
 def make_dataset_from_select_fields(index, row):
     # pylint: disable=protected-access
-    return index.datasets._make(row)
+    return index.datasets._make(row, full_info=True)
 
 
 # pylint: disable=protected-access
@@ -877,3 +876,48 @@ def get_dataset_sources(
             index.datasets.bulk_get(dataset_id for dataset_id, _ in dataset_classifier)
         )
     }, remaining_records
+
+
+def get_datasets_derived(
+    index: Index, dataset_id: UUID, limit=None
+) -> Tuple[List[Dataset], int]:
+    """
+    this is similar to ODC's connection.get_derived_datasets() but allows a
+    limit, and will return a total count.
+    """
+    dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
+    query = (
+        select(DATASET_SELECT_FIELDS)
+        .select_from(
+            ODC_DATASET.join(
+                dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
+            )
+        )
+        .where(dataset_source.c.source_dataset_ref == dataset_id)
+    )
+    if limit:
+        # We add one to detect if there are more records after out limit.
+        query = query.limit(limit + 1)
+
+    engine = alchemy_engine(index)
+
+    remaining_records = 0
+    total_count = 0
+    datasets = engine.execute(query).fetchall()
+
+    if limit and len(datasets) > limit:
+        datasets = datasets[:limit]
+        total_count = engine.execute(
+            select(func.count())
+            .select_from(
+                ODC_DATASET.join(
+                    dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
+                )
+            )
+            .where(dataset_source.c.source_dataset_ref == dataset_id)
+        ).scalar()
+        remaining_records = total_count - limit
+
+    return [
+        make_dataset_from_select_fields(index, dataset) for dataset in datasets
+    ], remaining_records
