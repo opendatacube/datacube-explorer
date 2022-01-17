@@ -388,14 +388,14 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
-    # Other params are ignored when ids is specified (Matching the Stac API spec)
+    # Other params are included when ids is specified (Matching the newer Stac API spec)
     geojson = get_items(
         stac_client,
         (
             "/stac/search?datetime=1975-01-01/1976-01-01&ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
         ),
     )
-    assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
+    assert geojson_feature_ids(geojson) == []
 
     # Can request multiple datasets
     geojson = get_items(
@@ -1110,15 +1110,18 @@ def validate_item(item: Dict):
     _ITEM_SCHEMA.validate(item)
 
     # Should be a valid polygon
-    assert "geometry" in item, "Item has no geometry"
-    assert item["geometry"], "Item has blank geometry"
-    with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
-        shape = shapely_shape(item["geometry"])
-        assert shape.is_valid, f"Item has invalid geometry: {explain_validity(shape)}"
-        assert shape.geom_type in (
-            "Polygon",
-            "MultiPolygon",
-        ), "Unexpected type of shape"
+    assert "geometry" in item, "Item has no geometry field"
+
+    if item["geometry"] is not None:
+        with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
+            shape = shapely_shape(item["geometry"])
+            assert (
+                shape.is_valid
+            ), f"Item has invalid geometry: {explain_validity(shape)}"
+            assert shape.geom_type in (
+                "Polygon",
+                "MultiPolygon",
+            ), "Unexpected type of shape"
 
     assert_stac_extensions(item)
 
