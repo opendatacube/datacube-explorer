@@ -135,8 +135,8 @@ def root():
                 ),
             ],
             conformsTo=[
-                "https://api.stacspec.org/v1.0.0-beta.1/core",
-                "https://api.stacspec.org/v1.0.0-beta.1/item-search",
+                "https://api.stacspec.org/v1.0.0-beta.2/core",
+                "https://api.stacspec.org/v1.0.0-beta.2/item-search",
                 # Incomplete:
                 # "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
             ],
