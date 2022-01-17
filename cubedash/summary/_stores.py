@@ -1088,49 +1088,47 @@ class SummaryStore:
         intersects: BaseGeometry = None,
         dataset_ids: Sequence[UUID] = None,
     ) -> Select:
-        # If they specify IDs, all other search parameters are ignored.
-        # (from Stac API spec)
         if dataset_ids is not None:
             query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
-        else:
-            if time:
-                query = query.where(
-                    func.tstzrange(
-                        _utils.default_utc(time[0]),
-                        _utils.default_utc(time[1]),
-                        "[]",
-                        type_=TSTZRANGE,
-                    ).contains(DATASET_SPATIAL.c.center_time)
-                )
 
-            if bbox:
-                query = query.where(
-                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
-                        func.ST_MakeEnvelope(*bbox)
-                    )
+        if time:
+            query = query.where(
+                func.tstzrange(
+                    _utils.default_utc(time[0]),
+                    _utils.default_utc(time[1]),
+                    "[]",
+                    type_=TSTZRANGE,
+                ).contains(DATASET_SPATIAL.c.center_time)
+            )
+
+        if bbox:
+            query = query.where(
+                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                    func.ST_MakeEnvelope(*bbox)
                 )
-            if intersects:
-                query = query.where(
-                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
-                        from_shape(intersects)
-                    )
+            )
+        if intersects:
+            query = query.where(
+                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
+                    from_shape(intersects)
                 )
-            if product_names:
-                if len(product_names) == 1:
-                    query = query.where(
-                        DATASET_SPATIAL.c.dataset_type_ref
-                        == select([ODC_DATASET_TYPE.c.id])
-                        .where(ODC_DATASET_TYPE.c.name == product_names[0])
+            )
+        if product_names:
+            if len(product_names) == 1:
+                query = query.where(
+                    DATASET_SPATIAL.c.dataset_type_ref
+                    == select([ODC_DATASET_TYPE.c.id])
+                    .where(ODC_DATASET_TYPE.c.name == product_names[0])
+                    .scalar_subquery()
+                )
+            else:
+                query = query.where(
+                    DATASET_SPATIAL.c.dataset_type_ref.in_(
+                        select([ODC_DATASET_TYPE.c.id])
+                        .where(ODC_DATASET_TYPE.c.name.in_(product_names))
                         .scalar_subquery()
                     )
-                else:
-                    query = query.where(
-                        DATASET_SPATIAL.c.dataset_type_ref.in_(
-                            select([ODC_DATASET_TYPE.c.id])
-                            .where(ODC_DATASET_TYPE.c.name.in_(product_names))
-                            .scalar_subquery()
-                        )
-                    )
+                )
 
         return query
 
