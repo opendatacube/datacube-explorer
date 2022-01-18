@@ -189,7 +189,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             select([SPATIAL_REF_SYS.c.srid])
             .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
             .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
-            .as_scalar()
+            .scalar_subquery()
         )
 
     expression = func.coalesce(
@@ -207,7 +207,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                         SPATIAL_REF_SYS.c.auth_srid
                         == func.split_part(spatial_ref, ":", 2).cast(Integer)
                     )
-                    .as_scalar(),
+                    .scalar_subquery(),
                 )
             ],
             else_=None,
@@ -235,7 +235,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                             spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
                         ).cast(Integer)
                     )
-                    .as_scalar(),
+                    .scalar_subquery(),
                 )
             ],
             else_=None,
@@ -257,7 +257,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                             )
                         ).cast(Integer)
                     )
-                    .as_scalar(),
+                    .scalar_subquery(),
                 )
             ],
             else_=None,

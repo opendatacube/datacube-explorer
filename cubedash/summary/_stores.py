@@ -664,7 +664,7 @@ class SummaryStore:
 
         fixed_fields = {
             key: first_dataset_fields[key]
-            for key, is_fixed in result[0].items()
+            for key, is_fixed in result[0]._mapping.items()
             if is_fixed
         }
         _LOG.info(
