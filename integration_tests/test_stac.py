@@ -233,6 +233,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
             ls7_nbar_scene=4,
             ls7_pq_legacy_scene=4,
             ls7_level1_scene=4,
+            ls7_satellite_telemetry_data=4,
         ),
     )
 
