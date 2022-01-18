@@ -90,7 +90,7 @@ setup(
         "orjson>=3",
         "shapely",
         "simplekml",
-        "sqlalchemy>=1.3",
+        "sqlalchemy>=1.4",
         "structlog>=20.2.0",
     ],
     tests_require=tests_require,
