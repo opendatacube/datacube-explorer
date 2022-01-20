@@ -29,10 +29,7 @@ $panel_odd_color: #fafafa
     // Margins, gaps, paddings are calculated as a multiple of it.
     --s: 15px
 
-    // On a narrow screen, make spacing smaller.
-    @media (max-width: 750px)
-        --s: 10px
-
+    // (Previously we made it smaller on smaller screens... which is why it exists)
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
