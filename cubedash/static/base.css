@@ -468,7 +468,7 @@ table.collapsed-head th {
 }
 
 .data-table {
-  margin: 0 calc(-1 * var(--s)) var(--s);
+  margin: 0 calc(-2 * var(--s)) var(--s);
 }
 @media (max-width: 750px) {
   .data-table .collapse-when-small {
@@ -496,7 +496,7 @@ table.collapsed-head th {
   padding-top: var(--s);
 }
 .data-table td, .data-table th {
-  padding: 0 var(--s);
+  padding: 0 calc(2 * var(--s));
   text-align: left;
   vertical-align: top;
 }
