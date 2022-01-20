@@ -2,11 +2,6 @@
 :root {
   --s: 15px;
 }
-@media (max-width: 750px) {
-  :root {
-    --s: 10px;
-  }
-}
 
 .product-description {
   display: none;
