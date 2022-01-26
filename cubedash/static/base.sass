@@ -29,10 +29,7 @@ $panel_odd_color: #fafafa
     // Margins, gaps, paddings are calculated as a multiple of it.
     --s: 15px
 
-    // On a narrow screen, make spacing smaller.
-    @media (max-width: 750px)
-        --s: 10px
-
+    // (Previously we made it smaller on smaller screens... which is why it exists)
 
 // Adjust standard padding based on screen width. We can't use CSS vars due to IE support.
 @mixin box_padding($scale_top:1, $scale_bottom:1, $scale_horizontal:1)
@@ -510,7 +507,7 @@ table.collapsed-head
 
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
-    margin: 0 calc(-1*var(--s)) var(--s)
+    margin: 0 calc(-2*var(--s)) var(--s)
 
     // On a small screen (eg: phone), these cells can
     // be collapsed to a vertical list.
@@ -522,15 +519,15 @@ table.collapsed-head
             td
                 display: block
 
-    tbody tr
-        &:hover
-            background-color: darken($panel_color, 4%)
+    // Add a row hover for data-intensive tables.
+    tbody tr:hover
+        background-color: darken($panel_color, 4%)
 
-            .panel.highlight &
-                background-color: darken($panel_highlight, 4%)
+        .panel.highlight &
+            background-color: darken($panel_highlight, 4%)
 
-            .panel.odd &
-                background-color: darken($panel_odd_color, 4%)
+        .panel.odd &
+            background-color: darken($panel_odd_color, 4%)
 
     th
         font-weight: bold
@@ -540,7 +537,7 @@ table.collapsed-head
         padding-top: var(--s)
 
     td, th
-        padding: 0 var(--s)
+        padding: 0 calc(2*var(--s))
 
         text-align: left
         @media (min-width: 800px)
