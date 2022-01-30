@@ -436,7 +436,7 @@ def inject_globals():
     # The footer "Last updated" date.
     # The default is the currently-viewed product's summary refresh date.
     last_updated = None
-    if "product_name" in flask.request.view_args:
+    if flask.request.view_args and ("product_name" in flask.request.view_args):
         product_summary = _model.STORE.get_product_summary(
             flask.request.view_args["product_name"]
         )

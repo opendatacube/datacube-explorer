@@ -555,7 +555,7 @@ def collection_items(collection: str):
     return _geojson_stac_response(feature_collection)
 
 
-@bp.route("/collections/<collection>/items/<dataset_id>")
+@bp.route("/collections/<collection>/items/<uuid:dataset_id>")
 def item(collection: str, dataset_id: str):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
