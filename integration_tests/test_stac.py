@@ -852,6 +852,10 @@ def test_returns_404s(stac_client: FlaskClient):
         f"/stac/collections/does_not_exist/items/{wrong_dataset_id}",
         message_contains="No dataset found",
     )
+    # Should be a 404, not a server or posgres error.
+    expect_404(
+        "/stac/collections/does_not_exist/items/not-a-uuid",
+    )
 
 
 def test_stac_item(stac_client: FlaskClient, populated_index: Index):
