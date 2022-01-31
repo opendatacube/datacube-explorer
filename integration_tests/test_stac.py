@@ -29,6 +29,7 @@ from integration_tests.asserts import (
     assert_matching_eo3,
     get_geojson,
     get_json,
+    get_text_response,
 )
 
 ALLOW_INTERNET = True
@@ -117,7 +118,6 @@ def _local_reference(schema_location: Path, ref):
 
 
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
-
     if not schema_location.exists():
         raise ValueError(f"No jsonschema file found at {schema_location}")
 
@@ -682,7 +682,7 @@ def test_huge_page_request(stac_client: FlaskClient):
     """Return an error if they try to request beyond max-page-size limit"""
     error_message_json = get_json(
         stac_client,
-        f"/stac/search?&limit={OUR_DATASET_LIMIT+1}",
+        f"/stac/search?&limit={OUR_DATASET_LIMIT + 1}",
         expect_status_code=400,
     )
     assert error_message_json == {
@@ -852,9 +852,11 @@ def test_returns_404s(stac_client: FlaskClient):
         f"/stac/collections/does_not_exist/items/{wrong_dataset_id}",
         message_contains="No dataset found",
     )
-    # Should be a 404, not a server or posgres error.
-    expect_404(
+    # Should be a 404, not a server or postgres error.
+    get_text_response(
+        stac_client,
         "/stac/collections/does_not_exist/items/not-a-uuid",
+        expect_status_code=404,
     )
 
 
