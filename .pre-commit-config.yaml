@@ -2,7 +2,7 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 0.8.0
+    rev: 0.9.0
     hooks:
     - id: shed
   # Python Linting
