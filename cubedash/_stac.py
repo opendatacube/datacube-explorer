@@ -29,6 +29,8 @@ bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
 PAGE_SIZE_LIMIT = _model.app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
 DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
+DEFAULT_CATALOG_SIZE = _model.app.config.get("STAC_DEFAULT_CATALOG_SIZE", 500)
+
 # Should we force all URLs to include the full hostname?
 FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
 
@@ -137,6 +139,7 @@ def root():
             conformsTo=[
                 "https://api.stacspec.org/v1.0.0-beta.2/core",
                 "https://api.stacspec.org/v1.0.0-beta.2/item-search",
+                "https://api.stacspec.org/v1.0.0-beta.5/browseable",
                 # Incomplete:
                 # "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
             ],
@@ -413,7 +416,7 @@ def collections():
     )
 
 
-@bp.route("/arrivals")
+@bp.route("/catalogs/arrivals")
 def arrivals():
     """
     Virtual collection of the items most recently indexed into this index
@@ -522,9 +525,16 @@ def _stac_collection(collection: str):
         ),
         links=[
             dict(
-                rel="items",
-                href=url_for(".collection_items", collection=collection),
+                rel="child",
+                href=url_for(
+                    ".collection_month",
+                    collection=collection,
+                    year=date.year,
+                    month=date.month,
+                ),
             )
+            for date, count in all_time_summary.timeline_dataset_counts.items()
+            if count > 0
         ],
     )
     return stac_collection
@@ -533,26 +543,74 @@ def _stac_collection(collection: str):
 @bp.route("/collections/<collection>/items")
 def collection_items(collection: str):
     """
-    A geojson FeatureCollection of all items in a collection/product.
-
-    (with paging)
+    We no longer have one 'items' link. Redirect them to a stac search that implements the
+    same FeatureCollection result.
     """
-    all_time_summary = _model.get_time_summary(collection)
+    return flask.redirect(url_for("stac_search", collection=collection, **request.args))
+
+
+@bp.route("/catalogs/<collection>/<int:year>-<int:month>")
+def collection_month(collection: str, year: int, month: int):
+    """ """
+    all_time_summary = _model.get_time_summary(collection, year, month)
     if not all_time_summary:
-        abort(404, f"Product {collection!r} not found among summaries.")
+        abort(404, f"No data for {collection!r} {year} {month}")
 
-    feature_collection = _handle_search_request(
-        request_args=request.args,
-        product_names=[collection],
+    request_args = request.args
+    limit = request_args.get("limit", default=DEFAULT_CATALOG_SIZE, type=int)
+    offset = request_args.get("_o", default=0, type=int)
+
+    items = list(
+        _model.STORE.search_items(
+            product_names=[collection],
+            time=_utils.as_time_range(year, month),
+            limit=limit + 1,
+            offset=offset,
+            # We need the full datast to get dataset labels
+            full_dataset=True,
+        )
     )
+    returned = items[:limit]
+    there_are_more = len(items) == limit + 1
 
-    # Maybe we shouldn't include total count, as it prevents some future optimisation?
-    if "numberMatched" not in feature_collection:
-        feature_collection["numberMatched"] = all_time_summary.dataset_count
-    # Backwards compatibility with older stac implementations.
-    feature_collection["context"]["matched"] = feature_collection["numberMatched"]
+    optional_links = []
+    if there_are_more:
+        next_url = url_for(
+            ".collection_month",
+            collection=collection,
+            year=year,
+            month=month,
+            _o=offset + limit,
+        )
+        optional_links.append(dict(rel="next", href=next_url))
 
-    return _geojson_stac_response(feature_collection)
+    return _stac_response(
+        dict(
+            **stac_endpoint_information(),
+            type="Catalog",
+            links=[
+                dict(rel="self", href=request.url),
+                dict(rel="root", href=url_for(".root")),
+                # dict(rel='parent', href= catalog?,
+                # Each item.
+                *(
+                    dict(
+                        title=_utils.dataset_label(item_summary.odc_dataset),
+                        rel="item",
+                        href=url_for(
+                            ".item",
+                            collection=item_summary.product_name,
+                            dataset_id=item_summary.dataset_id,
+                        ),
+                    )
+                    for item_summary in items
+                ),
+                *optional_links,
+            ],
+            numberReturned=len(returned),
+            numberMatched=all_time_summary.dataset_count,
+        )
+    )
 
 
 @bp.route("/collections/<collection>/items/<uuid:dataset_id>")
