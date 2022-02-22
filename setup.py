@@ -85,6 +85,7 @@ setup(
         "markupsafe",
         "pyorbital",
         "pyproj",
+        "pystac",
         "python-dateutil",
         "orjson>=3",
         "sentry-sdk[flask]",
