@@ -72,8 +72,8 @@ setup(
     install_requires=[
         "cachetools",
         "click",
-        "datacube==1.8.6",
-        "eodatasets3>=0.24.1",
+        "datacube>=1.8",
+        "eodatasets3>=0.25.0",
         "fiona",
         "flask==2.1.3",
         "Flask-Caching",
