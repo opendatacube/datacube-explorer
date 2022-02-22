@@ -86,6 +86,7 @@ setup(
         "markupsafe",
         "pyorbital",
         "pyproj",
+        "pystac",
         "python-dateutil",
         "orjson>=3",
         "shapely",
