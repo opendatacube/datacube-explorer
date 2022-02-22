@@ -3,9 +3,10 @@ import logging
 import uuid
 from datetime import datetime, time as dt_time, timedelta
 from functools import partial
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import flask
+import pystac
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
@@ -14,6 +15,7 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, request
+from pystac import Catalog, Collection, Extent, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from werkzeug.datastructures import TypeConversionDict
@@ -70,28 +72,31 @@ def utc(d: datetime):
     return d.astimezone(tz.tzutc())
 
 
-def _stac_response(doc: Dict, content_type="application/json") -> flask.Response:
+def _stac_response(
+    doc: Union[STACObject, pystac.ItemCollection], content_type="application/json"
+) -> flask.Response:
     """Return a stac document as the flask response"""
+
+    doc.set_root(root_catalog())
     return _utils.as_json(
-        _with_stac_properties(doc),
+        doc.to_dict(),
         content_type=content_type,
     )
 
 
-def _with_stac_properties(doc):
-    # Any response without a links array already is a coding problem.
-    doc["links"].append(dict(rel="root", href=url_for(".root")))
-    return {
-        # Always put stac version at the beginning for readability.
-        "stac_version": STAC_VERSION,
-        # The given doc may override it too.
-        **doc,
-    }
-
-
-def _geojson_stac_response(doc: Dict) -> flask.Response:
+def _geojson_stac_response(
+    doc: Union[STACObject, pystac.ItemCollection]
+) -> flask.Response:
     """Return a stac item"""
     return _stac_response(doc, content_type="application/geo+json")
+
+
+def root_catalog():
+    c = Catalog(
+        **stac_endpoint_information(),
+    )
+    c.set_self_href(url_for(".root"))
+    return c
 
 
 @bp.route("", strict_slashes=False)
@@ -99,52 +104,44 @@ def root():
     """
     The root stac page links to each collection (product) catalog
     """
-    return _stac_response(
-        dict(
-            **stac_endpoint_information(),
-            type="Catalog",
-            links=[
-                dict(
-                    title="Collections",
-                    description="All product collections",
-                    rel="children",
-                    type="application/json",
-                    href=url_for(".collections"),
-                ),
-                dict(
-                    title="Arrivals",
-                    description="Most recently added items",
+    c = root_catalog()
+    c.links.extend(
+        [
+            Link(
+                title="Collections",
+                # description="All product collections",
+                rel="children",
+                media_type="application/json",
+                target=url_for(".collections"),
+            ),
+            Link(
+                title="Arrivals",
+                # description="Most recently added items",
+                rel="child",
+                media_type="application/json",
+                target=url_for(".arrivals"),
+            ),
+            Link(
+                title="Item Search",
+                rel="search",
+                media_type="application/json",
+                target=url_for(".stac_search"),
+            ),
+            # Individual Product Collections
+            *(
+                Link(
+                    title=product.name,
+                    # description=product.definition.get("description"),
                     rel="child",
-                    type="application/json",
-                    href=url_for(".arrivals"),
-                ),
-                dict(
-                    title="Item Search",
-                    rel="search",
-                    type="application/json",
-                    href=url_for(".stac_search"),
-                ),
-                dict(rel="self", href=request.url),
-                # Individual Product Collections
-                *(
-                    dict(
-                        title=product.name,
-                        description=product.definition.get("description"),
-                        rel="child",
-                        href=url_for(".collection", collection=product.name),
-                    )
-                    for product, product_summary in _model.get_products_with_summaries()
-                ),
-            ],
-            conformsTo=[
-                "https://api.stacspec.org/v1.0.0-beta.2/core",
-                "https://api.stacspec.org/v1.0.0-beta.2/item-search",
-                "https://api.stacspec.org/v1.0.0-beta.5/browseable",
-                # Incomplete:
-                # "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-            ],
-        )
+                    media_type="application/json",
+                    target=url_for(".collection", collection=product.name),
+                )
+                for product, product_summary in _model.get_products_with_summaries()
+            ),
+        ]
     )
+
+    return _stac_response(c)
 
 
 @bp.route("/search", methods=["GET", "POST"])
@@ -228,7 +225,7 @@ def _handle_search_request(
     request_args: TypeConversionDict,
     product_names: List[str],
     include_total_count: bool = True,
-) -> Dict:
+) -> pystac.ItemCollection:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
     )
@@ -289,7 +286,8 @@ def _handle_search_request(
         full_information=full_information,
         include_total_count=include_total_count,
     )
-    feature_collection["links"].extend(
+
+    feature_collection.extra_fields["links"].extend(
         (
             dict(
                 href=url_for(".stac_search"),
@@ -323,7 +321,7 @@ def search_stac_items(
     order: ItemSort = ItemSort.DEFAULT_SORT,
     include_total_count: bool = False,
     use_post_request: bool = False,
-) -> Dict:
+) -> pystac.ItemCollection:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
 
@@ -349,7 +347,8 @@ def search_stac_items(
     page = 0
     if limit != 0:
         page = offset // limit
-    paging_properties = dict(
+    extra_properties = dict(
+        links=[],
         # Stac standard
         numberReturned=len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
@@ -364,14 +363,11 @@ def search_stac_items(
         count_matching = _model.STORE.get_count(
             product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
         )
-        paging_properties["numberMatched"] = count_matching
-        paging_properties["context"]["matched"] = count_matching
+        extra_properties["numberMatched"] = count_matching
+        extra_properties["context"]["matched"] = count_matching
 
-    result = dict(
-        type="FeatureCollection",
-        features=[as_stac_item(f) for f in returned],
-        links=[],
-        **paging_properties,
+    result = pystac.ItemCollection(
+        [as_stac_item(f) for f in returned], extra_fields=extra_properties
     )
 
     if there_are_more:
@@ -394,7 +390,7 @@ def search_stac_items(
             # Otherwise, let the route create the next url.
             next_link = dict(rel="next", href=get_next_url(offset + limit))
 
-        result["links"].append(next_link)
+        result.extra_fields["links"].append(next_link)
 
     return result
 
@@ -405,11 +401,16 @@ def collections():
     This is like the root "/", but has full information for each collection in
      an array (instead of just a link to each collection).
     """
-    return _stac_response(
+    return _utils.as_json(
         dict(
-            links=[],
+            links=[
+                dict(rel="self", type="application/json", href=request.url),
+                dict(rel="root", type="application/json", href=url_for(".root")),
+                dict(rel="parent", type="application/json", href=url_for(".root")),
+            ],
             collections=[
-                _with_stac_properties(_stac_collection(product.name))
+                # TODO: This has a root link, right?
+                _stac_collection(product.name).to_dict()
                 for product, product_summary in _model.get_products_with_summaries()
             ],
         )
@@ -421,29 +422,26 @@ def arrivals():
     """
     Virtual collection of the items most recently indexed into this index
     """
-    return _stac_response(
-        dict(
-            id="Arrivals",
-            title="Dataset Arrivals",
-            type="Collection",
-            license="various",
-            description="The most recently added Items to this index",
-            properties={},
-            providers=[],
-            # Covers all products, so all possible extent. We *could* be smart and show the whole
-            # server's extent range, but that wouldn't be too useful either. ?
-            extent=dict(
-                temporal=dict(interval=[[None, None]]),
-                spatial=dict(bbox=[[-180.0, -90.0, 180.0, 90.0]]),
-            ),
-            links=[
-                dict(
-                    rel="items",
-                    href=url_for(".arrivals_items"),
-                )
-            ],
+    c = Collection(
+        id="arrivals",
+        title="Dataset Arrivals",
+        license="various",
+        description="The most recently added Items to this index",
+        # # Covers all products, so all possible extent. We *could* be smart and show the whole
+        # # server's extent range, but that wouldn't be too useful either. ?
+        extent=pystac.Extent(
+            temporal=pystac.TemporalExtent(intervals=[[None, None]]),
+            spatial=pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]]),
+        ),
+    )
+
+    c.links.append(
+        Link(
+            rel="items",
+            target=url_for(".arrivals_items"),
         )
     )
+    return _stac_response(c)
 
 
 @bp.route("/arrivals/items")
@@ -489,7 +487,7 @@ def collection(collection: str):
     return _stac_response(_stac_collection(collection))
 
 
-def _stac_collection(collection: str):
+def _stac_collection(collection: str) -> Collection:
     summary = _model.get_product_summary(collection)
     try:
         dataset_type = _model.STORE.get_dataset_type(collection)
@@ -502,31 +500,34 @@ def _stac_collection(collection: str):
         (summary.time_earliest, summary.time_latest) if summary else (None, None)
     )
     footprint = all_time_summary.footprint_wgs84
-    stac_collection = dict(
+    stac_collection = Collection(
         id=summary.name,
         title=summary.name,
-        type="Collection",
         license=_utils.product_license(dataset_type),
         description=dataset_type.definition.get("description"),
-        properties=dict(_build_properties(dataset_type.metadata)),
+        # ? properties=dict(_build_properties(dataset_type.metadata)),
         providers=[],
-        extent=dict(
-            temporal=dict(
-                interval=[
+        extent=Extent(
+            pystac.SpatialExtent(
+                bboxes=[footprint.bounds if footprint else [-180.0, -90.0, 180.0, 90.0]]
+            ),
+            temporal=pystac.TemporalExtent(
+                intervals=[
                     [
                         utc(begin) if begin else None,
                         utc(end) if end else None,
                     ]
                 ]
             ),
-            spatial=dict(
-                bbox=[footprint.bounds if footprint else [-180.0, -90.0, 180.0, 90.0]]
-            ),
         ),
-        links=[
-            dict(
+    )
+    stac_collection.set_root(root_catalog())
+
+    if all_time_summary.timeline_dataset_counts:
+        stac_collection.links.extend(
+            Link(
                 rel="child",
-                href=url_for(
+                target=url_for(
                     ".collection_month",
                     collection=collection,
                     year=date.year,
@@ -535,8 +536,7 @@ def _stac_collection(collection: str):
             )
             for date, count in all_time_summary.timeline_dataset_counts.items()
             if count > 0
-        ],
-    )
+        )
     return stac_collection
 
 
@@ -573,7 +573,7 @@ def collection_month(collection: str, year: int, month: int):
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    optional_links = []
+    optional_links: List[Link] = []
     if there_are_more:
         next_url = url_for(
             ".collection_month",
@@ -582,35 +582,40 @@ def collection_month(collection: str, year: int, month: int):
             month=month,
             _o=offset + limit,
         )
-        optional_links.append(dict(rel="next", href=next_url))
+        optional_links.append(Link(rel="next", target=next_url))
 
-    return _stac_response(
-        dict(
-            **stac_endpoint_information(),
-            type="Catalog",
-            links=[
-                dict(rel="self", href=request.url),
-                dict(rel="root", href=url_for(".root")),
-                # dict(rel='parent', href= catalog?,
-                # Each item.
-                *(
-                    dict(
-                        title=_utils.dataset_label(item_summary.odc_dataset),
-                        rel="item",
-                        href=url_for(
-                            ".item",
-                            collection=item_summary.product_name,
-                            dataset_id=item_summary.dataset_id,
-                        ),
-                    )
-                    for item_summary in items
-                ),
-                *optional_links,
-            ],
-            numberReturned=len(returned),
-            numberMatched=all_time_summary.dataset_count,
-        )
+    date = datetime(year, month, 1).date()
+    c = Catalog(
+        f"{collection}-{year}-{month}",
+        description=f'{collection} for {date.strftime("%B %Y")}',
     )
+
+    c.links.extend(
+        [
+            Link(rel="self", target=request.url),
+            # dict(rel='parent', href= catalog?,
+            # Each item.
+            *(
+                Link(
+                    title=_utils.dataset_label(item_summary.odc_dataset),
+                    rel="item",
+                    target=url_for(
+                        ".item",
+                        collection=item_summary.product_name,
+                        dataset_id=item_summary.dataset_id,
+                    ),
+                )
+                for item_summary in items
+            ),
+            *optional_links,
+        ]
+    )
+
+    # ????
+    c.extra_fields["numberReturned"] = len(returned)
+    c.extra_fields["numberMatched"] = all_time_summary.dataset_count
+
+    return _stac_response(c)
 
 
 @bp.route("/collections/<collection>/items/<uuid:dataset_id>")
@@ -713,7 +718,7 @@ def _band_to_measurement(band: Dict, dataset_location: str) -> MeasurementDoc:
     )
 
 
-def as_stac_item(dataset: DatasetItem):
+def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     """
     Get a dict corresponding to a stac item
     """
@@ -783,7 +788,7 @@ def as_stac_item(dataset: DatasetItem):
     if dataset_doc.label is None and ds is not None:
         dataset_doc.label = _utils.dataset_label(ds)
 
-    item_doc = eo3stac.to_stac_item(
+    item = eo3stac.to_pystac_item(
         dataset=dataset_doc,
         stac_item_destination_url=url_for(
             ".item",
@@ -793,12 +798,13 @@ def as_stac_item(dataset: DatasetItem):
         odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
         explorer_base_url=url_for("default_redirect"),
     )
+
     # Add the region code that Explorer inferred.
     # (Explorer's region codes predate ODC's and support
     #  many more products.
-    item_doc["properties"]["cubedash:region_code"] = dataset.region_code
+    item.properties["cubedash:region_code"] = dataset.region_code
 
-    return item_doc
+    return item
 
 
 def _accessories_from_eo1(metadata_doc: Dict) -> Dict[str, AccessoryDoc]:
