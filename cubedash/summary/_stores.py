@@ -554,8 +554,8 @@ class SummaryStore:
         insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
             select srid_groups.dataset_type_ref,
                    coalesce(srid_groups.region_code, '')                          as region_code,
-                   ST_SimplifyPreserveTopology(
-                           ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
+                   ST_ShiftLongitude(ST_SimplifyPreserveTopology(
+                           ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.1)) as footprint,
                    sum(srid_groups.count)                                         as count
             from srid_groups
             group by srid_groups.dataset_type_ref, srid_groups.region_code
@@ -752,7 +752,7 @@ class SummaryStore:
     ) -> Optional[TimePeriodOverview]:
         period, start_day = TimePeriodOverview.flat_period_representation(
             year, month, day
-        )
+        ) 
         if year and month and day:
             # We don't store days, they're quick.
             return self._summariser.calculate_summary(
@@ -760,7 +760,7 @@ class SummaryStore:
                 year_month_day=(year, month, day),
                 product_refresh_time=datetime.now(),
             )
-
+            
         product = self.get_product_summary(product_name)
         if not product:
             return None
@@ -1236,7 +1236,7 @@ class SummaryStore:
         Returned results are always sorted by (center_time, id)
         """
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
-
+        
         columns = [
             geom.label("geometry"),
             func.Box2D(geom).cast(String).label("bbox"),
@@ -1308,7 +1308,7 @@ class SummaryStore:
                     else None
                 ),
             )
-
+        
     def _recalculate_period(
         self,
         product: ProductSummary,
@@ -1726,7 +1726,7 @@ def _summary_from_row(res, product_name):
     year, month, day = TimePeriodOverview.from_flat_period_representation(
         period_type, res["start_day"]
     )
-
+    
     return TimePeriodOverview(
         product_name=product_name,
         year=year,

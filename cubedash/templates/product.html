@@ -12,7 +12,7 @@
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
     <div class="panels">
-        <div class="map-panel relative">
+      <div class="map-panel relative">
             {% if not selected_summary.footprint_count %}
                 <div id="msg-no-results" class="message-box">
                     {% if selected_summary %}
@@ -32,7 +32,7 @@
                 </div>
                 <div class="panel odd info-panel">
                     {% if have_displayable_data %}
-                        <div>
+                        <div style="display:none">
                             {# Show regions if available, otherwise a plain footprint #}
                             {% if product_region_info %}
                                 <label>
@@ -53,6 +53,7 @@
                                    {% if not show_individual_datasets %}title="Too many datasets to display individually"{% endif %}>
                             <input type="radio"
                                    name="map_display_view"
+                                   checked="checked"
                                    value="datasets"
                                    {% if not show_individual_datasets %}disabled="disabled"{% endif %}
                                    title="Show individual datasets">Datasets</label>

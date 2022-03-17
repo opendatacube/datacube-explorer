@@ -281,6 +281,9 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
     var layers = [];
     var activeLayer = null;
     if (hasDisplayableData) {
+        if (showIndividualDatasets) {
+            layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(routes)));
+        }
         var footprint = new DataLayer('footprint', routes.geojsonFootprintURL, new FootprintLayer(footprintData, !regionData), footprintData);
         if (regionData) {
             layers.push(new DataLayer('regions', routes.geojsonRegionsURL, new RegionsLayer(regionData, routes), regionData, [footprint]));
@@ -289,9 +292,6 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
             layers.push(footprint);
         }
         activeLayer = layers[0];
-        if (showIndividualDatasets) {
-            layers.push(new DataLayer('datasets', routes.geojsonDatasetsURL, new DatasetsLayer(routes)));
-        }
     }
     return new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
 }
