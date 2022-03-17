@@ -8942,7 +8942,6 @@
 
   	case 'Polygon':
   	case 'MultiPolygon':
-      // Check
   		latlngs = coordsToLatLngs(coords, geometry.type === 'Polygon' ? 1 : 2, _coordsToLatLng);
   		return new Polygon(latlngs, options);
 
