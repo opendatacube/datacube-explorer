@@ -12,7 +12,7 @@
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
 
     <div class="panels">
-        <div class="map-panel relative">
+        <div class="map-panel relative ">
             {% if not selected_summary.footprint_count %}
                 <div id="msg-no-results" class="message-box">
                     {% if selected_summary %}
@@ -42,7 +42,7 @@
                                            {% if regions_geojson %}checked="checked"{% endif %}
                                            title="Show regions">{{ product_region_info.units_label }}</label>
                             {% else %}
-                                <label>
+                                <label style="display:none;">
                                     <input type="radio"
                                            name="map_display_view"
                                            value="footprint"

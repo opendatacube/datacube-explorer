@@ -1619,7 +1619,26 @@ class SummaryStore:
     @ttl_cache(ttl=DEFAULT_TTL)
     def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
         dt = self.get_dataset_type(product_name)
-        return {
+        
+        result = self._engine.execute(
+                select(
+                    [
+                        REGION.c.region_code,
+                        REGION.c.count,
+                        REGION.c.generation_time,
+                        REGION.c.footprint,
+                    ]
+                )
+                .where(REGION.c.dataset_type_ref == dt.id)
+                .order_by(REGION.c.region_code))
+        
+        # Here we could do a spatial query to get footprint ourselves...
+        
+        landsat = result.first()
+        
+        geom = landsat[3]
+    
+        output = {
             code: RegionSummary(
                 product_name=product_name,
                 region_code=code,
@@ -1641,6 +1660,8 @@ class SummaryStore:
             )
             if geom is not None
         }
+
+        return output
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         return RegionInfo.for_product(
