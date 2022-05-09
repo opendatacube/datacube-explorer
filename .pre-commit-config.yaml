@@ -2,12 +2,12 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 0.8.0
+    rev: 0.9.5
     hooks:
     - id: shed
   # Python Linting
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 4.0.1
     hooks:
       - id: flake8
         additional_dependencies:
@@ -24,6 +24,7 @@ repos:
           - flake8-pytest # Use plain assert, not unittest assertions
           - flake8-rst-docstrings # docstring should be valid ReST
           - pep8-naming # Follow pep8 naming rules (eg. function names lowercase)
+        args: ['--extend-ignore=B019,E203']
   # Lint Python snippets embedded in Markdown (using flake8)
   - repo: https://github.com/johnfraney/flake8-markdown
     rev: v0.3.0
@@ -31,7 +32,7 @@ repos:
       - id: flake8-markdown
   # Lint Jinja2 templates
   - repo: https://github.com/thibaudcolas/curlylint
-    rev: "v0.13.0"
+    rev: "v0.13.1"
     hooks:
     - id: curlylint
   # Lint Yaml files
