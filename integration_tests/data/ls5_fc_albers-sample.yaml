@@ -1,0 +1,374 @@
+---
+# EO1 Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/5da416a9-faed-4600-880d-033d0b0f7b85.odc-metadata.yaml
+id: 5da416a9-faed-4600-880d-033d0b0f7b85
+product_type: fractional_cover
+creation_dt: '2017-10-25T07:15:57.470495'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -31.792334953247007
+      lon: 151.2552636376507
+    lr:
+      lat: -31.6545399563168
+      lon: 152.30753184773917
+    ul:
+      lat: -30.909271159403843
+      lon: 151.09655969948412
+    ur:
+      lat: -30.772734590331588
+      lon: 152.14043770910143
+  to_dt: '2010-12-31T23:33:13.500000'
+  from_dt: '2010-12-31T23:33:13.500000'
+  center_dt: '2010-12-31T23:33:13.500000'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 1800000.0
+          - -3600000.0
+        - - 1800000.0
+          - -3546606.277355145
+        - - 1802854.547312176
+          - -3539533.1304883114
+        - - 1810927.62118441
+          - -3519534.5198194203
+        - - 1818857.361899124
+          - -3500000.0
+        - - 1844816.2038862118
+          - -3500000.0
+        - - 1900000.0
+          - -3518949.4697534954
+        - - 1900000.0
+          - -3600000.0
+        - - 1800000.0
+          - -3600000.0
+    geo_ref_points:
+      ll:
+        x: 1800000.0
+        y: -3600000.0
+      lr:
+        x: 1900000.0
+        y: -3600000.0
+      ul:
+        x: 1800000.0
+        y: -3500000.0
+      ur:
+        x: 1900000.0
+        y: -3500000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS5_TM_FC_3577_18_-36_20101231233313_BS.tif
+    PV:
+      path: LS5_TM_FC_3577_18_-36_20101231233313_PV.tif
+    UE:
+      path: LS5_TM_FC_3577_18_-36_20101231233313_UE.tif
+    NPV:
+      path: LS5_TM_FC_3577_18_-36_20101231233313_NPV.tif
+lineage:
+  source_datasets: {}
+location: s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls5/x_18/y_-36/2010/12/31/LS5_TM_FC_3577_18_-36_20101231233313.yaml
+...
+---
+# EO1 Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/c9ca9d2c-f6c5-453b-932f-8209fd7616f4.odc-metadata.yaml
+id: c9ca9d2c-f6c5-453b-932f-8209fd7616f4
+product_type: fractional_cover
+creation_dt: '2017-10-25T06:59:58.997348'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -33.69428173849478
+      lon: 150.5084340261626
+    lr:
+      lat: -33.68096829805456
+      lon: 150.61855338017006
+    ul:
+      lat: -33.6632779849886
+      lon: 150.50296025166455
+    ur:
+      lat: -33.64996925366232
+      lon: 150.61304796269766
+  to_dt: '2010-12-31T23:34:01.500000'
+  from_dt: '2010-12-31T23:34:01.500000'
+  center_dt: '2010-12-31T23:34:01.500000'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 1700000.0
+          - -3800000.0
+        - - 1700000.0
+          - -3796504.212228239
+        - - 1710258.6797728932
+          - -3800000.0
+        - - 1700000.0
+          - -3800000.0
+    geo_ref_points:
+      ll:
+        x: 1700000.0
+        y: -3800000.0
+      lr:
+        x: 1800000.0
+        y: -3800000.0
+      ul:
+        x: 1700000.0
+        y: -3700000.0
+      ur:
+        x: 1800000.0
+        y: -3700000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS5_TM_FC_3577_17_-38_20101231233401_BS.tif
+    PV:
+      path: LS5_TM_FC_3577_17_-38_20101231233401_PV.tif
+    UE:
+      path: LS5_TM_FC_3577_17_-38_20101231233401_UE.tif
+    NPV:
+      path: LS5_TM_FC_3577_17_-38_20101231233401_NPV.tif
+lineage:
+  source_datasets: {}
+location: s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls5/x_17/y_-38/2010/12/31/LS5_TM_FC_3577_17_-38_20101231233401.yaml
+...
+---
+# EO1 Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/fae1e582-85a8-49aa-b01f-a75326a3490a.odc-metadata.yaml
+id: fae1e582-85a8-49aa-b01f-a75326a3490a
+product_type: fractional_cover
+creation_dt: '2017-10-25T07:02:54.458365'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -42.24267040501726
+      lon: 147.73147795344119
+    lr:
+      lat: -42.16196220392461
+      lon: 148.54155754131943
+    ul:
+      lat: -41.326898848566344
+      lon: 147.58795724425258
+    ur:
+      lat: -41.247316000551145
+      lon: 148.3908059111785
+  to_dt: '2010-12-31T23:36:01'
+  from_dt: '2010-12-31T23:36:01'
+  center_dt: '2010-12-31T23:36:01'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 1400000.0
+          - -4700000.0
+        - - 1330722.61986387
+          - -4700000.0
+        - - 1348951.9976831903
+          - -4656243.236127858
+        - - 1372281.5173885094
+          - -4600000.0
+        - - 1400000.0
+          - -4600000.0
+        - - 1400000.0
+          - -4700000.0
+    geo_ref_points:
+      ll:
+        x: 1300000.0
+        y: -4700000.0
+      lr:
+        x: 1400000.0
+        y: -4700000.0
+      ul:
+        x: 1300000.0
+        y: -4600000.0
+      ur:
+        x: 1400000.0
+        y: -4600000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS5_TM_FC_3577_13_-47_20101231233601_BS.tif
+    PV:
+      path: LS5_TM_FC_3577_13_-47_20101231233601_PV.tif
+    UE:
+      path: LS5_TM_FC_3577_13_-47_20101231233601_UE.tif
+    NPV:
+      path: LS5_TM_FC_3577_13_-47_20101231233601_NPV.tif
+lineage:
+  source_datasets: {}
+location: s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls5/x_13/y_-47/2010/12/31/LS5_TM_FC_3577_13_-47_20101231233601.yaml
+...
+---
+# EO1 Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/da91169c-f54b-4d0f-aa59-1a82ea19ab93.odc-metadata.yaml
+id: da91169c-f54b-4d0f-aa59-1a82ea19ab93
+product_type: fractional_cover
+creation_dt: '2017-10-25T09:07:31.950408'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -22.579731933030622
+      lon: 139.85449735713544
+    lr:
+      lat: -22.521320077027717
+      lon: 140.8333562455955
+    ul:
+      lat: -22.076476530674995
+      lon: 139.82069172715194
+    ur:
+      lat: -22.018269855104286
+      lon: 140.79536284662865
+  to_dt: '2010-12-31T00:26:02.500000'
+  from_dt: '2010-12-31T00:26:02.500000'
+  center_dt: '2010-12-31T00:26:02.500000'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 800000.0
+          - -2433395.0716199055
+        - - 800000.0
+          - -2400000.0
+        - - 900000.0
+          - -2400000.0
+        - - 900000.0
+          - -2456317.1777320346
+        - - 800000.0
+          - -2433395.0716199055
+    geo_ref_points:
+      ll:
+        x: 800000.0
+        y: -2500000.0
+      lr:
+        x: 900000.0
+        y: -2500000.0
+      ul:
+        x: 800000.0
+        y: -2400000.0
+      ur:
+        x: 900000.0
+        y: -2400000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS5_TM_FC_3577_8_-25_20101231002602_BS.tif
+    PV:
+      path: LS5_TM_FC_3577_8_-25_20101231002602_PV.tif
+    UE:
+      path: LS5_TM_FC_3577_8_-25_20101231002602_UE.tif
+    NPV:
+      path: LS5_TM_FC_3577_8_-25_20101231002602_NPV.tif
+lineage:
+  source_datasets: {}
+location: s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls5/x_8/y_-25/2010/12/31/LS5_TM_FC_3577_8_-25_20101231002602.yaml
+...
+---
+# EO1 Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/72a2f859-574c-4cac-8132-611de083f474.odc-metadata.yaml
+id: 72a2f859-574c-4cac-8132-611de083f474
+product_type: fractional_cover
+creation_dt: '2017-10-25T08:33:15.915897'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -27.423490614002514
+      lon: 140.19651757600374
+    lr:
+      lat: -27.398463937262452
+      lon: 140.6322848603143
+    ul:
+      lat: -26.717913061750945
+      lon: 140.1447829889888
+    ur:
+      lat: -26.693039977557262
+      lon: 140.57781599042292
+  to_dt: '2010-12-31T00:27:38.500000'
+  from_dt: '2010-12-31T00:27:38.500000'
+  center_dt: '2010-12-31T00:27:38.500000'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 800000.0
+          - -3000000.0
+        - - 800000.0
+          - -2920688.7477281676
+        - - 838795.6076291848
+          - -2929520.9522248716
+        - - 840967.9355012162
+          - -2930030.817577745
+        - - 842658.3959025372
+          - -2930882.9918161146
+        - - 842476.9196627961
+          - -2933457.0849773507
+        - - 823798.915626894
+          - -3000000.0
+        - - 800000.0
+          - -3000000.0
+    geo_ref_points:
+      ll:
+        x: 800000.0
+        y: -3000000.0
+      lr:
+        x: 900000.0
+        y: -3000000.0
+      ul:
+        x: 800000.0
+        y: -2900000.0
+      ur:
+        x: 900000.0
+        y: -2900000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    BS:
+      path: LS5_TM_FC_3577_8_-30_20101231002738_BS.tif
+    PV:
+      path: LS5_TM_FC_3577_8_-30_20101231002738_PV.tif
+    UE:
+      path: LS5_TM_FC_3577_8_-30_20101231002738_UE.tif
+    NPV:
+      path: LS5_TM_FC_3577_8_-30_20101231002738_NPV.tif
+lineage:
+  source_datasets: {}
+location: s3://dea-public-data-dev/fractional-cover/fc/v2.2.1/ls5/x_8/y_-30/2010/12/31/LS5_TM_FC_3577_8_-30_20101231002738.yaml
+...
