@@ -1,0 +1,37 @@
+name: wofs_summary
+description: Water Observations from Space Statistics
+metadata_type: eo
+
+metadata:
+  product_type: wofs_statistical_summary
+  format:
+    name: 'NetCDF'
+  instrument:
+    name: 'TM,ETM+,OLI'
+  platform:
+    code: 'LANDSAT_5,LANDSAT_7,LANDSAT_8'
+measurements:
+  - name: count_wet
+    dtype: int16
+    nodata: -1
+    units: '1'
+  - name: count_clear
+    dtype: int16
+    nodata: -1
+    units: '1'
+  - name: frequency
+    dtype: float32
+    nodata: -1
+    units: '1'
+storage:
+  crs: EPSG:3577
+  dimension_order:
+  - time
+  - y
+  - x
+  resolution:
+    x: 25
+    y: -25
+  tile_size:
+    x: 100000.0
+    y: 100000.0

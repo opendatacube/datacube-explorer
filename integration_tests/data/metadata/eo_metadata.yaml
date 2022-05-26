@@ -1,0 +1,128 @@
+---
+# Metadata Type
+# url: https://explorer-aws.dea.ga.gov.au/metadata-types/eo.odc-type.yaml
+name: eo
+description: "Earth Observation datasets.\n\nExpected metadata structure produced\
+  \ by the eodatasets library, as used internally at GA.\n\nhttps://github.com/GeoscienceAustralia/eo-datasets\n"
+dataset:
+  id:
+  - id
+  label:
+  - ga_label
+  format:
+  - format
+  - name
+  sources:
+  - lineage
+  - source_datasets
+  creation_dt:
+  - creation_dt
+  grid_spatial:
+  - grid_spatial
+  - projection
+  measurements:
+  - image
+  - bands
+  search_fields:
+    lat:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      min_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      description: Latitude range
+    lon:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      min_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      description: Longitude range
+    time:
+      type: datetime-range
+      max_offset:
+      - - extent
+        - to_dt
+      - - extent
+        - center_dt
+      min_offset:
+      - - extent
+        - from_dt
+      - - extent
+        - center_dt
+      description: Acquisition time
+    platform:
+      offset:
+      - platform
+      - code
+      description: Platform code
+    instrument:
+      offset:
+      - instrument
+      - name
+      description: Instrument name
+    product_type:
+      offset:
+      - product_type
+      description: Product code
+...

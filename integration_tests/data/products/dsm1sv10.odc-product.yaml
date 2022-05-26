@@ -1,0 +1,29 @@
+---
+# Product
+# url: https://explorer-nci.dea.ga.gov.au/products/dsm1sv10.odc-product.yaml
+name: dsm1sv10
+metadata_type: eo
+description: DSM 1sec Version 1.0
+metadata:
+  product_type: DEM
+  platform:
+    code: SRTM
+  instrument:
+    name: SIR
+  format:
+    name: GeoTIFF
+measurements:
+- name: elevation
+  dtype: float32
+  units: metre
+  nodata: NaN
+storage:
+  crs: EPSG:4326
+  resolution:
+    latitude: -0.00027777777778
+    longitude: 0.00027777777778
+  dimension_order:
+  - time
+  - latitude
+  - longitude
+...

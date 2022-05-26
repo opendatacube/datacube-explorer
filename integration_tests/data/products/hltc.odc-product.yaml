@@ -1,0 +1,159 @@
+---
+name: high_tide_comp_20p
+description: High Tide 20 percentage composites for entire coastline
+metadata_type: eo
+
+managed: true
+metadata:
+    format:
+        name: NetCDF
+    product_type: tidal_composite
+    statistic:
+        name: precisegeomedian
+        source: nbar
+        tidal_range:
+            name: high
+            min: 80
+            max: 100
+
+measurements:
+    - name: blue
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: green
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: red
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: nir
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: swir1
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: swir2
+      dtype: float32
+      nodata: -999
+      units: '1'
+
+storage:
+    crs: EPSG:3577
+    resolution:
+        x: 25
+        y: -25
+
+---
+name: high_tide_comp_count
+description: High Tide 20 percentage pixel count
+metadata_type: eo
+managed: true
+
+metadata:
+    format:
+        name: NetCDF
+    product_type: tidal_composite
+    statistic:
+        name: clearcount
+        source: pq
+        tidal_range:
+            name: high
+            min: 80
+            max: 100
+
+measurements:
+    - name: count_observations
+      dtype: int16
+      nodata: 0
+      units: '1'
+
+storage:
+    crs: EPSG:3577
+    resolution:
+        x: 25
+        y: -25
+
+---
+name: low_tide_comp_20p
+description: Low Tide 20 percentage composites for entire coastline
+metadata_type: eo
+managed: true
+
+metadata:
+    format:
+        name: NetCDF
+    product_type: tidal_composite
+    statistic:
+        name: precisegeomedian
+        source: nbar
+        tidal_range:
+            name: low
+            min: 0
+            max: 20
+
+measurements:
+    - name: blue
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: green
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: red
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: nir
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: swir1
+      dtype: float32
+      nodata: -999
+      units: '1'
+    - name: swir2
+      dtype: float32
+      nodata: -999
+      units: '1'
+
+storage:
+    crs: EPSG:3577
+    resolution:
+        x: 25
+        y: -25
+
+---
+name: low_tide_comp_count
+description: Low Tide 20 percentage pixel count
+metadata_type: eo
+managed: true
+
+metadata:
+    format:
+        name: NetCDF
+    product_type: tidal_composite
+    statistic:
+        name: clearcount
+        source: pq
+        tidal_range:
+            name: low
+            min: 0
+            max: 20
+
+measurements:
+    - dtype: int16
+      name: count_observations
+      nodata: 0
+      units: '1'
+
+storage:
+    crs: EPSG:3577
+    resolution:
+        x: 25
+        y: -25

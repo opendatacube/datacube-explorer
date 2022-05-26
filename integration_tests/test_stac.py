@@ -1078,6 +1078,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
         ),
     ],
 )
+
 def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
     resp: Response = stac_client.get(url, follow_redirects=False)
     assert resp.location == stac_url(redirect_to_url), (

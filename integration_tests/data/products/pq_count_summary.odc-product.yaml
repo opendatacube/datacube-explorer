@@ -1,0 +1,37 @@
+name: pq_count_summary
+description: Pixel Quality Statistics 25m
+
+metadata_type: eo
+
+metadata:
+  product_type: pq_count
+  statistics:
+    period: '*'
+  format:
+    name: NetCDF
+
+storage:
+  driver: NetCDF CF
+  crs: EPSG:3577
+  tile_size:
+    x: 100000.0
+    y: 100000.0
+  resolution:
+    x: 25
+    y: -25
+  chunking:
+    x: 200
+    y: 200
+    time: 1
+  dimension_order: [time, y, x]
+
+measurements:
+  - name: clear_observation_count
+    dtype: int16
+    nodata: -1
+    units: '1'
+
+  - name: total_observation_count
+    dtype: int16
+    nodata: -1
+    units: '1'

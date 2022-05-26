@@ -1,0 +1,151 @@
+---
+name: eo3_landsat_l1
+description: EO3 for Level 1 Landsat, GA Collection 3
+dataset:
+  id: [id]  # No longer configurable in newer ODCs.
+  sources: [lineage, source_datasets]  # No longer configurable in newer ODCs.
+
+  grid_spatial: [grid_spatial, projection]
+  measurements: [measurements]
+  creation_dt: [properties, 'odc:processing_datetime']
+  label: [label]
+  format: [properties, 'odc:file_format']
+
+  search_fields:
+    platform:
+      description: Platform code
+      offset: [properties, 'eo:platform']
+      indexed: false
+
+    instrument:
+      description: Instrument name
+      offset: [properties, 'eo:instrument']
+      indexed: false
+
+    product_family:
+      description: Product family code
+      offset: [properties, 'odc:product_family']
+      indexed: false
+
+    region_code:
+      description: >
+        Spatial reference code from the provider.
+        For Landsat region_code is a scene path row:
+                '{:03d}{:03d}.format(path,row)'.
+        For Sentinel it is MGRS code.
+        In general it is a unique string identifier that datasets
+        covering roughly the same spatial region share.
+
+      offset: [properties, 'odc:region_code']
+
+    crs_raw:
+      description: The raw CRS string as it appears in metadata
+      offset: ['crs']
+      indexed: false
+
+    cloud_cover:
+      description: |
+        The proportion (from 0 to 100) of the dataset's valid data area that contains cloud pixels.
+      type: double
+      offset: [properties, 'eo:cloud_cover']
+
+    time:
+      description: Acquisition time range
+      type: datetime-range
+      min_offset:
+        - [properties, 'dtr:start_datetime']
+        - [properties, datetime]
+      max_offset:
+        - [properties, 'dtr:end_datetime']
+        - [properties, datetime]
+
+    # LonLat bounding box, generated on the fly from:
+    #  `grids`, `crs` and `geometry` of the new metadata format
+    #
+    # Bounding box is defined by two ranges:
+    #   [lon.begin, lon.end] -- Longitude
+    #   [lat.begin, lat.end] -- Latitude
+    #
+    # Note that STAC is using `bbox` for the same thing as following:
+    #
+    #     bbox: [left, bottom, right, top]
+    #              0      1      2     3
+    #             lon    lat    lon   lat
+    #
+    # But MetadataType does not support integer index keys, so...
+    #   BoundingBox: [lon.begin, lat.begin, lon.end, lat.end]
+
+    lon:
+      description: Longitude range
+      type: double-range
+      min_offset:
+        - [extent, lon, begin]
+      max_offset:
+        - [extent, lon, end]
+
+    lat:
+      description: Latitude range
+      type: double-range
+      min_offset:
+        - [extent, lat, begin]
+      max_offset:
+        - [extent, lat, end]
+
+    # semi-auto generated below
+    eo_gsd:
+      # The nominal distance between pixel centers available, in meters.
+      description: |
+        Ground sampling distance of the sensor’s best resolution band
+        in metres; represents the size (or spatial resolution) of one pixel.
+      indexed: false
+      offset:
+        - properties
+        - eo:gsd
+      type: double
+    eo_sun_azimuth:
+      description: |
+        The azimuth angle of the sun at the moment of acquisition, in degree units measured clockwise from due north
+      indexed: false
+      offset:
+        - properties
+        - eo:sun_azimuth
+      type: double
+    eo_sun_elevation:
+      description: |
+        The elevation angle of the sun at the moment of acquisition, in degree units relative to the horizon.
+      indexed: false
+      offset:
+        - properties
+        - eo:sun_elevation
+      type: double
+
+    # Level 1 fields
+    landsat_product_id:
+      description: |
+        A Landsat Collection 1 Level-1 product identifier including the
+        Collection processing levels, processing date, collection number, and
+        collection tier category
+
+        (e.g. ‘LE07_L1TP_098084_20210307_20210308_02_RT’)
+      indexed: false
+      offset:
+        - properties
+        - landsat:landsat_product_id
+
+    landsat_scene_id:
+      description: |
+        A Landsat scene ID including WRS path and row, year and day,
+        ground station identifier and archive version number
+
+        (e.g. ‘LC80900852021066LGN00’)
+      indexed: false
+      offset:
+        - properties
+        - landsat:landsat_scene_id
+
+    landsat_data_type:
+      description: "Landsat Data Type (eg. 'L1T')"
+      indexed: false
+      offset:
+        - properties
+        - landsat:data_type

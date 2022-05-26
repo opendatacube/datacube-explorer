@@ -1,0 +1,124 @@
+name: gqa_eo
+description: Minimal eo metadata for products with GQA.
+dataset:
+    id: ['id']
+    creation_dt: ['system_information', 'time_processed']
+    label: ['ga_label']
+    measurements: ['image', 'bands']
+    grid_spatial: ['grid_spatial', 'projection']
+    format: ['format', 'name']
+    sources: ['lineage', 'source_datasets']
+
+    search_fields:
+        region_code:
+            description: Spatial reference code from the provider
+            offset: [provider, reference_code]
+
+        platform:
+            description: Platform code
+            offset: [platform, code]
+            indexed: false
+
+        instrument:
+            description: Instrument name
+            offset: [instrument, name]
+            indexed: false
+
+        product_type:
+            description: Product code
+            offset: [product_type]
+
+        format:
+            description: File format (GeoTIFF, NetCDF)
+            offset: [format, name]
+            indexed: false
+
+        lat:
+            description: Latitude range
+            type: double-range
+            max_offset:
+            - [extent, coord, ur, lat]
+            - [extent, coord, lr, lat]
+            - [extent, coord, ul, lat]
+            - [extent, coord, ll, lat]
+            min_offset:
+            - [extent, coord, ur, lat]
+            - [extent, coord, lr, lat]
+            - [extent, coord, ul, lat]
+            - [extent, coord, ll, lat]
+
+        lon:
+            description: Longitude range
+            type: double-range
+            max_offset:
+            - [extent, coord, ul, lon]
+            - [extent, coord, ur, lon]
+            - [extent, coord, ll, lon]
+            - [extent, coord, lr, lon]
+            min_offset:
+            - [extent, coord, ul, lon]
+            - [extent, coord, ur, lon]
+            - [extent, coord, ll, lon]
+            - [extent, coord, lr, lon]
+
+        time:
+            description: Acquisition time
+            type: datetime-range
+            min_offset:
+            - [extent, from_dt]
+            max_offset:
+            - [extent, to_dt]
+
+        gqa:
+            description: GQA Circular error probable (90%)
+            type: double
+            offset: [gqa, cep90]
+            indexed: false
+        gqa_error_message:
+            description: GQA Error Message
+            offset: [gqa, error_message]
+            indexed: false
+        gqa_final_gcp_count:
+            description: GQA GCP Count
+            offset: [gqa, final_gcp_count]
+            type: integer
+            indexed: false
+        gqa_ref_source:
+            description: GQA reference imagery collection name
+            offset: [gqa, ref_source]
+            indexed: false
+        gqa_cep90:
+            description: Circular error probable (90%) of the values of the GCP residuals
+            offset: [gqa, residual, cep90]
+            type: double
+            indexed: false
+        gqa_abs_xy:
+            description: Absolute value of the total GCP residual
+            offset: [gqa, residual, abs, xy]
+            type: double
+            indexed: false
+        gqa_abs_iterative_mean_xy:
+            description: Mean of the absolute values of the GCP residuals after removal of outliers
+            offset: [gqa, residual, abs_iterative_mean, xy]
+            type: double
+            indexed: false
+        gqa_iterative_mean_xy:
+            description: Mean of the values of the GCP residuals after removal of outliers
+            offset: [gqa, residual, iterative_mean, xy]
+            type: double
+            indexed: false
+        gqa_iterative_stddev_xy:
+            description: Standard Deviation of the values of the GCP residuals after removal of outliers
+            offset: [gqa, residual, iterative_stddev, xy]
+            type: double
+            indexed: false
+        gqa_mean_xy:
+            description: Mean of the values of the GCP residuals
+            offset: [gqa, residual, mean, xy]
+            type: double
+            indexed: false
+        gqa_stddev_xy:
+            description: Standard Deviation of the values of the GCP residuals
+            offset: [gqa, residual, stddev, xy]
+            type: double
+            indexed: false

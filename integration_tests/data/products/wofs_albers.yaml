@@ -1,0 +1,95 @@
+---
+description: 'Historic Flood Mapping Water Observations from Space'
+managed: true
+measurements:
+  - dtype: int16
+    flags_definition:
+      cloud:
+        bits: 6
+        description: Cloudy
+        values:
+          0: false
+          1: true
+      cloud_shadow:
+        bits: 5
+        description: 'Cloud shadow'
+        values:
+          0: false
+          1: true
+      dry:
+        bits:
+          - 7
+          - 6
+          - 5
+          - 4
+          - 3
+          - 1
+          - 0
+        description: 'No water detected'
+        values:
+          0: true
+      high_slope:
+        bits: 4
+        description: 'High slope'
+        values:
+          0: false
+          1: true
+      nodata:
+        bits: 0
+        description: 'No data'
+        values:
+          1: true
+      noncontiguous:
+        bits: 1
+        description: 'At least one EO band is missing over over/undersaturated'
+        values:
+          0: false
+          1: true
+      sea:
+        bits: 2
+        description: Sea
+        values:
+          0: false
+          1: true
+      terrain_or_low_angle:
+        bits: 3
+        description: 'terrain shadow or low solar angle'
+        values:
+          0: false
+          1: true
+      wet:
+        bits:
+          - 7
+          - 6
+          - 5
+          - 4
+          - 3
+          - 1
+          - 0
+        description: 'Clear and Wet'
+        values:
+          128: true
+    name: water
+    nodata: 1
+    units: '1'
+metadata:
+  product_type: wofs
+metadata_type: eo
+name: wofs_albers
+storage:
+  chunking:
+    time: 5
+    x: 200
+    y: 200
+  crs: EPSG:3577
+  dimension_order:
+    - time
+    - y
+    - x
+  driver: 'NetCDF CF'
+  resolution:
+    x: 25
+    y: -25
+  tile_size:
+    x: 100000.0
+    y: 100000.0
