@@ -3,6 +3,8 @@ from pathlib import Path
 from textwrap import indent
 from typing import Tuple
 
+from importlib_metadata import metadata
+
 import pytest
 import sqlalchemy
 import structlog
@@ -12,6 +14,9 @@ from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
+from datacube.scripts import ingest
+from datacube.drivers import storage_writer_by_name
+
 from datacube.utils import read_documents
 from digitalearthau.testing import factories
 from flask.testing import FlaskClient
@@ -30,27 +35,11 @@ from cubedash.warmup import find_examples_of_all_public_urls
 #          the same db.
 from integration_tests.asserts import format_doc_diffs
 
+######################################################
+# Prepare DB for integration test
+#####################################################
+
 module_vanilla_db = factories.db_fixture("local_config", scope="module")
-
-
-def pytest_assertrepr_compare(op, left, right):
-    """
-    Custom pytest error messages for large documents.
-
-    The default pytest dict==dict error messages are unreadable for
-    nested document-like dicts. (Such as our json and yaml docs!)
-
-    We just want to know which fields differ.
-    """
-
-    def is_a_doc(o: object):
-        """
-        Is it a dict that's not printable on one line?
-        """
-        return isinstance(o, dict) and len(repr(o)) > 79
-
-    if (is_a_doc(left) or is_a_doc(right)) and op == "==":
-        return format_doc_diffs(left, right)
 
 
 @pytest.fixture(scope="module")
@@ -60,25 +49,57 @@ def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
     return module_vanilla_db
 
 
-def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
+INTERGRATION_METADATA_FOLDER = Path(__file__).parent / "data/metadata"
+INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
+INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
+import os
+def dea_index_fixture(index_fixture_name, scope='function'):
     """
-    Set all tables in this alchemy metadata to unlogged.
-
-    Make them faster, but data is lost on crashes. Which is a good
-    trade-off for tests.
+    Create a pytest fixture for a Datacube instance populated
+    with DEA products/config.
     """
-    for table in reversed(metadata.sorted_tables):
-        table: sqlalchemy.Table
-        if table.name.startswith("mv_"):
-            # Not supported for materialised views.
-            continue
-        else:
-            engine.execute(f"""alter table {table.selectable.fullname} set unlogged;""")
 
+    @pytest.fixture(scope=scope)
+    def dea_index_instance(request):
+        """
+        An index initialised with DEA config (products)
+        """
+        index: Index = request.getfixturevalue(index_fixture_name)
+
+        was_created = index.init_db(with_default_types=True)
+
+        index.metadata_types.check_field_indexes(
+            allow_table_lock=True,
+            rebuild_indexes=False,
+            rebuild_views=True,
+        )
+        # Add DEA metadata types, products.
+        for md_file in os.listdir(INTERGRATION_METADATA_FOLDER):
+            for _, doc in read_documents(os.path.join(INTERGRATION_METADATA_FOLDER, md_file)):
+                md = index.metadata_types.add(index.metadata_types.from_doc(doc))
+
+        for prod_file in os.listdir(INTERGRATION_PRODUCTS_FOLDER):
+            for _, product_def in read_documents(os.path.join(INTERGRATION_PRODUCTS_FOLDER, prod_file)):
+                product = index.products.add_document(product_def)
+
+        for path in INTEGRATION_INGESTION_FOLDER.glob('*.yaml'):
+            ingest_config = ingest.load_config_from_file(path)
+
+            driver_name = ingest_config['storage']['driver']
+            driver = storage_writer_by_name(driver_name)
+            if driver is None:
+                raise ValueError("No driver found for {}".format(driver_name))
+            source_type, output_type = ingest.ensure_output_type(
+                index, ingest_config, driver.format, allow_product_changes=True
+            )
+
+        return index
+
+    return dea_index_instance
 
 module_index = factories.index_fixture("module_db", scope="module")
 
-module_dea_index = factories.dea_index_fixture("module_index", scope="module")
+module_dea_index = dea_index_fixture("module_index", scope="module")
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -247,4 +268,45 @@ def populated_index(dataset_loader, module_dea_index):
     )
     assert loaded == 20
 
+    # loaded = dataset_loader(
+    #     "ls5_fc_albers", TEST_DATA_DIR / "ls5_fc_albers-sample.yaml.gz"
+    # )
+    # assert loaded == 5
+
+
     return module_dea_index
+
+def pytest_assertrepr_compare(op, left, right):
+    """
+    Custom pytest error messages for large documents.
+
+    The default pytest dict==dict error messages are unreadable for
+    nested document-like dicts. (Such as our json and yaml docs!)
+
+    We just want to know which fields differ.
+    """
+
+    def is_a_doc(o: object):
+        """
+        Is it a dict that's not printable on one line?
+        """
+        return isinstance(o, dict) and len(repr(o)) > 79
+
+    if (is_a_doc(left) or is_a_doc(right)) and op == "==":
+        return format_doc_diffs(left, right)
+
+
+def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
+    """
+    Set all tables in this alchemy metadata to unlogged.
+
+    Make them faster, but data is lost on crashes. Which is a good
+    trade-off for tests.
+    """
+    for table in reversed(metadata.sorted_tables):
+        table: sqlalchemy.Table
+        if table.name.startswith("mv_"):
+            # Not supported for materialised views.
+            continue
+        else:
+            engine.execute(f"""alter table {table.selectable.fullname} set unlogged;""")
