@@ -576,7 +576,7 @@ def test_general_dataset_redirect(client: FlaskClient):
     assert rv.status_code == 302
     assert (
         rv.location
-        == "http://localhost/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d"
+        == "/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d"
     )
 
 
