@@ -32,7 +32,6 @@ format: ## Reformat all Python code
 
 .PHONY: lint
 lint: ## Run all Python linting checks
-	git tag
 	python3 setup.py check -rms
 	pre-commit run -a
 
