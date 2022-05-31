@@ -1567,7 +1567,7 @@ class SummaryStore:
         )
         self._product.cache_clear()
 
-    @lru_cache()
+    @lru_cache()  # noqa: B019
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'

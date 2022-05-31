@@ -32,6 +32,7 @@ format: ## Reformat all Python code
 
 .PHONY: lint
 lint: ## Run all Python linting checks
+	git config --global --add safe.directory /code
 	python3 setup.py check -rms
 	pre-commit run -a
 

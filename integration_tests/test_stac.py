@@ -1069,7 +1069,8 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
             + (
                 "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272"
                 # Flask will auto-escape parameters
-                .replace(",", "%2C").replace("/", "%2F")
+                # .replace(",", "%2C")
+                .replace("/", "%2F")
             ),
         ),
         (
@@ -1081,7 +1082,7 @@ def test_stac_item(stac_client: FlaskClient, populated_index: Index):
 
 def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
     resp: Response = stac_client.get(url, follow_redirects=False)
-    assert resp.location == stac_url(redirect_to_url), (
+    assert resp.location == redirect_to_url, (
         f"Expected {url} to be redirected to:\n"
         f"             {redirect_to_url}\n"
         f"  instead of {resp.location}"

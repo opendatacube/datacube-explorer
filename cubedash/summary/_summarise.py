@@ -229,7 +229,7 @@ class Summariser:
         )
         return begin_time, end_time, where_clause
 
-    @lru_cache()
+    @lru_cache()  # noqa: B019
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
