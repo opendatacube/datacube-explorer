@@ -1,18 +1,14 @@
 """
 Tests that load pages and check the contained text.
 """
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 from datacube.index.hl import Doc2Dataset
-from datacube.model import Range
 from datacube.utils import read_documents
-from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 
-from cubedash.summary import SummaryStore
-from integration_tests.asserts import check_dataset_count, expect_values, get_html
+from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -24,6 +20,7 @@ def populate_index(dataset_loader, module_dea_index):
 
     It's module-scoped as it's expensive to populate.
     """
+    dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
     for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ls5_fc_albers-sample.yaml"):
         try:
@@ -45,3 +42,11 @@ def test_summary_product(client: FlaskClient):
     html = get_html(client, "/ls5_fc_albers")
 
     check_dataset_count(html, 5)
+
+def test_yearly_dataset_count(client: FlaskClient):
+    html = get_html(client, "/ls5_fc_albers/2010")
+    check_dataset_count(html, 2)
+
+
+    html = get_html(client, "/ls5_fc_albers/2011")
+    check_dataset_count(html, 3)
