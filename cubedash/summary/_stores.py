@@ -384,7 +384,10 @@ class SummaryStore:
 
         # All years we are expected to have
         expected_years = set(
-            range(product.time_earliest.astimezone(timezone).year, product.time_latest.astimezone(timezone).year + 1)
+            range(
+                product.time_earliest.astimezone(timezone).year,
+                product.time_latest.astimezone(timezone).year + 1
+            )
         )
 
         # Years that have already been summarised
@@ -1327,7 +1330,8 @@ class SummaryStore:
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year_, None, None)
                 for year_ in range(
-                    product.time_earliest.astimezone(timezone).year, product.time_latest.astimezone(timezone).year + 1
+                    product.time_earliest.astimezone(timezone).year,
+                    product.time_latest.astimezone(timezone).year + 1
                 )
             )
         else:
@@ -1734,8 +1738,12 @@ def _summary_from_row(res, product_name):
         timeline_period=res["timeline_period"],
         # : Range
         time_range=Range(
-            res["time_earliest"].astimezone(timezone) if res["time_earliest"] else res["time_earliest"],
-            res["time_latest"].astimezone(timezone) if res["time_latest"] else res["time_latest"]
+            res["time_earliest"].astimezone(timezone)
+            if res["time_earliest"]
+            else res["time_earliest"],
+            res["time_latest"].astimezone(timezone)
+            if res["time_latest"]
+            else res["time_latest"]
         )
         if res["time_earliest"]
         else None,
