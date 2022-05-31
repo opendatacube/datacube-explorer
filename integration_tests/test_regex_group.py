@@ -4,7 +4,7 @@ Unit test for regex product grouping
 
 import pytest
 import re
-import itertools
+from cubedash._utils import get_sorted_product_summaries
 
 
 class FakeProduct:
@@ -61,17 +61,7 @@ def test_group_by_regex(test_product_groupby_regex_list, test_product_list):
 
     key = regex_key
 
-    grouped_product_summarise = sorted(
-        (
-            (name or "", list(items))
-            for (name, items) in itertools.groupby(
-                sorted(test_product_list, key=key), key=key
-            )
-        ),
-        # Show largest groups first
-        key=lambda k: len(k[1]),
-        reverse=True,
-    )
+    grouped_product_summarise = get_sorted_product_summaries(test_product_list, key)
 
     assert len(grouped_product_summarise) == 4
     assert grouped_product_summarise[0][0] == 'Water Observations'
@@ -101,17 +91,7 @@ def test_reverse_group_by_regex(test_product_groupby_regex_list, test_product_li
 
     key = regex_key
 
-    grouped_product_summarise = sorted(
-        (
-            (name or "", list(items))
-            for (name, items) in itertools.groupby(
-                sorted(test_product_list, key=key), key=key
-            )
-        ),
-        # Show largest groups first
-        key=lambda k: len(k[1]),
-        reverse=True,
-    )
+    grouped_product_summarise = get_sorted_product_summaries(test_product_list, key)
 
     assert len(grouped_product_summarise) == 1
     assert grouped_product_summarise[0][0] == 'C2 - Deprecated'
