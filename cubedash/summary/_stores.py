@@ -137,8 +137,8 @@ class ProductSummary:
         if self.dataset_count == 0:
             return
 
-        start = self.time_earliest.astimezone(timezone)
-        end = self.time_latest.astimezone(timezone)
+        start = self.time_earliest.astimezone(timezone) if self.time_earliest else self.time_earliest
+        end = self.time_latest.astimezone(timezone) if self.time_latest else self.time_latest
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
@@ -1733,7 +1733,10 @@ def _summary_from_row(res, product_name):
         region_dataset_counts=region_dataset_counts,
         timeline_period=res["timeline_period"],
         # : Range
-        time_range=Range(res["time_earliest"].astimezone(timezone), res["time_latest"].astimezone(timezone))
+        time_range=Range(
+            res["time_earliest"].astimezone(timezone) if res["time_earliest"] else res["time_earliest"],
+            res["time_latest"].astimezone(timezone) if res["time_latest"] else res["time_latest"]
+        )
         if res["time_earliest"]
         else None,
         # shapely.geometry.base.BaseGeometry
@@ -1776,8 +1779,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         regions=func.cast(region_values, type_=postgres.ARRAY(String)),
         region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
-        time_earliest=begin.astimezone(timezone),
-        time_latest=end.astimezone(timezone),
+        time_earliest=begin.astimezone(timezone) if begin else begin,
+        time_latest=end.astimezone(timezone) if end else end,
         size_bytes=summary.size_bytes,
         product_refresh_time=summary.product_refresh_time,
         footprint_geometry=(
