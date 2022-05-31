@@ -37,16 +37,17 @@ def populate_index(dataset_loader, module_dea_index):
     assert dataset_count == 5
     return module_dea_index
 
+
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/ls5_fc_albers")
 
     check_dataset_count(html, 5)
 
+
 def test_yearly_dataset_count(client: FlaskClient):
     html = get_html(client, "/ls5_fc_albers/2010")
     check_dataset_count(html, 2)
-
 
     html = get_html(client, "/ls5_fc_albers/2011")
     check_dataset_count(html, 3)
