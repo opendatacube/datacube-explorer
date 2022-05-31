@@ -27,10 +27,6 @@ jobs:
           make build
           docker-compose up -d
 
-      - name: work around permission issue
-        run: docker-compose run explorer \
-                git config --global --add safe.directory /code
-
       - name: Run linting
         run: |
           make lint-docker
