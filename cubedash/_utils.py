@@ -183,7 +183,7 @@ def group_field_names(request: dict) -> dict:
     return dict(out)
 
 
-def get_sorted_product_summaries(product_summaries, key):
+def get_sorted_product_summaries(product_summaries: dict, key: str) -> List:
     return sorted(
         (
             (name or "", list(items))
