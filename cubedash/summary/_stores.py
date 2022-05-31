@@ -79,6 +79,7 @@ DEFAULT_EPSG = 6933
 
 timezone = pytz.timezone("Australia/Darwin")
 
+
 class ItemSort(Enum):
     # The fastest, but paging is unusable.
     UNSORTED = auto()
