@@ -1,3 +1,4 @@
+---
 name: telemetry
 description: |
     telemetry datasets.
@@ -41,7 +42,7 @@ dataset:
         orbit:
             description: Orbit number
             offset: [acquisition, platform_orbit]
-            indexed: False
+            indexed: false
 
         sat_path:
             description: Landsat path

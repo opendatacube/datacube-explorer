@@ -1,9 +1,9 @@
+import os
+
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
 from typing import Tuple
-
-from importlib_metadata import metadata
 
 import pytest
 import sqlalchemy
@@ -49,10 +49,13 @@ def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
     return module_vanilla_db
 
 
+TEST_DATA_DIR = Path(__file__).parent / "data"
+
 INTERGRATION_METADATA_FOLDER = Path(__file__).parent / "data/metadata"
 INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
-import os
+
+
 def dea_index_fixture(index_fixture_name, scope='function'):
     """
     Create a pytest fixture for a Datacube instance populated
@@ -66,7 +69,7 @@ def dea_index_fixture(index_fixture_name, scope='function'):
         """
         index: Index = request.getfixturevalue(index_fixture_name)
 
-        was_created = index.init_db(with_default_types=True)
+        index.init_db(with_default_types=True)
 
         index.metadata_types.check_field_indexes(
             allow_table_lock=True,
@@ -76,11 +79,11 @@ def dea_index_fixture(index_fixture_name, scope='function'):
         # Add DEA metadata types, products.
         for md_file in os.listdir(INTERGRATION_METADATA_FOLDER):
             for _, doc in read_documents(os.path.join(INTERGRATION_METADATA_FOLDER, md_file)):
-                md = index.metadata_types.add(index.metadata_types.from_doc(doc))
+                index.metadata_types.add(index.metadata_types.from_doc(doc))
 
         for prod_file in os.listdir(INTERGRATION_PRODUCTS_FOLDER):
             for _, product_def in read_documents(os.path.join(INTERGRATION_PRODUCTS_FOLDER, prod_file)):
-                product = index.products.add_document(product_def)
+                index.products.add_document(product_def)
 
         for path in INTEGRATION_INGESTION_FOLDER.glob('*.yaml'):
             ingest_config = ingest.load_config_from_file(path)
@@ -89,7 +92,7 @@ def dea_index_fixture(index_fixture_name, scope='function'):
             driver = storage_writer_by_name(driver_name)
             if driver is None:
                 raise ValueError("No driver found for {}".format(driver_name))
-            source_type, output_type = ingest.ensure_output_type(
+            ingest.ensure_output_type(
                 index, ingest_config, driver.format, allow_product_changes=True
             )
 
@@ -97,11 +100,10 @@ def dea_index_fixture(index_fixture_name, scope='function'):
 
     return dea_index_instance
 
+
 module_index = factories.index_fixture("module_db", scope="module")
 
 module_dea_index = dea_index_fixture("module_index", scope="module")
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture()
@@ -268,13 +270,8 @@ def populated_index(dataset_loader, module_dea_index):
     )
     assert loaded == 20
 
-    # loaded = dataset_loader(
-    #     "ls5_fc_albers", TEST_DATA_DIR / "ls5_fc_albers-sample.yaml.gz"
-    # )
-    # assert loaded == 5
-
-
     return module_dea_index
+
 
 def pytest_assertrepr_compare(op, left, right):
     """

@@ -1,3 +1,4 @@
+---
 description: Sentinel-2A MSI ARD - NBAR NBART and Pixel Quality
 measurements:
   - aliases: [azimuthal_exiting]
