@@ -1,3 +1,4 @@
+---
 source_type: ls7_nbar_scene
 output_type: ls7_nbar_albers
 metadata_type: eo
@@ -126,8 +127,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '1'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           alias: "band_1"
@@ -137,8 +138,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '2'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           alias: "band_2"
@@ -148,8 +149,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '3'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           alias: "band_3"
@@ -159,8 +160,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '4'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           alias: "band_4"
@@ -170,8 +171,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '5'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           alias: "band_5"
@@ -181,8 +182,8 @@ measurements:
       nodata: -999
       resampling_method: nearest
       src_varname: '7'
-      zlib: True
-      fletcher32: True
+      zlib: true
+      fletcher32: true
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           alias: "band_7"

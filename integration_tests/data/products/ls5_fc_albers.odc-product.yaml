@@ -1,0 +1,46 @@
+---
+name: ls5_fc_albers
+
+description: Landsat 5 Fractional Cover 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+metadata_type: eo
+
+metadata:
+  platform:
+    code: LANDSAT_5
+  format:
+    name: GeoTIFF
+  instrument:
+    name: TM
+  product_type: fractional_cover
+
+storage:
+  crs: EPSG:3577
+  resolution:
+          x: 25
+          y: -25
+  dimension_order: ['time', 'y', 'x']
+  tile_size:
+    x: 100000.0
+    y: 100000.0
+
+measurements:
+    - name: BS
+      units: "percent"
+      dtype: int16
+      nodata: -1
+      aliases: ["bare"]
+    - name: PV
+      units: "percent"
+      dtype: int16
+      nodata: -1
+      aliases: ["green_veg"]
+    - name: NPV
+      units: "percent"
+      dtype: int16
+      nodata: -1
+      aliases: ["dead_veg"]
+    - name: UE
+      units: "1"
+      dtype: int16
+      nodata: -1
+      aliases: ["err"]
