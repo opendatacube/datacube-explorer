@@ -13,6 +13,8 @@ from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
 from uuid import UUID
+import itertools
+
 
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
@@ -179,6 +181,20 @@ def group_field_names(request: dict) -> dict:
 
         out[field_name][constraint] = val
     return dict(out)
+
+
+def get_sorted_product_summaries(product_summaries: dict, key: str) -> List:
+    return sorted(
+        (
+            (name or "", list(items))
+            for (name, items) in itertools.groupby(
+                sorted(product_summaries, key=key), key=key
+            )
+        ),
+        # Show largest groups first
+        key=lambda k: len(k[1]),
+        reverse=True,
+    )
 
 
 def query_to_search(request: MultiDict, product: DatasetType) -> dict:

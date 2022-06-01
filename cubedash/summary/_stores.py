@@ -19,6 +19,7 @@ from typing import (
     Union,
 )
 from uuid import UUID
+import pytz
 
 import dateutil.parser
 import structlog
@@ -75,6 +76,8 @@ _LOG = structlog.get_logger()
 #
 # We'll use a global equal area.
 DEFAULT_EPSG = 6933
+
+timezone = pytz.timezone("Australia/Darwin")
 
 
 class ItemSort(Enum):
@@ -135,8 +138,8 @@ class ProductSummary:
         if self.dataset_count == 0:
             return
 
-        start = self.time_earliest
-        end = self.time_latest
+        start = self.time_earliest.astimezone(timezone) if self.time_earliest else self.time_earliest
+        end = self.time_latest.astimezone(timezone) if self.time_latest else self.time_latest
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
@@ -382,7 +385,10 @@ class SummaryStore:
 
         # All years we are expected to have
         expected_years = set(
-            range(product.time_earliest.year, product.time_latest.year + 1)
+            range(
+                product.time_earliest.astimezone(timezone).year,
+                product.time_latest.astimezone(timezone).year + 1
+            )
         )
 
         # Years that have already been summarised
@@ -1319,12 +1325,14 @@ class SummaryStore:
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year, month_, None) for month_ in range(1, 13)
             )
+
         # Product. Does it have data?
         elif product.dataset_count > 0:
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year_, None, None)
                 for year_ in range(
-                    product.time_earliest.year, product.time_latest.year + 1
+                    product.time_earliest.astimezone(timezone).year,
+                    product.time_latest.astimezone(timezone).year + 1
                 )
             )
         else:
@@ -1730,7 +1738,14 @@ def _summary_from_row(res, product_name):
         region_dataset_counts=region_dataset_counts,
         timeline_period=res["timeline_period"],
         # : Range
-        time_range=Range(res["time_earliest"], res["time_latest"])
+        time_range=Range(
+            res["time_earliest"].astimezone(timezone)
+            if res["time_earliest"]
+            else res["time_earliest"],
+            res["time_latest"].astimezone(timezone)
+            if res["time_latest"]
+            else res["time_latest"]
+        )
         if res["time_earliest"]
         else None,
         # shapely.geometry.base.BaseGeometry
@@ -1773,8 +1788,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         regions=func.cast(region_values, type_=postgres.ARRAY(String)),
         region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
-        time_earliest=begin,
-        time_latest=end,
+        time_earliest=begin.astimezone(timezone) if begin else begin,
+        time_latest=end.astimezone(timezone) if end else end,
         size_bytes=summary.size_bytes,
         product_refresh_time=summary.product_refresh_time,
         footprint_geometry=(

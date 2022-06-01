@@ -1,4 +1,3 @@
-import itertools
 import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
@@ -29,7 +28,7 @@ from . import (
     _stac_legacy,
     _utils as utils,
 )
-from ._utils import as_rich_json
+from ._utils import as_rich_json, get_sorted_product_summaries
 
 app = _model.app
 app.register_blueprint(_filters.bp)
@@ -541,17 +540,7 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
 
         key = field_key
 
-    grouped_product_summarise = sorted(
-        (
-            (name or "", list(items))
-            for (name, items) in itertools.groupby(
-                sorted(product_summaries, key=key), key=key
-            )
-        ),
-        # Show largest groups first
-        key=lambda k: len(k[1]),
-        reverse=True,
-    )
+    grouped_product_summarise = get_sorted_product_summaries(product_summaries, key)
     return _partition_default(grouped_product_summarise, group_field_size)
 
 
