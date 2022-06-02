@@ -364,13 +364,13 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
         is not None
     )
 
-    check_dataset_count(html, 230)
+    check_dataset_count(html, 306)
     # Footprint is not exact due to shapely.simplify()
-    check_area("2,448,...km2", html)
+    check_area("2,984,...km2", html)
 
     assert (
         one_element(html, ".last-processed time").attrs["datetime"]
-        == "2017-05-27T11:30:29.371342+00:00"
+        == "2017-06-08T20:58:07.014314+00:00"
     )
 
 
@@ -389,17 +389,17 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     # year
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008")
     assert (
-        len(geojson["features"]) == 230
+        len(geojson["features"]) == 306
     ), "Expected high tide datasets within whole dataset range"
     # month
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6")
     assert (
-        len(geojson["features"]) == 230
+        len(geojson["features"]) == 306
     ), "Expected high tide datasets within whole dataset range"
     # day
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6/1")
     assert (
-        len(geojson["features"]) == 230
+        len(geojson["features"]) == 306
     ), "Expected high tide datasets within whole dataset range"
 
     # Out of the test dataset time range. No results.
