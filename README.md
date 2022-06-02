@@ -259,37 +259,60 @@ Inside https://github.com/opendatacube/datacube-explorer/tree/develop/integratio
 
 Then, to add sample datasets required for the test case, create a `.yaml` file with the product name and place all the sample datasets split by `---` in the yaml. Then at the beginning of the new `test_xyz.py` file place
 
+```python
+import pytest
 
-    @pytest.fixture(scope="module", autouse=True)
-    def populate_index(dataset_loader, module_dea_index):
-        """
-        Index populated with example datasets. Assumes our tests wont modify the data!
+from pathlib import Path
 
-        It's module-scoped as it's expensive to populate.
-        """
-        dataset_count = 0
-        create_dataset = Doc2Dataset(module_dea_index)
-        for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
-            try:
-                dataset, err = create_dataset(
-                    s2_dataset_doc, "file://example.com/test_dataset/"
-                )
-                assert dataset is not None, err
-                created = module_dea_index.datasets.add(dataset)
-                assert created.type.name == "s2_l2a"
-                dataset_count += 1
-            except AttributeError as ae:
-                assert dataset_count == 5
-                print(ae)
+from datacube.utils import read_documents
+from datacube.index.hl import Doc2Dataset
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def populate_index(dataset_loader, module_dea_index):
+    """
+    Index populated with example datasets. Assumes our tests wont modify the data!
+
+    It's module-scoped as it's expensive to populate.
+    """
+    dataset_count = 0
+    create_dataset = Doc2Dataset(module_dea_index)
+    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
+        try:
+            dataset, err = create_dataset(
+                s2_dataset_doc, "file://example.com/test_dataset/"
+            )
+            assert dataset is not None, err
+            created = module_dea_index.datasets.add(dataset)
+            assert created.type.name == "s2_l2a"
+            dataset_count += 1
+        except AttributeError as ae:
+            assert dataset_count == 5
+            print(ae)
         assert dataset_count == 5
-        return module_dea_index
-
+    return module_dea_index
+```
 
 if the sample dataset yaml file is too big, run `gzip **yaml**` and append the required `yaml.gz` to `conftest.py` `populated_index` fixture
 
-    @pytest.fixture(scope="module")
-    def populated_index(dataset_loader, module_dea_index):
+```python
 
+import pytest
+from pathlib import Path
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
+
+
+@pytest.fixture(scope="module")
+def populated_index(dataset_loader, module_dea_index):
+    loaded = dataset_loader(
+        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
+    )
+    assert loaded == 20
+    return module_dea_index
+```
 
 #### Custom test configuration (using other hosts, postgres servers)
 
