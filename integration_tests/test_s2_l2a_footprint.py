@@ -24,12 +24,7 @@ def populate_index(dataset_loader, module_dea_index):
 
     It's module-scoped as it's expensive to populate.
     """
-    path, s2_product_doc = list(
-        read_documents(TEST_DATA_DIR / "products/esa_s2_l2a.product.yaml")
-    )[0]
     dataset_count = 0
-    product_ = module_dea_index.products.from_doc(s2_product_doc)
-    module_dea_index.products.add(product_)
     create_dataset = Doc2Dataset(module_dea_index)
     for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
         try:
