@@ -1674,6 +1674,21 @@ class SummaryStore:
             row.region_code,
         )
 
+    def get_dataset_center_time(self, dataset_id):
+        rows = self._engine.execute(
+            select(
+                [
+                    DATASET_SPATIAL.c.center_time
+                ]
+            ).where(DATASET_SPATIAL.c.id == dataset_id)
+        ).fetchall()
+        if not rows:
+            return None, None
+        row = rows[0]
+
+        center_time = row.center_time
+        return center_time
+
 
 def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
     """
