@@ -197,6 +197,12 @@ def search_page(
         _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
         key=lambda d: d.center_time,
     )
+
+    for dataset in datasets:
+        # take center_time from summary generated value
+        if _model.STORE.get_dataset_center_time(dataset.id):
+            dataset.center_time = _model.STORE.get_dataset_center_time(dataset.id)
+
     more_datasets_exist = False
     if len(datasets) > _HARD_SEARCH_LIMIT:
         more_datasets_exist = True
