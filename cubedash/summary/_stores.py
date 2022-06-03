@@ -1687,7 +1687,7 @@ class SummaryStore:
             ).where(DATASET_SPATIAL.c.id == dataset_id)
         ).fetchall()
         if not rows:
-            return None, None
+            return None
         row = rows[0]
 
         center_time = row.center_time
