@@ -64,6 +64,8 @@
                 {% endif %}
             for
             {{ dataset | dataset_day_link(grouping_timezone) }}
+            {{ dataset.center_time }}
+            {{ grouping_timezone }}
         </div>
     </div>
 
