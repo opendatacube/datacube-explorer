@@ -1675,6 +1675,10 @@ class SummaryStore:
         )
 
     def get_dataset_center_time(self, dataset_id):
+        """
+        get dataset center_time from DATASET_SPATIAL table
+        to override the center_time value returned by datacube-core
+        """
         rows = self._engine.execute(
             select(
                 [
