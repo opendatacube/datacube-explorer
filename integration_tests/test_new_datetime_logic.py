@@ -60,3 +60,13 @@ def test_datestring_on_datasets_search_page(client: FlaskClient):
             a.find("td", first=True).text.strip() for a in html.find(".search-result")
         ]
     ), "datestring does not match expected center_time recorded in dataset_spatial table"
+
+
+def test_datestring_on_regions_page(client: FlaskClient):
+    html = get_html(client, "/product/rainfall_chirps_daily/regions/x210y106")
+
+    assert (
+        "2019-05-15 00:00:00" in [
+            a.find("td", first=True).text.strip() for a in html.find(".search-result")
+        ]
+    ), "datestring does not match expected center_time recorded in dataset_spatial table"

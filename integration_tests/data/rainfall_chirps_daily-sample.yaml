@@ -97,6 +97,7 @@ properties:
   odc:file_format: GeoTIFF
   odc:processing_datetime: '2021-12-17T02:30:32.725683Z'
   odc:product: rainfall_chirps_daily
+  odc:region_code: x210y106
   proj:bbox:
   - -20.0
   - -40.000001192092896

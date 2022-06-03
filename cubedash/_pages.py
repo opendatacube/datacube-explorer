@@ -198,10 +198,9 @@ def search_page(
         key=lambda d: d.center_time,
     )
 
-    for dataset in datasets:
-        # take center_time from summary generated value
-        if _model.STORE.get_dataset_center_time(dataset.id):
-            dataset.center_time = _model.STORE.get_dataset_center_time(dataset.id)
+    for i in range(len(datasets)):
+        if _model.STORE.get_dataset_center_time(datasets[i].id):
+            datasets[i].center_time = _model.STORE.get_dataset_center_time(datasets[i].id)
 
     more_datasets_exist = False
     if len(datasets) > _HARD_SEARCH_LIMIT:
@@ -308,6 +307,10 @@ def region_page(
             product_name, region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
+
+    for i in range(len(datasets)):
+        if _model.STORE.get_dataset_center_time(datasets[i].id):
+            datasets[i].center_time = _model.STORE.get_dataset_center_time(datasets[i].id)
 
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
