@@ -11,7 +11,11 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
-from integration_tests.asserts import check_datesets_page_datestring, get_html
+from integration_tests.asserts import (
+    check_dataset_count,
+    check_datesets_page_datestring,
+    get_html
+)
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -70,3 +74,14 @@ def test_datestring_on_regions_page(client: FlaskClient):
             a.find("td", first=True).text.strip() for a in html.find(".search-result")
         ]
     ), "datestring does not match expected center_time recorded in dataset_spatial table"
+
+
+def test_summary_center_datetime(client: FlaskClient):
+    html = get_html(client, "/rainfall_chirps_daily/2019/5")
+    check_dataset_count(html, 2)
+
+    html = get_html(client, "/rainfall_chirps_daily/2019/5/15")
+    check_dataset_count(html, 1)
+
+    html = get_html(client, "/rainfall_chirps_daily/2019/5/31")
+    check_dataset_count(html, 1)
