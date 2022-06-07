@@ -202,31 +202,201 @@ class Summariser:
         )
         return summary
 
+    def calculate_region_summary(
+        self,
+        product_name: str,
+        year_month_day: Tuple[Optional[int], Optional[int], Optional[int]],
+        product_refresh_time: datetime,
+        region_code: str,
+    ) -> TimePeriodOverview:
+        """
+        Create a summary of the given product/time range.
+        """
+        time = _utils.as_time_range(*year_month_day)
+        log = self.log.bind(product_name=product_name, time=time)
+        log.debug("summary.query")
+
+        begin_time, end_time, where_clause = self._where(product_name, time, region_code)
+        select_by_srid = (
+            select(
+                (
+                    func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
+                    func.count().label("dataset_count"),
+                    func.ST_Transform(
+                        func.ST_Union(DATASET_SPATIAL.c.footprint),
+                        FOOTPRINT_SRID_EXPRESSION,
+                        type_=Geometry(),
+                    ).label("footprint_geometry"),
+                    func.sum(DATASET_SPATIAL.c.size_bytes).label("size_bytes"),
+                    func.max(DATASET_SPATIAL.c.creation_time).label(
+                        "newest_dataset_creation_time"
+                    ),
+                )
+            )
+            .where(where_clause)
+            .group_by("srid")
+            .alias("srid_summaries")
+        )
+
+        # Union all srid groups into one summary.
+        result = self._engine.execute(
+            select(
+                (
+                    func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
+                    func.array_agg(select_by_srid.c.srid).label("srids"),
+                    func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
+                    func.ST_Union(
+                        func.ST_Buffer(select_by_srid.c.footprint_geometry, 0),
+                        type_=Geometry(),
+                    ).label("footprint_geometry"),
+                    func.max(select_by_srid.c.newest_dataset_creation_time).label(
+                        "newest_dataset_creation_time"
+                    ),
+                    func.now().label("summary_gen_time"),
+                )
+            )
+        )
+
+        rows = result.fetchall()
+        log.debug("summary.query.done", srid_rows=len(rows))
+
+        assert len(rows) == 1
+        row = dict(rows[0])
+        row["dataset_count"] = int(row["dataset_count"]) if row["dataset_count"] else 0
+        if row["footprint_geometry"] is not None:
+            row["footprint_crs"] = self._get_srid_name(row["footprint_geometry"].srid)
+            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
+        else:
+            row["footprint_crs"] = None
+        row["crses"] = None
+        if row["srids"] is not None:
+            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
+        del row["srids"]
+
+        # Convert from Python Decimal
+        if row["size_bytes"] is not None:
+            row["size_bytes"] = int(row["size_bytes"])
+
+        has_data = row["dataset_count"] > 0
+
+        log.debug("counter.calc")
+
+        # Initialise all requested days as zero
+        day_counts = Counter(
+            {d.date(): 0 for d in pd.date_range(begin_time, end_time, closed="left")}
+        )
+        region_counts = Counter()
+        if has_data:
+            day_counts.update(
+                Counter(
+                    {
+                        day.date(): count
+                        for day, count in self._engine.execute(
+                            select(
+                                [
+                                    func.date_trunc(
+                                        "day",
+                                        DATASET_SPATIAL.c.center_time.op(
+                                            "AT TIME ZONE"
+                                        )(self.grouping_time_zone),
+                                    ).label("day"),
+                                    func.count(),
+                                ]
+                            )
+                            .where(where_clause)
+                            .group_by("day")
+                        )
+                    }
+                )
+            )
+            region_counts = Counter(
+                {
+                    item: count
+                    for item, count in self._engine.execute(
+                        select(
+                            [
+                                DATASET_SPATIAL.c.region_code.label("region_code"),
+                                func.count(),
+                            ]
+                        )
+                        .where(where_clause)
+                        .group_by("region_code")
+                    )
+                }
+            )
+
+        if product_refresh_time is None:
+            raise RuntimeError(
+                "Internal error: Newly-made time summaries should "
+                "not have a null product refresh time."
+            )
+
+        year, month, day = year_month_day
+        summary = TimePeriodOverview(
+            **row,
+            product_name=product_name,
+            year=year,
+            month=month,
+            day=day,
+            product_refresh_time=product_refresh_time,
+            timeline_period="day",
+            time_range=Range(begin_time, end_time),
+            timeline_dataset_counts=day_counts,
+            region_dataset_counts=region_counts,
+            # TODO: filter invalid from the counts?
+            footprint_count=row["dataset_count"] or 0,
+        )
+
+        log.debug(
+            "summary.calc.done",
+            dataset_count=summary.dataset_count,
+            footprints_missing=summary.dataset_count - summary.footprint_count,
+        )
+        return summary
+
     def _with_default_tz(self, d: datetime) -> datetime:
         if d.tzinfo is None:
             return d.replace(tzinfo=self._grouping_time_zone_tz)
         return d
 
     def _where(
-        self, product_name: str, time: Range
+        self, product_name: str, time: Range, region: str = None,
     ) -> Tuple[datetime, datetime, ColumnElement]:
         begin_time = self._with_default_tz(time.begin)
         end_time = self._with_default_tz(time.end)
-        where_clause = and_(
-            func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
-                DATASET_SPATIAL.c.center_time
-            ),
-            DATASET_SPATIAL.c.dataset_type_ref
-            == _scalar_subquery(
-                select([ODC_DATASET_TYPE.c.id]).where(
-                    ODC_DATASET_TYPE.c.name == product_name
-                )
-            ),
-            or_(
-                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
-                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
-            ),
-        )
+        if region:
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                    DATASET_SPATIAL.c.center_time
+                ),
+                DATASET_SPATIAL.c.dataset_type_ref
+                == _scalar_subquery(
+                    select([ODC_DATASET_TYPE.c.id]).where(
+                        ODC_DATASET_TYPE.c.name == product_name
+                    )
+                ),
+                DATASET_SPATIAL.c.region_code == region,
+                or_(
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
+                ),
+            )
+        else:
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                    DATASET_SPATIAL.c.center_time
+                ),
+                DATASET_SPATIAL.c.dataset_type_ref
+                == _scalar_subquery(
+                    select([ODC_DATASET_TYPE.c.id]).where(
+                        ODC_DATASET_TYPE.c.name == product_name
+                    )
+                ),
+                or_(
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
+                ),
+            )
         return begin_time, end_time, where_clause
 
     @lru_cache()  # noqa: B019
