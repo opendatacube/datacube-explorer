@@ -755,6 +755,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         day: Optional[int] = None,
+        region_code: Optional[str] = None,
     ) -> Optional[TimePeriodOverview]:
         period, start_day = TimePeriodOverview.flat_period_representation(
             year, month, day
@@ -770,6 +771,14 @@ class SummaryStore:
         product = self.get_product_summary(product_name)
         if not product:
             return None
+
+        if region_code and year:
+            return self._summariser.calculate_region_summary(
+                product_name,
+                year_month_day=(year, month, day),
+                product_refresh_time=datetime.now(),
+                region_code=region_code,
+            )
 
         res = self._engine.execute(
             select([TIME_OVERVIEW]).where(
