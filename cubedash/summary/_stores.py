@@ -773,7 +773,7 @@ class SummaryStore:
             return None
 
         if region_code and year:
-            return self._summariser.calculate_region_summary(
+            return self._summariser.calculate_summary(
                 product_name,
                 year_month_day=(year, month, day),
                 product_refresh_time=datetime.now(),
