@@ -146,6 +146,9 @@ def check_dataset_count(html, count: int):
 
 
 def check_product_date_selector_contains(html, year: str, month: str = None, day: str = None):
+    """
+    Testing date selector only showing date containing datasets
+    """
     __tracebackhide__ = True
     date_selector = html.find("#product-headers .limited")
     if year:
@@ -159,6 +162,25 @@ def check_product_date_selector_contains(html, year: str, month: str = None, day
     if month and day:
         day_option = date_selector[2].find(".option-menu ul", first=True).find("li")
         assert (day in [days.text for days in day_option]), f"{day} not in {[days.text for days in day_option]}"
+
+
+def check_product_date_selector_not_contain(html, year: str, month: str = None, day: str = None):
+    """
+    Testing date selector is not showing date containing no datasets
+    """
+    __tracebackhide__ = True
+    date_selector = html.find("#product-headers .limited")
+    if not month and not day:
+        year_option = date_selector[0].find(".option-menu ul", first=True).find("li")
+        assert (year not in [years.text for years in year_option]), f"{year} in {[years.text for years in year_option]}"
+    if not day:
+        month_option = date_selector[1].find(".option-menu ul", first=True).find("li")
+        assert (
+            month not in [months.text for months in month_option]
+        ), f"{month} in {[months.text for months in month_option]}"
+    else:
+        day_option = date_selector[2].find(".option-menu ul", first=True).find("li")
+        assert (day not in [days.text for days in day_option]), f"{day} in {[days.text for days in day_option]}"
 
 
 def expect_values(

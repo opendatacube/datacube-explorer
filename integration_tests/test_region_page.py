@@ -8,7 +8,11 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
-from integration_tests.asserts import get_html, check_product_date_selector_contains
+from integration_tests.asserts import (
+    check_product_date_selector_not_contain,
+    check_product_date_selector_contains,
+    get_html,
+)
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -56,10 +60,20 @@ def test_product_region_page_date_selector(client: FlaskClient):
     check_product_date_selector_contains(
         html, "1984"
     )
+    # check_product_date_selector_not_contain(
+    #     html, "1989"
+    # )
+    # check_product_date_selector_not_contain(
+    #     html, "2007"
+    # )
 
     html = get_html(client, "/product/ls5_sr/regions/168053/1984")
     check_product_date_selector_contains(
         html, "1984", "October"
+    )
+
+    check_product_date_selector_not_contain(
+        html, "1984", "June"
     )
 
     html = get_html(client, "/product/ls5_sr/regions/168053/1984/10")
