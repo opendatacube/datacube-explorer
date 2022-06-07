@@ -8,7 +8,7 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
-from integration_tests.asserts import get_html
+from integration_tests.asserts import get_html, check_product_date_selector_contains
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -38,7 +38,7 @@ def populate_index(dataset_loader, module_dea_index):
     return module_dea_index
 
 
-def test_product_region_page_count(client: FlaskClient):
+def test_product_region_page_dataset_count(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/product/ls5_sr/regions/168053")
 
@@ -49,3 +49,20 @@ def test_product_region_page_count(client: FlaskClient):
 
     search_results = html.find(".search-result")
     assert len(search_results) == 4
+
+
+def test_product_region_page_date_selector(client: FlaskClient):
+    html = get_html(client, "/product/ls5_sr/regions/168053")
+    check_product_date_selector_contains(
+        html, "1984"
+    )
+
+    html = get_html(client, "/product/ls5_sr/regions/168053/1984")
+    check_product_date_selector_contains(
+        html, "1984", "October"
+    )
+
+    html = get_html(client, "/product/ls5_sr/regions/168053/1984/10")
+    check_product_date_selector_contains(
+        html, "1984", "October", "30th"
+    )

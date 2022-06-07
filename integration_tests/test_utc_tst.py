@@ -8,7 +8,7 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
-from integration_tests.asserts import check_dataset_count, get_html
+from integration_tests.asserts import check_dataset_count, check_product_date_selector_contains, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -51,3 +51,4 @@ def test_yearly_dataset_count(client: FlaskClient):
 
     html = get_html(client, "/ls5_fc_albers/2011")
     check_dataset_count(html, 3)
+    check_product_date_selector_contains(html, "2011", "January")
