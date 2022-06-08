@@ -11,7 +11,6 @@
   .option-description {
     display: none;
   }
-
   .product-description {
     display: block;
   }
@@ -209,11 +208,9 @@ footer {
   .panels {
     display: flex;
   }
-
   .info-panel {
     width: 250px;
   }
-
   #map {
     flex: 1 1;
     height: 100%;
@@ -620,7 +617,7 @@ label.disabled {
   font-size: 10px;
   font-weight: normal;
   color: #333;
-  transform: translateY(calc(100% + 5px));
+  transform: translateY(calc(100% + 5px)) rotate(45deg);
   transform-origin: top left;
 }
 .chart-timeline-year.tooltip {
@@ -1225,8 +1222,7 @@ details > summary {
 .leaflet-control {
   position: relative;
   z-index: 800;
-  pointer-events: visiblePainted;
-  /* IE 9-10 doesn't have auto */
+  pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
   pointer-events: auto;
 }
 
@@ -1364,8 +1360,7 @@ details > summary {
 .leaflet-image-layer.leaflet-interactive,
 .leaflet-pane > svg path.leaflet-interactive,
 svg.leaflet-image-layer.leaflet-interactive path {
-  pointer-events: visiblePainted;
-  /* IE 9-10 doesn't have auto */
+  pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
   pointer-events: auto;
 }
 
