@@ -1344,6 +1344,7 @@ class SummaryStore:
                     product.time_latest.astimezone(timezone).year + 1
                 )
             )
+
         else:
             summary = TimePeriodOverview.empty(product.name)
 
@@ -1351,6 +1352,7 @@ class SummaryStore:
         summary.period_tuple = (product.name, year, month, None)
 
         self._put(summary)
+
         for listener in self._update_listeners:
             listener(
                 product_name=product.name,

@@ -60,12 +60,12 @@ def test_product_region_page_date_selector(client: FlaskClient):
     check_product_date_selector_contains(
         html, "1984"
     )
-    # check_product_date_selector_not_contain(
-    #     html, "1989"
-    # )
-    # check_product_date_selector_not_contain(
-    #     html, "2007"
-    # )
+    check_product_date_selector_not_contain(
+        html, "1989"
+    )
+    check_product_date_selector_not_contain(
+        html, "2007"
+    )
 
     html = get_html(client, "/product/ls5_sr/regions/168053/1984")
     check_product_date_selector_contains(

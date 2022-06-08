@@ -167,19 +167,30 @@ def check_product_date_selector_contains(html, year: str, month: str = None, day
 def check_product_date_selector_not_contain(html, year: str, month: str = None, day: str = None):
     """
     Testing date selector is not showing date containing no datasets
+    if year is provided: year must be invalid
+    if month is provided: year must be valid, but month isn't
+    if day is provided: year and month must be valid, but day isnt'
     """
     __tracebackhide__ = True
     date_selector = html.find("#product-headers .limited")
-    if not month and not day:
+    if year and not month and not day:
         year_option = date_selector[0].find(".option-menu ul", first=True).find("li")
         assert (year not in [years.text for years in year_option]), f"{year} in {[years.text for years in year_option]}"
-    if not day:
+    if year and month and not day:
+        year_option = date_selector[0].find(".option-menu ul", first=True).find("li")
         month_option = date_selector[1].find(".option-menu ul", first=True).find("li")
+        assert (year in [years.text for years in year_option]), f"{year} not in {[years.text for years in year_option]}"
         assert (
             month not in [months.text for months in month_option]
         ), f"{month} in {[months.text for months in month_option]}"
-    else:
+    if year and month and day:
+        year_option = date_selector[0].find(".option-menu ul", first=True).find("li")
+        month_option = date_selector[1].find(".option-menu ul", first=True).find("li")
         day_option = date_selector[2].find(".option-menu ul", first=True).find("li")
+        assert (year in [years.text for years in year_option]), f"{year} not in {[years.text for years in year_option]}"
+        assert (
+            month in [months.text for months in month_option]
+        ), f"{month} not in {[months.text for months in month_option]}"
         assert (day not in [days.text for days in day_option]), f"{day} in {[days.text for days in day_option]}"
 
 
