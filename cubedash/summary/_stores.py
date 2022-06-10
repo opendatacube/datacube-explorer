@@ -799,23 +799,12 @@ class SummaryStore:
                         TIME_OVERVIEW.c.product_ref == product.id_,
                         TIME_OVERVIEW.c.start_day == start_day,
                         TIME_OVERVIEW.c.period_type == period,
+                        func.cardinality(TIME_OVERVIEW.c.regions) == len(
+                            self.get_product_all_regions(product.name, period, start_day)
+                        ),
                     )
                 )
             ).fetchone()
-
-            if period == 'all':
-                res = self._engine.execute(
-                    select([TIME_OVERVIEW]).where(
-                        and_(
-                            TIME_OVERVIEW.c.product_ref == product.id_,
-                            TIME_OVERVIEW.c.start_day == start_day,
-                            TIME_OVERVIEW.c.period_type == period,
-                            func.cardinality(TIME_OVERVIEW.c.regions) == len(
-                                self.get_product_all_regions(product.name)
-                            ),
-                        )
-                    )
-                ).fetchone()
 
         if not res:
             return None
@@ -1698,7 +1687,10 @@ class SummaryStore:
             if geom is not None
         }
 
-    def get_product_all_regions(self, product_name: str) -> List:
+    def get_product_all_regions(self, product_name: str, period_type: str = None, start_day=None) -> List:
+        """
+        return list of regions per date range
+        """
         dt = self.get_dataset_type(product_name)
 
         rows = self._engine.execute(
@@ -1709,6 +1701,34 @@ class SummaryStore:
                 )
                 .where(REGION.c.dataset_type_ref == dt.id)
                 .order_by(REGION.c.region_code)
+            )
+
+        if period_type != 'all' and start_day:
+            year, month, day = TimePeriodOverview.from_flat_period_representation(
+                period_type, start_day
+            )
+            time = _utils.as_time_range(year, month, day)
+
+            begin_time = time.begin
+            end_time = time.end
+            rows = self._engine.execute(
+                select(
+                    [
+                        DATASET_SPATIAL.c.region_code
+                    ]
+                )
+                .where(
+                    and_(
+                        func.tstzrange(
+                            begin_time, end_time, "[]", type_=TSTZRANGE
+                        ).contains(
+                            DATASET_SPATIAL.c.center_time
+                        ),
+                        DATASET_SPATIAL.c.dataset_type_ref == dt.id
+
+                    )
+                )
+                .distinct()
             )
         if not rows:
             return None
