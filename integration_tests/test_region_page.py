@@ -36,9 +36,9 @@ def populate_index(dataset_loader, module_dea_index):
             assert created.type.name == "ls5_sr"
             dataset_count += 1
         except AttributeError as ae:
-            assert dataset_count == 6
+            assert dataset_count == 7
             print(ae)
-    assert dataset_count == 6
+    assert dataset_count == 7
     return module_dea_index
 
 
@@ -55,6 +55,22 @@ def test_product_region_page_dataset_count(client: FlaskClient):
     assert len(search_results) == 4
 
 
+def test_product_page_date_selector(client: FlaskClient):
+    """
+    This tests the product page date selector displays correctly
+    """
+    html = get_html(client, "/product/ls5_sr")
+    check_product_date_selector_contains(
+        html, "1984"
+    )
+    check_product_date_selector_contains(
+        html, "1989"
+    )
+    check_product_date_selector_contains(
+        html, "2007"
+    )
+
+
 def test_product_region_page_date_selector(client: FlaskClient):
     html = get_html(client, "/product/ls5_sr/regions/168053")
     check_product_date_selector_contains(
@@ -64,6 +80,17 @@ def test_product_region_page_date_selector(client: FlaskClient):
         html, "1989"
     )
     check_product_date_selector_not_contain(
+        html, "2007"
+    )
+
+    html = get_html(client, "/product/ls5_sr/regions/205050")
+    check_product_date_selector_contains(
+        html, "1984"
+    )
+    check_product_date_selector_contains(
+        html, "1989"
+    )
+    check_product_date_selector_contains(
         html, "2007"
     )
 

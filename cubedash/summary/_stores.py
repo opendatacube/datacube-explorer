@@ -780,15 +780,29 @@ class SummaryStore:
                 region_code=region_code,
             )
 
-        res = self._engine.execute(
-            select([TIME_OVERVIEW]).where(
-                and_(
-                    TIME_OVERVIEW.c.product_ref == product.id_,
-                    TIME_OVERVIEW.c.start_day == start_day,
-                    TIME_OVERVIEW.c.period_type == period,
+        if region_code:
+            res = self._engine.execute(
+                select([TIME_OVERVIEW]).where(
+                    and_(
+                        TIME_OVERVIEW.c.product_ref == product.id_,
+                        TIME_OVERVIEW.c.start_day == start_day,
+                        TIME_OVERVIEW.c.period_type == period,
+                        TIME_OVERVIEW.c.regions.contains([region_code]),
+                        func.cardinality(TIME_OVERVIEW.c.regions) == 1,
+                    )
                 )
-            )
-        ).fetchone()
+            ).fetchone()
+        else:
+            res = self._engine.execute(
+                select([TIME_OVERVIEW]).where(
+                    and_(
+                        TIME_OVERVIEW.c.product_ref == product.id_,
+                        TIME_OVERVIEW.c.start_day == start_day,
+                        TIME_OVERVIEW.c.period_type == period,
+                        func.cardinality(TIME_OVERVIEW.c.regions) == len(self.get_product_all_regions(product.name)),
+                    )
+                )
+            ).fetchone()
 
         if not res:
             return None
@@ -1043,24 +1057,29 @@ class SummaryStore:
         log.info("product.put")
         product = self._product(summary.product_name)
         period, start_day = summary.as_flat_period()
+        region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
 
+        if bool(region_values):
+            print(region_values, period, start_day, product.id_)
         row = _summary_to_row(summary)
         ret = self._engine.execute(
             postgres.insert(TIME_OVERVIEW)
             .returning(TIME_OVERVIEW.c.generation_time)
             .on_conflict_do_update(
-                index_elements=["product_ref", "start_day", "period_type"],
+                index_elements=["product_ref", "start_day", "period_type", "regions"],
                 set_=row,
                 where=and_(
                     TIME_OVERVIEW.c.product_ref == product.id_,
                     TIME_OVERVIEW.c.start_day == start_day,
                     TIME_OVERVIEW.c.period_type == period,
+                    TIME_OVERVIEW.c.regions == region_values,
                 ),
             )
             .values(
                 product_ref=product.id_, start_day=start_day, period_type=period, **row
             )
         )
+
         [gen_time] = ret.fetchone()
         summary.summary_gen_time = gen_time
 
@@ -1322,6 +1341,7 @@ class SummaryStore:
         year: Optional[int] = None,
         month: Optional[int] = None,
         product_refresh_time: datetime = None,
+        region_code: str = None,
     ) -> TimePeriodOverview:
         """Recalculate the given period and store it in the DB"""
         if year and month:
@@ -1329,6 +1349,7 @@ class SummaryStore:
                 product.name,
                 year_month_day=(year, month, None),
                 product_refresh_time=product_refresh_time,
+                region_code=region_code,
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
@@ -1344,6 +1365,18 @@ class SummaryStore:
                     product.time_latest.astimezone(timezone).year + 1
                 )
             )
+
+            for region in self.get_product_all_regions(product_name=product.name):
+                region_summary = TimePeriodOverview.add_periods(
+                    self.get(product.name, year_, None, None, region_code=region)
+                    for year_ in range(
+                        product.time_earliest.astimezone(timezone).year,
+                        product.time_latest.astimezone(timezone).year + 1
+                    )
+                )
+                region_summary.product_refresh_time = product_refresh_time
+                region_summary.period_tuple = (product.name, year, month, None)
+                self._put(region_summary)
 
         else:
             summary = TimePeriodOverview.empty(product.name)
@@ -1653,6 +1686,23 @@ class SummaryStore:
             if geom is not None
         }
 
+    def get_product_all_regions(self, product_name: str) -> List:
+        dt = self.get_dataset_type(product_name)
+
+        rows = self._engine.execute(
+                select(
+                    [
+                        REGION.c.region_code,
+                    ]
+                )
+                .where(REGION.c.dataset_type_ref == dt.id)
+                .order_by(REGION.c.region_code)
+            )
+        if not rows:
+            return None
+
+        return [region["region_code"] for region in rows]
+
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         return RegionInfo.for_product(
             dataset_type=self.get_dataset_type(product_name),
@@ -1785,6 +1835,9 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
 
+    # if bool(region_values):
+    #     print(type(region_values))
+    #     print(region_values, region_counts, day_values, day_counts)
     begin, end = summary.time_range if summary.time_range else (None, None)
 
     if summary.footprint_geometry and summary.footprint_srid is None:

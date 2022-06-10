@@ -145,7 +145,7 @@
                 {% for start_time, count in timeline_items  %}
                     <a href="{{ url_for('region_page',
                             product_name=product.name,
-                            region_code=region_code,
+                            region_code=region,
                             **{
                                 'year': start_time.year,
                                 'month':start_time.month,

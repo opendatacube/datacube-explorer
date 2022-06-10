@@ -142,6 +142,7 @@ class TimePeriodOverview:
         for p in periods:
             timeline_counter.update(p.timeline_dataset_counts)
             period = p.timeline_period
+
         timeline_counter, period = cls._group_counter_if_needed(
             timeline_counter, period
         )

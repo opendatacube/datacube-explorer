@@ -82,13 +82,7 @@
                     {% if year_selector_summary and year_selector_summary.timeline_dataset_counts %}
                     {% for dataset_date, dataset_count in year_selector_summary.timeline_dataset_counts.items() %}
                             {% if dataset_count > 0 %}
-                            {% if datasets %}
-                            {% for dataset in datasets %}
-                            {% do year_range.append(dataset.center_time.year) %}
-                            {% endfor %}
-                            {% else %}
                             {% do year_range.append(dataset_date.year) %}
-                            {% endif %}
                             {% endif %}
                     {% endfor %}
                     {% endif %}
