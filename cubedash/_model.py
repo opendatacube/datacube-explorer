@@ -96,7 +96,7 @@ def get_time_summary(
     year: Optional[int] = None,
     month: Optional[int] = None,
     day: Optional[int] = None,
-    region: Optional[str] = None
+    region: Optional[str] = None,
 ) -> Optional[TimePeriodOverview]:
     return STORE.get(product_name, year, month, day, region)
 
