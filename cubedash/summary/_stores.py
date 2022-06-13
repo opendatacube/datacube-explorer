@@ -1709,8 +1709,8 @@ class SummaryStore:
             )
             time = _utils.as_time_range(year, month, day)
 
-            begin_time = time.begin
-            end_time = time.end
+            begin_time = time.begin.replace(tzinfo=tz.gettz("Australia/Darwin"))
+            end_time = time.end.replace(tzinfo=tz.gettz("Australia/Darwin"))
             rows = self._engine.execute(
                 select(
                     [
