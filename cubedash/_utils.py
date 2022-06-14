@@ -423,7 +423,10 @@ def center_time_from_metadata(dataset: Dataset) -> datetime:
         return default_utc(dc_utils.parse_time(t))
 
     time = md_type.dataset_fields["time"]
-    center_time = (time.begin + (time.end - time.begin) / 2)
+    try:
+        center_time = (time.begin + (time.end - time.begin) / 2)
+    except AttributeError:
+        center_time = dataset.center_time
     return center_time
 
 
