@@ -115,7 +115,7 @@
                 </thead>
                 {% for dataset in datasets %}
                     <tr class="search-result">
-                        <td>{{ dataset.center_time | printable_time }}</td>
+                        <td>{{ dataset | metadata_center_time | printable_time }}</td>
                         <td>
                             <a href='{{ url_for('dataset.dataset_page', id_=dataset.id) }}'>{{ dataset | printable_dataset }}</a>
                         </td>

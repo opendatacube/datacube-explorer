@@ -38,7 +38,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs
+from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs, expects_eo3_metadata_type
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
@@ -104,19 +104,6 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
             get_dataset_srid_alchemy_expression(md, default_crs),
             type_=Geometry,
         )
-
-
-def expects_eo3_metadata_type(md: MetadataType) -> bool:
-    """
-    Does the given metadata type expect EO3 datasets?
-    """
-    # We don't have a clean way to say that a product expects EO3
-
-    measurements_offset = md.definition["dataset"].get("measurements")
-
-    # In EO3, the measurements are in ['measurments'],
-    # In EO1, they are in ['image', 'bands'].
-    return measurements_offset == ["measurements"]
 
 
 def _projection_doc_offset(md):
@@ -482,17 +469,12 @@ def datetime_expression(md_type: MetadataType):
     """
     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
     """
-    # If EO3+Stac formats, there's already has a plain 'datetime' field,
+    # If EO3 format, there's already has a plain 'datetime' field,
     # So we can use it directly.
     if expects_eo3_metadata_type(md_type):
-        props = _jsonb_doc_expression(md_type)["properties"]
-
-        # .... but in newer Stac, datetime is optional.
-        # .... in which case we fall back to the start time.
-        #      (which I think makes more sense in large ranges than a calculated center time)
         return (
-            func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
-            .cast(TIMESTAMP(timezone=True))
+            _jsonb_doc_expression(md_type)["properties"]["datetime"]
+            .astext.cast(TIMESTAMP(timezone=True))
             .label("center_time")
         )
 
