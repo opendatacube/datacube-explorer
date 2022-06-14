@@ -793,18 +793,35 @@ class SummaryStore:
                 )
             ).fetchone()
         else:
-            res = self._engine.execute(
-                select([TIME_OVERVIEW]).where(
-                    and_(
-                        TIME_OVERVIEW.c.product_ref == product.id_,
-                        TIME_OVERVIEW.c.start_day == start_day,
-                        TIME_OVERVIEW.c.period_type == period,
-                        func.cardinality(TIME_OVERVIEW.c.regions) == len(
-                            self.get_product_all_regions(product.name, period, start_day)
-                        ),
+            if self.get_product_all_regions(product.name, period, start_day):
+                """
+                if the product contains region
+                """
+                res = self._engine.execute(
+                    select([TIME_OVERVIEW]).where(
+                        and_(
+                            TIME_OVERVIEW.c.product_ref == product.id_,
+                            TIME_OVERVIEW.c.start_day == start_day,
+                            TIME_OVERVIEW.c.period_type == period,
+                            func.cardinality(TIME_OVERVIEW.c.regions) == len(
+                                self.get_product_all_regions(product.name, period, start_day)
+                            ),
+                        )
                     )
-                )
-            ).fetchone()
+                ).fetchone()
+            else:
+                """
+                if the product doesnt contain region
+                """
+                res = self._engine.execute(
+                    select([TIME_OVERVIEW]).where(
+                        and_(
+                            TIME_OVERVIEW.c.product_ref == product.id_,
+                            TIME_OVERVIEW.c.start_day == start_day,
+                            TIME_OVERVIEW.c.period_type == period,
+                        )
+                    )
+                ).fetchone()
 
         if not res:
             return None
@@ -858,6 +875,13 @@ class SummaryStore:
             if d.name == name:
                 return d
         raise KeyError(f"Unknown dataset type {name!r}")
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def get_dataset_type_return_none(self, name) -> DatasetType:
+        for d in self.all_dataset_types():
+            if d.name == name:
+                return d
+        return None
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _dataset_type_by_id(self, id_) -> DatasetType:
@@ -1691,8 +1715,9 @@ class SummaryStore:
         """
         return list of regions per date range
         """
-        dt = self.get_dataset_type(product_name)
-
+        dt = self.get_dataset_type_return_none(product_name)
+        if not dt:
+            return None
         rows = self._engine.execute(
                 select(
                     [
