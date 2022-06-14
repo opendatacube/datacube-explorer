@@ -8,7 +8,6 @@ import logging
 from datetime import datetime
 from typing import Mapping
 from urllib.parse import quote_plus
-from xml.etree.ElementTree import QName
 
 import flask
 from datacube.index.fields import Field
