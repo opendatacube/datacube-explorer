@@ -64,7 +64,7 @@
             <table class="data-table">
                 {% for dataset in datasets %}
                     <tr class="search-result collapse-when-small">
-                        <td>{{ dataset | metadata_center_time  }}</td>
+                        <td>{{ dataset | metadata_center_time | printable_time }}</td>
                         <td>
                             <a href="{{ url_for('dataset.dataset_page', id_=dataset.id) }}">{{ dataset | printable_dataset }}</a>
                         </td>

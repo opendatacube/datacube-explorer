@@ -413,20 +413,15 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
 
 
 def center_time_from_metadata(dataset: Dataset) -> datetime:
+    """
+    This function shares the same logic as
+    https://github.com/opendatacube/datacube-explorer/blob/4afa0dbbb51d541f377c479e7edb914bdb62aef9/cubedash/summary/_extents.py#L481-L505
+    """
     md_type = dataset.metadata_type
     if expects_eo3_metadata_type(md_type):
-        from dateutil import parser
         t = dataset.metadata_doc["properties"]["datetime"] or dataset.metadata_doc["properties"]["dtr:start_datetime"]
-        t = datetime.strptime(t, '%Y-%m-%dT%H:%M:%S%fZ')
-        return  t
-        # .... but in newer Stac, datetime is optional.
-        # .... in which case we fall back to the start time.
-        #      (which I think makes more sense in large ranges than a calculated center time)
-        # return props["datetime"].astext
-        # or props["dtr:start_datetime"].astext
+        return default_utc(dc_utils.parse_time(t))
 
-    # On older EO datasets, there's only a time range, so we take the center time.
-    # (This matches the logic in ODC's Dataset.center_time)
     time = md_type.dataset_fields["time"]
     center_time = (time.begin + (time.end - time.begin) / 2)
     return center_time
