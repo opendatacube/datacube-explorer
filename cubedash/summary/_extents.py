@@ -469,12 +469,17 @@ def datetime_expression(md_type: MetadataType):
     """
     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
     """
-    # If EO3 format, there's already has a plain 'datetime' field,
+    # If EO3+Stac formats, there's already has a plain 'datetime' field,
     # So we can use it directly.
     if expects_eo3_metadata_type(md_type):
+        props = _jsonb_doc_expression(md_type)["properties"]
+
+        # .... but in newer Stac, datetime is optional.
+        # .... in which case we fall back to the start time.
+        #      (which I think makes more sense in large ranges than a calculated center time)
         return (
-            _jsonb_doc_expression(md_type)["properties"]["datetime"]
-            .astext.cast(TIMESTAMP(timezone=True))
+            func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
+            .cast(TIMESTAMP(timezone=True))
             .label("center_time")
         )
 
