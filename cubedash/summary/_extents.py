@@ -468,6 +468,8 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
 def datetime_expression(md_type: MetadataType):
     """
     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
+    There is another function sharing the same logic but is for flask template
+    in file: _utils.py function center_time_from_metadata
     """
     # If EO3+Stac formats, there's already has a plain 'datetime' field,
     # So we can use it directly.
