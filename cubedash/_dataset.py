@@ -43,10 +43,6 @@ def dataset_full_page(product_name: str, id_: UUID):
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
 
-    # take center_time from summary generated value
-    if _model.STORE.get_dataset_center_time(id_):
-        dataset.center_time = _model.STORE.get_dataset_center_time(id_)
-
     if product_name != dataset.type.name:
         actual_url = url_for(
             "dataset.dataset_full_page", product_name=dataset.type.name, id_=dataset.id

@@ -101,6 +101,19 @@ def render(template, **context):
     return render_template(template, **context)
 
 
+def expects_eo3_metadata_type(md: MetadataType) -> bool:
+    """
+    Does the given metadata type expect EO3 datasets?
+    """
+    # We don't have a clean way to say that a product expects EO3
+
+    measurements_offset = md.definition["dataset"].get("measurements")
+
+    # In EO3, the measurements are in ['measurments'],
+    # In EO1, they are in ['image', 'bands'].
+    return measurements_offset == ["measurements"]
+
+
 def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
     """
     Get (usually relative) paths for all known files of a dataset.
@@ -397,6 +410,26 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
             _LOG.warn("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
 
     return None
+
+
+def center_time_from_metadata(dataset: Dataset) -> datetime:
+    md_type = dataset.metadata_type
+    if expects_eo3_metadata_type(md_type):
+        from dateutil import parser
+        t = dataset.metadata_doc["properties"]["datetime"] or dataset.metadata_doc["properties"]["dtr:start_datetime"]
+        t = datetime.strptime(t, '%Y-%m-%dT%H:%M:%S%fZ')
+        return  t
+        # .... but in newer Stac, datetime is optional.
+        # .... in which case we fall back to the start time.
+        #      (which I think makes more sense in large ranges than a calculated center time)
+        # return props["datetime"].astext
+        # or props["dtr:start_datetime"].astext
+
+    # On older EO datasets, there's only a time range, so we take the center time.
+    # (This matches the logic in ODC's Dataset.center_time)
+    time = md_type.dataset_fields["time"]
+    center_time = (time.begin + (time.end - time.begin) / 2)
+    return center_time
 
 
 def as_rich_json(o):
