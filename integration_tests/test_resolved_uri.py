@@ -1,9 +1,15 @@
 """
-Unit test
+Unit test for various app.config["CUBEDASH_DATA_S3_REGION"]
 """
 import pytest
 from flask import current_app, Flask
 from cubedash._utils import as_resolved_remote_url, as_external_url
+
+
+@pytest.fixture()
+def app_s3_region_unset():
+    app = Flask(__name__)
+    return app
 
 
 @pytest.fixture()
@@ -42,6 +48,21 @@ def test_as_external_url():
         's3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml',
         None,
     ) == 's3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
+
+
+def test_resolved_remote_url_s3_region_unset(app_s3_region_unset):
+    with app_s3_region_unset.app_context():
+        assert current_app.config.get("CUBEDASH_DATA_S3_REGION") is None
+
+        assert as_resolved_remote_url(
+            None,
+            'file://example.com/test_dataset/'
+        ) == 'file://example.com/test_dataset/'
+
+        assert as_resolved_remote_url(
+            None,
+            's3://example.com/test_dataset/'
+        ) == 'https://example.com.s3.ap-southeast-2.amazonaws.com/test_dataset/'
 
 
 def test_resolved_remote_url_none_s3_region(app_s3_region_none):
