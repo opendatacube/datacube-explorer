@@ -182,8 +182,7 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
         ), "Expected dataset count to decrease after archival"
     finally:
         # Now let's restore the dataset!
-        # index.datasets.restore([dataset_id])
-        pass
+        index.datasets.restore([dataset_id])
 
     # It should be in the count again.
     # (this change should work because the new 'updated' column will be bumped on restore)

@@ -184,8 +184,9 @@ TIME_OVERVIEW = Table(
     Column("crses", postgres.ARRAY(String)),
     # Size of this dataset in bytes, if the product includes it.
     Column("size_bytes", BigInteger),
+    Column("regions_hash", String),
     PrimaryKeyConstraint(
-        "product_ref", "start_day", "period_type", "regions"
+        "product_ref", "start_day", "period_type", "regions_hash",
     ),
     CheckConstraint(
         r"array_length(timeline_dataset_start_days, 1) = "

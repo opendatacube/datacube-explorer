@@ -820,7 +820,7 @@ class SummaryStore:
                             TIME_OVERVIEW.c.start_day == start_day,
                             TIME_OVERVIEW.c.period_type == period,
                         )
-                    )
+                    ).order_by(TIME_OVERVIEW.c.generation_time.desc())
                 ).fetchone()
 
         if not res:
@@ -1086,11 +1086,17 @@ class SummaryStore:
         region_values, _ = _counter_key_vals(summary.region_dataset_counts)
 
         row = _summary_to_row(summary)
+
+        import hashlib
+        import json
         ret = self._engine.execute(
             postgres.insert(TIME_OVERVIEW)
             .returning(TIME_OVERVIEW.c.generation_time)
             .on_conflict_do_update(
-                index_elements=["product_ref", "start_day", "period_type", "regions"],
+                index_elements=[
+                    "product_ref", "start_day", "period_type",
+                    "regions_hash"
+                ],
                 set_=row,
                 where=and_(
                     TIME_OVERVIEW.c.product_ref == product.id_,
@@ -1100,7 +1106,8 @@ class SummaryStore:
                 ),
             )
             .values(
-                product_ref=product.id_, start_day=start_day, period_type=period, **row
+                product_ref=product.id_, start_day=start_day, period_type=period,
+                regions_hash=hashlib.sha224(json.dumps(region_values).encode("utf-8")).hexdigest(), **row
             )
         )
 
