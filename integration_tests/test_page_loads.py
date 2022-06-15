@@ -126,6 +126,11 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     html = get_html(client, "/wofs_summary")
     check_dataset_count(html, 1244)
 
+    # this test setup the page will return 0 dataset listing
+    html = get_html(client, "/products/wofs_summary/datasets")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 0
+
 
 def test_all_products_are_shown(client: FlaskClient):
     """

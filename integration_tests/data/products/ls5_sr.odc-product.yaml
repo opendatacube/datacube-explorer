@@ -1,0 +1,250 @@
+---
+# Product
+# url: https://explorer.digitalearth.africa/products/ls5_sr.odc-product.yaml
+name: ls5_sr
+license: CC-BY-4.0
+metadata_type: eo3
+description: USGS Landsat 5 Collection 2 Level-2 Surface Reflectance
+metadata:
+  product:
+    name: ls5_sr
+measurements:
+- name: SR_B1
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_1
+  - blue
+- name: SR_B2
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_2
+  - green
+- name: SR_B3
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_3
+  - red
+- name: SR_B4
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_4
+  - nir
+- name: SR_B5
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_5
+  - swir_1
+- name: SR_B7
+  dtype: uint16
+  units: '1'
+  nodata: 0
+  aliases:
+  - band_7
+  - swir_2
+- name: QA_PIXEL
+  dtype: uint16
+  units: bit_index
+  nodata: 1
+  aliases:
+  - pq
+  - pixel_quality
+  flags_definition:
+    snow:
+      bits: 5
+      values:
+        '0': not_high_confidence
+        '1': high_confidence
+    clear:
+      bits: 6
+      values:
+        '0': false
+        '1': true
+    cloud:
+      bits: 3
+      values:
+        '0': not_high_confidence
+        '1': high_confidence
+    water:
+      bits: 7
+      values:
+        '0': land_or_cloud
+        '1': water
+    nodata:
+      bits: 0
+      values:
+        '0': false
+        '1': true
+    cloud_shadow:
+      bits: 4
+      values:
+        '0': not_high_confidence
+        '1': high_confidence
+    dilated_cloud:
+      bits: 1
+      values:
+        '0': not_dilated
+        '1': dilated
+    cloud_confidence:
+      bits:
+      - 8
+      - 9
+      values:
+        '0': none
+        '1': low
+        '2': medium
+        '3': high
+    snow_ice_confidence:
+      bits:
+      - 12
+      - 13
+      values:
+        '0': none
+        '1': low
+        '2': reserved
+        '3': high
+    cloud_shadow_confidence:
+      bits:
+      - 10
+      - 11
+      values:
+        '0': none
+        '1': low
+        '2': reserved
+        '3': high
+- name: QA_RADSAT
+  dtype: uint16
+  units: bit_index
+  nodata: 0
+  aliases:
+  - radsat
+  - radiometric_saturation
+  flags_definition:
+    dropped_pixel:
+      bits: 9
+      values:
+        '0': false
+        '1': true
+    nir_saturation:
+      bits: 3
+      values:
+        '0': false
+        '1': true
+    red_saturation:
+      bits: 2
+      values:
+        '0': false
+        '1': true
+    tir_saturation:
+      bits: 5
+      values:
+        '0': false
+        '1': true
+    blue_saturation:
+      bits: 0
+      values:
+        '0': false
+        '1': true
+    green_saturation:
+      bits: 1
+      values:
+        '0': false
+        '1': true
+    band_1_saturation:
+      bits: 0
+      values:
+        '0': false
+        '1': true
+    band_2_saturation:
+      bits: 1
+      values:
+        '0': false
+        '1': true
+    band_3_saturation:
+      bits: 2
+      values:
+        '0': false
+        '1': true
+    band_4_saturation:
+      bits: 3
+      values:
+        '0': false
+        '1': true
+    band_5_saturation:
+      bits: 4
+      values:
+        '0': false
+        '1': true
+    band_6_saturation:
+      bits: 5
+      values:
+        '0': false
+        '1': true
+    band_7_saturation:
+      bits: 6
+      values:
+        '0': false
+        '1': true
+    swir_1_saturation:
+      bits: 4
+      values:
+        '0': false
+        '1': true
+    swir_2_saturation:
+      bits: 6
+      values:
+        '0': false
+        '1': true
+- name: SR_ATMOS_OPACITY
+  dtype: int16
+  units: '1'
+  nodata: -9999
+  aliases:
+  - atmos_opacity
+- name: SR_CLOUD_QA
+  dtype: uint8
+  units: bit_index
+  nodata: 0
+  aliases:
+  - cloud_qa
+  flags_definition:
+    snow:
+      bits: 4
+      values:
+        '0': false
+        '1': true
+    cloud:
+      bits: 1
+      values:
+        '0': false
+        '1': true
+    water:
+      bits: 5
+      values:
+        '0': false
+        '1': true
+    cloud_shadow:
+      bits: 2
+      values:
+        '0': false
+        '1': true
+    adjacent_to_cloud:
+      bits: 3
+      values:
+        '0': false
+        '1': true
+    dark_dense_vegetation:
+      bits: 0
+      values:
+        '0': false
+        '1': true
+...

@@ -1,0 +1,686 @@
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/94772957-fb4d-5a42-ae99-7f01010fc2c7.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 94772957-fb4d-5a42-ae99-7f01010fc2c7
+
+label: LT05_L2SP_205050_19840408_20200918_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1984/205/050/LT05_L2SP_205050_19840408_20200918_02_T1/LT05_L2SP_205050_19840408_20200918_02_T1_SR_stac.json
+
+crs: epsg:32628
+geometry:
+  type: Polygon
+  coordinates: [[[245850.0, 1701060.0], [205770.0, 1524600.0], [388200.0, 1495560.0],
+      [427890.0, 1672320.0], [245850.0, 1701060.0]]]
+grids:
+  default:
+    shape: [6971, 7791]
+    transform: [30.0, 0.0, 200385.0, 0.0, -30.0, 1702515.0]
+
+properties:
+  datetime: '1984-04-08T10:54:37.835069Z'
+  eo:cloud_cover: 19.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 98.5418956
+  eo:sun_elevation: 56.38333026
+  landsat:cloud_cover_land: 3.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.606
+  landsat:rmse_x: 3.2
+  landsat:rmse_y: 3.313
+  landsat:scene_id: LT52050501984099XXX07
+  landsat:wrs_path: '205'
+  landsat:wrs_row: '050'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1984-04-08T10:54:37.835069Z'
+  odc:product: ls5_sr
+  odc:region_code: '205050'
+  proj:epsg: 32628
+  proj:shape:
+  - 6971
+  - 7791
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 200385.0
+  - 0.0
+  - -30.0
+  - 1702515.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1
+  ANG.txt:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_205050_19840408_20200918_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/08d432b3-36f3-5818-9d6a-04bb03c6947b.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 08d432b3-36f3-5818-9d6a-04bb03c6947b
+
+label: LT05_L2SP_205050_19840611_20200918_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1984/205/050/LT05_L2SP_205050_19840611_20200918_02_T1/LT05_L2SP_205050_19840611_20200918_02_T1_SR_stac.json
+
+crs: epsg:32628
+geometry:
+  type: Polygon
+  coordinates: [[[247050.0, 1701810.0], [207060.0, 1525320.0], [389370.0, 1496340.0],
+      [429030.0, 1673100.0], [247050.0, 1701810.0]]]
+grids:
+  default:
+    shape: [6961, 7781]
+    transform: [30.0, 0.0, 201885.0, 0.0, -30.0, 1703115.0]
+
+properties:
+  datetime: '1984-06-11T10:55:42.580038Z'
+  eo:cloud_cover: 22.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 69.37743188
+  eo:sun_elevation: 57.95878382
+  landsat:cloud_cover_land: 10.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.827
+  landsat:rmse_x: 3.357
+  landsat:rmse_y: 3.469
+  landsat:scene_id: LT52050501984163XXX03
+  landsat:wrs_path: '205'
+  landsat:wrs_row: '050'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1984-06-11T10:55:42.580038Z'
+  odc:product: ls5_sr
+  odc:region_code: '205050'
+  proj:epsg: 32628
+  proj:shape:
+  - 6961
+  - 7781
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 201885.0
+  - 0.0
+  - -30.0
+  - 1703115.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1
+  ANG.txt:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_205050_19840611_20200918_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/8e922543-90d6-558f-bd0d-352cf8feac4c.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 8e922543-90d6-558f-bd0d-352cf8feac4c
+
+label: LT05_L2SP_205050_19890913_20200916_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1989/205/050/LT05_L2SP_205050_19890913_20200916_02_T1/LT05_L2SP_205050_19890913_20200916_02_T1_SR_stac.json
+
+crs: epsg:32628
+geometry:
+  type: Polygon
+  coordinates: [[[247530.0, 1700820.0], [207450.0, 1523280.0], [390450.0, 1494480.0],
+      [430080.0, 1671660.0], [247530.0, 1700820.0]]]
+grids:
+  default:
+    shape: [6991, 7801]
+    transform: [30.0, 0.0, 202185.0, 0.0, -30.0, 1702215.0]
+
+properties:
+  datetime: '1989-09-13T10:53:22.450013Z'
+  eo:cloud_cover: 5.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 105.47192095
+  eo:sun_elevation: 56.38244577
+  landsat:cloud_cover_land: 6.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.752
+  landsat:rmse_x: 3.327
+  landsat:rmse_y: 3.393
+  landsat:scene_id: LT52050501989256MPS00
+  landsat:wrs_path: '205'
+  landsat:wrs_row: '050'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1989-09-13T10:53:22.450013Z'
+  odc:product: ls5_sr
+  odc:region_code: '205050'
+  proj:epsg: 32628
+  proj:shape:
+  - 6991
+  - 7801
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 202185.0
+  - 0.0
+  - -30.0
+  - 1702215.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1
+  ANG.txt:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_205050_19890913_20200916_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/7ffb6023-0536-5a01-9d03-2ef5ceb6f721.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 7ffb6023-0536-5a01-9d03-2ef5ceb6f721
+
+label: LT05_L2SP_205050_20070408_20200830_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/2007/205/050/LT05_L2SP_205050_20070408_20200830_02_T1/LT05_L2SP_205050_20070408_20200830_02_T1_SR_stac.json
+
+crs: epsg:32628
+geometry:
+  type: Polygon
+  coordinates: [[[234000.0, 1704600.0], [194430.0, 1528260.0], [384300.0, 1497900.0],
+      [423780.0, 1674390.0], [234000.0, 1704600.0]]]
+grids:
+  default:
+    shape: [7001, 7911]
+    transform: [30.0, 0.0, 190485.0, 0.0, -30.0, 1705815.0]
+
+properties:
+  datetime: '2007-04-08T11:22:17.998050Z'
+  eo:cloud_cover: 4.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 102.75501138
+  eo:sun_elevation: 62.79753454
+  landsat:cloud_cover_land: 0.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.002
+  landsat:rmse_x: 2.892
+  landsat:rmse_y: 2.766
+  landsat:scene_id: LT52050502007098MPS00
+  landsat:wrs_path: '205'
+  landsat:wrs_row: '050'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2007-04-08T11:22:17.998050Z'
+  odc:product: ls5_sr
+  odc:region_code: '205050'
+  proj:epsg: 32628
+  proj:shape:
+  - 7001
+  - 7911
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 190485.0
+  - 0.0
+  - -30.0
+  - 1705815.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1
+  ANG.txt:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_205050_20070408_20200830_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/a6299b8d-2e9f-512c-98f3-8fa70746e9e9.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: a6299b8d-2e9f-512c-98f3-8fa70746e9e9
+
+label: LT05_L2SP_168053_19840421_20200918_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1984/168/053/LT05_L2SP_168053_19840421_20200918_02_T1/LT05_L2SP_168053_19840421_20200918_02_T1_SR_stac.json
+
+crs: epsg:32637
+geometry:
+  type: Polygon
+  coordinates: [[[491040.0, 1219440.0], [452670.0, 1042770.0], [635010.0, 1015830.0],
+      [672900.0, 1192830.0], [491040.0, 1219440.0]]]
+grids:
+  default:
+    shape: [6891, 7731]
+    transform: [30.0, 0.0, 447285.0, 0.0, -30.0, 1220715.0]
+
+properties:
+  datetime: '1984-04-21T07:07:10.080000Z'
+  eo:cloud_cover: 0.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 83.59297863
+  eo:sun_elevation: 57.26686646
+  landsat:cloud_cover_land: 0.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.41
+  landsat:rmse_x: 3.079
+  landsat:rmse_y: 3.157
+  landsat:scene_id: LT51680531984112XXX02
+  landsat:wrs_path: '168'
+  landsat:wrs_row: '053'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1984-04-21T07:07:10.080000Z'
+  odc:product: ls5_sr
+  odc:region_code: '168053'
+  proj:epsg: 32637
+  proj:shape:
+  - 6891
+  - 7731
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 447285.0
+  - 0.0
+  - -30.0
+  - 1220715.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1
+  ANG.txt:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_168053_19840421_20200918_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/2cafc5d5-1207-54eb-b8dc-48382648390a.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 2cafc5d5-1207-54eb-b8dc-48382648390a
+
+label: LT05_L2SP_168053_19841030_20200918_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1984/168/053/LT05_L2SP_168053_19841030_20200918_02_T1/LT05_L2SP_168053_19841030_20200918_02_T1_SR_stac.json
+
+crs: epsg:32637
+geometry:
+  type: Polygon
+  coordinates: [[[488130.0, 1220010.0], [449850.0, 1043310.0], [632160.0, 1016400.0],
+      [670050.0, 1193400.0], [488130.0, 1220010.0]]]
+grids:
+  default:
+    shape: [6901, 7731]
+    transform: [30.0, 0.0, 444285.0, 0.0, -30.0, 1221315.0]
+
+properties:
+  datetime: '1984-10-30T07:09:59.330075Z'
+  eo:cloud_cover: 4.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 129.40676507
+  eo:sun_elevation: 52.63393032
+  landsat:cloud_cover_land: 4.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 4.555
+  landsat:rmse_x: 3.047
+  landsat:rmse_y: 3.386
+  landsat:scene_id: LT51680531984304XXX01
+  landsat:wrs_path: '168'
+  landsat:wrs_row: '053'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1984-10-30T07:09:59.330075Z'
+  odc:product: ls5_sr
+  odc:region_code: '168053'
+  proj:epsg: 32637
+  proj:shape:
+  - 6901
+  - 7731
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 444285.0
+  - 0.0
+  - -30.0
+  - 1221315.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1
+  ANG.txt:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_168053_19841030_20200918_02_T1_thumb_large.jpeg
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.digitalearth.africa/dataset/24dc56c2-922a-5572-896b-9168b7d02595.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 24dc56c2-922a-5572-896b-9168b7d02595
+
+label: LT05_L2SP_205047_19840408_20200918_02_T1_SR
+product:
+  name: ls5_sr
+
+location: s3://deafrica-landsat/collection02/level-2/standard/tm/1984/205/047/LT05_L2SP_205047_19840408_20200918_02_T1/LT05_L2SP_205047_19840408_20200918_02_T1_SR_stac.json
+
+crs: epsg:32628
+geometry:
+  type: Polygon
+  coordinates: [[[353070.0, 2179860.0], [313170.0, 2003460.0], [495840.0, 1974510.0],
+      [535350.0, 2151330.0], [353070.0, 2179860.0]]]
+grids:
+  default:
+    shape: [6961, 7781]
+    transform: [30.0, 0.0, 308085.0, 0.0, -30.0, 2181315.0]
+
+properties:
+  datetime: '1984-04-08T10:53:26.058000Z'
+  eo:cloud_cover: 14.0
+  eo:constellation: Landsat
+  eo:instrument: TM
+  eo:off_nadir: 0
+  eo:platform: LANDSAT_5
+  eo:sun_azimuth: 105.29540246
+  eo:sun_elevation: 56.12926809
+  landsat:cloud_cover_land: 7.0
+  landsat:collection_category: T1
+  landsat:collection_number: '02'
+  landsat:correction: L2SP
+  landsat:rmse: 9.243
+  landsat:rmse_x: 7.89
+  landsat:rmse_y: 4.815
+  landsat:scene_id: LT52050471984099XXX02
+  landsat:wrs_path: '205'
+  landsat:wrs_row: '047'
+  landsat:wrs_type: '2'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '1984-04-08T10:53:26.058000Z'
+  odc:product: ls5_sr
+  odc:region_code: '205047'
+  proj:epsg: 32628
+  proj:shape:
+  - 6961
+  - 7781
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 308085.0
+  - 0.0
+  - -30.0
+  - 2181315.0
+
+measurements:
+  SR_B1:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B1.TIF
+  SR_B2:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B2.TIF
+  SR_B3:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B3.TIF
+  SR_B4:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B4.TIF
+  SR_B5:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B5.TIF
+  SR_B7:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_B7.TIF
+  QA_PIXEL:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_QA_PIXEL.TIF
+  QA_RADSAT:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_QA_RADSAT.TIF
+  SR_CLOUD_QA:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_CLOUD_QA.TIF
+  SR_ATMOS_OPACITY:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_SR_ATMOS_OPACITY.TIF
+
+accessories:
+  index:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1
+  ANG.txt:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_ANG.txt
+  MTL.txt:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_MTL.txt
+  MTL.xml:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_MTL.xml
+  MTL.json:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_MTL.json
+  thumbnail:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_thumb_small.jpeg
+  reduced_resolution_browse:
+    path: LT05_L2SP_205047_19840408_20200918_02_T1_thumb_large.jpeg
+
+lineage: {}
+...

@@ -88,6 +88,7 @@
 
 {% block body_footer %}
     {{ super() }}
+    {% from "layout/macros.html" import region_chart_timeline %}
 
     <script type="application/javascript">
 
@@ -124,6 +125,21 @@
         });
         L.control.zoom({position: "bottomright"}).addTo(map);
         map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+
+        const timelineControl = L.control({position: "topright"});
+        timelineControl.onAdd = function (map) {
+            const div = L.DomUtil.create("div", "timeline-control");
+            div.innerHTML = {{
+                region_chart_timeline(
+                    selected_summary.timeline_dataset_counts,
+                    product,
+                    region_code,
+                    period=selected_summary.timeline_period
+                ) | torapidjson
+                }};
+            return div;
+        };
+        map.addControl(timelineControl);
 
         window.MAP = map;
     </script>

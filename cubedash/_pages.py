@@ -286,7 +286,7 @@ def region_page(
         selected_summary,
         year_selector_summary,
         time_selector_summary,
-    ) = _load_product(product_name, year, month, day)
+    ) = _load_product(product_name, year, month, day, region_code)
 
     region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:
@@ -394,7 +394,7 @@ def timeline_page(product_name: str):
 
 
 def _load_product(
-    product_name, year, month, day
+    product_name, year, month, day, region: str = None
 ) -> Tuple[
     DatasetType,
     ProductSummary,
@@ -410,9 +410,9 @@ def _load_product(
             abort(404, f"Unknown product {product_name!r}")
 
     product_summary = _model.get_product_summary(product_name)
-    time_summary = _model.get_time_summary(product_name, year, month, day)
-    year_selector_summary = _model.get_time_summary(product_name, None, None, None)
-    time_selector_summary = _model.get_time_summary(product_name, year, None, None)
+    time_summary = _model.get_time_summary(product_name, year, month, day, region)
+    year_selector_summary = _model.get_time_summary(product_name, None, None, None, region)
+    time_selector_summary = _model.get_time_summary(product_name, year, None, None, region)
     return (
         product,
         product_summary,

@@ -56,6 +56,7 @@ class Summariser:
         product_name: str,
         year_month_day: Tuple[Optional[int], Optional[int], Optional[int]],
         product_refresh_time: datetime,
+        region_code: str = None,
     ) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
@@ -64,7 +65,7 @@ class Summariser:
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        begin_time, end_time, where_clause = self._where(product_name, time)
+        begin_time, end_time, where_clause = self._where(product_name, time, region_code)
         select_by_srid = (
             select(
                 (
@@ -208,25 +209,43 @@ class Summariser:
         return d
 
     def _where(
-        self, product_name: str, time: Range
+        self, product_name: str, time: Range, region: str = None,
     ) -> Tuple[datetime, datetime, ColumnElement]:
         begin_time = self._with_default_tz(time.begin)
         end_time = self._with_default_tz(time.end)
-        where_clause = and_(
-            func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
-                DATASET_SPATIAL.c.center_time
-            ),
-            DATASET_SPATIAL.c.dataset_type_ref
-            == _scalar_subquery(
-                select([ODC_DATASET_TYPE.c.id]).where(
-                    ODC_DATASET_TYPE.c.name == product_name
-                )
-            ),
-            or_(
-                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
-                func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
-            ),
-        )
+        if region:
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                    DATASET_SPATIAL.c.center_time
+                ),
+                DATASET_SPATIAL.c.dataset_type_ref
+                == _scalar_subquery(
+                    select([ODC_DATASET_TYPE.c.id]).where(
+                        ODC_DATASET_TYPE.c.name == product_name
+                    )
+                ),
+                DATASET_SPATIAL.c.region_code == region,
+                or_(
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
+                ),
+            )
+        else:
+            where_clause = and_(
+                func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
+                    DATASET_SPATIAL.c.center_time
+                ),
+                DATASET_SPATIAL.c.dataset_type_ref
+                == _scalar_subquery(
+                    select([ODC_DATASET_TYPE.c.id]).where(
+                        ODC_DATASET_TYPE.c.name == product_name
+                    )
+                ),
+                or_(
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
+                    func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
+                ),
+            )
         return begin_time, end_time, where_clause
 
     @lru_cache()  # noqa: B019

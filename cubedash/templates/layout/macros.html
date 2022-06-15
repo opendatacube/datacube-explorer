@@ -128,3 +128,56 @@
         {{ _show_raw_keyval(doc) }}
     </div>
 {%- endmacro %}
+
+
+{% macro region_chart_timeline(timeline, product, region, period='month') -%}
+    <div class="chart-timeline">
+        {% if timeline %}
+            {% set month_width = 650 / timeline | length %}
+            {% if month_width > 5 %}
+                {% set month_width = 5 %}
+            {%endif%}
+
+            {% set max_count = timeline.most_common(1)[0][1] %}
+            <div class="chart-timeline-bars">
+                {% set last = namespace(year=False, bars_this_year=100) %}
+                {% set timeline_items = timeline.items() | sort %}
+                {% for start_time, count in timeline_items  %}
+                    <a href="{{ url_for('region_page',
+                            product_name=product.name,
+                            region_code=region,
+                            **{
+                                'year': start_time.year,
+                                'month':start_time.month,
+                                'day': start_time.day if period=='day' else None}
+                            ) }}"
+                       class="chart-timeline-bar {% if start_time[period] == 1 %}new-year{% endif %}"
+                       style="height: {{ (count or 0)/(max_count if max_count > 0 else 1)*100 }}%">
+                        {% set is_always_shown = loop.index == 1 or loop.index == (timeline_items|length) %}
+                        {%  if is_always_shown %}
+                            <span class="chart-timeline-year">
+                                {%- if period == 'day' -%}{{- start_time.day | day_ordinal }} {% endif -%}
+                                {{-start_time.strftime('%b %Y')-}}
+                            </span>
+                        {%endif%}
+
+                        <span class="chart-timeline-year tooltip">
+                            <strong>
+                                {%- if period == 'day' -%}{{- start_time.day | day_ordinal }} {% endif -%}
+                                {{-start_time.strftime('%b %Y')-}}
+                            </strong><br/>
+                            {{ count }} datasets
+                        </span>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {# We're assuming only 1 control per page, sorry. #}
+            <style>
+                .chart-timeline-bar {
+                    width: {{month_width}}px;
+                }
+            </style>
+        {% endif %}
+    </div>
+{%- endmacro %}
