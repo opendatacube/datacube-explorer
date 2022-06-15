@@ -677,16 +677,17 @@ class RegionInfo:
         region_code_field: Field = dataset_type.metadata_type.dataset_fields.get(
             "region_code"
         )
+
         grid_spec = dataset_type.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
         #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
-        if grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dataset_type, known_regions)
-        elif region_code_field is not None:
+        if region_code_field is not None:
             # Generic region info
             return RegionInfo(dataset_type, known_regions)
+        elif grid_spec is not None and grid_spec.tile_size:
+            return GridRegionInfo(dataset_type, known_regions)
         elif "sat_path" in dataset_type.metadata_type.dataset_fields:
             return SceneRegionInfo(dataset_type, known_regions)
 
@@ -760,7 +761,6 @@ class GridRegionInfo(RegionInfo):
 
         doc = _jsonb_doc_expression(dt.metadata_type)
         projection_offset = _projection_doc_offset(dt.metadata_type)
-
         # Calculate tile refs
         geo_ref_points_offset = projection_offset + ["geo_ref_points"]
         center_point = func.ST_Centroid(
