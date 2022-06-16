@@ -1,0 +1,186 @@
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/2a421654-1243-42b0-83c2-73c53338fb4d.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 2a421654-1243-42b0-83c2-73c53338fb4d
+
+label: ga_ls_landcover_class_cyear_2_1-0-0_au_1988-01-01
+product:
+  name: ga_ls_landcover_class_cyear_2
+
+location: s3://dea-public-data/derivative/ga_ls_landcover_class_cyear_2/1-0-0/1988/x_16/y_-38/ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[1700000.0, -3700000.0], [1600000.0, -3700000.0], [1600000.0, -3800000.0],
+      [1700000.0, -3800000.0], [1700000.0, -3700000.0]]]
+grids:
+  default:
+    shape: [4000, 4000]
+    transform: [25.0, 0.0, 1600000.0, 0.0, -25.0, -3700000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1988-01-01 00:00:00Z'
+  eo:instrument: TM, ETM+, OLI
+  eo:platform: landsat-5,landsat-7,landsat-8
+  odc:dataset_version: 1.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-07-20 06:20:46.527409Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_landcover_class_cyear_2
+  odc:product_family: lc
+  odc:region_code: au
+
+measurements:
+  level3:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_level3.tif
+  level4:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_level4.tif
+  canopyco_veg_cat_l4d:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_canopyco-veg-cat-l4d.tif
+  inttidal_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_inttidal-wat-cat-l4a.tif
+  lifeform_veg_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_lifeform-veg-cat-l4a.tif
+  waterstt_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_waterstt-wat-cat-l4a.tif
+  baregrad_phy_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_baregrad-phy-cat-l4d-au.tif
+  waterper_wat_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_waterper-wat-cat-l4d-au.tif
+  watersea_veg_cat_l4a_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01_watersea-veg-cat-l4a-au.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01.sha1
+  lineage:static:
+    path: s3://dea-public-data/projects/LCCS/urban_mask.tif
+  metadata:processor:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_1988-01-01.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/33550ee5-353f-4e07-ad4b-dc780a78d2d1.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 33550ee5-353f-4e07-ad4b-dc780a78d2d1
+
+label: ga_ls_landcover_class_cyear_2_1-0-0_au_2018-01-01
+product:
+  name: ga_ls_landcover_class_cyear_2
+
+location: s3://dea-public-data/derivative/ga_ls_landcover_class_cyear_2/1-0-0/2018/x_16/y_-38/ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[1700000.0, -3700000.0], [1600000.0, -3700000.0], [1600000.0, -3800000.0],
+      [1700000.0, -3800000.0], [1700000.0, -3700000.0]]]
+grids:
+  default:
+    shape: [4000, 4000]
+    transform: [25.0, 0.0, 1600000.0, 0.0, -25.0, -3700000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2018-01-01 00:00:00Z'
+  eo:instrument: TM, ETM+, OLI
+  eo:platform: landsat-5,landsat-7,landsat-8
+  odc:dataset_version: 1.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-07-14 11:02:38.170932Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_landcover_class_cyear_2
+  odc:product_family: lc
+  odc:region_code: au
+
+measurements:
+  level3:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_level3.tif
+  level4:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_level4.tif
+  canopyco_veg_cat_l4d:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_canopyco-veg-cat-l4d.tif
+  inttidal_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_inttidal-wat-cat-l4a.tif
+  lifeform_veg_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_lifeform-veg-cat-l4a.tif
+  waterstt_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_waterstt-wat-cat-l4a.tif
+  baregrad_phy_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_baregrad-phy-cat-l4d-au.tif
+  waterper_wat_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_waterper-wat-cat-l4d-au.tif
+  watersea_veg_cat_l4a_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01_watersea-veg-cat-l4a-au.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01.sha1
+  lineage:static:
+    path: s3://dea-public-data/projects/LCCS/urban_mask.tif
+  metadata:processor:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x16y-38_2018-01-01.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/6a42f0f0-d1b6-45de-9352-7506e23c4e57.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 6a42f0f0-d1b6-45de-9352-7506e23c4e57
+
+label: ga_ls_landcover_class_cyear_2_1-0-0_au_1988-01-01
+product:
+  name: ga_ls_landcover_class_cyear_2
+
+location: s3://dea-public-data/derivative/ga_ls_landcover_class_cyear_2/1-0-0/1988/x_-7/y_-26/ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-600000.0, -2500000.0], [-700000.0, -2500000.0], [-700000.0, -2600000.0],
+      [-600000.0, -2600000.0], [-600000.0, -2500000.0]]]
+grids:
+  default:
+    shape: [4000, 4000]
+    transform: [25.0, 0.0, -700000.0, 0.0, -25.0, -2500000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1988-01-01 00:00:00Z'
+  eo:instrument: TM, ETM+, OLI
+  eo:platform: landsat-5,landsat-7,landsat-8
+  odc:dataset_version: 1.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-07-20 03:09:13.199639Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_landcover_class_cyear_2
+  odc:product_family: lc
+  odc:region_code: au
+
+measurements:
+  level3:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_level3.tif
+  level4:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_level4.tif
+  canopyco_veg_cat_l4d:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_canopyco-veg-cat-l4d.tif
+  inttidal_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_inttidal-wat-cat-l4a.tif
+  lifeform_veg_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_lifeform-veg-cat-l4a.tif
+  waterstt_wat_cat_l4a:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_waterstt-wat-cat-l4a.tif
+  baregrad_phy_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_baregrad-phy-cat-l4d-au.tif
+  waterper_wat_cat_l4d_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_waterper-wat-cat-l4d-au.tif
+  watersea_veg_cat_l4a_au:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01_watersea-veg-cat-l4a-au.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01.sha1
+  lineage:static:
+    path: s3://dea-public-data/projects/LCCS/urban_mask.tif
+  metadata:processor:
+    path: ga_ls_landcover_class_cyear_2_1-0-0_au_x-7y-26_1988-01-01.proc-info.yaml
+...
