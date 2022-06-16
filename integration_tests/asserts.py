@@ -145,6 +145,14 @@ def check_dataset_count(html, count: int):
     ), f"Incorrect dataset count: found {actual} instead of {expected}"
 
 
+def check_datesets_page_datestring(html, datestring: str):
+    __tracebackhide__ = True
+    actual = html.find(".overview-day-link", first=True).text
+    assert (
+        datestring == actual
+    ), f"Incorrect datestring: found {actual} instead of {datestring}"
+
+
 def expect_values(
     s: TimePeriodOverview,
     dataset_count: int,

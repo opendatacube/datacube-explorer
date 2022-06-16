@@ -1,0 +1,141 @@
+---
+# Dataset (actual live)
+# url: https://explorer.dev.digitalearth.africa/dataset/35cbccee-cb07-51cf-85d2-6d2948957544.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: 35cbccee-cb07-51cf-85d2-6d2948957544
+product:
+  name: rainfall_chirps_daily
+
+location: s3://deafrica-input-datasets/rainfall_chirps_daily/2019/05/chirps-v2.0_2019.05.31.stac-item.json
+
+crs: epsg:4326
+geometry:
+  type: Polygon
+  coordinates: [[[-20.0, 40.0], [-20.0, -40.000001192092896], [55.00000111758709,
+        -40.000001192092896], [55.00000111758709, 40.0], [-20.0, 40.0]]]
+grids:
+  default:
+    shape: [1600, 1500]
+    transform: [0.05000000074505806, 0.0, -20.0, 0.0, -0.05000000074505806, 40.0,
+      0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2019-05-31T00:00:00Z'
+  dtr:end_datetime: '2019-05-31T23:59:59Z'
+  dtr:start_datetime: '2019-05-31T00:00:00Z'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-12-17T02:30:32.725683Z'
+  odc:product: rainfall_chirps_daily
+  proj:bbox:
+  - -20.0
+  - -40.000001192092896
+  - 55.00000111758709
+  - 40.0
+  proj:epsg: 4326
+  proj:geometry:
+    type: Polygon
+    coordinates:
+    - - - -20.0
+        - 40.0
+      - - -20.0
+        - -40.000001192092896
+      - - 55.00000111758709
+        - -40.000001192092896
+      - - 55.00000111758709
+        - 40.0
+      - - -20.0
+        - 40.0
+  proj:shape:
+  - 1600
+  - 1500
+  proj:transform:
+  - 0.05000000074505806
+  - 0.0
+  - -20.0
+  - 0.0
+  - -0.05000000074505806
+  - 40.0
+  - 0.0
+  - 0.0
+  - 1.0
+
+measurements:
+  rainfall:
+    path: chirps-v2.0_2019.05.31.tif
+
+accessories: {}
+
+lineage: {}
+...
+---
+# Dataset (test sample, datetime outside range, uuid modified)
+# url: https://explorer.dev.digitalearth.africa/dataset/35cbccee-cb07-51cf-85d2-6d2948957544.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: 35cbccee-cb07-51cf-85d2-6d2948957545
+product:
+  name: rainfall_chirps_daily
+
+location: s3://deafrica-input-datasets/rainfall_chirps_daily/2019/05/chirps-v2.0_2019.05.31.stac-item.json
+
+crs: epsg:4326
+geometry:
+  type: Polygon
+  coordinates: [[[-20.0, 40.0], [-20.0, -40.000001192092896], [55.00000111758709,
+        -40.000001192092896], [55.00000111758709, 40.0], [-20.0, 40.0]]]
+grids:
+  default:
+    shape: [1600, 1500]
+    transform: [0.05000000074505806, 0.0, -20.0, 0.0, -0.05000000074505806, 40.0,
+      0.0, 0.0, 1.0]
+
+properties:
+  datetime: '2019-05-15T00:00:00Z'
+  dtr:end_datetime: '2019-05-31T23:59:59Z'
+  dtr:start_datetime: '2019-05-31T00:00:00Z'
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-12-17T02:30:32.725683Z'
+  odc:product: rainfall_chirps_daily
+  odc:region_code: x210y106
+  proj:bbox:
+  - -20.0
+  - -40.000001192092896
+  - 55.00000111758709
+  - 40.0
+  proj:epsg: 4326
+  proj:geometry:
+    type: Polygon
+    coordinates:
+    - - - -20.0
+        - 40.0
+      - - -20.0
+        - -40.000001192092896
+      - - 55.00000111758709
+        - -40.000001192092896
+      - - 55.00000111758709
+        - 40.0
+      - - -20.0
+        - 40.0
+  proj:shape:
+  - 1600
+  - 1500
+  proj:transform:
+  - 0.05000000074505806
+  - 0.0
+  - -20.0
+  - 0.0
+  - -0.05000000074505806
+  - 40.0
+  - 0.0
+  - 0.0
+  - 1.0
+
+measurements:
+  rainfall:
+    path: chirps-v2.0_2019.05.31.tif
+
+accessories: {}
+
+lineage: {}
+...

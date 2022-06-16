@@ -101,6 +101,19 @@ def render(template, **context):
     return render_template(template, **context)
 
 
+def expects_eo3_metadata_type(md: MetadataType) -> bool:
+    """
+    Does the given metadata type expect EO3 datasets?
+    """
+    # We don't have a clean way to say that a product expects EO3
+
+    measurements_offset = md.definition["dataset"].get("measurements")
+
+    # In EO3, the measurements are in ['measurments'],
+    # In EO1, they are in ['image', 'bands'].
+    return measurements_offset == ["measurements"]
+
+
 def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
     """
     Get (usually relative) paths for all known files of a dataset.
@@ -397,6 +410,24 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
             _LOG.warn("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
 
     return None
+
+
+def center_time_from_metadata(dataset: Dataset) -> datetime:
+    """
+    This function shares the same logic as
+    https://github.com/opendatacube/datacube-explorer/blob/4afa0dbbb51d541f377c479e7edb914bdb62aef9/cubedash/summary/_extents.py#L481-L505
+    """
+    md_type = dataset.metadata_type
+    if expects_eo3_metadata_type(md_type):
+        t = dataset.metadata_doc["properties"]["datetime"] or dataset.metadata_doc["properties"]["dtr:start_datetime"]
+        return default_utc(dc_utils.parse_time(t))
+
+    time = md_type.dataset_fields["time"]
+    try:
+        center_time = (time.begin + (time.end - time.begin) / 2)
+    except AttributeError:
+        center_time = dataset.center_time
+    return center_time
 
 
 def as_rich_json(o):
