@@ -20,6 +20,7 @@ from shapely.geometry import MultiPolygon
 
 from . import _utils, _utils as utils
 
+
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
     "numeric-range": 0.001,
@@ -39,6 +40,11 @@ bp = Blueprint("filters", __name__)
 @bp.app_template_filter("printable_time")
 def _format_datetime(date):
     return date.strftime("%Y-%m-%d %H:%M:%S")
+
+
+@bp.app_template_filter("metadata_center_time")
+def _get_metadata_center_time(dataset):
+    return utils.center_time_from_metadata(dataset)
 
 
 @bp.app_template_filter("printable_dataset")
@@ -123,11 +129,9 @@ def _all_values_none(d: Mapping):
 
 @bp.app_template_filter("dataset_day_link")
 def _dataset_day_link(dataset: Dataset, timezone=None):
-    t = dataset.center_time
+    t = utils.center_time_from_metadata(dataset)
     if t is None:
         return "(unknown time)"
-    if timezone:
-        t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for(
         "product_page",
         product_name=dataset.type.name,

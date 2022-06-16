@@ -1,0 +1,280 @@
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/7fbb4cf1-7dbd-4eb2-8366-79b45fc4faf3.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 7fbb4cf1-7dbd-4eb2-8366-79b45fc4faf3
+
+label: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_wo_fq_nov_mar_3
+  name: ga_ls_wo_fq_nov_mar_3
+
+location: s3://dea-public-data/derivative/ga_ls_wo_fq_nov_mar_3/1-6-0/x11/y46/1987-11--P5M/ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-1632000.0, -960000.0], [-1632000.0, -1056000.0], [-1536000.0, -1056000.0],
+      [-1536000.0, -960000.0], [-1632000.0, -960000.0]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [30.0, 0.0, -1632000.0, 0.0, -30.0, -960000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1987-11-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1988-03-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '1987-11-01T00:00:00+00:00'
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 1.6.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-11-16T00:35:08.505770+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x11y46
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1987-11--P5M_final.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/798fa2b8-9ea3-4b18-8948-d54b189470b1.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 798fa2b8-9ea3-4b18-8948-d54b189470b1
+
+label: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_wo_fq_nov_mar_3
+  name: ga_ls_wo_fq_nov_mar_3
+
+location: s3://dea-public-data/derivative/ga_ls_wo_fq_nov_mar_3/1-6-0/x11/y46/1988-11--P5M/ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-1632000.0, -960000.0], [-1632000.0, -1056000.0], [-1536000.0, -1056000.0],
+      [-1536000.0, -960000.0], [-1632000.0, -960000.0]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [30.0, 0.0, -1632000.0, 0.0, -30.0, -960000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1988-11-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1989-03-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '1988-11-01T00:00:00+00:00'
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 1.6.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-11-16T00:30:01.816921+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x11y46
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1988-11--P5M_final.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/b5361a2b-f31c-43b0-81f4-8f69bcf92263.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: b5361a2b-f31c-43b0-81f4-8f69bcf92263
+
+label: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_wo_fq_nov_mar_3
+  name: ga_ls_wo_fq_nov_mar_3
+
+location: s3://dea-public-data/derivative/ga_ls_wo_fq_nov_mar_3/1-6-0/x11/y46/1989-11--P5M/ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-1632000.0, -960000.0], [-1632000.0, -1056000.0], [-1536000.0, -1056000.0],
+      [-1536000.0, -960000.0], [-1632000.0, -960000.0]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [30.0, 0.0, -1632000.0, 0.0, -30.0, -960000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1989-11-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1990-03-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '1989-11-01T00:00:00+00:00'
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 1.6.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-11-16T00:30:05.233045+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x11y46
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1989-11--P5M_final.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/952aee80-ced8-4a56-b672-096307353407.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 952aee80-ced8-4a56-b672-096307353407
+
+label: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_wo_fq_nov_mar_3
+  name: ga_ls_wo_fq_nov_mar_3
+
+location: s3://dea-public-data/derivative/ga_ls_wo_fq_nov_mar_3/1-6-0/x11/y46/1990-11--P5M/ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-1632000.0, -960000.0], [-1632000.0, -1056000.0], [-1536000.0, -1056000.0],
+      [-1536000.0, -960000.0], [-1632000.0, -960000.0]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [30.0, 0.0, -1632000.0, 0.0, -30.0, -960000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1990-11-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1991-03-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '1990-11-01T00:00:00+00:00'
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 1.6.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-11-16T00:35:26.291947+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x11y46
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1990-11--P5M_final.proc-info.yaml
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/e813174a-7c6a-4d21-9c58-e4fb29ef8ef1.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: e813174a-7c6a-4d21-9c58-e4fb29ef8ef1
+
+label: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_wo_fq_nov_mar_3
+  name: ga_ls_wo_fq_nov_mar_3
+
+location: s3://dea-public-data/derivative/ga_ls_wo_fq_nov_mar_3/1-6-0/x11/y46/1991-11--P5M/ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-1632000.0, -960000.0], [-1632000.0, -1056000.0], [-1536000.0, -1056000.0],
+      [-1536000.0, -960000.0], [-1632000.0, -960000.0]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [30.0, 0.0, -1632000.0, 0.0, -30.0, -960000.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1991-11-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1992-03-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '1991-11-01T00:00:00+00:00'
+  eo:gsd: 30.0  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 1.6.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2021-11-16T01:54:52.154408+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x11y46
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final.proc-info.yaml
+...

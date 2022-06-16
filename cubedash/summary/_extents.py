@@ -38,7 +38,7 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs
+from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs, expects_eo3_metadata_type
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
@@ -104,19 +104,6 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
             get_dataset_srid_alchemy_expression(md, default_crs),
             type_=Geometry,
         )
-
-
-def expects_eo3_metadata_type(md: MetadataType) -> bool:
-    """
-    Does the given metadata type expect EO3 datasets?
-    """
-    # We don't have a clean way to say that a product expects EO3
-
-    measurements_offset = md.definition["dataset"].get("measurements")
-
-    # In EO3, the measurements are in ['measurments'],
-    # In EO1, they are in ['image', 'bands'].
-    return measurements_offset == ["measurements"]
 
 
 def _projection_doc_offset(md):
@@ -481,6 +468,8 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
 def datetime_expression(md_type: MetadataType):
     """
     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
+    There is another function sharing the same logic but is for flask template
+    in file: _utils.py function center_time_from_metadata
     """
     # If EO3+Stac formats, there's already has a plain 'datetime' field,
     # So we can use it directly.
@@ -688,16 +677,17 @@ class RegionInfo:
         region_code_field: Field = dataset_type.metadata_type.dataset_fields.get(
             "region_code"
         )
+
         grid_spec = dataset_type.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
         #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
-        if grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dataset_type, known_regions)
-        elif region_code_field is not None:
+        if region_code_field is not None:
             # Generic region info
             return RegionInfo(dataset_type, known_regions)
+        elif grid_spec is not None and grid_spec.tile_size:
+            return GridRegionInfo(dataset_type, known_regions)
         elif "sat_path" in dataset_type.metadata_type.dataset_fields:
             return SceneRegionInfo(dataset_type, known_regions)
 
@@ -771,7 +761,6 @@ class GridRegionInfo(RegionInfo):
 
         doc = _jsonb_doc_expression(dt.metadata_type)
         projection_offset = _projection_doc_offset(dt.metadata_type)
-
         # Calculate tile refs
         geo_ref_points_offset = projection_offset + ["geo_ref_points"]
         center_point = func.ST_Centroid(

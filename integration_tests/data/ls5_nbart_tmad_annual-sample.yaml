@@ -1,0 +1,150 @@
+---
+# EO1 Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/ed1e1d02-0a5f-422a-b111-1b7320698b09.odc-metadata.yaml
+id: ed1e1d02-0a5f-422a-b111-1b7320698b09
+product_type: surface_reflectance_triple_mad
+creation_dt: '2018-12-26T22:50:42.761211'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -22.51564578096387
+      lon: 118.24427397418239
+    lr:
+      lat: -22.608425122320266
+      lon: 119.22003537123635
+    ul:
+      lat: -21.625127734743167
+      lon: 118.34886096596806
+    ur:
+      lat: -21.717336091784635
+      lon: 119.31730543859135
+  to_dt: '2010-01-01T00:00:00'
+  from_dt: '2010-01-01T00:00:00'
+  center_dt: '2010-01-01T00:00:00'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - -1400000.0
+          - -2465518.621653176
+        - - -1400000.0
+          - -2400000.0
+        - - -1300000.0
+          - -2400000.0
+        - - -1300000.0
+          - -2500000.0
+        - - -1400000.0
+          - -2500000.0
+        - - -1400000.0
+          - -2465518.621653176
+    geo_ref_points:
+      ll:
+        x: -1400000.0
+        y: -2500000.0
+      lr:
+        x: -1300000.0
+        y: -2500000.0
+      ul:
+        x: -1400000.0
+        y: -2400000.0
+      ur:
+        x: -1300000.0
+        y: -2400000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    edev:
+      path: ls5_tmad_nbart_-14_-25_20100101_edev.tif
+    sdev:
+      path: ls5_tmad_nbart_-14_-25_20100101_sdev.tif
+    bcdev:
+      path: ls5_tmad_nbart_-14_-25_20100101_bcdev.tif
+lineage:
+  source_datasets: {}
+statistics:
+  step: 1y
+  period: 1y
+location: s3://dea-public-data-dev/tmad-annual/ls5/x_-14/y_-25/2010/01/01/ls5_tmad_nbart_-14_-25_20100101.yaml
+...
+---
+# EO1 Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/867050c5-f854-434b-8b16-498243a5cf24.odc-metadata.yaml
+id: 867050c5-f854-434b-8b16-498243a5cf24
+product_type: surface_reflectance_triple_mad
+creation_dt: '2018-12-24T13:13:49.087464'
+platform:
+  code: LANDSAT_5
+instrument:
+  name: TM
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -32.76641070461508
+      lon: 140.61023025436907
+    lr:
+      lat: -32.702404943913415
+      lon: 141.68261970358134
+    ul:
+      lat: -31.874201521237953
+      lon: 140.5384063667321
+    ur:
+      lat: -31.810810325945294
+      lon: 141.60191424847983
+  to_dt: '2010-01-01T00:00:00'
+  from_dt: '2010-01-01T00:00:00'
+  center_dt: '2010-01-01T00:00:00'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 800000.0
+          - -3546997.0444869134
+        - - 800000.0
+          - -3500000.0
+        - - 900000.0
+          - -3500000.0
+        - - 900000.0
+          - -3600000.0
+        - - 800000.0
+          - -3600000.0
+        - - 800000.0
+          - -3546997.0444869134
+    geo_ref_points:
+      ll:
+        x: 800000.0
+        y: -3600000.0
+      lr:
+        x: 900000.0
+        y: -3600000.0
+      ul:
+        x: 800000.0
+        y: -3500000.0
+      ur:
+        x: 900000.0
+        y: -3500000.0
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    edev:
+      path: ls5_tmad_nbart_8_-36_20100101_edev.tif
+    sdev:
+      path: ls5_tmad_nbart_8_-36_20100101_sdev.tif
+    bcdev:
+      path: ls5_tmad_nbart_8_-36_20100101_bcdev.tif
+lineage:
+  source_datasets: {}
+statistics:
+  step: 1y
+  period: 1y
+location: s3://dea-public-data-dev/tmad-annual/ls5/x_8/y_-36/2010/01/01/ls5_tmad_nbart_8_-36_20100101.yaml
+...
