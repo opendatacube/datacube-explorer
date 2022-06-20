@@ -533,9 +533,7 @@ class SummaryStore:
             last_refresh_time=covers_up_to,
         )
 
-        # TODO: This is an expensive operation.
-        # We regenerate them all every time there are changes.
-        # pins' bookmark
+        # TODO: This is an expensive operation. We regenerate them all every time there are changes.
         self._refresh_product_regions(product)
 
         self._persist_product_extent(new_summary)
@@ -544,8 +542,9 @@ class SummaryStore:
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
         log.info("refresh.regions.start")
+
         log.info("refresh.regions.update.count.and.insert.new")
-        # TODO: this sql needs to handle in the case all the dataset for certain regions are now archived
+        # add new regions row and/or update existing regions based on dataset_spatial
         changed_rows = self._engine.execute(
             """
         with srid_groups as (
@@ -577,10 +576,10 @@ class SummaryStore:
             """,
             dataset_type.id,
         ).rowcount
-
         log.info("refresh.regions.update.count.and.insert.new.end")
-        log.info("refresh.regions.delete.empty.regions")
 
+        # delete region rows with no related datasets in dataset_spatial table
+        log.info("refresh.regions.delete.empty.regions")
         changed_rows += self._engine.execute(
             """
         delete from cubedash.region
@@ -593,8 +592,8 @@ class SummaryStore:
             """,
             dataset_type.id, dataset_type.id
         ).rowcount
-
         log.info("refresh.regions.delete.empty.regions.end")
+
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
 
