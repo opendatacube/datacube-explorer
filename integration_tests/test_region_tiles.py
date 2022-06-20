@@ -9,8 +9,6 @@ from datacube.utils import read_documents
 from flask.testing import FlaskClient
 from flask import Response
 
-from cubedash.summary import SummaryStore
-
 from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -139,54 +137,19 @@ def test_tmad_region_dataset_count(client: FlaskClient):
     assert len(search_results) == 1
 
 
-def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, summary_store: SummaryStore):
-    rv: Response = client.get(
-            "product/ls5_nbart_tmad_annual/regions/8_-36"
-        )
-    assert rv.status == '200 OK'
-
-    html = get_html(client, "product/ls5_nbart_tmad_annual/regions/8_-36")
-
-    search_results = html.find(".search-result a")
-    assert len(search_results) == 1
-
-    rv: Response = client.get(
-            "product/ls5_nbart_tmad_annual/regions/madeup-36"
-        )
-    assert rv.status == '404 NOT FOUND'
-
-    index = summary_store.index
-
+def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, module_dea_index):
     try:
         # now  index one tile that sole represents a region
-        index.datasets.archive(['867050c5-f854-434b-8b16-498243a5cf24'])
+        module_dea_index.datasets.archive(['867050c5-f854-434b-8b16-498243a5cf24'])
 
         # ... the next generation should catch it and update with one less dataset....
         run_generate("ls5_nbart_tmad_annual")
 
-        html = get_html(client, "product/ls5_nbart_tmad_annual/regions/8_-36")
-
-        search_results = html.find(".search-result a")
-        assert len(search_results) == 0
-
         rv: Response = client.get(
             "product/ls5_nbart_tmad_annual/regions/8_-36"
         )
-        assert rv.status == 404
+        assert rv.status_code == 404
 
     finally:
         # Now let's restore the dataset!
-        index.datasets.restore(['867050c5-f854-434b-8b16-498243a5cf24'])
-
-    # It should be in the count again.
-    # (this change should work because the new 'updated' column will be bumped on restore)
-    run_generate("ls5_nbart_tmad_annual")
-    rv: Response = client.get(
-            "product/ls5_nbart_tmad_annual/regions/8_-36"
-        )
-    assert rv.status == '200 OK'
-
-    html = get_html(client, "product/ls5_nbart_tmad_annual/regions/8_-36")
-
-    search_results = html.find(".search-result a")
-    assert len(search_results) == 1
+        module_dea_index.datasets.restore(['867050c5-f854-434b-8b16-498243a5cf24'])
