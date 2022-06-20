@@ -374,22 +374,12 @@ class SummaryStore:
 
         Either:
            1) They don't exist yet, or
-           2) They have month-records that are newer than our year-record.
+           2) They existed before and has been deleted or archived, or
+           3) They have month-records that are newer than our year-record.
         """
         updated_months = TIME_OVERVIEW.alias("updated_months")
         years = TIME_OVERVIEW.alias("years_needing_update")
         product = self.get_product_summary(product_name)
-        # Empty product? No years
-        if product.dataset_count == 0:
-            return []
-
-        # All years we are expected to have
-        expected_years = set(
-            range(
-                product.time_earliest.astimezone(timezone).year,
-                product.time_latest.astimezone(timezone).year + 1
-            )
-        )
 
         # Years that have already been summarised
         summarised_years = {
@@ -402,6 +392,23 @@ class SummaryStore:
                 )
             )
         }
+
+        # Empty product? No years
+        if product.dataset_count == 0:
+            # check if the timeoverview needs cleanse
+            if not summarised_years:
+                return []
+            else:
+                return summarised_years
+
+        # All years we are expected to have
+        expected_years = set(
+            range(
+                product.time_earliest.astimezone(timezone).year,
+                product.time_latest.astimezone(timezone).year + 1
+            )
+        )
+
         missing_years = expected_years.difference(summarised_years)
 
         # Years who have month-records updated more recently than their own record.
