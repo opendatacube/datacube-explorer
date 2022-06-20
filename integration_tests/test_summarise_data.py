@@ -15,8 +15,6 @@ from datacube.utils import read_documents
 from dateutil import tz
 from dateutil.tz import tzutc
 
-from flask.testing import FlaskClient
-
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
@@ -160,7 +158,7 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     )
 
 
-def test_generate_incremental_archivals(client: FlaskClient, run_generate, summary_store: SummaryStore):
+def test_generate_incremental_archivals(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
     index = summary_store.index
 
