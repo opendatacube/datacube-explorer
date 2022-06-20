@@ -24,7 +24,6 @@ from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 from .asserts import expect_values as _expect_values
-from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -169,10 +168,6 @@ def test_generate_incremental_archivals(client: FlaskClient, run_generate, summa
     original_summary = summary_store.get("ls8_nbar_scene")
     original_dataset_count = original_summary.dataset_count
 
-    html = get_html(client, "/ls8_nbar_scene")
-
-    check_dataset_count(html, original_dataset_count)
-
     # ... and we archive one dataset ...
     product_name = "ls8_nbar_scene"
     dataset_id = _one_dataset(index, product_name)
@@ -185,10 +180,6 @@ def test_generate_incremental_archivals(client: FlaskClient, run_generate, summa
             summary_store.get("ls8_nbar_scene").dataset_count
             == original_dataset_count - 1
         ), "Expected dataset count to decrease after archival"
-
-        html = get_html(client, "/ls8_nbar_scene")
-
-        check_dataset_count(html, original_dataset_count-1)
     finally:
         # Now let's restore the dataset!
         index.datasets.restore([dataset_id])
@@ -199,9 +190,6 @@ def test_generate_incremental_archivals(client: FlaskClient, run_generate, summa
     assert (
         summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
     ), "A dataset that was restored from archival was not refreshed by Explorer"
-    html = get_html(client, "/ls8_nbar_scene")
-
-    check_dataset_count(html, original_dataset_count)
 
 
 def _one_dataset(index: Index, product_name: str):
