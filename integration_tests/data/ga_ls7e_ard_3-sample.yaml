@@ -1,0 +1,142 @@
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/50014f19-5546-4853-be8d-0185a798c083.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 50014f19-5546-4853-be8d-0185a798c083
+
+label: ga_ls7e_ard_3-0-0_093074_1999-07-30_final
+product:
+  name: ga_ls7e_ard_3
+
+location: s3://dea-public-data/baseline/ga_ls7e_ard_3/093/074/1999/07/30/ga_ls7e_ard_3-0-0_093074_1999-07-30_final.stac-item.json
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[730472.0, -2337677.0], [577450.0, -2312505.0], [576303.0, -2312307.0],
+      [570886.0, -2311416.0], [570878.0, -2311340.0], [570938.0, -2311024.0], [575333.0,
+        -2291854.0], [603128.0, -2171374.0], [609098.0, -2145529.0], [611978.0, -2133124.0],
+      [612218.0, -2132168.0], [612505.0, -2132198.0], [683080.0, -2143778.0], [796690.0,
+        -2162438.0], [801520.0, -2163233.0], [801539.0, -2163249.0], [804500.0, -2163735.0],
+      [806600.0, -2164095.0], [806745.0, -2164153.0], [806774.0, -2164641.0], [806354.0,
+        -2166561.0], [800414.0, -2192392.0], [766454.0, -2339692.0], [765674.0, -2342992.0],
+      [765461.0, -2343389.0], [765310.0, -2343405.0], [764380.0, -2343255.0], [760053.0,
+        -2342543.0], [760040.0, -2342542.0], [730472.0, -2337677.0]]]
+grids:
+  g15m:
+    shape: [14121, 15861]
+    transform: [15.0, 0.0, 570592.5, 0.0, -15.0, -2132092.5, 0.0, 0.0, 1.0]
+  default:
+    shape: [7061, 7931]
+    transform: [30.0, 0.0, 570585.0, 0.0, -30.0, -2132085.0, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: '1999-07-30T23:57:44.353320Z'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1999-07-30T23:57:57.878049Z'
+  dtr:start_datetime: '1999-07-30T23:57:30.724605Z'
+  eo:cloud_cover: 38.6758866869305
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 42.44117309
+  eo:sun_elevation: 39.35997415
+  fmask:clear: 20.434160766812145
+  fmask:cloud: 38.6758866869305
+  fmask:cloud_shadow: 2.679276345455315
+  fmask:snow: 0.00012657425410055756
+  fmask:water: 38.21054962654794
+  gqa:abs_iterative_mean_x: 0.13
+  gqa:abs_iterative_mean_xy: 0.18
+  gqa:abs_iterative_mean_y: 0.13
+  gqa:abs_x: 0.2
+  gqa:abs_xy: 0.31
+  gqa:abs_y: 0.24
+  gqa:cep90: 0.36
+  gqa:iterative_mean_x: -0.02
+  gqa:iterative_mean_xy: 0.08
+  gqa:iterative_mean_y: 0.08
+  gqa:iterative_stddev_x: 0.16
+  gqa:iterative_stddev_xy: 0.22
+  gqa:iterative_stddev_y: 0.15
+  gqa:mean_x: -0.07
+  gqa:mean_xy: 0.12
+  gqa:mean_y: 0.09
+  gqa:stddev_x: 0.56
+  gqa:stddev_xy: 0.86
+  gqa:stddev_y: 0.66
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:landsat_product_id: LE07_L1TP_093074_19990730_20170218_01_T1
+  landsat:landsat_scene_id: LE70930741999211EDC00
+  landsat:wrs_path: 93
+  landsat:wrs_row: 74
+  odc:dataset_version: 3.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2019-11-01T18:56:39.150063Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls7e_ard_3
+  odc:product_family: ard
+  odc:region_code: '093074'
+  proj:epsg: 32655
+  proj:shape:
+  - 7061
+  - 7931
+  proj:transform:
+  - 30.0
+  - 0.0
+  - 570585.0
+  - 0.0
+  - -30.0
+  - -2132085.0
+  - 0.0
+  - 0.0
+  - 1.0
+
+measurements:
+  oa_fmask:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_fmask.tif
+  nbart_nir:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band04.tif
+  nbart_red:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band03.tif
+  nbart_blue:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band01.tif
+  nbart_green:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band02.tif
+  nbart_swir_1:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band05.tif
+  nbart_swir_2:
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band07.tif
+  oa_time_delta:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_time-delta.tif
+  oa_solar_zenith:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_solar-zenith.tif
+  oa_exiting_angle:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_exiting-angle.tif
+  oa_solar_azimuth:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_solar-azimuth.tif
+  oa_incident_angle:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_incident-angle.tif
+  oa_relative_slope:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_relative-slope.tif
+  oa_satellite_view:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_satellite-view.tif
+  nbart_panchromatic:
+    grid: g15m
+    path: ga_ls7e_nbart_3-0-0_093074_1999-07-30_final_band08.tif
+  oa_nbart_contiguity:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_relative-azimuth.tif
+  oa_azimuthal_exiting:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_azimuthal-exiting.tif
+  oa_satellite_azimuth:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_satellite-azimuth.tif
+  oa_azimuthal_incident:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls7e_oa_3-0-0_093074_1999-07-30_final_combined-terrain-shadow.tif
+
+lineage: {}
+...

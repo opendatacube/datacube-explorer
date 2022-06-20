@@ -29,7 +29,7 @@
 
                 <tbody>
                     {% for period, count in products_period_dscount.items() %}
-                        <tr>
+                        <tr id="{{period[0]}}-{{period[1] or ''}}-{{period[2] or ''}}">
                             <td>{{ period[0] }}</td>
                             <td>{{ period[1] or '' }}</td>
                             <td>{{ period[2] | month_name if period[2] else '' }}</td>

@@ -1,0 +1,179 @@
+---
+# Product
+# url: https://explorer.dev.dea.ga.gov.au/products/ga_ls7e_ard_3.odc-product.yaml
+name: ga_ls7e_ard_3
+license: CC-BY-4.0
+metadata_type: eo3_landsat_ard
+description: Geoscience Australia Landsat 7 Enhanced Thematic Mapper Plus Analysis
+  Ready Data Collection 3
+metadata:
+  product:
+    name: ga_ls7e_ard_3
+  properties:
+    eo:platform: landsat-7
+    odc:producer: ga.gov.au
+    eo:instrument: ETM
+    odc:product_family: ard
+measurements:
+- name: nbart_blue
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band01
+  - blue
+- name: nbart_green
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band02
+  - green
+- name: nbart_red
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band03
+  - red
+- name: nbart_nir
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band04
+  - nir
+- name: nbart_swir_1
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band05
+  - swir_1
+  - swir1
+- name: nbart_swir_2
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band07
+  - swir_2
+  - swir2
+- name: nbart_panchromatic
+  dtype: int16
+  units: '1'
+  nodata: -999
+  aliases:
+  - nbart_band08
+  - panchromatic
+- name: oa_fmask
+  dtype: uint8
+  units: '1'
+  nodata: 0
+  aliases:
+  - fmask
+  flags_definition:
+    fmask:
+      bits:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      values:
+        '0': nodata
+        '1': valid
+        '2': cloud
+        '3': shadow
+        '4': snow
+        '5': water
+      description: Fmask
+- name: oa_nbart_contiguity
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  aliases:
+  - nbart_contiguity
+  flags_definition:
+    contiguous:
+      bits:
+      - 0
+      values:
+        '0': false
+        '1': true
+- name: oa_azimuthal_exiting
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - azimuthal_exiting
+- name: oa_azimuthal_incident
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - azimuthal_incident
+- name: oa_combined_terrain_shadow
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  aliases:
+  - combined_terrain_shadow
+- name: oa_exiting_angle
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - exiting_angle
+- name: oa_incident_angle
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - incident_angle
+- name: oa_relative_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - relative_azimuth
+- name: oa_relative_slope
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - relative_slope
+- name: oa_satellite_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - satellite_azimuth
+- name: oa_satellite_view
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - satellite_view
+- name: oa_solar_azimuth
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - solar_azimuth
+- name: oa_solar_zenith
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - solar_zenith
+- name: oa_time_delta
+  dtype: float32
+  units: '1'
+  nodata: NaN
+  aliases:
+  - time_delta
+...
