@@ -7,6 +7,7 @@ import pytest
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
+from flask import Response
 
 from integration_tests.asserts import check_dataset_count, get_html
 
@@ -134,3 +135,21 @@ def test_tmad_region_dataset_count(client: FlaskClient):
 
     search_results = html.find(".search-result a")
     assert len(search_results) == 1
+
+
+def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, module_dea_index):
+    try:
+        # now  index one tile that sole represents a region
+        module_dea_index.datasets.archive(['867050c5-f854-434b-8b16-498243a5cf24'])
+
+        # ... the next generation should catch it and update with one less dataset....
+        run_generate("ls5_nbart_tmad_annual")
+
+        rv: Response = client.get(
+            "product/ls5_nbart_tmad_annual/regions/8_-36"
+        )
+        assert rv.status_code == 404
+
+    finally:
+        # Now let's restore the dataset!
+        module_dea_index.datasets.restore(['867050c5-f854-434b-8b16-498243a5cf24'])

@@ -549,6 +549,9 @@ class SummaryStore:
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
         log = _LOG.bind(product_name=dataset_type.name)
         log.info("refresh.regions.start")
+
+        log.info("refresh.regions.update.count.and.insert.new")
+        # add new regions row and/or update existing regions based on dataset_spatial
         changed_rows = self._engine.execute(
             """
         with srid_groups as (
@@ -580,6 +583,23 @@ class SummaryStore:
             """,
             dataset_type.id,
         ).rowcount
+        log.info("refresh.regions.update.count.and.insert.new.end")
+
+        # delete region rows with no related datasets in dataset_spatial table
+        log.info("refresh.regions.delete.empty.regions")
+        changed_rows += self._engine.execute(
+            """
+        delete from cubedash.region
+        where dataset_type_ref = %s and region_code not in (
+             select cubedash.dataset_spatial.region_code
+             from cubedash.dataset_spatial
+             where cubedash.dataset_spatial.dataset_type_ref = %s
+             group by cubedash.dataset_spatial.region_code
+        )
+            """,
+            dataset_type.id, dataset_type.id
+        ).rowcount
+        log.info("refresh.regions.delete.empty.regions.end")
 
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
