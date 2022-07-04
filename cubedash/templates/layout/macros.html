@@ -93,7 +93,7 @@
         <span class="value">{{ value }}</span>
     {%- elif value is mapping -%}
         {%- for key, val in value.items() %}
-            <div class="property">
+            <div class="property"  id="{{key}}">
                 <span class="key">{{ key }}:</span>
                 {{ _show_raw_keyval(val) }}
             </div>
@@ -105,14 +105,14 @@
             <details class="array">[
                 <summary><span>[{{ value | length }} items...]</span></summary>
             {%- for item in value %}
-                <div class="array-item">{{ _show_raw_keyval(item) }},</div>
+                <div class="array-item" id="{{ item.name }}">{{ _show_raw_keyval(item) }},</div>
             {% endfor %}
             ]
             </details>
         {% else %}
             <span class="array">[
             {%- for item in value %}
-                <div class="array-item">{{ _show_raw_keyval(item) }}</div>
+                <div class="array-item" id="{{ item.name }}">{{ _show_raw_keyval(item) }}</div>
             {% endfor %}
             ]</span>
         {% endif %}
