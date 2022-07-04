@@ -1,0 +1,225 @@
+---
+# Metadata Type
+# url: https://explorer.dev.dea.ga.gov.au/metadata-types/eo_plus.odc-type.yaml
+name: eo_plus
+description: EO metadata for DEA products with GQA.
+dataset:
+  id:
+  - id
+  label:
+  - ga_label
+  format:
+  - format
+  - name
+  sources:
+  - lineage
+  - source_datasets
+  creation_dt:
+  - system_information
+  - time_processed
+  grid_spatial:
+  - grid_spatial
+  - projection
+  measurements:
+  - image
+  - bands
+  search_fields:
+    gqa:
+      type: double
+      offset:
+      - gqa
+      - cep90
+      indexed: false
+      description: GQA circular error probable (90%)
+    lat:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      min_offset:
+      - - extent
+        - coord
+        - ur
+        - lat
+      - - extent
+        - coord
+        - lr
+        - lat
+      - - extent
+        - coord
+        - ul
+        - lat
+      - - extent
+        - coord
+        - ll
+        - lat
+      description: Latitude range
+    lon:
+      type: double-range
+      max_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      min_offset:
+      - - extent
+        - coord
+        - ul
+        - lon
+      - - extent
+        - coord
+        - ur
+        - lon
+      - - extent
+        - coord
+        - ll
+        - lon
+      - - extent
+        - coord
+        - lr
+        - lon
+      description: Longitude range
+    time:
+      type: datetime-range
+      max_offset:
+      - - extent
+        - to_dt
+      min_offset:
+      - - extent
+        - from_dt
+      description: Acquisition time
+    format:
+      offset:
+      - format
+      - name
+      indexed: false
+      description: File format (GeoTIFF, NetCDF)
+    platform:
+      offset:
+      - platform
+      - code
+      description: Platform code
+    gqa_cep90:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - cep90
+      indexed: false
+      description: Circular error probable (90%) of the values of the GCP residuals
+    gqa_abs_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - abs
+      - xy
+      indexed: false
+      description: Absolute value of the total GCP residual
+    instrument:
+      offset:
+      - instrument
+      - name
+      description: Instrument name
+    gqa_mean_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - mean
+      - xy
+      indexed: false
+      description: Mean of the values of the GCP residuals
+    region_code:
+      offset:
+      - provider
+      - reference_code
+      description: Spatial reference code from the provider
+    product_type:
+      offset:
+      - product_type
+      description: Product code
+    gqa_stddev_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - stddev
+      - xy
+      indexed: false
+      description: Standard Deviation of the values of the GCP residuals
+    gqa_ref_source:
+      offset:
+      - gqa
+      - ref_source
+      indexed: false
+      description: GQA reference imagery collection name
+    gqa_error_message:
+      offset:
+      - gqa
+      - error_message
+      indexed: false
+      description: GQA error message
+    gqa_final_qa_count:
+      type: integer
+      offset:
+      - gqa
+      - final_qa_count
+      indexed: false
+      description: GQA QA point count
+    gqa_iterative_mean_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - iterative_mean
+      - xy
+      indexed: false
+      description: Mean of the values of the GCP residuals after removal of outliers
+    gqa_iterative_stddev_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - iterative_stddev
+      - xy
+      indexed: false
+      description: Standard Deviation of the values of the GCP residuals after removal
+        of outliers
+    gqa_abs_iterative_mean_xy:
+      type: double
+      offset:
+      - gqa
+      - residual
+      - abs_iterative_mean
+      - xy
+      indexed: false
+      description: Mean of the absolute values of the GCP residuals after removal
+        of outliers
+...

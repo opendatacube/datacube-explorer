@@ -755,6 +755,7 @@ def test_raw_documents(client: FlaskClient):
     # Product
     check_doc_start_has_hint("Product", "/products/ls8_nbar_albers.odc-product.yaml")
 
+
     # Metadata type
     check_doc_start_has_hint("Metadata Type", "/metadata-types/eo3.odc-type.yaml")
 

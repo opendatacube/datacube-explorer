@@ -542,10 +542,18 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
 
     Multiple args will return a multi-doc yaml file.
     """
-    stream = StringIO()
-    eodatasets3.serialise.dumps_yaml(stream, *o)
+    import yaml
+    from datacube.utils.serialise import SafeDatacubeDumper
+
+    def commentedmap_representer(dumper, data):
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    SafeDatacubeDumper.add_representer(CommentedMap, commentedmap_representer)
+
+    stream = yaml.dump(*o, Dumper=SafeDatacubeDumper, default_flow_style=False,
+                      indent=4)
     response = flask.Response(
-        stream.getvalue(),
+        stream,
         content_type=content_type,
     )
     if downloadable_filename_prefix:
