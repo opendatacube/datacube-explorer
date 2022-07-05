@@ -151,9 +151,9 @@ def cli(
         def handle_failure():
             nonlocal consecutive_failures
             consecutive_failures += 1
-            failures.append(url)
+            failures.append(url)  # noqa: B023
             # Back off slightly for network hiccups.
-            time.sleep(max(throttle_seconds, 1) * (consecutive_failures + 1))
+            time.sleep(max(throttle_seconds, 1) * (consecutive_failures + 1))  # noqa: B023
 
         try:
             start_time = time.time()
