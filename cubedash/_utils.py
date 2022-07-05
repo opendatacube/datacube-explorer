@@ -14,7 +14,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Uni
 from urllib.parse import urljoin, urlparse
 from uuid import UUID
 import itertools
-
+import numpy
 
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
@@ -542,18 +542,28 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
 
     Multiple args will return a multi-doc yaml file.
     """
-    import yaml
-    from datacube.utils.serialise import SafeDatacubeDumper
+    stream = StringIO()
 
-    def commentedmap_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+    # TODO: remove the two functions once eo-datasets fix is released
+    def _represent_float(self, value):
+        text = numpy.format_float_scientific(value)
+        return self.represent_scalar(u'tag:yaml.org,2002:float', text)
 
-    SafeDatacubeDumper.add_representer(CommentedMap, commentedmap_representer)
+    def dumps_yaml(yml, stream, *docs) -> None:
+        """Dump yaml through a stream, using the default serialisation settings."""
+        return yml.dump_all(docs, stream=stream)
 
-    stream = yaml.dump(*o, Dumper=SafeDatacubeDumper, default_flow_style=False,
-                      indent=4)
+    yml = eodatasets3.serialise._init_yaml()
+
+    # extend from eodatasets3 serialise
+    yml.representer.add_representer(float, _represent_float)
+    dumps_yaml(yml, stream, *o)
+    # ENDTODO
+
+    # TODO: once upstream is fixed, use the below line only
+    # eodatasets3.serialise.dumps_yaml(stream, *o)
     response = flask.Response(
-        stream,
+        stream.getvalue(),
         content_type=content_type,
     )
     if downloadable_filename_prefix:

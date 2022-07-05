@@ -9,40 +9,107 @@ import yaml
 
 from datacube.utils.serialise import SafeDatacubeDumper
 
-
+import datacube.scripts.cli_app
 from integration_tests.asserts import (
     check_dataset_count,
     get_html,
     get_text_response
 )
-
-from cubedash._utils import prepare_document_formatting
+from datacube.index import Index
+from datacube.utils import read_documents
 import pytest
 import re
+import tempfile
+from datacube.utils import read_documents, InvalidDocException
+
+from click.testing import CliRunner
 
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
+def test_product_yaml_with_scientific_notation_is_valid(client: FlaskClient):
+    response = client.get('products/ga_s2a_ard_nbar_granule.odc-product.yaml')
+    assert response.content_type == 'text/yaml'
 
-@pytest.mark.skip(reason="loading back to yaml will convert it to float")
-def test_s2a_ard_nbar_yaml(client: FlaskClient):
-    doc, _ = get_text_response(client, 'products/ga_s2a_ard_nbar_granule.odc-product.yaml')
+    f = tempfile.NamedTemporaryFile(suffix='.yaml')
+    f.write(response.data)
+
+    runner = CliRunner()
+
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        [
+            "product",
+            "update",
+            f.name
+        ]
+    )
+
+    assert result.output == 'Updated "ga_s2a_ard_nbar_granule"\n'
+    assert result.exit_code == 0
 
 
-    doc_yaml = YAML(typ="safe", pure=True).load(StringIO(doc))
+def test_wagl_product_yaml_is_valid(client: FlaskClient):
+    response = client.get('products/s2a_ard_granule.odc-product.yaml')
+    assert response.content_type == 'text/yaml'
 
-    for m in doc_yaml['measurements']:
-        if m["name"] == 'nbar_swir_2':
-            assert str(m['spectral_definition']['response'][0]) == '7.0e-06'
-            assert m['spectral_definition']['response'][1] == '7.0e-06'
-            assert m['spectral_definition']['response'][2] == '7.0e-06'
+    f = tempfile.NamedTemporaryFile(suffix='.yaml')
+    f.write(response.data)
+
+    runner = CliRunner()
+
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        [
+            "product",
+            "update",
+            f.name
+        ]
+    )
+
+    assert result.output == 'Updated "s2a_ard_granule"\n'
+    assert result.exit_code == 0
 
 
+@pytest.mark.skip(reason="result output for this is empty string")
+def test_low_complication_product_yaml_is_valid(client):
+    response = client.get("/products/ls5_fc_albers.odc-product.yaml", follow_redirects=True)
+    assert response.content_type == 'text/yaml'
 
-@pytest.mark.skip()
-def test_s2a_ard_nbar_page(client: FlaskClient):
-    html = get_html(client, 'products/ga_s2a_ard_nbar_granule')
+    f = tempfile.NamedTemporaryFile(suffix='.yaml')
+    f.write(response.data)
 
-    spectral_response = html.find("#raw-doc #nbar_swir_2 #spectral_definition", first=True)
-    assert spectral_response.find(".array-item")[0].find(".value", first=True).text ==  '7.0e-06'
-    assert spectral_response.find(".array-item")[1].find(".value", first=True).text ==  '7.0e-06'
-    assert spectral_response.find(".array-item")[2].find(".value", first=True).text ==  '7.0e-06'
+    runner = CliRunner()
+
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        [
+            "product",
+            "update",
+            f.name
+        ]
+    )
+
+    assert result.output == 'Updated "ls5_fc_albers"\n'
+    assert result.exit_code == 0
+
+
+@pytest.mark.skip(reason="result output for this is empty string")
+def test_simple_product_yaml_is_valid(client):
+    response = client.get("/products/dsm1sv10.odc-product.yaml", follow_redirects=True)
+    assert response.content_type == 'text/yaml'
+
+    f = tempfile.NamedTemporaryFile(suffix='.yaml')
+    f.write(response.data)
+
+    runner = CliRunner()
+
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        [
+            "product",
+            "update",
+            f.name
+        ]
+    )
+
+    assert result.output == 'Updated "dsm1sv10"\n'
+    assert result.exit_code == 0
