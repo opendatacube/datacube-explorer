@@ -384,6 +384,15 @@ h1, h2, h3, h4, th
     &.overflowable
         overflow-x: auto
 
+    .dataset-location
+        @media (max-width: 750px)
+            table
+                tr
+                    th
+                        float: left
+                    td
+                        float: left
+
 .columned
     column-count: 2
     @media (max-width: 590px)
@@ -705,7 +714,6 @@ label
     font-family: monospace
     font-size: 12px
     line-break: anywhere
-    white-space: pre-line
 
 .raw-metadata
     .property

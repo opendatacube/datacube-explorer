@@ -341,6 +341,14 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .panel.overflowable {
   overflow-x: auto;
 }
+@media (max-width: 750px) {
+  .panel .dataset-location table tr th {
+    float: left;
+  }
+  .panel .dataset-location table tr td {
+    float: left;
+  }
+}
 
 .columned {
   column-count: 2;
@@ -672,7 +680,6 @@ label.disabled {
   font-family: monospace;
   font-size: 12px;
   line-break: anywhere;
-  white-space: pre-line;
 }
 
 .raw-metadata .property {
