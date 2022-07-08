@@ -341,9 +341,22 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .panel.overflowable {
   overflow-x: auto;
 }
+@media (max-width: 750px) {
+  .panel .dataset-location table tr th {
+    float: left;
+  }
+  .panel .dataset-location table tr td {
+    float: left;
+  }
+}
 
 .columned {
   column-count: 2;
+}
+@media (max-width: 590px) {
+  .columned {
+    column-count: 1;
+  }
 }
 
 .header-option {
@@ -380,6 +393,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 .header-option .option-title {
   font-size: 1em;
   font-weight: normal;
+  line-break: anywhere;
 }
 .header-option .group-name {
   margin: 0;
@@ -665,7 +679,7 @@ label.disabled {
 .uri-path {
   font-family: monospace;
   font-size: 12px;
-  white-space: nowrap;
+  line-break: anywhere;
 }
 
 .raw-metadata .property {
@@ -676,6 +690,8 @@ label.disabled {
 }
 .raw-metadata .property > .value {
   color: #737373;
+  line-break: anywhere;
+  white-space: pre-line;
 }
 .raw-metadata .property summary {
   font-style: italic;

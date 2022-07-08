@@ -384,8 +384,19 @@ h1, h2, h3, h4, th
     &.overflowable
         overflow-x: auto
 
+    .dataset-location
+        @media (max-width: 750px)
+            table
+                tr
+                    th
+                        float: left
+                    td
+                        float: left
+
 .columned
     column-count: 2
+    @media (max-width: 590px)
+        column-count: 1
 
 .header-option
     position: relative
@@ -422,7 +433,7 @@ h1, h2, h3, h4, th
     .option-title
         font-size: 1em
         font-weight: normal
-
+        line-break: anywhere
 
     .group-name
         margin: 0
@@ -702,7 +713,7 @@ label
 .uri-path
     font-family: monospace
     font-size: 12px
-    white-space: nowrap
+    line-break: anywhere
 
 .raw-metadata
     .property
@@ -713,6 +724,8 @@ label
 
         & > .value
             color: $muted_text
+            line-break: anywhere
+            white-space: pre-line
 
         summary
             font-style: italic
