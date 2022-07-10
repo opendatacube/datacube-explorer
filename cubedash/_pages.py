@@ -458,6 +458,7 @@ def inject_globals():
             "CUBEDASH_INSTANCE_TITLE",
         )
         or app.config.get("STAC_ENDPOINT_TITLE", ""),
+        explorer_sister_instances=app.config.get("CUBEDASH_SISTER_SITES", None),
         breadcrumb=_get_breadcrumbs(request.path, request.script_root),
     )
 

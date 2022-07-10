@@ -40,6 +40,16 @@
         </div>
         <div id="menu-link">
             <ul>
+                {%- if explorer_sister_instances -%}
+                <li id="sister-site-menu" class="top-menu ex-menu">
+                    <span class="ex-menu-title">Sister Sites</span>
+                    <ul>
+                        {% for site_title, site_link in explorer_sister_instances %}
+                            <li><a class="sister-link" href="{{site_link}}">{{site_title}}</a></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {%- endif -%}
                 <li class="top-menu ex-menu">
                     <span class="ex-menu-title">Products</span>
                     <ul>
