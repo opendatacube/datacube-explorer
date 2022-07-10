@@ -160,6 +160,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     include the default name.
     # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )"
     CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
+    # CUBEDASH_PRODUCT_GROUP_BY_REGEX = (r'^usgs_','USGS products'), (r'_albers$','C2 Albers products'), (r'level1','Level 1 products'), )
     # Otherwise, group by a single metadata field in the products:
     CUBEDASH_PRODUCT_GROUP_BY_FIELD = 'product_type'
     # Ungrouped products will be grouped together in this size.
@@ -173,6 +174,9 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     CUBEDASH_HARD_API_LIMIT = 4000
     # Maximum number of source/derived datasets to show
     CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
+
+    CUBEDASH_SISTER_SITES = None
+    # CUBEDASH_SISTER_SITES = (('Production - ODC', 'http://prod.odc.example'), ('Production - NCI', 'http://nci.odc.example'), )
 
     # How many days of recent datasets to show on the "/arrivals" page?
     CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT = 14
@@ -357,3 +361,8 @@ Once Explorer indexes have been created, you can browse the running application 
 You can run tests by first creating a test database `make create-test-db-docker` and then running tests with `make test-docker`.
 
 And you can run a single test in Docker using a command like this: `docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`
+
+
+## Docker-compose for Development and running tests
+### Testing with app.config
+edit `.docker/settings_docker.py` and setup application config. Then `docker-compose -f docker-compose.yml -f docker-compose.test.yml up` to bring up explorer docker with database, explorer with settings
