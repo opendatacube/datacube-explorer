@@ -149,6 +149,14 @@ ul {
   left: initial;
   right: 0;
 }
+.header #menu-link .ex-menu.is-open > ul li .hide {
+  display: none;
+}
+.header #menu-link .ex-menu.is-open > ul li #show-hidden-product {
+  text-align: right;
+  color: #000;
+  font-size: 12px;
+}
 
 .logo-text, .instance-title {
   display: inline-block;

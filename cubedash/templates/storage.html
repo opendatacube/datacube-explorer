@@ -27,10 +27,15 @@
 {% endblock %}
 {% block content %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Storage of {{ product_summary_and_location | length }} products</h2>
+        <h2 class="followed lonesome">Storage of {{ (product_summary_and_location | length) - (hidden_product_list | length) }} products</h2>
         <div class="header-follow">
             Open Data Cube {{ datacube_version }}
             {# TODO: Links to Website, CMI Metadata, DEA, ODC, help? #}
+        </div>
+        <div class="">
+            Total indexed products: <span class="indexed-product-count">{{ product_summary_and_location | length}}</span>,
+            hidden products: <span class="hidden-product-count">{{ hidden_product_list | length }}</span> <br/>
+            Download csv for all products locations:
             <a href="{{ url_for('product.storage_csv') }}" class="badge header-badge">csv <i class="fa fa-file-excel-o" aria-hidden="true"></i></a>
         </div>
     </div>
@@ -50,6 +55,7 @@
             </thead>
             <tbody>
                 {% for product, summary, locations in product_summary_and_location %}
+                {% if product.name not in hidden_product_list %}
                 <tr>
                     <td>{{ product.name | product_link }}</td>
                     <td class="numeric">{{ '{:,d}'.format(summary.dataset_count) }}</td>
@@ -84,6 +90,7 @@
                     {% endif %}
                 </td>
                 </tr>
+                {% endif %}
               {% endfor %}
             </tbody>
         </table>

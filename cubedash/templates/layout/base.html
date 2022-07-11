@@ -50,11 +50,21 @@
                     </ul>
                 </li>
                 {%- endif -%}
-                <li class="top-menu ex-menu">
+                <li class="top-menu ex-menu" id="products-menu">
                     <span class="ex-menu-title">Products</span>
                     <ul>
                         {% for product in datacube_products %}
-                            <li><a href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
+                            {% if product.name not in hidden_product_list %}
+                                <li><a class="datacube-product-name" href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if hide_product_list %}
+                        <li><a id="show-hidden-product">Show hidden products</a></li>
+                        {% endif %}
+                        {% for product in datacube_products %}
+                            {% if product.name in hidden_product_list %}
+                                <li><a class="configured-hide-product hide" href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
+                            {% endif %}
                         {% endfor %}
                     </ul>
                 </li>
@@ -210,6 +220,21 @@
             });
         }
     );
+
+    var showHiddenProduct = document.getElementById("show-hidden-product");
+    showHiddenProduct.addEventListener("click", function(event) {
+        if (showHiddenProduct.innerHTML === "Show hidden products") {
+            showHiddenProduct.innerHTML = "Show non-hidden products";
+        } else {
+            showHiddenProduct.innerHTML = "Show hidden products";
+        }
+        document.querySelectorAll(".datacube-product-name").forEach(function(el) {
+            el.classList.toggle("hide");
+        });
+        document.querySelectorAll(".configured-hide-product").forEach(function(el) {
+            el.classList.toggle("hide");
+        });
+    });
 
 </script>
 </body>

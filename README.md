@@ -178,6 +178,12 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     CUBEDASH_SISTER_SITES = None
     # CUBEDASH_SISTER_SITES = (('Production - ODC', 'http://prod.odc.example'), ('Production - NCI', 'http://nci.odc.example'), )
 
+    CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST = None
+    # CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST = [
+    #    "ls5_pq_scene",
+    #    "ls7_pq_scene",
+    # ]
+
     # How many days of recent datasets to show on the "/arrivals" page?
     CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT = 14
 
