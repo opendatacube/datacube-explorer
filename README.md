@@ -365,4 +365,4 @@ And you can run a single test in Docker using a command like this: `docker-compo
 
 ## Docker-compose for Development and running tests
 ### Testing with app.config
-edit `.docker/settings_docker.py` and setup application config. Then `docker-compose -f docker-compose.yml -f docker-compose.test.yml up` to bring up explorer docker with database, explorer with settings
+edit `.docker/settings_docker.py` and setup application config. Then `docker-compose -f docker-compose.yml -f docker-compose.override.yml up` to bring up explorer docker with database, explorer with settings
