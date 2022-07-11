@@ -45,7 +45,7 @@
                     <span class="ex-menu-title">Sister Sites</span>
                     <ul>
                         {% for site_title, site_link in explorer_sister_instances %}
-                            <li><a class="sister-link" href="{{site_link}}">{{site_title}}</a></li>
+                            <li><a class="sister-link" href="{{site_link}}{{request.path}}">{{site_title}}</a></li>
                         {% endfor %}
                     </ul>
                 </li>
