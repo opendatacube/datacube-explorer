@@ -57,7 +57,7 @@
                                 <h3 class="group-name">{{ group_name or ('&nbsp;'|safe)}}</h3>
                                 <ul class="items">
                                     {% for product_opt, summary in product_summaries %}
-                                        <li class="{% if (not same_region_products and ((not summary) or summary.dataset_count == 0)) or (same_region_products and product_opt.id not in same_region_products) %}empty{% endif %}">
+                                        <li class="{% if (not same_region_products and ((not summary) or summary.dataset_count == 0)) or (same_region_products and product_opt.name not in same_region_products) %}empty{% endif %}">
                                             <a href="{{ url_for(request.url_rule.endpoint, product_name=product_opt.name, **additional_page_args) }}"
                                                title="{{ product_opt.definition.description }}"
                                                class="option-menu-link {% if product_opt.name == product.name %}active{% endif %}">
