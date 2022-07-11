@@ -304,6 +304,12 @@ def region_page(
         )
     )
 
+    same_region_products = list(
+        _model.STORE.find_products_for_region(
+            region_code, year, month, day, limit=limit + 1, offset=offset
+        )
+    )
+
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
         page_args = dict(flask.request.view_args)
@@ -340,6 +346,7 @@ def region_page(
         # Summary for the users' currently selected filters.
         selected_summary=selected_summary,
         datasets=datasets,
+        same_region_products=same_region_products,
         previous_page_url=previous_page_url,
         next_page_url=next_page_url,
         time_selector_summary=time_selector_summary,

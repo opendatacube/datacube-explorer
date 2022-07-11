@@ -1,0 +1,75 @@
+---
+# EO1 Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/ad1619d3-3830-4969-a8f9-7b341c10f942.odc-metadata.yaml
+id: ad1619d3-3830-4969-a8f9-7b341c10f942
+product_type: surface_reflectance_triple_mad
+creation_dt: '2018-12-26T16:48:32.304782'
+platform:
+  code: LANDSAT_7
+instrument:
+  name: ETM+
+format:
+  name: GeoTIFF
+extent:
+  coord:
+    ll:
+      lat: -3.276641070461508e+01
+      lon: 1.4061023025436907e+02
+    lr:
+      lat: -3.2702404943913415e+01
+      lon: 1.4168261970358134e+02
+    ul:
+      lat: -3.1874201521237953e+01
+      lon: 1.405384063667321e+02
+    ur:
+      lat: -3.1810810325945294e+01
+      lon: 1.4160191424847983e+02
+  to_dt: '2010-01-01T00:00:00'
+  from_dt: '2010-01-01T00:00:00'
+  center_dt: '2010-01-01T00:00:00'
+grid_spatial:
+  projection:
+    valid_data:
+      type: Polygon
+      coordinates:
+      - - - 8.e+05
+          - -3.545277379062803e+06
+        - - 8.e+05
+          - -3.5e+06
+        - - 9.e+05
+          - -3.5e+06
+        - - 9.e+05
+          - -3.6e+06
+        - - 8.e+05
+          - -3.6e+06
+        - - 8.e+05
+          - -3.545277379062803e+06
+    geo_ref_points:
+      ll:
+        x: 8.e+05
+        y: -3.6e+06
+      lr:
+        x: 9.e+05
+        y: -3.6e+06
+      ul:
+        x: 8.e+05
+        y: -3.5e+06
+      ur:
+        x: 9.e+05
+        y: -3.5e+06
+    spatial_reference: EPSG:3577
+image:
+  bands:
+    edev:
+      path: ls7_tmad_nbart_8_-36_20100101_edev.tif
+    sdev:
+      path: ls7_tmad_nbart_8_-36_20100101_sdev.tif
+    bcdev:
+      path: ls7_tmad_nbart_8_-36_20100101_bcdev.tif
+lineage:
+  source_datasets: {}
+statistics:
+  step: 1y
+  period: 1y
+location: s3://dea-public-data-dev/tmad-annual/ls7/x_8/y_-36/2010/01/01/ls7_tmad_nbart_8_-36_20100101.yaml
+...
