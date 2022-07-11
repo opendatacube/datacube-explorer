@@ -455,6 +455,15 @@ def inject_globals():
         grouped_products=_get_grouped_products(),
         # All products in the datacube, summarised or not.
         datacube_products=list(_model.STORE.index.products.get_all()),
+        hidden_product_list=app.config.get(
+            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", [
+                "ls5_pq_scene",
+                "ls7_pq_scene",
+                "ls8_pq_scene",
+                "ls5_pq_legacy_scene",
+                "ls7_pq_legacy_scene",
+            ]
+        ),
         datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,

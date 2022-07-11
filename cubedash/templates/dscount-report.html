@@ -5,13 +5,16 @@
 
 {% block content %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Bulk Dataset Counts</h2>
-        <span class="header-follow">
+        <h2 class="followed lonesome">Bulk Dataset Counts - {{ (products_period_dscount | length ) - (hidden_product_list | length) }} Products</h2>
+        <div class="">
+            Total indexed products: <span class="indexed-product-count">{{ products_period_dscount | length }}</span>,
+            hidden products: <span class="hidden-product-count">{{ hidden_product_list | length }}</span> <br/>
+            Download csv for all products dataset count
             <a href="{{ url_for('.dsreport_csv') }}" class="badge header-badge">
                 csv
                 <i class="fa fa-file-excel-o" aria-hidden="true"></i>
             </a>
-        </span>
+        </div>
     </div>
     <div class="panel">
         <p>
@@ -29,6 +32,7 @@
 
                 <tbody>
                     {% for period, count in products_period_dscount.items() %}
+                    {% if period[0] not in hidden_product_list %}
                         <tr id="{{period[0]}}-{{period[1] or ''}}-{{period[2] or ''}}">
                             <td>{{ period[0] }}</td>
                             <td>{{ period[1] or '' }}</td>
@@ -42,8 +46,8 @@
                                     {{ count }}
                                 </a>
                             </td>
-
                         </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
         </table>
