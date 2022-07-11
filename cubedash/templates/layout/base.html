@@ -58,7 +58,7 @@
                                 <li><a class="datacube-product-name" href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
                             {% endif %}
                         {% endfor %}
-                        {% if hide_product_list %}
+                        {% if hidden_product_list %}
                         <li><a id="show-hidden-product">Show hidden products</a></li>
                         {% endif %}
                         {% for product in datacube_products %}

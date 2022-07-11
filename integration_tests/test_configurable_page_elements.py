@@ -63,6 +63,17 @@ def test_hide_products_audit_page_display(app_configured_client: FlaskClient, to
     assert str(total_indexed_products_count - 5) in h2
 
 
+def test_hide_products_product_page_display(app_configured_client: FlaskClient, total_indexed_products_count):
+    html = get_html(app_configured_client, "/products")
+    hidden_product_count = html.find("span.hidden-product-count", first=True).text
+    assert hidden_product_count == '5'
+
+    h2 = html.find("h2", first=True).text
+    indexed_product_count = html.find("span.indexed-product-count", first=True).text
+    assert indexed_product_count == str(total_indexed_products_count)
+    assert str(total_indexed_products_count - 5) in h2
+
+
 def test_hide_products_menu_display(app_configured_client: FlaskClient, total_indexed_products_count):
     html = get_html(app_configured_client, "/about")
 
@@ -70,6 +81,11 @@ def test_hide_products_menu_display(app_configured_client: FlaskClient, total_in
         "#products-menu li a.configured-hide-product"
     )
     assert len(hide_products) == 5
+
+    products_hide_show_switch = html.find(
+        "a#show-hidden-product"
+    )
+    assert products_hide_show_switch
 
     html = get_html(app_configured_client, "/products/dsm1sv10")
     products = html.find(
