@@ -91,8 +91,6 @@ def test_landcover_region_dataset_count(client: FlaskClient):
     search_results = html.find(".search-result a")
     assert len(search_results) == 3
 
-# Test where region_code is not defined in metadata
-
 
 @pytest.fixture(scope="module", autouse=True)
 def populate_tmad_index(dataset_loader, module_dea_index):
@@ -116,6 +114,19 @@ def populate_tmad_index(dataset_loader, module_dea_index):
             assert dataset_count == 2
             print(ae)
     assert dataset_count == 2
+    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ls7_nbart_tmad_annual-sample.yaml"):
+        try:
+            dataset, err = create_dataset(
+                s2_dataset_doc, "file://example.com/test_dataset/"
+            )
+            assert dataset is not None, err
+            created = module_dea_index.datasets.add(dataset)
+            assert created.type.name == "ls7_nbart_tmad_annual"
+            dataset_count += 1
+        except AttributeError as ae:
+            assert dataset_count == 3
+            print(ae)
+    assert dataset_count == 3
     return module_dea_index
 
 
@@ -153,3 +164,15 @@ def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, module_
     finally:
         # Now let's restore the dataset!
         module_dea_index.datasets.restore(['867050c5-f854-434b-8b16-498243a5cf24'])
+
+
+def test_region_switchable_product(client: FlaskClient):
+    # Two products share the same region code
+    html = get_html(client, "/product/ls5_nbart_tmad_annual/regions/8_-36")
+    product_list = html.find("#product-headers ul.items li:not(.empty)")
+    assert len(product_list) == 2
+
+    # Only one product has the region code
+    html = get_html(client, "/product/ls5_nbart_tmad_annual/regions/-14_-25")
+    product_list = html.find("#product-headers ul.items li:not(.empty)")
+    assert len(product_list) == 1

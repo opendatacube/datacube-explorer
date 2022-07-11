@@ -622,6 +622,37 @@ def datasets_by_region(
     )
 
 
+def products_by_region(
+    engine: Engine,
+    index: Index,
+    region_code: str,
+    time_range: Range,
+    limit: int,
+    offset: int = 0,
+) -> Generator[Dataset, None, None]:
+    query = (
+        select(postgres_api._DATASET_SELECT_FIELDS)
+        .select_from(
+            DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
+        )
+        .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
+    )
+    if time_range:
+        query = query.where(
+            DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
+        ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
+    query = (
+        query.order_by(DATASET_SPATIAL.c.center_time)
+        .limit(bindparam("limit", limit))
+        .offset(bindparam("offset", offset))
+    )
+
+    return (
+        res.dataset_type_ref
+        for res in engine.execute(query).fetchall()
+    )
+
+
 @dataclass
 class RegionSummary:
     product_name: str

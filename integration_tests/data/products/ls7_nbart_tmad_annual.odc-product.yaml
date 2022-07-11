@@ -1,0 +1,42 @@
+---
+# Product
+# url: https://explorer.dev.dea.ga.gov.au/products/ls7_nbart_tmad_annual.odc-product.yaml
+name: ls7_nbart_tmad_annual
+metadata_type: eo
+description: Surface Reflectance Triple Median Absolute Deviation 25 metre, 100km
+  tile, Australian Albers Equal Area projection (EPSG:3577)
+metadata:
+  product_type: surface_reflectance_triple_mad
+  platform:
+    code: LANDSAT_7
+  instrument:
+    name: ETM+
+  statistics:
+    period: 1y
+measurements:
+- name: sdev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+- name: edev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+- name: bcdev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+storage:
+  crs: EPSG:3577
+  driver: GeoTIFF
+  tile_size:
+    x: 1.e+05
+    y: 1.e+05
+  resolution:
+    x: 25
+    y: -25
+  dimension_order:
+  - time
+  - y
+  - x
+...

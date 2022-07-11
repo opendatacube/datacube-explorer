@@ -1643,6 +1643,28 @@ class SummaryStore:
             offset=offset,
         )
 
+    def find_products_for_region(
+        self,
+        region_code: str,
+        year: int,
+        month: int,
+        day: int,
+        limit: int,
+        offset: int = 0,
+    ) -> Iterable[Dataset]:
+
+        time_range = _utils.as_time_range(
+            year, month, day, tzinfo=self.grouping_timezone
+        )
+        return _extents.products_by_region(
+            self._engine,
+            self.index,
+            region_code,
+            time_range,
+            limit,
+            offset=offset,
+        )
+
     @ttl_cache(ttl=DEFAULT_TTL)
     def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
         dt = self.get_dataset_type(product_name)
