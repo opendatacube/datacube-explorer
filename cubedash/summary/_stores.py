@@ -1651,7 +1651,7 @@ class SummaryStore:
         day: int,
         limit: int,
         offset: int = 0,
-    ) -> Iterable[Dataset]:
+    ) -> Iterable[DatasetType]:
 
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone

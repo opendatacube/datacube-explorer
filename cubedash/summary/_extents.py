@@ -638,7 +638,7 @@ def products_by_region(
         query = query.where(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-    
+
     query = (
         query.order_by(DATASET_SPATIAL.c.dataset_type_ref)
         .limit(bindparam("limit", limit))
@@ -646,7 +646,7 @@ def products_by_region(
     )
 
     return (
-        index.products.get_by_name(res.dataset_type_ref)
+        index.products.get(res.dataset_type_ref)
         for res in engine.execute(query).fetchall()
     )
 

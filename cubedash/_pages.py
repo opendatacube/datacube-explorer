@@ -305,7 +305,7 @@ def region_page(
     )
 
     same_region_products = list(
-        _model.STORE.find_products_for_region(
+        product.name for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
