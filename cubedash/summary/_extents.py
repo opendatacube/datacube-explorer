@@ -629,26 +629,24 @@ def products_by_region(
     time_range: Range,
     limit: int,
     offset: int = 0,
-) -> Generator[Dataset, None, None]:
+) -> Generator[DatasetType, None, None]:
     query = (
-        select(postgres_api._DATASET_SELECT_FIELDS)
-        .select_from(
-            DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
-        )
+        select([DATASET_SPATIAL.c.dataset_type_ref]).distinct()
         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
     )
     if time_range:
         query = query.where(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
+    
     query = (
-        query.order_by(DATASET_SPATIAL.c.center_time)
+        query.order_by(DATASET_SPATIAL.c.dataset_type_ref)
         .limit(bindparam("limit", limit))
         .offset(bindparam("offset", offset))
     )
 
     return (
-        res.dataset_type_ref
+        index.products.get_by_name(res.dataset_type_ref)
         for res in engine.execute(query).fetchall()
     )
 
