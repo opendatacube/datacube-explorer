@@ -206,6 +206,8 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
     _model.cache.clear()
     _model.STORE = summary_store
     cubedash.app.config["TESTING"] = True
+    cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = []
+    cubedash.app.config["CUBEDASH_SISTER_SITES"] = None
     return cubedash.app.test_client()
 
 

@@ -23,7 +23,7 @@ def app_configured_client(client: FlaskClient):
         "ls5_pq_legacy_scene",
         "ls7_pq_legacy_scene",
     ]
-    return cubedash.app.test_client()
+    return client
 
 
 @pytest.fixture()
