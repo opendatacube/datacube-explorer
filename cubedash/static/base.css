@@ -444,6 +444,7 @@ h1:hover .header-anchor, h2:hover .header-anchor, h3:hover .header-anchor, h4:ho
 }
 .header-option .option-menu li.empty {
   opacity: 0.6;
+  font-size: 8px;
 }
 .header-option .option-menu.left {
   left: initial;
