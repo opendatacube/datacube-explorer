@@ -96,7 +96,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
 
 
 def test_generate_scene_year(run_generate, summary_store: SummaryStore):
-    run_generate()
+    run_generate(multi_processed=True)
     # One year
     _expect_values(
         summary_store.get("ls8_nbar_scene", year=2017, month=None, day=None),
