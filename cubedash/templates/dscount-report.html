@@ -5,9 +5,9 @@
 
 {% block content %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Bulk Dataset Counts - {{ (products_period_dscount | length ) - (hidden_product_list | length) }} Products</h2>
+        <h2 class="followed lonesome">Bulk Dataset Counts - {{ (datacube_products | length ) - (hidden_product_list | length) }} Products</h2>
         <div class="">
-            Total indexed products: <span class="indexed-product-count">{{ products_period_dscount | length }}</span>,
+            Total indexed products: <span class="indexed-product-count">{{ datacube_products | length }}</span>,
             hidden products: <span class="hidden-product-count">{{ hidden_product_list | length }}</span> <br/>
             Download csv for all products dataset count
             <a href="{{ url_for('.dsreport_csv') }}" class="badge header-badge">
