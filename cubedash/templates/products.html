@@ -47,20 +47,23 @@
                 </thead>
             {% endif %}
             <tbody>
-                {% for product, summary in product_summaries %}
-                {% if product.name not in hidden_product_list %}
-                    <tr class="collapse-when-small">
-                        <td>
-                            <a href="{{ url_for('product_page', product_name=product.name) }}"
-                                >{{ product.name }}</a>
-                        </td>
-                        <td class="{% if (not summary) or summary.dataset_count == 0 %}muted{% endif %}">
-                            {{- product.definition.description -}}
-                        </td>
-                    </tr>
+                {% if product_summaries %}
+                    {% for product, summary in product_summaries %}
+                        {% if product.name not in hidden_product_list %}
+                            <tr class="collapse-when-small">
+                                <td>
+                                    <a href="{{ url_for('product_page', product_name=product.name) }}"
+                                        >{{ product.name }}</a>
+                                </td>
+                                <td class="{% if (not summary) or summary.dataset_count == 0 %}muted{% endif %}">
+                                    {{- product.definition.description -}}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
                 {% else %}
                     <tr><td>No products in index</td></tr>
-                {% endfor %}
+                {% endif %}
             </tbody>
         {% endfor %}
     </table>
