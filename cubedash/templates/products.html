@@ -48,7 +48,7 @@
             {% endif %}
             <tbody>
                 {% for product, summary in product_summaries %}
-                {% if product.name not in hide_product_list %}
+                {% if product.name not in hidden_product_list %}
                     <tr class="collapse-when-small">
                         <td>
                             <a href="{{ url_for('product_page', product_name=product.name) }}"

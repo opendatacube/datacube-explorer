@@ -73,6 +73,9 @@ def test_hide_products_product_page_display(app_configured_client: FlaskClient, 
     assert indexed_product_count == str(total_indexed_products_count)
     assert str(total_indexed_products_count - 5) in h2
 
+    listed_product_count = html.find("tr.collapse-when-small")
+    assert len(listed_product_count) == (total_indexed_products_count - 5)
+
 
 def test_hide_products_menu_display(app_configured_client: FlaskClient, total_indexed_products_count):
     html = get_html(app_configured_client, "/about")
