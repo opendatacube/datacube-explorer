@@ -175,6 +175,8 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     # Maximum number of source/derived datasets to show
     CUBEDASH_PROVENANCE_DISPLAY_LIMIT = 20
 
+    CUBEDASH_DEFAULT_TIMEZONE = "Australia/Darwin"
+
     CUBEDASH_SISTER_SITES = None
     # CUBEDASH_SISTER_SITES = (('Production - ODC', 'http://prod.odc.example'), ('Production - NCI', 'http://nci.odc.example'), )
 
