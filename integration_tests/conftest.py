@@ -108,7 +108,7 @@ module_dea_index = dea_index_fixture("module_index", scope="module")
 
 @pytest.fixture()
 def summary_store(module_dea_index: Index) -> SummaryStore:
-    store = SummaryStore.create(module_dea_index)
+    store = SummaryStore.create(module_dea_index, grouping_time_zone="Australia/Darwin")
     store.drop_all()
     module_dea_index.close()
 
@@ -158,10 +158,11 @@ def clirunner(global_integration_cli_args):
 
 @pytest.fixture()
 def run_generate(clirunner, summary_store):
-    def do(*args, expect_success=True, multi_processed=False):
+    def do(*args, expect_success=True, multi_processed=False, grouping_time_zone="Australia/Darwin"):
         args = args or ("--all",)
         if not multi_processed:
             args = ("-j", "1") + tuple(args)
+        args = ("-tz", grouping_time_zone) + tuple(args)
         res = clirunner(generate.cli, args, expect_success=expect_success)
         return res
 

@@ -61,6 +61,8 @@ cors = (
 app.config.setdefault("CUBEDASH_THEME", "odc")
 themer = Themer(app)
 
+DEFAULT_TIMEZONE=app.config.get("CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin")
+
 
 @themer.current_theme_loader
 def get_current_theme():
@@ -78,7 +80,8 @@ with (Path(app.root_path) / "themes" / themer.current_theme / "info.json").open(
 # As long as we don't run queries (ie. open db connections) before forking
 # (hence validate=False).
 STORE: SummaryStore = SummaryStore.create(
-    index_connect(application_name=NAME, validate_connection=False)
+    index_connect(application_name=NAME, validate_connection=False),
+    grouping_time_zone=DEFAULT_TIMEZONE
 )
 
 # Which product to show by default when loading '/'. Picks the first available.
@@ -86,6 +89,7 @@ DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
     "ls7_nbar_scene",
     "ls5_nbar_scene",
 )
+
 
 _LOG = structlog.get_logger()
 
