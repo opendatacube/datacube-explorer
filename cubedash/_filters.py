@@ -10,6 +10,8 @@ from typing import Mapping
 from urllib.parse import quote_plus
 
 import flask
+import pytz
+
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from dateutil import tz
@@ -19,7 +21,7 @@ from orjson import orjson
 from shapely.geometry import MultiPolygon
 
 from . import _utils, _utils as utils
-
+from . import _model
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -45,6 +47,11 @@ def _format_datetime(date):
 @bp.app_template_filter("metadata_center_time")
 def _get_metadata_center_time(dataset):
     return utils.center_time_from_metadata(dataset)
+
+
+@bp.app_template_filter("localised_metadata_center_time")
+def _get_localised_metadata_center_time(date):
+    return date.astimezone(pytz.timezone(_model.DEFAULT_GROUPING_TIMEZONE))
 
 
 @bp.app_template_filter("printable_dataset")
