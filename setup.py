@@ -76,7 +76,7 @@ setup(
         "datacube>=1.8",
         "eodatasets3>=0.24.1",
         "fiona",
-        "flask",
+        "flask==2.1.3",
         "Flask-Caching",
         "flask-cors",
         "flask-themer>=1.4.3",
