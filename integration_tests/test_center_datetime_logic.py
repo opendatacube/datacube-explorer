@@ -10,7 +10,6 @@ import pytest
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
-from click.testing import Result
 
 
 from integration_tests.asserts import (
