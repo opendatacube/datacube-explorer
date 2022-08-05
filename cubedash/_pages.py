@@ -10,6 +10,7 @@ from datacube.scripts.dataset import build_dataset_info
 from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
+from dateutil import tz
 
 import cubedash
 from cubedash import _audit, _monitoring
@@ -167,7 +168,7 @@ def search_page(
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
     time_range = utils.as_time_range(
-        year, month, day, tzinfo=_model.STORE.grouping_timezone
+        year, month, day, tzinfo=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE)
     )
 
     args = MultiDict(flask.request.args)
@@ -462,7 +463,7 @@ def inject_globals():
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        grouping_timezone=_model.STORE.grouping_timezone,
+        grouping_timezone=_model.DEFAULT_GROUPING_TIMEZONE,
         last_updated_time=last_updated,
         explorer_instance_title=app.config.get(
             "CUBEDASH_INSTANCE_TITLE",

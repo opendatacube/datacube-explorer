@@ -62,6 +62,8 @@ from functools import partial
 from textwrap import dedent
 from typing import List, Optional, Sequence, Tuple
 
+from pytz import timezone
+
 import click
 import structlog
 from click import secho as click_secho, style
@@ -78,6 +80,7 @@ from cubedash.summary import (
     UnsupportedWKTProductCRS,
 )
 from cubedash.summary._stores import DEFAULT_EPSG
+from cubedash.summary._summarise import DEFAULT_TIMEZONE
 
 # Machine (json) logging.
 _LOG = structlog.get_logger()
@@ -97,9 +100,9 @@ class GenerateSettings:
 
 # pylint: disable=broad-except
 def generate_report(
-    item: Tuple[str, GenerateSettings],
+    item: Tuple[str, GenerateSettings, str],
 ) -> Tuple[str, GenerateResult, Optional[TimePeriodOverview]]:
-    product_name, settings = item
+    product_name, settings, grouping_time_zone = item
     log = _LOG.bind(product=product_name)
 
     started_years = set()
@@ -111,7 +114,10 @@ def generate_report(
                 user_message(f"\t  {product_name} {year}")
                 started_years.add((product_name, year))
 
-    store = SummaryStore.create(_get_index(settings.config, product_name), log=log)
+    store = SummaryStore.create(
+        _get_index(settings.config, product_name), log=log,
+        grouping_time_zone=grouping_time_zone
+    )
     store.add_change_listener(print_status)
 
     try:
@@ -149,6 +155,7 @@ def _get_index(config: LocalConfig, variant: str) -> Index:
 def run_generation(
     settings: GenerateSettings,
     products: Sequence[DatasetType],
+    grouping_time_zone=DEFAULT_TIMEZONE,
     workers=3,
 ) -> Tuple[int, int]:
     user_message(
@@ -182,14 +189,14 @@ def run_generation(
     # This makes test tracing far easier.
     if workers == 1:
         for p in products:
-            on_complete(*generate_report((p.name, settings)))
+            on_complete(*generate_report((p.name, settings, grouping_time_zone)))
     else:
         with multiprocessing.Pool(workers) as pool:
             product: DatasetType
             summary: TimePeriodOverview
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
-                ((p.name, settings) for p in products),
+                ((p.name, settings, grouping_time_zone) for p in products),
                 chunksize=1,
             ):
                 on_complete(product_name, result, summary)
@@ -298,6 +305,17 @@ class TimeDeltaParam(click.ParamType):
         This should match how many io-and-cpu-heavy queries your DB would
         like to handle concurrently.
     """
+    ),
+)
+@click.option(
+    "-tz",
+    "--timezone",
+    type=str,
+    default=DEFAULT_TIMEZONE,
+    help=dedent(
+        """\
+        Timezone for the geolocation
+        """
     ),
 )
 @click.option(
@@ -418,6 +436,7 @@ def cli(
     config: LocalConfig,
     generate_all_products: bool,
     jobs: int,
+    timezone: str,
     product_names: List[str],
     event_log_file: str,
     refresh_stats: bool,
@@ -436,7 +455,7 @@ def cli(
     )
 
     index = _get_index(config, "setup")
-    store = SummaryStore.create(index)
+    store = SummaryStore.create(index, grouping_time_zone=timezone)
 
     if drop_database:
         user_message("Dropping all Explorer additions to the database")
@@ -475,6 +494,7 @@ def cli(
         ),
         products,
         workers=jobs,
+        grouping_time_zone=timezone,
     )
     if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)

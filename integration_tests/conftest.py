@@ -157,7 +157,7 @@ def clirunner(global_integration_cli_args):
 
 
 @pytest.fixture()
-def run_generate(clirunner, summary_store):
+def run_generate(clirunner):
     def do(*args, expect_success=True, multi_processed=False, grouping_time_zone="Australia/Darwin"):
         args = args or ("--all",)
         if not multi_processed:
@@ -209,6 +209,7 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
     cubedash.app.config["TESTING"] = True
     cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = []
     cubedash.app.config["CUBEDASH_SISTER_SITES"] = None
+    cubedash.app.config["CUBEDASH_DEFAULT_TIMEZONE"] = "Australia/Darwin"
     return cubedash.app.test_client()
 
 

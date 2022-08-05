@@ -27,6 +27,7 @@ _LOG = structlog.get_logger()
 
 _NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
 
+DEFAULT_TIMEZONE = "Australia/Darwin"
 
 def _scalar_subquery(selectable):
     """
@@ -42,7 +43,7 @@ def _scalar_subquery(selectable):
 
 
 class Summariser:
-    def __init__(self, engine, log=_LOG, grouping_time_zone="Australia/Darwin") -> None:
+    def __init__(self, engine, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE) -> None:
         self._engine = engine
         self.log = log
         # Group datasets using this timezone when counting them.
@@ -65,6 +66,7 @@ class Summariser:
         log.debug("summary.query")
 
         begin_time, end_time, where_clause = self._where(product_name, time)
+
         select_by_srid = (
             select(
                 (
