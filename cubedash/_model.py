@@ -62,6 +62,7 @@ cors = (
 app.config.setdefault("CUBEDASH_THEME", "odc")
 themer = Themer(app)
 
+
 @themer.current_theme_loader
 def get_current_theme():
     return app.config["CUBEDASH_THEME"]

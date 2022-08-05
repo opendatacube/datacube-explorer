@@ -29,6 +29,7 @@ _NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
 
 DEFAULT_TIMEZONE = "Australia/Darwin"
 
+
 def _scalar_subquery(selectable):
     """
     Make select statement into a scalar subquery.

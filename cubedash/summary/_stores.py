@@ -79,6 +79,7 @@ DEFAULT_EPSG = 6933
 
 default_timezone = pytz.timezone(DEFAULT_TIMEZONE)
 
+
 class ItemSort(Enum):
     # The fastest, but paging is unusable.
     UNSORTED = auto()
@@ -297,8 +298,12 @@ class SummaryStore:
 
     @classmethod
     def create(cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE) -> "SummaryStore":
-        return cls(index,
-            Summariser(_utils.alchemy_engine(index), grouping_time_zone=grouping_time_zone),
+        return cls(
+            index,
+            Summariser(
+                _utils.alchemy_engine(index),
+                grouping_time_zone=grouping_time_zone
+            ),
             log=log,
         )
 

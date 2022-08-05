@@ -62,8 +62,6 @@ from functools import partial
 from textwrap import dedent
 from typing import List, Optional, Sequence, Tuple
 
-from pytz import timezone
-
 import click
 import structlog
 from click import secho as click_secho, style

@@ -8,6 +8,8 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
+from click.testing import Result
+
 from datacube.model import Range
 from datetime import datetime
 from dateutil import tz
@@ -91,7 +93,6 @@ def test_clirunner_generate_grouping_timezone(module_dea_index, run_generate):
 
     store = SummaryStore.create(module_dea_index, grouping_time_zone="America/Chicago")
 
-
     # simulate search pages
     datasets = sorted(
         store.index.datasets.search(**{
@@ -106,7 +107,7 @@ def test_clirunner_generate_grouping_timezone(module_dea_index, run_generate):
                     tzinfo=tz.gettz("America/Chicago")
                 )
             )
-        }, limit =5),
+        }, limit=5),
         key=lambda d: d.center_time,
     )
     assert len(datasets) == 2
@@ -125,7 +126,7 @@ def test_clirunner_generate_grouping_timezone(module_dea_index, run_generate):
                     tzinfo=tz.gettz("America/Chicago")
                 )
             )
-        }, limit =5),
+        }, limit=5),
         key=lambda d: d.center_time,
     )
     assert len(datasets) == 3
