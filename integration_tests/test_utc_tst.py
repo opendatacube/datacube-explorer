@@ -2,6 +2,8 @@
 Tests that load pages and check the contained text.
 """
 from pathlib import Path
+from cubedash._utils import center_time_from_metadata, default_utc
+import pytz
 
 import pytest
 from datacube.index.hl import Doc2Dataset
@@ -75,3 +77,14 @@ def test_dataset_search_page_localised_time(client: FlaskClient):
             a.find("td", first=True).text.strip() for a in html.find(".search-result")
         ]
     ), "datestring does not match expected center_time recorded in dataset_spatial table"
+
+
+# Unit tests
+def test_dataset_day_link(summary_store):
+    index = summary_store.index
+    ds = index.datasets.get("5da416a9-faed-4600-880d-033d0b0f7b85")
+    t = center_time_from_metadata(ds)
+    t = default_utc(t).astimezone(pytz.timezone("Australia/Darwin"))
+    assert t.year == 2011
+    assert t.month == 1
+    assert t.day == 1
