@@ -463,7 +463,7 @@ def inject_globals():
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        grouping_timezone=_model.DEFAULT_GROUPING_TIMEZONE,
+        grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
         last_updated_time=last_updated,
         explorer_instance_title=app.config.get(
             "CUBEDASH_INSTANCE_TITLE",
