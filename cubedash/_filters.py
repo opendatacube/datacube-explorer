@@ -139,6 +139,8 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
     t = utils.center_time_from_metadata(dataset)
     if t is None:
         return "(unknown time)"
+    if timezone:
+        t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for(
         "product_page",
         product_name=dataset.type.name,
