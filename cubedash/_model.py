@@ -81,12 +81,6 @@ STORE: SummaryStore = SummaryStore.create(
     index_connect(application_name=NAME, validate_connection=False)
 )
 
-# Which product to show by default when loading '/'. Picks the first available.
-DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
-    "ls7_nbar_scene",
-    "ls5_nbar_scene",
-)
-
 DEFAULT_GROUPING_TIMEZONE = app.config.get("CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin")
 
 _LOG = structlog.get_logger()
