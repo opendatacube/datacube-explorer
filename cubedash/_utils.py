@@ -407,7 +407,7 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return default_utc(dc_utils.parse_time(value))
         except ValueError:
-            _LOG.warn("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
+            _LOG.warning("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
 
     return None
 
@@ -818,12 +818,12 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     if extent is None:
-        log.warn("invalid_dataset.empty_extent")
+        log.warning("invalid_dataset.empty_extent")
         return None, False
     geom = shape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not geom.is_valid:
-        log.warn(
+        log.warning(
             "invalid_dataset.invalid_extent",
             reason_text=shapely.validation.explain_validity(geom),
         )
@@ -837,7 +837,7 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return clean, False
 
     if geom.is_empty:
-        _LOG.warn("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
+        _LOG.warning("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
         return None, False
 
     return geom, True

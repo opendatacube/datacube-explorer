@@ -761,7 +761,8 @@ class SummaryStore:
         ).fetchone()
 
         _LOG.info(
-            f"product.links.{kind}",
+            "product.links.{kind}",
+            extra=dict(kind=kind),
             product=product.name,
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2),
@@ -1468,7 +1469,7 @@ class SummaryStore:
             # Then choose the whole time range of the product to generate.
             log.info("product.generate_whole_range")
             if force:
-                log.warn("forcing_refresh")
+                log.warning("forcing_refresh")
 
             # Regenerate the old months too, in case any have been deleted.
             old_months = self._already_summarised_months(product_name)
