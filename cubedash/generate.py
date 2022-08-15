@@ -131,7 +131,7 @@ def generate_report(
         log.warning("product.unsupported", reason=e.reason)
         return product_name, GenerateResult.UNSUPPORTED, None
     except Exception:
-        log.exception("product.error", exc_info=True)
+        log.exception("product.error")
         return product_name, GenerateResult.ERROR, None
     finally:
         store.index.close()
