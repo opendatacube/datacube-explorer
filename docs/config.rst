@@ -9,19 +9,9 @@ The following configuration values are used internally by Datacube-explorer:
 
 .. py:data:: CUBEDASH_CORS
 
-    Enable testing mode. Exceptions are propagated rather than handled by the
-    the app's error handlers. Extensions may also change their behavior to
-    facilitate easier testing. You should enable this in your own tests.
+    Enable Cross Origin Resource Sharing (CORS) for ``stac`` and ``api``.
 
     Default: ``True``
-
-.. py:data:: CUBEDASH_DEFAULT_PRODUCTS
-
-    Exceptions are re-raised rather than being handled by the app's error
-    handlers. If not set, this is implicitly true if ``TESTING`` or ``DEBUG``
-    is enabled.
-
-    Default: ``("ls7_nbar_scene","ls5_nbar_scene",)``
 
 .. py:data:: CUBEDASH_PRODUCT_GROUP_BY_REGEX
 

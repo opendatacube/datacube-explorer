@@ -213,6 +213,25 @@ Start coding
 .. _create a pull request: https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
 
 
+Pre-commit setup
+~~~~~~~~~~~~~~~~
+
+A `pre-commit <https://pre-commit.com/>`__ config is provided to automatically format
+and check your code changes. This allows you to immediately catch and fix
+issues before you raise a failing pull request (which run the same checks under
+Travis).
+
+Install pre-commit from pip, and initialise it in your repo:
+
+.. code-block:: text
+
+    pip install pre-commit
+    pre-commit install
+
+Your code will now be formatted and validated before each commit. You can also
+invoke it manually by running ``pre-commit run``
+
+
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
@@ -232,22 +251,146 @@ wait.
     $ tox
 
 
-Running test coverage
-~~~~~~~~~~~~~~~~~~~~~
+How do I modify the css/javascript?
+---------------------------------------
 
-Generating a report of lines that do not have test coverage can indicate
-where to start contributing. Run ``pytest`` using ``coverage`` and
-generate a report.
+The CSS is compiled from `Sass <https://sass-lang.com/>`__ , and the Javascript is compiled from
+`Typescript <https://www.typescriptlang.org/>`__
+
+Install `npm <https://www.npmjs.com/get-npm>`__, and then install them both:
 
 .. code-block:: text
 
-    $ pip install coverage
-    $ coverage run -m pytest
-    $ coverage html
+    npm install -g sass typescript
 
-Open ``htmlcov/index.html`` in your browser to explore the report.
+You can now run ``make static`` to rebuild all the static files, or
+individually with ``make style`` or ``make js``.
 
-Read more about `coverage <https://coverage.readthedocs.io>`__.
+Alternatively, if using `PyCharm <https://www.jetbrains.com/pycharm>`__, open a
+Sass file and you will be prompted to enable a `File Watcher` to
+compile automatically.
+
+PyCharm will also compile the Typescript automatically by ticking
+the "Recompile on changes" option in ``Languages & Frameworks ->
+Typescript``.
+
+
+Integration tests
+-----------------
+
+The integration tests run against a real postgres database, which is dropped and
+recreated between each test method:
+
+Install the test dependencies: ``pip install -e .[test]``
+
+Simple test setup
+~~~~~~~~~~~~~~~~~~~
+
+Set up a database on localhost that doesn't prompt for a password locally (eg. add credentials to ``~/.pgpass``)
+
+Then: ``createdb dea_integration``
+
+And the tests should be runnable with no configuration: ``pytest integration_tests``
+
+Setting up product and dataset for new tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inside https://github.com/opendatacube/datacube-explorer/tree/develop/integration_tests/data there are three folders, `ingestions`, `metadata` and `products`. For integration test to include a new metadata yaml, product yaml or ingestion yaml place the yaml files in the corresponding folders.
+
+Then, to add sample datasets required for the test case, create a `.yaml` file with the product name and place all the sample datasets split by `---` in the yaml. Then at the beginning of the new `test_xyz.py` file place
+
+.. code-block:: python
+
+    import pytest
+
+    from pathlib import Path
+
+    from datacube.utils import read_documents
+    from datacube.index.hl import Doc2Dataset
+
+    TEST_DATA_DIR = Path(__file__).parent / "data"
+
+
+    @pytest.fixture(scope="module", autouse=True)
+    def populate_index(dataset_loader, module_dea_index):
+        """
+        Index populated with example datasets. Assumes our tests wont modify the data!
+
+        It's module-scoped as it's expensive to populate.
+        """
+        dataset_count = 0
+        create_dataset = Doc2Dataset(module_dea_index)
+        for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
+            try:
+                dataset, err = create_dataset(
+                    s2_dataset_doc, "file://example.com/test_dataset/"
+                )
+                assert dataset is not None, err
+                created = module_dea_index.datasets.add(dataset)
+                assert created.type.name == "s2_l2a"
+                dataset_count += 1
+            except AttributeError as ae:
+                assert dataset_count == 5
+                print(ae)
+            assert dataset_count == 5
+        return module_dea_index
+
+
+if the sample dataset yaml file is too big, run `gzip **yaml**` and append the required `yaml.gz` to `conftest.py` `populated_index` fixture
+
+.. code-block:: python
+
+    import pytest
+    from pathlib import Path
+
+    TEST_DATA_DIR = Path(__file__).parent / "data"
+
+
+    @pytest.fixture(scope="module")
+    def populated_index(dataset_loader, module_dea_index):
+        loaded = dataset_loader(
+            "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
+        )
+        assert loaded == 20
+        return module_dea_index
+
+
+Custom test configuration (using other hosts, postgres servers)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a ``.datacube_integration.conf`` file to your home directory in the same format as
+`datacube config files <https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config>`__
+
+(You might already have one if you run datacube's integration tests)
+
+Then run pytest: ``pytest integration_tests``
+
+__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+
+Docker for Development and running tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You need to have Docker and Docker Compose installed on your system.
+
+To create your environment, run `make up` or `docker-compose up`.
+
+You need an ODC database, so you'll need to refer to the `ODC docs <https://datacube-core.readthedocs.io/en/latest/>`__ for help on indexing, but you can create the database by running ``make initdb`` or ``docker-compose exec explorer datacube system init``. (This is not enough, you still need to add a product and index datasets.)
+
+When you have some ODC data indexed, you can run ``make index`` to create the Explorer indexes.
+
+Once Explorer indexes have been created, you can browse the running application at `http://localhost:5000 <http://localhost:5000>`__
+
+You can run tests by first creating a test database ``make create-test-db-docker`` and then running tests with ``make test-docker``.
+
+And you can run a single test in Docker using a command like this: ``docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py``
+
+
+Docker-compose for Development and running tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+edit `.docker/settings_docker.py` and setup application config.
+Then `docker-compose -f docker-compose.yml -f docker-compose.override.yml up` to bring up explorer docker with database, explorer with settings
+
 
 
 Building the docs
