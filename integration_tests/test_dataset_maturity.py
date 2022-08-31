@@ -4,18 +4,10 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 16 datasets have maturity level: final
 """
 from pathlib import Path
-from cubedash._utils import center_time_from_metadata, default_utc
-import pytz
-
 import pytest
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from cubedash.summary import SummaryStore
-
-from flask.testing import FlaskClient
-import datetime
-
-from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
