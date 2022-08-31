@@ -648,18 +648,6 @@ class SummaryStore:
             if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
-        if sample_percentage < 100:
-            dataset_table = ODC_DATASET.tablesample(
-                func.system(float(sample_percentage)), name="sampled_dataset"
-            )
-            # Replace the table with our sampled one.
-            for _, field in candidate_fields:
-                if field.alchemy_column.table == ODC_DATASET:
-                    field.alchemy_column = dataset_table.c[field.alchemy_column.name]
-
-        else:
-            dataset_table = ODC_DATASET
-
         # Give a friendlier error message when a product doesn't match the dataset.
         for name, field in candidate_fields:
             sample_value = first_dataset_fields[name]
@@ -673,11 +661,39 @@ class SummaryStore:
                     f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
                 )
 
+        dataset_count = self._engine.execute(
+            select(
+                [
+                   func.count(ODC_DATASET.c.id)
+                ]
+            )
+            .select_from(ODC_DATASET)
+            .where(ODC_DATASET.c.dataset_type_ref == product.id)
+            .where(ODC_DATASET.c.archived.is_(None))
+        ).scalar()
+
+        sample_datasets_size = math.ceil(sample_percentage/100*dataset_count)
+
+        dataset_samples = self._engine.execute(
+            select(
+                [
+                   ODC_DATASET.c.id
+                ]
+            )
+            .select_from(ODC_DATASET)
+            .where(ODC_DATASET.c.dataset_type_ref == product.id)
+            .where(ODC_DATASET.c.archived.is_(None))
+            .limit(sample_datasets_size)
+            .order_by(func.random())
+        ).fetchall()
+
         _LOG.info(
             "product.fixed_metadata_search",
             product=product.name,
             sample_percentage=round(sample_percentage, 2),
+            sampled_dataset_count=sample_datasets_size,
         )
+
         result = self._engine.execute(
             select(
                 [
@@ -689,9 +705,8 @@ class SummaryStore:
                     for field_name, field in candidate_fields
                 ]
             )
-            .select_from(dataset_table)
-            .where(dataset_table.c.dataset_type_ref == product.id)
-            .where(dataset_table.c.archived.is_(None))
+            .select_from(ODC_DATASET)
+            .where(ODC_DATASET.c.id.in_([r for r, in dataset_samples]))
         ).fetchall()
         assert len(result) == 1
 
@@ -704,6 +719,7 @@ class SummaryStore:
             "product.fixed_metadata_search.done",
             product=product.name,
             sample_percentage=round(sample_percentage, 2),
+            sampled_dataset_count=sample_datasets_size,
             searched_field_count=len(result[0]),
             found_field_count=len(fixed_fields),
         )
