@@ -37,13 +37,13 @@ def populate_index(dataset_loader, module_dea_index):
     return module_dea_index
 
 
-def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore):
+def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore, client):
     # There are 4 interim and 16 final maturity level datasets
     # at 100% (all 20 datasets), the same dictionary will be returned
     # 100% of the time
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ga_ls8c_ard_3"),
-        sample_percentage=100,
+        sample_datasets_size=20,
     )
 
     assert fixed_fields == {
@@ -59,7 +59,7 @@ def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ga_ls8c_ard_3"),
-        sample_percentage=50,
+        sample_datasets_size=10,
     )
 
     assert len(fixed_fields) >= 5
@@ -69,7 +69,7 @@ def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ga_ls8c_ard_3"),
-        sample_percentage=20,
+        sample_datasets_size=4,
     )
 
     assert len(fixed_fields) >= 5
@@ -79,7 +79,7 @@ def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ga_ls8c_ard_3"),
-        sample_percentage=5,
+        sample_datasets_size=1,
     )
 
     assert len(fixed_fields) >= 5

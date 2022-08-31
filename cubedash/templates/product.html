@@ -147,6 +147,7 @@
                         >{{ product.metadata_type.name -}}</a>)
                     </h4>
 
+                    <h4 title="randomly sampled 1,000 datasets">Common fields <i class="fa fa-info-circle"></i></h4>
                     {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
                         <em>No common values</em>
                     {% else %}
@@ -161,7 +162,6 @@
                             </em>
                         {% endif %}
                     {% endif %}
-
                     {% if product_summary.derived_products %}
                         <h4>Derived</h4>
                         <ul>

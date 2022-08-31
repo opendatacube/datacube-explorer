@@ -526,7 +526,7 @@ class SummaryStore:
                 product, kind="derived", sample_percentage=sample_percentage
             )
             fixed_metadata = self._find_product_fixed_metadata(
-                product, sample_percentage=sample_percentage
+                product, sample_datasets_size=dataset_sample_size
             )
 
         new_summary = ProductSummary(
@@ -613,7 +613,7 @@ class SummaryStore:
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
-        self, product: DatasetType, sample_percentage=0.05
+        self, product: DatasetType, sample_datasets_size=1000,
     ) -> Dict[str, any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -622,11 +622,6 @@ class SummaryStore:
         feel free to sample 100%!)
 
         """
-        if not 0.0 < sample_percentage <= 100.0:
-            raise ValueError(
-                f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
-            )
-
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = self.index.datasets.search_eager(
             product=product.name, limit=1
@@ -661,19 +656,6 @@ class SummaryStore:
                     f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
                 )
 
-        dataset_count = self._engine.execute(
-            select(
-                [
-                   func.count(ODC_DATASET.c.id)
-                ]
-            )
-            .select_from(ODC_DATASET)
-            .where(ODC_DATASET.c.dataset_type_ref == product.id)
-            .where(ODC_DATASET.c.archived.is_(None))
-        ).scalar()
-
-        sample_datasets_size = math.ceil(sample_percentage/100*dataset_count)
-
         dataset_samples = self._engine.execute(
             select(
                 [
@@ -690,7 +672,6 @@ class SummaryStore:
         _LOG.info(
             "product.fixed_metadata_search",
             product=product.name,
-            sample_percentage=round(sample_percentage, 2),
             sampled_dataset_count=sample_datasets_size,
         )
 
@@ -718,7 +699,6 @@ class SummaryStore:
         _LOG.info(
             "product.fixed_metadata_search.done",
             product=product.name,
-            sample_percentage=round(sample_percentage, 2),
             sampled_dataset_count=sample_datasets_size,
             searched_field_count=len(result[0]),
             found_field_count=len(fixed_fields),
