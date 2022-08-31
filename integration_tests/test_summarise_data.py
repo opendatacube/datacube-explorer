@@ -335,7 +335,7 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
     # Tiled product, sampled
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ls8_nbar_albers"),
-        sample_percentage=50,
+        sample_datasets_size=5,
     )
     # Ingested products carry little of the original metadata...
     assert fixed_fields == {
