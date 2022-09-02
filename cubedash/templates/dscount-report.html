@@ -3,6 +3,11 @@
 
 {% block title %}Dataset Count Report{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js" integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
+{% endblock %}
 {% block content %}
     <div class="panel highlight">
         <h2 class="followed lonesome">Bulk Dataset Counts - {{ (datacube_products | length ) - (hidden_product_list | length) }} Products</h2>
@@ -20,7 +25,7 @@
         <p>
             An empty value means "all"
         </p>
-        <table class="data-table">
+        <table id="dscount-table" class="data-table">
                 <thead>
                     <tr>
                         <th>Product Name</th>
@@ -52,5 +57,11 @@
                 </tbody>
         </table>
     </div>
-
+<script>
+    $(document).ready( function () {
+    $('#dscount-table').DataTable({
+        paging: false,
+    });
+} );
+</script>
 {% endblock %}
