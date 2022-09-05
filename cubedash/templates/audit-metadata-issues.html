@@ -34,18 +34,21 @@
     <div class="panel">
         {% if spatial_quality_stats %}
             <table class="data-table unavailable-metadata" id="missing-metadata">
-                <thead>
+                <thead id="metadata-audit-table-thead">
                 <th>Product</th>
-                <th class="missing">Missing footprint</th>
-                <th class="missing">Missing CRS</th>
-                <th class="feature"
-                    title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
-                    Missing Regions
+                <th class="missing" onclick="showRow(this, 'footprint')">
+                    Missing footprint <i class="filter-icon fa-solid fa-filter"></i>
                 </th>
-                <th class="feature">Missing Dataset Size</th>
+                <th class="missing" onclick="showRow(this, 'crs')">Missing CRS <i class="filter-icon fa-solid fa-filter"></i></th>
+                <th class="feature" onclick="showRow(this, 'region')"
+                    title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
+                    Missing Regions <i class="filter-icon fa-solid fa-filter"></i>
+                </th>
+                <th class="feature" onclick="showRow(this, 'dsize')">Missing Dataset Size <i class="filter-icon fa-solid fa-filter"></i></th>
                 </thead>
                 {% for stat in spatial_quality_stats | sort(attribute='product.name') %}
-                    <tr class="search-result">
+                    <tr class="search-result missing-result" data-missing-footprint="{{ stat.missing_footprint }}"
+                    data-mising-srid="{{ stat.missing_srid }}" data-missing-region="{{ (stat.count - stat.has_region)}}" data-missing-filesize="{{ (stat.count - stat.has_file_size) }}">
                         <td>{{ stat.product.name | product_link }}</td>
                         <td title="{{ stat.missing_footprint }} of {{ stat.count }} missing footprint"
                             class="missing-footprint">
@@ -124,5 +127,56 @@
                 View query timings</a> (very slow)
     {% endif %}
     </div>
+<script>
+    function objToggle(obj){
+        document.querySelectorAll('.filter-icon').forEach(function(icon){
+            if(icon != obj.firstElementChild)
+            {
+                icon.classList.remove('fa-square-check');
+                icon.classList.add('fa-filter');
+            }
 
+        });
+        obj.firstElementChild.classList.toggle('fa-filter');
+        obj.firstElementChild.classList.toggle('fa-square-check');
+    }
+
+    function showRow(obj, type) {
+        filter_con = obj.firstElementChild.classList.contains('fa-filter');
+        if(type == 'footprint'){
+            document.querySelectorAll(".missing-result").forEach(function(row){
+                row.style.display = "table-row";
+                if (row.getAttribute("data-missing-footprint") == '0' && filter_con){
+                    row.style.display = "none";
+                }
+            });
+            objToggle(obj);
+        } else if (type == 'crs') {
+            document.querySelectorAll(".missing-result").forEach(function(row){
+                row.style.display = "table-row";
+                if (row.getAttribute("data-missing-footprint") == '0' && filter_con){
+                    row.style.display = "none";
+                }
+            });
+            objToggle(obj);
+
+        } else if (type == 'region') {
+            document.querySelectorAll(".missing-result").forEach(function(row){
+                row.style.display = "table-row";
+                if (row.getAttribute("data-missing-region") == '0' && filter_con){
+                    row.style.display = "none";
+                }
+            });
+            objToggle(obj);
+        }  else if (type == 'dsize') {
+            document.querySelectorAll(".missing-result").forEach(function(row){
+                row.style.display = "table-row";
+                if (row.getAttribute("data-missing-filesize") == '0' && filter_con){
+                    row.style.display = "none";
+                }
+            });
+            objToggle(obj);
+        }
+    }
+</script>
 {% endblock %}

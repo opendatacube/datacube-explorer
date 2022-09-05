@@ -45,7 +45,7 @@
             <a href="{{ url_for('region_geojson', region_code=region_code, **product_args) }}"
                 class="badge">
                 GeoJSON
-                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                <i class="fa-solid fa-file-text" aria-hidden="true"></i>
             </a>
         </div>
     </div>
@@ -55,7 +55,7 @@
             {% if previous_page_url %}
                 <p>
                     <a href="{{ previous_page_url }}" class="muted">
-                        <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+                        <i class="fa-solid fa-arrow-circle-left" aria-hidden="true"></i>
                         Previous
                     </a>
                 </p>
@@ -76,7 +76,7 @@
                 <p>
                     <a href="{{ next_page_url }}" class="muted">
                         Next
-                        <i class="fa fa-arrow-circle-right" aria-hidden="true"></i>
+                        <i class="fa-solid fa-arrow-circle-right" aria-hidden="true"></i>
                     </a>
                 </p>
             {% endif %}
