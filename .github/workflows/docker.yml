@@ -63,6 +63,15 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
+      - name: Update Docker Hub Description
+        uses: peter-evans/dockerhub-description@v2
+        with:
+          username: gadockersvc
+          password: ${{ secrets.DockerPassword }}
+          repository: ${{ env.IMAGE_NAME }}
+          readme-filepath: README.md
+          short-description: Open Data Cube Explorer Image
+
       - name: Notify Slack for Failures
         uses: rtCamp/action-slack-notify@v2.0.0
         if: failure()

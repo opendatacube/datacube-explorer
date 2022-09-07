@@ -273,7 +273,7 @@ class TimePeriodOverview:
         epsg = self.footprint_crs.lower()
 
         if not epsg.startswith("epsg:"):
-            _LOG.warn("unsupported.to_srid", crs=self.footprint_crs)
+            _LOG.warning("unsupported.to_srid", crs=self.footprint_crs)
             return None
         return int(epsg.split(":")[1])
 
@@ -319,12 +319,12 @@ def _create_unified_footprint(
         # avoid non-noded intersection.
         # TODO: does shapely have a snap-to-grid?
         try:
-            _LOG.warn("summary.footprint.invalid_union", exc_info=True)
+            _LOG.warning("summary.footprint.invalid_union", exc_info=True)
             geometry_union = shapely.ops.unary_union(
                 [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
             )
         except ValueError:
-            _LOG.warn("summary.footprint.invalid_buffered_union", exc_info=True)
+            _LOG.warning("summary.footprint.invalid_buffered_union", exc_info=True)
 
             # Attempt 3 at union: Recursive filter bad polygons first
             polygonlist = _polygon_chain(with_valid_geometries)

@@ -10,11 +10,11 @@
             over {{ period_length.days }} days
             <a href="{{ url_for('.arrivals_csv') }}" class="badge header-badge">
                 csv
-                <i class="fa fa-file-excel-o" aria-hidden="true"></i>
+                <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
             </a>
             <a href="{{ url_for('stac.arrivals') }}" class="badge header-badge">
                 As Stac Catalog
-                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                <i class="fa-solid fa-file-text" aria-hidden="true"></i>
             </a>
         </span>
     </div>
@@ -43,7 +43,7 @@
                                     <a href="{{ url_for('dataset.dataset_page', id_=dataset_id) }}"
                                        class="badge"
                                        title="Example {{ arrival.product_name }} arrival {{ loop.index }}"
-                                    ><i class="fa fa-picture-o" aria-hidden="true"></i></a>&nbsp;
+                                    ><i class="fa-solid fa-image" aria-hidden="true"></i></a>&nbsp;
                                 {% endfor %}
                             </td>
                         </tr>

@@ -304,7 +304,7 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
     refresh = set()
 
     if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
-        _LOG.warn("schema.applying_update.add_fixed_metadata")
+        _LOG.warning("schema.applying_update.add_fixed_metadata")
         engine.execute(
             f"""
         alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
@@ -316,20 +316,20 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
         engine,
         f"{CUBEDASH_SCHEMA}.{_COLLECTION_ITEMS_INDEX.name}",
     ):
-        _LOG.warn("schema.applying_update.add_collection_items_idx")
+        _LOG.warning("schema.applying_update.add_collection_items_idx")
         _COLLECTION_ITEMS_INDEX.create(engine)
 
     if not pg_exists(
         engine,
         f"{CUBEDASH_SCHEMA}.{_ALL_COLLECTIONS_ORDER_INDEX.name}",
     ):
-        _LOG.warn("schema.applying_update.add_all_collections_idx")
+        _LOG.warning("schema.applying_update.add_all_collections_idx")
         _ALL_COLLECTIONS_ORDER_INDEX.create(engine)
 
     if not pg_column_exists(
         engine, f"{CUBEDASH_SCHEMA}.time_overview", "product_refresh_time"
     ):
-        _LOG.warn("schema.applying_update.add_refresh_time")
+        _LOG.warning("schema.applying_update.add_refresh_time")
         engine.execute(
             f"""
             alter table {CUBEDASH_SCHEMA}.time_overview
@@ -340,7 +340,7 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
     if not pg_column_exists(
         engine, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
     ):
-        _LOG.warn("schema.applying_update.add_summary_success_time")
+        _LOG.warning("schema.applying_update.add_summary_success_time")
         engine.execute(
             f"""
             alter table {CUBEDASH_SCHEMA}.product
@@ -363,7 +363,7 @@ def check_or_update_odc_schema(engine: Engine):
     try:
         # We can try to install it ourselves if we have permission, using ODC's code.
         if not pg_column_exists(engine, ODC_DATASET.fullname, "updated"):
-            _LOG.warn("schema.applying_update.add_odc_change_triggers")
+            _LOG.warning("schema.applying_update.add_odc_change_triggers")
             _utils.install_timestamp_trigger(engine)
     except ProgrammingError as e:
         # We don't have permission.
@@ -389,14 +389,14 @@ def check_or_update_odc_schema(engine: Engine):
         if not pg_index_exists(
             engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_added"
         ):
-            _LOG.warn("schema.applying_update.add_odc_added_index")
+            _LOG.warning("schema.applying_update.add_odc_added_index")
             statements.append(
                 f"create index ix_dataset_added on {ODC_DATASET.fullname}(added desc);"
             )
         if not pg_index_exists(
             engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_type_changed"
         ):
-            _LOG.warn("schema.applying_update.add_odc_changed_index")
+            _LOG.warning("schema.applying_update.add_odc_changed_index")
             statements.append(
                 f"create index ix_dataset_type_changed on "
                 f"{ODC_DATASET.fullname}(dataset_type_ref, greatest(added, updated, archived) desc);"
