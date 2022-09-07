@@ -10,6 +10,7 @@ repos:
     rev: 4.0.1
     hooks:
       - id: flake8
+        exclude: ^docs/
         additional_dependencies:
           - dlint # Check common security issues
           - flake8-broken-line # Don't escape newlines. (surround in parens or simplify)
