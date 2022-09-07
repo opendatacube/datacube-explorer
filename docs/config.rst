@@ -15,194 +15,150 @@ The following configuration values are used internally by Datacube-explorer:
 
 .. py:data:: CUBEDASH_PRODUCT_GROUP_BY_REGEX
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Tuple containing regex for product name matching and group name
 
     Default: ``None``
+    Example: ``((r'^usgs_','USGS products'), (r'_albers$','C2 Albers products'), (r'level1','Level 1 products'), )``
 
 .. py:data:: CUBEDASH_PRODUCT_GROUP_BY_FIELD
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``product_type``
 
 .. py:data:: CUBEDASH_PRODUCT_GROUP_SIZE
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+   ??
 
     Default: ``5``
 
 .. py:data:: CUBEDASH_DEFAULT_GROUP_NAME
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Group name for default group and products not matching regex.
 
     Default: ``Other Products``
 
 .. py:data:: CUBEDASH_HARD_SEARCH_LIMIT
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    limit for number of SQL search for datasets query.
 
     Default: ``150``
 
 .. py:data:: CUBEDASH_DEFAULT_API_LIMIT
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Query limit for search datasets using Explorer's spatial table
 
     Default: ``500``
 
 .. py:data:: CUBEDASH_PROVENANCE_DISPLAY_LIMIT
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Limit for displaying source datasets and derived datasets of a dataset
 
     Default: ``25``
 
 .. py:data:: CUBEDASH_DEFAULT_TIMEZONE
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    default grouping timezone for display datasets time in local timezone
 
     Default: ``Australia/Darwin``
 
 .. py:data:: CUBEDASH_SISTER_SITES
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Tuple containing related explorer instance name and domain
 
     Default: ``None``
+    Example: ``(('Production - ODC', 'http://prod.odc.example'), ('Production - NCI', 'http://nci.odc.example'), )``
 
 .. py:data:: CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    List containing product names to hide from product menu and audit pages.
 
     Default: ``[]``
 
 
 .. py:data:: CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    In a time window between `(today, today - number of days)` show on Audit arrival page
 
     Default: ``14``
 
 .. py:data:: CUBEDASH_SHOW_PERF_TIMES
 
-    Add server timings to http headers.
+    Whether to add server timings to http headers or not.
 
     Default: ``False``
 
 .. py:data:: CUBEDASH_THEME
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Theme name to apply to explorer instance, options are ``odc``, ``dea``, ``deafrica``. Those can be viewed in folder under ``cubedash > templates >> themes``
 
     Default: ``odc``
 
 .. py:data:: CUBEDASH_DEFAULT_LICENSE
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``None``
 
 .. py:data:: STAC_ENDPOINT_ID
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    id shown on ``/stac`` page.
 
     Default: ``odc-explorer``
 
 .. py:data:: STAC_ENDPOINT_TITLE
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    title shown on ``/stac`` page.
 
     Default: ``Default ODC Explorer instance``
 
 .. py:data:: STAC_ENDPOINT_DESCRIPTION
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    description shown on ``/stac`` page.
 
     Default: ``Configure stac endpoint information in your Explorer `settings.env.py` file``
 
 .. py:data:: STAC_ABSOLUTE_HREFS
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``True``
 
 .. py:data:: STAC_DEFAULT_PAGE_SIZE
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``20``
 
 .. py:data:: STAC_PAGE_SIZE_LIMIT
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``1000``
 
 .. py:data:: STAC_DEFAULT_FULL_ITEM_INFORMATION
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Request the full Item information. This forces us to go to the ODC dataset table for every record, which can be extremely slow.
 
     Default: ``True``
 
 .. py:data:: CUBEDASH_DATA_S3_REGION
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    ??
 
     Default: ``ap-southeast-2``
 
 .. py:data:: default_map_zoom
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Leaflet map https://leafletjs.com/reference.html#map-zoom
 
-    Default: ``False``
+    Default: ``3``
 
 .. py:data:: default_map_center
 
-    If there is no handler for an ``HTTPException``-type exception, re-raise it
-    to be handled by the interactive debugger instead of returning it as a
-    simple error response.
+    Leaflet map https://leafletjs.com/reference.html#map-center, variates by explorer theme.
 
-    Default: ``False``
+    Default: ``[0.0, 60.0]``
 
 
 Configuring from Python Files
