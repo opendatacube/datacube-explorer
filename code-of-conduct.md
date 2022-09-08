@@ -56,7 +56,7 @@ a project may be further defined and clarified by project maintainers.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting the ODC Steering Council Chair,
-currently [Alex Leith](alex.leith@ga.gov.au) or alternatively, a member of
+currently [Caitlin Adams](cadams@frontiersi.com.au) or alternatively, a member of
 the ODC Secretariat, currently [George Dyke](george@symbioscomms.com).
 All complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
