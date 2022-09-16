@@ -1,0 +1,12 @@
+{
+    "name": "tai",
+    "author": "Terrain-AI Maynooth University",
+    "description": "TerrainAI ODC Theme",
+    "defaults": {
+        "default_map_zoom": 5,
+        "default_map_center": [
+            -7.502,
+            53.449
+        ]
+    }
+}
