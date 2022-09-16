@@ -67,7 +67,6 @@ target/
 
 # Environment-specific templates
 *.env.html
-settings.env.py
 
 node_modules
 
