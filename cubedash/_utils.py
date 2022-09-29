@@ -419,7 +419,8 @@ def center_time_from_metadata(dataset: Dataset) -> datetime:
     """
     md_type = dataset.metadata_type
     if expects_eo3_metadata_type(md_type):
-        t = dataset.metadata_doc["properties"]["datetime"] or dataset.metadata_doc["properties"]["dtr:start_datetime"]
+        properties = dataset.metadata_doc["properties"]
+        t = properties.get("datetime") or properties.get("dtr:start_datetime")
         return default_utc(dc_utils.parse_time(t))
 
     time = md_type.dataset_fields["time"]
