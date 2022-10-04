@@ -4,6 +4,7 @@
 [![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![Scan](https://github.com/opendatacube/datacube-explorer/workflows/Scan/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3AScan)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
+[![Doc](https://readthedocs.org/projects/datacube-explorer/badge/?version=latest)](http://datacube-explorer.readthedocs.org/en/latest/)
 
 ![Explorer Screenshot](screenshot.png)
 
