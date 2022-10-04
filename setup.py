@@ -36,7 +36,7 @@ extras_require = {
         # The default run.sh and docs use gunicorn+meinheld
         "gunicorn",
         "setproctitle",
-        "gevent==21.12.0",
+        "gevent",
         # Monitoring
         "raven",
         "blinker",
@@ -86,7 +86,7 @@ setup(
         "jinja2",
         "markupsafe",
         "pyorbital",
-        "pyproj==3.2.1",
+        "pyproj",
         "python-dateutil",
         "orjson>=3",
         "shapely",
