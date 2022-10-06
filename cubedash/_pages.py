@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
-
+import pytz
 import datacube
 import flask
 import structlog
@@ -195,7 +195,7 @@ def search_page(
     # TODO: Add sort option to index API
     datasets = sorted(
         _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
-        key=lambda d: d.center_time,
+        key=lambda d: d.center_time.replace(tzinfo=pytz.utc),
     )
 
     more_datasets_exist = False
