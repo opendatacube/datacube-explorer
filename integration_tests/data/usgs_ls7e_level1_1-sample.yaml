@@ -1,0 +1,491 @@
+---
+# Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/7dff1cb5-b297-5701-8390-43c0f2d58fbb.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 7dff1cb5-b297-5701-8390-43c0f2d58fbb
+
+label: usgs_ls7e_level1_1-0-20200628_097068_2020-06-01
+product:
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+  name: usgs_ls7e_level1_1
+
+location: file:///g/data/da82/AODH/USGS/L1/Landsat/C1/097_068/LE70970682020153/LE07_L1GT_097068_20200601_20200628_01_T2.odc-metadata.yaml
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[1.2332521982352514e+05, -1.3508818033246212e+06], [1.246956053753521e+05,
+        -1.3440090036643015e+06], [1.3309561240699986e+05, -1.3028789692970843e+06],
+      [1.574256508540635e+05, -1.184318784886743e+06], [1.590456508540635e+05, -1.176668784886743e+06],
+      [1.5905907653063975e+05, -1.176659652516386e+06], [1.593225e+05, -1.1758275e+06],
+      [3.5747457355879503e+05, -1.2034726440128593e+06], [3.576661346211255e+05, -1.2035076538255017e+06],
+      [3.605891469204953e+05, -1.2039152879982095e+06], [3.628693028721696e+05, -1.20424531018203e+06],
+      [3.638814705882353e+05, -1.2045008823529412e+06], [3.643614705882353e+05, -1.2054008823529412e+06],
+      [3.6436439961958746e+05, -1.2054809717977287e+06], [3.618443931438037e+05, -1.2178710035903703e+06],
+      [3.286943931438037e+05, -1.3801710035903703e+06], [3.282743070005219e+05, -1.3821214109063642e+06],
+      [3.2742892219156807e+05, -1.3832431032801056e+06], [3.263830685316601e+05, -1.383194937759269e+06],
+      [3.252709008780859e+05, -1.3830447186338773e+06], [3.212206111812235e+05, -1.3824858087691544e+06],
+      [3.2100545043904294e+05, -1.3824673593169386e+06], [1.2629044833523837e+05,
+        -1.355602359026607e+06], [1.2270537867965644e+05, -1.355107349242405e+06],
+      [1.225768933982822e+05, -1.3550731066017179e+06], [1.2258576084323977e+05, -1.3546350914798602e+06],
+      [1.2257792370063509e+05, -1.3546296657657493e+06], [1.2258676873309811e+05,
+        -1.3545853058875923e+06], [1.2258779663782804e+05, -1.354534531643411e+06],
+      [1.2332521982352514e+05, -1.3508818033246212e+06]]]
+grids:
+  default:
+    shape: [6931, 8081]
+    transform: [3.e+01, 0.e+00, 1.22085e+05, 0.e+00, -3.e+01, -1.175685e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  panchromatic:
+    shape: [13861, 16161]
+    transform: [1.5e+01, 0.e+00, 1.220925e+05, 0.e+00, -1.5e+01, -1.1756925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  datetime: '2020-06-01T23:59:36.483928'
+  eo:cloud_cover: 5.e+00
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 4.541800946e+01
+  eo:sun_elevation: 4.187082146e+01
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:data_type: L1GT
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:landsat_product_id: LE07_L1GT_097068_20200601_20200628_01_T2
+  landsat:landsat_scene_id: LE70970682020153ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.e+00
+  landsat:station_id: ASA
+  landsat:wrs_path: 97
+  landsat:wrs_row: 68
+  odc:dataset_version: 1.0.20200628
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-06-28T10:08:55'
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '097068'
+
+measurements:
+  nir:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B4.TIF
+  red:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B3.TIF
+  blue:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B1.TIF
+  green:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B2.TIF
+  tir_1:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B6_VCID_2.TIF
+  swir_1:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B5.TIF
+  swir_2:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B7.TIF
+  quality:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_BQA.TIF
+  panchromatic:
+    grid: panchromatic
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_B8.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1GT_097068_20200601_20200628_01_T2_MTL.txt
+
+lineage: {}
+...
+---
+# Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/40a3a835-865d-54f9-a89c-79933d0d985f.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 40a3a835-865d-54f9-a89c-79933d0d985f
+
+label: usgs_ls7e_level1_1-0-20200628_097067_2020-06-01
+product:
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+  name: usgs_ls7e_level1_1
+
+location: file:///g/data/da82/AODH/USGS/L1/Landsat/C1/097_067/LE70970672020153/LE07_L1GT_097067_20200601_20200628_01_T2.odc-metadata.yaml
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[1.8350511547986933e+05, -1.058064291560618e+06], [1.9198562408185838e+05,
+        -1.0170089126825829e+06], [1.920175810158043e+05, -1.016986694204684e+06],
+      [1.922631256835884e+05, -1.0161632129231755e+06], [1.923825e+05, -1.0161075e+06],
+      [3.901146213203436e+05, -1.0430926507575951e+06], [3.9022758281641535e+05, -1.0431113942891657e+06],
+      [3.90246434771541e+05, -1.0431285098800035e+06], [3.9058905923937104e+05, -1.0431752758923477e+06],
+      [3.952693028721696e+05, -1.04383531018203e+06], [3.96609e+05, -1.044147e+06],
+      [3.97215e+05, -1.0449645283018867e+06], [3.97215e+05, -1.0453347906012735e+06],
+      [3.9715439961958746e+05, -1.0460009717977287e+06], [3.608307006571969e+05, -1.2227244533955178e+06],
+      [3.59895e+05, -1.222905e+06], [3.5863098246311996e+05, -1.2228147297729123e+06],
+      [1.6180097653029786e+05, -1.1962047289705768e+06], [1.5968336135189727e+05,
+        -1.1959089054969312e+06], [1.557204845449054e+05, -1.1953723639813226e+06],
+      [1.5545271809826384e+05, -1.1953150486037475e+06], [1.5538931247635823e+05,
+        -1.1949209252388133e+06], [1.553705750216638e+05, -1.19491130437226e+06],
+      [1.553791844094905e+05, -1.1948579701305085e+06], [1.553775e+05, -1.1948475e+06],
+      [1.554341579272088e+05, -1.1945174150361223e+06], [1.55535568471209e+05, -1.1938891875037183e+06],
+      [1.5742561812097538e+05, -1.1843189415195812e+06], [1.7820051819112356e+05,
+        -1.0837446206193934e+06], [1.821078110937074e+05, -1.0648094609159394e+06],
+      [1.8350511547986933e+05, -1.058064291560618e+06]]]
+grids:
+  default:
+    shape: [6911, 8071]
+    transform: [3.e+01, 0.e+00, 1.55085e+05, 0.e+00, -3.e+01, -1.015785e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  panchromatic:
+    shape: [13821, 16141]
+    transform: [1.5e+01, 0.e+00, 1.550925e+05, 0.e+00, -1.5e+01, -1.0157925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  datetime: '2020-06-01T23:59:12.557451'
+  eo:cloud_cover: 1.8e+01
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 4.619331155e+01
+  eo:sun_elevation: 4.30260323e+01
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:data_type: L1GT
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:landsat_product_id: LE07_L1GT_097067_20200601_20200628_01_T2
+  landsat:landsat_scene_id: LE70970672020153ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.e+00
+  landsat:station_id: ASA
+  landsat:wrs_path: 97
+  landsat:wrs_row: 67
+  odc:dataset_version: 1.0.20200628
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-06-28T10:55:40'
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '097067'
+
+measurements:
+  nir:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B4.TIF
+  red:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B3.TIF
+  blue:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B1.TIF
+  green:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B2.TIF
+  tir_1:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B6_VCID_2.TIF
+  swir_1:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B5.TIF
+  swir_2:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B7.TIF
+  quality:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_BQA.TIF
+  panchromatic:
+    grid: panchromatic
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_B8.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1GT_097067_20200601_20200628_01_T2_MTL.txt
+
+lineage: {}
+...
+---
+# Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/927d8697-f201-523d-88aa-def3c7e8cc41.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 927d8697-f201-523d-88aa-def3c7e8cc41
+
+label: usgs_ls7e_level1_1-0-20200627_106079_2020-06-01
+product:
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+  name: usgs_ls7e_level1_1
+
+location: file:///g/data/da82/AODH/USGS/L1/Landsat/C1/106_079/LE71060792020153/LE07_L1TP_106079_20200601_20200627_01_T1.odc-metadata.yaml
+
+crs: epsg:32652
+geometry:
+  type: Polygon
+  coordinates: [[[1.9062321892465372e+05, -3.1099935474653733e+06], [1.9061729950231974e+05,
+        -3.109989221733668e+06], [2.007756219007279e+05, -3.060308923217697e+06],
+      [2.1814562292275557e+05, -2.9763689182788148e+06], [2.271156435064504e+05, -2.9334388196855686e+06],
+      [2.2733819071896886e+05, -2.932460151497606e+06], [2.273549922009877e+05, -2.932448886575888e+06],
+      [2.275875e+05, -2.9316225e+06], [4.2169145447037235e+05, -2.9603080565439714e+06],
+      [4.295293964598327e+05, -2.9614653238961296e+06], [4.323194700840458e+05, -2.961885334896787e+06],
+      [4.3327183281573e+05, -2.962141583592135e+06], [4.3372183281573e+05, -2.963041583592135e+06],
+      [4.337243858313264e+05, -2.963121039281187e+06], [3.975143858313264e+05, -3.139311039281187e+06],
+      [3.9663861167745455e+05, -3.140433506449897e+06], [3.954725086356044e+05, -3.140354896372747e+06],
+      [3.946306707932078e+05, -3.140234685989432e+06], [3.9039308452276734e+05, -3.1396160510969027e+06],
+      [3.901853786796564e+05, -3.139597349242405e+06], [1.9062760274093517e+05, -3.1104542526187133e+06],
+      [1.905975e+05, -3.1101975e+06], [1.9061280324685795e+05, -3.11004449909229e+06],
+      [1.9062321892465372e+05, -3.1099935474653733e+06]]]
+grids:
+  default:
+    shape: [6981, 8121]
+    transform: [3.e+01, 0.e+00, 1.90185e+05, 0.e+00, -3.e+01, -2.931285e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  panchromatic:
+    shape: [13961, 16241]
+    transform: [1.5e+01, 0.e+00, 1.901925e+05, 0.e+00, -1.5e+01, -2.9312925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  datetime: '2020-06-01T00:59:40.385706'
+  eo:cloud_cover: 1.e+00
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 3.994087327e+01
+  eo:sun_elevation: 2.865134808e+01
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:data_type: L1TP
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:geometric_rmse_model_x: 2.758e+00
+  landsat:geometric_rmse_model_y: 3.33e+00
+  landsat:ground_control_points_model: 159
+  landsat:ground_control_points_version: 4
+  landsat:landsat_product_id: LE07_L1TP_106079_20200601_20200627_01_T1
+  landsat:landsat_scene_id: LE71060792020153ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.e+00
+  landsat:station_id: ASA
+  landsat:wrs_path: 106
+  landsat:wrs_row: 79
+  odc:dataset_version: 1.0.20200627
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-06-27T10:29:00'
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '106079'
+
+measurements:
+  nir:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B4.TIF
+  red:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B3.TIF
+  blue:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B1.TIF
+  green:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B2.TIF
+  tir_1:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B6_VCID_2.TIF
+  swir_1:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B5.TIF
+  swir_2:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B7.TIF
+  quality:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_BQA.TIF
+  panchromatic:
+    grid: panchromatic
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_B8.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1TP_106079_20200601_20200627_01_T1_MTL.txt
+
+lineage: {}
+...
+---
+# Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/d1ac8e7c-94d7-54ea-8d65-f4d63d73c81c.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: d1ac8e7c-94d7-54ea-8d65-f4d63d73c81c
+
+label: usgs_ls7e_level1_1-0-20200628_113067_2020-06-02
+product:
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+  name: usgs_ls7e_level1_1
+
+location: file:///g/data/da82/AODH/USGS/L1/Landsat/C1/113_067/LE71130672020154/LE07_L1TP_113067_20200602_20200628_01_T1.odc-metadata.yaml
+
+crs: epsg:32651
+geometry:
+  type: Polygon
+  coordinates: [[[7.67654412466039e+04, -1.1941892875072767e+06], [7.696559019580425e+04,
+        -1.1930490785629137e+06], [7.966560391887114e+04, -1.1796390108085466e+06],
+      [9.175560391887114e+04, -1.1202990108085466e+06], [1.1215561191898075e+05, -1.0207589716756884e+06],
+      [1.1302575803044415e+05, -1.0169482987153102e+06], [1.1303796971267178e+05,
+        -1.0169394934103263e+06], [1.132575e+05, -1.0160925e+06], [2.172487064548934e+05,
+        -1.0305249693778014e+06], [3.144791228806383e+05, -1.0440152846528669e+06],
+      [3.1678924264068715e+05, -1.0443453015151902e+06], [3.177714705882353e+05, -1.0446008823529412e+06],
+      [3.182514705882353e+05, -1.0455008823529412e+06], [3.18255e+05, -1.045605e+06],
+      [3.1750439961958746e+05, -1.0494209717977287e+06], [2.8255438157595345e+05,
+        -1.2213810599500404e+06], [2.82339455412248e+05, -1.2223223762139657e+06],
+      [2.81529455412248e+05, -1.2234623762139657e+06], [2.80510946603858e+05, -1.2234147249050413e+06],
+      [2.778709309847381e+05, -1.2230547227709813e+06], [2.754538263515144e+05, -1.2227236373306839e+06],
+      [2.75435473301929e+05, -1.2227323624525208e+06], [7.66207917960675e+04, -1.195490916407865e+06],
+      [7.661278244306843e+04, -1.1949496028431237e+06], [7.67654412466039e+04, -1.1941892875072767e+06]]]
+grids:
+  default:
+    shape: [6931, 8071]
+    transform: [3.e+01, 0.e+00, 7.6185e+04, 0.e+00, -3.e+01, -1.015785e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  panchromatic:
+    shape: [13861, 16141]
+    transform: [1.5e+01, 0.e+00, 7.61925e+04, 0.e+00, -1.5e+01, -1.0157925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  datetime: '2020-06-02T01:38:05.395252'
+  eo:cloud_cover: 1.e+01
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 4.618734976e+01
+  eo:sun_elevation: 4.302016665e+01
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:data_type: L1TP
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:geometric_rmse_model_x: 4.021e+00
+  landsat:geometric_rmse_model_y: 6.168e+00
+  landsat:ground_control_points_model: 49
+  landsat:ground_control_points_version: 4
+  landsat:landsat_product_id: LE07_L1TP_113067_20200602_20200628_01_T1
+  landsat:landsat_scene_id: LE71130672020154ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.e+00
+  landsat:station_id: ASA
+  landsat:wrs_path: 113
+  landsat:wrs_row: 67
+  odc:dataset_version: 1.0.20200628
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-06-28T10:49:19'
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '113067'
+
+measurements:
+  nir:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B4.TIF
+  red:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B3.TIF
+  blue:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B1.TIF
+  green:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B2.TIF
+  tir_1:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B6_VCID_2.TIF
+  swir_1:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B5.TIF
+  swir_2:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B7.TIF
+  quality:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_BQA.TIF
+  panchromatic:
+    grid: panchromatic
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_B8.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1TP_113067_20200602_20200628_01_T1_MTL.txt
+
+lineage: {}
+...
+---
+# Dataset
+# url: http://pin.devbox.dea.ga.gov.au/dataset/7ab4138c-9b9f-597d-9afc-7fa5eb758179.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 7ab4138c-9b9f-597d-9afc-7fa5eb758179
+
+label: usgs_ls7e_level1_1-0-20200627_090075_2020-05-31
+product:
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+  name: usgs_ls7e_level1_1
+
+location: file:///g/data/da82/AODH/USGS/L1/Landsat/C1/090_075/LE70900752020152/LE07_L1GT_090075_20200531_20200627_01_T2.odc-metadata.yaml
+
+crs: epsg:32656
+geometry:
+  type: Polygon
+  coordinates: [[[3.990156981835847e+05, -2.469473658809232e+06], [3.9910569395097374e+05,
+        -2.4689185847454867e+06], [4.2076569406399154e+05, -2.3699785842292225e+06],
+      [4.337557021678216e+05, -2.310998547323839e+06], [4.377757166791068e+05, -2.2929384817857146e+06],
+      [4.377883022529952e+05, -2.292929847434792e+06], [4.380230581741525e+05, -2.292093446154148e+06],
+      [4.381425e+05, -2.2920525e+06], [4.382647566299548e+05, -2.29205267071744e+06],
+      [4.389547616297654e+05, -2.292157671479143e+06], [6.364297808577638e+05, -2.322277674424535e+06],
+      [6.364571998489405e+05, -2.3223035214335714e+06], [6.392895617155277e+05, -2.3227353488490703e+06],
+      [6.415099319696191e+05, -2.3230954081822853e+06], [6.428022760687511e+05, -2.3233958957249955e+06],
+      [6.43515e+05, -2.324248233806124e+06], [6.43515e+05, -2.3243846343210232e+06],
+      [6.41894307461841e+05, -2.332011408797113e+06], [6.065543070005219e+05, -2.493621410906364e+06],
+      [6.0484183281573e+05, -2.501218416407865e+06], [6.03885e+05, -2.501415e+06],
+      [6.021405058386172e+05, -2.5012346614651266e+06], [4.214204929184124e+05, -2.4737846595046413e+06],
+      [4.04770692999061e+05, -2.471233852499058e+06], [3.9902279128986463e+05, -2.470360441742027e+06],
+      [3.989448979559407e+05, -2.4699438130457937e+06], [3.989399359344784e+05, -2.469940943668398e+06],
+      [3.989419913377501e+05, -2.4699282663939022e+06], [3.989325e+05, -2.4698775e+06],
+      [3.990156981835847e+05, -2.469473658809232e+06]]]
+grids:
+  default:
+    shape: [7001, 8161]
+    transform: [3.e+01, 0.e+00, 3.98685e+05, 0.e+00, -3.e+01, -2.291685e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  panchromatic:
+    shape: [14001, 16321]
+    transform: [1.5e+01, 0.e+00, 3.986925e+05, 0.e+00, -1.5e+01, -2.2916925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  datetime: '2020-05-31 23:19:11.860719Z'
+  eo:cloud_cover: 1.7e+01
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 4.13952234e+01
+  eo:sun_elevation: 3.361573713e+01
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:data_type: L1GT
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:landsat_product_id: LE07_L1GT_090075_20200531_20200627_01_T2
+  landsat:landsat_scene_id: LE70900752020152ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.e+00
+  landsat:station_id: ASA
+  landsat:wrs_path: 90
+  landsat:wrs_row: 75
+  odc:dataset_version: 1.0.20200627
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2020-06-27 10:44:58Z'
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '090075'
+
+measurements:
+  nir:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B4.TIF
+  red:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B3.TIF
+  blue:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B1.TIF
+  green:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B2.TIF
+  tir_1:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B6_VCID_2.TIF
+  swir_1:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B5.TIF
+  swir_2:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B7.TIF
+  quality:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_BQA.TIF
+  panchromatic:
+    grid: panchromatic
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_B8.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1GT_090075_20200531_20200627_01_T2_MTL.txt
+
+lineage: {}
+...

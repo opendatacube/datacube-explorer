@@ -88,3 +88,38 @@ def test_dataset_day_link(summary_store):
     assert t.year == 2011
     assert t.month == 1
     assert t.day == 1
+
+
+@pytest.fixture(scope="module", autouse=True)
+def populate_ls7e_level1_index(dataset_loader, module_dea_index):
+    """
+    Index populated with example datasets. Assumes our tests wont modify the data!
+
+    It's module-scoped as it's expensive to populate.
+    """
+    dataset_count = 0
+    create_dataset = Doc2Dataset(module_dea_index)
+    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "usgs_ls7e_level1_1-sample.yaml"):
+        try:
+            dataset, err = create_dataset(
+                s2_dataset_doc, "file://example.com/test_dataset/"
+            )
+            assert dataset is not None, err
+            created = module_dea_index.datasets.add(dataset)
+            assert created.type.name == "usgs_ls7e_level1_1"
+            dataset_count += 1
+        except AttributeError as ae:
+            assert dataset_count == 5
+            print(ae)
+    assert dataset_count == 5
+    return module_dea_index
+
+
+def test_dataset_search_page_ls7e_time(client: FlaskClient):
+    html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/1")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 1
+
+    html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/2")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 4
