@@ -118,8 +118,8 @@ def populate_ls7e_level1_index(dataset_loader, module_dea_index):
 def test_dataset_search_page_ls7e_time(client: FlaskClient):
     html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/1")
     search_results = html.find(".search-result a")
-    assert len(search_results) == 1
+    assert len(search_results) == 2
 
     html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/2")
     search_results = html.find(".search-result a")
-    assert len(search_results) == 4
+    assert len(search_results) == 3
