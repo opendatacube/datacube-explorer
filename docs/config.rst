@@ -123,6 +123,20 @@ The following configuration values are used internally by Datacube-explorer:
 
     Default: ``3``
 
+.. py:data:: SENTRY_CONFIG
+
+    once set, sentry reporting will be enabled
+
+    Default: ``None``
+    Example:
+
+    ```
+    SENTRY_CONFIG = {
+        "dsn": "https://githash@number.sentry.opendatacube.org/123456",
+        "env": "production",
+    }
+    ```
+
 .. py:data:: STAC_ABSOLUTE_HREFS
 
     TODO:
@@ -164,9 +178,6 @@ The following configuration values are used internally by Datacube-explorer:
     TODO:
 
     Default: ``1000``
-
-.. py:data:: SENTRY_CONFIG
-
 
 Configuring from Python Files
 -----------------------------
