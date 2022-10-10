@@ -72,6 +72,7 @@ def _script(html: HTML):
     return html.find("script")
 
 
+@pytest.mark.skip(reason="TODO:")
 def test_sentry(sentry_client: FlaskClient):
     """Ensure Sentry Client gets initialized correctly
 

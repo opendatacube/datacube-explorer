@@ -1,6 +1,6 @@
 SENTRY_CONFIG = {
     "dsn": "https://githash@number.sentry.opendatacube.org/123456",
-    "include_paths": ["cubedash"],
+    "env": "develop",
 }
 CUBEDASH_SISTER_SITES = (
     ('Production - ODC', 'http://prod.odc.example'),

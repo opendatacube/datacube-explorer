@@ -255,11 +255,7 @@ def _get_regions_geojson(
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    args = {}
-    if "sentry_event_id" in flask.g:
-        args["sentry_event_id"] = flask.g.sentry_event_id
-
-    return flask.render_template("500.html", **args)
+    return flask.render_template("500.html")
 
 
 # Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
@@ -267,23 +263,28 @@ def internal_server_error(error):
 @app.before_first_request
 def enable_sentry():
     if "SENTRY_CONFIG" in app.config:
+        import sentry_sdk
         # pylint: disable=import-error
-        from raven.contrib.flask import Sentry
+        from sentry_sdk.integrations.flask import FlaskIntegration
 
-        app.config["SENTRY_CONFIG"]["release"] = __version__
-        sentry = Sentry(app)
+        sentry_sdk.init(
+            dsn=app.config["SENTRY_CONFIG"].get('dsn'),
+            environment=app.config["SENTRY_CONFIG"].get('env'),
+            integrations=[
+                FlaskIntegration(),
+            ],
 
-        @app.context_processor
-        def inject_sentry_info():
-            # For Javascript error reporting. See the base template (base.html) and 500.html
-            sentry_args = {"release": sentry.client.release}
-            if sentry.client.environment:
-                sentry_args["environment"] = sentry.client.environment
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for performance monitoring.
+            # We recommend adjusting this value in production.
+            traces_sample_rate=1.0,
 
-            return dict(
-                sentry_public_dsn=sentry.client.get_public_dsn("https"),
-                sentry_public_args=sentry_args,
-            )
+            # By default the SDK will try to use the SENTRY_RELEASE
+            # environment variable, or infer a git commit
+            # SHA as release, however you may want to set
+            # something more human-readable.
+            # release="myapp@1.0.0",
+        )
 
 
 @app.before_first_request
