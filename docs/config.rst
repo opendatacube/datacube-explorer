@@ -11,7 +11,7 @@ The following configuration values are used internally by Datacube-explorer:
 
     Enable Flask-Cache https://pythonhosted.org/Flask-Caching/#configuring-flask-caching settings.
 
-    Default: ``null``
+    Default: ``NullCache``
 
 .. py:data:: CUBEDASH_CORS
 
