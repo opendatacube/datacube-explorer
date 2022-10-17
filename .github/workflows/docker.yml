@@ -73,7 +73,7 @@ jobs:
           short-description: Open Data Cube Explorer Image
 
       - name: Notify Slack for Failures
-        uses: rtCamp/action-slack-notify@v2.0.0
+        uses: rtCamp/action-slack-notify@v2.2.0
         if: failure()
         env:
           SLACK_CHANNEL: explorer-alerts
