@@ -16,6 +16,7 @@ from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
+from cubedash._utils import default_utc
 
 from . import (
     _api,
@@ -195,7 +196,7 @@ def search_page(
     # TODO: Add sort option to index API
     datasets = sorted(
         _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
-        key=lambda d: d.center_time,
+        key=lambda d: default_utc(d.center_time),
     )
 
     more_datasets_exist = False
