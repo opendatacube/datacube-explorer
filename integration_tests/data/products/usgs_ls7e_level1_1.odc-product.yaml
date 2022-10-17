@@ -1,0 +1,61 @@
+---
+# Product
+# url: http://pin.devbox.dea.ga.gov.au/products/usgs_ls7e_level1_1.odc-product.yaml
+name: usgs_ls7e_level1_1
+license: CC-BY-4.0
+metadata_type: eo3_landsat_l1
+description: United States Geological Survey Landsat 7 Enhanced Thematic Mapper Plus
+  Level 1 Collection 1
+metadata:
+  product:
+    name: usgs_ls7e_level1_1
+  properties:
+    eo:platform: landsat-7
+    odc:producer: usgs.gov
+    eo:instrument: ETM
+    odc:product_family: level1
+    landsat:collection_number: 1
+measurements:
+- name: blue
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band01
+- name: green
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band02
+- name: red
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band03
+- name: nir
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band04
+- name: swir_1
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band05
+- name: swir_2
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - band07
+- name: quality
+  dtype: uint16
+  units: '1'
+  nodata: 65535
+  aliases:
+  - bqa
+...
