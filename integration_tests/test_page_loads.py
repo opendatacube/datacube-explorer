@@ -72,18 +72,6 @@ def _script(html: HTML):
     return html.find("script")
 
 
-@pytest.mark.skip(reason="TODO:")
-def test_sentry(sentry_client: FlaskClient):
-    """Ensure Sentry Client gets initialized correctly
-
-    Args:
-        sentry_client (FlaskClient): Client for Flask app with Sentry enabled
-    """
-    html: HTML = get_html(sentry_client, "/ls7_nbar_scene")
-    # Ensure rendered page has a SENTRY link
-    assert "raven.min.js" in str(_script(html))
-
-
 def test_prometheus(sentry_client: FlaskClient):
     """
     Ensure Prometheus metrics endpoint exists

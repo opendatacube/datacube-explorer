@@ -17,3 +17,19 @@ If you have access to the server, you could add some code to start an
 external debugger if ``request.remote_addr`` matches your IP. Some IDE
 debuggers also have a remote mode so breakpoints on the server can be
 interacted with locally. Only enable a debugger temporarily.
+
+
+Sentry
+------
+
+To enable Sentry reporting set environment
+
+.. py:data:: SENTRY_DSN
+
+    Enable Sentry reporting.
+
+.. py:data:: SENTRY_ENV_TAG
+
+    Add environment for Sentry reporting.
+
+    Default: ``dev-explorer``
