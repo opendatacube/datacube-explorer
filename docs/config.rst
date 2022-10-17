@@ -7,6 +7,12 @@ Application Configuration Values
 The following configuration values are used internally by Datacube-explorer:
 
 
+.. py:data:: CACHE_TYPE
+
+    Enable Flask-Cache https://pythonhosted.org/Flask-Caching/#configuring-flask-caching settings.
+
+    Default: ``null``
+
 .. py:data:: CUBEDASH_CORS
 
     Enable Cross Origin Resource Sharing (CORS) for ``stac`` and ``api``.
