@@ -4,6 +4,10 @@ import time
 from pathlib import Path
 from typing import Counter, Dict, List, Optional, Tuple
 
+import sentry_sdk
+# pylint: disable=import-error
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 import flask
 import structlog
 from datacube.index import index_connect
@@ -29,7 +33,31 @@ except ImportError:
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
 
+
+if os.getenv('SENTRY_DSN'):
+    sentry_sdk.init(
+        dsn=os.getenv('SENTRY_DSN'),
+        environment=os.getenv("SENTRY_ENV_TAG") if os.getenv("SENTRY_ENV_TAG") else "dev-explorer",
+        integrations=[
+            FlaskIntegration(),
+        ],
+
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+
+        # By default the SDK will try to use the SENTRY_RELEASE
+        # environment variable, or infer a git commit
+        # SHA as release, however you may want to set
+        # something more human-readable.
+        # release="myapp@1.0.0",
+    )
+
+
 app = flask.Flask(NAME)
+
+
 # Also part of the fix from ^
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
@@ -41,6 +69,7 @@ app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 app.jinja_env.add_extension("jinja2.ext.do")
 
 app.config.setdefault("CACHE_TYPE", "NullCache")
+
 
 # Global defaults
 app.config.from_mapping(
@@ -256,35 +285,6 @@ def _get_regions_geojson(
 @app.errorhandler(500)
 def internal_server_error(error):
     return flask.render_template("500.html")
-
-
-# Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
-# This is injected before application starts serving requests
-@app.before_first_request
-def enable_sentry():
-    if "SENTRY_CONFIG" in app.config:
-        import sentry_sdk
-        # pylint: disable=import-error
-        from sentry_sdk.integrations.flask import FlaskIntegration
-
-        sentry_sdk.init(
-            dsn=app.config["SENTRY_CONFIG"].get('dsn'),
-            environment=app.config["SENTRY_CONFIG"].get('env'),
-            integrations=[
-                FlaskIntegration(),
-            ],
-
-            # Set traces_sample_rate to 1.0 to capture 100%
-            # of transactions for performance monitoring.
-            # We recommend adjusting this value in production.
-            traces_sample_rate=1.0,
-
-            # By default the SDK will try to use the SENTRY_RELEASE
-            # environment variable, or infer a git commit
-            # SHA as release, however you may want to set
-            # something more human-readable.
-            # release="myapp@1.0.0",
-        )
 
 
 @app.before_first_request

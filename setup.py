@@ -20,10 +20,10 @@ tests_require = [
     "pytest-benchmark",
     "pytest-cov",
     "requests-html",
-    "raven",
     "blinker",
     "prometheus-flask-exporter",
     'sphinx_click',
+    "sentry-sdk[flask]",
 ]
 
 extras_require = {
@@ -38,7 +38,6 @@ extras_require = {
         "setproctitle",
         "gevent",
         # Monitoring
-        "raven",
         "blinker",
         "prometheus-flask-exporter",
     ],
