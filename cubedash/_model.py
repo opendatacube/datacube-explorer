@@ -40,7 +40,7 @@ app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 # Enable do template extension
 app.jinja_env.add_extension("jinja2.ext.do")
 
-app.config.setdefault("CACHE_TYPE", "null")
+app.config.setdefault("CACHE_TYPE", "NullCache")
 
 # Global defaults
 app.config.from_mapping(
