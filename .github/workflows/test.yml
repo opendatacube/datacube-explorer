@@ -35,13 +35,13 @@ jobs:
           make docker-clean
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
 
       - name: Notify Slack for Failures
-        uses: rtCamp/action-slack-notify@v2.0.0
+        uses: rtCamp/action-slack-notify@v2.2.0
         if: failure()
         env:
           SLACK_CHANNEL: explorer-alerts
