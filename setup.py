@@ -73,7 +73,7 @@ setup(
     install_requires=[
         "cachetools",
         "click",
-        "datacube>=1.8",
+        "datacube==1.8.6",
         "eodatasets3>=0.24.1",
         "fiona",
         "flask==2.1.3",
@@ -92,6 +92,7 @@ setup(
         "simplekml",
         "sqlalchemy>=1.4",
         "structlog>=20.2.0",
+        "pytz",
     ],
     tests_require=tests_require,
     extras_require=extras_require,

@@ -32,12 +32,6 @@ RUN echo "Environment is: $ENVIRONMENT"
 
 RUN pip install pip-tools pre-commit pytest-cov
 
-# Pip installation
-RUN mkdir -p /conf
-COPY requirements-docker.txt constraints-docker.txt /conf/
-RUN pip install -r /conf/requirements-docker.txt -c /conf/constraints-docker.txt
-
-
 # Dev setup: run pre-commit once, so its virtualenv is built and cached.
 #    We do this in a tmp repository, before copying our real code, as we
 #    want this cached by Docker and not rebuilt every time code changes
@@ -63,10 +57,10 @@ ADD . $APPDIR
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
-        pip install .[$ENVIRONMENT] ; \
+        pip install .[$ENVIRONMENT] --extra-index-url https://packages.dea.ga.gov.au/; \
         rm -rf /code/* ; \
     else \
-        pip install --editable .[$ENVIRONMENT] ; \
+        pip install --editable .[$ENVIRONMENT] --extra-index-url https://packages.dea.ga.gov.au/; \
     fi
 
 RUN pip freeze
