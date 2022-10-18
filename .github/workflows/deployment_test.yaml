@@ -29,6 +29,11 @@ jobs:
           make init-odc
           make schema
 
+      - name: Sleep for 10 seconds
+        uses: whatnick/wait-action@master
+        with:
+          time: '5s'
+
       - name: Test ping
         run: |
           curl --show-error --fail \
