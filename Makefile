@@ -123,11 +123,11 @@ schema: ## Initialise Explorer DB using Docker
 
 index: ## Update Explorer DB using Docker
 	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --all
+		cubedash-gen --all
 
 force-refresh: ## Entirely refresh the Explorer tables in Docker
 	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
+		cubedash-gen --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
 	docker-compose run -T explorer \
