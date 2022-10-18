@@ -8,7 +8,7 @@ Add a file to the current directory called ``settings.env.py``
 
 You can alter default .. _Flask: http://flask.pocoo.org/docs/1.0/config/ or
 .. _Flask Cache: https://pythonhosted.org/Flask-Caching/#configuring-flask-caching settings
-(default "CACHE_TYPE: null"), as well as some cubedash-specific settings:
+(default "CACHE_TYPE: NullCache"), as well as some cubedash-specific settings:
 
 .. code-block:: text
 
