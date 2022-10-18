@@ -107,7 +107,7 @@ build-prod: ## Build the prod Docker image
 up-prod: ## Start using the prod Docker image
 	docker-compose \
 		--file docker-compose.yml \
-		up
+		up -d
 
 init-odc: ## Initialise ODC Database
 	docker-compose exec explorer \
@@ -119,7 +119,7 @@ docker-shell: ## Get a shell into local Docker environ
 
 schema: ## Initialise Explorer DB using Docker
 	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --init-database
+		cubedash-gen -v --init
 
 index: ## Update Explorer DB using Docker
 	docker-compose exec explorer \
