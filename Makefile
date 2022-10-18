@@ -110,28 +110,28 @@ up-prod: ## Start using the prod Docker image
 		up -d
 
 init-odc: ## Initialise ODC Database
-	docker-compose exec explorer \
-		datacube system init
+	docker-compose exec -T explorer /bin/sh -c \
+		"datacube system init"
 
 docker-shell: ## Get a shell into local Docker environ
 	docker-compose exec explorer \
 		bash
 
 schema: ## Initialise Explorer DB using Docker
-	docker-compose exec explorer \
-		cubedash-gen -v --init
+	docker-compose exec -T explorer /bin/sh -c \
+		"cubedash-gen -v --init"
 
 index: ## Update Explorer DB using Docker
-	docker-compose exec explorer \
-		cubedash-gen --all
+	docker-compose exec -T explorer /bin/sh -c \
+		"cubedash-gen --all"
 
 force-refresh: ## Entirely refresh the Explorer tables in Docker
-	docker-compose exec explorer \
-		cubedash-gen --force-refresh --refresh-stats --all
+	docker-compose exec -T explorer /bin/sh -c \
+		"cubedash-gen --force-refresh --refresh-stats --all"
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose run -T explorer \
-		bash /code/.docker/create_db.sh
+	docker-compose exec -T explorer /bin/sh -c \
+		"/code/.docker/create_db.sh"
 
 lint-docker: ## Run linting inside inside Docker
 	docker-compose run explorer \
