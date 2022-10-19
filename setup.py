@@ -23,7 +23,6 @@ tests_require = [
     "blinker",
     "prometheus-flask-exporter",
     'sphinx_click',
-    "sentry-sdk[flask]",
 ]
 
 extras_require = {
@@ -88,6 +87,7 @@ setup(
         "pyproj",
         "python-dateutil",
         "orjson>=3",
+        "sentry-sdk[flask]",
         "shapely",
         "simplekml",
         "sqlalchemy>=1.4",
