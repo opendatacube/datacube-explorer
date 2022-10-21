@@ -1,3 +1,8 @@
+setuptools>=42
+setuptools_scm>=3.4
+toml
+wheel
+twine
 --extra-index-url https://packages.dea.ga.gov.au/
 digitalearthau
 pytz

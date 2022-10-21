@@ -83,3 +83,30 @@ jobs:
           SLACK_TITLE: Docker failure
           SLACK_USERNAME: Explorer Docker
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  publish_pypi:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'release'
+      && github.event.release.action == 'published'
+
+    steps:
+      - name: Build Packages
+        run: |
+          cat <<EOF | docker run --rm -i  \
+                    -v $(pwd):/code \
+                    -e SKIP_DB=yes \
+                    ${{ env.IMAGE_NAME }} bash -
+          python setup.py bdist_wheel sdist
+          ls -lh ./dist/
+          if hash twine 2> /dev/null ; then
+            twine check ./dist/*
+          else
+            echo "WARNING: twine is missing from the docker!"
+          fi
+          EOF
+
+      - name: Publish to PyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PyPiToken }}
