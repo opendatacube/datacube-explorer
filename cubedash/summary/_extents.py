@@ -38,7 +38,12 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs, expects_eo3_metadata_type
+from cubedash._utils import (
+    ODC_DATASET as DATASET,
+    alchemy_engine,
+    expects_eo3_metadata_type,
+    infer_crs,
+)
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
@@ -631,7 +636,8 @@ def products_by_region(
     offset: int = 0,
 ) -> Generator[DatasetType, None, None]:
     query = (
-        select([DATASET_SPATIAL.c.dataset_type_ref]).distinct()
+        select([DATASET_SPATIAL.c.dataset_type_ref])
+        .distinct()
         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
     )
     if time_range:

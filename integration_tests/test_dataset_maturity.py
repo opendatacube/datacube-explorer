@@ -4,9 +4,11 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 16 datasets have maturity level: final
 """
 from pathlib import Path
+
 import pytest
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
+
 from cubedash.summary import SummaryStore
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -21,7 +23,9 @@ def populate_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ga_ls8c_ard_3-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ga_ls8c_ard_3-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -37,7 +41,9 @@ def populate_index(dataset_loader, module_dea_index):
     return module_dea_index
 
 
-def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore, client):
+def test_product_fixed_metadata_by_sample_percentage(
+    summary_store: SummaryStore, client
+):
     # There are 4 interim and 16 final maturity level datasets
     # at 100% (all 20 datasets), the same dictionary will be returned
     # 100% of the time
@@ -51,7 +57,7 @@ def test_product_fixed_metadata_by_sample_percentage(summary_store: SummaryStore
         "instrument": "OLI_TIRS",
         "product_family": "ard",
         "format": "GeoTIFF",
-        "eo_gsd": 15.0
+        "eo_gsd": 15.0,
     }
 
     # There are 4 interim and 16 final maturity level datasets

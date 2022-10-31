@@ -281,13 +281,13 @@ def test_view_dataset(client: FlaskClient):
         "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501"
         in html.find("h2", first=True).text
     )
-    assert not html.find('.key-creation_dt', first=True)
+    assert not html.find(".key-creation_dt", first=True)
 
     # wofs_albers dataset (has no label or location)
     rv: HTML = get_html(client, "/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
     assert "-20.502 to -19.6" in rv.text
     assert "132.0 to 132.924" in rv.text
-    assert not rv.find('.key-creation_dt', first=True)
+    assert not rv.find(".key-creation_dt", first=True)
 
     # No dataset found: should return 404, not a server error.
     rv: Response = client.get(

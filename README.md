@@ -273,12 +273,11 @@ Inside https://github.com/opendatacube/datacube-explorer/tree/develop/integratio
 Then, to add sample datasets required for the test case, create a `.yaml` file with the product name and place all the sample datasets split by `---` in the yaml. Then at the beginning of the new `test_xyz.py` file place
 
 ```python
-import pytest
-
 from pathlib import Path
 
-from datacube.utils import read_documents
+import pytest
 from datacube.index.hl import Doc2Dataset
+from datacube.utils import read_documents
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -311,9 +310,9 @@ def populate_index(dataset_loader, module_dea_index):
 if the sample dataset yaml file is too big, run `gzip **yaml**` and append the required `yaml.gz` to `conftest.py` `populated_index` fixture
 
 ```python
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 

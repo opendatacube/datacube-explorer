@@ -19,9 +19,9 @@ from typing import (
     Union,
 )
 from uuid import UUID
-import pytz
 
 import dateutil.parser
+import pytz
 import structlog
 from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
@@ -138,8 +138,16 @@ class ProductSummary:
         if self.dataset_count == 0:
             return
 
-        start = self.time_earliest.astimezone(timezone) if self.time_earliest else self.time_earliest
-        end = self.time_latest.astimezone(timezone) if self.time_latest else self.time_latest
+        start = (
+            self.time_earliest.astimezone(timezone)
+            if self.time_earliest
+            else self.time_earliest
+        )
+        end = (
+            self.time_latest.astimezone(timezone)
+            if self.time_latest
+            else self.time_latest
+        )
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
@@ -405,7 +413,7 @@ class SummaryStore:
         expected_years = set(
             range(
                 product.time_earliest.astimezone(timezone).year,
-                product.time_latest.astimezone(timezone).year + 1
+                product.time_latest.astimezone(timezone).year + 1,
             )
         )
 
@@ -597,7 +605,8 @@ class SummaryStore:
              group by cubedash.dataset_spatial.region_code
         )
             """,
-            dataset_type.id, dataset_type.id
+            dataset_type.id,
+            dataset_type.id,
         ).rowcount
         log.info("refresh.regions.delete.empty.regions.end")
 
@@ -613,7 +622,9 @@ class SummaryStore:
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
-        self, product: DatasetType, sample_datasets_size=1000,
+        self,
+        product: DatasetType,
+        sample_datasets_size=1000,
     ) -> Dict[str, any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -657,11 +668,7 @@ class SummaryStore:
                 )
 
         dataset_samples = self._engine.execute(
-            select(
-                [
-                   ODC_DATASET.c.id
-                ]
-            )
+            select([ODC_DATASET.c.id])
             .select_from(ODC_DATASET)
             .where(ODC_DATASET.c.dataset_type_ref == product.id)
             .where(ODC_DATASET.c.archived.is_(None))
@@ -1356,7 +1363,7 @@ class SummaryStore:
                 self.get(product.name, year_, None, None)
                 for year_ in range(
                     product.time_earliest.astimezone(timezone).year,
-                    product.time_latest.astimezone(timezone).year + 1
+                    product.time_latest.astimezone(timezone).year + 1,
                 )
             )
         else:
@@ -1790,7 +1797,7 @@ def _summary_from_row(res, product_name):
             else res["time_earliest"],
             res["time_latest"].astimezone(timezone)
             if res["time_latest"]
-            else res["time_latest"]
+            else res["time_latest"],
         )
         if res["time_earliest"]
         else None,

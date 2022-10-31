@@ -1,5 +1,4 @@
 import os
-
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
@@ -9,14 +8,13 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
+from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.scripts import ingest
-from datacube.drivers import storage_writer_by_name
-
 from datacube.utils import read_documents
 from digitalearthau.testing import factories
 from flask.testing import FlaskClient
@@ -56,7 +54,7 @@ INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
 
 
-def dea_index_fixture(index_fixture_name, scope='function'):
+def dea_index_fixture(index_fixture_name, scope="function"):
     """
     Create a pytest fixture for a Datacube instance populated
     with DEA products/config.
@@ -78,20 +76,24 @@ def dea_index_fixture(index_fixture_name, scope='function'):
         )
         # Add DEA metadata types, products.
         for md_file in os.listdir(INTERGRATION_METADATA_FOLDER):
-            for _, doc in read_documents(os.path.join(INTERGRATION_METADATA_FOLDER, md_file)):
+            for _, doc in read_documents(
+                os.path.join(INTERGRATION_METADATA_FOLDER, md_file)
+            ):
                 index.metadata_types.add(index.metadata_types.from_doc(doc))
 
         for prod_file in os.listdir(INTERGRATION_PRODUCTS_FOLDER):
-            for _, product_def in read_documents(os.path.join(INTERGRATION_PRODUCTS_FOLDER, prod_file)):
+            for _, product_def in read_documents(
+                os.path.join(INTERGRATION_PRODUCTS_FOLDER, prod_file)
+            ):
                 index.products.add_document(product_def)
 
-        for path in INTEGRATION_INGESTION_FOLDER.glob('*.yaml'):
+        for path in INTEGRATION_INGESTION_FOLDER.glob("*.yaml"):
             ingest_config = ingest.load_config_from_file(path)
 
-            driver_name = ingest_config['storage']['driver']
+            driver_name = ingest_config["storage"]["driver"]
             driver = storage_writer_by_name(driver_name)
             if driver is None:
-                raise ValueError("No driver found for {}".format(driver_name))
+                raise ValueError(f"No driver found for {driver_name}")
             ingest.ensure_output_type(
                 index, ingest_config, driver.format, allow_product_changes=True
             )

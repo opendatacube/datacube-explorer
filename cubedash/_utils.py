@@ -6,6 +6,7 @@ import csv
 import difflib
 import functools
 import io
+import itertools
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -13,12 +14,11 @@ from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
 from uuid import UUID
-import itertools
-import numpy
 
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
 import flask
+import numpy
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -407,7 +407,9 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return default_utc(dc_utils.parse_time(value))
         except ValueError:
-            _LOG.warning("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
+            _LOG.warning(
+                "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
+            )
 
     return None
 
@@ -425,7 +427,7 @@ def center_time_from_metadata(dataset: Dataset) -> datetime:
 
     time = md_type.dataset_fields["time"]
     try:
-        center_time = (time.begin + (time.end - time.begin) / 2)
+        center_time = time.begin + (time.end - time.begin) / 2
     except AttributeError:
         center_time = dataset.center_time
     return default_utc(center_time)
@@ -548,7 +550,7 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
     # TODO: remove the two functions once eo-datasets fix is released
     def _represent_float(self, value):
         text = numpy.format_float_scientific(value)
-        return self.represent_scalar(u'tag:yaml.org,2002:float', text)
+        return self.represent_scalar("tag:yaml.org,2002:float", text)
 
     def dumps_yaml(yml, stream, *docs) -> None:
         """Dump yaml through a stream, using the default serialisation settings."""

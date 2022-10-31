@@ -14,9 +14,9 @@ from werkzeug.exceptions import HTTPException
 import cubedash
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
+from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
-from cubedash._utils import default_utc
 
 from . import (
     _api,
@@ -306,7 +306,8 @@ def region_page(
     )
 
     same_region_products = list(
-        product.name for product in _model.STORE.find_products_for_region(
+        product.name
+        for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
@@ -456,9 +457,7 @@ def inject_globals():
         grouped_products=_get_grouped_products(),
         # All products in the datacube, summarised or not.
         datacube_products=list(_model.STORE.index.products.get_all()),
-        hidden_product_list=app.config.get(
-            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
-        ),
+        hidden_product_list=app.config.get("CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []),
         datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
