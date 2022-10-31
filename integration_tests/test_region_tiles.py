@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
-from flask.testing import FlaskClient
 from flask import Response
+from flask.testing import FlaskClient
 
 from integration_tests.asserts import check_dataset_count, get_html
 
@@ -23,7 +23,9 @@ def populate_wo_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ga_ls_wo_fq_nov_mar_3-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ga_ls_wo_fq_nov_mar_3-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -54,6 +56,7 @@ def test_wo_region_dataset_count(client: FlaskClient):
 
 # Test where region_code is defined in metadata but all are the same
 
+
 @pytest.fixture(scope="module", autouse=True)
 def populate_landcover_index(dataset_loader, module_dea_index):
     """
@@ -63,7 +66,9 @@ def populate_landcover_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ga_ls_landcover_class_cyear_2-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ga_ls_landcover_class_cyear_2-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -101,7 +106,9 @@ def populate_tmad_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ls5_nbart_tmad_annual-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ls5_nbart_tmad_annual-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -114,7 +121,9 @@ def populate_tmad_index(dataset_loader, module_dea_index):
             assert dataset_count == 2
             print(ae)
     assert dataset_count == 2
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ls7_nbart_tmad_annual-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ls7_nbart_tmad_annual-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -148,22 +157,22 @@ def test_tmad_region_dataset_count(client: FlaskClient):
     assert len(search_results) == 1
 
 
-def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, module_dea_index):
+def test_tmad_archived_dataset_region(
+    client: FlaskClient, run_generate, module_dea_index
+):
     try:
         # now  index one tile that sole represents a region
-        module_dea_index.datasets.archive(['867050c5-f854-434b-8b16-498243a5cf24'])
+        module_dea_index.datasets.archive(["867050c5-f854-434b-8b16-498243a5cf24"])
 
         # ... the next generation should catch it and update with one less dataset....
         run_generate("ls5_nbart_tmad_annual")
 
-        rv: Response = client.get(
-            "product/ls5_nbart_tmad_annual/regions/8_-36"
-        )
+        rv: Response = client.get("product/ls5_nbart_tmad_annual/regions/8_-36")
         assert rv.status_code == 404
 
     finally:
         # Now let's restore the dataset!
-        module_dea_index.datasets.restore(['867050c5-f854-434b-8b16-498243a5cf24'])
+        module_dea_index.datasets.restore(["867050c5-f854-434b-8b16-498243a5cf24"])
 
 
 def test_region_switchable_product(client: FlaskClient):

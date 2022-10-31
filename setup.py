@@ -22,7 +22,7 @@ tests_require = [
     "requests-html",
     "blinker",
     "prometheus-flask-exporter",
-    'sphinx_click',
+    "sphinx_click",
 ]
 
 extras_require = {

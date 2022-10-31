@@ -301,12 +301,11 @@ Then, to add sample datasets required for the test case, create a `.yaml` file w
 
 .. code-block:: python
 
-    import pytest
-
     from pathlib import Path
 
-    from datacube.utils import read_documents
+    import pytest
     from datacube.index.hl import Doc2Dataset
+    from datacube.utils import read_documents
 
     TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -340,8 +339,9 @@ if the sample dataset yaml file is too big, run `gzip **yaml**` and append the r
 
 .. code-block:: python
 
-    import pytest
     from pathlib import Path
+
+    import pytest
 
     TEST_DATA_DIR = Path(__file__).parent / "data"
 

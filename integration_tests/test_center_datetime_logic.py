@@ -14,7 +14,7 @@ from flask.testing import FlaskClient
 from integration_tests.asserts import (
     check_dataset_count,
     check_datesets_page_datestring,
-    get_html
+    get_html,
 )
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -29,7 +29,9 @@ def populate_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "rainfall_chirps_daily-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "rainfall_chirps_daily-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -47,11 +49,17 @@ def populate_index(dataset_loader, module_dea_index):
 
 def test_datestring_on_dataset_page(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
-    html = get_html(client, "/products/rainfall_chirps_daily/datasets/35cbccee-cb07-51cf-85d2-6d2948957544")
+    html = get_html(
+        client,
+        "/products/rainfall_chirps_daily/datasets/35cbccee-cb07-51cf-85d2-6d2948957544",
+    )
 
     check_datesets_page_datestring(html, "31st May 2019")
 
-    html = get_html(client, "/products/rainfall_chirps_daily/datasets/35cbccee-cb07-51cf-85d2-6d2948957545")
+    html = get_html(
+        client,
+        "/products/rainfall_chirps_daily/datasets/35cbccee-cb07-51cf-85d2-6d2948957545",
+    )
 
     check_datesets_page_datestring(html, "15th May 2019")
 
@@ -59,21 +67,17 @@ def test_datestring_on_dataset_page(client: FlaskClient):
 def test_datestring_on_datasets_search_page(client: FlaskClient):
     html = get_html(client, "/products/rainfall_chirps_daily/datasets")
 
-    assert (
-        "Time UTC: 2019-05-15 00:00:00" in [
-            a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
-        ]
-    ), "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert "Time UTC: 2019-05-15 00:00:00" in [
+        a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
+    ], "datestring does not match expected center_time recorded in dataset_spatial table"
 
 
 def test_datestring_on_regions_page(client: FlaskClient):
     html = get_html(client, "/product/rainfall_chirps_daily/regions/x210y106")
 
-    assert (
-        "2019-05-15 00:00:00" in [
-            a.find("td", first=True).text.strip() for a in html.find(".search-result")
-        ]
-    ), "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert "2019-05-15 00:00:00" in [
+        a.find("td", first=True).text.strip() for a in html.find(".search-result")
+    ], "datestring does not match expected center_time recorded in dataset_spatial table"
 
 
 def test_summary_center_datetime(client: FlaskClient):

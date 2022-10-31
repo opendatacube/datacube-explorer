@@ -11,7 +11,6 @@ from urllib.parse import quote_plus
 
 import flask
 import pytz
-
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from dateutil import tz
@@ -20,8 +19,7 @@ from markupsafe import Markup, escape
 from orjson import orjson
 from shapely.geometry import MultiPolygon
 
-from . import _utils, _utils as utils
-from . import _model
+from . import _model, _utils, _utils as utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {

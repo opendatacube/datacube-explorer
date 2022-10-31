@@ -4,17 +4,17 @@ import time
 from pathlib import Path
 from typing import Counter, Dict, List, Optional, Tuple
 
-import sentry_sdk
-# pylint: disable=import-error
-from sentry_sdk.integrations.flask import FlaskIntegration
-
 import flask
+import sentry_sdk
 import structlog
 from datacube.index import index_connect
 from datacube.model import DatasetType
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
+
+# pylint: disable=import-error
+from sentry_sdk.integrations.flask import FlaskIntegration
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -34,19 +34,19 @@ NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
 
 
-if os.getenv('SENTRY_DSN'):
+if os.getenv("SENTRY_DSN"):
     sentry_sdk.init(
-        dsn=os.getenv('SENTRY_DSN'),
-        environment=os.getenv("SENTRY_ENV_TAG") if os.getenv("SENTRY_ENV_TAG") else "dev-explorer",
+        dsn=os.getenv("SENTRY_DSN"),
+        environment=os.getenv("SENTRY_ENV_TAG")
+        if os.getenv("SENTRY_ENV_TAG")
+        else "dev-explorer",
         integrations=[
             FlaskIntegration(),
         ],
-
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
         traces_sample_rate=1.0,
-
         # By default the SDK will try to use the SENTRY_RELEASE
         # environment variable, or infer a git commit
         # SHA as release, however you may want to set
@@ -110,7 +110,9 @@ STORE: SummaryStore = SummaryStore.create(
     index_connect(application_name=NAME, validate_connection=False)
 )
 
-DEFAULT_GROUPING_TIMEZONE = app.config.get("CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin")
+DEFAULT_GROUPING_TIMEZONE = app.config.get(
+    "CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin"
+)
 
 _LOG = structlog.get_logger()
 
@@ -296,10 +298,7 @@ def enable_prometheus():
         )
 
         metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-        _LOG.info(
-            "Prometheus metrics enabled : {metrics}",
-            extra=dict(metrics=metrics)
-        )
+        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
 
 
 @app.before_first_request

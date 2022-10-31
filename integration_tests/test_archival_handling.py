@@ -11,10 +11,7 @@ from datacube.index.hl import Doc2Dataset
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
-from integration_tests.asserts import (
-    check_dataset_count,
-    get_html
-)
+from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
@@ -28,7 +25,9 @@ def populate_index(dataset_loader, module_dea_index):
     """
     dataset_count = 0
     create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ga_ls7e_ard_3-sample.yaml"):
+    for _, s2_dataset_doc in read_documents(
+        TEST_DATA_DIR / "ga_ls7e_ard_3-sample.yaml"
+    ):
         try:
             dataset, err = create_dataset(
                 s2_dataset_doc, "file://example.com/test_dataset/"
@@ -51,26 +50,23 @@ def test_pre_archival_dataset_count(client: FlaskClient):
     html = get_html(client, "/audit/dataset-counts")
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-- td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-- td.numeric", first=True
     ).text
-    assert dataset_count == '1'
+    assert dataset_count == "1"
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric", first=True
     ).text
-    assert dataset_count == '1'
+    assert dataset_count == "1"
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric", first=True
     ).text
-    assert dataset_count == '1'
+    assert dataset_count == "1"
 
 
 def test_post_archival_dataset_count(module_dea_index, run_generate, client):
-    module_dea_index.datasets.archive(['50014f19-5546-4853-be8d-0185a798c083'])
+    module_dea_index.datasets.archive(["50014f19-5546-4853-be8d-0185a798c083"])
     run_generate("ga_ls7e_ard_3")
 
     html = get_html(client, "/products/ga_ls7e_ard_3")
@@ -79,19 +75,16 @@ def test_post_archival_dataset_count(module_dea_index, run_generate, client):
     html = get_html(client, "/audit/dataset-counts")
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-- td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-- td.numeric", first=True
     ).text
-    assert dataset_count == '0'
+    assert dataset_count == "0"
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric", first=True
     ).text
-    assert dataset_count == '0'
+    assert dataset_count == "0"
 
     dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric",
-        first=True
+        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric", first=True
     ).text
-    assert dataset_count == '0'
+    assert dataset_count == "0"
