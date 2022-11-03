@@ -16,6 +16,7 @@ Initialise and create product summaries:
 
     cubedash-gen --init --all
 
+
 .. click:: cubedash.generate::cli
     :prog: cubedash
     :show-nested:
@@ -31,9 +32,11 @@ A simple `cubedash-run` command is available to run Explorer locally:
     $ cubedash-run
         * Running on http://localhost:8080/ (Press CTRL+C to quit)
 
+
 .. click:: cubedash.run::cli
     :prog: cubedash
     :show-nested:
+
 
 (see `cubedash-run --help` for list of options)
 
