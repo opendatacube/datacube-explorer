@@ -1,0 +1,14 @@
+name: Docs QA
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+jobs:
+  documentation-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "datacube-explorer"

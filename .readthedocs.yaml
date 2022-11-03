@@ -1,11 +1,13 @@
 ---
-# .readthedocs.yaml
-
+version: 2
 build:
   image: latest
-
+  apt_packages:
+    - libgdal-dev
+    - gdal-bin
 python:
   version: 3.8
   install:
     - requirements: docs/rtd-requirements.txt
+    - requirements: docs/requirements.txt
   system_packages: true
