@@ -2,11 +2,13 @@ name: "Pull Request Docs Check"
 on:
   - pull_request
 
+env:
+  DKR: opendatacube/datacube-tests:latest
+
 jobs:
-  docs:
+  documentation-links:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: "docs/"
+      - uses: readthedocs/actions/preview@v1
+        with:
+          project-slug: "datacube-explorer"
