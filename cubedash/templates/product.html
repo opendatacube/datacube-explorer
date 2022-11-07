@@ -178,7 +178,7 @@
 
 
                     {% if have_displayable_data %}
-                    <h4>GeoJSON</h4>
+                    <h4>JSON / GeoJSON</h4>
                     <ul>
                         {% if product_region_info %}
                         <li>
@@ -202,6 +202,12 @@
                             </a>
                         </li>
                         {% endif %}
+                        <li>
+                            <a href="{{ url_for('api.dataset_timeline', **product_args) }}" >
+                                <i class="fa-regular fa-file-text" aria-hidden="true"></i>
+                                Timeline
+                            </a>
+                        </li>
                     </ul>
                     {% endif %}
 
