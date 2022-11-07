@@ -444,13 +444,19 @@ def as_rich_json(o):
     return as_json(jsonify_document(o))
 
 
-def as_json(o, content_type="application/json") -> flask.Response:
+def as_json(o, content_type="application/json", downloadable_filename_prefix: str = None) -> flask.Response:
+    """
+    Serialise an object into a json flask response.
+
+    Optionally provide a filename, to tell web-browsers to download
+    it on click with that filename.
+    """
     # Indent if they're loading directly in a browser.
     #   (Flask's Accept parsing is too smart, and sees html-acceptance in
     #    default ajax requests "accept: */*". So we do it raw.)
     prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
 
-    return flask.Response(
+    response = flask.Response(
         orjson.dumps(
             o,
             option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
@@ -458,6 +464,11 @@ def as_json(o, content_type="application/json") -> flask.Response:
         ),
         content_type=content_type,
     )
+
+    if downloadable_filename_prefix:
+        suggest_download_filename(response, downloadable_filename_prefix, ".json")
+
+    return response
 
 
 def _json_fallback(o, *args, **kwargs):
