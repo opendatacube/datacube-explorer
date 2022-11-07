@@ -444,7 +444,9 @@ def as_rich_json(o):
     return as_json(jsonify_document(o))
 
 
-def as_json(o, content_type="application/json", downloadable_filename_prefix: str = None) -> flask.Response:
+def as_json(
+    o, content_type="application/json", downloadable_filename_prefix: str = None
+) -> flask.Response:
     """
     Serialise an object into a json flask response.
 

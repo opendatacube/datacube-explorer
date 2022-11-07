@@ -99,8 +99,11 @@ def dataset_timeline(
 ):
     summary = _model.get_time_summary(product_name, year, month, day)
     if summary is None:
-        abort(404, f"No known information for product "
-                   f"{product_name!r} {year or 'all'} {month or 'all'} {day or 'all'}")
+        abort(
+            404,
+            f"No known information for product "
+            f"{product_name!r} {year or 'all'} {month or 'all'} {day or 'all'}",
+        )
 
     def _datekey(k):
         # The timezone is the global grouping timezone: we don't want it in json.
