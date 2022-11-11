@@ -54,9 +54,7 @@ INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
 
 
-
 def index_fixture(index_fixture_name, scope="function"):
-
     @pytest.fixture(scope=scope)
     def index_instance(request):
         index = index_connect(application_name=str(index_fixture_name))
