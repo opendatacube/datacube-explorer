@@ -12,7 +12,6 @@ tests_require = [
     "docutils",
     "boltons",
     "deepdiff",
-    "digitalearthau",
     "flake8",
     "jsonschema > 3",
     "pre-commit",

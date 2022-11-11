@@ -50,6 +50,11 @@ for schema_path in _SCHEMA_BASE.rglob("*.json"):
     _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
 
+### Helpers ###
+
+# Schema and URL helpers
+
+
 def explorer_url(offset: str):
     """The public absolute url for this url"""
     return urllib.parse.urljoin("http://localhost/", offset)
@@ -161,6 +166,8 @@ _COLLECTION_SCHEMA = load_validator(
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
 _ITEM_COLLECTION_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "itemcollection.json")
 
+# Getters
+
 
 @lru_cache
 def get_extension(url: str) -> jsonschema.Draft7Validator:
@@ -200,6 +207,135 @@ def get_item(client: FlaskClient, url: str) -> Dict:
     return data
 
 
+def _get_next_href(geojson: Dict) -> Optional[str]:
+    hrefs = [link["href"] for link in geojson.get("links", []) if link["rel"] == "next"]
+    if not hrefs:
+        return None
+
+    assert len(hrefs) == 1, "Multiple next links found: " + ",".join(hrefs)
+    [href] = hrefs
+    return href
+
+
+def _iter_items_across_pages(
+    client: FlaskClient, url: str
+) -> Generator[Dict, None, None]:
+    """
+    Keep loading "next" pages and yield every Stac Item in order
+    """
+    while url is not None:
+        items = get_items(client, url)
+
+        yield from items["features"]
+        url = _get_next_href(items)
+
+
+# Assertions and validations
+
+
+def assert_stac_extensions(doc: Dict):
+    stac_extensions = doc.get("stac_extensions", ())
+    for extension_name in stac_extensions:
+        get_extension(extension_name).validate(doc)
+
+
+def assert_item_collection(collection: Dict):
+    assert "features" in collection, "No features in collection"
+    _ITEM_COLLECTION_SCHEMA.validate(collection)
+    assert_stac_extensions(collection)
+    validate_items(collection["features"])
+
+
+def assert_collection(collection: Dict):
+    _COLLECTION_SCHEMA.validate(collection)
+    assert "features" not in collection
+    assert_stac_extensions(collection)
+
+    # Does it have a link to the list of items?
+    links = collection["links"]
+    assert links, "No links in collection"
+    rels = [r["rel"] for r in links]
+    # TODO: 'child'? The newer stac examples use that rather than items.
+    assert "items" in rels, "Collection has no link to its items"
+
+
+def validate_item(item: Dict):
+    _ITEM_SCHEMA.validate(item)
+
+    # Should be a valid polygon
+    assert "geometry" in item, "Item has no geometry field"
+
+    if item["geometry"] is not None:
+        with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
+            shape = shapely_shape(item["geometry"])
+            assert (
+                shape.is_valid
+            ), f"Item has invalid geometry: {explain_validity(shape)}"
+            assert shape.geom_type in (
+                "Polygon",
+                "MultiPolygon",
+            ), "Unexpected type of shape"
+
+    assert_stac_extensions(item)
+
+
+def validate_items(
+    items: Iterable[Dict], expect_ordered=True, expect_count: Union[int, dict] = None
+):
+    """
+    Check that a series of stac Items:
+    - has no duplicates,
+    - is ordered (center time: our default)
+    - are all valid individually.
+    - (optionally) has a specific count
+    """
+    __tracebackhide__ = True
+    seen_ids = set()
+    last_item = None
+    i = 0
+    product_counts = Counter()
+    for item in items:
+        id_ = item["id"]
+        with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
+            validate_item(item)
+        product_counts[item["properties"].get("odc:product", item["collection"])] += 1
+
+        # Assert there's no duplicates
+        assert (
+            id_ not in seen_ids
+        ), f"Duplicate dataset item (record {i}) of search results: {id_}"
+        seen_ids.add(id_)
+
+        # Assert they are all ordered (including across pages!)
+        if last_item and expect_ordered:
+            # TODO: this is actually a (date, id) sort, but our test data has no duplicate dates.
+            prev_dt = last_item["properties"]["datetime"]
+            this_dt = item["properties"]["datetime"]
+            assert (
+                prev_dt < this_dt
+            ), f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
+        i += 1
+
+    # Note that the above block stops most paging infinite loops quickly
+    # ("already seen this dataset id")
+    # So we perform this length check in the same method and afterwards.
+    if expect_count is not None:
+        printable_product_counts = "\n\t".join(
+            f"{k}: {v}" for k, v in product_counts.items()
+        )
+        if isinstance(expect_count, int):
+            assert i == expect_count, (
+                f"Expected {expect_count} items.\n"
+                "Got:\n"
+                f"\t{printable_product_counts}"
+            )
+        else:
+            assert product_counts == expect_count
+
+
+### Tests ###
+
+
 @pytest.fixture()
 def stac_client(populated_index: Index, client: FlaskClient):
     """
@@ -209,6 +345,9 @@ def stac_client(populated_index: Index, client: FlaskClient):
     cubedash._stac.DEFAULT_PAGE_SIZE = OUR_PAGE_SIZE
     _model.app.config["CUBEDASH_DEFAULT_LICENSE"] = "CC-BY-4.0"
     return client
+
+
+# Page requests
 
 
 def test_stac_loading_all_pages(stac_client: FlaskClient):
@@ -266,71 +405,442 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     )
 
 
-def validate_items(
-    items: Iterable[Dict], expect_ordered=True, expect_count: Union[int, dict] = None
-):
+def test_huge_page_request(stac_client: FlaskClient):
+    """Return an error if they try to request beyond max-page-size limit"""
+    error_message_json = get_json(
+        stac_client,
+        f"/stac/search?&limit={OUR_DATASET_LIMIT + 1}",
+        expect_status_code=400,
+    )
+    assert error_message_json == {
+        "code": 400,
+        "name": "Bad Request",
+        "description": f"Max page size is {OUR_DATASET_LIMIT}. Use the next links instead of a large limit.",
+    }
+
+
+def test_returns_404s(stac_client: FlaskClient):
     """
-    Check that a series of stac Items:
-    - has no duplicates,
-    - is ordered (center time: our default)
-    - are all valid individually.
-    - (optionally) has a specific count
+    We should get 404 messages, not exceptions, for missing things.
+
+    (and stac errors are expected in json)
     """
-    __tracebackhide__ = True
-    seen_ids = set()
-    last_item = None
-    i = 0
-    product_counts = Counter()
-    for item in items:
-        id_ = item["id"]
-        with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
-            validate_item(item)
-        product_counts[item["properties"].get("odc:product", item["collection"])] += 1
 
-        # Assert there's no duplicates
-        assert (
-            id_ not in seen_ids
-        ), f"Duplicate dataset item (record {i}) of search results: {id_}"
-        seen_ids.add(id_)
-
-        # Assert they are all ordered (including across pages!)
-        if last_item and expect_ordered:
-            # TODO: this is actually a (date, id) sort, but our test data has no duplicate dates.
-            prev_dt = last_item["properties"]["datetime"]
-            this_dt = item["properties"]["datetime"]
-            assert (
-                prev_dt < this_dt
-            ), f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
-        i += 1
-
-    # Note that the above block stops most paging infinite loops quickly
-    # ("already seen this dataset id")
-    # So we perform this length check in the same method and afterwards.
-    if expect_count is not None:
-        printable_product_counts = "\n\t".join(
-            f"{k}: {v}" for k, v in product_counts.items()
-        )
-        if isinstance(expect_count, int):
-            assert i == expect_count, (
-                f"Expected {expect_count} items.\n"
-                "Got:\n"
-                f"\t{printable_product_counts}"
+    def expect_404(url: str, message_contains: str = None):
+        __tracebackhide__ = True
+        data = get_json(stac_client, url, expect_status_code=404)
+        if message_contains and message_contains not in data.get("description", ""):
+            raise AssertionError(
+                f"Expected {message_contains!r} in description of response {data!r}"
             )
-        else:
-            assert product_counts == expect_count
+
+    # Product
+    expect_404(
+        "/stac/collections/does_not_exist", message_contains="Unknown collection"
+    )
+
+    # Product items
+    expect_404(
+        "/stac/collections/does_not_exist/items",
+        message_contains="Product 'does_not_exist' not found",
+    )
+
+    # Dataset
+    wrong_dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
+    expect_404(
+        f"/stac/collections/does_not_exist/items/{wrong_dataset_id}",
+        message_contains="No dataset found",
+    )
+    # Should be a 404, not a server or postgres error.
+    get_text_response(
+        stac_client,
+        "/stac/collections/does_not_exist/items/not-a-uuid",
+        expect_status_code=404,
+    )
 
 
-def _iter_items_across_pages(
-    client: FlaskClient, url: str
-) -> Generator[Dict, None, None]:
+@pytest.mark.parametrize(
+    ("url", "redirect_to_url"),
+    [
+        (
+            "/collections/ls7_nbar_scene",
+            "/stac/collections/ls7_nbar_scene",
+        ),
+        (
+            "/collections/ls7_nbar_scene/items",
+            "/stac/collections/ls7_nbar_scene/items",
+        ),
+        (
+            # Maintains extra query parameters in the redirect
+            "/collections/ls7_nbar_scene/items"
+            "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
+            "/stac/collections/ls7_nbar_scene/items"
+            + (
+                "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272"
+                # Flask will auto-escape parameters
+                # .replace(",", "%2C")
+                .replace("/", "%2F")
+            ),
+        ),
+        (
+            "/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+            "/stac/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        ),
+    ],
+)
+def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
+    resp: Response = stac_client.get(url, follow_redirects=False)
+    assert resp.location == redirect_to_url, (
+        f"Expected {url} to be redirected to:\n"
+        f"             {redirect_to_url}\n"
+        f"  instead of {resp.location}"
+    )
+
+
+# Stac validation
+
+
+def test_stac_links(stac_client: FlaskClient):
+    """Check that root contains all expected links"""
+    response = get_json(stac_client, "/stac")
+    _CATALOG_SCHEMA.validate(response)
+
+    assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
+    assert (
+        response["title"] == "Default ODC Explorer instance"
+    ), "Expected default unconfigured endpoint title"
+
+    # A child link to each "collection" (product)
+    child_links = [r for r in response["links"] if r["rel"] == "child"]
+    other_links = [r for r in response["links"] if r["rel"] != "child"]
+    assert other_links == [
+        {
+            "rel": "root",
+            "href": "http://localhost/stac",
+            "type": "application/json",
+            "title": "Default ODC Explorer instance",
+        },
+        {
+            "rel": "self",
+            "href": "http://localhost/stac",
+            "type": "application/json",
+        },
+        {
+            "rel": "children",
+            "href": "http://localhost/stac/collections",
+            "type": "application/json",
+            "title": "Collections",
+        },
+        {
+            "rel": "search",
+            "href": "http://localhost/stac/search",
+            "type": "application/json",
+            "title": "Item Search",
+        },
+    ]
+
+    # All expected products and their dataset counts.
+    expected_product_counts = {
+        dt.name: _model.STORE.index.datasets.count(product=dt.name)
+        for dt in _model.STORE.all_dataset_types()
+    }
+
+    found_collection_ids = set()
+    for child_link in child_links:
+        product_name: str = child_link["title"]
+        href: str = child_link["href"]
+        # ignore child links corresponding to catalogs
+        if "catalogs" not in href:
+            print(f"Loading collection page for {product_name}: {repr(href)}")
+
+            collection_data = get_collection(stac_client, href, validate=True)
+            assert collection_data["id"] == product_name
+            # TODO: assert items, properties, etc.
+
+            found_collection_ids.add(product_name)
+
+    # We should have seen all products in the index
+    assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
+
+
+def test_arrivals_page_validation(stac_client: FlaskClient):
+    # Do the virtual 'arrivals' catalog and items validate?
+    response = get_json(stac_client, "/stac/catalogs/arrivals")
+    _CATALOG_SCHEMA.validate(response)
+
+    assert response["id"] == "arrivals"
+    assert response["title"] == "Dataset Arrivals"
+
+    [items_page_url] = [i["href"] for i in response["links"] if i["rel"] == "items"]
+
+    # Get and validate items.
+    items = get_items(stac_client, items_page_url)
+    # Sanity check.
+    assert len(items["features"]) == OUR_PAGE_SIZE
+
+
+def test_stac_collection(stac_client: FlaskClient):
     """
-    Keep loading "next" pages and yield every Stac Item in order
+    Follow the links to the "high_tide_comp_20p" collection and ensure it includes
+    all of our tests data.
     """
-    while url is not None:
-        items = get_items(client, url)
 
-        yield from items["features"]
-        url = _get_next_href(items)
+    collections = get_json(stac_client, "/stac")
+    for link in collections["links"]:
+        if link["rel"] == "child" and link["title"] == "high_tide_comp_20p":
+            collection_href = link["href"]
+            break
+    else:
+        raise AssertionError("high_tide_comp_20p not found in collection list")
+
+    scene_collection = get_collection(stac_client, collection_href, validate=False)
+
+    assert scene_collection == {
+        "stac_version": "1.0.0",
+        "type": "Collection",
+        "id": "high_tide_comp_20p",
+        "title": "high_tide_comp_20p",
+        "license": "CC-BY-4.0",
+        "description": "High Tide 20 percentage composites for entire coastline",
+        "extent": {
+            "spatial": {
+                "bbox": [
+                    [
+                        pytest.approx(112.223_058_990_767_51, abs=0.001),
+                        pytest.approx(-43.829_196_553_065_4, abs=0.001),
+                        pytest.approx(153.985_054_424_922_77, abs=0.001),
+                        pytest.approx(-10.237_104_814_250_783, abs=0.001),
+                    ]
+                ]
+            },
+            "temporal": {
+                "interval": [["2008-06-01T00:00:00Z", "2008-06-01T00:00:00Z"]]
+            },
+        },
+        "links": [
+            {
+                "rel": "root",
+                "href": "http://localhost/stac",
+                "type": "application/json",
+                "title": "Default ODC Explorer instance",
+            },
+            {
+                "rel": "self",
+                "href": stac_url("collections/high_tide_comp_20p"),
+            },
+            {
+                "rel": "items",
+                "href": stac_url("collections/high_tide_comp_20p/items"),
+            },
+            {
+                "rel": "child",
+                "href": stac_url("catalogs/high_tide_comp_20p/2008-6"),
+            },
+        ],
+        "providers": [],
+        "stac_extensions": [],
+    }
+    assert_collection(scene_collection)
+    for link in scene_collection["links"]:
+        if link["rel"] == "items":
+            item_links = link["href"]
+            break
+    validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
+
+
+def test_stac_item(stac_client: FlaskClient, populated_index: Index):
+    # Load one stac dataset from the test data.
+
+    dataset_uri = (
+        "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+        "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
+    )
+    populated_index.datasets.add_location(
+        "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
+    )
+
+    response = get_item(
+        stac_client,
+        stac_url(
+            "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
+        ),
+    )
+
+    def dataset_url(s: str):
+        return (
+            f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+            f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
+        )
+
+    # Our item document can still be improved.
+    # This is ensuring changes are deliberate.
+    expected = {
+        "stac_version": "1.0.0",
+        "stac_extensions": [
+            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+        ],
+        "type": "Feature",
+        "collection": "ls7_nbar_scene",
+        "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        "bbox": [
+            140.03596008297276,
+            -32.68883005637166,
+            142.6210671177689,
+            -30.779953471187625,
+        ],
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [140.494174472712, -30.779953471187625],
+                    [140.48160638713588, -30.786613939351987],
+                    [140.47654885652616, -30.803517459008308],
+                    [140.26694302361142, -31.554989847530283],
+                    [140.11071136692811, -32.10972728807016],
+                    [140.05019849367122, -32.32331059968287],
+                    [140.03596008297276, -32.374863567950605],
+                    [140.04582698730871, -32.37992930113176],
+                    [140.09253434030472, -32.38726630955288],
+                    [142.19093826112766, -32.68798630718157],
+                    [142.19739423481033, -32.68883005637166],
+                    [142.20859663812988, -32.688497041665755],
+                    [142.21294093862082, -32.68685778341274],
+                    [142.6210671177689, -31.092487513703713],
+                    [142.6090583939577, -31.083354434650456],
+                    [142.585607903412, -31.08001593849131],
+                    [140.494174472712, -30.779953471187625],
+                ]
+            ],
+        },
+        "properties": {
+            "created": "2017-07-11T01:32:22Z",
+            "datetime": "2017-05-02T00:29:01Z",
+            "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
+            "platform": "landsat-7",
+            "instruments": ["etm"],
+            "landsat:wrs_path": 96,
+            "landsat:wrs_row": 82,
+            "cubedash:region_code": "96_82",
+            "proj:epsg": 4326,
+        },
+        "assets": {
+            "1": {
+                "title": "1",
+                "eo:bands": [{"name": "1"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
+                ),
+            },
+            "2": {
+                "title": "2",
+                "eo:bands": [{"name": "2"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
+                ),
+            },
+            "3": {
+                "title": "3",
+                "eo:bands": [{"name": "3"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
+                ),
+            },
+            "4": {
+                "title": "4",
+                "eo:bands": [{"name": "4"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
+                ),
+            },
+            "5": {
+                "title": "5",
+                "eo:bands": [{"name": "5"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
+                ),
+            },
+            "7": {
+                "title": "7",
+                "eo:bands": [{"name": "7"}],
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data"],
+                "href": dataset_url(
+                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
+                ),
+            },
+            "thumbnail:full": {
+                "title": "Thumbnail image",
+                "type": "image/jpeg",
+                "roles": ["thumbnail"],
+                "href": dataset_url("browse.fr.jpg"),
+            },
+            "thumbnail:medium": {
+                "title": "Thumbnail image",
+                "type": "image/jpeg",
+                "roles": ["thumbnail"],
+                "href": dataset_url("browse.jpg"),
+            },
+            "checksum:sha1": {
+                "type": "text/plain",
+                "href": dataset_url("package.sha1"),
+                "roles": ["metadata"],
+            },
+        },
+        "links": [
+            {
+                "rel": "self",
+                "type": "application/json",
+                "href": stac_url(
+                    "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
+                ),
+            },
+            {
+                "title": "ODC Dataset YAML",
+                "rel": "odc_yaml",
+                "type": "text/yaml",
+                "href": explorer_url(
+                    "dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml"
+                ),
+            },
+            {
+                "rel": "collection",
+                "href": stac_url("collections/ls7_nbar_scene"),
+            },
+            {
+                "title": "ODC Product Overview",
+                "rel": "product_overview",
+                "type": "text/html",
+                "href": explorer_url("product/ls7_nbar_scene"),
+            },
+            {
+                "title": "ODC Dataset Overview",
+                "rel": "alternative",
+                "type": "text/html",
+                "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
+            },
+            {
+                "title": "Default ODC Explorer instance",
+                "rel": "root",
+                "type": "application/json",
+                "href": "http://localhost/stac",
+            },
+        ],
+    }
+    assert_matching_eo3(response, expected)
+
+
+# Search tests
 
 
 def test_stac_search_limits(stac_client: FlaskClient):
@@ -676,469 +1186,3 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
             # Validate stac item with jsonschema
             validate_item(feature)
-
-
-def test_huge_page_request(stac_client: FlaskClient):
-    """Return an error if they try to request beyond max-page-size limit"""
-    error_message_json = get_json(
-        stac_client,
-        f"/stac/search?&limit={OUR_DATASET_LIMIT + 1}",
-        expect_status_code=400,
-    )
-    assert error_message_json == {
-        "code": 400,
-        "name": "Bad Request",
-        "description": f"Max page size is {OUR_DATASET_LIMIT}. Use the next links instead of a large limit.",
-    }
-
-
-def test_stac_collections(stac_client: FlaskClient):
-    response = get_json(stac_client, "/stac")
-    _CATALOG_SCHEMA.validate(response)
-
-    assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
-    assert (
-        response["title"] == "Default ODC Explorer instance"
-    ), "Expected default unconfigured endpoint title"
-
-    # A child link to each "collection" (product)
-    child_links = [r for r in response["links"] if r["rel"] == "child"]
-    other_links = [r for r in response["links"] if r["rel"] != "child"]
-
-    assert other_links == [
-        {
-            "description": "All product collections",
-            "href": "http://localhost/stac/collections",
-            "rel": "children",
-            "title": "Collections",
-            "type": "application/json",
-        },
-        {
-            "href": "http://localhost/stac/search",
-            "rel": "search",
-            "title": "Item Search",
-            "type": "application/json",
-        },
-        {"href": "http://localhost/stac", "rel": "self"},
-        {"href": "http://localhost/stac", "rel": "root"},
-    ]
-
-    # All expected products and their dataset counts.
-    expected_product_counts = {
-        dt.name: _model.STORE.index.datasets.count(product=dt.name)
-        for dt in _model.STORE.all_dataset_types()
-    }
-
-    found_collection_ids = set()
-    for child_link in child_links:
-        product_name: str = child_link["title"]
-        href: str = child_link["href"]
-
-        print(f"Loading collection page for {product_name}: {repr(href)}")
-
-        collection_data = get_collection(stac_client, href, validate=True)
-        assert collection_data["id"] == product_name
-        # TODO: assert items, properties, etc.
-
-        found_collection_ids.add(product_name)
-
-    virtual_collections = ("Arrivals",)
-
-    # We should have seen all products in the index
-    assert sorted(found_collection_ids) == sorted(
-        virtual_collections + tuple(expected_product_counts.keys())
-    )
-
-
-def test_arrivals_page_validation(stac_client: FlaskClient):
-    # Do the virtual 'arrivals' catalog and items validate?
-    arrivals_collection = get_collection(stac_client, "/stac/arrivals")
-
-    [items_page_url] = [
-        i["href"] for i in arrivals_collection["links"] if i["rel"] == "items"
-    ]
-
-    # Get and validate items.
-    response = get_items(stac_client, items_page_url)
-    # Sanity check.
-    assert len(response["features"]) == OUR_PAGE_SIZE
-
-
-def test_stac_collection_items(stac_client: FlaskClient):
-    """
-    Follow the links to the "high_tide_comp_20p" collection and ensure it includes
-    all of our tests data.
-    """
-
-    collections = get_json(stac_client, "/stac")
-    for link in collections["links"]:
-        if link["rel"] == "child" and link["title"] == "high_tide_comp_20p":
-            collection_href = link["href"]
-            break
-    else:
-        raise AssertionError("high_tide_comp_20p not found in collection list")
-
-    scene_collection = get_collection(stac_client, collection_href, validate=False)
-
-    assert scene_collection == {
-        "stac_version": "1.0.0",
-        "type": "Collection",
-        "id": "high_tide_comp_20p",
-        "title": "high_tide_comp_20p",
-        "license": "CC-BY-4.0",
-        "properties": {},
-        "description": "High Tide 20 percentage composites for entire coastline",
-        "extent": {
-            "spatial": {
-                "bbox": [
-                    [
-                        pytest.approx(112.223_058_990_767_51, abs=0.0001),
-                        pytest.approx(-43.829_196_553_065_4, abs=0.0001),
-                        pytest.approx(153.985_054_424_922_77, abs=0.0001),
-                        pytest.approx(-10.237_104_814_250_783, abs=0.0001),
-                    ]
-                ]
-            },
-            "temporal": {
-                "interval": [["2008-06-01T00:00:00+00:00", "2008-06-01T00:00:00+00:00"]]
-            },
-        },
-        "links": [
-            {
-                "href": stac_url("collections/high_tide_comp_20p/items"),
-                "rel": "items",
-            },
-            {
-                "rel": "root",
-                "href": "http://localhost/stac",
-            },
-        ],
-        "providers": [],
-    }
-    assert_collection(scene_collection)
-    item_links = scene_collection["links"][0]["href"]
-    validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
-
-
-def test_returns_404s(stac_client: FlaskClient):
-    """
-    We should get 404 messages, not exceptions, for missing things.
-
-    (and stac errors are expected in json)
-    """
-
-    def expect_404(url: str, message_contains: str = None):
-        __tracebackhide__ = True
-        data = get_json(stac_client, url, expect_status_code=404)
-        if message_contains and message_contains not in data.get("description", ""):
-            raise AssertionError(
-                f"Expected {message_contains!r} in description of response {data!r}"
-            )
-
-    # Product
-    expect_404(
-        "/stac/collections/does_not_exist", message_contains="Unknown collection"
-    )
-
-    # Product items
-    expect_404(
-        "/stac/collections/does_not_exist/items",
-        message_contains="Product 'does_not_exist' not found",
-    )
-
-    # Dataset
-    wrong_dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
-    expect_404(
-        f"/stac/collections/does_not_exist/items/{wrong_dataset_id}",
-        message_contains="No dataset found",
-    )
-    # Should be a 404, not a server or postgres error.
-    get_text_response(
-        stac_client,
-        "/stac/collections/does_not_exist/items/not-a-uuid",
-        expect_status_code=404,
-    )
-
-
-def test_stac_item(stac_client: FlaskClient, populated_index: Index):
-    # Load one stac dataset from the test data.
-
-    dataset_uri = (
-        "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
-        "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
-    )
-    populated_index.datasets.add_location(
-        "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
-    )
-
-    response = get_item(
-        stac_client,
-        stac_url(
-            "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
-        ),
-    )
-
-    def dataset_url(s: str):
-        return (
-            f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
-            f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
-        )
-
-    # Our item document can still be improved.
-    # This is ensuring changes are deliberate.
-    expected = {
-        "stac_version": "1.0.0",
-        "stac_extensions": [
-            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
-            "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
-        ],
-        "type": "Feature",
-        "collection": "ls7_nbar_scene",
-        "id": "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
-        "bbox": [
-            140.03596008297276,
-            -32.68883005637166,
-            142.6210671177689,
-            -30.779953471187625,
-        ],
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    [140.494174472712, -30.779953471187625],
-                    [140.48160638713588, -30.786613939351987],
-                    [140.47654885652616, -30.803517459008308],
-                    [140.26694302361142, -31.554989847530283],
-                    [140.11071136692811, -32.10972728807016],
-                    [140.05019849367122, -32.32331059968287],
-                    [140.03596008297276, -32.374863567950605],
-                    [140.04582698730871, -32.37992930113176],
-                    [140.09253434030472, -32.38726630955288],
-                    [142.19093826112766, -32.68798630718157],
-                    [142.19739423481033, -32.68883005637166],
-                    [142.20859663812988, -32.688497041665755],
-                    [142.21294093862082, -32.68685778341274],
-                    [142.6210671177689, -31.092487513703713],
-                    [142.6090583939577, -31.083354434650456],
-                    [142.585607903412, -31.08001593849131],
-                    [140.494174472712, -30.779953471187625],
-                ]
-            ],
-        },
-        "properties": {
-            "created": "2017-07-11T01:32:22Z",
-            "datetime": "2017-05-02T00:29:01Z",
-            "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
-            "platform": "landsat-7",
-            "instruments": ["etm"],
-            "landsat:wrs_path": 96,
-            "landsat:wrs_row": 82,
-            "cubedash:region_code": "96_82",
-            "proj:epsg": 4326,
-        },
-        "assets": {
-            "1": {
-                "title": "1",
-                "eo:bands": [{"name": "1"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
-                ),
-            },
-            "2": {
-                "title": "2",
-                "eo:bands": [{"name": "2"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
-                ),
-            },
-            "3": {
-                "title": "3",
-                "eo:bands": [{"name": "3"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
-                ),
-            },
-            "4": {
-                "title": "4",
-                "eo:bands": [{"name": "4"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
-                ),
-            },
-            "5": {
-                "title": "5",
-                "eo:bands": [{"name": "5"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
-                ),
-            },
-            "7": {
-                "title": "7",
-                "eo:bands": [{"name": "7"}],
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data"],
-                "href": dataset_url(
-                    "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
-                ),
-            },
-            "thumbnail:full": {
-                "title": "Thumbnail image",
-                "type": "image/jpeg",
-                "roles": ["thumbnail"],
-                "href": dataset_url("browse.fr.jpg"),
-            },
-            "thumbnail:medium": {
-                "title": "Thumbnail image",
-                "type": "image/jpeg",
-                "roles": ["thumbnail"],
-                "href": dataset_url("browse.jpg"),
-            },
-            "checksum:sha1": {
-                "type": "text/plain",
-                "href": dataset_url("package.sha1"),
-                "roles": ["metadata"],
-            },
-        },
-        "links": [
-            {
-                "rel": "self",
-                "type": "application/json",
-                "href": stac_url(
-                    "collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c"
-                ),
-            },
-            {
-                "title": "ODC Dataset YAML",
-                "rel": "odc_yaml",
-                "type": "text/yaml",
-                "href": explorer_url(
-                    "dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml"
-                ),
-            },
-            {
-                "rel": "collection",
-                "href": stac_url("collections/ls7_nbar_scene"),
-            },
-            {
-                "title": "ODC Product Overview",
-                "rel": "product_overview",
-                "type": "text/html",
-                "href": explorer_url("product/ls7_nbar_scene"),
-            },
-            {
-                "title": "ODC Dataset Overview",
-                "rel": "alternative",
-                "type": "text/html",
-                "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
-            },
-            {
-                "rel": "root",
-                "href": "http://localhost/stac",
-            },
-        ],
-    }
-    assert_matching_eo3(response, expected)
-
-
-@pytest.mark.parametrize(
-    ("url", "redirect_to_url"),
-    [
-        (
-            "/collections/ls7_nbar_scene",
-            "/stac/collections/ls7_nbar_scene",
-        ),
-        (
-            "/collections/ls7_nbar_scene/items",
-            "/stac/collections/ls7_nbar_scene/items",
-        ),
-        (
-            # Maintains extra query parameters in the redirect
-            "/collections/ls7_nbar_scene/items"
-            "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
-            "/stac/collections/ls7_nbar_scene/items"
-            + (
-                "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272"
-                # Flask will auto-escape parameters
-                # .replace(",", "%2C")
-                .replace("/", "%2F")
-            ),
-        ),
-        (
-            "/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
-            "/stac/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
-        ),
-    ],
-)
-def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
-    resp: Response = stac_client.get(url, follow_redirects=False)
-    assert resp.location == redirect_to_url, (
-        f"Expected {url} to be redirected to:\n"
-        f"             {redirect_to_url}\n"
-        f"  instead of {resp.location}"
-    )
-
-
-def assert_stac_extensions(doc: Dict):
-    stac_extensions = doc.get("stac_extensions", ())
-    for extension_name in stac_extensions:
-        get_extension(extension_name).validate(doc)
-
-
-def assert_item_collection(collection: Dict):
-    assert "features" in collection, "No features in collection"
-    _ITEM_COLLECTION_SCHEMA.validate(collection)
-    assert_stac_extensions(collection)
-    validate_items(collection["features"])
-
-
-def assert_collection(collection: Dict):
-    _COLLECTION_SCHEMA.validate(collection)
-    assert "features" not in collection
-    assert_stac_extensions(collection)
-
-    # Does it have a link to the list of items?
-    links = collection["links"]
-    assert links, "No links in collection"
-    rels = [r["rel"] for r in links]
-    # TODO: 'child'? The newer stac examples use that rather than items.
-    assert "items" in rels, "Collection has no link to its items"
-
-
-def validate_item(item: Dict):
-    _ITEM_SCHEMA.validate(item)
-
-    # Should be a valid polygon
-    assert "geometry" in item, "Item has no geometry field"
-
-    if item["geometry"] is not None:
-        with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
-            shape = shapely_shape(item["geometry"])
-            assert (
-                shape.is_valid
-            ), f"Item has invalid geometry: {explain_validity(shape)}"
-            assert shape.geom_type in (
-                "Polygon",
-                "MultiPolygon",
-            ), "Unexpected type of shape"
-
-    assert_stac_extensions(item)
-
-
-def _get_next_href(geojson: Dict) -> Optional[str]:
-    hrefs = [link["href"] for link in geojson.get("links", []) if link["rel"] == "next"]
-    if not hrefs:
-        return None
-
-    assert len(hrefs) == 1, "Multiple next links found: " + ",".join(hrefs)
-    [href] = hrefs
-    return href
