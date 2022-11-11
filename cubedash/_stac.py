@@ -15,7 +15,7 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, request
-from pystac import Catalog, Collection, Extent, Link, STACObject, ItemCollection
+from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from werkzeug.datastructures import TypeConversionDict
