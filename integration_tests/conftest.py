@@ -11,7 +11,7 @@ from click.testing import CliRunner
 from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
-from datacube.index import Index
+from datacube.index import Index, index_connect
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.scripts import ingest
@@ -54,6 +54,17 @@ INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
 
 
+
+def index_fixture(index_fixture_name, scope="function"):
+
+    @pytest.fixture(scope=scope)
+    def index_instance(request):
+        index = index_connect(application_name=str(index_fixture_name))
+        return index
+
+    return index_instance
+
+
 def dea_index_fixture(index_fixture_name, scope="function"):
     """
     Create a pytest fixture for a Datacube instance populated
@@ -65,7 +76,8 @@ def dea_index_fixture(index_fixture_name, scope="function"):
         """
         An index initialised with DEA config (products)
         """
-        index: Index = request.getfixturevalue(index_fixture_name)
+        # index: Index = request.getfixturevalue(index_fixture_name)
+        index = index_connect(application_name=str(index_fixture_name))
 
         index.init_db(with_default_types=True)
 
@@ -103,7 +115,7 @@ def dea_index_fixture(index_fixture_name, scope="function"):
     return dea_index_instance
 
 
-module_index = factories.index_fixture("module_db", scope="module")
+module_index = index_fixture("module_db", scope="module")
 
 module_dea_index = dea_index_fixture("module_index", scope="module")
 
