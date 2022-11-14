@@ -94,7 +94,9 @@ def dea_index_fixture(index_fixture_name, scope="module"):
         """
         An index initialised with DEA config (products)
         """
-        index = index_connect(application_name=str(index_fixture_name), validate_connection=False)
+        index = index_connect(
+            application_name=str(index_fixture_name), validate_connection=False
+        )
 
         index.init_db(with_default_types=True)
 
