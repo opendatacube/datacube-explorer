@@ -255,7 +255,6 @@ The integration tests run against a real postgres database, which is dropped and
 recreated between each test method:
 
 Install the test dependencies: `pip install -e .[test]`
-Install digitalearthau: `pip install --extra-index-url=https://packages.dea.ga.gov.au/ digitalearthau`
 
 #### Simple test setup
 
