@@ -10,8 +10,7 @@ import structlog
 from click.testing import CliRunner
 from datacube.config import LocalConfig
 from datacube.drivers import storage_writer_by_name
-from datacube.drivers.postgres import PostgresDb
-from datacube.drivers.postgres import _core
+from datacube.drivers.postgres import PostgresDb, _core
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index, index_connect
 from datacube.index.hl import Doc2Dataset
@@ -38,8 +37,8 @@ from integration_tests.asserts import format_doc_diffs
 # Prepare DB for integration test
 #####################################################
 
-def db_fixture():
 
+def db_fixture():
     @pytest.fixture(scope="module")
     def db_fixture_instance():
         local_config: LocalConfig = "local_config"
@@ -57,7 +56,9 @@ def db_fixture():
 
     return db_fixture_instance
 
+
 module_vanilla_db = db_fixture()
+
 
 @pytest.fixture(scope="module")
 def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
