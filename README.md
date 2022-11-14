@@ -259,9 +259,20 @@ Install digitalearthau: `pip install --extra-index-url=https://packages.dea.ga.g
 
 #### Simple test setup
 
-Set up a database on localhost that doesn't prompt for a password locally (eg. add credentials to `~/.pgpass`)
+Set up a database on localhost that doesn't prompt for a password locally.
 
-Then: `createdb dea_integration`
+One way to do this is by running PostGIS with docker:
+
+`docker run -p 5432:5432 -e POSTGRES_USER=<user> -e POSTGRES_PASSWORD=<password> -e POSTGRES_DB=dea_integration -d postgis/postgis`
+
+Add credentials to `.pgpass` (e.g. `localhost:5432:*:<user>:<password>`)
+
+Then:
+`export PGPASSFILE=path/to/.pgpass`
+
+`export DATACUBE_DB_URL=postgresql://<user>:<password>@localhost/dea_integration`
+
+`datacube system init`
 
 And the tests should be runnable with no configuration: `pytest integration_tests`
 
