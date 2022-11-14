@@ -48,7 +48,9 @@ for schema_path in _SCHEMA_BASE.rglob("*.json"):
     _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
 
-""" Helpers """
+#######################################
+# Helpers
+#######################################
 
 # Schema and URL helpers
 
@@ -333,7 +335,9 @@ def validate_items(
             assert product_counts == expect_count
 
 
-""" Tests """
+#######################################
+# Tests
+#######################################
 
 
 @pytest.fixture()

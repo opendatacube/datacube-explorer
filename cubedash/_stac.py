@@ -44,7 +44,9 @@ DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
 
 STAC_VERSION = "1.0.0"
 
-""" Helpers """
+############################
+#  Helpers
+############################
 
 # Time-related
 
@@ -662,7 +664,9 @@ def root_catalog():
     return c
 
 
-""" Endpoints """
+##########################
+# ENDPOINTS
+##########################
 
 
 @bp.route("", strict_slashes=False)
