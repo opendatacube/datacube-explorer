@@ -29,7 +29,7 @@ rm ${stac_tag}.tar.gz
 rm -rf "schemas.stacspec.org/${stac_version}"
 mv ${subfolder} "schemas.stacspec.org/${stac_version}"
 rm -rf "stac/${stac_version}"
-ln -s "$(pwd)/schemas.stacspec.org/${stac_version}" "$(pwd)/stac"
+ln -s "../schemas.stacspec.org/${stac_version}" "stac/"
 
 api_subfolder="stac-api-spec-${stac_api_tag}"
 wget https://github.com/radiantearth/stac-api-spec/archive/${stac_api_tag}.tar.gz
@@ -38,7 +38,7 @@ rm ${stac_api_tag}.tar.gz
 rm -rf "schemas.stacspec.org/${stac_api_tag}"
 mv ${api_subfolder} "schemas.stacspec.org/${stac_api_tag}"
 rm -rf "stac-api/${stac_api_tag}"
-ln -s "$(pwd)/schemas.stacspec.org/${stac_api_tag}" "$(pwd)/stac-api"
+ln -s "../schemas.stacspec.org/${stac_api_tag}" "stac-api/"
 
 # The ItemCollection was removed from core stac, but is used by stac-api.
 cd "stac/${stac_version}/item-spec/json-schema"
