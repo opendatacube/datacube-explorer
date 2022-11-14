@@ -8,15 +8,16 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
+from datacube.config import LocalConfig
 from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
+from datacube.drivers.postgres import _core
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
 from datacube.index import Index, index_connect
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.scripts import ingest
 from datacube.utils import read_documents
-from digitalearthau.testing import factories
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
@@ -37,8 +38,26 @@ from integration_tests.asserts import format_doc_diffs
 # Prepare DB for integration test
 #####################################################
 
-module_vanilla_db = factories.db_fixture("local_config", scope="module")
+def db_fixture():
 
+    @pytest.fixture(scope="module")
+    def db_fixture_instance():
+        local_config: LocalConfig = "local_config"
+        db = PostgresDb.from_config(
+            local_config, application_name="dea-test-run", validate_connection=False
+        )
+        # Drop and recreate tables so our tests have a clean db.
+        _core.drop_db(db._engine)
+        for table in _core.METADATA.tables.values():
+            table.indexes.intersection_update(
+                [i for i in table.indexes if not i.name.startswith("dix_")]
+            )
+        yield db
+        db.close()
+
+    return db_fixture_instance
+
+module_vanilla_db = db_fixture()
 
 @pytest.fixture(scope="module")
 def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
@@ -54,7 +73,7 @@ INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
 
 
-def index_fixture(index_fixture_name, scope="function"):
+def index_fixture(index_fixture_name, scope="module"):
     @pytest.fixture(scope=scope)
     def index_instance(request):
         index = index_connect(application_name=str(index_fixture_name))
@@ -63,18 +82,17 @@ def index_fixture(index_fixture_name, scope="function"):
     return index_instance
 
 
-def dea_index_fixture(index_fixture_name, scope="function"):
+def dea_index_fixture(index_fixture_name, scope="module"):
     """
     Create a pytest fixture for a Datacube instance populated
     with DEA products/config.
     """
 
     @pytest.fixture(scope=scope)
-    def dea_index_instance(request):
+    def dea_index_instance():
         """
         An index initialised with DEA config (products)
         """
-        # index: Index = request.getfixturevalue(index_fixture_name)
         index = index_connect(application_name=str(index_fixture_name))
 
         index.init_db(with_default_types=True)
