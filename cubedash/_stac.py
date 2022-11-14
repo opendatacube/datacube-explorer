@@ -44,7 +44,7 @@ DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
 
 STAC_VERSION = "1.0.0"
 
-### Helpers ###
+""" Helpers """
 
 # Time-related
 
@@ -662,7 +662,7 @@ def root_catalog():
     return c
 
 
-### Endpoints ###
+""" Endpoints """
 
 
 @bp.route("", strict_slashes=False)
@@ -788,7 +788,7 @@ def collection_items(collection: str):
     same FeatureCollection result.
     """
     try:
-        dataset_type = _model.STORE.get_dataset_type(collection)
+        _model.STORE.get_dataset_type(collection)
     except KeyError:
         abort(404, f"Product {collection!r} not found")
 

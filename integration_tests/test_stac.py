@@ -41,16 +41,14 @@ OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
-_STAC_SCHEMA_BASE = (
-    _SCHEMA_BASE / f"schemas.stacspec.org/v{cubedash._stac.STAC_VERSION}"
-)
+_STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{cubedash._stac.STAC_VERSION}"
 
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
     _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
 
-### Helpers ###
+""" Helpers """
 
 # Schema and URL helpers
 
@@ -164,7 +162,9 @@ _COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
 )
 _ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "itemcollection.json")
+_ITEM_COLLECTION_SCHEMA = load_validator(
+    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
+)
 
 # Getters
 
@@ -333,7 +333,7 @@ def validate_items(
             assert product_counts == expect_count
 
 
-### Tests ###
+""" Tests """
 
 
 @pytest.fixture()
