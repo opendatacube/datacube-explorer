@@ -83,13 +83,6 @@ def get_geojson(client: FlaskClient, url: str) -> Dict:
     return data
 
 
-def get_html_response(client: FlaskClient, url: str) -> Tuple[HTML, Response]:
-    response: Response = client.get(url, follow_redirects=True)
-    assert response.status_code == 200, response.data.decode("utf-8")
-    html = HTML(html=response.data.decode("utf-8"))
-    return html, response
-
-
 def get_text_response(
     client: FlaskClient, url: str, expect_status_code=200
 ) -> Tuple[str, Response]:
@@ -118,7 +111,9 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> Dict:
 
 
 def get_html(client: FlaskClient, url: str) -> HTML:
-    html, _ = get_html_response(client, url)
+    response: Response = client.get(url, follow_redirects=True)
+    assert response.status_code == 200, response.data.decode("utf-8")
+    html = HTML(html=response.data.decode("utf-8"))
     return html
 
 
