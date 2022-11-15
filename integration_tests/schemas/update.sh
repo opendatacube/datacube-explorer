@@ -29,6 +29,7 @@ rm ${stac_tag}.tar.gz
 rm -rf "schemas.stacspec.org/${stac_version}"
 mv ${subfolder} "schemas.stacspec.org/${stac_version}"
 rm -rf "stac/${stac_version}"
+# The path to the linked folder needs to be relative to the path of the symlink.
 ln -s "../schemas.stacspec.org/${stac_version}" "stac/"
 
 api_subfolder="stac-api-spec-${stac_api_tag}"
