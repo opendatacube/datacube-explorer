@@ -753,8 +753,10 @@ def undo_eo3_compatibility(doc):
     In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
      documents on index.
     """
-    del doc["grid_spatial"]
-    del doc["extent"]
+    if "grid_spatial" in doc:
+        del doc["grid_spatial"]
+    if "extent" in doc:
+        del doc["extent"]
 
     lineage = doc.get("lineage")
     # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),

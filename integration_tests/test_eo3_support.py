@@ -218,6 +218,14 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
     ), "Document does not match original after undoing compatibility fields."
 
 
+def test_undo_eo3_compatibility_del_handling():
+    doc = {
+        "extent": "a",
+        "lineage": {}
+    }
+    assert _utils.undo_eo3_compatibility(doc) is None
+
+
 def with_parsed_datetimes(v: Dict, name=""):
     """
     All date fields in eo3 metadata have names ending in 'datetime'. Return a doc
