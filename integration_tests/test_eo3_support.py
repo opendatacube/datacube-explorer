@@ -219,10 +219,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
 
 
 def test_undo_eo3_compatibility_del_handling():
-    doc = {
-        "extent": "a",
-        "lineage": {}
-    }
+    doc = {"extent": "a", "lineage": {}}
     assert _utils.undo_eo3_compatibility(doc) is None
 
 
