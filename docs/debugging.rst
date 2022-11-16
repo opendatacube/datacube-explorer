@@ -18,6 +18,7 @@ external debugger if ``request.remote_addr`` matches your IP. Some IDE
 debuggers also have a remote mode so breakpoints on the server can be
 interacted with locally. Only enable a debugger temporarily.
 
+.. _sentry-env:
 
 Sentry
 ------
