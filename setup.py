@@ -22,7 +22,7 @@ tests_require = [
     "blinker",
     "prometheus-flask-exporter",
     "sphinx_click",
-    "digitalearthau @ git+https://github.com/GeoscienceAustralia/digitalearthau",
+    "digitalearthau @ git+https://github.com/GeoscienceAustralia/digitalearthau@fix_index_connect",
 ]
 
 extras_require = {
