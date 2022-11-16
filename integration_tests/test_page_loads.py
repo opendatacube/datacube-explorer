@@ -47,13 +47,11 @@ def auto_populate_index(populated_index: Index):
         "ls7_nbart_albers": 4,
         "ls7_nbart_scene": 4,
         "ls7_pq_legacy_scene": 4,
-        "ls7_satellite_telemetry_data": 4,
         "ls8_level1_scene": 7,
         "ls8_nbar_scene": 7,
         "ls8_nbart_albers": 7,
         "ls8_nbart_scene": 7,
         "ls8_pq_legacy_scene": 7,
-        "ls8_satellite_telemetry_data": 7,
         "pq_count_summary": 20,
         "wofs_albers": 11,
     }
@@ -694,6 +692,7 @@ def test_api_returns_timelines(client: FlaskClient):
     }
 
 
+pytest.mark.xfail(True, reason="telemetry data removed")
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
