@@ -371,13 +371,11 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
             ls8_nbart_scene=7,
             ls8_pq_legacy_scene=7,
             ls8_nbart_albers=7,
-            ls8_satellite_telemetry_data=7,
             ls7_nbart_albers=4,
             ls7_nbart_scene=4,
             ls7_nbar_scene=4,
             ls7_pq_legacy_scene=4,
             ls7_level1_scene=4,
-            ls7_satellite_telemetry_data=4,
         ),
     )
 
