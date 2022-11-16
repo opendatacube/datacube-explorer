@@ -698,6 +698,8 @@ def test_api_returns_timelines(client: FlaskClient):
 
 
 pytest.mark.xfail(True, reason="telemetry data removed")
+
+
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
