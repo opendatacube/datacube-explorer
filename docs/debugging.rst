@@ -20,8 +20,8 @@ interacted with locally. Only enable a debugger temporarily.
 
 .. _sentry-env:
 
-Sentry
-------
+Explorer Sentry setup
+----------------------
 
 To enable Sentry reporting set environment
 
