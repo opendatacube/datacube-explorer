@@ -8,7 +8,6 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
-from datacube.config import LocalConfig
 from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
