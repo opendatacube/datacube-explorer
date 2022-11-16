@@ -1,0 +1,19 @@
+---
+# Product
+# url: https://explorer.dev.digitalearth.africa/products/rainfall_chirps_daily.odc-product.yaml
+name: rainfall_chirps_daily
+metadata_type: eo3
+description: Rainfall Estimates from Rain Gauge and Satellite Observations
+metadata:
+  product:
+    name: rainfall_chirps_daily
+measurements:
+  - name: rainfall
+    dtype: float32
+    units: mm
+    nodata: -9999
+storage:
+  crs: EPSG:4326
+  resolution:
+    latitude: -0.05000000074505806
+    longitude: 0.05000000074505806
