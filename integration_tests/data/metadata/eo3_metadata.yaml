@@ -58,11 +58,6 @@ dataset:
         - - properties
           - datetime
       description: Acquisition time range
-    crs_raw:
-      offset:
-        - crs
-      indexed: false
-      description: The raw CRS string as it appears in metadata
     platform:
       offset:
         - properties
