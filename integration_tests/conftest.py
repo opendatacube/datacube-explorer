@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
+from datacube.config import LocalConfig
 from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
@@ -19,7 +20,6 @@ from datacube.utils import read_documents
 from digitalearthau.testing import factories
 from flask.testing import FlaskClient
 from structlog import DropEvent
-from datacube.config import LocalConfig
 
 import cubedash
 from cubedash import _model, _utils, generate, logs
@@ -68,9 +68,7 @@ def dea_index_fixture(index_fixture_name, scope="module"):
         An index initialised with DEA config (products)
         """
         config: LocalConfig = request.getfixturevalue(index_fixture_name)
-        index = index_connect(
-            config, validate_connection=False
-        )
+        index = index_connect(config, validate_connection=False)
 
         index.init_db(with_default_types=True)
 
