@@ -1,8 +1,10 @@
 Configuration Handling
 ======================
 
-Application Configuration Values
-----------------------------
+.. _explorer-app-settings:
+
+Application Configuration Settings
+------------------------------------
 
 The following configuration values are used internally by Datacube-explorer:
 

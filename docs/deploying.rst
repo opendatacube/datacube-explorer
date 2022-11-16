@@ -6,12 +6,7 @@ Configure deployment
 
 Add a file to the current directory called ``settings.env.py``
 
-You can alter default
-
-.. _Flask: http://flask.pocoo.org/docs/1.0/config/ or
-.. _Flask Cache: https://pythonhosted.org/Flask-Caching/#configuring-flask-caching settings
-
-(default "CACHE_TYPE: NullCache"), as well as some cubedash-specific settings:
+You can alter default config values, all the Explorer application config settings can be found at :any:`explorer-app-settings`.
 
 .. code-block:: text
 
@@ -100,7 +95,7 @@ Sentry error reporting is supported and can be setup as per :any:`sentry-env`
 Roles for production deployments
 ---------------------------------
 
-The `Roles <roles>`_ directory contains sql files for creating
+The `roles`_ directory contains sql files for creating
 Postgres roles for Explorer. These are suitable for running each Explorer
 task with minimum needed security permissions.
 
@@ -112,6 +107,6 @@ Three roles are created:
 
 Note that these roles extend the built-in datacube role ``agdc_user``. If you
 created your datacube without permissions, a stand-alone creator of the ``agdc_user``
-role is available as a prerequisite in the same `Roles <roles>`_
+role is available as a prerequisite in the same `roles`_
 
 .. _roles: https://github.com/opendatacube/datacube-explorer/tree/develop/cubedash/summary/roles
