@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
+from datacube.config import LocalConfig
 from datacube.drivers import storage_writer_by_name
 from datacube.drivers.postgres import PostgresDb
 from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
@@ -68,6 +69,10 @@ def dea_index_fixture(index_fixture_name, scope="module"):
         """
         index = index_connect(
             validate_connection=False,
+        )
+        config: LocalConfig = request.getfixturevalue(index_fixture_name)
+        index = index_connect(
+            config, validate_connection=False
         )
 
         index.init_db(with_default_types=True)
