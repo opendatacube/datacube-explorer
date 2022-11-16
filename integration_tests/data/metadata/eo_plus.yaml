@@ -107,19 +107,7 @@ dataset:
       description: Longitude range
     time:
       type: datetime-range
-      max_offset:
-      - - extent
-        - to_dt
-      min_offset:
-      - - extent
-        - from_dt
       description: Acquisition time
-    format:
-      offset:
-      - format
-      - name
-      indexed: false
-      description: File format (GeoTIFF, NetCDF)
     platform:
       offset:
       - platform
