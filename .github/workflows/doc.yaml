@@ -1,9 +1,10 @@
+---
 name: Docs QA
 
 on:
   pull_request:
     paths:
-      - '**'
+      - "**"
 
 permissions:
   pull-requests: write
