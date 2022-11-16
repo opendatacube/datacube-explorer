@@ -1,15 +1,4 @@
 ---
-name: ls8_satellite_telemetry_data
-description: Landsat 8 Satellite Telemetry Data
-metadata_type: telemetry
-
-metadata:
-    platform:
-        code: LANDSAT_8
-    product_type: satellite_telemetry_data
-
----
-
 name: ls8_level1_scene
 description: Landsat 8 Level 1 OLI-TIRS At-sensor Radiance 25 metre
 metadata_type: landsat_l1_scene
