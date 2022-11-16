@@ -19,6 +19,7 @@ from datacube.scripts import ingest
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 from structlog import DropEvent
+from digitalearthau.testing import factories
 
 import cubedash
 from cubedash import _model, _utils, generate, logs
@@ -38,26 +39,7 @@ from integration_tests.asserts import format_doc_diffs
 #####################################################
 
 
-def db_fixture():
-    @pytest.fixture(scope="module")
-    def db_fixture_instance():
-        local_config: LocalConfig = "local_config"
-        db = PostgresDb.from_config(
-            local_config, application_name="dea-test-run", validate_connection=False
-        )
-        # Drop and recreate tables so our tests have a clean db.
-        _core.drop_db(db._engine)
-        for table in _core.METADATA.tables.values():
-            table.indexes.intersection_update(
-                [i for i in table.indexes if not i.name.startswith("dix_")]
-            )
-        yield db
-        db.close()
-
-    return db_fixture_instance
-
-
-module_vanilla_db = db_fixture()
+module_vanilla_db = factories.db_fixture("local_config", scope="module")
 
 
 @pytest.fixture(scope="module")
@@ -74,15 +56,6 @@ INTERGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
 INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
 
 
-def index_fixture(index_fixture_name, scope="module"):
-    @pytest.fixture(scope=scope)
-    def index_instance(request):
-        index = index_connect(application_name=str(index_fixture_name))
-        return index
-
-    return index_instance
-
-
 def dea_index_fixture(index_fixture_name, scope="module"):
     """
     Create a pytest fixture for a Datacube instance populated
@@ -90,12 +63,12 @@ def dea_index_fixture(index_fixture_name, scope="module"):
     """
 
     @pytest.fixture(scope=scope)
-    def dea_index_instance():
+    def dea_index_instance(request):
         """
         An index initialised with DEA config (products)
         """
         index = index_connect(
-            application_name=str(index_fixture_name), validate_connection=False
+            application_name=request.getfixturevalue(index_fixture_name), validate_connection=False
         )
 
         index.init_db(with_default_types=True)
@@ -134,7 +107,7 @@ def dea_index_fixture(index_fixture_name, scope="module"):
     return dea_index_instance
 
 
-module_index = index_fixture("module_db", scope="module")
+module_index = factories.index_fixture("module_db", scope="module")
 
 module_dea_index = dea_index_fixture("module_index", scope="module")
 
