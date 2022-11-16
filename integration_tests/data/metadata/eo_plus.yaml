@@ -105,8 +105,24 @@ dataset:
         - lr
         - lon
       description: Longitude range
+    format:
+      offset:
+      - format
+      - name
+      indexed: false
+      description: File format (GeoTiff, NetCDF)
     time:
       type: datetime-range
+      max_offset:
+      - - extent
+        - to_dt
+      - - extent
+        - center_dt
+      min_offset:
+      - - extent
+        - from_dt
+      - - extent
+        - center_dt
       description: Acquisition time
     platform:
       offset:
