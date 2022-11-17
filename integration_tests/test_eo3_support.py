@@ -1001,6 +1001,8 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "href": "http://localhost/dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
             },
             {
+                "title": "Default ODC Explorer instance",
+                "type": "application/json",
                 "rel": "root",
                 "href": "http://localhost/stac",
             },

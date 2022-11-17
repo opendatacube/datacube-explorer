@@ -17,12 +17,11 @@ tests_require = [
     "pre-commit",
     "pytest",
     "pytest-benchmark",
-    "pytest-cov",
     "requests-html",
     "blinker",
     "prometheus-flask-exporter",
     "sphinx_click",
-    "digitalearthau @ git+https://github.com/GeoscienceAustralia/digitalearthau@fix_index_connect",
+    "docker",
 ]
 
 extras_require = {
@@ -79,7 +78,7 @@ setup(
         "Flask-Caching",
         "flask-cors",
         "flask-themer>=1.4.3",
-        "geoalchemy2",
+        "geoalchemy2>=0.8",
         "geographiclib",
         "jinja2",
         "markupsafe",
