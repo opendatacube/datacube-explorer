@@ -1,5 +1,4 @@
 import json
-import operator
 import re
 from datetime import datetime
 from pathlib import Path
@@ -34,7 +33,7 @@ _FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open("r")
 def assert_shapes_mostly_equal(
     shape1: BaseGeometry, shape2: BaseGeometry, threshold: float
 ):
-    __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+    # __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
     # Check area first, as it's a nicer error message when they're wildly different.
     assert shape1.area == pytest.approx(
@@ -52,7 +51,7 @@ def assert_matching_eo3(actual_doc: Dict, expected_doc: Dict):
 
     (without caring about float precision etc.)
     """
-    __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+    # __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
     actual_doc = dict(actual_doc)
     expected_doc = dict(expected_doc)
@@ -60,7 +59,7 @@ def assert_matching_eo3(actual_doc: Dict, expected_doc: Dict):
     # Compare geometry separately (as a parsed shape)
     actual_geom = shape(actual_doc.pop("geometry"))
     expected_geom = shape(expected_doc.pop("geometry"))
-    assert_shapes_mostly_equal(actual_geom, expected_geom, 0.00000001)
+    assert_shapes_mostly_equal(actual_geom, expected_geom, 0.0001)
 
     # Replace expected bbox points with approximates.
     # (We don't worry about float rounding issues)

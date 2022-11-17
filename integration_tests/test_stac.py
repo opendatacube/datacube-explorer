@@ -169,6 +169,7 @@ _ITEM_COLLECTION_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
 )
 
+
 # Getters
 
 
@@ -292,7 +293,7 @@ def validate_items(
     - are all valid individually.
     - (optionally) has a specific count
     """
-    __tracebackhide__ = True
+    # __tracebackhide__ = True
     seen_ids = set()
     last_item = None
     i = 0
@@ -361,22 +362,24 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     all_items = _iter_items_across_pages(stac_client, "/stac/search")
     validate_items(
         all_items,
-        expect_count=dict(
-            pq_count_summary=20,
-            dsm1sv10=1,
-            high_tide_comp_20p=306,
-            wofs_albers=11,
-            ls8_nbar_scene=7,
-            ls8_level1_scene=7,
-            ls8_nbart_scene=7,
-            ls8_pq_legacy_scene=7,
-            ls8_nbart_albers=7,
-            ls7_nbart_albers=4,
-            ls7_nbart_scene=4,
-            ls7_nbar_scene=4,
-            ls7_pq_legacy_scene=4,
-            ls7_level1_scene=4,
-        ),
+        expect_count={
+            "high_tide_comp_20p": 306,
+            "pq_count_summary": 20,
+            "wofs_albers": 11,
+            "ls8_nbar_scene": 7,
+            "ls8_level1_scene": 7,
+            "ls8_nbart_scene": 7,
+            "ls8_pq_legacy_scene": 7,
+            "ls8_nbart_albers": 7,
+            "ls8_satellite_telemetry_data": 7,
+            "ls7_satellite_telemetry_data": 4,
+            "ls7_nbart_albers": 4,
+            "ls7_nbart_scene": 4,
+            "ls7_nbar_scene": 4,
+            "ls7_pq_legacy_scene": 4,
+            "ls7_level1_scene": 4,
+            "dsm1sv10": 1,
+        },
     )
 
     # A constrained search within a bounding box.
