@@ -226,19 +226,21 @@
     );
 
     var showHiddenProduct = document.getElementById("show-hidden-product");
-    showHiddenProduct.addEventListener("click", function(event) {
-        if (showHiddenProduct.innerHTML === "Show hidden products") {
-            showHiddenProduct.innerHTML = "Show non-hidden products";
-        } else {
-            showHiddenProduct.innerHTML = "Show hidden products";
-        }
-        document.querySelectorAll(".datacube-product-name").forEach(function(el) {
-            el.classList.toggle("hide");
+    if (showHiddenProduct) {
+        showHiddenProduct.addEventListener("click", function(event) {
+            if (showHiddenProduct.innerHTML === "Show hidden products") {
+                showHiddenProduct.innerHTML = "Show non-hidden products";
+            } else {
+                showHiddenProduct.innerHTML = "Show hidden products";
+            }
+            document.querySelectorAll(".datacube-product-name").forEach(function(el) {
+                el.classList.toggle("hide");
+            });
+            document.querySelectorAll(".configured-hide-product").forEach(function(el) {
+                el.classList.toggle("hide");
+            });
         });
-        document.querySelectorAll(".configured-hide-product").forEach(function(el) {
-            el.classList.toggle("hide");
-        });
-    });
+    }
 
 </script>
 </body>
