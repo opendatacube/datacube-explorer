@@ -204,7 +204,7 @@
                     ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
                 }
             );
-            
+            var coords = [];
             const dataset_data = L.geoJson({{ extent_geojson | torapidjson }},
                 {
                     style: function (feature) {
@@ -230,10 +230,7 @@
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
             const paths = '{{ (dataset|dataset_file_paths)|tojson }}';
             if (JSON.parse(paths)['thumbnail:nbart']) {
-                dataset_data.bindPopup(
-                    `<img width="200" height="200" src="{{ thumbnail_url[0]|e }}">`,
-                    { offset: L.point(0, -20)}
-                ).openPopup();
+                L.imageOverlay("{{ thumbnail_url[0]|e }}", dataset_data.getBounds()).addTo(map);
             }
 
             window.MAP = map;
