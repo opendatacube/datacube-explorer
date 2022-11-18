@@ -945,8 +945,9 @@ class SummaryStore:
             queries.append(subquery)
 
         product_urls = defaultdict(list)
-        for product_name, uri in self._engine.execute(union_all(*queries)):
-            product_urls[product_name].append(uri)
+        if queries:  # Don't run invalid SQL on empty database
+            for product_name, uri in self._engine.execute(union_all(*queries)):
+                product_urls[product_name].append(uri)
 
         return {
             name: list(_common_paths_for_uris(uris))
@@ -1189,16 +1190,16 @@ class SummaryStore:
         out_groups = []
         for day, product_name, count, dataset_ids in self._engine.execute(
             """
-            select
-               date_trunc('day', added) as arrival_date,
-               (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
-               count(*),
-               (array_agg(id))[0:3]
-            from agdc.dataset d
-            where d.added > %(datasets_since)s
-            group by arrival_date, product_name
-            order by arrival_date desc, product_name;
-        """,
+                select
+                   date_trunc('day', added) as arrival_date,
+                   (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
+                   count(*),
+                   (array_agg(id))[0:3]
+                from agdc.dataset d
+                where d.added > %(datasets_since)s
+                group by arrival_date, product_name
+                order by arrival_date desc, product_name;
+            """,
             datasets_since=datasets_since_date,
         ):
             if current_day is None:

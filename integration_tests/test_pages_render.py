@@ -1,7 +1,7 @@
 from textwrap import indent
 from typing import List
 
-from datacube.index import Index
+from datacube import Datacube
 from flask import Response
 from flask.testing import FlaskClient
 
@@ -57,7 +57,7 @@ def test_all_pages_render(all_urls, client: FlaskClient):
 def test_allows_null_product_fixed_fields(
     all_urls,
     client: FlaskClient,
-    module_index: Index,
+    odc_test_db: Datacube,
     summary_store: SummaryStore,
 ):
     """
@@ -77,7 +77,7 @@ def test_allows_null_product_fixed_fields(
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
     update_count = (
-        _utils.alchemy_engine(module_index)
+        _utils.alchemy_engine(odc_test_db.index)
         .execute(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
         .rowcount
     )

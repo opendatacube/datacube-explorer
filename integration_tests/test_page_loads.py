@@ -783,8 +783,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     print(res.output)
 
     # Expect it to show the dates in local timezone.
-    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc()).astimezone()
-    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc()).astimezone()
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc())
 
     expected_header = "\n".join(
         (
