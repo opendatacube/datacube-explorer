@@ -3,7 +3,7 @@
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
 
 {% set extent_geojson = dataset_footprint.__geo_interface__ %}
-{% set thumbnail_url = [] %}
+{% set thumbnail_url = dataset | dataset_thumbnail_url %}
 
 {% block head %}
     {{ super() }}
@@ -144,15 +144,9 @@
                                     <i class="fa fa-caret-right" aria-hidden="true"></i>
                                 </th>
                                 <td>
-                                    {% set offset_url = offset | resolve_remote_url(uri) %}
-                                    <a href="{{ offset_url }}"
+                                    <a href="{{ offset | resolve_remote_url(uri) }}"
                                        class="uri-path">
                                         {{ offset }}
-                                        {% if 'thumbnail:nbart' == name or 'thumbnail' == name %}
-                                            {# workaround for jinja preventing global varaibles from being updated inside
-                                                for loops and if/else statements #}
-                                            {% set _ = thumbnail_url.append(offset_url) %}
-                                        {% endif %}
                                     </a>
                                 </td>
                             </tr>
@@ -229,9 +223,8 @@
             });
             L.control.zoom({position: "bottomright"}).addTo(map);
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
-            const has_thumbnail = '{{ thumbnail_url|length >= 1 }}';
-            if (has_thumbnail === "True") {
-                L.imageOverlay("{{ thumbnail_url[0]|e }}", dataset_data.getBounds()).addTo(map);
+            if ("{{ thumbnail_url }}") {
+                L.imageOverlay("{{ thumbnail_url }}", dataset_data.getBounds()).addTo(map);
             }
 
             window.MAP = map;
