@@ -121,6 +121,17 @@ def _dataset_created(dataset: Dataset):
 def _dataset_file_paths(dataset: Dataset):
     return utils.get_dataset_file_offsets(dataset)
 
+@bp.app_template_filter("dataset_thumbnail_url")
+def _dataset_thumbnail_url(dataset: Dataset):
+    file_paths = _dataset_file_paths(dataset)
+    if "thumbnail:nbart" in file_paths:
+        offset = file_paths['thumbnail:nbart']
+    elif "thumbnail" in file_paths:
+        offset = file_paths['thumbnail']
+    else:
+        return ""
+    return _to_remote_url(offset, dataset.uris[0])
+
 
 @bp.app_template_filter("resolve_remote_url")
 def _to_remote_url(offset: str, base_uri: str = None):
