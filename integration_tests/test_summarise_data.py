@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from datacube import Datacube
 from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import DatasetType, Range
@@ -440,7 +441,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
 
 
 def test_force_dataset_regeneration(
-    run_generate, summary_store: SummaryStore, module_index: Index
+    run_generate, summary_store: SummaryStore, odc_test_db: Datacube
 ):
     """
     We should be able to force-replace dataset extents with the "--recreate-dataset-extents" option
@@ -454,7 +455,7 @@ def test_force_dataset_regeneration(
     assert original_footprint is not None
 
     # Now let's break the footprint!
-    alchemy_engine(module_index).execute(
+    alchemy_engine(odc_test_db.index).execute(
         f"update {CUBEDASH_SCHEMA}.dataset_spatial "
         "    set footprint="
         "        ST_SetSRID("
@@ -527,14 +528,14 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     ), "A new, rather than cached, summary was returned"
 
 
-def test_cubedash_gen_refresh(run_generate, module_index: Index):
+def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
 
     def _get_product_seq_value():
         [new_val] = (
-            alchemy_engine(module_index)
+            alchemy_engine(odc_test_db.index)
             .execute(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
             .fetchone()
         )
