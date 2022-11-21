@@ -24,7 +24,7 @@ def app_s3_region_none():
 def app_s3_region_string_none():
     app = Flask(__name__)
     app.config["CUBEDASH_DATA_S3_REGION"] = "None"
-    app.config["SHOW_DATA_LOCATION"] = { "dea-public-data": "data.dea.ga.gov.au"}
+    app.config["SHOW_DATA_LOCATION"] = {"dea-public-data": "data.dea.ga.gov.au"}
     return app
 
 
@@ -121,15 +121,21 @@ def test_resolved_remote_url_empty_string_s3_region(app_s3_region_empty_string):
             == "s3://example.com/test_dataset/"
         )
 
+
 def test_resolved_remote_url_data_browser(app_s3_region_string_none):
     with app_s3_region_string_none.app_context():
-        assert current_app.config.get("SHOW_DATA_LOCATION") == { "dea-public-data": "data.dea.ga.gov.au" }
-        
+        assert current_app.config.get("SHOW_DATA_LOCATION") == {
+            "dea-public-data": "data.dea.ga.gov.au"
+        }
+
         assert (
-            as_resolved_remote_url(None, "s3://dea-public-data/example/product/filepath")
+            as_resolved_remote_url(
+                None, "s3://dea-public-data/example/product/filepath"
+            )
         ) == "https://data.dea.ga.gov.au/?prefix=example/product/"
 
         assert (
-            as_resolved_remote_url("s3://dea-public-data/example/product/filepath", "offset")
+            as_resolved_remote_url(
+                "s3://dea-public-data/example/product/filepath", "offset"
+            )
         ) == "https://data.dea.ga.gov.au/example/product/offset"
-
