@@ -119,6 +119,13 @@ The following configuration values are used internally by Datacube-explorer:
 
     Default: ``odc``
 
+.. py:data:: SHOW_DATA_LOCATION
+
+    S3 buckets for which to return a browseable bucket link instead of the plain S3 link
+    
+    Default: ``{}``
+    Example: ``{ 'dea-public-data': 'data.dea.ga.gov.au'}``
+
 .. py:data:: default_map_center
 
     Leaflet map https://leafletjs.com/reference.html#map-center, variates by explorer theme.

@@ -241,6 +241,7 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
     cubedash.app.config["TESTING"] = True
     cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = []
     cubedash.app.config["CUBEDASH_SISTER_SITES"] = None
+    cubedash.app.config["SHOW_DATA_LOCATION"] = { "dea-public-data": "data.dea.ga.gov.au"}
     return cubedash.app.test_client()
 
 
