@@ -136,7 +136,7 @@ def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
 
 def as_resolved_remote_url(location: str, offset: str) -> str:
     """
-    Convert a dataset location and file offset to a full remote URL. 
+    Convert a dataset location and file offset to a full remote URL.
     """
     return as_external_url(
         urljoin(location, offset),
@@ -145,7 +145,9 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
     )
 
 
-def as_external_url(url: str, s3_region: str = None, is_base: bool = False) -> Optional[str]:
+def as_external_url(
+    url: str, s3_region: str = None, is_base: bool = False
+) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
 
@@ -170,7 +172,7 @@ def as_external_url(url: str, s3_region: str = None, is_base: bool = False) -> O
             path = parsed.path[1:]
             if is_base:
                 # if it's the folder url, get the directory path
-                path = path[:path.rindex("/")+1]
+                path = path[: path.rindex("/") + 1]
                 path = f"?prefix={path}"
             return f"https://{data_location.get(parsed.netloc)}/{path}"
 

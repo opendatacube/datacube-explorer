@@ -122,7 +122,7 @@ The following configuration values are used internally by Datacube-explorer:
 .. py:data:: SHOW_DATA_LOCATION
 
     S3 buckets for which to return a browseable bucket link instead of the plain S3 link
-    
+
     Default: ``{}``
     Example: ``{ 'dea-public-data': 'data.dea.ga.gov.au'}``
 
