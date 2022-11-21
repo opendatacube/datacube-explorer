@@ -88,6 +88,8 @@ You can alter default config values, all the Explorer application config setting
     default_map_zoom = 3
     default_map_center = [-26.2756326, 134.9387844]
 
+    # S3 buckets for which data browser url should be returned
+    SHOW_DATA_LOCATION = { "dea-public-data": "data.dea.ga.gov.au" }
 
 Sentry error reporting is supported and can be setup as per :any:`sentry-env`
 

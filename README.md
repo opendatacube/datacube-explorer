@@ -225,6 +225,8 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     default_map_zoom = 3
     default_map_center = [-26.2756326, 134.9387844]
 
+    # S3 buckets for which data browser url should be returned
+    SHOW_DATA_LOCATION = { "dea-public-data": "data.dea.ga.gov.au" }
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).
