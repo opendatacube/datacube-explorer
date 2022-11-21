@@ -136,15 +136,16 @@ def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
 
 def as_resolved_remote_url(location: str, offset: str) -> str:
     """
-    Convert a dataset location and file offset to a full remote URL.
+    Convert a dataset location and file offset to a full remote URL. 
     """
     return as_external_url(
         urljoin(location, offset),
         (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
+        location is None,
     )
 
 
-def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
+def as_external_url(url: str, s3_region: str = None, is_base: bool = False) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
 
@@ -157,10 +158,22 @@ def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
     True
     >>> as_external_url('some/relative/path.txt')
     'some/relative/path.txt'
+    >>> # if base uri was none, we may want to return the s3 location instead of the metadata yaml
     """
     parsed = urlparse(url)
 
     if s3_region and parsed.scheme == "s3":
+        # get buckets for which link should be to data location instead of s3 link
+        data_location = flask.current_app.config.get("SHOW_DATA_LOCATION", {})
+        if parsed.netloc in data_location:
+            # remove the first '/'
+            path = parsed.path[1:]
+            if is_base:
+                # if it's the folder url, get the directory path
+                path = path[:path.rindex("/")+1]
+                path = f"?prefix={path}"
+            return f"https://{data_location.get(parsed.netloc)}/{path}"
+
         return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
 
     return url
