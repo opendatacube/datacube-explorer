@@ -693,6 +693,11 @@ def test_api_returns_timelines(client: FlaskClient):
         "2017-04-30T00:00:00": 0,
     }
 
+    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017/04/24")
+    assert doc == {
+        "2017-04-24T00:00:00": 1,
+    }
+
 
 def test_undisplayable_product(client: FlaskClient):
     """
