@@ -25,11 +25,11 @@ def postgresql_server():
 
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
-    if Path("/.dockerenv").exists() and os.environ.get("DATACUBE_DB_URL"):
+    if Path("/.dockerenv").exists() and (
+        "DATACUBE_DB_URL" in os.environ or "DB_DATABASE" in os.environ
+    ):
         yield GET_DB_FROM_ENV
-
     else:
-
         client = docker.from_env()
         container = client.containers.run(
             "postgis/postgis:14-3.3-alpine",
@@ -67,7 +67,7 @@ def postgresql_server():
 @pytest.fixture(scope="module")
 def odc_db(postgresql_server, tmp_path_factory, request):
     if postgresql_server == GET_DB_FROM_ENV:
-        return os.environ["DATACUBE_DB_URL"]
+        yield None  # os.environ["DATACUBE_DB_URL"]
     else:
 
         postgres_url = "postgresql://{db_username}:{db_password}@{db_hostname}:{db_port}/{db_database}".format(

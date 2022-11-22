@@ -31,7 +31,7 @@ from cubedash.warmup import find_examples_of_all_public_urls
 # -> Note: Since we're reusing the default config unchanged, we can't use the
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
-from integration_tests.asserts import format_doc_diffs
+from .asserts import format_doc_diffs
 
 ######################################################
 # Prepare DB for integration test
