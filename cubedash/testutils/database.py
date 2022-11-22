@@ -7,11 +7,11 @@ import docker
 import psycopg2
 import psycopg2.extensions
 import pytest
-import yaml
 from datacube import Datacube
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
 from datacube.model import MetadataType
+from datacube.utils import read_documents
 
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 
@@ -156,19 +156,19 @@ def _remove_postgres_dynamic_indexes():
 
 @pytest.fixture(scope="module")
 def populated_odc_db(odc_test_db, request):
-    data_path = request.path.parent().joinpath("data")
+    data_path = request.path.parent.joinpath("data")
     if data_path.exists():
         # Load Metadata Types
-        for metadata_file in data_path.joinpath("metadata_types").glob("*.yaml"):
-            with metadata_file.open(encoding="utf8") as f:
-                meta_doc = yaml.safe_load(f)
-                odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
+        for _, meta_doc in read_documents(
+            *data_path.joinpath("metadata").glob("*.yaml")
+        ):
+            odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
 
         # Load Products
-        for metadata_file in data_path.joinpath("products").glob("*.yaml"):
-            with metadata_file.open(encoding="utf8") as f:
-                doc = yaml.safe_load(f)
-                odc_test_db.index.products.add_document(doc)
+        for _, prod_doc in read_documents(
+            *data_path.joinpath("products").glob("*.yaml")
+        ):
+            odc_test_db.index.products.add_document(prod_doc)
 
         # Load Datasets
 
