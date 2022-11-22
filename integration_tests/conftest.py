@@ -33,7 +33,6 @@ from cubedash.warmup import find_examples_of_all_public_urls
 #          the same db.
 from integration_tests.asserts import format_doc_diffs
 
-pytest_plugins = ("cubedash.database_testutils",)
 ######################################################
 # Prepare DB for integration test
 #####################################################
