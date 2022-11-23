@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
@@ -14,7 +15,6 @@ from dateutil.tz import tzutc
 from flask import Response
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
-from ruamel import yaml
 from ruamel.yaml import YAML
 
 from cubedash import _utils
@@ -25,47 +25,33 @@ from integration_tests.test_pages_render import assert_all_urls_render
 from integration_tests.test_stac import get_item, get_items
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
-TEST_EO3_DATASET_L1 = (
-    TEST_DATA_DIR / "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml"
-)
+
 TEST_EO3_DATASET_ARD = (
     TEST_DATA_DIR / "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml"
 )
 
+METADATA_TYPES = [
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+    "metadata/eo3_landsat_ard.odc-type.yaml",
+    "metadata/landsat_l1_scene.yaml",
+]
+PRODUCTS = [
+    "products/l1_ls5.odc-product.yaml",
+    "products/ard_ls5.odc-product.yaml",
+    "gm_s2_semiannual/gm_s2_semiannual_lowres.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+]
+DATASETS = [
+    "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
+    "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
+    "gm_s2_semiannual/856e45bf-cd50-5a5a-b1cd-12b85df99b24.odc-metadata.yaml",
+]
+
 
 @pytest.fixture(scope="module")
-def eo3_index(odc_test_db: Datacube, dataset_loader):
-    def _add_from_dir(
-        path: Path, expected_product_name: str, expected_dataset_count: int
-    ):
-        """Add any product definitions and datasets from the given directory."""
-
-        for product in path.glob("*.odc-product.yaml"):
-            odc_test_db.index.products.add_document(yaml.load(product.open()))
-        loaded = 0
-        for dataset in path.glob("*.odc-metadata.yaml"):
-            loaded += dataset_loader(
-                expected_product_name,
-                dataset,
-            )
-        assert loaded == expected_dataset_count
-
-    loaded = dataset_loader(
-        "usgs_ls5t_level1_1",
-        TEST_EO3_DATASET_L1,
-    )
-    assert loaded == 1
-
-    loaded = dataset_loader(
-        "ga_ls5t_ard_3",
-        TEST_EO3_DATASET_ARD,
-    )
-    assert loaded == 1
-
-    _add_from_dir(
-        TEST_DATA_DIR / "gm_s2_semiannual",
-        expected_product_name="gm_s2_semiannual_lowres",
-        expected_dataset_count=1,
+def eo3_index(odc_test_db: Datacube, auto_odc_db):
+    assert auto_odc_db == Counter(
+        {"usgs_ls5t_level1_1": 1, "ga_ls5t_ard_3": 1, "gm_s2_semiannual_lowres": 1}
     )
 
     # We need postgis and some support tables (eg. srid lookup).
@@ -167,7 +153,7 @@ def test_eo3_dateless_extents(eo3_index: Index):
 def test_location_sampling(eo3_index: Index):
     summary_store = SummaryStore.create(eo3_index)
 
-    assert summary_store.product_location_samples("ls8_nbar_albers") == []
+    assert summary_store.product_location_samples("ls8_nbar_scene") == []
 
 
 def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
@@ -193,7 +179,7 @@ def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
 def test_undo_eo3_doc_compatibility(eo3_index: Index):
     """
     ODC adds compatibility fields on index. Check that our undo-method
-    correctly creates an indentical document to the original.
+    correctly creates an identical document to the original.
     """
 
     # Get our EO3 ARD document that was indexed.
