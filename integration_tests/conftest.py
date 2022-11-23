@@ -1,4 +1,3 @@
-import os
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
@@ -9,13 +8,8 @@ import sqlalchemy
 import structlog
 from click.testing import CliRunner
 from datacube import Datacube
-from datacube.drivers import storage_writer_by_name
-from datacube.drivers.postgres import PostgresDb
-from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
-from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
-from datacube.scripts import ingest
 from datacube.utils import read_documents
 from flask.testing import FlaskClient
 from structlog import DropEvent
@@ -37,70 +31,7 @@ from .asserts import format_doc_diffs
 # Prepare DB for integration test
 #####################################################
 
-
-@pytest.fixture(scope="module")
-def module_db(module_vanilla_db: PostgresDb) -> PostgresDb:
-    # Set all the tables to unlogged for faster perf.
-    _make_all_tables_unlogged(module_vanilla_db._engine, ODC_SCHEMA_METADATA)
-    return module_vanilla_db
-
-
 TEST_DATA_DIR = Path(__file__).parent / "data"
-
-INTEGRATION_METADATA_FOLDER = Path(__file__).parent / "data/metadata"
-INTEGRATION_PRODUCTS_FOLDER = Path(__file__).parent / "data/products"
-INTEGRATION_INGESTION_FOLDER = Path(__file__).parent / "data/ingestions"
-
-
-def dea_index_fixture_factory(index_fixture_name: str, scope="module"):
-    """
-    Create a pytest fixture for a Datacube instance populated
-    with DEA products/config.
-    :name: The name of the created fixture
-    """
-
-    @pytest.fixture(name=index_fixture_name, scope=scope)
-    def dea_index_instance(odc_test_db):
-        """
-        An index initialised with DEA config (products)
-        """
-        index = odc_test_db.index
-
-        index.metadata_types.check_field_indexes(
-            allow_table_lock=True,
-            rebuild_indexes=False,
-            rebuild_views=True,
-        )
-        # Add DEA metadata types, products.
-        for md_file in os.listdir(INTEGRATION_METADATA_FOLDER):
-            for _, doc in read_documents(
-                os.path.join(INTEGRATION_METADATA_FOLDER, md_file)
-            ):
-                index.metadata_types.add(index.metadata_types.from_doc(doc))
-
-        for prod_file in os.listdir(INTEGRATION_PRODUCTS_FOLDER):
-            for _, product_def in read_documents(
-                os.path.join(INTEGRATION_PRODUCTS_FOLDER, prod_file)
-            ):
-                index.products.add_document(product_def)
-
-        for path in INTEGRATION_INGESTION_FOLDER.glob("*.yaml"):
-            ingest_config = ingest.load_config_from_file(path)
-
-            driver_name = ingest_config["storage"]["driver"]
-            driver = storage_writer_by_name(driver_name)
-            if driver is None:
-                raise ValueError(f"No driver found for {driver_name}")
-            ingest.ensure_output_type(
-                index, ingest_config, driver.format, allow_product_changes=True
-            )
-
-        return index
-
-    return dea_index_instance
-
-
-module_dea_index_fixture = dea_index_fixture_factory("module_dea_index", scope="module")
 
 
 @pytest.fixture()
@@ -132,11 +63,6 @@ def _init_logs(pytestconfig):
 
 
 @pytest.fixture()
-def tmppath(tmpdir):
-    return Path(str(tmpdir))
-
-
-@pytest.fixture()
 def clirunner():
     def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
 
@@ -164,12 +90,12 @@ def run_generate(clirunner, summary_store):
 
 
 @pytest.fixture(scope="module")
-def dataset_loader(module_dea_index: Index):
+def dataset_loader(odc_test_db: Datacube):
     def _populate_from_dump(expected_type: str, dump_path: Path):
-        ls8_nbar_scene = module_dea_index.products.get_by_name(expected_type)
+        ls8_nbar_scene = odc_test_db.index.products.get_by_name(expected_type)
         dataset_count = 0
 
-        create_dataset = Doc2Dataset(module_dea_index)
+        create_dataset = Doc2Dataset(odc_test_db.index)
 
         for _, doc in read_documents(dump_path):
             label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
@@ -179,7 +105,7 @@ def dataset_loader(module_dea_index: Index):
             )
             assert dataset is not None, err
             assert dataset.type.name == expected_type
-            created = module_dea_index.datasets.add(dataset)
+            created = odc_test_db.index.datasets.add(dataset)
             assert created.uris
             assert created.type.name == ls8_nbar_scene.name
             dataset_count += 1
@@ -248,7 +174,7 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
 
 
 @pytest.fixture(scope="module")
-def populated_index(dataset_loader, module_dea_index):
+def populated_index(dataset_loader, odc_test_db):
     """
     Index populated with example datasets. Assumes our tests wont modify the data!
 
@@ -269,8 +195,7 @@ def populated_index(dataset_loader, module_dea_index):
         "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
     )
     assert loaded == 20
-
-    return module_dea_index
+    return odc_test_db.index
 
 
 def pytest_assertrepr_compare(op, left, right):

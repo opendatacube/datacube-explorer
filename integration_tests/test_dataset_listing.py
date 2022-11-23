@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from datacube import Datacube
 from datacube.index import Index
 from datacube.model import Range
 from werkzeug.datastructures import MultiDict
@@ -8,13 +9,13 @@ from werkzeug.datastructures import MultiDict
 from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
 
 
-def test_parse_query_args(module_dea_index: Index):
+def test_parse_query_args(populated_odc_db: Datacube):
     """
     A user gives time start/end: they should be parsed as a single time field,
     and restricted to the current product.
     """
 
-    product = module_dea_index.products.get_by_name("ls7_level1_scene")
+    product = populated_odc_db.index.products.get_by_name("ls7_level1_scene")
     res = query_to_search(
         MultiDict(
             (

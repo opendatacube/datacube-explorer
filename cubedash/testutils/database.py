@@ -1,6 +1,7 @@
 import configparser
 import os
 import time
+from collections import Counter
 from pathlib import Path
 
 import docker
@@ -10,6 +11,7 @@ import pytest
 from datacube import Datacube
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
+from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.utils import read_documents
 
@@ -155,21 +157,70 @@ def _remove_postgres_dynamic_indexes():
 
 
 @pytest.fixture(scope="module")
-def populated_odc_db(odc_test_db, request):
+def auto_odc_db(odc_test_db, request):
+    """
+    Look for globals in the test module for loading data into an ODC Database
+    """
+    odc_test_db.index.metadata_types.check_field_indexes(
+        allow_table_lock=True,
+        rebuild_indexes=False,
+        rebuild_views=True,
+    )
     data_path = request.path.parent.joinpath("data")
-    if data_path.exists():
-        # Load Metadata Types
-        for _, meta_doc in read_documents(
-            *data_path.joinpath("metadata").glob("*.yaml")
-        ):
-            odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
+    if hasattr(request.module, "METADATA_TYPES"):
+        for filename in request.module.METADATA_TYPES:
+            filename = data_path / filename
+            for _, meta_doc in read_documents(filename):
+                odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
 
-        # Load Products
-        for _, prod_doc in read_documents(
-            *data_path.joinpath("products").glob("*.yaml")
-        ):
-            odc_test_db.index.products.add_document(prod_doc)
+    if hasattr(request.module, "PRODUCTS"):
+        for filename in request.module.PRODUCTS:
+            filename = data_path / filename
+            for _, prod_doc in read_documents(filename):
+                odc_test_db.index.products.add_document(prod_doc)
 
-        # Load Datasets
+    dataset_count = Counter()
+    if hasattr(request.module, "DATASETS"):
+        create_dataset = Doc2Dataset(odc_test_db.index)
+        for filename in request.module.DATASETS:
+            filename = data_path / filename
+            for _, doc in read_documents(filename):
+                label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
+                dataset, err = create_dataset(
+                    doc, f"file://example.com/test_dataset/{label}"
+                )
+                assert dataset is not None, err
+                created = odc_test_db.index.datasets.add(dataset)
+                assert created.uris
+                dataset_count[created.type.name] += 1
+
+            print(f"Loaded Datasets: {dataset_count}")
+    return dataset_count
+
+
+@pytest.fixture(scope="module")
+def populated_odc_db(odc_test_db, request):
+    odc_test_db.index.metadata_types.check_field_indexes(
+        allow_table_lock=True,
+        rebuild_indexes=False,
+        rebuild_views=True,
+    )
+    data_path = request.path.parent.joinpath("data")
+    # Load Metadata Types
+    for _, meta_doc in read_documents(*data_path.joinpath("metadata").glob("*.yaml")):
+        odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
+
+    # Load Products
+    for _, prod_doc in read_documents(*data_path.joinpath("products").glob("*.yaml")):
+        odc_test_db.index.products.add_document(prod_doc)
+
+    # Load Datasets
+    create_dataset = Doc2Dataset(odc_test_db.index)
+    for _, dataset_file in read_documents(
+        *data_path.joinpath("datasets").glob("*.yaml")
+    ):
+        dataset, err = create_dataset(dataset_file, "file://example.com/test_dataset/")
+        assert dataset is not None, err
+        odc_test_db.index.datasets.add(dataset)
 
     return odc_test_db

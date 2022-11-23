@@ -1,13 +1,26 @@
-from pathlib import Path
+from collections import Counter
 
 import pytest
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
 import cubedash
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import get_html
+
+METADATA_TYPES = ["metadata/eo_metadata.yaml", "metadata/landsat_l1_scene.yaml"]
+PRODUCTS = [
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/dsm1sv10.odc-product.yaml",
+]
+DATASETS = ["datasets/ls5_fc_albers-sample.yaml"]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _populate_index(auto_odc_db):
+    assert auto_odc_db == Counter({"ls5_fc_albers": 5})
 
 
 @pytest.fixture()
@@ -50,36 +63,6 @@ def test_hide_products_audit_page_display(
     indexed_product_count = html.find("span.indexed-product-count", first=True).text
     assert indexed_product_count == str(total_indexed_products_count)
     assert str(total_indexed_products_count - 5) in h2
-
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
-
-
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(
-        TEST_DATA_DIR / "ls5_fc_albers-sample.yaml"
-    ):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "ls5_fc_albers"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-    assert dataset_count == 5
-    return module_dea_index
 
 
 def test_hide_products_audit_bulk_dataset_display(
@@ -140,24 +123,24 @@ def test_sister_sites(app_configured_client: FlaskClient):
 
 
 def test_sister_sites_request_path(app_configured_client: FlaskClient):
-    html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
+    html = get_html(app_configured_client, "/products/ls5_fc_albers")
 
     sister_instances = html.find("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
-            "/products/ga_ls5t_ard_3"
+            "/products/ls5_fc_albers"
             in sister_instance.find("a.sister-link", first=True).attrs["href"]
         )
 
-    html = get_html(app_configured_client, "/products/ga_ls5t_ard_3/datasets")
+    html = get_html(app_configured_client, "/products/ls5_fc_albers/datasets")
 
     sister_instances = html.find("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
-            "/products/ga_ls5t_ard_3/datasets"
+            "/products/ls5_fc_albers/datasets"
             in sister_instance.find("a.sister-link", first=True).attrs["href"]
         )

@@ -49,23 +49,22 @@ def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def populate_index(module_dea_index):
+def _populate_index(odc_test_db):
     """
     Index populated with example datasets. Assumes our tests wont modify the data!
 
     It's module-scoped as it's expensive to populate.
     """
     _populate_from_dump(
-        module_dea_index,
+        odc_test_db.index,
         "ls8_nbar_scene",
         TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
     )
     _populate_from_dump(
-        module_dea_index,
+        odc_test_db.index,
         "ls8_nbar_albers",
         TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
     )
-    return module_dea_index
 
 
 def test_generate_month(run_generate, summary_store: SummaryStore):

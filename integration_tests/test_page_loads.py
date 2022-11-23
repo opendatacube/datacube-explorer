@@ -8,7 +8,6 @@ from textwrap import indent
 
 import pytest
 from click.testing import Result
-from datacube.index import Index
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -32,7 +31,7 @@ DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
 
 @pytest.fixture(scope="module", autouse=True)
-def auto_populate_index(populated_index: Index):
+def auto_populate_index(populated_index):
     """
     Auto-populate the index for all tests in this file.
     """
@@ -309,7 +308,7 @@ def test_view_product(client: FlaskClient):
     assert "Landsat 7 NBAR 25 metre" in rv.text
 
 
-def test_view_metadata_type(client: FlaskClient, populated_index: Index):
+def test_view_metadata_type(client: FlaskClient, populated_index):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
     assert html.find("h2", first=True).text == "eo"
@@ -327,7 +326,7 @@ def test_view_metadata_type(client: FlaskClient, populated_index: Index):
     assert "ls8_nbar_albers" in products_using_it
 
 
-def test_storage_page(client: FlaskClient, populated_index: Index):
+def test_storage_page(client: FlaskClient, populated_index):
     html: HTML = get_html(client, "/audit/storage")
 
     assert html.find(".product-name", containing="wofs_albers")
@@ -854,8 +853,8 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
     assert res.exit_code != 0
 
 
-def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
-    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=module_dea_index)
+def test_extent_debugging_method(odc_test_db, client: FlaskClient):
+    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=odc_test_db)
     assert cols["id"] is not None
     assert cols["dataset_type_ref"] is not None
     assert cols["center_time"] is not None
@@ -865,7 +864,7 @@ def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
     output_json = _extents._as_json(cols)
     assert str(cols["id"]) in output_json
 
-    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=module_dea_index)
+    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=odc_test_db)
     assert cols["product"] == "ls7_nbar_scene"
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 

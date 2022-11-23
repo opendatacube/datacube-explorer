@@ -6,6 +6,7 @@ from typing import Dict
 from uuid import UUID
 
 import pytest
+from datacube import Datacube
 from datacube.index import Index
 from datacube.utils import parse_time
 from dateutil import tz
@@ -33,14 +34,14 @@ TEST_EO3_DATASET_ARD = (
 
 
 @pytest.fixture(scope="module")
-def eo3_index(module_dea_index: Index, dataset_loader):
+def eo3_index(odc_test_db: Datacube, dataset_loader):
     def _add_from_dir(
         path: Path, expected_product_name: str, expected_dataset_count: int
     ):
         """Add any product definitions and datasets from the given directory."""
 
         for product in path.glob("*.odc-product.yaml"):
-            module_dea_index.products.add_document(yaml.load(product.open()))
+            odc_test_db.index.products.add_document(yaml.load(product.open()))
         loaded = 0
         for dataset in path.glob("*.odc-metadata.yaml"):
             loaded += dataset_loader(
@@ -68,11 +69,11 @@ def eo3_index(module_dea_index: Index, dataset_loader):
     )
 
     # We need postgis and some support tables (eg. srid lookup).
-    store = SummaryStore.create(module_dea_index)
+    store = SummaryStore.create(odc_test_db.index)
     store.drop_all()
     store.init(grouping_epsg_code=3577)
 
-    return module_dea_index
+    return odc_test_db.index
 
 
 def test_eo3_extents(eo3_index: Index):
