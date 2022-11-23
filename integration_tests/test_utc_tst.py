@@ -13,12 +13,17 @@ from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
-METADATA_TYPES = ["metadata/eo_metadata.yaml", "metadata/landsat_l1_scene.yaml"]
+METADATA_TYPES = [
+    "metadata/eo_metadata.yaml",
+    "metadata/landsat_l1_scene.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+]
 PRODUCTS = [
     "products/ls5_fc_albers.odc-product.yaml",
     "products/ls5_scenes.odc-product.yaml",
     "products/ls7_scenes.odc-product.yaml",
     "products/ls8_scenes.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/dsm1sv10.odc-product.yaml",
 ]
 DATASETS = ["datasets/ls5_fc_albers-sample.yaml", "usgs_ls7e_level1_1-sample.yaml"]
@@ -26,7 +31,7 @@ DATASETS = ["datasets/ls5_fc_albers-sample.yaml", "usgs_ls7e_level1_1-sample.yam
 
 @pytest.fixture(scope="module", autouse=True)
 def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"ls5_fc_albers": 5})
+    assert auto_odc_db == Counter({"ls5_fc_albers": 5, "usgs_ls7e_level1_1": 5})
 
 
 def test_summary_product(client: FlaskClient):

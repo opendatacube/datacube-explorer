@@ -5,26 +5,28 @@ Tests rendered raw yaml pages by passing the rendered content to datacube cli to
 - odc-metadata.yaml (cli command: datacube dataset)
 """
 import tempfile
-from pathlib import Path
+from collections import Counter
 
 import datacube.scripts.cli_app
 import pytest
 from flask.testing import FlaskClient
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
+METADATA_TYPES = [
+    "metadata/qga_eo.yaml",
+    "metadata/eo_plus.yaml",
+    "eo_metadata.yaml",
+]
+PRODUCTS = [
+    "products/ga_s2_ard.odc-product.yaml",
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/dsm1sv10.odc-product.yaml",
+]
+DATASETS = ["s2a_ard_granule.yaml.gz"]
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _populate_index(dataset_loader):
-    """
-    Index populated with example datasets. Assumes our tests will not modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    loaded = dataset_loader(
-        "s2a_ard_granule", TEST_DATA_DIR / "s2a_ard_granule.yaml.gz"
-    )
-    assert loaded == 8
+def _populate_index(auto_odc_db):
+    assert auto_odc_db == Counter({"s2a_ard_granule": 8})
 
 
 @pytest.fixture()

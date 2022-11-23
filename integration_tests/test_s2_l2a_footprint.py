@@ -15,14 +15,8 @@ from integration_tests.asserts import check_dataset_count, expect_values, get_ht
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
-METADATA_TYPES = ["metadata/eo_metadata.yaml", "metadata/landsat_l1_scene.yaml"]
-PRODUCTS = [
-    "products/ls5_fc_albers.odc-product.yaml",
-    "products/ls5_scenes.odc-product.yaml",
-    "products/ls7_scenes.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
-    "products/dsm1sv10.odc-product.yaml",
-]
+METADATA_TYPES = ["metadata/eo3_metadata.yaml"]
+PRODUCTS = ["products/esa_s2_l2a.product.yaml"]
 DATASETS = ["s2_l2a-sample.yaml"]
 
 

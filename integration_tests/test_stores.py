@@ -12,6 +12,14 @@ from shapely import geometry as geo
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._stores import GenerateResult, ProductSummary
 
+METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
+PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _populate_index(auto_odc_db):
+    pass
+
 
 def _overview(
     product_name: str = "test_product",
@@ -86,7 +94,7 @@ def test_srid_calcs():
     assert o.footprint_srid == 3577
 
 
-def test_add_no_periods(odc_test_db, summary_store: SummaryStore):
+def test_add_no_periods(summary_store: SummaryStore):
     """
     All the get/update methods should work on products with no datasets.
     """

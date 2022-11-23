@@ -3,41 +3,26 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 4 datasets have maturity level: interim
 - 16 datasets have maturity level: final
 """
+from collections import Counter
 from pathlib import Path
 
 import pytest
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
 
 from cubedash.summary import SummaryStore
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
+METADATA_TYPES = [
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo3_landsat_ard.odc-type.yaml",
+]
+PRODUCTS = ["products/ga_ls8c_ard_3.odc-product.yaml"]
+DATASETS = ["ga_ls8c_ard_3-sample.yaml"]
+
 
 @pytest.fixture(scope="module", autouse=True)
-def _populate_index(dataset_loader, odc_test_db):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(odc_test_db.index)
-    for _, s2_dataset_doc in read_documents(
-        TEST_DATA_DIR / "ga_ls8c_ard_3-sample.yaml"
-    ):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = odc_test_db.index.datasets.add(dataset)
-            assert created.type.name == "ga_ls8c_ard_3"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 20
-            print(ae)
-    assert dataset_count == 20
+def _populate_index(auto_odc_db):
+    assert auto_odc_db == Counter({"ga_ls8c_ard_3": 20})
 
 
 def test_product_fixed_metadata_by_sample_percentage(

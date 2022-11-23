@@ -4,15 +4,12 @@ Load a lot of real-world DEA datasets (very slow)
 And then check their statistics match expected.
 """
 from datetime import datetime, timedelta
-from pathlib import Path
 from uuid import UUID
 
 import pytest
 from datacube import Datacube
 from datacube.index import Index
-from datacube.index.hl import Doc2Dataset
 from datacube.model import DatasetType, Range
-from datacube.utils import read_documents
 from dateutil import tz
 from dateutil.tz import tzutc
 
@@ -24,47 +21,24 @@ from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 from .asserts import expect_values as _expect_values
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
-
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
-
-def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
-    ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
-    dataset_count = 0
-
-    create_dataset = Doc2Dataset(session_dea_index)
-
-    for _, doc in read_documents(dump_path):
-        label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
-        dataset, err = create_dataset(doc, f"file://example.com/test_dataset/{label}")
-        assert dataset is not None, err
-        created = session_dea_index.datasets.add(dataset)
-
-        assert created.type.name == ls8_nbar_scene.name
-        dataset_count += 1
-
-    print(f"Populated {dataset_count} of {expected_type}")
-    return dataset_count
+METADATA_TYPES = [
+    "metadata/landsat_l1_scene.yaml",
+]
+PRODUCTS = [
+    "products/ls8_nbar_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+]
+DATASETS = [
+    "ls8-nbar-scene-sample-2017.yaml.gz",
+    "ls8-nbar-albers-sample.yaml.gz",
+]
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _populate_index(odc_test_db):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    _populate_from_dump(
-        odc_test_db.index,
-        "ls8_nbar_scene",
-        TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
-    )
-    _populate_from_dump(
-        odc_test_db.index,
-        "ls8_nbar_albers",
-        TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
-    )
+def _populate_index(auto_odc_db):
+    pass
 
 
 def test_generate_month(run_generate, summary_store: SummaryStore):
