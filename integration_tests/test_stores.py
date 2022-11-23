@@ -86,11 +86,10 @@ def test_srid_calcs():
     assert o.footprint_srid == 3577
 
 
-def test_add_no_periods(module_dea_index, summary_store: SummaryStore):
+def test_add_no_periods(odc_test_db, summary_store: SummaryStore):
     """
     All the get/update methods should work on products with no datasets.
     """
-    # Requires `module_dea_index` to have a database containing products
     result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.CREATED
     assert summary.dataset_count == 0

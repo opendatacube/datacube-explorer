@@ -15,14 +15,14 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
+def _populate_index(dataset_loader, odc_test_db):
     """
     Index populated with example datasets. Assumes our tests wont modify the data!
 
     It's module-scoped as it's expensive to populate.
     """
     dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
+    create_dataset = Doc2Dataset(odc_test_db.index)
     for _, s2_dataset_doc in read_documents(
         TEST_DATA_DIR / "ga_ls8c_ard_3-sample.yaml"
     ):
@@ -31,14 +31,13 @@ def populate_index(dataset_loader, module_dea_index):
                 s2_dataset_doc, "file://example.com/test_dataset/"
             )
             assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
+            created = odc_test_db.index.datasets.add(dataset)
             assert created.type.name == "ga_ls8c_ard_3"
             dataset_count += 1
         except AttributeError as ae:
             assert dataset_count == 20
             print(ae)
     assert dataset_count == 20
-    return module_dea_index
 
 
 def test_product_fixed_metadata_by_sample_percentage(

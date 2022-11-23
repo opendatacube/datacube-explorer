@@ -13,7 +13,6 @@ from urllib.request import urlopen
 
 import jsonschema
 import pytest
-from datacube.index import Index
 from datacube.utils import is_url, read_documents
 from dateutil import tz
 from flask import Response
@@ -343,7 +342,7 @@ def validate_items(
 
 
 @pytest.fixture()
-def stac_client(populated_index: Index, client: FlaskClient):
+def stac_client(populated_index, client: FlaskClient):
     """
     Get a client with populated data and standard settings
     """
@@ -654,7 +653,7 @@ def test_stac_collection(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
-def test_stac_item(stac_client: FlaskClient, populated_index: Index):
+def test_stac_item(stac_client: FlaskClient, populated_index):
     # Load one stac dataset from the test data.
 
     dataset_uri = (
@@ -887,7 +886,7 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
-def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
+def test_stac_search_by_ids(stac_client: FlaskClient, populated_index):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
 
@@ -957,7 +956,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index: Index):
     assert error_message_json["name"] == "Bad Request"
 
 
-def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index: Index):
+def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index):
     """
     We have the polygon for region 16,-33.
 
@@ -1004,9 +1003,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index: In
     assert features[0]["properties"]["cubedash:region_code"] == "16_-33"
 
 
-def test_stac_search_by_intersects_paging(
-    stac_client: FlaskClient, populated_index: Index
-):
+def test_stac_search_by_intersects_paging(stac_client: FlaskClient, populated_index):
     """
     When we search by 'intersects', the next page link should use a correct POST request.
 

@@ -1,12 +1,11 @@
 """
 Tests that load pages and check the contained text.
 """
+from collections import Counter
 from pathlib import Path
 
 import pytest
 import pytz
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
 from flask.testing import FlaskClient
 
 from cubedash._utils import center_time_from_metadata, default_utc
@@ -14,32 +13,20 @@ from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
+METADATA_TYPES = ["metadata/eo_metadata.yaml", "metadata/landsat_l1_scene.yaml"]
+PRODUCTS = [
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/dsm1sv10.odc-product.yaml",
+]
+DATASETS = ["datasets/ls5_fc_albers-sample.yaml", "usgs_ls7e_level1_1-sample.yaml"]
+
 
 @pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(
-        TEST_DATA_DIR / "ls5_fc_albers-sample.yaml"
-    ):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "ls5_fc_albers"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-    assert dataset_count == 5
-    return module_dea_index
+def _populate_index(auto_odc_db):
+    assert auto_odc_db == Counter({"ls5_fc_albers": 5})
 
 
 def test_summary_product(client: FlaskClient):
@@ -84,33 +71,6 @@ def test_dataset_day_link(summary_store):
     assert t.year == 2011
     assert t.month == 1
     assert t.day == 1
-
-
-@pytest.fixture(scope="module", autouse=True)
-def populate_ls7e_level1_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(
-        TEST_DATA_DIR / "usgs_ls7e_level1_1-sample.yaml"
-    ):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "usgs_ls7e_level1_1"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-    assert dataset_count == 5
-    return module_dea_index
 
 
 def test_dataset_search_page_ls7e_time(client: FlaskClient):
