@@ -8,6 +8,7 @@ from cubedash import _utils
 from . import _model
 from ._utils import as_geojson, as_json
 from .summary import ItemSort
+from datetime import date, datetime
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
@@ -107,6 +108,8 @@ def dataset_timeline(
 
     def _datekey(k):
         # The timezone is the global grouping timezone: we don't want it in json.
+        if type(k) is date:
+            k = datetime(k.year, k.month, k.day)
         return k.replace(tzinfo=None).isoformat()
 
     return as_json(
