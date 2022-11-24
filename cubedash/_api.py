@@ -1,4 +1,5 @@
 import logging
+from datetime import date, datetime
 
 import flask
 from flask import Blueprint, abort, request
@@ -8,7 +9,6 @@ from cubedash import _utils
 from . import _model
 from ._utils import as_geojson, as_json
 from .summary import ItemSort
-from datetime import date, datetime
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("api", __name__, url_prefix="/api")
