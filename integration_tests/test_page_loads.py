@@ -57,6 +57,7 @@ PRODUCTS = [
     "products/pq_count_summary.odc-product.yaml",
     "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/wofs_albers.yaml",
+    "products/wofs_summary.odc-product.yaml",
 ]
 DATASETS = [
     "high_tide_comp_20p.yaml.gz",
@@ -345,13 +346,17 @@ def test_view_product(client: FlaskClient):
     assert "Landsat 7 NBAR 25 metre" in rv.text
 
 
-def test_view_metadata_type(client: FlaskClient, populated_index):
+def test_view_metadata_type(client: FlaskClient, odc_test_db):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
     assert html.find("h2", first=True).text == "eo"
 
     how_many_are_eo = len(
-        [p for p in populated_index.products.get_all() if p.metadata_type.name == "eo"]
+        [
+            p
+            for p in odc_test_db.index.products.get_all()
+            if p.metadata_type.name == "eo"
+        ]
     )
     assert (
         html.find(".header-follow", first=True).text
@@ -363,12 +368,12 @@ def test_view_metadata_type(client: FlaskClient, populated_index):
     assert "ls8_nbar_albers" in products_using_it
 
 
-def test_storage_page(client: FlaskClient, populated_index):
+def test_storage_page(client: FlaskClient, odc_test_db):
     html: HTML = get_html(client, "/audit/storage")
 
     assert html.find(".product-name", containing="wofs_albers")
 
-    product_count = len(list(populated_index.products.get_all()))
+    product_count = len(list(odc_test_db.index.products.get_all()))
     assert f"{product_count} products" in html.text
     assert len(html.find(".data-table tbody tr")) == product_count
 
