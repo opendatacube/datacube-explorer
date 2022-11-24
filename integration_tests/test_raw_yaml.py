@@ -14,14 +14,17 @@ from flask.testing import FlaskClient
 METADATA_TYPES = [
     "metadata/qga_eo.yaml",
     "metadata/eo_plus.yaml",
-    "eo_metadata.yaml",
+    "metadata/eo_metadata.yaml",
 ]
 PRODUCTS = [
     "products/ga_s2_ard.odc-product.yaml",
+    "products/ga_s2_ard_nbar_granule.odc-product.yaml",
     "products/ls5_fc_albers.odc-product.yaml",
     "products/dsm1sv10.odc-product.yaml",
 ]
-DATASETS = ["s2a_ard_granule.yaml.gz"]
+DATASETS = [
+    "s2a_ard_granule.yaml.gz",
+]
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -52,24 +55,28 @@ def product_yaml_from_raw(client: FlaskClient):
     response = client.get(
         "/products/ls5_fc_albers.odc-product.yaml", follow_redirects=True
     )
+    assert response.status_code == 200
     assert response.content_type == "text/yaml"
 
     f.write(response.data)
 
     # simple product definition
     response = client.get("/products/dsm1sv10.odc-product.yaml", follow_redirects=True)
+    assert response.status_code == 200
     assert response.content_type == "text/yaml"
 
     f.write(response.data)
 
     # wagl product definition
     response = client.get("products/s2a_ard_granule.odc-product.yaml")
+    assert response.status_code == 200
     assert response.content_type == "text/yaml"
 
     f.write(response.data)
 
     # high complex product definition with scientific notation
     response = client.get("products/ga_s2a_ard_nbar_granule.odc-product.yaml")
+    assert response.status_code == 200
     assert response.content_type == "text/yaml"
 
     f.write(response.data)
@@ -86,6 +93,7 @@ def dataset_yaml_from_raw(client: FlaskClient):
         "/dataset/290eca22-defc-43b4-998f-eaf56e1fd211.odc-metadata.yaml",
         follow_redirects=True,
     )
+    assert response.status_code == 200
     assert response.content_type == "text/yaml"
 
     f.write(response.data)
