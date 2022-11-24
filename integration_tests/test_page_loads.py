@@ -2,6 +2,7 @@
 Tests that load pages and check the contained text.
 """
 import json
+from collections import Counter
 from datetime import datetime
 from io import StringIO
 from textwrap import indent
@@ -29,35 +30,91 @@ from integration_tests.asserts import (
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
+METADATA_TYPES = [
+    "metadata/eo3_landsat_ard.odc-type.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo_metadata.yaml",
+    "metadata/eo_plus.yaml",
+    "metadata/landsat_l1_scene.yaml",
+    "metadata/qga_eo.yaml",
+]
+PRODUCTS = [
+    # "gm_s2_semiannual/gm_s2_semiannual_lowres.odc-product.yaml",
+    "products/ard_ls5.odc-product.yaml",
+    "products/dsm1sv10.odc-product.yaml",
+    "products/esa_s2_l2a.product.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/ga_ls_landcover_class_cyear_2.odc-product.yaml",
+    "products/ga_ls_wo_fq_nov_mar_3.odc-product.yaml",
+    "products/ga_s2_ard.odc-product.yaml",
+    "products/hltc.odc-product.yaml",
+    "products/l1_ls8_ga.odc-product.yaml",
+    "products/l1_ls5.odc-product.yaml",
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_nbart_albers.odc-product.yaml",
+    "products/ls5_nbart_tmad_annual.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_nbart_tmad_annual.odc-product.yaml",
+    "products/ls7_nbar_albers.odc-product.yaml",
+    "products/ls7_nbart_albers.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_nbar_albers.odc-product.yaml",
+    "products/ls8_nbart_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/pq_count_summary.odc-product.yaml",
+    "products/rainfall_chirps_daily.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
+    "products/wofs_albers.yaml",
+    "products/wofs_summary.odc-product.yaml",
+]
+DATASETS = [
+    # "datasets/ls5_fc_albers-sample.yaml",
+    # "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
+    # "ga_ls8c_ard_3-sample.yaml",
+    # "ga_ls_landcover_class_cyear_2-sample.yaml",
+    # "ga_ls_wo_fq_nov_mar_3-sample.yaml",
+    # "gm_s2_semiannual/856e45bf-cd50-5a5a-b1cd-12b85df99b24.odc-metadata.yaml",
+    "high_tide_comp_20p.yaml.gz",
+    # "ls5_nbart_tmad_annual-sample.yaml",
+    # "ls7_nbart_tmad_annual-sample.yaml",
+    # "ls8-nbar-albers-sample.yaml.gz",
+    "pq_count_summary.yaml.gz",
+    # "ls8-nbar-scene-sample-2017.yaml.gz",
+    # "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
+    # "rainfall_chirps_daily-sample.yaml",
+    # "s2_l2a-sample.yaml",
+    # "s2a_ard_granule.yaml.gz",
+    # "usgs_ls7e_level1_1-sample.yaml",
+    "wofs-albers-sample.yaml.gz",
+]
+
 
 @pytest.fixture(scope="module", autouse=True)
-def auto_populate_index(populated_index):
-    """
-    Auto-populate the index for all tests in this file.
-    """
-    populated_product_counts = {
-        p.name: count for p, count in populated_index.datasets.count_by_product()
-    }
-    assert populated_product_counts == {
-        "dsm1sv10": 1,
-        "high_tide_comp_20p": 306,
-        "ls7_level1_scene": 4,
-        "ls7_nbar_scene": 4,
-        "ls7_nbart_albers": 4,
-        "ls7_nbart_scene": 4,
-        "ls7_pq_legacy_scene": 4,
-        "ls7_satellite_telemetry_data": 4,
-        "ls8_level1_scene": 7,
-        "ls8_nbar_scene": 7,
-        "ls8_nbart_albers": 7,
-        "ls8_nbart_scene": 7,
-        "ls8_pq_legacy_scene": 7,
-        "ls8_satellite_telemetry_data": 7,
-        "pq_count_summary": 20,
-        "wofs_albers": 11,
-    }
-
-    return populated_index
+def _auto_populate_index(auto_odc_db):
+    assert (
+        Counter(
+            {
+                "dsm1sv10": 1,
+                "high_tide_comp_20p": 306,
+                "ls7_level1_scene": 4,
+                "ls7_nbar_scene": 4,
+                "ls7_nbart_albers": 4,
+                "ls7_nbart_scene": 4,
+                "ls7_pq_legacy_scene": 4,
+                "ls7_satellite_telemetry_data": 4,
+                "ls8_level1_scene": 7,
+                "ls8_nbar_scene": 7,
+                "ls8_nbart_albers": 7,
+                "ls8_nbart_scene": 7,
+                "ls8_pq_legacy_scene": 7,
+                "ls8_satellite_telemetry_data": 7,
+                "pq_count_summary": 20,
+                "wofs_albers": 11,
+            }
+        )
+        == auto_odc_db
+    )
 
 
 @pytest.fixture()
@@ -73,6 +130,7 @@ def _script(html: HTML):
     return html.find("script")
 
 
+@pytest.mark.xfail()
 def test_prometheus(sentry_client: FlaskClient):
     """
     Ensure Prometheus metrics endpoint exists
@@ -854,7 +912,7 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
 
 
 def test_extent_debugging_method(odc_test_db, client: FlaskClient):
-    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=odc_test_db)
+    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=odc_test_db.index)
     assert cols["id"] is not None
     assert cols["dataset_type_ref"] is not None
     assert cols["center_time"] is not None
@@ -864,7 +922,7 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     output_json = _extents._as_json(cols)
     assert str(cols["id"]) in output_json
 
-    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=odc_test_db)
+    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=odc_test_db.index)
     assert cols["product"] == "ls7_nbar_scene"
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 

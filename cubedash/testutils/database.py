@@ -15,6 +15,8 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.utils import read_documents
 
+from cubedash import _utils
+
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 
 
@@ -131,6 +133,16 @@ def odc_test_db(odc_db, request):
     dc = Datacube(index=index)
 
     # TODO Look into performance improvements, disabling logging
+
+    engine = _utils.alchemy_engine(index)
+    for table in [
+        "agdc.dataset_location",
+        "agdc.dataset_source",
+        "agdc.dataset",
+        "agdc.dataset_type",
+        "agdc.metadata_type",
+    ]:
+        engine.execute(f"""alter table {table} set unlogged;""")
 
     yield dc
 
