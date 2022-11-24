@@ -46,6 +46,73 @@ _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
     _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
+METADATA_TYPES = [
+    "metadata/eo3_landsat_ard.odc-type.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo_metadata.yaml",
+    "metadata/eo_plus.yaml",
+    "metadata/landsat_l1_scene.yaml",
+    "metadata/qga_eo.yaml",
+]
+PRODUCTS = [
+    "products/dsm1sv10.odc-product.yaml",
+    "products/hltc.odc-product.yaml",
+    "products/l1_ls8_ga.odc-product.yaml",
+    "products/l1_ls5.odc-product.yaml",
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_nbart_albers.odc-product.yaml",
+    "products/ls5_nbart_tmad_annual.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_nbart_tmad_annual.odc-product.yaml",
+    "products/ls7_nbar_albers.odc-product.yaml",
+    "products/ls7_nbart_albers.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_nbar_albers.odc-product.yaml",
+    "products/ls8_nbart_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/pq_count_summary.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
+    "products/wofs_albers.yaml",
+]
+DATASETS = [
+    "high_tide_comp_20p.yaml.gz",
+    # These have very large footprints, as they were unioned from many almost-identical
+    # polygons and not simplified. They will trip up postgis if used naively.
+    # (postgis gist index has max record size of 8k per entry)
+    "pq_count_summary.yaml.gz",
+    "wofs-albers-sample.yaml.gz",
+]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _auto_populate_index(auto_odc_db):
+    pass
+    # Counter({'high_tide_comp_20p': 306, 'pq_count_summary': 20, 'wofs_albers': 11})
+    # assert (
+    #         Counter(
+    #             {
+    #                 "dsm1sv10": 1,
+    #                 "high_tide_comp_20p": 306,
+    #                 "ls7_level1_scene": 4,
+    #                 "ls7_nbar_scene": 4,
+    #                 "ls7_nbart_albers": 4,
+    #                 "ls7_nbart_scene": 4,
+    #                 "ls7_pq_legacy_scene": 4,
+    #                 "ls7_satellite_telemetry_data": 4,
+    #                 "ls8_level1_scene": 7,
+    #                 "ls8_nbar_scene": 7,
+    #                 "ls8_nbart_albers": 7,
+    #                 "ls8_nbart_scene": 7,
+    #                 "ls8_pq_legacy_scene": 7,
+    #                 "ls8_satellite_telemetry_data": 7,
+    #                 "pq_count_summary": 20,
+    #                 "wofs_albers": 11,
+    #             }
+    #         )
+    #         == auto_odc_db
+    # )
+
 
 #######################################
 # Helpers
@@ -342,7 +409,7 @@ def validate_items(
 
 
 @pytest.fixture()
-def stac_client(populated_index, client: FlaskClient):
+def stac_client(client: FlaskClient):
     """
     Get a client with populated data and standard settings
     """
@@ -653,14 +720,14 @@ def test_stac_collection(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
-def test_stac_item(stac_client: FlaskClient, populated_index):
+def test_stac_item(stac_client: FlaskClient, odc_test_db):
     # Load one stac dataset from the test data.
 
     dataset_uri = (
         "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
         "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
     )
-    populated_index.datasets.add_location(
+    odc_test_db.index.datasets.add_location(
         "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
     )
 
@@ -886,7 +953,7 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
-def test_stac_search_by_ids(stac_client: FlaskClient, populated_index):
+def test_stac_search_by_ids(stac_client: FlaskClient):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
 
@@ -956,7 +1023,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient, populated_index):
     assert error_message_json["name"] == "Bad Request"
 
 
-def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index):
+def test_stac_search_by_intersects(stac_client: FlaskClient):
     """
     We have the polygon for region 16,-33.
 
@@ -1003,7 +1070,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient, populated_index):
     assert features[0]["properties"]["cubedash:region_code"] == "16_-33"
 
 
-def test_stac_search_by_intersects_paging(stac_client: FlaskClient, populated_index):
+def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
     """
     When we search by 'intersects', the next page link should use a correct POST request.
 

@@ -1,16 +1,12 @@
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
-from typing import Tuple
 
 import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
 from datacube import Datacube
-from datacube.index.hl import Doc2Dataset
-from datacube.model import Dataset
-from datacube.utils import read_documents
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
@@ -50,11 +46,6 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
     return store
 
 
-@pytest.fixture()
-def summariser(summary_store: SummaryStore):
-    return summary_store._summariser
-
-
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig):
     logs.init_logging(
@@ -87,33 +78,6 @@ def run_generate(clirunner, summary_store):
         return res
 
     return do
-
-
-@pytest.fixture(scope="module")
-def dataset_loader(odc_test_db: Datacube):
-    def _populate_from_dump(expected_type: str, dump_path: Path):
-        ls8_nbar_scene = odc_test_db.index.products.get_by_name(expected_type)
-        dataset_count = 0
-
-        create_dataset = Doc2Dataset(odc_test_db.index)
-
-        for _, doc in read_documents(dump_path):
-            label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
-            # type: Tuple[Dataset, str]
-            dataset, err = create_dataset(
-                doc, f"file://example.com/test_dataset/{label}"
-            )
-            assert dataset is not None, err
-            assert dataset.type.name == expected_type
-            created = odc_test_db.index.datasets.add(dataset)
-            assert created.uris
-            assert created.type.name == ls8_nbar_scene.name
-            dataset_count += 1
-
-        print(f"Populated {dataset_count} of {expected_type}")
-        return dataset_count
-
-    return _populate_from_dump
 
 
 @pytest.fixture()
@@ -171,31 +135,6 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
             _model.STORE.refresh(product.name)
 
     return unpopulated_client
-
-
-@pytest.fixture(scope="module")
-def populated_index(dataset_loader, odc_test_db):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    loaded = dataset_loader("wofs_albers", TEST_DATA_DIR / "wofs-albers-sample.yaml.gz")
-    assert loaded == 11
-
-    loaded = dataset_loader(
-        "high_tide_comp_20p", TEST_DATA_DIR / "high_tide_comp_20p.yaml.gz"
-    )
-    assert loaded == 306
-
-    # These have very large footprints, as they were unioned from many almost-identical
-    # polygons and not simplified. They will trip up postgis if used naively.
-    # (postgis gist index has max record size of 8k per entry)
-    loaded = dataset_loader(
-        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
-    )
-    assert loaded == 20
-    return odc_test_db.index
 
 
 def pytest_assertrepr_compare(op, left, right):

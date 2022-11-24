@@ -71,7 +71,7 @@ def test_tmad_summary_product(client: FlaskClient):
     check_dataset_count(html, 2)
 
 
-def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, odc_test_db):
+def test_tmad_dataset_regions(client: FlaskClient):
     html = get_html(client, "product/ls5_nbart_tmad_annual/regions/-14_-25")
 
     search_results = html.find(".search-result a")
@@ -81,15 +81,21 @@ def test_tmad_archived_dataset_region(client: FlaskClient, run_generate, odc_tes
 
     search_results = html.find(".search-result a")
     assert len(search_results) == 1
+
+
+def test_archived_dataset_is_excluded(client, run_generate, odc_test_db):
+    # It's not possible to test this thoroughly, because the Region response is cached for 90
+    # seconds, with no way to override other than creating a new `client`. :(
     try:
-        # now  index one tile that sole represents a region
+        # now archive one tile that sole represents a region
         odc_test_db.index.datasets.archive(["867050c5-f854-434b-8b16-498243a5cf24"])
 
         # ... the next generation should catch it and update with one less dataset....
-        run_generate("ls5_nbart_tmad_annual")
+        result = run_generate("ls5_nbart_tmad_annual")
+        print(result)
 
         rv: Response = client.get("product/ls5_nbart_tmad_annual/regions/8_-36")
-        assert rv.status_code == 404
+        assert rv.status_code == 404, rv.data
 
     finally:
         # Now let's restore the dataset!
