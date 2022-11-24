@@ -18,6 +18,7 @@ from flask import abort, request
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
+from toolz import dicttoolz
 from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
@@ -109,66 +110,6 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
     """
     start_time, end_time = time
     return f"{start_time.isoformat()}/{end_time.isoformat()}"
-
-
-# Arg parsers
-
-
-def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
-    """
-    Parse an argument that should be a simple list.
-    """
-    if isinstance(arg, list):
-        return arg
-
-    # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
-    try:
-        arg = arg.strip()
-        # Legacy json-like format. This is what sat-api seems to do too.
-        if arg.startswith("["):
-            value = json.loads(arg)
-        else:
-            # Otherwise OpenAPI non-exploded form style.
-            # Eg. "1, 2, 3" or "string1,string2" or "string1"
-            args = [a.strip() for a in arg.split(",")]
-            value = [expect_type(a.strip()) for a in args if a]
-    except ValueError:
-        raise BadRequest(
-            f"Invalid argument syntax. Expected comma-separated list, got: {arg!r}"
-        )
-
-    if not isinstance(value, list):
-        raise BadRequest(f"Invalid argument syntax. Expected json list, got: {value!r}")
-
-    if expect_size is not None and len(value) != expect_size:
-        raise BadRequest(
-            f"Expected size {expect_size}, got {len(value)} elements in {arg!r}"
-        )
-
-    return value
-
-
-def _geojson_arg(arg: dict) -> BaseGeometry:
-    if not isinstance(arg, dict):
-        raise BadRequest(
-            "The 'intersects' argument must be a JSON object (and sent over a POST request)"
-        )
-
-    try:
-        return shape(arg)
-    except ValueError:
-        raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
-
-
-def _bool_argument(s: str):
-    """
-    Parse an argument that should be a bool
-    """
-    if isinstance(s, bool):
-        return s
-    # Copying FastAPI booleans:
-    # https://fastapi.tiangolo.com/tutorial/query-params
-    return s.strip().lower() in ("1", "true", "on", "yes")
 
 
 # URL-related
@@ -379,6 +320,86 @@ def _build_properties(d: DocReader):
             yield from converter(key, val)
 
 
+# Search arguments
+
+
+def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
+    """
+    Parse an argument that should be a simple list.
+    """
+    if isinstance(arg, list):
+        return arg
+
+    # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
+    try:
+        arg = arg.strip()
+        # Legacy json-like format. This is what sat-api seems to do too.
+        if arg.startswith("["):
+            value = json.loads(arg)
+        else:
+            # Otherwise OpenAPI non-exploded form style.
+            # Eg. "1, 2, 3" or "string1,string2" or "string1"
+            args = [a.strip() for a in arg.split(",")]
+            value = [expect_type(a.strip()) for a in args if a]
+    except ValueError:
+        raise BadRequest(
+            f"Invalid argument syntax. Expected comma-separated list, got: {arg!r}"
+        )
+
+    if not isinstance(value, list):
+        raise BadRequest(f"Invalid argument syntax. Expected json list, got: {value!r}")
+
+    if expect_size is not None and len(value) != expect_size:
+        raise BadRequest(
+            f"Expected size {expect_size}, got {len(value)} elements in {arg!r}"
+        )
+
+    return value
+
+
+def _geojson_arg(arg: dict) -> BaseGeometry:
+    if not isinstance(arg, dict):
+        raise BadRequest(
+            "The 'intersects' argument must be a JSON object (and sent over a POST request)"
+        )
+
+    try:
+        return shape(arg)
+    except ValueError:
+        raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
+
+
+def _bool_argument(s: str):
+    """
+    Parse an argument that should be a bool
+    """
+    if isinstance(s, bool):
+        return s
+    # Copying FastAPI booleans:
+    # https://fastapi.tiangolo.com/tutorial/query-params
+    return s.strip().lower() in ("1", "true", "on", "yes")
+
+
+def _dict_arg(arg: dict):
+    """
+    Parse stac extension arguments as dicts
+    """
+    if isinstance(arg, str):
+        arg = json.loads(arg.replace("'", '"'))
+    return arg
+
+
+def _list_arg(arg: list):
+    """
+    Parse sortby argument as a list of dicts
+    """
+    if isinstance(arg, str):
+        arg = list(arg)
+    return list(
+        map(lambda a: json.loads(a.replace("'", '"')) if isinstance(a, str) else a, arg)
+    )
+
+
 # Search
 
 
@@ -408,6 +429,14 @@ def _handle_search_request(
 
     intersects = request_args.get("intersects", default=None, type=_geojson_arg)
 
+    query = request_args.get("query", default=None, type=_dict_arg)
+
+    fields = request_args.get("fields", default=None, type=_dict_arg)
+
+    sortby = request_args.get("sortby", default=None, type=_list_arg)
+
+    filter_cql = request_args.get("filter", default=None, type=_dict_arg)
+
     if limit > PAGE_SIZE_LIMIT:
         abort(
             400,
@@ -431,6 +460,10 @@ def _handle_search_request(
             limit=limit,
             _o=next_offset,
             _full=full_information,
+            query=query,
+            fields=fields,
+            sortby=sortby,
+            filter=filter_cql,
         )
 
     feature_collection = search_stac_items(
@@ -446,6 +479,10 @@ def _handle_search_request(
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
+        query=query,
+        fields=fields,
+        sortby=sortby,
+        filter_cql=filter_cql,
     )
 
     feature_collection.extra_fields["links"].extend(
@@ -469,6 +506,177 @@ def _handle_search_request(
     return feature_collection
 
 
+# Item search extensions
+
+
+def _get_property(prop: str, item: pystac.Item, no_default=False):
+    """So that we don't have to keep using this bulky expression"""
+    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
+
+
+def _predicate_helper(items: List[pystac.Item], prop: str, op: str, val) -> filter:
+    """Common comparison predicates used in both query and filter"""
+    if op == "eq" or op == "=":
+        return filter(lambda item: _get_property(prop, item) == val, items)
+    if op == "gte" or op == ">=":
+        return filter(lambda item: _get_property(prop, item) >= val, items)
+    if op == "lte" or op == "<=":
+        return filter(lambda item: _get_property(prop, item) <= val, items)
+    elif op == "gt" or op == ">":
+        return filter(lambda item: _get_property(prop, item) > val, items)
+    elif op == "lt" or op == "<":
+        return filter(lambda item: _get_property(prop, item) < val, items)
+    elif op == "neq" or op == "<>":
+        return filter(lambda item: _get_property(prop, item) != val, items)
+
+
+def _handle_query_extension(items: List[pystac.Item], query: dict) -> List[pystac.Item]:
+    """
+    Implementation of item search query extension (https://github.com/stac-api-extensions/query/blob/main/README.md)
+    The documentation doesn't specify whether multiple properties should be treated as logical AND or OR; this
+    implementation has assumed AND.
+
+    query = {'property': {'op': 'value'}, 'property': {'op': 'value', 'op': 'value'}}
+    """
+    filtered = items
+    # split on '.' to use dicttoolz for nested items
+    for prop in query.keys():
+        # Retrieve nested dict values
+        for op, val in query[property].items():
+            if op == "startsWith":
+                matched = filter(
+                    lambda item: _get_property(prop, item).startswith(val), items
+                )
+            elif op == "endsWith":
+                matched = filter(
+                    lambda item: _get_property(prop, item).endswith(val), items
+                )
+            elif op == "contains":
+                matched = filter(lambda item: val in _get_property(prop, item), items)
+            elif op == "in":
+                matched = filter(lambda item: _get_property(prop, item) in val, items)
+            else:
+                matched = _predicate_helper(items, prop, op, val)
+
+            # achieve logical and between queries with set intersection
+            filtered = list(set(filtered).intersection(set(matched)))
+
+    return filtered
+
+
+def _handle_fields_extension(
+    items: List[pystac.Item], fields: dict
+) -> List[pystac.Item]:
+    """
+    Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
+    This implementation differs slightly from the documented semantics in that if only `exclude` is specified, those
+    attributes will be subtracted from the complete set of the item's attributes, not just the default. `exclude` will
+    also not remove any of the default attributes so as to prevent errors due to invalid stac items.
+
+    fields = {'include': [...], 'exclude': [...]}
+    """
+    res = []
+    # minimum fields needed for a valid stac item
+    default_fields = [
+        "id",
+        "type",
+        "geometry",
+        "bbox",
+        "links",
+        "assets",
+        "properties.datetime",
+        "stac_version",
+    ]
+
+    for item in items:
+        include = fields.get("include") or []
+        # if 'include' is provided we build up from an empty slate;
+        # but if only 'exclude' is provided we remove from all existing fields
+        filtered_item = {} if fields.get("include") else item.to_dict()
+        # union of 'include' and default fields to ensure a valid stac item
+        include = list(set(include + default_fields))
+
+        for inc in include:
+            filtered_item = dicttoolz.update_in(
+                d=filtered_item,
+                keys=inc.split("."),
+                # get corresponding field from item
+                # disallow default to avoid None values being inserted
+                func=lambda _: _get_property(inc, item, no_default=True),  # noqa: B023
+            )
+
+        for exc in fields.get("exclude") or []:
+            # don't remove a field if it will make for an invalid stac item
+            if exc not in default_fields:
+                filtered_item = dicttoolz.dissoc(filtered_item, exc.split("."))
+
+        res.append(pystac.Item.from_dict(filtered_item))
+
+    return res
+
+
+def _handle_sortby_extension(
+    items: List[pystac.Item], sortby: List[dict]
+) -> List[pystac.Item]:
+    """
+    Implementation of sort extension (https://github.com/stac-api-extensions/sort/blob/main/README.md)
+
+    sortby = [ {'field': 'field_name', 'direction': <'asc' or 'desc'>} ]
+    """
+    sorted_items = items
+
+    for s in sortby:
+        field = s.get("field")
+        reverse = s.get("direction") == "desc"
+        # should we enforce correct names and raise error if not?
+        sorted_items = sorted(
+            sorted_items, key=lambda i: _get_property(field, i), reverse=reverse
+        )
+
+    return list(sorted_items)
+
+
+def _handle_filter_extension(
+    items: List[pystac.Item], filter_cql: dict
+) -> List[pystac.Item]:
+    """
+    Implementation of filter extension (https://github.com/stac-api-extensions/filter/blob/main/README.md)
+    Currently only supporting logical expression (and/or), null and binary comparisons, provided in cql-json
+    Assumes comparisons to be done between a property value and a literal
+
+    filter = {'op': 'and','args':
+    [{'op': '=', 'args': [{'property': 'prop_name'}, val]}, {'op': 'isNull', 'args': {'property': 'prop_name'}}]
+    }
+    """
+    results = []
+    op = filter_cql.get("op")
+    args = filter_cql.get("args")
+    # if there is a nested operation in the args, recur to resolve those, creating
+    # a list of lists that we can then apply the top level operator to
+    for arg in [a for a in args if isinstance(a, dict) and a.get("op")]:
+        results.append(_handle_filter_extension(items, arg))
+
+    if op == "and":
+        # set intersection between each result
+        # need to pass results as a list of sets to intersection
+        results = list(set.intersection(*map(set, results)))
+    elif op == "or":
+        # set union between each result
+        results = list(set.union(*map(set, results)))
+    elif op == "isNull":
+        # args is a single property rather than a list
+        prop = args.get("property")
+        results = filter(
+            lambda item: _get_property(prop, item) in [None, "None"], items
+        )
+    else:
+        prop = args[0].get("property")
+        val = args[1]
+        results = _predicate_helper(items, prop, op, val)
+
+    return list(results)
+
+
 def search_stac_items(
     get_next_url: Callable[[int], str],
     limit: int = DEFAULT_PAGE_SIZE,
@@ -482,6 +690,10 @@ def search_stac_items(
     order: ItemSort = ItemSort.DEFAULT_SORT,
     include_total_count: bool = False,
     use_post_request: bool = False,
+    query: Optional[dict] = None,
+    fields: Optional[dict] = None,
+    sortby: Optional[List[dict]] = None,
+    filter_cql: Optional[dict] = None,
 ) -> ItemCollection:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -527,9 +739,13 @@ def search_stac_items(
         extra_properties["numberMatched"] = count_matching
         extra_properties["context"]["matched"] = count_matching
 
-    result = ItemCollection(
-        [as_stac_item(f) for f in returned], extra_fields=extra_properties
-    )
+    items = [as_stac_item(f) for f in returned]
+    items = _handle_query_extension(items, query) if query else items
+    items = _handle_filter_extension(items, filter_cql) if filter_cql else items
+    items = _handle_sortby_extension(items, sortby) if sortby else items
+    items = _handle_fields_extension(items, fields) if fields else items
+
+    result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
         if use_post_request:
@@ -624,7 +840,6 @@ def _stac_response(
     doc: Union[STACObject, ItemCollection], content_type="application/json"
 ) -> flask.Response:
     """Return a stac document as the flask response"""
-    # doc.set_root(root_catalog())  # ItemCollection doesn't have a set_root method
     if isinstance(doc, STACObject):
         doc.set_root(root_catalog())
     return _utils.as_json(
@@ -716,15 +931,16 @@ def root():
         "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
         "https://api.stacspec.org/v1.0.0-rc.1/core",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter:basic-cql",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter:cql-json",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter:cql-text",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter:filter",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter:item-search-filter",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#query",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
         "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
+        "https://api.stacspec.org/v1.0.0-rc.1/item-search#query",
+        "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
+        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#fields",
+        "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
+        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#sort",
+        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
+        "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
+        "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
+        "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
         "https://api.stacspec.org/v1.0.0-rc.1/collections",
     ]
     c.extra_fields = dict(conformsTo=conformance_classes)
