@@ -58,14 +58,14 @@ Other available options can be seen by running `cubedash-gen --help`.
 
 ### Run
 
-A simple `cubedash-run` command is available to run Explorer locally:
+A `cubedash-run` command is available to run Explorer locally:
 
     $ cubedash-run
         * Running on http://localhost:8080/ (Press CTRL+C to quit)
 
 (see `cubedash-run --help` for list of options)
 
-But Explorer can be run using any typical python wsgi server, for example gunicorn:
+But Explorer can be run using any typical Python WSGI server, for example [gunicorn](https://gunicorn.org/):
 
     pip install gunicorn
     gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
@@ -253,29 +253,13 @@ Typescript`.
 
 ### How do I run the integration tests?
 
-The integration tests run against a real postgres database, which is dropped and
-recreated between each test method:
+The integration tests run against a real PostgreSQL database, which is
+automatically started and stopped using Docker. This requires Docker to
+be available, but no further database setup is required.
 
 Install the test dependencies: `pip install -e .[test]`
 
-#### Simple test setup
-
-Set up a database on localhost that doesn't prompt for a password locally.
-
-One way to do this is by running PostGIS with docker:
-
-`docker run -p 5432:5432 -e POSTGRES_USER=<user> -e POSTGRES_PASSWORD=<password> -e POSTGRES_DB=dea_integration -d postgis/postgis`
-
-Add credentials to `.pgpass` (e.g. `localhost:5432:*:<user>:<password>`)
-
-Then:
-`export PGPASSFILE=path/to/.pgpass`
-
-`export DATACUBE_DB_URL=postgresql://<user>:<password>@localhost/dea_integration`
-
-`datacube system init`
-
-And the tests should be runnable with no configuration: `pytest integration_tests`
+The run the tests with: `pytest integration_tests`
 
 #### Contributing to integration test
 
