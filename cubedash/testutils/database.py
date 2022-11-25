@@ -171,7 +171,16 @@ def _remove_postgres_dynamic_indexes():
 @pytest.fixture(scope="module")
 def auto_odc_db(odc_test_db, request):
     """
-    Look for globals in the test module for loading data into an ODC Database
+    Load sample data into an ODC PostgreSQL Database for tests within a module.
+
+    This fixture will look for global variables within the test module named,
+    `METADATA_TYPES`, `PRODUCTS`, and `DATASETS`, which should be a list of filenames
+    with a `data/` directory relative to the test module. These files will be added
+    to the current ODC DB, defined by environment variables in the `odc_test_db`
+    fixture.
+
+    The fixture makes available a dict, keyed by name, counting the number of datasets
+    added, not including derivatives.
     """
     odc_test_db.index.metadata_types.check_field_indexes(
         allow_table_lock=True,
@@ -208,31 +217,3 @@ def auto_odc_db(odc_test_db, request):
 
             print(f"Loaded Datasets: {dataset_count}")
     return dataset_count
-
-
-@pytest.fixture(scope="module")
-def populated_odc_db(odc_test_db, request):
-    odc_test_db.index.metadata_types.check_field_indexes(
-        allow_table_lock=True,
-        rebuild_indexes=False,
-        rebuild_views=True,
-    )
-    data_path = request.path.parent.joinpath("data")
-    # Load Metadata Types
-    for _, meta_doc in read_documents(*data_path.joinpath("metadata").glob("*.yaml")):
-        odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
-
-    # Load Products
-    for _, prod_doc in read_documents(*data_path.joinpath("products").glob("*.yaml")):
-        odc_test_db.index.products.add_document(prod_doc)
-
-    # Load Datasets
-    create_dataset = Doc2Dataset(odc_test_db.index)
-    for _, dataset_file in read_documents(
-        *data_path.joinpath("datasets").glob("*.yaml")
-    ):
-        dataset, err = create_dataset(dataset_file, "file://example.com/test_dataset/")
-        assert dataset is not None, err
-        odc_test_db.index.datasets.add(dataset)
-
-    return odc_test_db
