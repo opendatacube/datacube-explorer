@@ -132,7 +132,8 @@ def odc_test_db(odc_db, request):
 
     dc = Datacube(index=index)
 
-    # TODO Look into performance improvements, disabling logging
+    # Disable PostgreSQL Table logging. We don't care about storage reliability
+    # during testing, and need any performance gains we can get.
 
     engine = _utils.alchemy_engine(index)
     for table in [
@@ -152,8 +153,7 @@ def odc_test_db(odc_db, request):
     pgres_core.drop_db(index._db._engine)  # pylint:disable=protected-access
 
     # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-    # and attempts to recreate them. WTF TODO FIX
-
+    # and attempts to recreate them.
     _remove_postgres_dynamic_indexes()
 
 
