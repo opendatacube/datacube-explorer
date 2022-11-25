@@ -13,6 +13,7 @@ User's Guide
    config
    cli
    deploying
+   database
 
 
 API Reference

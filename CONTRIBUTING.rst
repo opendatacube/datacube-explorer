@@ -407,3 +407,20 @@ Build the docs in the ``docs`` directory using Sphinx.
 Open ``_build/html/index.html`` in your browser to view the docs.
 
 Read more about `Sphinx <https://www.sphinx-doc.org/en/stable/>`__.
+
+
+
+Generating database relationship diagram
+----------------------------------------
+
+.. code-block:: console
+
+    docker run -it --rm -v "$PWD:/output" --network="host" schemaspy/schemaspy:snapshot -u $DB_USERNAME -host localhost -port $DB_PORT -db $DB_DATABASE -t pgsql11 -schemas cubedash -norows -noviews -pfp -imageformat svg
+
+Merge relationship diagram and orphan diagram
+
+.. code-block:: console
+
+    python3 svg_stack.py --direction=h --margin=100 ../cubedash/diagrams/summary/relationships.real.large.svg ../cubedash/diagrams/orphans/orphans.svg > explorer.merged.large.svg
+
+    cp svg_stack/explorer.merged.large.svg ../datacube-explorer/docs/diagrams/db-relationship-diagram.svg
