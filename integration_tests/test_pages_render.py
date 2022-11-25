@@ -8,6 +8,21 @@ from flask.testing import FlaskClient
 from cubedash import _utils
 from cubedash.summary import SummaryStore, _schema
 
+METADATA_TYPES = [
+    "metadata/landsat_l1_scene.yaml",
+]
+PRODUCTS = [
+    "products/dsm1sv10.odc-product.yaml",
+    "products/wofs_albers.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls7_nbart_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/ls8_nbart_albers.odc-product.yaml",
+]
+DATASETS = [
+    "wofs-albers-sample.yaml.gz",
+]
+
 
 def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
     """Assert all given URLs return an OK HTTP response
@@ -57,7 +72,8 @@ def test_all_pages_render(all_urls, client: FlaskClient):
 def test_allows_null_product_fixed_fields(
     all_urls,
     client: FlaskClient,
-    populated_odc_db: Datacube,
+    auto_odc_db,
+    odc_test_db: Datacube,
     summary_store: SummaryStore,
 ):
     """
@@ -77,7 +93,7 @@ def test_allows_null_product_fixed_fields(
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
     update_count = (
-        _utils.alchemy_engine(populated_odc_db.index)
+        _utils.alchemy_engine(odc_test_db.index)
         .execute(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
         .rowcount
     )
