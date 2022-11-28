@@ -93,6 +93,7 @@ def products_overview_page():
         "product-overview.html",
     )
 
+
 @bp.route("/audit/dataset-counts")
 def dscount_report_page():
     return utils.render(
