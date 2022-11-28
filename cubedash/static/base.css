@@ -484,6 +484,13 @@ table.collapsed-head th {
   white-space: nowrap;
 }
 
+.unavailable-metadata tbody tr:nth-child(even) {
+  background-color: #dde6e9;
+}
+.unavailable-metadata tbody tr:nth-child(odd) {
+  background-color: #e9eff1;
+}
+
 .data-table {
   margin: 0 calc(-2 * var(--s)) var(--s);
 }
@@ -497,7 +504,7 @@ table.collapsed-head th {
   }
 }
 .data-table tbody tr:hover {
-  background-color: #dae4e7;
+  background-color: #d6e2e5;
 }
 .panel.highlight .data-table tbody tr:hover {
   background-color: #3d3d3d;
@@ -1149,11 +1156,6 @@ details > summary {
 .leaflet-container .leaflet-tile {
   max-width: none !important;
   max-height: none !important;
-}
-
-/* Unset image overlay width to preserve correct image aspect ratio */
-.leaflet-container img.leaflet-image-layer {
-  width: unset !important;
 }
 
 .leaflet-container.leaflet-touch-zoom {
