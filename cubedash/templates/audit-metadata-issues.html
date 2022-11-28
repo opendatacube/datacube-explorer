@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Product audit{% endblock %}
+{% block title %}Datasets audit{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -20,7 +20,7 @@
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Product Metadata Issues
+        <h2 class="followed lonesome">Datasets Metadata Issues
             {%- if sentry_public_dsn and sentry_public_args.environment %} ({{ sentry_public_args.environment }})
             {%- endif -%}
         </h2>
@@ -122,7 +122,7 @@
                 {% endfor %}
             </ul>
     {% else %}
-            <a href="{{ url_for('audit.product_metadata_page', timings=True) }}#query-timings">
+            <a href="{{ url_for('audit.datasets_metadata_page', timings=True) }}#query-timings">
                 <i class="fa fa-cogs" aria-hidden="true"></i>
                 View query timings</a> (very slow)
     {% endif %}
