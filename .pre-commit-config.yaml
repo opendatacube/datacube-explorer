@@ -7,7 +7,7 @@ repos:
     - id: shed
   # Python Linting
   - repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
       - id: flake8
         exclude: ^docs/
@@ -43,7 +43,7 @@ repos:
         args: ['-c', '.yamllint']
   # Common pre-commit checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files # We don't want huge files. (Cut down test data!)
         args: ['--maxkb=2000']
