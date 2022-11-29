@@ -85,33 +85,8 @@ DATASETS = [
 ]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _auto_populate_index(auto_odc_db):
-    pass
-    # Counter({'high_tide_comp_20p': 306, 'pq_count_summary': 20, 'wofs_albers': 11})
-    # assert (
-    #         Counter(
-    #             {
-    #                 "dsm1sv10": 1,
-    #                 "high_tide_comp_20p": 306,
-    #                 "ls7_level1_scene": 4,
-    #                 "ls7_nbar_scene": 4,
-    #                 "ls7_nbart_albers": 4,
-    #                 "ls7_nbart_scene": 4,
-    #                 "ls7_pq_legacy_scene": 4,
-    #                 "ls7_satellite_telemetry_data": 4,
-    #                 "ls8_level1_scene": 7,
-    #                 "ls8_nbar_scene": 7,
-    #                 "ls8_nbart_albers": 7,
-    #                 "ls8_nbart_scene": 7,
-    #                 "ls8_pq_legacy_scene": 7,
-    #                 "ls8_satellite_telemetry_data": 7,
-    #                 "pq_count_summary": 20,
-    #                 "wofs_albers": 11,
-    #             }
-    #         )
-    #         == auto_odc_db
-    # )
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 #######################################

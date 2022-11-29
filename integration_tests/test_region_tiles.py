@@ -1,7 +1,6 @@
 """
 Tests that indexes DEA C3 Summary products region tiles
 """
-from collections import Counter
 
 import pytest
 from flask import Response
@@ -24,16 +23,8 @@ DATASETS = [
 ]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter(
-        {
-            "ga_ls_wo_fq_nov_mar_3": 5,
-            "ls5_nbart_tmad_annual": 2,
-            "ls7_nbart_tmad_annual": 1,
-            "ga_ls_landcover_class_cyear_2": 3,
-        }
-    )
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_wo_summary_product(client: FlaskClient):

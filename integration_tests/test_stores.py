@@ -16,9 +16,8 @@ METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
 PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    pass
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def _overview(

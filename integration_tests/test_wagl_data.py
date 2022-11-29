@@ -1,7 +1,6 @@
 """
 Tests that load pages and check the contained text.
 """
-from collections import Counter
 from datetime import datetime
 
 import pytest
@@ -18,9 +17,8 @@ PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]
 DATASETS = ["s2a_ard_granule.yaml.gz"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"s2a_ard_granule": 8})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_s2_ard_summary(run_generate, summary_store: SummaryStore):

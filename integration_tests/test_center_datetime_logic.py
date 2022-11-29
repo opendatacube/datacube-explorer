@@ -19,9 +19,8 @@ PRODUCTS = ["products/rainfall_chirps_daily.odc-product.yaml"]
 DATASETS = ["rainfall_chirps_daily-sample.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    pass
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_datestring_on_dataset_page(client: FlaskClient):

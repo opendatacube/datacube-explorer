@@ -1,5 +1,3 @@
-from collections import Counter
-
 import pytest
 from flask.testing import FlaskClient
 
@@ -18,9 +16,8 @@ PRODUCTS = [
 DATASETS = ["datasets/ls5_fc_albers-sample.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"ls5_fc_albers": 5})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.fixture()

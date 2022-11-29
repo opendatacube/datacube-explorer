@@ -231,7 +231,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).
 
-### How do I modify the css/javascript?
+### How do I modify the CSS/Javascript?
 
 The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from
 [Typescript](https://www.typescriptlang.org/).
@@ -261,78 +261,30 @@ Install the test dependencies: `pip install -e .[test]`
 
 The run the tests with: `pytest integration_tests`
 
-#### Contributing to integration test
+### How do I add test data for the automated tests?
 
-##### Setting up product and dataset for new tests
+Most of the automated tests for Datacube Explorer require sample data to run. This comprises
+definitions of ODC *Metadata Types*, *Products* and *Datasets*.
 
-Inside https://github.com/opendatacube/datacube-explorer/tree/develop/integration_tests/data there are three folders, `ingestions`, `metadata` and `products`. For integration test to include a new metadata yaml, product yaml or ingestion yaml place the yaml files in the corresponding folders.
+These are contained within YAML files in the [`integration_tests/data`](https://github.com/opendatacube/datacube-explorer/tree/develop/integration_tests/data) directory.
 
-Then, to add sample datasets required for the test case, create a `.yaml` file with the product name and place all the sample datasets split by `---` in the yaml. Then at the beginning of the new `test_xyz.py` file place
-
-```python
-from pathlib import Path
-
-import pytest
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+Test data is loaded using a pytest fixture called `auto_odc_db`, which is activated per
+test module, and will automatically populate the database using files referenced in module
+global variables. Activate and use it similar to the following example:
 
 
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
+    pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "s2_l2a"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-        assert dataset_count == 5
-    return module_dea_index
-```
-
-if the sample dataset yaml file is too big, run `gzip **yaml**` and append the required `yaml.gz` to `conftest.py` `populated_index` fixture
-
-```python
-from pathlib import Path
-
-import pytest
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+    METADATA_TYPES = ["metadata/qga_eo.yaml"]
+    PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]
+    DATASETS = ["s2a_ard_granule.yaml.gz"]
 
 
-@pytest.fixture(scope="module")
-def populated_index(dataset_loader, module_dea_index):
-    loaded = dataset_loader(
-        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
-    )
-    assert loaded == 20
-    return module_dea_index
-```
+To add sample datasets required for the test case, create a `.yaml` file
+with the product name and place all the sample datasets split by `---` in the yaml.
 
-#### Custom test configuration (using other hosts, postgres servers)
-
-Add a `.datacube_integration.conf` file to your home directory in the same format as
-[datacube config files](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config).
-
-(You might already have one if you run datacube's integration tests)
-
-Then run pytest: `pytest integration_tests`
-
-__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+If the sample datasets file is large, compress it with `gzip <dataset_file>.yaml` and reference
+that file instead.
 
 ## Roles for production deployments
 

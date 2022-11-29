@@ -1,6 +1,7 @@
 from textwrap import indent
 from typing import List
 
+import pytest
 from datacube import Datacube
 from flask import Response
 from flask.testing import FlaskClient
@@ -22,6 +23,10 @@ PRODUCTS = [
 DATASETS = [
     "wofs-albers-sample.yaml.gz",
 ]
+
+
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
@@ -72,7 +77,6 @@ def test_all_pages_render(all_urls, client: FlaskClient):
 def test_allows_null_product_fixed_fields(
     all_urls,
     client: FlaskClient,
-    auto_odc_db,
     odc_test_db: Datacube,
     summary_store: SummaryStore,
 ):
