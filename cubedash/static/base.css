@@ -1158,6 +1158,11 @@ details > summary {
   max-height: none !important;
 }
 
+/* Unset image overlay width to preserve correct image aspect ratio */
+.leaflet-container img.leaflet-image-layer {
+  width: unset !important;
+}
+
 .leaflet-container.leaflet-touch-zoom {
   -ms-touch-action: pan-x pan-y;
   touch-action: pan-x pan-y;
@@ -1866,6 +1871,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 .leaflet-tooltip-right:before {
   border-right-color: #105e85;
+}
+
+.leaflet-container img.leaflet-image-layer {
+  width: unset !important;
 }
 
 /*# sourceMappingURL=base.css.map */

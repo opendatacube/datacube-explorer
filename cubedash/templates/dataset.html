@@ -194,7 +194,7 @@
             const osm_carto_light = L.tileLayer(
                 "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
                 {
-                    maxZoom: 7,
+                    maxZoom: 10,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
                     ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
                 }
@@ -222,7 +222,7 @@
                 scrollWheelZoom: false
             });
             L.control.zoom({position: "bottomright"}).addTo(map);
-            map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+            map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
             if ("{{ thumbnail_url }}") {
                 L.imageOverlay("{{ thumbnail_url }}", dataset_data.getBounds()).addTo(map);
             }

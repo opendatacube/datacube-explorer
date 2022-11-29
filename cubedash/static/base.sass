@@ -801,3 +801,7 @@ details > summary
     border-left-color: $widget_base
 .leaflet-tooltip-right:before
     border-right-color: $widget_base
+
+// Unset image overlay width to preserve correct image aspect ratio
+.leaflet-container img.leaflet-image-layer
+    width: unset !important
