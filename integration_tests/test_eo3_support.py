@@ -48,6 +48,10 @@ DATASETS = [
 ]
 
 
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
+
 @pytest.fixture(scope="module")
 def eo3_index(odc_test_db: Datacube, auto_odc_db):
     assert auto_odc_db == Counter(

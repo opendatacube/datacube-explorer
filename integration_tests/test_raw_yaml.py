@@ -5,7 +5,6 @@ Tests rendered raw yaml pages by passing the rendered content to datacube cli to
 - odc-metadata.yaml (cli command: datacube dataset)
 """
 import tempfile
-from collections import Counter
 
 import datacube.scripts.cli_app
 import pytest
@@ -27,9 +26,8 @@ DATASETS = [
 ]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"s2a_ard_granule": 8})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.fixture()

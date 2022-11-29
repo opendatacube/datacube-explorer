@@ -1,7 +1,6 @@
 """
 Tests that load pages and check the contained text.
 """
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -20,9 +19,8 @@ PRODUCTS = ["products/esa_s2_l2a.product.yaml"]
 DATASETS = ["s2_l2a-sample.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"s2_l2a": 5})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_summary_product(client: FlaskClient):

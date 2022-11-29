@@ -23,8 +23,11 @@ DATASETS = [
     "wofs-albers-sample.yaml.gz",
 ]
 
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-def test_parse_query_args(auto_odc_db, odc_test_db: Datacube):
+
+def test_parse_query_args(odc_test_db: Datacube):
     """
     A user gives time start/end: they should be parsed as a single time field,
     and restricted to the current product.

@@ -1,7 +1,6 @@
 """
 Tests that load pages and check the contained text.
 """
-from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -29,9 +28,8 @@ PRODUCTS = [
 DATASETS = ["datasets/ls5_fc_albers-sample.yaml", "usgs_ls7e_level1_1-sample.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"ls5_fc_albers": 5, "usgs_ls7e_level1_1": 5})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_summary_product(client: FlaskClient):

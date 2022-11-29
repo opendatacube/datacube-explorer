@@ -24,7 +24,11 @@ GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 def postgresql_server():
     """
     Provide a temporary PostgreSQL server for the test session using Docker.
-    :return: dictionary configuration required to connect to the server
+
+    If already running inside Docker, and there's an ODC database configured with
+    environment variables, do nothing.
+
+    :return: ODC style dictionary configuration required to connect to the server
     """
 
     # If we're running inside docker already, don't attempt to start a container!

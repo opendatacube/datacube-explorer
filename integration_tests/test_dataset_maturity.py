@@ -3,7 +3,6 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 4 datasets have maturity level: interim
 - 16 datasets have maturity level: final
 """
-from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -20,9 +19,8 @@ PRODUCTS = ["products/ga_ls8c_ard_3.odc-product.yaml"]
 DATASETS = ["ga_ls8c_ard_3-sample.yaml"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    assert auto_odc_db == Counter({"ga_ls8c_ard_3": 20})
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_product_fixed_metadata_by_sample_percentage(

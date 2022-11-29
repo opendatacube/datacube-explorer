@@ -36,9 +36,8 @@ DATASETS = [
 ]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _populate_index(auto_odc_db):
-    pass
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_generate_month(run_generate, summary_store: SummaryStore):
