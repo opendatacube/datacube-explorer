@@ -63,7 +63,7 @@
                             {{ (stat.count - stat.has_region) | percent(stat.count) }}
                         </td>
                         <td title="{{ stat.count - stat.has_file_size }} of {{ stat.count }} without size_bytes field"
-                            class="missing-dize">
+                            class="missing-dsize">
                             {{ (stat.count - stat.has_file_size) | percent(stat.count) }}
                         </td>
                     </tr>
@@ -145,8 +145,6 @@
         filter_con = obj.firstElementChild.classList.contains('fa-filter');
         document.querySelectorAll(".missing-result").forEach(function(row){
             row.style.visibility = "visible";
-
-            console.log(type);
             if (row.getAttribute(`data-missing-${type}`)== '0' && filter_con){
                 row.style.visibility = "collapse";
             }
