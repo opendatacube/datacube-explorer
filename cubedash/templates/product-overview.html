@@ -76,33 +76,13 @@
 
     function showRow(obj, type) {
         filter_con = obj.firstElementChild.classList.contains('fa-filter');
-        if(type == 'license'){
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                console.log(row.querySelector(".missing-license").innerHTML);
-                if (row.querySelector(".missing-license").innerHTML.trim() != 'None' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-        } else if (type == 'crs') {
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.querySelector(".missing-crs").innerHTML.trim() != 'None' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-
-        } else if (type == 'resolution') {
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.querySelector(".missing-resolution").innerHTML.trim() != 'None' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-        }
+        document.querySelectorAll(".missing-result").forEach(function(row){
+            row.style.visibility = "visible";
+            if (row.querySelector(`.missing-${type}`).innerHTML.trim() != 'None' && filter_con){
+                row.style.visibility = "collapse";
+            }
+        });
+        objToggle(obj);
     }
 </script>
 {% endblock %}
