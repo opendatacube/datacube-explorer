@@ -527,6 +527,14 @@ table.collapsed-head
 .nowrap
     white-space: nowrap
 
+.unavailable-metadata tbody
+    tr:nth-child(even)
+        background-color: darken($panel_color, 3%)
+
+    tr:nth-child(odd)
+        background-color: lighten($panel_color, 1%)
+
+
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
     margin: 0 calc(-2*var(--s)) var(--s)
@@ -541,9 +549,9 @@ table.collapsed-head
             td
                 display: block
 
-    // Add a row hover for data-intensive tables.
     tbody tr:hover
-        background-color: darken($panel_color, 4%)
+        // Add a row hover for data-intensive tables.
+        background-color: darken($panel_color, 5%)
 
         .panel.highlight &
             background-color: darken($panel_highlight, 4%)

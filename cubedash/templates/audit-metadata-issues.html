@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Product audit{% endblock %}
+{% block title %}Datasets audit{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -20,7 +20,7 @@
 {% block content %}
     {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
-        <h2 class="followed lonesome">Product Metadata Issues
+        <h2 class="followed lonesome">Datasets Metadata Issues
             {%- if sentry_public_dsn and sentry_public_args.environment %} ({{ sentry_public_args.environment }})
             {%- endif -%}
         </h2>
@@ -39,7 +39,7 @@
                 <th class="missing" onclick="showRow(this, 'footprint')">
                     Missing footprint <i class="filter-icon fa-solid fa-filter"></i>
                 </th>
-                <th class="missing" onclick="showRow(this, 'crs')">Missing CRS <i class="filter-icon fa-solid fa-filter"></i></th>
+                <th class="missing" onclick="showRow(this, 'srid')">Missing CRS <i class="filter-icon fa-solid fa-filter"></i></th>
                 <th class="feature" onclick="showRow(this, 'region')"
                     title="Product has neither a grid specification, nor platform-specific regions (eg. Landsat WRS path rows)">
                     Missing Regions <i class="filter-icon fa-solid fa-filter"></i>
@@ -48,7 +48,7 @@
                 </thead>
                 {% for stat in spatial_quality_stats | sort(attribute='product.name') %}
                     <tr class="search-result missing-result" data-missing-footprint="{{ stat.missing_footprint }}"
-                    data-mising-srid="{{ stat.missing_srid }}" data-missing-region="{{ (stat.count - stat.has_region)}}" data-missing-filesize="{{ (stat.count - stat.has_file_size) }}">
+                    data-missing-srid="{{ stat.missing_srid }}" data-missing-region="{{ (stat.count - stat.has_region)}}" data-missing-dsize="{{ (stat.count - stat.has_file_size) }}">
                         <td>{{ stat.product.name | product_link }}</td>
                         <td title="{{ stat.missing_footprint }} of {{ stat.count }} missing footprint"
                             class="missing-footprint">
@@ -63,7 +63,7 @@
                             {{ (stat.count - stat.has_region) | percent(stat.count) }}
                         </td>
                         <td title="{{ stat.count - stat.has_file_size }} of {{ stat.count }} without size_bytes field"
-                            class="missing-file-size">
+                            class="missing-dsize">
                             {{ (stat.count - stat.has_file_size) | percent(stat.count) }}
                         </td>
                     </tr>
@@ -122,7 +122,7 @@
                 {% endfor %}
             </ul>
     {% else %}
-            <a href="{{ url_for('audit.product_metadata_page', timings=True) }}#query-timings">
+            <a href="{{ url_for('audit.datasets_metadata_page', timings=True) }}#query-timings">
                 <i class="fa fa-cogs" aria-hidden="true"></i>
                 View query timings</a> (very slow)
     {% endif %}
@@ -143,40 +143,13 @@
 
     function showRow(obj, type) {
         filter_con = obj.firstElementChild.classList.contains('fa-filter');
-        if(type == 'footprint'){
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.getAttribute("data-missing-footprint") == '0' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-        } else if (type == 'crs') {
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.getAttribute("data-missing-footprint") == '0' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-
-        } else if (type == 'region') {
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.getAttribute("data-missing-region") == '0' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-        }  else if (type == 'dsize') {
-            document.querySelectorAll(".missing-result").forEach(function(row){
-                row.style.display = "table-row";
-                if (row.getAttribute("data-missing-filesize") == '0' && filter_con){
-                    row.style.display = "none";
-                }
-            });
-            objToggle(obj);
-        }
+        document.querySelectorAll(".missing-result").forEach(function(row){
+            row.style.visibility = "visible";
+            if (row.getAttribute(`data-missing-${type}`)== '0' && filter_con){
+                row.style.visibility = "collapse";
+            }
+        });
+        objToggle(obj);
     }
 </script>
 {% endblock %}

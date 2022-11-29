@@ -63,11 +63,11 @@ def cached_product_timings():
 
 @bp.route("/product-audit/")
 def legacy_product_audit_page():
-    return redirect(url_for(".product_metadata_page"))
+    return redirect(url_for(".datasets_metadata_page"))
 
 
-@bp.route("/audit/product-metadata")
-def product_metadata_page():
+@bp.route("/audit/datasets-metadata")
+def datasets_metadata_page():
     store = _model.STORE
     all_products = {p.name for p in store.index.products.get_all()}
     summarised_products = set(store.list_complete_products())
@@ -84,6 +84,13 @@ def product_metadata_page():
         products_missing=unsummarised_product_names,
         spatial_quality_stats=list(store.get_quality_stats()),
         **extra,
+    )
+
+
+@bp.route("/audit/product-overview")
+def products_overview_page():
+    return utils.render(
+        "product-overview.html",
     )
 
 
