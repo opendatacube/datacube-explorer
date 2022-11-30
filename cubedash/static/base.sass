@@ -343,9 +343,9 @@ h1, h2, h3, h4, th
         font-size: 0.7em
         opacity: 0.6
         // Displayed on hover (below)
-        display: none
+        visibility: hidden
     &:hover .header-anchor
-        display: inline
+        visibility: visible
 
 .panel
     @include square_padding
@@ -595,18 +595,23 @@ table.collapsed-head
 @media (min-width: 800px)
     .query-param-list.wide
         grid-template-columns: 1fr 1fr
+        column-gap: 15px
 
 .query-param
     display: block
     > .value
         color: $muted_text
-
-    .value > .query-param
-        margin-left: 15px
+        word-break: break-all
 
     .missing-value
         text-decoration-style: wavy
         text-decoration-line: underline
+
+    .query-param-search
+        text-decoration: none
+        visibility: hidden
+    &:hover .query-param-search
+        visibility: visible
 
 button
     margin: 5px 0

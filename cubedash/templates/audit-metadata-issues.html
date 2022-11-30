@@ -18,7 +18,6 @@
 
 {% endblock %}
 {% block content %}
-    {% from "layout/macros.html" import query_param_list, show_raw_document %}
     <div class="panel highlight">
         <h2 class="followed lonesome">Datasets Metadata Issues
             {%- if sentry_public_dsn and sentry_public_args.environment %} ({{ sentry_public_args.environment }})
