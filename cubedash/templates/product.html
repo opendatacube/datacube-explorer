@@ -267,18 +267,24 @@
                         <tr>
                             <td><span class="badge">{{ measurement.dtype }}</span></td>
                             <td>
-                            <span>{{ measurement.name }}</span>
-                            {%- for a in measurement.aliases %}
-                                / <span class="muted">{{ a }}</span>
-                            {%- endfor %}
-
+                                <span>{{ measurement.name }}</span>
+                                {%- for a in measurement.aliases %}
+                                    / <span class="muted">{{ a }}</span>
+                                {%- endfor %}
                             </td>
-                        <td>
-                            <span class="muted"> {{ measurement.nodata }}</span>
-                        </td>
+                            <td>
+                                <span class="muted"> {{ measurement.nodata }}</span>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td>
+                            <p>Total: {{ product.definition.measurements | length }}</p>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         {% endif %}
 
