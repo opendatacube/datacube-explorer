@@ -30,22 +30,7 @@ ARG ENVIRONMENT=deployment
 
 RUN echo "Environment is: $ENVIRONMENT"
 
-RUN pip install pip-tools pre-commit pytest-cov
-
-# Dev setup: run pre-commit once, so its virtualenv is built and cached.
-#    We do this in a tmp repository, before copying our real code, as we
-#    want this cached by Docker and not rebuilt every time code changes
-COPY .pre-commit-config.yaml /conf/
-
-RUN if [ "$ENVIRONMENT" = "test" ] ; then \
-       mkdir -p ~/pre-commit \
-       && cp /conf/.pre-commit-config.yaml ~/pre-commit \
-       && cd ~/pre-commit \
-       && git init \
-       && pre-commit run \
-       && rm -rf ~/pre-commit ; \
-    fi
-
+RUN pip install pip-tools pytest-cov
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
