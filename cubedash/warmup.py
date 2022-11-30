@@ -26,9 +26,12 @@ def find_examples_of_all_public_urls(index: Index):
     yield "/metadata-types.txt"
     yield "/metadata-types.odc-type.yaml"
 
+    yield "/audit/datasets-metadata"
+    yield "/audit/product-overview"
+    yield "/audit/dataset-counts"
+    yield "/audit/dataset-counts.csv"
     yield "/audit/storage"
     yield "/audit/storage.csv"
-    yield "/audit/product-metadata"
     yield "/audit/day-query-times.txt"
 
     yield "/stac"
