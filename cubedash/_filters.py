@@ -260,6 +260,13 @@ def _searchable_fields(product: DatasetType):
     )
 
 
+@bp.app_template_filter("searchable_fields_keys")
+def _searchable_fields_keys(product: DatasetType):
+    """List of keys of searchable field names for a product"""
+    fields = _searchable_fields(product)
+    return [k for k, _ in fields]
+
+
 @bp.app_template_filter("is_numeric_field")
 def _is_numeric_field(field: Field):
     return field.type_name in NUMERIC_STEP_SIZE
