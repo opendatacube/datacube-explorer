@@ -57,10 +57,10 @@ ADD . $APPDIR
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
-        pip install .[$ENVIRONMENT] --extra-index-url https://packages.dea.ga.gov.au/; \
+        pip install .[$ENVIRONMENT]; \
         rm -rf /code/* ; \
     else \
-        pip install --editable .[$ENVIRONMENT] --extra-index-url https://packages.dea.ga.gov.au/; \
+        pip install --editable .[$ENVIRONMENT]; \
     fi
 
 RUN pip freeze

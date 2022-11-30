@@ -62,7 +62,7 @@ def assert_all_urls_render(all_urls: List[str], client: FlaskClient):
                 response.data.decode("utf-8").split("\n")[:max_failure_line_count]
             )
             raise AssertionError(
-                f"Response {response.status_code} from url f{url}. "
+                f"Response {response.status_code} from url '{url}'. "
                 f"Content:\n{indent(error_sample, ' ' * 4)}"
             )
 
