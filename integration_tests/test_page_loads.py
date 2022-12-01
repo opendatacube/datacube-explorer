@@ -60,12 +60,12 @@ PRODUCTS = [
     "products/wofs_summary.odc-product.yaml",
 ]
 DATASETS = [
-    "high_tide_comp_20p.yaml.gz",
+    "datasets/high_tide_comp_20p.yaml.gz",
     # These have very large footprints, as they were unioned from many almost-identical
     # polygons and not simplified. They will trip up postgis if used naively.
     # (postgis gist index has max record size of 8k per entry)
-    "pq_count_summary.yaml.gz",
-    "wofs-albers-sample.yaml.gz",
+    "datasets/pq_count_summary.yaml.gz",
+    "datasets/wofs-albers-sample.yaml.gz",
 ]
 
 

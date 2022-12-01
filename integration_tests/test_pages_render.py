@@ -21,7 +21,7 @@ PRODUCTS = [
     "products/ls8_nbart_albers.odc-product.yaml",
 ]
 DATASETS = [
-    "wofs-albers-sample.yaml.gz",
+    "datasets/wofs-albers-sample.yaml.gz",
 ]
 
 

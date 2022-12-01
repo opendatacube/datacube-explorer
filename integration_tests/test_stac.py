@@ -74,14 +74,16 @@ PRODUCTS = [
     "products/pq_count_summary.odc-product.yaml",
     "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/wofs_albers.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
 ]
 DATASETS = [
-    "high_tide_comp_20p.yaml.gz",
+    "datasets/high_tide_comp_20p.yaml.gz",
     # These have very large footprints, as they were unioned from many almost-identical
     # polygons and not simplified. They will trip up postgis if used naively.
     # (postgis gist index has max record size of 8k per entry)
-    "pq_count_summary.yaml.gz",
-    "wofs-albers-sample.yaml.gz",
+    "datasets/pq_count_summary.yaml.gz",
+    "datasets/wofs-albers-sample.yaml.gz",
+    "datasets/ga_ls8c_ard_3-sample.yaml",
 ]
 
 
@@ -420,6 +422,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
             "ls7_pq_legacy_scene": 4,
             "ls7_level1_scene": 4,
             "dsm1sv10": 1,
+            "ga_ls8c_ard_3": 21,
         },
     )
 
@@ -1231,3 +1234,162 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
             # Validate stac item with jsonschema
             validate_item(feature)
+
+
+def test_stac_query_extension(stac_client: FlaskClient):
+    query = {"properties.dea:dataset_maturity": dict(eq="nrt")}
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "query": query,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert len(doc.get("features")) == 1
+    assert doc["features"][0]["properties"]["dea:dataset_maturity"] == "nrt"
+
+
+def test_stac_fields_extension(stac_client: FlaskClient):
+    fields = {"include": ["properties.dea:dataset_maturity"]}
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "fields": fields,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    keys = set(doc["features"][0].keys())
+    assert {
+        "id",
+        "type",
+        "geometry",
+        "bbox",
+        "links",
+        "assets",
+        "properties",
+        "stac_version",
+        "stac_extensions",
+    } == keys
+    properties = doc["features"][0]["properties"]
+    assert {"datetime", "dea:dataset_maturity"} == set(properties.keys())
+
+    fields = {"exclude": ["assets.thumbnail:nbart"]}
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "fields": fields,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    keys = set(doc["features"][0].keys())
+    assert "collection" in keys
+    properties = doc["features"][0]["assets"]
+    assert "thumbnail:nbart" not in set(properties.keys())
+
+    # should we do an invalid field as well?
+
+
+def test_stac_sortby_extension(stac_client: FlaskClient):
+    sortby = [{"field": "properties.datetime", "direction": "asc"}]
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "sortby": sortby,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    for i in range(1, len(doc["features"])):
+        assert (
+            doc["features"][i - 1]["properties"]["datetime"]
+            < doc["features"][i]["properties"]["datetime"]
+        )
+
+    sortby = [{"field": "properties.datetime", "direction": "desc"}]
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "sortby": sortby,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    for i in range(1, len(doc["features"])):
+        assert (
+            doc["features"][i - 1]["properties"]["datetime"]
+            > doc["features"][i]["properties"]["datetime"]
+        )
+
+
+def test_stac_filter_extension(stac_client: FlaskClient):
+    filter_cql = {
+        "op": "and",
+        "args": [
+            {
+                "op": "<>",
+                "args": [{"property": "properties.dea:dataset_maturity"}, "final"],
+            },
+            {"op": ">=", "args": [{"property": "properties.eo:cloud_cover"}, float(2)]},
+        ],
+    }
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "filter": filter_cql,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    features = doc.get("features")
+    assert len(features) == 2
+    ids = [f["id"] for f in features]
+    assert "fc792b3b-a685-4c0f-9cf6-f5257f042c64", (
+        "192276c6-8fa4-46a9-8bc6-e04e157974b9" in ids
+    )

@@ -16,10 +16,10 @@ PRODUCTS = [
     "products/ga_ls_landcover_class_cyear_2.odc-product.yaml",
 ]
 DATASETS = [
-    "ga_ls_wo_fq_nov_mar_3-sample.yaml",
-    "ls5_nbart_tmad_annual-sample.yaml",
-    "ls7_nbart_tmad_annual-sample.yaml",
-    "ga_ls_landcover_class_cyear_2-sample.yaml",
+    "datasets/ga_ls_wo_fq_nov_mar_3-sample.yaml",
+    "datasets/ls5_nbart_tmad_annual-sample.yaml",
+    "datasets/ls7_nbart_tmad_annual-sample.yaml",
+    "datasets/ga_ls_landcover_class_cyear_2-sample.yaml",
 ]
 
 

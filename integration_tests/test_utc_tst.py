@@ -25,7 +25,10 @@ PRODUCTS = [
     "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/dsm1sv10.odc-product.yaml",
 ]
-DATASETS = ["datasets/ls5_fc_albers-sample.yaml", "usgs_ls7e_level1_1-sample.yaml"]
+DATASETS = [
+    "datasets/ls5_fc_albers-sample.yaml",
+    "datasets/usgs_ls7e_level1_1-sample.yaml",
+]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

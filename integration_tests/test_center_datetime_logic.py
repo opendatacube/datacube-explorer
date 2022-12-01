@@ -16,7 +16,7 @@ from integration_tests.asserts import (
 
 METADATA_TYPES = ["metadata/eo3_metadata.yaml"]
 PRODUCTS = ["products/rainfall_chirps_daily.odc-product.yaml"]
-DATASETS = ["rainfall_chirps_daily-sample.yaml"]
+DATASETS = ["datasets/rainfall_chirps_daily-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

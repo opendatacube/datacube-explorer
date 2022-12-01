@@ -454,6 +454,7 @@ measurements:
 
 accessories:
   checksum:sha1:
+    path: ga_ls8c_nbart_3-2-1_104074_2022-07-19_final.sha1
   thumbnail:nbart:
     path: ga_ls8c_nbart_3-2-1_104074_2022-07-19_interim_thumbnail.jpg
   metadata:processor:
@@ -2150,6 +2151,14 @@ measurements:
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_099067_2017-12-09_final_combined-terrain-shadow.tif
 
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_099067_2017-12-09_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_099067_2017-12-09_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_099067_2017-12-09_final.proc-info.yaml
+
 lineage: {}
 ...
 ---
@@ -2296,6 +2305,14 @@ measurements:
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_096067_2017-12-04_final_combined-terrain-shadow.tif
 
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_096067_2017-12-04_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_096067_2017-12-04_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_096067_2017-12-04_final.proc-info.yaml
+
 lineage: {}
 ...
 ---
@@ -2439,6 +2456,14 @@ measurements:
     path: ga_ls8c_oa_3-0-0_096080_2017-12-04_final_azimuthal-incident.tif
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_096080_2017-12-04_final_combined-terrain-shadow.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_096080_2017-12-04_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_096080_2017-12-04_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_096080_2017-12-04_final.proc-info.yaml
 
 lineage: {}
 ...
@@ -2585,6 +2610,14 @@ measurements:
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_112084_2017-12-04_final_combined-terrain-shadow.tif
 
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_112084_2017-12-04_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_112084_2017-12-04_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_112084_2017-12-04_final.proc-info.yaml
+
 lineage: {}
 ...
 ---
@@ -2729,6 +2762,14 @@ measurements:
     path: ga_ls8c_oa_3-0-0_101073_2017-12-23_final_azimuthal-incident.tif
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_101073_2017-12-23_final_combined-terrain-shadow.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_101073_2017-12-23_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_101073_2017-12-23_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_101073_2017-12-23_final.proc-info.yaml
 
 lineage: {}
 ...
@@ -2875,6 +2916,14 @@ measurements:
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_104068_2017-12-28_final_combined-terrain-shadow.tif
 
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_104068_2017-12-28_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_104068_2017-12-28_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_104068_2017-12-28_final.proc-info.yaml
+
 lineage: {}
 ...
 ---
@@ -3019,6 +3068,166 @@ measurements:
     path: ga_ls8c_oa_3-0-0_104083_2017-12-28_final_azimuthal-incident.tif
   oa_combined_terrain_shadow:
     path: ga_ls8c_oa_3-0-0_104083_2017-12-28_final_combined-terrain-shadow.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-0-0_104083_2017-12-28_final.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-0-0_104083_2017-12-28_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-0-0_104083_2017-12-28_final.proc-info.yaml
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/fc792b3b-a685-4c0f-9cf6-f5257f042c64.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: fc792b3b-a685-4c0f-9cf6-f5257f042c64
+
+label: ga_ls8c_ard_3-2-1_100074_2022-10-27_nrt
+product:
+  name: ga_ls8c_ard_3
+
+location: s3://dea-public-data-dev/baseline/ga_ls8c_ard_3/100/074/2022/10/27_nrt/ga_ls8c_ard_3-2-1_100074_2022-10-27_nrt.stac-item.json
+
+crs: epsg:32654
+geometry:
+  type: Polygon
+  coordinates: [[[7.5203e+04, -2.317327e+06], [8.0648e+04, -2.28998e+06], [9.2558e+04,
+        -2.23052e+06], [1.04723e+05, -2.1701e+06], [1.13872e+05, -2.124938e+06], [
+        1.13951e+05, -2.124953e+06], [1.13955e+05, -2.124945e+06], [3.00021e+05, -2.162386e+06],
+      [3.0104e+05, -2.162613e+06], [3.0166e+05, -2.162738e+06], [3.01718e+05, -2.162768e+06],
+      [2.63328e+05, -2.354958e+06], [2.6327e+05, -2.354962e+06], [2.63199e+05, -2.354948e+06],
+      [2.63109e+05, -2.354954e+06], [7.5272e+04, -2.317362e+06], [7.5275e+04, -2.317342e+06],
+      [7.5203e+04, -2.317327e+06]]]
+grids:
+  g15m:
+    shape: [15341, 15141]
+    transform: [1.5e+01, 0.e+00, 7.49925e+04, 0.e+00, -1.5e+01, -2.1248925e+06, 0.e+00,
+      0.e+00, 1.e+00]
+  default:
+    shape: [7671, 7571]
+    transform: [3.e+01, 0.e+00, 7.4985e+04, 0.e+00, -3.e+01, -2.124885e+06, 0.e+00,
+      0.e+00, 1.e+00]
+
+properties:
+  created: '2022-10-27T07:13:32.099729Z'
+  datetime: '2022-10-27T00:48:44.263505Z'
+  dea:dataset_maturity: nrt
+  dea:product_maturity: stable
+  eo:cloud_cover: 4.848515250221337e+00
+  eo:gsd: 1.5e+01  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 7.707753318e+01
+  eo:sun_elevation: 6.420122097e+01
+  fmask:clear: 9.457580708694493e+01
+  fmask:cloud: 4.848515250221337e+00
+  fmask:cloud_shadow: 5.685451304374108e-01
+  fmask:snow: 0.e+00
+  fmask:water: 7.132532396319751e-03
+  gqa:abs_iterative_mean_x: 1.5e-01
+  gqa:abs_iterative_mean_xy: 2.4e-01
+  gqa:abs_iterative_mean_y: 1.9e-01
+  gqa:abs_x: 2.3e-01
+  gqa:abs_xy: 4.1e-01
+  gqa:abs_y: 3.4e-01
+  gqa:cep90: 4.9e-01
+  gqa:iterative_mean_x: -7.e-02
+  gqa:iterative_mean_xy: 1.4e-01
+  gqa:iterative_mean_y: 1.2e-01
+  gqa:iterative_stddev_x: 1.9e-01
+  gqa:iterative_stddev_xy: 2.9e-01
+  gqa:iterative_stddev_y: 2.2e-01
+  gqa:mean_x: -1.1e-01
+  gqa:mean_xy: 2.7e-01
+  gqa:mean_y: 2.5e-01
+  gqa:stddev_x: 5.8e-01
+  gqa:stddev_xy: 1.91e+00
+  gqa:stddev_y: 1.82e+00
+  landsat:collection_category: RT
+  landsat:collection_number: 2
+  landsat:landsat_product_id: LC08_L1TP_100074_20221027_20221027_02_RT
+  landsat:landsat_scene_id: LC81000742022300LGN00
+  landsat:wrs_path: 100
+  landsat:wrs_row: 74
+  odc:dataset_version: 3.2.1
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2022-10-27T07:13:32.099729Z'
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: '100074'
+  proj:epsg: 32654
+  proj:shape:
+  - 7671
+  - 7571
+  proj:transform:
+  - 3.e+01
+  - 0.e+00
+  - 7.4985e+04
+  - 0.e+00
+  - -3.e+01
+  - -2.124885e+06
+  - 0.e+00
+  - 0.e+00
+  - 1.e+00
+  title: ga_ls8c_ard_3-2-1_100074_2022-10-27_nrt
+
+measurements:
+  oa_fmask:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_fmask.tif
+  nbart_nir:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band05.tif
+  nbart_red:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band04.tif
+  nbart_blue:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band02.tif
+  nbart_green:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band03.tif
+  nbart_swir_1:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band06.tif
+  nbart_swir_2:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band07.tif
+  oa_time_delta:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_time-delta.tif
+  oa_solar_zenith:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_solar-zenith.tif
+  oa_exiting_angle:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_exiting-angle.tif
+  oa_solar_azimuth:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_solar-azimuth.tif
+  oa_incident_angle:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_incident-angle.tif
+  oa_relative_slope:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_relative-slope.tif
+  oa_satellite_view:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_satellite-view.tif
+  nbart_panchromatic:
+    grid: g15m
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band08.tif
+  oa_nbart_contiguity:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_relative-azimuth.tif
+  oa_azimuthal_exiting:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_azimuthal-exiting.tif
+  oa_satellite_azimuth:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_satellite-azimuth.tif
+  nbart_coastal_aerosol:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_band01.tif
+  oa_azimuthal_incident:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls8c_oa_3-2-1_100074_2022-10-27_nrt_combined-terrain-shadow.tif
+
+accessories:
+  checksum:sha1:
+    path: ga_ls8c_ard_3-2-1_100074_2022-10-27_nrt.sha1
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-2-1_100074_2022-10-27_nrt_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls8c_ard_3-2-1_100074_2022-10-27_nrt.proc-info.yaml
 
 lineage: {}
 ...

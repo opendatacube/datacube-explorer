@@ -14,7 +14,7 @@ from integration_tests.asserts import expect_values, get_html
 
 METADATA_TYPES = ["metadata/qga_eo.yaml"]
 PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]
-DATASETS = ["s2a_ard_granule.yaml.gz"]
+DATASETS = ["datasets/s2a_ard_granule.yaml.gz"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

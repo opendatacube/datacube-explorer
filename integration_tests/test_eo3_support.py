@@ -27,7 +27,8 @@ from integration_tests.test_stac import get_item, get_items
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
 TEST_EO3_DATASET_ARD = (
-    TEST_DATA_DIR / "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml"
+    TEST_DATA_DIR
+    / "datasets/ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml"
 )
 
 METADATA_TYPES = [
@@ -42,9 +43,9 @@ PRODUCTS = [
     "products/ls8_scenes.odc-product.yaml",
 ]
 DATASETS = [
-    "LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
-    "ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
-    "gm_s2_semiannual/856e45bf-cd50-5a5a-b1cd-12b85df99b24.odc-metadata.yaml",
+    "datasets/LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
+    "datasets/ga_ls5t_ard_3-1-20200605_113081_1988-03-30_final.odc-metadata.yaml",
+    "datasets/gm_s2_semiannual/856e45bf-cd50-5a5a-b1cd-12b85df99b24.odc-metadata.yaml",
 ]
 
 
