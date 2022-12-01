@@ -12,7 +12,7 @@ from integration_tests.asserts import check_dataset_count, get_html
 
 METADATA_TYPES = ["metadata/eo3_landsat_ard.odc-type.yaml"]
 PRODUCTS = ["products/ga_ls7e_ard_3.odc-product.yaml"]
-DATASETS = ["ga_ls7e_ard_3-sample.yaml"]
+DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

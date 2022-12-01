@@ -16,7 +16,7 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 METADATA_TYPES = ["metadata/eo3_metadata.yaml"]
 PRODUCTS = ["products/esa_s2_l2a.product.yaml"]
-DATASETS = ["s2_l2a-sample.yaml"]
+DATASETS = ["datasets/s2_l2a-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

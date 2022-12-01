@@ -542,7 +542,7 @@ def _handle_query_extension(items: List[pystac.Item], query: dict) -> List[pysta
     # split on '.' to use dicttoolz for nested items
     for prop in query.keys():
         # Retrieve nested dict values
-        for op, val in query[property].items():
+        for op, val in query[prop].items():
             if op == "startsWith":
                 matched = filter(
                     lambda item: _get_property(prop, item).startswith(val), items
@@ -608,7 +608,15 @@ def _handle_fields_extension(
         for exc in fields.get("exclude") or []:
             # don't remove a field if it will make for an invalid stac item
             if exc not in default_fields:
-                filtered_item = dicttoolz.dissoc(filtered_item, exc.split("."))
+                # what about a field that isn't there?
+                split = exc.split(".")
+                # have to manually take care of nested case because dicttoolz doesn't have a dissoc_in
+                if len(split):
+                    filtered_item[split[0]] = dicttoolz.dissoc(
+                        filtered_item[split[0]], split[1]
+                    )
+                else:
+                    filtered_item = dicttoolz.dissoc(filtered_item, exc)
 
         res.append(pystac.Item.from_dict(filtered_item))
 

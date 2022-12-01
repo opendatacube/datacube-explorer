@@ -16,7 +16,7 @@ METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
 ]
 PRODUCTS = ["products/ga_ls8c_ard_3.odc-product.yaml"]
-DATASETS = ["ga_ls8c_ard_3-sample.yaml"]
+DATASETS = ["datasets/ga_ls8c_ard_3-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

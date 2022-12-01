@@ -20,7 +20,7 @@ PRODUCTS = [
     "products/ls8_nbart_albers.odc-product.yaml",
 ]
 DATASETS = [
-    "wofs-albers-sample.yaml.gz",
+    "datasets/wofs-albers-sample.yaml.gz",
 ]
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.

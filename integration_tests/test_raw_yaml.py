@@ -22,7 +22,7 @@ PRODUCTS = [
     "products/dsm1sv10.odc-product.yaml",
 ]
 DATASETS = [
-    "s2a_ard_granule.yaml.gz",
+    "datasets/s2a_ard_granule.yaml.gz",
 ]
 
 
