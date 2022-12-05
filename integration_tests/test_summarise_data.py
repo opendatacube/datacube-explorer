@@ -31,8 +31,8 @@ PRODUCTS = [
     "products/ls8_scenes.odc-product.yaml",
 ]
 DATASETS = [
-    "ls8-nbar-scene-sample-2017.yaml.gz",
-    "ls8-nbar-albers-sample.yaml.gz",
+    "datasets/ls8-nbar-scene-sample-2017.yaml.gz",
+    "datasets/ls8-nbar-albers-sample.yaml.gz",
 ]
 
 
