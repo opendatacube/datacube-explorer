@@ -185,7 +185,6 @@ def run_generation(
             on_complete(*generate_report((p.name, settings)))
     else:
         with multiprocessing.Pool(workers) as pool:
-            product: DatasetType
             summary: TimePeriodOverview
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
