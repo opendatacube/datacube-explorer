@@ -7,13 +7,11 @@ repos:
     - id: shed
   # Python Linting
   - repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
       - id: flake8
         exclude: ^docs/
         additional_dependencies:
-          - dlint # Check common security issues
-          - flake8-broken-line # Don't escape newlines. (surround in parens or simplify)
           - flake8-bugbear # Lint-checks too opinionated for flake8 proper
           - flake8-builtins # Don't allow built-in names like list
           - flake8-coding # Only UTF-8
