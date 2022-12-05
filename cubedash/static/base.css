@@ -1868,8 +1868,4 @@ svg.leaflet-image-layer.leaflet-interactive path {
   border-right-color: #105e85;
 }
 
-.leaflet-container img.leaflet-image-layer {
-  width: unset !important;
-}
-
 /*# sourceMappingURL=base.css.map */

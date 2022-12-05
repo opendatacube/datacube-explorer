@@ -877,6 +877,11 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     return geom, True
 
 
+def bbox_as_geom(dataset):
+    """Get dataset bounds as to Geometry object projected to target CRS"""
+    return geometry.box(*dataset.bounds, crs=CRS(dataset.crs)).to_crs(CRS(_TARGET_CRS))
+
+
 # ######################### WARNING ############################### #
 #  These functions are bad and access non-public parts of datacube  #
 #     They are kept here in one place for easy criticism.           #
