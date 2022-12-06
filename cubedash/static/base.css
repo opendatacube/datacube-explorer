@@ -556,22 +556,26 @@ table.collapsed-head th {
     column-gap: 15px;
   }
 }
-.query-param {
+.query-param, .query-param-search {
   display: block;
 }
-.query-param > .value {
+.query-param > .value, .query-param-search > .value {
   color: #737373;
   word-break: break-all;
 }
-.query-param .missing-value {
+.query-param .missing-value, .query-param-search .missing-value {
   text-decoration-style: wavy;
   text-decoration-line: underline;
 }
-.query-param .query-param-search {
-  text-decoration: none;
+
+.query-param-search {
+  width: fit-content;
+  text-decoration: initial;
+}
+.query-param-search > .search-icon {
   visibility: hidden;
 }
-.query-param:hover .query-param-search {
+.query-param-search:hover > .search-icon {
   visibility: visible;
 }
 
