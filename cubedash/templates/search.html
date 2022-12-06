@@ -52,7 +52,7 @@
                                        id="search-{{ key }}-before"
                                        name="{{ key }}-begin"
                                        {% if key not in query_params %}disabled="disabled"{% endif %}
-                                       value="{{ query_params[key] and
+                                       value="{{ query_params[key] and query_params[key].begin and
                                         query_params[key].begin.strftime('%Y-%m-%d') or '' }}"/>
                             </div>
                             <div data-field-span="1">
@@ -63,7 +63,7 @@
                                        id="search-{{ key }}-after"
                                        name="{{ key }}-end"
                                        {% if key not in query_params %}disabled="disabled"{% endif %}
-                                       value="{{ query_params[key] and
+                                       value="{{ query_params[key] and query_params[key].end and
                                         query_params[key].end.strftime('%Y-%m-%d') or '' }}"/>
                             </div>
                         </div>
