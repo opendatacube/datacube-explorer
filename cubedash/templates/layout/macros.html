@@ -81,7 +81,7 @@
                                 <span class="null-value" title="Unspecified">•</span>
                             {%- endif -%}
                         {%- else -%}
-                            <span class="null-value" title="Unspecified">•</span>
+                            {{- value | query_value -}}
                         {%- endif -%}
                     </span>
                     {%- if search_link -%}
