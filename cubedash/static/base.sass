@@ -597,7 +597,7 @@ table.collapsed-head
         grid-template-columns: 1fr 1fr
         column-gap: 15px
 
-.query-param
+.query-param, .query-param-search
     display: block
     > .value
         color: $muted_text
@@ -607,10 +607,12 @@ table.collapsed-head
         text-decoration-style: wavy
         text-decoration-line: underline
 
-    .query-param-search
-        text-decoration: none
+.query-param-search
+    width: fit-content
+    text-decoration: initial
+    > .search-icon
         visibility: hidden
-    &:hover .query-param-search
+    &:hover > .search-icon
         visibility: visible
 
 button

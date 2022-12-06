@@ -55,6 +55,10 @@
             {# "creation_dt" is excluded, as it's a duplicate of the creation_time field (latter is newer and date typed) #}
             {% if (show_nulls or (value is not none) or (key in fallback_dict)) and (key != "creation_dt") %}
                 <span class="query-param {{ prefix+key | maybe_to_css_class_name(prefix="key-") }}">
+                    {% set search_link = (dataset and (key in (dataset.type | searchable_fields_keys))) %}
+                    {%- if search_link -%}
+                        <a href="{{ url_for('search_page', product_name=dataset.type.name, **{ key: value }) }}" class="query-param-search">
+                    {%- endif -%}
                     <span class="key"
                         {% if descriptions  and descriptions[key] -%}
                         title="{{ descriptions[key].description}}"
@@ -80,10 +84,10 @@
                             {{- value | query_value -}}
                         {%- endif -%}
                     </span>
-                    {% if dataset and (key in (dataset.type | searchable_fields_keys)) %}
-                    <a href="{{ url_for('search_page', product_name=dataset.type.name, **{ key: value }) }}"
-                            class="query-param-search"> &#128269; </a>
-                    {% endif %}
+                    {%- if search_link -%} 
+                        <span class="search-icon"> &#128269; </span>
+                        </a> 
+                    {%- endif -%}
                 </span>
             {% endif %}
         {% endfor %}
