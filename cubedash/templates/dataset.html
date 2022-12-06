@@ -4,7 +4,7 @@
 
 {% set extent_geojson = dataset_footprint.__geo_interface__ %}
 {% set thumbnail_url = dataset | dataset_thumbnail_url %}
-{% set image_bounds = dataset_bounds.__geo_interface__ %}
+{% set image_bounds = dataset_bounds.__geo_interface__ if dataset_bounds is not none else 'NONE' %}
 
 {% block head %}
     {{ super() }}
@@ -225,10 +225,13 @@
             L.control.zoom({position: "bottomright"}).addTo(map);
             map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
             if ("{{ thumbnail_url }}") {
-                L.imageOverlay(
-                    "{{ thumbnail_url }}",
-                    L.geoJson({{ image_bounds | torapidjson }}).getBounds()
-                ).addTo(map);
+                if ("{{ image_bounds }}" != "NONE") {
+                    bounds = L.geoJson({{ image_bounds | torapidjson }}).getBounds();
+                } else {
+                    // if no image bounds, go for the next best thing
+                    bounds = dataset_data.getBounds();
+                }
+                L.imageOverlay("{{ thumbnail_url }}", bounds).addTo(map);
             }
 
             window.MAP = map;
