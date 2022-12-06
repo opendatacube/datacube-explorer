@@ -563,11 +563,7 @@ table.collapsed-head th {
   color: #737373;
   word-break: break-all;
 }
-<<<<<<< HEAD
 .query-param .missing-value, .query-param-search .missing-value {
-=======
-.query-param .missing-value {
->>>>>>> remove duplicate styling
   text-decoration-style: wavy;
   text-decoration-line: underline;
 }
