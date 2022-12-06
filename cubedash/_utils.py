@@ -879,7 +879,9 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
 
 def bbox_as_geom(dataset):
     """Get dataset bounds as to Geometry object projected to target CRS"""
-    return geometry.box(**dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
+    if dataset.crs is None:
+        return None
+    return geometry.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
 
 
 # ######################### WARNING ############################### #
