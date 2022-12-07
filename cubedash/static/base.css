@@ -617,8 +617,6 @@ label.disabled {
 }
 .form-footer select {
   padding: 6px;
-}
-.form-footer select#add-search-field-type {
   width: 100%;
   text-overflow: ellipsis;
 }

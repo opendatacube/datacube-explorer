@@ -178,18 +178,39 @@ def search_page(
     if product_name:
         query["product"] = product_name
 
-    if "time" in query:
-        # If they left one end of the range open, fill it in with the product bounds.
-        search_time = query["time"]
-        assert isinstance(search_time, Range)
-        if product_summary:
-            query["time"] = Range(
-                search_time.begin or product_summary.time_earliest,
-                search_time.end or product_summary.time_latest + timedelta(days=1),
-            )
+    if "dataset_maturity" in query:
+        query["dataset_maturity"] = query["dataset_maturity"].lower()
+
     # The URL time range always trumps args.
     if time_range:
         query["time"] = time_range
+    elif "time" in query:
+        search_time = query["time"]
+        # If it's not a range, it's almost certainly because we're searching via an
+        # individual dataset field value, so we need to create a range corresponding to that day.
+        if not isinstance(search_time, Range):
+            search_time = Range(search_time, search_time + timedelta(days=1))
+        # If they left one end of the range open, fill it in with the product bounds.
+        if product_summary:
+            search_time = Range(
+                search_time.begin or product_summary.time_earliest,
+                search_time.end or product_summary.time_latest + timedelta(days=1),
+            )
+        query["time"] = search_time
+
+    # same logic as with 'time'
+    if "creation_time" in query:
+        creation_time = query["creation_time"]
+        if not isinstance(creation_time, Range):
+            creation_time = Range(creation_time, creation_time + timedelta(days=1))
+        if product_summary:
+            creation_time = Range(
+                creation_time.begin or product_summary.time_earliest,
+                # product time bounds don't necessarily include the creation time
+                # so use today's date instead as our end bound if needed
+                creation_time.end or datetime.utcnow(),
+            )
+        query["creation_time"] = creation_time
 
     _LOG.info("query", query=query)
 
