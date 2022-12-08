@@ -6,18 +6,7 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
-<<<<<<< HEAD
 from datacube import Datacube
-=======
-from datacube.config import LocalConfig
-from datacube.drivers import storage_writer_by_name
-from datacube.drivers.postgres import PostgresDb, _core
-from datacube.drivers.postgres._core import METADATA as ODC_SCHEMA_METADATA
-from datacube.index import Index, index_connect
-from datacube.index.hl import Doc2Dataset
-from datacube.scripts import ingest
-from datacube.utils import read_documents
->>>>>>> linting(fix): Update in line with flake8. rm broken pkgs
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
