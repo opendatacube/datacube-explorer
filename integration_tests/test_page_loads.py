@@ -40,6 +40,7 @@ METADATA_TYPES = [
 ]
 PRODUCTS = [
     "products/dsm1sv10.odc-product.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
     "products/hltc.odc-product.yaml",
     "products/l1_ls8_ga.odc-product.yaml",
     "products/l1_ls5.odc-product.yaml",
@@ -60,6 +61,7 @@ PRODUCTS = [
     "products/wofs_summary.odc-product.yaml",
 ]
 DATASETS = [
+    "datasets/ga_ls8c_ard_3-sample.yaml",
     "datasets/high_tide_comp_20p.yaml.gz",
     # These have very large footprints, as they were unioned from many almost-identical
     # polygons and not simplified. They will trip up postgis if used naively.
@@ -520,6 +522,17 @@ def test_search_time_completion(client: FlaskClient):
     assert one_element(html, "#search-time-after").attrs["value"] == "2017-05-04"
     search_results = html.find(".search-result a")
     assert len(search_results) == 4
+
+    # if not provided as a span, it should become a span of one day
+    html = get_html(client, "/datasets/ga_ls8c_ard_3?creation_time=2022-02-14")
+    assert (
+        one_element(html, "#search-creation_time-before").attrs["value"] == "2022-02-14"
+    )
+    assert (
+        one_element(html, "#search-creation_time-after").attrs["value"] == "2022-02-15"
+    )
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 2
 
 
 def test_api_returns_tiles_regions(client: FlaskClient):
