@@ -157,7 +157,7 @@ def legacy_search_page(
 @app.route("/products/<product_name>/datasets/<int:year>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
-def search_page(
+def search_page(  # noqa: C901
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     (
