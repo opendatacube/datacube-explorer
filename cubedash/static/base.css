@@ -567,13 +567,6 @@ table.collapsed-head th {
   text-decoration-style: wavy;
   text-decoration-line: underline;
 }
-.query-param .query-param-search {
-  text-decoration: none;
-  visibility: hidden;
-}
-.query-param:hover .query-param-search {
-  visibility: visible;
-}
 
 .query-param-search {
   width: fit-content;
