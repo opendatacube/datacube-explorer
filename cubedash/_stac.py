@@ -232,6 +232,16 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     #  many more products.
     item.properties["cubedash:region_code"] = dataset.region_code
 
+    # add canonical ref pointing to the JSON file on s3
+    if ds.uris:
+        item.links.append(
+            Link(
+                rel="canonical",
+                media_type="application/json",
+                target=_utils.as_resolved_remote_url(None, ds.uris[0]),
+            )
+        )
+
     return item
 
 
