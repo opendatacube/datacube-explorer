@@ -880,6 +880,11 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
                 "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
             },
             {
+                "rel": "canonical",
+                "type": "text/yaml",
+                "href": dataset_uri,
+            },
+            {
                 "title": "Default ODC Explorer instance",
                 "rel": "root",
                 "type": "application/json",
