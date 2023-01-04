@@ -998,6 +998,11 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "rel": "root",
                 "href": "http://localhost/stac",
             },
+            {
+                "type": "application/json",
+                "rel": "canonical",
+                "href": "file://example.com/test_dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
+            },
         ],
     }
     assert_matching_eo3(response, expected)
