@@ -993,7 +993,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
                 "href": "http://localhost/dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
             },
             {
-                "type": "application/json",
+                "type": "text/yaml",
                 "rel": "canonical",
                 "href": "file://example.com/test_dataset/5b2f2c50-e618-4bef-ba1f-3d436d9aed14",
             },
