@@ -90,7 +90,7 @@ setup(
         "sentry-sdk[flask]",
         "shapely>=2.0.0",
         "simplekml",
-        "sqlalchemy>=1.4",
+        "sqlalchemy>=1.4,<2.0",
         "structlog>=20.2.0",
         "pytz",
     ],
