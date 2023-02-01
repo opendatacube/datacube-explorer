@@ -88,7 +88,7 @@ setup(
         "python-dateutil",
         "orjson>=3",
         "sentry-sdk[flask]",
-        "shapely<2.0.0",
+        "shapely>=2.0.0",
         "simplekml",
         "sqlalchemy>=1.4",
         "structlog>=20.2.0",
