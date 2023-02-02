@@ -130,13 +130,13 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 		cubedash-gen --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose run -T explorer \
+	docker-compose run --rm -T explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
-	docker-compose run explorer \
+	docker-compose run --rm explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose run explorer \
+	docker-compose run --rm explorer \
 		pytest --cov=cubedash --cov-report=xml -r sx --durations=5
