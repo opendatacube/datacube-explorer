@@ -454,7 +454,6 @@ def test_force_dataset_regeneration(
 
 
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
-
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
     assert summary is None

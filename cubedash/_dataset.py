@@ -19,7 +19,6 @@ PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
 
 @bp.route("/dataset/<uuid:id_>")
 def dataset_page(id_):
-
     index = _model.STORE.index
     dataset = index.datasets.get(id_)
 

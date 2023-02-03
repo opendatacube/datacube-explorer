@@ -33,7 +33,6 @@ def product_timings() -> Iterable[ProductTiming]:
     done = 0
     store = _model.STORE
     for product_name in store.list_complete_products():
-
         p = store.get_product_summary(product_name)
 
         if not p:

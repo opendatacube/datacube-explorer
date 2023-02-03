@@ -56,7 +56,6 @@ def _init_logs(pytestconfig):
 @pytest.fixture()
 def clirunner():
     def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
-
         runner = CliRunner()
         result = runner.invoke(cli_method, opts, catch_exceptions=catch_exceptions)
         if expect_success:
@@ -129,7 +128,6 @@ def disable_logging():
 
 @pytest.fixture()
 def client(unpopulated_client: FlaskClient) -> FlaskClient:
-
     with disable_logging():
         for product in _model.STORE.index.products.get_all():
             _model.STORE.refresh(product.name)

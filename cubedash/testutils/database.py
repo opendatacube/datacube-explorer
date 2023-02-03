@@ -77,7 +77,6 @@ def odc_db(postgresql_server, tmp_path_factory, request):
     if postgresql_server == GET_DB_FROM_ENV:
         yield None  # os.environ["DATACUBE_DB_URL"]
     else:
-
         postgres_url = "postgresql://{db_username}:{db_password}@{db_hostname}:{db_port}/{db_database}".format(
             **postgresql_server
         )

@@ -77,7 +77,6 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 if __name__ == "__main__":
     with Datacube(env="clone") as dc:
-
         dump_datasets(
             dc,
             TEST_DATA_DIR / "s2a_ard_granule.yaml.gz",
