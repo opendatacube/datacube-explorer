@@ -513,7 +513,7 @@ def parse_timedelta(value: str) -> Optional[timedelta]:
     """
     parts = _TIME_PERIOD_FORMAT.match(value)
     params = {}
-    for (name, param) in parts.groupdict().items():
+    for name, param in parts.groupdict().items():
         if param:
             params[name] = int(param)
 

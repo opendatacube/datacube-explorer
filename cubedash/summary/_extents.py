@@ -391,7 +391,6 @@ def refresh_spatial_extents(
         if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
             # And it has WRS path/rows...
             if "sat_path" in product.metadata_type.dataset_fields:
-
                 # We can synthesize the polygons!
                 log.info(
                     "spatial_synthesizing",

@@ -623,7 +623,6 @@ def chunks(ls: List, n: int):
 
 @app.route("/arrivals")
 def arrivals_page():
-
     period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
     arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
     return utils.render(

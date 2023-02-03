@@ -47,7 +47,6 @@ def test_product_list():
 
 
 def test_group_by_regex(test_product_groupby_regex_list, test_product_list):
-
     regex_group = {}
     for regex, group in test_product_groupby_regex_list:
         regex_group[re.compile(regex)] = group.strip()

@@ -16,7 +16,6 @@ from cubedash.summary import RegionInfo
 
 
 def find_examples_of_all_public_urls(index: Index):
-
     yield "/"
     yield "/arrivals"
     yield "/arrivals.csv"
