@@ -555,59 +555,68 @@ class SummaryStore:
         return change_count, new_summary
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
-        log = _LOG.bind(product_name=dataset_type.name)
+        log = _LOG.bind(product_name=dataset_type.name, engine=str(self._engine))
         log.info("refresh.regions.start")
 
         log.info("refresh.regions.update.count.and.insert.new")
+
         # add new regions row and/or update existing regions based on dataset_spatial
-        changed_rows = self._engine.execute(
-            """
-        with srid_groups as (
-             select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
-                     cubedash.dataset_spatial.region_code                             as region_code,
-                     ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
-                     count(*)                                                         as count
-              from cubedash.dataset_spatial
-              where cubedash.dataset_spatial.dataset_type_ref = %s
-                    and
-                    st_isvalid(cubedash.dataset_spatial.footprint)
-              group by cubedash.dataset_spatial.dataset_type_ref,
-                       cubedash.dataset_spatial.region_code,
-                       st_srid(cubedash.dataset_spatial.footprint)
-        )
-        insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
-            select srid_groups.dataset_type_ref,
-                   coalesce(srid_groups.region_code, '')                          as region_code,
-                   ST_SimplifyPreserveTopology(
-                           ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
-                   sum(srid_groups.count)                                         as count
-            from srid_groups
-            group by srid_groups.dataset_type_ref, srid_groups.region_code
-        on conflict (dataset_type_ref, region_code)
-            do update set count           = excluded.count,
-                          generation_time = now(),
-                          footprint       = excluded.footprint
+        with self._engine.begin() as conn:
+            result = conn.execute(
+                """
+            with srid_groups as (
+                 select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
+                         cubedash.dataset_spatial.region_code                             as region_code,
+                         ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
+                         count(*)                                                         as count
+                  from cubedash.dataset_spatial
+                  where cubedash.dataset_spatial.dataset_type_ref = %s
+                        and
+                        st_isvalid(cubedash.dataset_spatial.footprint)
+                  group by cubedash.dataset_spatial.dataset_type_ref,
+                           cubedash.dataset_spatial.region_code,
+                           st_srid(cubedash.dataset_spatial.footprint)
+            )
+            insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
+                select srid_groups.dataset_type_ref,
+                       coalesce(srid_groups.region_code, '')                          as region_code,
+                       ST_SimplifyPreserveTopology(
+                               ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
+                       sum(srid_groups.count)                                         as count
+                from srid_groups
+                group by srid_groups.dataset_type_ref, srid_groups.region_code
+            on conflict (dataset_type_ref, region_code)
+                do update set count           = excluded.count,
+                              generation_time = now(),
+                              footprint       = excluded.footprint
+            returning dataset_type_ref, region_code, footprint, count
 
-            """,
-            dataset_type.id,
-        ).rowcount
-        log.info("refresh.regions.update.count.and.insert.new.end")
+                """,
+                dataset_type.id,
+            )
+            log.info("refresh.regions.inserted", list(result))
+            changed_rows = result.rowcount
+            log.info(
+                "refresh.regions.update.count.and.insert.new.end",
+                changed_rows=changed_rows,
+            )
 
-        # delete region rows with no related datasets in dataset_spatial table
-        log.info("refresh.regions.delete.empty.regions")
-        changed_rows += self._engine.execute(
-            """
-        delete from cubedash.region
-        where dataset_type_ref = %s and region_code not in (
-             select cubedash.dataset_spatial.region_code
-             from cubedash.dataset_spatial
-             where cubedash.dataset_spatial.dataset_type_ref = %s
-             group by cubedash.dataset_spatial.region_code
-        )
-            """,
-            dataset_type.id,
-            dataset_type.id,
-        ).rowcount
+            # delete region rows with no related datasets in dataset_spatial table
+            log.info("refresh.regions.delete.empty.regions")
+            result = conn.execute(
+                """
+            delete from cubedash.region
+            where dataset_type_ref = %s and region_code not in (
+                 select cubedash.dataset_spatial.region_code
+                 from cubedash.dataset_spatial
+                 where cubedash.dataset_spatial.dataset_type_ref = %s
+                 group by cubedash.dataset_spatial.region_code
+            )
+                """,
+                dataset_type.id,
+                dataset_type.id,
+            )
+            changed_rows = result.rowcount
         log.info("refresh.regions.delete.empty.regions.end")
 
         log.info("refresh.regions.end", changed_regions=changed_rows)
@@ -1634,7 +1643,6 @@ class SummaryStore:
         limit: int,
         offset: int = 0,
     ) -> Iterable[Dataset]:
-
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
@@ -1657,7 +1665,6 @@ class SummaryStore:
         limit: int,
         offset: int = 0,
     ) -> Iterable[DatasetType]:
-
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
