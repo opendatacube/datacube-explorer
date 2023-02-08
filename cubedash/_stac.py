@@ -1012,6 +1012,71 @@ def collections():
     )
 
 
+@bp.route("/queryables")
+def queryables():
+    """
+    Define what terms are available for use when writing filter expressions for the entire catalog
+    Part of basic CQL2 conformance for stac-api filter implementation.
+    See: https://github.com/stac-api-extensions/filter#queryables
+    """
+    return _utils.as_json(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://example.org/queryables",
+            "type": "object",
+            "title": "",
+            "properties": {
+                "id": {
+                    "title": "Item ID",
+                    "description": "Item identifier",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/definitions/core/allOf/2/properties/id",
+                }
+            },
+        }
+    )
+
+
+@bp.route("/collections/<collection>/queryables")
+def collection_queryables(collection: str):
+    """
+    The queryables resources for a given collection (barebones implementation)
+    """
+    try:
+        dataset_type = _model.STORE.get_dataset_type(collection)
+    except KeyError:
+        abort(404, f"Unknown collection {collection!r}")
+
+    collection_title = dataset_type.definition.get("description")
+    return _utils.as_json(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://example.org/queryables",
+            "type": "object",
+            "title": f"Queryables for {collection_title}",
+            "properties": {
+                "id": {
+                    "title": "Item ID",
+                    "description": "Item identifier",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/definitions/core/allOf/2/properties/id",
+                },
+                "collection": {
+                    "description": "Collection",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/collection",
+                },
+                "datetime": {
+                    "description": "Datetime",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "datetime.json#/properties/datetime",
+                },
+            },
+            "additionalProperties": True,
+        }
+    )
+
+
 @bp.route("/collections/<collection>")
 def collection(collection: str):
     """
