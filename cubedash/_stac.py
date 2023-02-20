@@ -836,6 +836,10 @@ def _stac_collection(collection: str) -> Collection:
                 rel="items",
                 target=url_for(".collection_items", collection=collection),
             ),
+            Link(
+                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                target=url_for(".collection_queryables", collection=collection),
+            ),
         ]
     )
     if all_time_summary.timeline_dataset_counts:
@@ -931,6 +935,12 @@ def root():
                 media_type="application/json",
                 target=url_for(".stac_search"),
             ),
+            Link(
+                title="Queryables",
+                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                media_type="application/json",
+                target=url_for(".queryables"),
+            ),
             # Individual Product Collections
             *(
                 Link(
@@ -1022,7 +1032,7 @@ def queryables():
     return _utils.as_json(
         {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "$id": "https://example.org/queryables",
+            "$id": flask.request.base_url,
             "type": "object",
             "title": "",
             "properties": {
@@ -1031,8 +1041,23 @@ def queryables():
                     "description": "Item identifier",
                     "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
                     "item.json#/definitions/core/allOf/2/properties/id",
-                }
+                },
+                "collection": {
+                    "description": "Collection",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/collection",
+                },
+                "geometry": {
+                    "description": "Geometry",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json#/geometry",
+                },
+                "datetime": {
+                    "description": "Datetime",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "datetime.json#/properties/datetime",
+                },
             },
+            "additionalProperties": True,
         }
     )
 
@@ -1051,7 +1076,7 @@ def collection_queryables(collection: str):
     return _utils.as_json(
         {
             "$schema": "http://json-schema.org/draft-07/schema#",
-            "$id": "https://example.org/queryables",
+            "$id": flask.request.base_url,
             "type": "object",
             "title": f"Queryables for {collection_title}",
             "properties": {
@@ -1065,6 +1090,10 @@ def collection_queryables(collection: str):
                     "description": "Collection",
                     "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
                     "item.json#/collection",
+                },
+                "geometry": {
+                    "description": "Geometry",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json#/geometry",
                 },
                 "datetime": {
                     "description": "Datetime",
