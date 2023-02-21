@@ -20,6 +20,13 @@
             min-height: calc(200px - 60px);
         }
     </style>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"
+        integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" language="javascript"
+        src="https://cdn.datatables.net/responsive/2.4.0/js/dataTables.responsive.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -52,16 +59,22 @@
     <div class="panel odd overflowable">
         {% if datasets %}
 
-            {% if previous_page_url %}
+            <!-- {% if previous_page_url %}
                 <p>
                     <a href="{{ previous_page_url }}" class="muted">
                         <i class="fa-solid fa-arrow-circle-left" aria-hidden="true"></i>
                         Previous
                     </a>
                 </p>
-            {% endif %}
+            {% endif %} -->
 
-            <table class="data-table">
+            <table id="dataset-table" class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time (local)</th>
+                        <th>Label</th>
+                    </tr>
+                </thead>
                 {% for dataset in datasets %}
                     <tr class="search-result collapse-when-small">
                         <td>{{ dataset | metadata_center_time | printable_time }}</td>
@@ -72,14 +85,14 @@
                 {% endfor %}
             </table>
 
-            {% if next_page_url %}
+            <!-- {% if next_page_url %}
                 <p>
                     <a href="{{ next_page_url }}" class="muted">
                         Next
                         <i class="fa-solid fa-arrow-circle-right" aria-hidden="true"></i>
                     </a>
                 </p>
-            {% endif %}
+            {% endif %} -->
         {% endif %}
         {{ back_to_product_overview }}
     </div>
@@ -126,6 +139,19 @@
         map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
 
         window.MAP = map;
+
+        $(document).ready(function () {
+            $('#dataset-table').DataTable({
+                searching: false,
+                autoWidth: false,
+                responsive: true,
+                pageLength: 100,
+                columnDefs: [
+                    { orderable: false, targets: 1 }
+                ],
+                order: [[0, 'desc']]
+            });
+        });
     </script>
 
 {% endblock %}

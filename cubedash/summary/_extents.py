@@ -595,8 +595,8 @@ def datasets_by_region(
     product_name: str,
     region_code: str,
     time_range: Range,
-    limit: int,
-    offset: int = 0,
+    # limit: int,
+    # offset: int = 0,
 ) -> Generator[Dataset, None, None]:
     product = index.products.get_by_name(product_name)
     query = (
@@ -616,8 +616,8 @@ def datasets_by_region(
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
     query = (
         query.order_by(DATASET_SPATIAL.c.center_time.desc())
-        .limit(bindparam("limit", limit))
-        .offset(bindparam("offset", offset))
+        # .limit(bindparam("limit", limit))
+        # .offset(bindparam("offset", offset))
     )
 
     return (

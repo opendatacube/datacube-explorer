@@ -1640,8 +1640,8 @@ class SummaryStore:
         year: int,
         month: int,
         day: int,
-        limit: int,
-        offset: int = 0,
+        # limit: int,
+        # offset: int = 0,
     ) -> Iterable[Dataset]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
@@ -1652,8 +1652,8 @@ class SummaryStore:
             product_name,
             region_code,
             time_range,
-            limit,
-            offset=offset,
+            # limit,
+            # offset=offset,
         )
 
     def find_products_for_region(

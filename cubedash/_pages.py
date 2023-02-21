@@ -322,7 +322,11 @@ def region_page(
     limit = _HARD_SEARCH_LIMIT
     datasets = list(
         _model.STORE.find_datasets_for_region(
-            product_name, region_code, year, month, day, limit=limit + 1, offset=offset
+            product_name,
+            region_code,
+            year,
+            month,
+            day,  # limit=limit + 1, offset=offset
         )
     )
 
@@ -333,20 +337,20 @@ def region_page(
         )
     )
 
-    def url_with_offset(new_offset: int):
-        """Currently request url with a different offset."""
-        page_args = dict(flask.request.view_args)
-        page_args["_o"] = new_offset
-        return url_for(".region_page", **page_args)
+    # def url_with_offset(new_offset: int):
+    #     """Currently request url with a different offset."""
+    #     page_args = dict(flask.request.view_args)
+    #     page_args["_o"] = new_offset
+    #     return url_for(".region_page", **page_args)
 
-    next_page_url = None
-    if len(datasets) > limit:
-        datasets = datasets[:limit]
-        next_page_url = url_with_offset(offset + limit)
+    # next_page_url = None
+    # if len(datasets) > limit:
+    #     datasets = datasets[:limit]
+    #     next_page_url = url_with_offset(offset + limit)
 
-    previous_page_url = None
-    if offset > 0:
-        previous_page_url = url_with_offset(max(offset - _HARD_SEARCH_LIMIT, 0))
+    # previous_page_url = None
+    # if offset > 0:
+    #     previous_page_url = url_with_offset(max(offset - _HARD_SEARCH_LIMIT, 0))
 
     if len(datasets) == 1 and "feelinglucky" in flask.request.args:
         return flask.redirect(url_for("dataset.dataset_page", id_=datasets[0].id))
@@ -370,8 +374,8 @@ def region_page(
         selected_summary=selected_summary,
         datasets=datasets,
         same_region_products=same_region_products,
-        previous_page_url=previous_page_url,
-        next_page_url=next_page_url,
+        # previous_page_url=previous_page_url,
+        # next_page_url=next_page_url,
         time_selector_summary=time_selector_summary,
         year_selector_summary=year_selector_summary,
     )
