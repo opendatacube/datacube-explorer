@@ -615,7 +615,7 @@ def datasets_by_region(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
     query = (
-        query.order_by(DATASET_SPATIAL.c.center_time)
+        query.order_by(DATASET_SPATIAL.c.center_time.desc())
         .limit(bindparam("limit", limit))
         .offset(bindparam("offset", offset))
     )
