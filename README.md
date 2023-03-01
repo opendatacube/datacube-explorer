@@ -141,7 +141,7 @@ Git)
 
 ### How can I configure the deployment?
 
-Add a file to the current directory called `settings.env.py`
+Add a file to the current directory called `settings.env.py` and run the explorer with `export FLASK_APP=cubedash:app; flask run`
 
 You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 [Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings
@@ -157,8 +157,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
     # Specify product grouping in the top menu.
     # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
-    # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't
-    include the default name.
+    # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't include the default name.
     # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )"
     CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
     # CUBEDASH_PRODUCT_GROUP_BY_REGEX = (r'^usgs_','USGS products'), (r'_albers$','C2 Albers products'), (r'level1','Level 1 products'), )
