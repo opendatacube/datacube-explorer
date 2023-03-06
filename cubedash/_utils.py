@@ -138,7 +138,7 @@ def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
 
 
 def as_resolved_remote_url(
-    location: str, offset: str, thredds: bool = RESOLVE_NCI
+    location: str, offset: str, thredds: Optional[bool] = None
 ) -> str:
     """
     Convert a dataset location and file offset to a full remote URL.
@@ -152,7 +152,10 @@ def as_resolved_remote_url(
 
 
 def as_external_url(
-    url: str, s3_region: str = None, is_base: bool = False, to_thredds: bool = False
+    url: str,
+    s3_region: str = None,
+    is_base: bool = False,
+    to_thredds: Optional[bool] = None,
 ) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
@@ -185,7 +188,12 @@ def as_external_url(
 
         return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
 
-    if parsed.scheme == "file" and to_thredds:
+    resolve_nci = (
+        to_thredds
+        if to_thredds is not None
+        else flask.current_app.config.get("NCI_LOCAL_TO_THREDDS", False)
+    )
+    if parsed.scheme == "file" and resolve_nci:
         path = parsed.path.replace("/g/data/", "")
         if path.find("/ga/") != -1:
             path = path.replace("/ga/", "/")
