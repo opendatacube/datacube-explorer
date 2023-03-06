@@ -44,9 +44,6 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
-# Should we resolve NCI local filesystem paths to the corresponding THREDDS location?
-RESOLVE_NCI = flask.current_app.config.get("NCI_LOCAL_TO_THREDDS", False)
-
 _TARGET_CRS = "EPSG:4326"
 
 DEFAULT_PLATFORM_END_DATE = {
