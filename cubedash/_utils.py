@@ -44,6 +44,11 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
+from . import _model
+
+# Should we resolve NCI local filesystem paths to the corresponding THREDDS location?
+RESOLVE_NCI = _model.app.config.get("NCI_LOCAL_TO_THREDDS", False)
+
 _TARGET_CRS = "EPSG:4326"
 
 DEFAULT_PLATFORM_END_DATE = {
@@ -134,7 +139,9 @@ def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
     return uri_list
 
 
-def as_resolved_remote_url(location: str, offset: str) -> str:
+def as_resolved_remote_url(
+    location: str, offset: str, thredds: bool = RESOLVE_NCI
+) -> str:
     """
     Convert a dataset location and file offset to a full remote URL.
     """
@@ -142,11 +149,12 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
         urljoin(location, offset),
         (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
         location is None,
+        thredds,
     )
 
 
 def as_external_url(
-    url: str, s3_region: str = None, is_base: bool = False
+    url: str, s3_region: str = None, is_base: bool = False, to_thredds: bool = False
 ) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
@@ -164,7 +172,6 @@ def as_external_url(
     >>> # if base uri was none, we may want to return the s3 location instead of the metadata yaml
     """
     parsed = urlparse(url)
-    print(parsed)
 
     if s3_region and parsed.scheme == "s3":
         # get buckets for which link should be to data location instead of s3 link
@@ -180,11 +187,11 @@ def as_external_url(
 
         return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
 
-    if parsed.scheme == "file":
+    if parsed.scheme == "file" and to_thredds:
         path = parsed.path.replace("/g/data/", "")
-        if path.find("/ga") != -1:
+        if path.find("/ga/") != -1:
             path = path.replace("/ga/", "/")
-        return f"https://dapds00.nci.org.au/thredds/fileServer/{path}"
+            return f"https://dapds00.nci.org.au/thredds/fileServer/{path}"
 
     return url
 
