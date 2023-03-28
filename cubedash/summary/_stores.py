@@ -19,9 +19,9 @@ from typing import (
     Union,
 )
 from uuid import UUID
-import pytz
 
 import dateutil.parser
+import pytz
 import structlog
 from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
@@ -138,8 +138,16 @@ class ProductSummary:
         if self.dataset_count == 0:
             return
 
-        start = self.time_earliest.astimezone(grouping_timezone) if self.time_earliest else self.time_earliest
-        end = self.time_latest.astimezone(grouping_timezone) if self.time_latest else self.time_latest
+        start = (
+            self.time_earliest.astimezone(grouping_timezone)
+            if self.time_earliest
+            else self.time_earliest
+        )
+        end = (
+            self.time_latest.astimezone(grouping_timezone)
+            if self.time_latest
+            else self.time_latest
+        )
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
@@ -533,7 +541,7 @@ class SummaryStore:
                 product, kind="derived", sample_percentage=sample_percentage
             )
             fixed_metadata = self._find_product_fixed_metadata(
-                product, sample_percentage=sample_percentage
+                product, sample_datasets_size=dataset_sample_size
             )
 
         new_summary = ProductSummary(
@@ -554,58 +562,68 @@ class SummaryStore:
         return change_count, new_summary
 
     def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
-        log = _LOG.bind(product_name=dataset_type.name)
+        log = _LOG.bind(product_name=dataset_type.name, engine=str(self._engine))
         log.info("refresh.regions.start")
 
         log.info("refresh.regions.update.count.and.insert.new")
+
         # add new regions row and/or update existing regions based on dataset_spatial
-        changed_rows = self._engine.execute(
-            """
-        with srid_groups as (
-             select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
-                     cubedash.dataset_spatial.region_code                             as region_code,
-                     ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
-                     count(*)                                                         as count
-              from cubedash.dataset_spatial
-              where cubedash.dataset_spatial.dataset_type_ref = %s
-                    and
-                    st_isvalid(cubedash.dataset_spatial.footprint)
-              group by cubedash.dataset_spatial.dataset_type_ref,
-                       cubedash.dataset_spatial.region_code,
-                       st_srid(cubedash.dataset_spatial.footprint)
-        )
-        insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
-            select srid_groups.dataset_type_ref,
-                   coalesce(srid_groups.region_code, '')                          as region_code,
-                   ST_SimplifyPreserveTopology(
-                           ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
-                   sum(srid_groups.count)                                         as count
-            from srid_groups
-            group by srid_groups.dataset_type_ref, srid_groups.region_code
-        on conflict (dataset_type_ref, region_code)
-            do update set count           = excluded.count,
-                          generation_time = now(),
-                          footprint       = excluded.footprint
+        with self._engine.begin() as conn:
+            result = conn.execute(
+                """
+            with srid_groups as (
+                 select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
+                         cubedash.dataset_spatial.region_code                             as region_code,
+                         ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
+                         count(*)                                                         as count
+                  from cubedash.dataset_spatial
+                  where cubedash.dataset_spatial.dataset_type_ref = %s
+                        and
+                        st_isvalid(cubedash.dataset_spatial.footprint)
+                  group by cubedash.dataset_spatial.dataset_type_ref,
+                           cubedash.dataset_spatial.region_code,
+                           st_srid(cubedash.dataset_spatial.footprint)
+            )
+            insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
+                select srid_groups.dataset_type_ref,
+                       coalesce(srid_groups.region_code, '')                          as region_code,
+                       ST_SimplifyPreserveTopology(
+                               ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
+                       sum(srid_groups.count)                                         as count
+                from srid_groups
+                group by srid_groups.dataset_type_ref, srid_groups.region_code
+            on conflict (dataset_type_ref, region_code)
+                do update set count           = excluded.count,
+                              generation_time = now(),
+                              footprint       = excluded.footprint
+            returning dataset_type_ref, region_code, footprint, count
 
-            """,
-            dataset_type.id,
-        ).rowcount
-        log.info("refresh.regions.update.count.and.insert.new.end")
+                """,
+                dataset_type.id,
+            )
+            log.info("refresh.regions.inserted", list(result))
+            changed_rows = result.rowcount
+            log.info(
+                "refresh.regions.update.count.and.insert.new.end",
+                changed_rows=changed_rows,
+            )
 
-        # delete region rows with no related datasets in dataset_spatial table
-        log.info("refresh.regions.delete.empty.regions")
-        changed_rows += self._engine.execute(
-            """
-        delete from cubedash.region
-        where dataset_type_ref = %s and region_code not in (
-             select cubedash.dataset_spatial.region_code
-             from cubedash.dataset_spatial
-             where cubedash.dataset_spatial.dataset_type_ref = %s
-             group by cubedash.dataset_spatial.region_code
-        )
-            """,
-            dataset_type.id, dataset_type.id
-        ).rowcount
+            # delete region rows with no related datasets in dataset_spatial table
+            log.info("refresh.regions.delete.empty.regions")
+            result = conn.execute(
+                """
+            delete from cubedash.region
+            where dataset_type_ref = %s and region_code not in (
+                 select cubedash.dataset_spatial.region_code
+                 from cubedash.dataset_spatial
+                 where cubedash.dataset_spatial.dataset_type_ref = %s
+                 group by cubedash.dataset_spatial.region_code
+            )
+                """,
+                dataset_type.id,
+                dataset_type.id,
+            )
+            changed_rows = result.rowcount
         log.info("refresh.regions.delete.empty.regions.end")
 
         log.info("refresh.regions.end", changed_regions=changed_rows)
@@ -620,7 +638,9 @@ class SummaryStore:
         refresh_supporting_views(self._engine, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
-        self, product: DatasetType, sample_percentage=0.05
+        self,
+        product: DatasetType,
+        sample_datasets_size=1000,
     ) -> Dict[str, any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -629,11 +649,6 @@ class SummaryStore:
         feel free to sample 100%!)
 
         """
-        if not 0.0 < sample_percentage <= 100.0:
-            raise ValueError(
-                f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
-            )
-
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = self.index.datasets.search_eager(
             product=product.name, limit=1
@@ -655,18 +670,6 @@ class SummaryStore:
             if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
-        if sample_percentage < 100:
-            dataset_table = ODC_DATASET.tablesample(
-                func.system(float(sample_percentage)), name="sampled_dataset"
-            )
-            # Replace the table with our sampled one.
-            for _, field in candidate_fields:
-                if field.alchemy_column.table == ODC_DATASET:
-                    field.alchemy_column = dataset_table.c[field.alchemy_column.name]
-
-        else:
-            dataset_table = ODC_DATASET
-
         # Give a friendlier error message when a product doesn't match the dataset.
         for name, field in candidate_fields:
             sample_value = first_dataset_fields[name]
@@ -680,11 +683,21 @@ class SummaryStore:
                     f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
                 )
 
+        dataset_samples = self._engine.execute(
+            select([ODC_DATASET.c.id])
+            .select_from(ODC_DATASET)
+            .where(ODC_DATASET.c.dataset_type_ref == product.id)
+            .where(ODC_DATASET.c.archived.is_(None))
+            .limit(sample_datasets_size)
+            .order_by(func.random())
+        ).fetchall()
+
         _LOG.info(
             "product.fixed_metadata_search",
             product=product.name,
-            sample_percentage=round(sample_percentage, 2),
+            sampled_dataset_count=sample_datasets_size,
         )
+
         result = self._engine.execute(
             select(
                 [
@@ -696,9 +709,8 @@ class SummaryStore:
                     for field_name, field in candidate_fields
                 ]
             )
-            .select_from(dataset_table)
-            .where(dataset_table.c.dataset_type_ref == product.id)
-            .where(dataset_table.c.archived.is_(None))
+            .select_from(ODC_DATASET)
+            .where(ODC_DATASET.c.id.in_([r for r, in dataset_samples]))
         ).fetchall()
         assert len(result) == 1
 
@@ -710,7 +722,7 @@ class SummaryStore:
         _LOG.info(
             "product.fixed_metadata_search.done",
             product=product.name,
-            sample_percentage=round(sample_percentage, 2),
+            sampled_dataset_count=sample_datasets_size,
             searched_field_count=len(result[0]),
             found_field_count=len(fixed_fields),
         )
@@ -768,7 +780,8 @@ class SummaryStore:
         ).fetchone()
 
         _LOG.info(
-            f"product.links.{kind}",
+            "product.links.{kind}",
+            extra=dict(kind=kind),
             product=product.name,
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2),
@@ -948,8 +961,9 @@ class SummaryStore:
             queries.append(subquery)
 
         product_urls = defaultdict(list)
-        for product_name, uri in self._engine.execute(union_all(*queries)):
-            product_urls[product_name].append(uri)
+        if queries:  # Don't run invalid SQL on empty database
+            for product_name, uri in self._engine.execute(union_all(*queries)):
+                product_urls[product_name].append(uri)
 
         return {
             name: list(_common_paths_for_uris(uris))
@@ -1192,16 +1206,16 @@ class SummaryStore:
         out_groups = []
         for day, product_name, count, dataset_ids in self._engine.execute(
             """
-            select
-               date_trunc('day', added) as arrival_date,
-               (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
-               count(*),
-               (array_agg(id))[0:3]
-            from agdc.dataset d
-            where d.added > %(datasets_since)s
-            group by arrival_date, product_name
-            order by arrival_date desc, product_name;
-        """,
+                select
+                   date_trunc('day', added) as arrival_date,
+                   (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
+                   count(*),
+                   (array_agg(id))[0:3]
+                from agdc.dataset d
+                where d.added > %(datasets_since)s
+                group by arrival_date, product_name
+                order by arrival_date desc, product_name;
+            """,
             datasets_since=datasets_since_date,
         ):
             if current_day is None:
@@ -1475,7 +1489,7 @@ class SummaryStore:
             # Then choose the whole time range of the product to generate.
             log.info("product.generate_whole_range")
             if force:
-                log.warn("forcing_refresh")
+                log.warning("forcing_refresh")
 
             # Regenerate the old months too, in case any have been deleted.
             old_months = self._already_summarised_months(product_name)
@@ -1636,7 +1650,6 @@ class SummaryStore:
         limit: int,
         offset: int = 0,
     ) -> Iterable[Dataset]:
-
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
@@ -1659,7 +1672,6 @@ class SummaryStore:
         limit: int,
         offset: int = 0,
     ) -> Iterable[DatasetType]:
-
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
@@ -1800,7 +1812,7 @@ def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
             else res["time_earliest"],
             res["time_latest"].astimezone(grouping_timezone)
             if res["time_latest"]
-            else res["time_latest"]
+            else res["time_latest"],
         )
         if res["time_earliest"]
         else None,

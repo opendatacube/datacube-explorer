@@ -343,9 +343,9 @@ h1, h2, h3, h4, th
         font-size: 0.7em
         opacity: 0.6
         // Displayed on hover (below)
-        display: none
+        visibility: hidden
     &:hover .header-anchor
-        display: inline
+        visibility: visible
 
 .panel
     @include square_padding
@@ -527,6 +527,14 @@ table.collapsed-head
 .nowrap
     white-space: nowrap
 
+.unavailable-metadata tbody
+    tr:nth-child(even)
+        background-color: darken($panel_color, 3%)
+
+    tr:nth-child(odd)
+        background-color: lighten($panel_color, 1%)
+
+
 .data-table
     // Negate the horizontal margin as we have our own cell padding.
     margin: 0 calc(-2*var(--s)) var(--s)
@@ -541,9 +549,9 @@ table.collapsed-head
             td
                 display: block
 
-    // Add a row hover for data-intensive tables.
     tbody tr:hover
-        background-color: darken($panel_color, 4%)
+        // Add a row hover for data-intensive tables.
+        background-color: darken($panel_color, 5%)
 
         .panel.highlight &
             background-color: darken($panel_highlight, 4%)
@@ -587,18 +595,25 @@ table.collapsed-head
 @media (min-width: 800px)
     .query-param-list.wide
         grid-template-columns: 1fr 1fr
+        column-gap: 15px
 
-.query-param
+.query-param, .query-param-search
     display: block
     > .value
         color: $muted_text
-
-    .value > .query-param
-        margin-left: 15px
+        word-break: break-all
 
     .missing-value
         text-decoration-style: wavy
         text-decoration-line: underline
+
+.query-param-search
+    width: fit-content
+    text-decoration: initial
+    > .search-icon
+        visibility: hidden
+    &:hover > .search-icon
+        visibility: visible
 
 button
     margin: 5px 0
@@ -636,10 +651,8 @@ label
 
     select
         padding: 6px
-
-        &#add-search-field-type
-            width: 100%
-            text-overflow: ellipsis
+        width: 100%
+        text-overflow: ellipsis
 
 .chart-timeline
     padding: var(--s) calc(3*var(--s)) var(--s) 0

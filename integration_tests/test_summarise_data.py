@@ -4,14 +4,12 @@ Load a lot of real-world DEA datasets (very slow)
 And then check their statistics match expected.
 """
 from datetime import datetime, timedelta
-from pathlib import Path
 from uuid import UUID
 
 import pytest
+from datacube import Datacube
 from datacube.index import Index
-from datacube.index.hl import Doc2Dataset
 from datacube.model import DatasetType, Range
-from datacube.utils import read_documents
 from dateutil import tz
 from dateutil.tz import tzutc
 
@@ -23,48 +21,23 @@ from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 from .asserts import expect_values as _expect_values
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
-
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
-
-def _populate_from_dump(session_dea_index, expected_type: str, dump_path: Path):
-    ls8_nbar_scene = session_dea_index.products.get_by_name(expected_type)
-    dataset_count = 0
-
-    create_dataset = Doc2Dataset(session_dea_index)
-
-    for _, doc in read_documents(dump_path):
-        label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
-        dataset, err = create_dataset(doc, f"file://example.com/test_dataset/{label}")
-        assert dataset is not None, err
-        created = session_dea_index.datasets.add(dataset)
-
-        assert created.type.name == ls8_nbar_scene.name
-        dataset_count += 1
-
-    print(f"Populated {dataset_count} of {expected_type}")
-    return dataset_count
+METADATA_TYPES = [
+    "metadata/landsat_l1_scene.yaml",
+]
+PRODUCTS = [
+    "products/ls8_nbar_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+]
+DATASETS = [
+    "datasets/ls8-nbar-scene-sample-2017.yaml.gz",
+    "datasets/ls8-nbar-albers-sample.yaml.gz",
+]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    _populate_from_dump(
-        module_dea_index,
-        "ls8_nbar_scene",
-        TEST_DATA_DIR / "ls8-nbar-scene-sample-2017.yaml.gz",
-    )
-    _populate_from_dump(
-        module_dea_index,
-        "ls8_nbar_albers",
-        TEST_DATA_DIR / "ls8-nbar-albers-sample.yaml.gz",
-    )
-    return module_dea_index
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_generate_month(run_generate, summary_store: SummaryStore):
@@ -335,7 +308,7 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
     # Tiled product, sampled
     fixed_fields = summary_store._find_product_fixed_metadata(
         summary_store.index.products.get_by_name("ls8_nbar_albers"),
-        sample_percentage=50,
+        sample_datasets_size=5,
     )
     # Ingested products carry little of the original metadata...
     assert fixed_fields == {
@@ -440,7 +413,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
 
 
 def test_force_dataset_regeneration(
-    run_generate, summary_store: SummaryStore, module_index: Index
+    run_generate, summary_store: SummaryStore, odc_test_db: Datacube
 ):
     """
     We should be able to force-replace dataset extents with the "--recreate-dataset-extents" option
@@ -454,7 +427,7 @@ def test_force_dataset_regeneration(
     assert original_footprint is not None
 
     # Now let's break the footprint!
-    alchemy_engine(module_index).execute(
+    alchemy_engine(odc_test_db.index).execute(
         f"update {CUBEDASH_SCHEMA}.dataset_spatial "
         "    set footprint="
         "        ST_SetSRID("
@@ -481,7 +454,6 @@ def test_force_dataset_regeneration(
 
 
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
-
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
     assert summary is None
@@ -527,14 +499,14 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     ), "A new, rather than cached, summary was returned"
 
 
-def test_cubedash_gen_refresh(run_generate, module_index: Index):
+def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
 
     def _get_product_seq_value():
         [new_val] = (
-            alchemy_engine(module_index)
+            alchemy_engine(odc_test_db.index)
             .execute(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
             .fetchone()
         )

@@ -147,6 +147,7 @@
                         >{{ product.metadata_type.name -}}</a>)
                     </h4>
 
+                    <h4 title="randomly sampled 1,000 datasets">Common fields <i class="fa fa-info-circle"></i></h4>
                     {% if (product.fields | all_values_none) and (product_summary.fixed_metadata == {}) %}
                         <em>No common values</em>
                     {% else %}
@@ -161,7 +162,6 @@
                             </em>
                         {% endif %}
                     {% endif %}
-
                     {% if product_summary.derived_products %}
                         <h4>Derived</h4>
                         <ul>
@@ -178,30 +178,36 @@
 
 
                     {% if have_displayable_data %}
-                    <h4>GeoJSON</h4>
+                    <h4>JSON / GeoJSON</h4>
                     <ul>
                         {% if product_region_info %}
                         <li>
                             <a href="{{ url_for('api.regions_geojson', **product_args) }}">
-                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                <i class="fa-regular fa-file-text" aria-hidden="true"></i>
                                 <span style="text-transform: capitalize">{{ product_region_info.units_label }}</span>
                             </a>
                         </li>
                         {% endif %}
                         <li>
                             <a href="{{ url_for('api.footprint_geojson', **product_args) }}" >
-                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                <i class="fa-regular fa-file-text" aria-hidden="true"></i>
                                 Footprint
                             </a>
                         </li>
                         {% if show_individual_datasets %}
                         <li>
                             <a href="{{ url_for('api.datasets_geojson', limit=dataset_limit, **product_args)}}" >
-                                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                                <i class="fa-regular fa-file-text" aria-hidden="true"></i>
                                 Datasets
                             </a>
                         </li>
                         {% endif %}
+                        <li>
+                            <a href="{{ url_for('api.dataset_timeline', **product_args) }}" >
+                                <i class="fa-regular fa-file-text" aria-hidden="true"></i>
+                                Timeline
+                            </a>
+                        </li>
                     </ul>
                     {% endif %}
 
@@ -213,8 +219,6 @@
 
         {% endif %}
     </div>
-    {% from "layout/macros.html" import query_param_list, show_raw_document %}
-
 
     <div class="panel overflowable">
         <h3>
@@ -261,18 +265,24 @@
                         <tr>
                             <td><span class="badge">{{ measurement.dtype }}</span></td>
                             <td>
-                            <span>{{ measurement.name }}</span>
-                            {%- for a in measurement.aliases %}
-                                / <span class="muted">{{ a }}</span>
-                            {%- endfor %}
-
+                                <span>{{ measurement.name }}</span>
+                                {%- for a in measurement.aliases %}
+                                    / <span class="muted">{{ a }}</span>
+                                {%- endfor %}
                             </td>
-                        <td>
-                            <span class="muted"> {{ measurement.nodata }}</span>
-                        </td>
+                            <td>
+                                <span class="muted"> {{ measurement.nodata }}</span>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td>
+                            <p>Total: {{ product.definition.measurements | length }}</p>
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         {% endif %}
 
@@ -295,12 +305,12 @@
         <div class="header-follow">
             <a href="{{ url_for('product.raw_product_doc', name=product.name) }}" class="badge">
                 RAW
-                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                <i class="fa-solid fa-file-text" aria-hidden="true"></i>
             </a>
             <a href="{{ url_for('stac.collection', collection=product.name) }}"
                class="badge">
                 As Stac
-                <i class="fa fa-file-text-o" aria-hidden="true"></i>
+                <i class="fa-solid fa-file-text" aria-hidden="true"></i>
             </a>
         </div>
         {{ show_raw_document(metadata_doc) }}

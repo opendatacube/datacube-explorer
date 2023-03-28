@@ -11,7 +11,6 @@ from urllib.parse import quote_plus
 
 import flask
 import pytz
-
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, Range
 from dateutil import tz
@@ -20,8 +19,7 @@ from markupsafe import Markup, escape
 from orjson import orjson
 from shapely.geometry import MultiPolygon
 
-from . import _utils, _utils as utils
-from . import _model
+from . import _model, _utils, _utils as utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -122,6 +120,13 @@ def _dataset_created(dataset: Dataset):
 @bp.app_template_filter("dataset_file_paths")
 def _dataset_file_paths(dataset: Dataset):
     return utils.get_dataset_file_offsets(dataset)
+
+
+@bp.app_template_filter("dataset_thumbnail_url")
+def _dataset_thumbnail_url(dataset: Dataset):
+    file_paths = _dataset_file_paths(dataset)
+    offset = file_paths.get("thumbnail:nbart") or file_paths.get("thumbnail")
+    return "" if not offset else _to_remote_url(offset, dataset.uris[0])
 
 
 @bp.app_template_filter("resolve_remote_url")
@@ -253,6 +258,13 @@ def _searchable_fields(product: DatasetType):
         for key, field in product.metadata_type.dataset_fields.items()
         if key not in skippable_product_keys and key != "product"
     )
+
+
+@bp.app_template_filter("searchable_fields_keys")
+def _searchable_fields_keys(product: DatasetType):
+    """List of keys of searchable field names for a product"""
+    fields = _searchable_fields(product)
+    return [k for k, _ in fields]
 
 
 @bp.app_template_filter("is_numeric_field")

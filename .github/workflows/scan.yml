@@ -35,21 +35,11 @@ jobs:
 
       - name: Run vulnerability scanner
         if: github.event_name != 'release'
-        uses: aquasecurity/trivy-action@0.0.6
+        uses: aquasecurity/trivy-action@0.7.1
         with:
           image-ref: "${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}"
           format: "table"
           exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: 'os,library'
           severity: "CRITICAL,HIGH"
-
-      - name: Notify Slack for Failures
-        uses: rtCamp/action-slack-notify@v2.1.0
-        if: failure()
-        env:
-          SLACK_CHANNEL: explorer-alerts
-          SLACK_ICON: "https://github.com/docker.png?size=48"
-          SLACK_COLOR: "#482de1"
-          SLACK_MESSAGE: ""
-          SLACK_TITLE: CVE Scan alert
-          SLACK_USERNAME: Explorer Scanner
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

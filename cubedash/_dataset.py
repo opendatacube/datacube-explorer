@@ -19,7 +19,6 @@ PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
 
 @bp.route("/dataset/<uuid:id_>")
 def dataset_page(id_):
-
     index = _model.STORE.index
     dataset = index.datasets.get(id_)
 
@@ -87,6 +86,8 @@ def dataset_full_page(product_name: str, id_: UUID):
         archive_location_times=archived_location_times,
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
+        # get dataset bounds for better image overlay
+        dataset_bounds=utils.bbox_as_geom(dataset),
     )
 
 

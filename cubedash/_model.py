@@ -5,12 +5,16 @@ from pathlib import Path
 from typing import Counter, Dict, List, Optional, Tuple
 
 import flask
+import sentry_sdk
 import structlog
 from datacube.index import index_connect
 from datacube.model import DatasetType
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
+
+# pylint: disable=import-error
+from sentry_sdk.integrations.flask import FlaskIntegration
 from shapely.geometry import MultiPolygon
 
 # Fix up URL Scheme handling using this
@@ -30,7 +34,31 @@ except ImportError:
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
 
+
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        environment=os.getenv("SENTRY_ENV_TAG")
+        if os.getenv("SENTRY_ENV_TAG")
+        else "dev-explorer",
+        integrations=[
+            FlaskIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+        # By default the SDK will try to use the SENTRY_RELEASE
+        # environment variable, or infer a git commit
+        # SHA as release, however you may want to set
+        # something more human-readable.
+        # release="myapp@1.0.0",
+    )
+
+
 app = flask.Flask(NAME)
+
+
 # Also part of the fix from ^
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
@@ -41,7 +69,8 @@ app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
 # Enable do template extension
 app.jinja_env.add_extension("jinja2.ext.do")
 
-app.config.setdefault("CACHE_TYPE", "null")
+app.config.setdefault("CACHE_TYPE", "NullCache")
+
 
 # Global defaults
 app.config.from_mapping(
@@ -85,10 +114,8 @@ STORE: SummaryStore = SummaryStore.create(
     grouping_time_zone=DEFAULT_GROUPING_TIMEZONE
 )
 
-# Which product to show by default when loading '/'. Picks the first available.
-DEFAULT_START_PAGE_PRODUCTS = app.config.get("CUBEDASH_DEFAULT_PRODUCTS") or (
-    "ls7_nbar_scene",
-    "ls5_nbar_scene",
+DEFAULT_GROUPING_TIMEZONE = app.config.get(
+    "CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin"
 )
 
 _LOG = structlog.get_logger()
@@ -263,35 +290,7 @@ def _get_regions_geojson(
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    args = {}
-    if "sentry_event_id" in flask.g:
-        args["sentry_event_id"] = flask.g.sentry_event_id
-
-    return flask.render_template("500.html", **args)
-
-
-# Optional Sentry error reporting. Add a SENTRY_CONFIG section to your config file to use it.
-# This is injected before application starts serving requests
-@app.before_first_request
-def enable_sentry():
-    if "SENTRY_CONFIG" in app.config:
-        # pylint: disable=import-error
-        from raven.contrib.flask import Sentry
-
-        app.config["SENTRY_CONFIG"]["release"] = __version__
-        sentry = Sentry(app)
-
-        @app.context_processor
-        def inject_sentry_info():
-            # For Javascript error reporting. See the base template (base.html) and 500.html
-            sentry_args = {"release": sentry.client.release}
-            if sentry.client.environment:
-                sentry_args["environment"] = sentry.client.environment
-
-            return dict(
-                sentry_public_dsn=sentry.client.get_public_dsn("https"),
-                sentry_public_args=sentry_args,
-            )
+    return flask.render_template("500.html")
 
 
 @app.before_first_request
@@ -303,7 +302,7 @@ def enable_prometheus():
         )
 
         metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-        _LOG.info(f"Prometheus metrics enabled : {metrics}")
+        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
 
 
 @app.before_first_request

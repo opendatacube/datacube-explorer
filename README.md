@@ -4,6 +4,7 @@
 [![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![Scan](https://github.com/opendatacube/datacube-explorer/workflows/Scan/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3AScan)
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
+[![Doc](https://readthedocs.org/projects/datacube-explorer/badge/?version=latest)](http://datacube-explorer.readthedocs.org/en/latest/)
 
 ![Explorer Screenshot](screenshot.png)
 
@@ -30,8 +31,8 @@ It will now be viewable on [http://localhost:8090](https://localhost:8090)
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server.
 
-Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/ops/conda.html)
-is recommended.
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/installation/setup/common_install.html)
+is recommended. You may need to also `conda install -c conda-forge postgis`
 
 Test that you can run `datacube system check`, and that it's connecting
 to the correct datacube instance.
@@ -57,14 +58,14 @@ Other available options can be seen by running `cubedash-gen --help`.
 
 ### Run
 
-A simple `cubedash-run` command is available to run Explorer locally:
+A `cubedash-run` command is available to run Explorer locally:
 
     $ cubedash-run
         * Running on http://localhost:8080/ (Press CTRL+C to quit)
 
 (see `cubedash-run --help` for list of options)
 
-But Explorer can be run using any typical python wsgi server, for example gunicorn:
+But Explorer can be run using any typical Python WSGI server, for example [gunicorn](https://gunicorn.org/):
 
     pip install gunicorn
     gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
@@ -140,11 +141,11 @@ Git)
 
 ### How can I configure the deployment?
 
-Add a file to the current directory called `settings.env.py`
+Add a file to the current directory called `settings.env.py` and run the explorer with `export FLASK_APP=cubedash:app; flask run`
 
 You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 [Flask Cache](https://pythonhosted.org/Flask-Caching/#configuring-flask-caching) settings
-(default "CACHE_TYPE: null"), as well as some cubedash-specific settings:
+(default "CACHE_TYPE: NullCache"), as well as some cubedash-specific settings:
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
@@ -156,8 +157,7 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
 
     # Specify product grouping in the top menu.
     # Expects a series of `(regex, group_label)` pairs. Each product will be grouped into the first regexp that matches
-    # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't
-    include the default name.
+    # anywhere in its name. Unmatched products have their own group see CUBEDASH_DEFAULT_GROUP_NAME, group names shouldn't include the default name.
     # eg "(('^usgs_','USGS products'), ('_albers$','C2 Albers products'), ('level1','Level 1 products'), )"
     CUBEDASH_PRODUCT_GROUP_BY_REGEX = None
     # CUBEDASH_PRODUCT_GROUP_BY_REGEX = (r'^usgs_','USGS products'), (r'_albers$','C2 Albers products'), (r'level1','Level 1 products'), )
@@ -224,11 +224,13 @@ You can alter default [Flask](http://flask.pocoo.org/docs/1.0/config/) or
     default_map_zoom = 3
     default_map_center = [-26.2756326, 134.9387844]
 
+    # S3 buckets for which data browser url should be returned
+    SHOW_DATA_LOCATION = { "dea-public-data": "data.dea.ga.gov.au" }
 
 [Sentry](https://sentry.io/) error reporting is supported by adding a `SENTRY_CONFIG` section.
 See [their documentation](https://docs.sentry.io/clients/python/integrations/flask/#settings).
 
-### How do I modify the css/javascript?
+### How do I modify the CSS/Javascript?
 
 The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from
 [Typescript](https://www.typescriptlang.org/).
@@ -250,92 +252,38 @@ Typescript`.
 
 ### How do I run the integration tests?
 
-The integration tests run against a real postgres database, which is dropped and
-recreated between each test method:
+The integration tests run against a real PostgreSQL database, which is
+automatically started and stopped using Docker. This requires Docker to
+be available, but no further database setup is required.
 
 Install the test dependencies: `pip install -e .[test]`
 
-#### Simple test setup
+The run the tests with: `pytest integration_tests`
 
-Set up a database on localhost that doesn't prompt for a password locally (eg. add credentials to `~/.pgpass`)
+### How do I add test data for the automated tests?
 
-Then: `createdb dea_integration`
+Most of the automated tests for Datacube Explorer require sample data to run. This comprises
+definitions of ODC *Metadata Types*, *Products* and *Datasets*.
 
-And the tests should be runnable with no configuration: `pytest integration_tests`
+These are contained within YAML files in the [`integration_tests/data`](https://github.com/opendatacube/datacube-explorer/tree/develop/integration_tests/data) directory.
 
-#### Contributing to integration test
-
-##### Setting up product and dataset for new tests
-
-Inside https://github.com/opendatacube/datacube-explorer/tree/develop/integration_tests/data there are three folders, `ingestions`, `metadata` and `products`. For integration test to include a new metadata yaml, product yaml or ingestion yaml place the yaml files in the corresponding folders.
-
-Then, to add sample datasets required for the test case, create a `.yaml` file with the product name and place all the sample datasets split by `---` in the yaml. Then at the beginning of the new `test_xyz.py` file place
-
-```python
-import pytest
-
-from pathlib import Path
-
-from datacube.utils import read_documents
-from datacube.index.hl import Doc2Dataset
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+Test data is loaded using a pytest fixture called `auto_odc_db`, which is activated per
+test module, and will automatically populate the database using files referenced in module
+global variables. Activate and use it similar to the following example:
 
 
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
+    pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "s2_l2a-sample.yaml"):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "s2_l2a"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-        assert dataset_count == 5
-    return module_dea_index
-```
-
-if the sample dataset yaml file is too big, run `gzip **yaml**` and append the required `yaml.gz` to `conftest.py` `populated_index` fixture
-
-```python
-
-import pytest
-from pathlib import Path
-
-TEST_DATA_DIR = Path(__file__).parent / "data"
+    METADATA_TYPES = ["metadata/qga_eo.yaml"]
+    PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]
+    DATASETS = ["s2a_ard_granule.yaml.gz"]
 
 
-@pytest.fixture(scope="module")
-def populated_index(dataset_loader, module_dea_index):
-    loaded = dataset_loader(
-        "pq_count_summary", TEST_DATA_DIR / "pq_count_summary.yaml.gz"
-    )
-    assert loaded == 20
-    return module_dea_index
-```
+To add sample datasets required for the test case, create a `.yaml` file
+with the product name and place all the sample datasets split by `---` in the yaml.
 
-#### Custom test configuration (using other hosts, postgres servers)
-
-Add a `.datacube_integration.conf` file to your home directory in the same format as
-[datacube config files](https://datacube-core.readthedocs.io/en/latest/user/config.html#runtime-config).
-
-(You might already have one if you run datacube's integration tests)
-
-Then run pytest: `pytest integration_tests`
-
-__Warning__ All data in this database will be dropped while running tests. Use a separate one from your normal development db.
+If the sample datasets file is large, compress it with `gzip <dataset_file>.yaml` and reference
+that file instead.
 
 ## Roles for production deployments
 
@@ -374,3 +322,14 @@ And you can run a single test in Docker using a command like this: `docker-compo
 ## Docker-compose for Development and running tests
 ### Testing with app.config
 edit `.docker/settings_docker.py` and setup application config. Then `docker-compose -f docker-compose.yml -f docker-compose.override.yml up` to bring up explorer docker with database, explorer with settings
+
+
+## STAC API Extensions
+
+The STAC endpoint implements the [query](https://github.com/stac-api-extensions/query), [filter](https://github.com/stac-api-extensions/filter), [fields](https://github.com/stac-api-extensions/fields), and [sort](https://github.com/stac-api-extensions/sort) extensions, all of which are bound to the `search` endpoint as used with POST requests, with fields and sort additionally bound to the features endpoint.
+
+Fields contained in the item properties must be prefixed with `properties.`, ex `properties.dea:dataset_maturity`.
+
+The implementation of `fields` differs somewhat from the suggested include/exclude semantics in that it does not permit for invalid STAC entities, so the `id`, `type`, `geometry`, `bbox`, `links`, `assets`, `properties.datetime`, and `stac_version` fields will always be included, regardless of user input.
+
+The implementation of `filter` is limited, and currently only supports CQL2 JSON syntax with the following basic CQL2 operators: `AND`, `OR`, `=`, `>`, `>=`, `<`, `<=`, `<>`, `IS NULL`.

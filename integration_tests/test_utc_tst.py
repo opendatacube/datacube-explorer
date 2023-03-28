@@ -2,12 +2,9 @@
 Tests that load pages and check the contained text.
 """
 from pathlib import Path
-from cubedash._utils import center_time_from_metadata, default_utc
-import pytz
 
 import pytest
-from datacube.index.hl import Doc2Dataset
-from datacube.utils import read_documents
+import pytz
 from flask.testing import FlaskClient
 
 from click.testing import Result
@@ -17,34 +14,32 @@ from datetime import datetime
 from dateutil import tz
 from cubedash.summary import SummaryStore
 
+from cubedash._utils import center_time_from_metadata, default_utc
 from integration_tests.asserts import check_dataset_count, get_html
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
+METADATA_TYPES = [
+    "metadata/eo_metadata.yaml",
+    "metadata/landsat_l1_scene.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+]
+PRODUCTS = [
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
+    "products/dsm1sv10.odc-product.yaml",
+]
+DATASETS = [
+    "datasets/ls5_fc_albers-sample.yaml",
+    "datasets/usgs_ls7e_level1_1-sample.yaml",
+]
 
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
 
-    It's module-scoped as it's expensive to populate.
-    """
-    dataset_count = 0
-    create_dataset = Doc2Dataset(module_dea_index)
-    for _, s2_dataset_doc in read_documents(TEST_DATA_DIR / "ls5_fc_albers-sample.yaml"):
-        try:
-            dataset, err = create_dataset(
-                s2_dataset_doc, "file://example.com/test_dataset/"
-            )
-            assert dataset is not None, err
-            created = module_dea_index.datasets.add(dataset)
-            assert created.type.name == "ls5_fc_albers"
-            dataset_count += 1
-        except AttributeError as ae:
-            assert dataset_count == 5
-            print(ae)
-    assert dataset_count == 5
-    return module_dea_index
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_summary_product(client: FlaskClient):
@@ -68,32 +63,26 @@ def test_yearly_dataset_count(client: FlaskClient):
 def test_dataset_search_page_localised_time(client: FlaskClient):
     html = get_html(client, "/products/ls5_fc_albers/datasets/2011")
 
-    assert (
-        "2011-01-01 09:03:13" in [
-            a.find("td", first=True).text.strip() for a in html.find(".search-result")
-        ]
-    ), "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert "2011-01-01 09:03:13" in [
+        a.find("td", first=True).text.strip() for a in html.find(".search-result")
+    ], "datestring does not match expected center_time recorded in dataset_spatial table"
 
-    assert (
-        "Time UTC: 2010-12-31 23:33:13" in [
-            a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
-        ]
-    ), "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert "Time UTC: 2010-12-31 23:33:13" in [
+        a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
+    ], "datestring does not match expected center_time recorded in dataset_spatial table"
 
     html = get_html(client, "/products/ls5_fc_albers/datasets/2010")
 
-    assert (
-        "2010-12-31 09:56:02" in [
-            a.find("td", first=True).text.strip() for a in html.find(".search-result")
-        ]
-    ), "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert "2010-12-31 09:56:02" in [
+        a.find("td", first=True).text.strip() for a in html.find(".search-result")
+    ], "datestring does not match expected center_time recorded in dataset_spatial table"
 
 
-def test_clirunner_generate_grouping_timezone(module_dea_index, run_generate):
+def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate):
     res: Result = run_generate("ls5_fc_albers", grouping_time_zone="America/Chicago")
     assert "2010" in res.output
 
-    store = SummaryStore.create(module_dea_index, grouping_time_zone="America/Chicago")
+    store = SummaryStore.create(odc_test_db.index, grouping_time_zone="America/Chicago")
 
     # simulate search pages
     datasets = sorted(
@@ -158,3 +147,12 @@ def test_dataset_day_link(summary_store):
     assert t.year == 2010
     assert t.month == 12
     assert t.day == 31
+
+def test_dataset_search_page_ls7e_time(client: FlaskClient):
+    html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/1")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 2
+
+    html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/2")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 3

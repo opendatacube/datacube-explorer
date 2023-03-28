@@ -8,13 +8,12 @@ metadata:
   product:
     name: rainfall_chirps_daily
 measurements:
-- name: rainfall
-  dtype: float32
-  units: mm
-  nodata: -9999
+  - name: rainfall
+    dtype: float32
+    units: mm
+    nodata: -9999
 storage:
   crs: EPSG:4326
   resolution:
     latitude: -0.05000000074505806
     longitude: 0.05000000074505806
-...

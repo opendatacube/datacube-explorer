@@ -7,6 +7,7 @@ rules:
   indentation: disable
   comments: disable
   comments-indentation: disable
+  document-start: disable
 
   # URLs and base64 strings break this a lot, and multi-line URLs aren't
   # clearer. Not worth it.

@@ -49,38 +49,46 @@
     </div>
 {%- endmacro %}
 
-{% macro query_param_list(d, prefix="", wide=false, show_nulls=true, show_dicts=true, descriptions=None, fallback_dict={}) -%}
+{% macro query_param_list(fields, prefix="", wide=false, show_nulls=true, show_dicts=true, descriptions=None, fallback_dict={}, dataset=None) -%}
     <div class="query-param-list {% if wide %}wide{% endif %}">
-        {% for key, value in d | dictsort if (show_dicts or value is not mapping) recursive %}
+        {% for key, value in fields | dictsort if (show_dicts or value is not mapping) recursive %}
             {# "creation_dt" is excluded, as it's a duplicate of the creation_time field (latter is newer and date typed) #}
             {% if (show_nulls or (value is not none) or (key in fallback_dict)) and (key != "creation_dt") %}
-            <span class="query-param {{ prefix+key | maybe_to_css_class_name(prefix="key-") }}">
-                <span class="key"
-                      {% if descriptions  and descriptions[key] -%}
-                      title="{{ descriptions[key].description}}"
-                      {%- endif %}>
-                    {{- key -}}
-                </span>
-                <span class="value">
-                    {%- if value is mapping -%}
-                        {{- loop(value.items()) -}}
-                    {%- elif value is none -%}
-                        {%- if key in fallback_dict -%}
-                            {% if fallback_dict[key] is not none %}
-                                <span class="missing-value" title="Inferred from datasets: not present in product definition">
-                                    {{- fallback_dict[key] | query_value -}}
-                                </span>
-                            {% else %}
-                                <span class="missing-value null-value" title="Always empty in dataset samples">•</span>
-                            {% endif %}
+                <span class="query-param {{ prefix+key | maybe_to_css_class_name(prefix="key-") }}">
+                    {% set search_link = (dataset and (key in (dataset.type | searchable_fields_keys))) %}
+                    {%- if search_link -%}
+                        <a href="{{ url_for('search_page', product_name=dataset.type.name, **{ key: value }) }}" class="query-param-search">
+                    {%- endif -%}
+                    <span class="key"
+                        {% if descriptions  and descriptions[key] -%}
+                        title="{{ descriptions[key].description}}"
+                        {%- endif %}>
+                        {{- key -}}
+                    </span>
+                    <span class="value">
+                        {%- if value is mapping -%}
+                            {{- loop(value.items()) -}}
+                        {%- elif value is none -%}
+                            {%- if key in fallback_dict -%}
+                                {% if fallback_dict[key] is not none %}
+                                    <span class="missing-value" title="Inferred from datasets: not present in product definition">
+                                        {{- fallback_dict[key] | query_value -}}
+                                    </span>
+                                {% else %}
+                                    <span class="missing-value null-value" title="Always empty in dataset samples">•</span>
+                                {% endif %}
+                            {%- else -%}
+                                <span class="null-value" title="Unspecified">•</span>
+                            {%- endif -%}
                         {%- else -%}
-                            <span class="null-value" title="Unspecified">•</span>
+                            {{- value | query_value -}}
                         {%- endif -%}
-                    {%- else -%}
-                        {{- value | query_value -}}
+                    </span>
+                    {%- if search_link -%}
+                        <span class="search-icon"> &#128269; </span>
+                        </a>
                     {%- endif -%}
                 </span>
-            </span>
             {% endif %}
         {% endfor %}
     </div>

@@ -63,14 +63,11 @@ jobs:
           password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
-      - name: Notify Slack for Failures
-        uses: rtCamp/action-slack-notify@v2.0.0
-        if: failure()
-        env:
-          SLACK_CHANNEL: explorer-alerts
-          SLACK_ICON: "https://github.com/docker.png?size=48"
-          SLACK_COLOR: "#482de1"
-          SLACK_MESSAGE: ""
-          SLACK_TITLE: Docker failure
-          SLACK_USERNAME: Explorer Docker
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      - name: Update Docker Hub Description
+        uses: peter-evans/dockerhub-description@v2
+        with:
+          username: gadockersvc
+          password: ${{ secrets.DockerPassword }}
+          repository: ${{ env.IMAGE_NAME }}
+          readme-filepath: README.md
+          short-description: Open Data Cube Explorer Image

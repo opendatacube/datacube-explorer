@@ -1,0 +1,87 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Products audit{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .bad {
+            color: #cc9424;
+        }
+
+        .data-table tr:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+{% endblock %}
+{% block panel %}
+
+{% endblock %}
+{% block content %}
+    <div class="panel highlight">
+        <h2 class="followed lonesome">Product
+            {%- if sentry_public_dsn and sentry_public_args.environment %} ({{ sentry_public_args.environment }})
+            {%- endif -%}
+        </h2>
+    </div>
+    <div class="panel">
+        <table class="data-table unavailable-metadata" id="missing-metadata">
+            <thead id="metadata-audit-table-thead">
+            <th>Product</th>
+            <th class="missing" onclick="showRow(this, 'license')">License <i class="filter-icon fa-solid fa-filter"></i></th>
+            <th class="missing" onclick="showRow(this, 'crs')">Default CRS <i class="filter-icon fa-solid fa-filter"></i></th>
+            <th class="missing" onclick="showRow(this, 'resolution')">Default Resolution <i class="filter-icon fa-solid fa-filter"></i></th>
+            </thead>
+            {% if grouped_products %}
+                {% for group_name, product_summaries in grouped_products %}
+                    {% if group_name %}
+                        <tr>
+                            <td colspan="4" style="font-weight:bolder;">{{ group_name }}</td>
+                        </tr>
+                    {% endif %}
+                    {% for product, summary in product_summaries %}
+                        {% if product.name not in hidden_product_list %}
+                            <tr class="search-result missing-result">
+                                <td>{{ product.name | product_link }}</td>
+                                <td class="missing-license">
+                                    {{ product.license }}
+                                </td>
+                                <td class="missing-crs">
+                                    {{ product.default_crs }}
+                                </td>
+                                <td class="missing-resolution">
+                                    {{ product.default_resolution }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+        </table>
+    </div>
+<script>
+    function objToggle(obj){
+        document.querySelectorAll('.filter-icon').forEach(function(icon){
+            if(icon != obj.firstElementChild)
+            {
+                icon.classList.remove('fa-square-check');
+                icon.classList.add('fa-filter');
+            }
+
+        });
+        obj.firstElementChild.classList.toggle('fa-filter');
+        obj.firstElementChild.classList.toggle('fa-square-check');
+    }
+
+    function showRow(obj, type) {
+        filter_con = obj.firstElementChild.classList.contains('fa-filter');
+        document.querySelectorAll(".missing-result").forEach(function(row){
+            row.style.visibility = "visible";
+            if (row.querySelector(`.missing-${type}`).innerHTML.trim() != 'None' && filter_con){
+                row.style.visibility = "collapse";
+            }
+        });
+        objToggle(obj);
+    }
+</script>
+{% endblock %}

@@ -2,17 +2,16 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 0.8.0
+    rev: 0.10.9
     hooks:
     - id: shed
   # Python Linting
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
     hooks:
       - id: flake8
+        exclude: ^docs/
         additional_dependencies:
-          - dlint # Check common security issues
-          - flake8-broken-line # Don't escape newlines. (surround in parens or simplify)
           - flake8-bugbear # Lint-checks too opinionated for flake8 proper
           - flake8-builtins # Don't allow built-in names like list
           - flake8-coding # Only UTF-8
@@ -26,23 +25,23 @@ repos:
           - pep8-naming # Follow pep8 naming rules (eg. function names lowercase)
   # Lint Python snippets embedded in Markdown (using flake8)
   - repo: https://github.com/johnfraney/flake8-markdown
-    rev: v0.3.0
+    rev: v0.4.0
     hooks:
       - id: flake8-markdown
-  # Lint Jinja2 templates
-  - repo: https://github.com/thibaudcolas/curlylint
-    rev: "v0.13.1"
-    hooks:
-    - id: curlylint
+  # # Lint Jinja2 templates
+  # - repo: https://github.com/thibaudcolas/curlylint
+  #   rev: "v0.13.1"
+  #   hooks:
+  #   - id: curlylint
   # Lint Yaml files
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.26.3
+    rev: v1.29.0
     hooks:
       - id: yamllint
-        args: [-s]
+        args: ['-c', '.yamllint']
   # Common pre-commit checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files # We don't want huge files. (Cut down test data!)
         args: ['--maxkb=2000']

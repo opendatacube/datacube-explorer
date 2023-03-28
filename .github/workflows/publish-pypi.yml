@@ -1,0 +1,38 @@
+---
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish_pypi:
+    if: github.repository == 'opendatacube/datacube-explorer'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install Twine
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install --upgrade \
+           toml \
+           wheel \
+           twine
+          python -m pip freeze
+
+      - name: Build Package
+        run: python setup.py sdist bdist_wheel
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_TOKEN }}

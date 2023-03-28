@@ -3,6 +3,8 @@
 {% block title %}{{ dataset | printable_dataset }}{% endblock %}
 
 {% set extent_geojson = dataset_footprint.__geo_interface__ %}
+{% set thumbnail_url = dataset | dataset_thumbnail_url %}
+{% set image_bounds = dataset_bounds.__geo_interface__ if dataset_bounds is not none else 'NONE' %}
 
 {% block head %}
     {{ super() }}
@@ -57,51 +59,18 @@
         </div>
         <div class="sub-header">
             {% if dataset_region_code %}
-                    Region
-                    <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
-                        {{- dataset_region_code -}}
-                    </a>
-                {% endif %}
+                Region
+                <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
+                    {{- dataset_region_code -}}
+                </a>
+            {% endif %}
             for
             {{ dataset | dataset_day_link(grouping_timezone) }}
         </div>
     </div>
 
-    {% if source_datasets or derived_datasets %}
-    <div class="panel">
-        {% for classifier, s_dataset in source_datasets.items() %}
-            <div>
-                <span title="Source '{{ classifier }}'">
-                    <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
-                    <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
-                        {{ s_dataset | printable_dataset }}
-                    </a>
-                </span>
-            </div>
-        {% endfor %}
-        {% if source_dataset_overflow %}
-            <span title="Too many to display">... {{ source_dataset_overflow }} more</span>
-        {% endif %}
-        <div class="tree-node">
-            <strong class="active-tree-node">
-                <i class="fa fa-caret-right" aria-hidden="true"></i>
-                {{ dataset | printable_dataset }}
-            </strong>
-            {% for d_dataset in derived_datasets %}
-                <div class="tree-node">
-                    <span title="Derived {{ d_dataset.type.name }}">
-                        <i class="fa fa-level-down" aria-hidden="true"></i>
-                        <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
-                            {{ d_dataset | printable_dataset }}
-                        </a>
-                    </span>
-                </div>
-            {% endfor %}
-            {% if derived_dataset_overflow %}
-                <span title="Too many to display">... {{ derived_dataset_overflow}} more</span>
-            {% endif %}
-        </div>
-    </div>
+    {% if extent_geojson %}
+        <div id="dataset-map"></div>
     {% endif %}
 
     <div class="panel odd">
@@ -113,15 +82,53 @@
             dataset.metadata.fields,
             wide=true,
             show_dicts=false,
-            descriptions=dataset.type.metadata_type.dataset_fields
+            descriptions=dataset.type.metadata_type.dataset_fields,
+            dataset=dataset
             ) }}
     </div>
 
-    {% if extent_geojson %}
-        <div id="dataset-map"></div>
+    {% if source_datasets or derived_datasets %}
+        <div class="panel">
+            <h3>
+                Related Datasets
+                {{ hanchor('related-datasets') }}
+            </h3>
+            {% for classifier, s_dataset in source_datasets.items() %}
+                <div>
+                    <span title="Source '{{ classifier }}'">
+                        <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
+                        <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
+                            {{ s_dataset | printable_dataset }}
+                        </a>
+                    </span>
+                </div>
+            {% endfor %}
+            {% if source_dataset_overflow %}
+                <span title="Too many to display">... {{ source_dataset_overflow }} more</span>
+            {% endif %}
+            <div class="tree-node">
+                <strong class="active-tree-node">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
+                    {{ dataset | printable_dataset }}
+                </strong>
+                {% for d_dataset in derived_datasets %}
+                    <div class="tree-node">
+                        <span title="Derived {{ d_dataset.type.name }}">
+                            <i class="fa fa-level-down" aria-hidden="true"></i>
+                            <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
+                                {{ d_dataset | printable_dataset }}
+                            </a>
+                        </span>
+                    </div>
+                {% endfor %}
+                {% if derived_dataset_overflow %}
+                    <span title="Too many to display">... {{ derived_dataset_overflow}} more</span>
+                {% endif %}
+            </div>
+        </div>
     {% endif %}
 
-    <div class="panel overflowable">
+    <div class="panel odd overflowable">
         <h3>
             Location{% if dataset.uris | length > 1 %}s{% endif %}
             {{ hanchor('locations') }}
@@ -166,15 +173,15 @@
 
 
 
-    <div class="panel odd overflowable">
+    <div class="panel overflowable">
         <h3 class="followed">
             Metadata Document
             {{ hanchor('metadata-doc') }}
         </h3>
         <div class="header-follow">
-            <a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">RAW <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+            <a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">RAW <i class="fa-solid fa-file-text" aria-hidden="true"></i></a>
             <a href="{{ url_for('stac.item', collection=dataset.type.name, dataset_id=dataset.id) }}"
-               class="badge">As Stac <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+               class="badge">As Stac <i class="fa-solid fa-file-text" aria-hidden="true"></i></a>
         </div>
         {{ show_raw_document(dataset_metadata) }}
     </div>
@@ -189,15 +196,14 @@
             const osm_carto_light = L.tileLayer(
                 "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
                 {
-                    maxZoom: 7,
+                    maxZoom: 10,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
                     ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
                 }
             );
-
+            var coords = [];
             const dataset_data = L.geoJson({{ extent_geojson | torapidjson }},
                 {
-                    interactive: false,
                     style: function (feature) {
                         return {
                             color: "#1d81a7",
@@ -218,7 +224,16 @@
                 scrollWheelZoom: false
             });
             L.control.zoom({position: "bottomright"}).addTo(map);
-            map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 5});
+            map.fitBounds(dataset_data.getBounds(), {animate: false, maxZoom: 6});
+            if ("{{ thumbnail_url }}") {
+                if ("{{ image_bounds }}" != "NONE") {
+                    bounds = L.geoJson({{ image_bounds | torapidjson }}).getBounds();
+                } else {
+                    // if no image bounds, go for the next best thing
+                    bounds = dataset_data.getBounds();
+                }
+                L.imageOverlay("{{ thumbnail_url }}", bounds).addTo(map);
+            }
 
             window.MAP = map;
         </script>

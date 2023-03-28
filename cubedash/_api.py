@@ -1,4 +1,5 @@
 import logging
+from datetime import date, datetime
 
 import flask
 from flask import Blueprint, abort, request
@@ -6,7 +7,7 @@ from flask import Blueprint, abort, request
 from cubedash import _utils
 
 from . import _model
-from ._utils import as_geojson
+from ._utils import as_geojson, as_json
 from .summary import ItemSort
 
 _LOG = logging.getLogger(__name__)
@@ -87,4 +88,31 @@ def regions_geojson(
         abort(404, f"{product_name} does not have regions")
     return as_geojson(
         regions, downloadable_filename_prefix=_utils.api_path_as_filename_prefix()
+    )
+
+
+@bp.route("/dataset-timeline/<product_name>")
+@bp.route("/dataset-timeline/<product_name>/<int:year>")
+@bp.route("/dataset-timeline/<product_name>/<int:year>/<int:month>")
+@bp.route("/dataset-timeline/<product_name>/<int:year>/<int:month>/<int:day>")
+def dataset_timeline(
+    product_name: str, year: int = None, month: int = None, day: int = None
+):
+    summary = _model.get_time_summary(product_name, year, month, day)
+    if summary is None:
+        abort(
+            404,
+            f"No known information for product "
+            f"{product_name!r} {year or 'all'} {month or 'all'} {day or 'all'}",
+        )
+
+    def _datekey(k):
+        # The timezone is the global grouping timezone: we don't want it in json.
+        if type(k) is date:
+            k = datetime(k.year, k.month, k.day)
+        return k.replace(tzinfo=None).isoformat()
+
+    return as_json(
+        {_datekey(k): v for k, v in summary.timeline_dataset_counts.items()},
+        downloadable_filename_prefix=_utils.api_path_as_filename_prefix(),
     )

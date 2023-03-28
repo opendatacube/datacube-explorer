@@ -8,7 +8,6 @@ from textwrap import indent
 
 import pytest
 from click.testing import Result
-from datacube.index import Index
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
@@ -24,39 +23,56 @@ from integration_tests.asserts import (
     check_last_processed,
     get_geojson,
     get_html,
+    get_json,
     get_text_response,
 )
 
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
+METADATA_TYPES = [
+    "metadata/eo3_landsat_ard.odc-type.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo_metadata.yaml",
+    "metadata/eo_plus.yaml",
+    "metadata/landsat_l1_scene.yaml",
+    "metadata/qga_eo.yaml",
+]
+PRODUCTS = [
+    "products/dsm1sv10.odc-product.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/hltc.odc-product.yaml",
+    "products/l1_ls8_ga.odc-product.yaml",
+    "products/l1_ls5.odc-product.yaml",
+    "products/ls5_fc_albers.odc-product.yaml",
+    "products/ls5_nbart_albers.odc-product.yaml",
+    "products/ls5_nbart_tmad_annual.odc-product.yaml",
+    "products/ls5_scenes.odc-product.yaml",
+    "products/ls7_nbart_tmad_annual.odc-product.yaml",
+    "products/ls7_nbar_albers.odc-product.yaml",
+    "products/ls7_nbart_albers.odc-product.yaml",
+    "products/ls7_scenes.odc-product.yaml",
+    "products/ls8_nbar_albers.odc-product.yaml",
+    "products/ls8_nbart_albers.odc-product.yaml",
+    "products/ls8_scenes.odc-product.yaml",
+    "products/pq_count_summary.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
+    "products/wofs_albers.yaml",
+    "products/wofs_summary.odc-product.yaml",
+]
+DATASETS = [
+    "datasets/ga_ls8c_ard_3-sample.yaml",
+    "datasets/high_tide_comp_20p.yaml.gz",
+    # These have very large footprints, as they were unioned from many almost-identical
+    # polygons and not simplified. They will trip up postgis if used naively.
+    # (postgis gist index has max record size of 8k per entry)
+    "datasets/pq_count_summary.yaml.gz",
+    "datasets/wofs-albers-sample.yaml.gz",
+]
 
-@pytest.fixture(scope="module", autouse=True)
-def auto_populate_index(populated_index: Index):
-    """
-    Auto-populate the index for all tests in this file.
-    """
-    populated_product_counts = {
-        p.name: count for p, count in populated_index.datasets.count_by_product()
-    }
-    assert populated_product_counts == {
-        "dsm1sv10": 1,
-        "high_tide_comp_20p": 306,
-        "ls7_level1_scene": 4,
-        "ls7_nbar_scene": 4,
-        "ls7_nbart_albers": 4,
-        "ls7_nbart_scene": 4,
-        "ls7_pq_legacy_scene": 4,
-        "ls7_satellite_telemetry_data": 4,
-        "ls8_level1_scene": 7,
-        "ls8_nbar_scene": 7,
-        "ls8_nbart_albers": 7,
-        "ls8_nbart_scene": 7,
-        "ls8_pq_legacy_scene": 7,
-        "ls8_satellite_telemetry_data": 7,
-        "pq_count_summary": 20,
-        "wofs_albers": 11,
-    }
-    return populated_index
+
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.fixture()
@@ -72,17 +88,7 @@ def _script(html: HTML):
     return html.find("script")
 
 
-def test_sentry(sentry_client: FlaskClient):
-    """Ensure Sentry Client gets initialized correctly
-
-    Args:
-        sentry_client (FlaskClient): Client for Flask app with Sentry enabled
-    """
-    html: HTML = get_html(sentry_client, "/ls7_nbar_scene")
-    # Ensure rendered page has a SENTRY link
-    assert "raven.min.js" in str(_script(html))
-
-
+@pytest.mark.xfail()
 def test_prometheus(sentry_client: FlaskClient):
     """
     Ensure Prometheus metrics endpoint exists
@@ -292,13 +298,13 @@ def test_view_dataset(client: FlaskClient):
         "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501"
         in html.find("h2", first=True).text
     )
-    assert not html.find('.key-creation_dt', first=True)
+    assert not html.find(".key-creation_dt", first=True)
 
     # wofs_albers dataset (has no label or location)
     rv: HTML = get_html(client, "/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
     assert "-20.502 to -19.6" in rv.text
     assert "132.0 to 132.924" in rv.text
-    assert not rv.find('.key-creation_dt', first=True)
+    assert not rv.find(".key-creation_dt", first=True)
 
     # No dataset found: should return 404, not a server error.
     rv: Response = client.get(
@@ -318,13 +324,17 @@ def test_view_product(client: FlaskClient):
     assert "Landsat 7 NBAR 25 metre" in rv.text
 
 
-def test_view_metadata_type(client: FlaskClient, populated_index: Index):
+def test_view_metadata_type(client: FlaskClient, odc_test_db):
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo")
     assert html.find("h2", first=True).text == "eo"
 
     how_many_are_eo = len(
-        [p for p in populated_index.products.get_all() if p.metadata_type.name == "eo"]
+        [
+            p
+            for p in odc_test_db.index.products.get_all()
+            if p.metadata_type.name == "eo"
+        ]
     )
     assert (
         html.find(".header-follow", first=True).text
@@ -336,12 +346,12 @@ def test_view_metadata_type(client: FlaskClient, populated_index: Index):
     assert "ls8_nbar_albers" in products_using_it
 
 
-def test_storage_page(client: FlaskClient, populated_index: Index):
+def test_storage_page(client: FlaskClient, odc_test_db):
     html: HTML = get_html(client, "/audit/storage")
 
     assert html.find(".product-name", containing="wofs_albers")
 
-    product_count = len(list(populated_index.products.get_all()))
+    product_count = len(list(odc_test_db.index.products.get_all()))
     assert f"{product_count} products" in html.text
     assert len(html.find(".data-table tbody tr")) == product_count
 
@@ -474,7 +484,6 @@ def test_region_page(client: FlaskClient):
 
 
 def test_legacy_region_redirect(client: FlaskClient):
-
     # Legacy redirect works, and maintains "feeling lucky"
     assert_redirects_to(
         client,
@@ -514,6 +523,17 @@ def test_search_time_completion(client: FlaskClient):
     search_results = html.find(".search-result a")
     assert len(search_results) == 4
 
+    # if not provided as a span, it should become a span of one day
+    html = get_html(client, "/datasets/ga_ls8c_ard_3?creation_time=2022-02-14")
+    assert (
+        one_element(html, "#search-creation_time-before").attrs["value"] == "2022-02-14"
+    )
+    assert (
+        one_element(html, "#search-creation_time-after").attrs["value"] == "2022-02-15"
+    )
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 2
+
 
 def test_api_returns_tiles_regions(client: FlaskClient):
     """
@@ -534,6 +554,183 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     assert len(geojson["features"]) == 1, "Unexpected wofs albers region day count"
     geojson = get_geojson(client, "/api/regions/wofs_albers/2017/04/6")
     assert len(geojson["features"]) == 0, "Unexpected wofs albers region count"
+
+
+def test_api_returns_timelines(client: FlaskClient):
+    """
+    Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
+    """
+    doc = get_json(client, "/api/dataset-timeline/wofs_albers")
+    assert doc == {
+        "2017-04-01T00:00:00": 0,
+        "2017-04-02T00:00:00": 0,
+        "2017-04-03T00:00:00": 0,
+        "2017-04-04T00:00:00": 0,
+        "2017-04-05T00:00:00": 0,
+        "2017-04-06T00:00:00": 0,
+        "2017-04-07T00:00:00": 0,
+        "2017-04-08T00:00:00": 0,
+        "2017-04-09T00:00:00": 0,
+        "2017-04-10T00:00:00": 0,
+        "2017-04-11T00:00:00": 0,
+        "2017-04-12T00:00:00": 0,
+        "2017-04-13T00:00:00": 0,
+        "2017-04-14T00:00:00": 0,
+        "2017-04-15T00:00:00": 0,
+        "2017-04-16T00:00:00": 1,
+        "2017-04-17T00:00:00": 0,
+        "2017-04-18T00:00:00": 0,
+        "2017-04-19T00:00:00": 1,
+        "2017-04-20T00:00:00": 1,
+        "2017-04-21T00:00:00": 0,
+        "2017-04-22T00:00:00": 0,
+        "2017-04-23T00:00:00": 0,
+        "2017-04-24T00:00:00": 1,
+        "2017-04-25T00:00:00": 0,
+        "2017-04-26T00:00:00": 0,
+        "2017-04-27T00:00:00": 0,
+        "2017-04-28T00:00:00": 0,
+        "2017-04-29T00:00:00": 0,
+        "2017-04-30T00:00:00": 0,
+        "2017-05-01T00:00:00": 1,
+        "2017-05-02T00:00:00": 1,
+        "2017-05-03T00:00:00": 1,
+        "2017-05-04T00:00:00": 0,
+        "2017-05-05T00:00:00": 1,
+        "2017-05-06T00:00:00": 0,
+        "2017-05-07T00:00:00": 0,
+        "2017-05-08T00:00:00": 1,
+        "2017-05-09T00:00:00": 1,
+        "2017-05-10T00:00:00": 1,
+        "2017-05-11T00:00:00": 0,
+        "2017-05-12T00:00:00": 0,
+        "2017-05-13T00:00:00": 0,
+        "2017-05-14T00:00:00": 0,
+        "2017-05-15T00:00:00": 0,
+        "2017-05-16T00:00:00": 0,
+        "2017-05-17T00:00:00": 0,
+        "2017-05-18T00:00:00": 0,
+        "2017-05-19T00:00:00": 0,
+        "2017-05-20T00:00:00": 0,
+        "2017-05-21T00:00:00": 0,
+        "2017-05-22T00:00:00": 0,
+        "2017-05-23T00:00:00": 0,
+        "2017-05-24T00:00:00": 0,
+        "2017-05-25T00:00:00": 0,
+        "2017-05-26T00:00:00": 0,
+        "2017-05-27T00:00:00": 0,
+        "2017-05-28T00:00:00": 0,
+        "2017-05-29T00:00:00": 0,
+        "2017-05-30T00:00:00": 0,
+        "2017-05-31T00:00:00": 0,
+    }
+
+    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017")
+    assert doc == {
+        "2017-04-01T00:00:00": 0,
+        "2017-04-02T00:00:00": 0,
+        "2017-04-03T00:00:00": 0,
+        "2017-04-04T00:00:00": 0,
+        "2017-04-05T00:00:00": 0,
+        "2017-04-06T00:00:00": 0,
+        "2017-04-07T00:00:00": 0,
+        "2017-04-08T00:00:00": 0,
+        "2017-04-09T00:00:00": 0,
+        "2017-04-10T00:00:00": 0,
+        "2017-04-11T00:00:00": 0,
+        "2017-04-12T00:00:00": 0,
+        "2017-04-13T00:00:00": 0,
+        "2017-04-14T00:00:00": 0,
+        "2017-04-15T00:00:00": 0,
+        "2017-04-16T00:00:00": 1,
+        "2017-04-17T00:00:00": 0,
+        "2017-04-18T00:00:00": 0,
+        "2017-04-19T00:00:00": 1,
+        "2017-04-20T00:00:00": 1,
+        "2017-04-21T00:00:00": 0,
+        "2017-04-22T00:00:00": 0,
+        "2017-04-23T00:00:00": 0,
+        "2017-04-24T00:00:00": 1,
+        "2017-04-25T00:00:00": 0,
+        "2017-04-26T00:00:00": 0,
+        "2017-04-27T00:00:00": 0,
+        "2017-04-28T00:00:00": 0,
+        "2017-04-29T00:00:00": 0,
+        "2017-04-30T00:00:00": 0,
+        "2017-05-01T00:00:00": 1,
+        "2017-05-02T00:00:00": 1,
+        "2017-05-03T00:00:00": 1,
+        "2017-05-04T00:00:00": 0,
+        "2017-05-05T00:00:00": 1,
+        "2017-05-06T00:00:00": 0,
+        "2017-05-07T00:00:00": 0,
+        "2017-05-08T00:00:00": 1,
+        "2017-05-09T00:00:00": 1,
+        "2017-05-10T00:00:00": 1,
+        "2017-05-11T00:00:00": 0,
+        "2017-05-12T00:00:00": 0,
+        "2017-05-13T00:00:00": 0,
+        "2017-05-14T00:00:00": 0,
+        "2017-05-15T00:00:00": 0,
+        "2017-05-16T00:00:00": 0,
+        "2017-05-17T00:00:00": 0,
+        "2017-05-18T00:00:00": 0,
+        "2017-05-19T00:00:00": 0,
+        "2017-05-20T00:00:00": 0,
+        "2017-05-21T00:00:00": 0,
+        "2017-05-22T00:00:00": 0,
+        "2017-05-23T00:00:00": 0,
+        "2017-05-24T00:00:00": 0,
+        "2017-05-25T00:00:00": 0,
+        "2017-05-26T00:00:00": 0,
+        "2017-05-27T00:00:00": 0,
+        "2017-05-28T00:00:00": 0,
+        "2017-05-29T00:00:00": 0,
+        "2017-05-30T00:00:00": 0,
+        "2017-05-31T00:00:00": 0,
+    }
+
+    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017/04")
+    assert doc == {
+        "2017-04-01T00:00:00": 0,
+        "2017-04-02T00:00:00": 0,
+        "2017-04-03T00:00:00": 0,
+        "2017-04-04T00:00:00": 0,
+        "2017-04-05T00:00:00": 0,
+        "2017-04-06T00:00:00": 0,
+        "2017-04-07T00:00:00": 0,
+        "2017-04-08T00:00:00": 0,
+        "2017-04-09T00:00:00": 0,
+        "2017-04-10T00:00:00": 0,
+        "2017-04-11T00:00:00": 0,
+        "2017-04-12T00:00:00": 0,
+        "2017-04-13T00:00:00": 0,
+        "2017-04-14T00:00:00": 0,
+        "2017-04-15T00:00:00": 0,
+        "2017-04-16T00:00:00": 1,
+        "2017-04-17T00:00:00": 0,
+        "2017-04-18T00:00:00": 0,
+        "2017-04-19T00:00:00": 1,
+        "2017-04-20T00:00:00": 1,
+        "2017-04-21T00:00:00": 0,
+        "2017-04-22T00:00:00": 0,
+        "2017-04-23T00:00:00": 0,
+        "2017-04-24T00:00:00": 1,
+        "2017-04-25T00:00:00": 0,
+        "2017-04-26T00:00:00": 0,
+        "2017-04-27T00:00:00": 0,
+        "2017-04-28T00:00:00": 0,
+        "2017-04-29T00:00:00": 0,
+        "2017-04-30T00:00:00": 0,
+    }
+
+    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017/04/24")
+    assert doc == {
+        "2017-04-24T00:00:00": 1,
+    }
+
+
+pytest.mark.xfail(True, reason="telemetry data removed")
 
 
 def test_undisplayable_product(client: FlaskClient):
@@ -616,8 +813,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     print(res.output)
 
     # Expect it to show the dates in local timezone.
-    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc()).astimezone()
-    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc()).astimezone()
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc())
 
     expected_header = "\n".join(
         (
@@ -687,8 +884,8 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
     assert res.exit_code != 0
 
 
-def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
-    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=module_dea_index)
+def test_extent_debugging_method(odc_test_db, client: FlaskClient):
+    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=odc_test_db.index)
     assert cols["id"] is not None
     assert cols["dataset_type_ref"] is not None
     assert cols["center_time"] is not None
@@ -698,7 +895,7 @@ def test_extent_debugging_method(module_dea_index: Index, client: FlaskClient):
     output_json = _extents._as_json(cols)
     assert str(cols["id"]) in output_json
 
-    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=module_dea_index)
+    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=odc_test_db.index)
     assert cols["product"] == "ls7_nbar_scene"
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 

@@ -6,6 +6,7 @@ import csv
 import difflib
 import functools
 import io
+import itertools
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -13,12 +14,11 @@ from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
 from uuid import UUID
-import itertools
-import numpy
 
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
 import flask
+import numpy
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -141,13 +141,17 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
     return as_external_url(
         urljoin(location, offset),
         (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
+        location is None,
     )
 
 
-def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
+def as_external_url(
+    url: str, s3_region: str = None, is_base: bool = False
+) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
 
+    >>> import pytest; pytest.skip() # doctests aren't working outside flask context :(
     >>> # Converts s3 to http
     >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
     'https://some-data.s3.ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
@@ -157,10 +161,22 @@ def as_external_url(url: str, s3_region: str = None) -> Optional[str]:
     True
     >>> as_external_url('some/relative/path.txt')
     'some/relative/path.txt'
+    >>> # if base uri was none, we may want to return the s3 location instead of the metadata yaml
     """
     parsed = urlparse(url)
 
     if s3_region and parsed.scheme == "s3":
+        # get buckets for which link should be to data location instead of s3 link
+        data_location = flask.current_app.config.get("SHOW_DATA_LOCATION", {})
+        if parsed.netloc in data_location:
+            # remove the first '/'
+            path = parsed.path[1:]
+            if is_base:
+                # if it's the folder url, get the directory path
+                path = path[: path.rindex("/") + 1]
+                path = f"?prefix={path}"
+            return f"https://{data_location.get(parsed.netloc)}/{path}"
+
         return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
 
     return url
@@ -407,7 +423,9 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
         try:
             return default_utc(dc_utils.parse_time(value))
         except ValueError:
-            _LOG.warn("invalid_dataset.creation_dt", dataset_id=dataset.id, value=value)
+            _LOG.warning(
+                "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
+            )
 
     return None
 
@@ -419,12 +437,13 @@ def center_time_from_metadata(dataset: Dataset) -> datetime:
     """
     md_type = dataset.metadata_type
     if expects_eo3_metadata_type(md_type):
-        t = dataset.metadata_doc["properties"]["datetime"] or dataset.metadata_doc["properties"]["dtr:start_datetime"]
+        properties = dataset.metadata_doc["properties"]
+        t = properties.get("datetime") or properties.get("dtr:start_datetime")
         return default_utc(dc_utils.parse_time(t))
 
     time = md_type.dataset_fields["time"]
     try:
-        center_time = (time.begin + (time.end - time.begin) / 2)
+        center_time = time.begin + (time.end - time.begin) / 2
     except AttributeError:
         center_time = dataset.center_time
     return default_utc(center_time)
@@ -441,13 +460,21 @@ def as_rich_json(o):
     return as_json(jsonify_document(o))
 
 
-def as_json(o, content_type="application/json") -> flask.Response:
+def as_json(
+    o, content_type="application/json", downloadable_filename_prefix: str = None
+) -> flask.Response:
+    """
+    Serialise an object into a json flask response.
+
+    Optionally provide a filename, to tell web-browsers to download
+    it on click with that filename.
+    """
     # Indent if they're loading directly in a browser.
     #   (Flask's Accept parsing is too smart, and sees html-acceptance in
     #    default ajax requests "accept: */*". So we do it raw.)
     prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
 
-    return flask.Response(
+    response = flask.Response(
         orjson.dumps(
             o,
             option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
@@ -455,6 +482,11 @@ def as_json(o, content_type="application/json") -> flask.Response:
         ),
         content_type=content_type,
     )
+
+    if downloadable_filename_prefix:
+        suggest_download_filename(response, downloadable_filename_prefix, ".json")
+
+    return response
 
 
 def _json_fallback(o, *args, **kwargs):
@@ -547,7 +579,7 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
     # TODO: remove the two functions once eo-datasets fix is released
     def _represent_float(self, value):
         text = numpy.format_float_scientific(value)
-        return self.represent_scalar(u'tag:yaml.org,2002:float', text)
+        return self.represent_scalar("tag:yaml.org,2002:float", text)
 
     def dumps_yaml(yml, stream, *docs) -> None:
         """Dump yaml through a stream, using the default serialisation settings."""
@@ -737,8 +769,10 @@ def undo_eo3_compatibility(doc):
     In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
      documents on index.
     """
-    del doc["grid_spatial"]
-    del doc["extent"]
+    if "grid_spatial" in doc:
+        del doc["grid_spatial"]
+    if "extent" in doc:
+        del doc["extent"]
 
     lineage = doc.get("lineage")
     # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),
@@ -818,12 +852,12 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return None, False
 
     if extent is None:
-        log.warn("invalid_dataset.empty_extent")
+        log.warning("invalid_dataset.empty_extent")
         return None, False
     geom = shape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not geom.is_valid:
-        log.warn(
+        log.warning(
             "invalid_dataset.invalid_extent",
             reason_text=shapely.validation.explain_validity(geom),
         )
@@ -837,10 +871,17 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         return clean, False
 
     if geom.is_empty:
-        _LOG.warn("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
+        _LOG.warning("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
         return None, False
 
     return geom, True
+
+
+def bbox_as_geom(dataset):
+    """Get dataset bounds as to Geometry object projected to target CRS"""
+    if dataset.crs is None:
+        return None
+    return geometry.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
 
 
 # ######################### WARNING ############################### #

@@ -31,6 +31,16 @@
                             "Feature"
                         ]
                     },
+                    "id": {
+                        "oneOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    },
                     "properties": {
                         "oneOf": [
                             {

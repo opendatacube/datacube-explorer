@@ -1,1 +1,1 @@
-pytest_plugins = "digitalearthau.testing.plugin"
+pytest_plugins = ("cubedash.testutils.database",)

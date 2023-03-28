@@ -1,0 +1,51 @@
+---
+name: Docker Image
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    branches:
+      - develop
+    paths:
+      - '**'
+
+env:
+  IMAGE_NAME: opendatacube/explorer
+
+jobs:
+  deployment-image-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Build deployment Docker
+        run: |
+          make build-prod
+          make up-prod
+
+      - name: Sleep for 10 seconds
+        uses: whatnick/wait-action@master
+        with:
+          time: '5s'
+
+      - name: Prepare explorer schema
+        run: |
+          make init-odc
+          make schema
+
+      - name: Test ping
+        run: |
+          curl --show-error --fail \
+          --connect-timeout 5 \
+          --max-time 10 \
+          --retry 5 \
+          --retry-delay 0 \
+          --retry-max-time 40 \
+          "localhost:80/products" \
+          > /dev/null

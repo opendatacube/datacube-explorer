@@ -16,7 +16,6 @@ from cubedash.summary import RegionInfo
 
 
 def find_examples_of_all_public_urls(index: Index):
-
     yield "/"
     yield "/arrivals"
     yield "/arrivals.csv"
@@ -26,15 +25,18 @@ def find_examples_of_all_public_urls(index: Index):
     yield "/metadata-types.txt"
     yield "/metadata-types.odc-type.yaml"
 
+    yield "/audit/datasets-metadata"
+    yield "/audit/product-overview"
+    yield "/audit/dataset-counts"
+    yield "/audit/dataset-counts.csv"
     yield "/audit/storage"
     yield "/audit/storage.csv"
-    yield "/audit/product-metadata"
     yield "/audit/day-query-times.txt"
 
     yield "/stac"
     yield "/stac/collections"
-    yield "/stac/arrivals"
-    yield "/stac/arrivals/items"
+    yield "/stac/catalogs/arrivals"
+    yield "/stac/catalogs/arrivals/items"
 
     for mdt in index.metadata_types.get_all():
         name = mdt.name
@@ -153,7 +155,9 @@ def cli(
             consecutive_failures += 1
             failures.append(url)  # noqa: B023
             # Back off slightly for network hiccups.
-            time.sleep(max(throttle_seconds, 1) * (consecutive_failures + 1))  # noqa: B023
+            time.sleep(
+                max(throttle_seconds, 1) * (consecutive_failures + 1)
+            )  # noqa: B023
 
         try:
             start_time = time.time()

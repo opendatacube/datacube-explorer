@@ -12,6 +12,13 @@ from shapely import geometry as geo
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._stores import GenerateResult, ProductSummary
 
+METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
+PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]
+
+
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
 
 def _overview(
     product_name: str = "test_product",

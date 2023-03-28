@@ -7,6 +7,8 @@ on:
       - '**'
 
   push:
+    branches:
+      - develop
     paths:
       - '**'
 
@@ -35,19 +37,7 @@ jobs:
           make docker-clean
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
-
-      - name: Notify Slack for Failures
-        uses: rtCamp/action-slack-notify@v2.0.0
-        if: failure()
-        env:
-          SLACK_CHANNEL: explorer-alerts
-          SLACK_COLOR: '#EEAF30'
-          SLACK_ICON: 'https://github.com/pytest-dev.png?size=48'
-          SLACK_MESSAGE: ''
-          SLACK_TITLE: Test failure
-          SLACK_USERNAME: Explorer tester
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

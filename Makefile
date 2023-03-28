@@ -107,36 +107,36 @@ build-prod: ## Build the prod Docker image
 up-prod: ## Start using the prod Docker image
 	docker-compose \
 		--file docker-compose.yml \
-		up
+		up -d
 
 init-odc: ## Initialise ODC Database
-	docker-compose exec explorer \
+	docker-compose exec -T explorer \
 		datacube system init
 
 docker-shell: ## Get a shell into local Docker environ
-	docker-compose exec explorer \
+	docker-compose exec -T explorer \
 		bash
 
 schema: ## Initialise Explorer DB using Docker
-	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --init-database
+	docker-compose exec -T explorer \
+		cubedash-gen -v --init
 
 index: ## Update Explorer DB using Docker
-	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --all
+	docker-compose exec -T explorer \
+		cubedash-gen --all
 
 force-refresh: ## Entirely refresh the Explorer tables in Docker
-	docker-compose exec explorer \
-		python3 /code/cubedash/generate.py --force-refresh --refresh-stats --all
+	docker-compose exec -T explorer \
+		cubedash-gen --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose run -T explorer \
+	docker-compose run --rm -T explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
-	docker-compose run explorer \
+	docker-compose run --rm explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose run explorer \
+	docker-compose run --rm explorer \
 		pytest --cov=cubedash --cov-report=xml -r sx --durations=5

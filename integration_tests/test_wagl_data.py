@@ -2,7 +2,6 @@
 Tests that load pages and check the contained text.
 """
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 from datacube.model import Range
@@ -13,21 +12,13 @@ from flask.testing import FlaskClient
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import expect_values, get_html
 
-TEST_DATA_DIR = Path(__file__).parent / "data"
+METADATA_TYPES = ["metadata/qga_eo.yaml"]
+PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]
+DATASETS = ["datasets/s2a_ard_granule.yaml.gz"]
 
 
-@pytest.fixture(scope="module", autouse=True)
-def populate_index(dataset_loader, module_dea_index):
-    """
-    Index populated with example datasets. Assumes our tests wont modify the data!
-
-    It's module-scoped as it's expensive to populate.
-    """
-    loaded = dataset_loader(
-        "s2a_ard_granule", TEST_DATA_DIR / "s2a_ard_granule.yaml.gz"
-    )
-    assert loaded == 8
-    return module_dea_index
+# Use the 'auto_odc_db' fixture to populate the database with sample data.
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_s2_ard_summary(run_generate, summary_store: SummaryStore):

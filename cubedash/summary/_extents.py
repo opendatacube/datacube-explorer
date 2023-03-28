@@ -38,7 +38,12 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash._utils import ODC_DATASET as DATASET, alchemy_engine, infer_crs, expects_eo3_metadata_type
+from cubedash._utils import (
+    ODC_DATASET as DATASET,
+    alchemy_engine,
+    expects_eo3_metadata_type,
+    infer_crs,
+)
 from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
@@ -386,7 +391,6 @@ def refresh_spatial_extents(
         if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
             # And it has WRS path/rows...
             if "sat_path" in product.metadata_type.dataset_fields:
-
                 # We can synthesize the polygons!
                 log.info(
                     "spatial_synthesizing",
@@ -611,7 +615,7 @@ def datasets_by_region(
             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
     query = (
-        query.order_by(DATASET_SPATIAL.c.center_time)
+        query.order_by(DATASET_SPATIAL.c.center_time.desc())
         .limit(bindparam("limit", limit))
         .offset(bindparam("offset", offset))
     )
@@ -631,7 +635,8 @@ def products_by_region(
     offset: int = 0,
 ) -> Generator[DatasetType, None, None]:
     query = (
-        select([DATASET_SPATIAL.c.dataset_type_ref]).distinct()
+        select([DATASET_SPATIAL.c.dataset_type_ref])
+        .distinct()
         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
     )
     if time_range:

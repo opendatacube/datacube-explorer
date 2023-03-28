@@ -15,6 +15,7 @@ from dateutil import tz
 import cubedash
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
+from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 
@@ -157,7 +158,7 @@ def legacy_search_page(
 @app.route("/products/<product_name>/datasets/<int:year>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
-def search_page(
+def search_page(  # noqa: C901
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     (
@@ -178,25 +179,46 @@ def search_page(
     if product_name:
         query["product"] = product_name
 
-    if "time" in query:
-        # If they left one end of the range open, fill it in with the product bounds.
-        search_time = query["time"]
-        assert isinstance(search_time, Range)
-        if product_summary:
-            query["time"] = Range(
-                search_time.begin or product_summary.time_earliest,
-                search_time.end or product_summary.time_latest + timedelta(days=1),
-            )
+    if "dataset_maturity" in query:
+        query["dataset_maturity"] = query["dataset_maturity"].lower()
+
     # The URL time range always trumps args.
     if time_range:
         query["time"] = time_range
+    elif "time" in query:
+        search_time = query["time"]
+        # If it's not a range, it's almost certainly because we're searching via an
+        # individual dataset field value, so we need to create a range corresponding to that day.
+        if not isinstance(search_time, Range):
+            search_time = Range(search_time, search_time + timedelta(days=1))
+        # If they left one end of the range open, fill it in with the product bounds.
+        if product_summary:
+            search_time = Range(
+                search_time.begin or product_summary.time_earliest,
+                search_time.end or product_summary.time_latest + timedelta(days=1),
+            )
+        query["time"] = search_time
+
+    # same logic as with 'time'
+    if "creation_time" in query:
+        creation_time = query["creation_time"]
+        if not isinstance(creation_time, Range):
+            creation_time = Range(creation_time, creation_time + timedelta(days=1))
+        if product_summary:
+            creation_time = Range(
+                creation_time.begin or product_summary.time_earliest,
+                # product time bounds don't necessarily include the creation time
+                # so use today's date instead as our end bound if needed
+                creation_time.end or datetime.utcnow(),
+            )
+        query["creation_time"] = creation_time
 
     _LOG.info("query", query=query)
 
     # TODO: Add sort option to index API
     datasets = sorted(
         _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
-        key=lambda d: d.center_time,
+        key=lambda d: default_utc(d.center_time),
     )
 
     more_datasets_exist = False
@@ -306,7 +328,8 @@ def region_page(
     )
 
     same_region_products = list(
-        product.name for product in _model.STORE.find_products_for_region(
+        product.name
+        for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
@@ -456,9 +479,7 @@ def inject_globals():
         grouped_products=_get_grouped_products(),
         # All products in the datacube, summarised or not.
         datacube_products=list(_model.STORE.index.products.get_all()),
-        hidden_product_list=app.config.get(
-            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
-        ),
+        hidden_product_list=app.config.get("CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []),
         datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
@@ -603,7 +624,6 @@ def chunks(ls: List, n: int):
 
 @app.route("/arrivals")
 def arrivals_page():
-
     period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
     arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
     return utils.render(
