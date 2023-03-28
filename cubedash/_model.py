@@ -104,14 +104,16 @@ with (Path(app.root_path) / "themes" / themer.current_theme / "info.json").open(
     for key, value in json.load(f)["defaults"].items():
         app.config.setdefault(key, value)
 
-DEFAULT_GROUPING_TIMEZONE = app.config.get("CUBEDASH_DEFAULT_TIMEZONE", DEFAULT_TIMEZONE)
+DEFAULT_GROUPING_TIMEZONE = app.config.get(
+    "CUBEDASH_DEFAULT_TIMEZONE", DEFAULT_TIMEZONE
+)
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
 # (hence validate=False).
 STORE: SummaryStore = SummaryStore.create(
     index_connect(application_name=NAME, validate_connection=False),
-    grouping_time_zone=DEFAULT_GROUPING_TIMEZONE
+    grouping_time_zone=DEFAULT_GROUPING_TIMEZONE,
 )
 
 DEFAULT_GROUPING_TIMEZONE = app.config.get(

@@ -113,8 +113,9 @@ def generate_report(
                 started_years.add((product_name, year))
 
     store = SummaryStore.create(
-        _get_index(settings.config, product_name), log=log,
-        grouping_time_zone=grouping_time_zone
+        _get_index(settings.config, product_name),
+        log=log,
+        grouping_time_zone=grouping_time_zone,
     )
     store.add_change_listener(print_status)
 

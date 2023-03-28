@@ -32,7 +32,9 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 @pytest.fixture()
 def summary_store(odc_test_db: Datacube) -> SummaryStore:
-    store = SummaryStore.create(odc_test_db.index, grouping_time_zone="Australia/Darwin")
+    store = SummaryStore.create(
+        odc_test_db.index, grouping_time_zone="Australia/Darwin"
+    )
     store.drop_all()
     odc_test_db.close()
 
@@ -69,7 +71,12 @@ def clirunner():
 
 @pytest.fixture()
 def run_generate(clirunner):
-    def do(*args, expect_success=True, multi_processed=False, grouping_time_zone="Australia/Darwin"):
+    def do(
+        *args,
+        expect_success=True,
+        multi_processed=False,
+        grouping_time_zone="Australia/Darwin",
+    ):
         args = args or ("--all",)
         if not multi_processed:
             args = ("-j", "1") + tuple(args)

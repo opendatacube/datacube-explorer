@@ -64,7 +64,7 @@ from cubedash.summary._schema import (
     get_srid_name,
     refresh_supporting_views,
 )
-from cubedash.summary._summarise import Summariser, DEFAULT_TIMEZONE
+from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 90
 
@@ -131,7 +131,9 @@ class ProductSummary:
     # The 'name' is typically used as an identifier, and with ODC itself.
     id_: Optional[int] = None
 
-    def iter_months(self, grouping_timezone=default_timezone) -> Generator[date, None, None]:
+    def iter_months(
+        self, grouping_timezone=default_timezone
+    ) -> Generator[date, None, None]:
         """
         Iterate through all months in its time range.
         """
@@ -305,12 +307,13 @@ class SummaryStore:
             _refresh_data(refresh_also, store=self)
 
     @classmethod
-    def create(cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE) -> "SummaryStore":
+    def create(
+        cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
+    ) -> "SummaryStore":
         return cls(
             index,
             Summariser(
-                _utils.alchemy_engine(index),
-                grouping_time_zone=grouping_time_zone
+                _utils.alchemy_engine(index), grouping_time_zone=grouping_time_zone
             ),
             log=log,
         )
@@ -420,7 +423,7 @@ class SummaryStore:
         expected_years = set(
             range(
                 product.time_earliest.astimezone(self.grouping_timezone).year,
-                product.time_latest.astimezone(self.grouping_timezone).year + 1
+                product.time_latest.astimezone(self.grouping_timezone).year + 1,
             )
         )
 
@@ -831,7 +834,9 @@ class SummaryStore:
         if not res:
             return None
 
-        return _summary_from_row(res, product_name=product_name, grouping_timezone=self.grouping_timezone)
+        return _summary_from_row(
+            res, product_name=product_name, grouping_timezone=self.grouping_timezone
+        )
 
     def get_all_dataset_counts(
         self,
@@ -1380,7 +1385,7 @@ class SummaryStore:
                 self.get(product.name, year_, None, None)
                 for year_ in range(
                     product.time_earliest.astimezone(self.grouping_timezone).year,
-                    product.time_latest.astimezone(self.grouping_timezone).year + 1
+                    product.time_latest.astimezone(self.grouping_timezone).year + 1,
                 )
             )
         else:
@@ -1495,7 +1500,10 @@ class SummaryStore:
             old_months = self._already_summarised_months(product_name)
 
             months_to_update = sorted(
-                (month, "all") for month in old_months.union(new_product.iter_months(self.grouping_timezone))
+                (month, "all")
+                for month in old_months.union(
+                    new_product.iter_months(self.grouping_timezone)
+                )
             )
             refresh_type = GenerateResult.CREATED
 
@@ -1838,7 +1846,9 @@ def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
     )
 
 
-def _summary_to_row(summary: TimePeriodOverview, grouping_timezone=default_timezone) -> dict:
+def _summary_to_row(
+    summary: TimePeriodOverview, grouping_timezone=default_timezone
+) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
 

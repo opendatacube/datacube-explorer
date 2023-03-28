@@ -8,7 +8,6 @@ end_datetime and start_datetime range (deliberate test setup sample)
 import pytest
 from flask.testing import FlaskClient
 
-
 from integration_tests.asserts import (
     check_dataset_count,
     check_datesets_page_datestring,

@@ -7,10 +7,10 @@ import flask
 import structlog
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
+from dateutil import tz
 from flask import abort, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
-from dateutil import tz
 
 import cubedash
 from cubedash import _audit, _monitoring
