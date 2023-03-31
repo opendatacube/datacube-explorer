@@ -134,7 +134,7 @@ class Summariser:
 
         # Initialise all requested days as zero
         day_counts = Counter(
-            {d.date(): 0 for d in pd.date_range(begin_time, end_time, inclusive="left")}
+            {d.date(): 0 for d in pd.date_range(begin_time, end_time, inclusive="left", nonexistent="shift_forward")}
         )
         region_counts = Counter()
         if has_data:
