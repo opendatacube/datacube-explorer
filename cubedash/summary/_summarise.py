@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime
+from os import environ
 from typing import Optional, Tuple
 
 import pandas as pd
@@ -27,7 +28,7 @@ _LOG = structlog.get_logger()
 
 _NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
 
-DEFAULT_TIMEZONE = "Australia/Darwin"
+DEFAULT_TIMEZONE = environ.get("CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin")
 
 
 def _scalar_subquery(selectable):
