@@ -199,5 +199,6 @@ server:
 
          $ export FLASK_ENV=development
          $ export FLASK_APP=cubedash
+         $ export CUBEDASH_DEFAULT_TIMEZONE=Australia/Darwin
          $ cubedash-run
           * Running on http://localhost:8080/ (Press CTRL+C to quit)
