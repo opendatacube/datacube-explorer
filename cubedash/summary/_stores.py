@@ -1896,8 +1896,8 @@ def _common_paths_for_uris(
     def uri_scheme(uri: str):
         return uri.split(":", 1)[0]
 
-    for scheme, uris in groupby(sorted(uri_samples), uri_scheme):
-        uris = list(uris)
+    for scheme, uri_grouper in groupby(sorted(uri_samples), uri_scheme):
+        uris = list(uri_grouper)
 
         # Use the first, last and middle as examples
         # (they're sorted, so this shows diversity)

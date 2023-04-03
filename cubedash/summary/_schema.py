@@ -263,7 +263,8 @@ def is_compatible_schema(engine: Engine) -> bool:
             "Your database has item `cubedash.mv_region` from an unstable version of Explorer. "
             "It will not harm you, but feel free to drop it once all Explorer instances "
             "have been upgraded: "
-            "    drop materialised view cubedash.mv_region"
+            "    drop materialised view cubedash.mv_region",
+            stacklevel=2,
         )
 
     return is_latest
@@ -417,7 +418,8 @@ def check_or_update_odc_schema(engine: Engine):
 
                 {unexecuted_sql}
         """
-            )
+            ),
+            stacklevel=2,
         )
         raise
 

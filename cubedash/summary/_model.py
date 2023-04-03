@@ -240,7 +240,7 @@ class TimePeriodOverview:
         if not self.footprint_geometry:
             return None
         if not self.footprint_crs:
-            warnings.warn(f"Geometry without a crs for {self}")
+            warnings.warn(f"Geometry without a crs for {self}", stacklevel=2)
             return None
 
         return (
