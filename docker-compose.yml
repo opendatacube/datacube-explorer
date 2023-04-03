@@ -18,6 +18,7 @@ services:
       - FLASK_ENV=development
       - FLASK_APP=cubedash
       - FLASK_DEBUG=1
+      - CUBEDASH_DEFAULT_TIMEZONE=Australia/Darwin
       # - VIRTUAL_HOST=datacube.explorer
     depends_on:
       - postgres
