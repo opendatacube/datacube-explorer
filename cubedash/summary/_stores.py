@@ -64,7 +64,7 @@ from cubedash.summary._schema import (
     get_srid_name,
     refresh_supporting_views,
 )
-from cubedash.summary._summarise import Summariser
+from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 90
 
@@ -77,7 +77,7 @@ _LOG = structlog.get_logger()
 # We'll use a global equal area.
 DEFAULT_EPSG = 6933
 
-timezone = pytz.timezone("Australia/Darwin")
+default_timezone = pytz.timezone(DEFAULT_TIMEZONE)
 
 
 class ItemSort(Enum):
@@ -131,7 +131,9 @@ class ProductSummary:
     # The 'name' is typically used as an identifier, and with ODC itself.
     id_: Optional[int] = None
 
-    def iter_months(self) -> Generator[date, None, None]:
+    def iter_months(
+        self, grouping_timezone=default_timezone
+    ) -> Generator[date, None, None]:
         """
         Iterate through all months in its time range.
         """
@@ -139,12 +141,12 @@ class ProductSummary:
             return
 
         start = (
-            self.time_earliest.astimezone(timezone)
+            self.time_earliest.astimezone(grouping_timezone)
             if self.time_earliest
             else self.time_earliest
         )
         end = (
-            self.time_latest.astimezone(timezone)
+            self.time_latest.astimezone(grouping_timezone)
             if self.time_latest
             else self.time_latest
         )
@@ -305,8 +307,16 @@ class SummaryStore:
             _refresh_data(refresh_also, store=self)
 
     @classmethod
-    def create(cls, index: Index, log=_LOG) -> "SummaryStore":
-        return cls(index, Summariser(_utils.alchemy_engine(index)), log=log)
+    def create(
+        cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
+    ) -> "SummaryStore":
+        return cls(
+            index,
+            Summariser(
+                _utils.alchemy_engine(index), grouping_time_zone=grouping_time_zone
+            ),
+            log=log,
+        )
 
     @property
     def grouping_crs(self):
@@ -412,8 +422,8 @@ class SummaryStore:
         # All years we are expected to have
         expected_years = set(
             range(
-                product.time_earliest.astimezone(timezone).year,
-                product.time_latest.astimezone(timezone).year + 1,
+                product.time_earliest.astimezone(self.grouping_timezone).year,
+                product.time_latest.astimezone(self.grouping_timezone).year + 1,
             )
         )
 
@@ -824,7 +834,9 @@ class SummaryStore:
         if not res:
             return None
 
-        return _summary_from_row(res, product_name=product_name)
+        return _summary_from_row(
+            res, product_name=product_name, grouping_timezone=self.grouping_timezone
+        )
 
     def get_all_dataset_counts(
         self,
@@ -1076,7 +1088,7 @@ class SummaryStore:
         product = self._product(summary.product_name)
         period, start_day = summary.as_flat_period()
 
-        row = _summary_to_row(summary)
+        row = _summary_to_row(summary, grouping_timezone=self.grouping_timezone)
         ret = self._engine.execute(
             postgres.insert(TIME_OVERVIEW)
             .returning(TIME_OVERVIEW.c.generation_time)
@@ -1372,8 +1384,8 @@ class SummaryStore:
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year_, None, None)
                 for year_ in range(
-                    product.time_earliest.astimezone(timezone).year,
-                    product.time_latest.astimezone(timezone).year + 1,
+                    product.time_earliest.astimezone(self.grouping_timezone).year,
+                    product.time_latest.astimezone(self.grouping_timezone).year + 1,
                 )
             )
         else:
@@ -1488,7 +1500,10 @@ class SummaryStore:
             old_months = self._already_summarised_months(product_name)
 
             months_to_update = sorted(
-                (month, "all") for month in old_months.union(new_product.iter_months())
+                (month, "all")
+                for month in old_months.union(
+                    new_product.iter_months(self.grouping_timezone)
+                )
             )
             refresh_type = GenerateResult.CREATED
 
@@ -1768,7 +1783,7 @@ def _safe_read_date(d):
     return None
 
 
-def _summary_from_row(res, product_name):
+def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
     timeline_dataset_counts = (
         Counter(
             dict(
@@ -1800,10 +1815,10 @@ def _summary_from_row(res, product_name):
         timeline_period=res["timeline_period"],
         # : Range
         time_range=Range(
-            res["time_earliest"].astimezone(timezone)
+            res["time_earliest"].astimezone(grouping_timezone)
             if res["time_earliest"]
             else res["time_earliest"],
-            res["time_latest"].astimezone(timezone)
+            res["time_latest"].astimezone(grouping_timezone)
             if res["time_latest"]
             else res["time_latest"],
         )
@@ -1831,7 +1846,9 @@ def _summary_from_row(res, product_name):
     )
 
 
-def _summary_to_row(summary: TimePeriodOverview) -> dict:
+def _summary_to_row(
+    summary: TimePeriodOverview, grouping_timezone=default_timezone
+) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
 
@@ -1849,8 +1866,8 @@ def _summary_to_row(summary: TimePeriodOverview) -> dict:
         regions=func.cast(region_values, type_=postgres.ARRAY(String)),
         region_dataset_counts=region_counts,
         timeline_period=summary.timeline_period,
-        time_earliest=begin.astimezone(timezone) if begin else begin,
-        time_latest=end.astimezone(timezone) if end else end,
+        time_earliest=begin.astimezone(grouping_timezone) if begin else begin,
+        time_latest=end.astimezone(grouping_timezone) if end else end,
         size_bytes=summary.size_bytes,
         product_refresh_time=summary.product_refresh_time,
         footprint_geometry=(
@@ -1879,8 +1896,8 @@ def _common_paths_for_uris(
     def uri_scheme(uri: str):
         return uri.split(":", 1)[0]
 
-    for scheme, uris in groupby(sorted(uri_samples), uri_scheme):
-        uris = list(uris)
+    for scheme, uri_grouper in groupby(sorted(uri_samples), uri_scheme):
+        uris = list(uri_grouper)
 
         # Use the first, last and middle as examples
         # (they're sorted, so this shows diversity)

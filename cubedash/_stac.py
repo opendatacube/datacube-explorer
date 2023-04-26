@@ -807,9 +807,13 @@ def _stac_collection(collection: str) -> Collection:
         (summary.time_earliest, summary.time_latest) if summary else (None, None)
     )
     footprint = all_time_summary.footprint_wgs84
+    if "title" in dataset_type.definition.get("metadata"):
+        title = dataset_type.definition.get("metadata")["title"]
+    else:
+        title = summary.name
     stac_collection = Collection(
         id=summary.name,
-        title=summary.name,
+        title=title,
         license=_utils.product_license(dataset_type),
         description=dataset_type.definition.get("description"),
         providers=[],
