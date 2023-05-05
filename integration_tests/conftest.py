@@ -32,7 +32,9 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 @pytest.fixture()
 def summary_store(odc_test_db: Datacube) -> SummaryStore:
-    store = SummaryStore.create(odc_test_db.index)
+    store = SummaryStore.create(
+        odc_test_db.index, grouping_time_zone="Australia/Darwin"
+    )
     store.drop_all()
     odc_test_db.close()
 
@@ -68,11 +70,17 @@ def clirunner():
 
 
 @pytest.fixture()
-def run_generate(clirunner, summary_store):
-    def do(*args, expect_success=True, multi_processed=False):
+def run_generate(clirunner):
+    def do(
+        *args,
+        expect_success=True,
+        multi_processed=False,
+        grouping_time_zone="Australia/Darwin",
+    ):
         args = args or ("--all",)
         if not multi_processed:
             args = ("-j", "1") + tuple(args)
+        args = ("-tz", grouping_time_zone) + tuple(args)
         res = clirunner(generate.cli, args, expect_success=expect_success)
         return res
 
@@ -92,6 +100,7 @@ def empty_client(summary_store: SummaryStore) -> FlaskClient:
     cubedash.app.config["TESTING"] = True
     cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = []
     cubedash.app.config["CUBEDASH_SISTER_SITES"] = None
+    cubedash.app.config["CUBEDASH_DEFAULT_TIMEZONE"] = "Australia/Darwin"
     cubedash.app.config["SHOW_DATA_LOCATION"] = {
         "dea-public-data": "data.dea.ga.gov.au"
     }

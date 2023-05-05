@@ -63,6 +63,7 @@ def assert_matching_eo3(actual_doc: Dict, expected_doc: Dict):
 
     # Replace expected bbox points with approximates.
     # (We don't worry about float rounding issues)
+    actual_doc["bbox"] = [pytest.approx(p) for p in actual_doc["bbox"]]
     expected_doc["bbox"] = [pytest.approx(p) for p in expected_doc["bbox"]]
 
     # Do the remaining fields match?
