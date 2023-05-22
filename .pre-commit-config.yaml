@@ -2,7 +2,7 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 2023.4.1
+    rev: 2023.5.1
     hooks:
     - id: shed
   # Python Linting
@@ -35,7 +35,7 @@ repos:
   #   - id: curlylint
   # Lint Yaml files
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.31.0
+    rev: v1.32.0
     hooks:
       - id: yamllint
         args: ['-c', '.yamllint']
