@@ -582,6 +582,12 @@ def test_stac_links(stac_client: FlaskClient):
             "type": "application/json",
             "title": "Item Search",
         },
+        {
+            "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+            "href": "http://localhost/stac/queryables",
+            "type": "application/json",
+            "title": "Queryables",
+        },
     ]
 
     # All expected products and their dataset counts.
@@ -684,6 +690,10 @@ def test_stac_collection(stac_client: FlaskClient):
             {
                 "rel": "items",
                 "href": stac_url("collections/high_tide_comp_20p/items"),
+            },
+            {
+                "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                "href": stac_url("collections/high_tide_comp_20p/queryables"),
             },
             {
                 "rel": "child",

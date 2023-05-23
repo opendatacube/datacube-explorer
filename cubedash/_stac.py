@@ -840,6 +840,10 @@ def _stac_collection(collection: str) -> Collection:
                 rel="items",
                 target=url_for(".collection_items", collection=collection),
             ),
+            Link(
+                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                target=url_for(".collection_queryables", collection=collection),
+            ),
         ]
     )
     if all_time_summary.timeline_dataset_counts:
@@ -935,6 +939,12 @@ def root():
                 media_type="application/json",
                 target=url_for(".stac_search"),
             ),
+            Link(
+                title="Queryables",
+                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                media_type="application/json",
+                target=url_for(".queryables"),
+            ),
             # Individual Product Collections
             *(
                 Link(
@@ -1013,6 +1023,90 @@ def collections():
                 for product, product_summary in _model.get_products_with_summaries()
             ],
         )
+    )
+
+
+@bp.route("/queryables")
+def queryables():
+    """
+    Define what terms are available for use when writing filter expressions for the entire catalog
+    Part of basic CQL2 conformance for stac-api filter implementation.
+    See: https://github.com/stac-api-extensions/filter#queryables
+    """
+    return _utils.as_json(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": flask.request.base_url,
+            "type": "object",
+            "title": "",
+            "properties": {
+                "id": {
+                    "title": "Item ID",
+                    "description": "Item identifier",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/definitions/core/allOf/2/properties/id",
+                },
+                "collection": {
+                    "description": "Collection",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/collection",
+                },
+                "geometry": {
+                    "description": "Geometry",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json#/geometry",
+                },
+                "datetime": {
+                    "description": "Datetime",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "datetime.json#/properties/datetime",
+                },
+            },
+            "additionalProperties": True,
+        }
+    )
+
+
+@bp.route("/collections/<collection>/queryables")
+def collection_queryables(collection: str):
+    """
+    The queryables resources for a given collection (barebones implementation)
+    """
+    try:
+        dataset_type = _model.STORE.get_dataset_type(collection)
+    except KeyError:
+        abort(404, f"Unknown collection {collection!r}")
+
+    collection_title = dataset_type.definition.get("description")
+    return _utils.as_json(
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": flask.request.base_url,
+            "type": "object",
+            "title": f"Queryables for {collection_title}",
+            "properties": {
+                "id": {
+                    "title": "Item ID",
+                    "description": "Item identifier",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/definitions/core/allOf/2/properties/id",
+                },
+                "collection": {
+                    "description": "Collection",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "item.json#/collection",
+                },
+                "geometry": {
+                    "description": "Geometry",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json#/geometry",
+                },
+                "datetime": {
+                    "description": "Datetime",
+                    "$ref": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/"
+                    "datetime.json#/properties/datetime",
+                },
+            },
+            "additionalProperties": True,
+        }
     )
 
 
