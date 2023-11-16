@@ -29,9 +29,8 @@ RUN apt-get update && \
 ARG ENVIRONMENT=deployment
 # ARG ENVIRONMENT=test
 
-RUN echo "Environment is: $ENVIRONMENT"
-
-RUN pip install pip-tools pytest-cov
+RUN echo "Environment is: $ENVIRONMENT" && \
+    pip install pip-tools pytest-cov
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
@@ -46,9 +45,8 @@ RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
         rm -rf /code/* /code/.git* ; \
     else \
         pip install --editable .[$ENVIRONMENT]; \
-    fi
-
-RUN pip freeze
+    fi && \
+    pip freeze
 
 ENTRYPOINT ["/bin/tini", "--"]
 
