@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Apt installation
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
       build-essential \
       git \
       vim \
