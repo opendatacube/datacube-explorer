@@ -35,9 +35,8 @@ RUN pip install pip-tools pytest-cov
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
-RUN mkdir -p $APPDIR
-COPY . $APPDIR
 WORKDIR $APPDIR
+COPY . $APPDIR
 
 # These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
 # then we want to link the source (with the -e flag) and if we're in prod, we
