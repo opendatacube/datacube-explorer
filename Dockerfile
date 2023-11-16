@@ -43,7 +43,7 @@ WORKDIR $APPDIR
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
         pip install .[$ENVIRONMENT]; \
-        rm -rf /code/* /code/.??* ; \
+        rm -rf /code/* /code/.git* ; \
     else \
         pip install --editable .[$ENVIRONMENT]; \
     fi
