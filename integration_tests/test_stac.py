@@ -200,7 +200,6 @@ def load_schema_doc(
 
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-# NOTE: you will need to manually update the stac version for the itemcollection schema.
 _CATALOG_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json"
 )
