@@ -745,7 +745,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
     expected = {
         "stac_version": "1.0.0",
         "stac_extensions": [
-            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
             "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
         ],
         "type": "Feature",
