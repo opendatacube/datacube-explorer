@@ -13,7 +13,7 @@ tests_require = [
     "boltons",
     "deepdiff",
     "flake8",
-    "jsonschema > 3",
+    "jsonschema >= 4.18",
     "pre-commit",
     "pytest",
     "pytest-benchmark",
