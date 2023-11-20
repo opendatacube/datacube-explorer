@@ -398,7 +398,6 @@ def stac_client(client: FlaskClient):
 # Page requests
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
@@ -614,7 +613,6 @@ def test_stac_links(stac_client: FlaskClient):
     assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_arrivals_page_validation(stac_client: FlaskClient):
     # Do the virtual 'arrivals' catalog and items validate?
     response = get_json(stac_client, "/stac/catalogs/arrivals")
@@ -631,7 +629,6 @@ def test_arrivals_page_validation(stac_client: FlaskClient):
     assert len(items["features"]) == OUR_PAGE_SIZE
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_collection(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
@@ -715,7 +712,6 @@ def test_stac_collection(stac_client: FlaskClient):
 
 
 # @pytest.mark.xfail()
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_item(stac_client: FlaskClient, odc_test_db):
     # Load one stac dataset from the test data.
 
@@ -916,7 +912,6 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
 # Search tests
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_search_limits(stac_client: FlaskClient):
     # Tell user with error if they request too much.
     large_limit = OUR_DATASET_LIMIT + 1
@@ -943,7 +938,6 @@ def test_stac_search_zero(stac_client: FlaskClient):
     assert rv.status_code == 200
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_includes_total(stac_client: FlaskClient):
     geojson = get_items(
         stac_client,
@@ -956,7 +950,6 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_search_by_ids(stac_client: FlaskClient):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
@@ -1120,7 +1113,6 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
     }
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_search_collections(stac_client: FlaskClient):
     """Can you query a list of multiple collections?"""
 
@@ -1159,7 +1151,6 @@ def test_stac_search_collections(stac_client: FlaskClient):
     assert len(geojson.get("features")) > 0
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_search_bounds(stac_client: FlaskClient):
     # Outside the box there should be no results
     geojson = get_items(
@@ -1198,7 +1189,6 @@ def test_stac_search_bounds(stac_client: FlaskClient):
     assert len(geojson.get("features")) == 0
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_stac_search_by_post(stac_client: FlaskClient):
     # Test POST, product, and assets
     rv: Response = stac_client.post(
