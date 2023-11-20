@@ -36,7 +36,7 @@ jobs:
 
       - name: Build and Push unstable + latest Docker image tag
         if: github.event_name != 'release'
-        uses: whoan/docker-build-with-cache-action@v4
+        uses: whoan/docker-build-with-cache-action@v8
         with:
           image_name: ${{ env.IMAGE_NAME }}
           username: gadockersvc
@@ -54,7 +54,7 @@ jobs:
         run: echo $RELEASE
 
       - name: Build and Push release if we have a tag
-        uses: whoan/docker-build-with-cache-action@v4
+        uses: whoan/docker-build-with-cache-action@v8
         if: github.event_name == 'release'
         with:
           image_name: ${{ env.IMAGE_NAME }}
