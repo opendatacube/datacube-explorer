@@ -246,7 +246,6 @@ def test_all_eo3_pages_render(eo3_index: Index, client: FlaskClient):
     assert_all_urls_render(find_examples_of_all_public_urls(eo3_index), client)
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_can_search_eo3_items(eo3_index, client: FlaskClient):
     """
     Searching returns lightweight item records, so the conversion code is different.
@@ -270,7 +269,6 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient):
     ] == pytest.approx(0.37)
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 def test_eo3_stac_item(eo3_index, client: FlaskClient):
     # Load one stac dataset from the test data.
     response = get_item(
