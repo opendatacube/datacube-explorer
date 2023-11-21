@@ -64,7 +64,7 @@ jobs:
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
       - name: Update Docker Hub Description
-        uses: peter-evans/dockerhub-description@v2
+        uses: peter-evans/dockerhub-description@v3
         with:
           username: gadockersvc
           password: ${{ secrets.DockerPassword }}
