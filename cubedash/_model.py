@@ -295,22 +295,9 @@ def internal_server_error(error):
     return flask.render_template("500.html")
 
 
-@app.before_first_request
-def enable_prometheus():
-    # Enable deployment specific code for Prometheus metrics
-    if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
-        from prometheus_flask_exporter.multiprocess import (
-            GunicornInternalPrometheusMetrics,
-        )
+# Enable deployment specific code for Prometheus metrics
+if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
+    from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 
-        metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
-
-
-@app.before_first_request
-def check_schema_compatibility():
-    if not STORE.is_schema_compatible():
-        raise RuntimeError(
-            "Cubedash schema is out of date. "
-            "Please rerun `cubedash-gen -v --init` to apply updates."
-        )
+    metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
+    _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
