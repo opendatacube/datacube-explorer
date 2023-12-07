@@ -43,7 +43,7 @@ def legacy_redirect(location):
     Used for backwards compatibility with older URLs that may be bookmarked or stored.
     """
     if isinstance(location, str):
-        location = iri_to_uri(location, safe_conversion=True)
+        location = iri_to_uri(location)
     response = Response(
         json.dumps(
             {
