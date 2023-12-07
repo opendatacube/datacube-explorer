@@ -22,6 +22,11 @@ RUN python3.10 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 
 
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.1
 
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    PYTHONFAULTHANDLER=1
+
 # Apt installation
 RUN apt-get update && \
     apt-get upgrade -y && \
