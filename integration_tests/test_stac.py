@@ -1305,6 +1305,7 @@ def test_stac_fields_extension(stac_client: FlaskClient):
         "properties",
         "stac_version",
         "stac_extensions",
+        "collection",
     } == keys
     properties = doc["features"][0]["properties"]
     assert {"datetime", "dea:dataset_maturity"} == set(properties.keys())
