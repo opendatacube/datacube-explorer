@@ -1309,7 +1309,8 @@ def test_stac_fields_extension(stac_client: FlaskClient):
     properties = doc["features"][0]["properties"]
     assert {"datetime", "dea:dataset_maturity"} == set(properties.keys())
 
-    fields = {"exclude": ["assets.thumbnail:nbart"]}
+    # exclude without include should remove from full set of properties
+    fields = {"exclude": ["properties.title"]}
     rv: Response = stac_client.post(
         "/stac/search",
         data=json.dumps(
@@ -1327,10 +1328,49 @@ def test_stac_fields_extension(stac_client: FlaskClient):
     doc = rv.json
     keys = set(doc["features"][0].keys())
     assert "collection" in keys
-    properties = doc["features"][0]["assets"]
-    assert "thumbnail:nbart" not in set(properties.keys())
+    properties = doc["features"][0]["properties"]
+    assert "title" not in set(properties.keys())
+    assert "dea:dataset_maturity" in set(properties.keys())
 
-    # should we do an invalid field as well?
+    # with get
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&+fields=properties.title"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime", "title"} == set(properties.keys())
+
+    # invalid field
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.foo"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime"} == set(properties.keys())
+
+    # exclude properties, but nested field properties.datetime is included by default
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-properties"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime"} == set(properties.keys())
+
+    # empty include and exclude should return just default fields
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields="
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime"} == set(properties.keys())
 
 
 def test_stac_sortby_extension(stac_client: FlaskClient):
@@ -1378,6 +1418,18 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
             doc["features"][i - 1]["properties"]["datetime"]
             > doc["features"][i]["properties"]["datetime"]
         )
+
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=assets"
+    )
+    assert rv.status_code == 400
+
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-properties.datetime"
+    )
+    doc = rv.json
+    for i in range(1, len(doc["features"])):
+        assert doc["features"][i - 1]["id"] < doc["features"][i]["id"]
 
 
 def test_stac_filter_extension(stac_client: FlaskClient):

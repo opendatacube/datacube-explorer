@@ -45,9 +45,27 @@ DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
 
 STAC_VERSION = "1.0.0"
 
+ItemLike = pystac.Item | dict
+
 ############################
 #  Helpers
 ############################
+
+
+def dissoc_in(d: dict, key: str):
+    # like dicttoolz.dissoc but with support for nested keys
+    split = key.split(".")
+
+    if len(split) > 1:  # if nested
+        if dicttoolz.get_in(split, d) is not None:
+            outer = dicttoolz.get_in(split[:-1], d)
+            return dicttoolz.update_in(
+                d=d,
+                keys=split[:-1],
+                func=lambda _: dicttoolz.dissoc(outer, split[-1]),  # noqa: B023
+            )
+    return dicttoolz.dissoc(d, key)
+
 
 # Time-related
 
@@ -380,7 +398,7 @@ def _geojson_arg(arg: dict) -> BaseGeometry:
         raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
 
 
-def _bool_argument(s: str):
+def _bool_argument(s: str | bool):
     """
     Parse an argument that should be a bool
     """
@@ -391,7 +409,7 @@ def _bool_argument(s: str):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: dict):
+def _dict_arg(arg: str | dict):
     """
     Parse stac extension arguments as dicts
     """
@@ -400,15 +418,47 @@ def _dict_arg(arg: dict):
     return arg
 
 
-def _list_arg(arg: list):
+def _field_arg(arg: str | list | dict):
     """
-    Parse sortby argument as a list of dicts
+    Parse field argument into a dict
     """
+    if isinstance(arg, dict):
+        return _dict_arg(arg)
     if isinstance(arg, str):
-        arg = list(arg)
-    return list(
-        map(lambda a: json.loads(a.replace("'", '"')) if isinstance(a, str) else a, arg)
-    )
+        if arg.startswith("{"):
+            return _dict_arg(arg)
+        arg = arg.split(",")
+    if isinstance(arg, list):
+        include = []
+        exclude = []
+        for a in arg:
+            if a.startswith("-"):
+                exclude.append(a[1:])
+            else:
+                # account for '+' showing up as a space if not encoded
+                include.append(a[1:] if a.startswith("+") else a.strip())
+        return {"include": include, "exclude": exclude}
+
+
+def _sort_arg(arg: str | list):
+    """
+    Parse sortby argument into a list of dicts
+    """
+
+    def _format(val: str) -> dict[str, str]:
+        if val.startswith("-"):
+            return {"field": val[1:], "direction": "desc"}
+        if val.startswith("+"):
+            return {"field": val[1:], "direction": "asc"}
+        return {"field": val.strip(), "direction": "asc"}
+
+    if len(arg):
+        if isinstance(arg[0], str):
+            return [_format(a) for a in arg]
+        if isinstance(arg[0], dict):
+            return arg
+
+    return arg
 
 
 # Search
@@ -442,9 +492,9 @@ def _handle_search_request(
 
     query = request_args.get("query", default=None, type=_dict_arg)
 
-    fields = request_args.get("fields", default=None, type=_dict_arg)
+    fields = request_args.get("fields", default=None, type=_field_arg)
 
-    sortby = request_args.get("sortby", default=None, type=_list_arg)
+    sortby = request_args.get("sortby", default=None, type=_sort_arg)
 
     filter_cql = request_args.get("filter", default=None, type=_dict_arg)
 
@@ -520,12 +570,14 @@ def _handle_search_request(
 # Item search extensions
 
 
-def _get_property(prop: str, item: pystac.Item, no_default=False):
+def _get_property(prop: str, item: ItemLike, no_default=False):
     """So that we don't have to keep using this bulky expression"""
-    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
+    if isinstance(item, pystac.Item):
+        item = item.to_dict()
+    return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
 
 
-def _predicate_helper(items: List[pystac.Item], prop: str, op: str, val) -> filter:
+def _predicate_helper(items: List[ItemLike], prop: str, op: str, val) -> filter:
     """Common comparison predicates used in both query and filter"""
     if op == "eq" or op == "=":
         return filter(lambda item: _get_property(prop, item) == val, items)
@@ -541,7 +593,7 @@ def _predicate_helper(items: List[pystac.Item], prop: str, op: str, val) -> filt
         return filter(lambda item: _get_property(prop, item) != val, items)
 
 
-def _handle_query_extension(items: List[pystac.Item], query: dict) -> List[pystac.Item]:
+def _handle_query_extension(items: List[ItemLike], query: dict) -> List[ItemLike]:
     """
     Implementation of item search query extension (https://github.com/stac-api-extensions/query/blob/main/README.md)
     The documentation doesn't specify whether multiple properties should be treated as logical AND or OR; this
@@ -575,68 +627,84 @@ def _handle_query_extension(items: List[pystac.Item], query: dict) -> List[pysta
     return filtered
 
 
-def _handle_fields_extension(
-    items: List[pystac.Item], fields: dict
-) -> List[pystac.Item]:
+def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
-    This implementation differs slightly from the documented semantics in that if only `exclude` is specified, those
-    attributes will be subtracted from the complete set of the item's attributes, not just the default. `exclude` will
-    also not remove any of the default attributes so as to prevent errors due to invalid stac items.
+    This implementation differs slightly from the documented semantics in that the default fields will always
+    be included regardless of `include` or `exclude` values so as to ensure valid stac items.
 
     fields = {'include': [...], 'exclude': [...]}
     """
     res = []
-    # minimum fields needed for a valid stac item
-    default_fields = [
-        "id",
-        "type",
-        "geometry",
-        "bbox",
-        "links",
-        "assets",
-        "properties.datetime",
-        "stac_version",
-    ]
 
     for item in items:
-        include = fields.get("include") or []
-        # if 'include' is provided we build up from an empty slate;
-        # but if only 'exclude' is provided we remove from all existing fields
-        filtered_item = {} if fields.get("include") else item.to_dict()
-        # union of 'include' and default fields to ensure a valid stac item
+        # minimum fields needed for a valid stac item
+        default_fields = [
+            "id",
+            "type",
+            "geometry",
+            "bbox",
+            "links",
+            "assets",
+            "stac_version",
+            # while not necessary for a valid stac item, we still want them included
+            "stac_extensions",
+            "collection",
+        ]
+
+        # datetime is one of the default fields, but might be included as start_datetime/end_datetime instead
+        if _get_property("properties.start_datetime", item) is None:
+            dt_field = ["properties.start_datetime", "properties.end_datetime"]
+        else:
+            dt_field = ["properties.datetime"]
+
+        try:
+            # if 'include' is present at all, start with default fields to add to or extract from
+            include = fields["include"]
+            if include is None:
+                include = []
+
+            filtered_item = {k: _get_property(k, item) for k in default_fields}
+            # handle datetime separately due to nested keys
+            for f in dt_field:
+                filtered_item = dicttoolz.assoc_in(
+                    filtered_item, f.split("."), _get_property(f, item)
+                )
+        except KeyError:
+            # if 'include' wasn't provided, remove 'exclude' fields from set of all available fields
+            filtered_item = item.to_dict()
+            include = []
+
+        # add datetime field names to list of defaults for easy access
+        default_fields.extend(dt_field)
         include = list(set(include + default_fields))
 
-        for inc in include:
-            filtered_item = dicttoolz.update_in(
-                d=filtered_item,
-                keys=inc.split("."),
-                # get corresponding field from item
-                # disallow default to avoid None values being inserted
-                func=lambda _: _get_property(inc, item, no_default=True),  # noqa: B023
-            )
-
-        for exc in fields.get("exclude") or []:
-            # don't remove a field if it will make for an invalid stac item
+        for exc in fields.get("exclude", []):
             if exc not in default_fields:
-                # what about a field that isn't there?
-                split = exc.split(".")
-                # have to manually take care of nested case because dicttoolz doesn't have a dissoc_in
-                if len(split):
-                    filtered_item[split[0]] = dicttoolz.dissoc(
-                        filtered_item[split[0]], split[1]
-                    )
-                else:
-                    filtered_item = dicttoolz.dissoc(filtered_item, exc)
+                filtered_item = dissoc_in(filtered_item, exc)
 
-        res.append(pystac.Item.from_dict(filtered_item))
+        # include takes precedence over exclude, plus account for a nested field of an excluded field
+        for inc in include:
+            # we don't want to insert None values if a field doesn't exist, but we also don't want to error
+            try:
+                filtered_item = dicttoolz.update_in(
+                    d=filtered_item,
+                    keys=inc.split("."),
+                    func=lambda _: _get_property(
+                        inc, item, no_default=True  # noqa: B023
+                    ),
+                )
+            except KeyError:
+                continue
+
+        res.append(filtered_item)
 
     return res
 
 
 def _handle_sortby_extension(
-    items: List[pystac.Item], sortby: List[dict]
-) -> List[pystac.Item]:
+    items: List[ItemLike], sortby: List[dict]
+) -> List[ItemLike]:
     """
     Implementation of sort extension (https://github.com/stac-api-extensions/sort/blob/main/README.md)
 
@@ -646,8 +714,14 @@ def _handle_sortby_extension(
 
     for s in sortby:
         field = s.get("field")
-        reverse = s.get("direction") == "desc"
-        # should we enforce correct names and raise error if not?
+        if not (field.startswith("properties.") or field in ["id", "collection"]):
+            abort(
+                400,
+                f"Cannot sort results by field {field}. Only 'id', 'collection', "
+                "or a propery attribute (prefixed with 'properties.') may be used to sort results.",
+            )
+        reverse = s.get("direction").lower().startswith("desc")
+        # should this error if the field doesn't exist?
         sorted_items = sorted(
             sorted_items, key=lambda i: _get_property(field, i), reverse=reverse
         )
@@ -655,9 +729,7 @@ def _handle_sortby_extension(
     return list(sorted_items)
 
 
-def _handle_filter_extension(
-    items: List[pystac.Item], filter_cql: dict
-) -> List[pystac.Item]:
+def _handle_filter_extension(items: List[ItemLike], filter_cql: dict) -> List[ItemLike]:
     """
     Implementation of filter extension (https://github.com/stac-api-extensions/filter/blob/main/README.md)
     Currently only supporting logical expression (and/or), null and binary comparisons, provided in cql-json
@@ -967,9 +1039,7 @@ def root():
         "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#query",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
-        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#fields",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
-        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#sort",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
         "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
         "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
