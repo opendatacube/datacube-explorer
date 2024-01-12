@@ -1335,7 +1335,7 @@ def test_stac_fields_extension(stac_client: FlaskClient):
 
     # with get
     rv: Response = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&+fields=properties.title"
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=+properties.title"
     )
     assert rv.status_code == 200
     doc = rv.json
