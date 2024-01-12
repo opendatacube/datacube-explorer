@@ -732,7 +732,7 @@ def _handle_sortby_extension(
     sorted_items = items
 
     # reverse sortby to ensure the first field is prioritised
-    for s in sortby.reversed():
+    for s in sortby.reverse():
         field = s.get("field")
         if not (field.startswith("properties.") or field in ["id", "collection"]):
             abort(
