@@ -71,3 +71,26 @@ jobs:
           repository: ${{ env.IMAGE_NAME }}
           readme-filepath: README.md
           short-description: Open Data Cube Explorer Image
+
+      - name: Push to GHCR
+        uses: macbre/push-to-ghcr@master
+        if: github.event_name == 'release'
+        with:
+          image_name: ${{ env.IMAGE_NAME }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        if: github.event_name == 'release'
+        with:
+          role-to-assume: arn:aws:iam::538673716275:role/github-actions-role
+          aws-region: ap-southeast-2
+
+      - name: Push image to ECR
+        uses: whoan/docker-build-with-cache-action@master
+        with:
+          context: ./docker
+          registry: 538673716275.dkr.ecr.ap-southeast-2.amazonaws.com
+          image_name: ${{ env.IMAGE_NAME }}
+          image_tag: latest,${{ env.RELEASE }}
+          build_extra_args: '{"--build-arg": "UPDATE_VERSION=${{ env.RELEASE }}"}'
