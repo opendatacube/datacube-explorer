@@ -1,6 +1,7 @@
 """
 Legacy redirects to maintain old stac api URLs
 """
+
 import json
 
 import flask

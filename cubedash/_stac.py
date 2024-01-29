@@ -196,18 +196,22 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
                     "odc:processing_datetime": utc(dataset.creation_time),
                 }
             ),
-            measurements={
-                name: _band_to_measurement(
-                    b,
-                    dataset_location=ds.uris[0] if ds is not None and ds.uris else None,
-                )
-                for name, b in ds.measurements.items()
-            }
-            if ds is not None
-            else {},
-            accessories=_accessories_from_eo1(ds.metadata_doc)
-            if ds is not None
-            else {},
+            measurements=(
+                {
+                    name: _band_to_measurement(
+                        b,
+                        dataset_location=(
+                            ds.uris[0] if ds is not None and ds.uris else None
+                        ),
+                    )
+                    for name, b in ds.measurements.items()
+                }
+                if ds is not None
+                else {}
+            ),
+            accessories=(
+                _accessories_from_eo1(ds.metadata_doc) if ds is not None else {}
+            ),
             # TODO: Fill in lineage. The datacube API only gives us full datasets, which is
             #       expensive. We only need a list of IDs here.
             lineage={},

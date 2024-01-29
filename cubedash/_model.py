@@ -38,9 +38,11 @@ BASE_DIR = Path(__file__).parent.parent
 if os.getenv("SENTRY_DSN"):
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
-        environment=os.getenv("SENTRY_ENV_TAG")
-        if os.getenv("SENTRY_ENV_TAG")
-        else "dev-explorer",
+        environment=(
+            os.getenv("SENTRY_ENV_TAG")
+            if os.getenv("SENTRY_ENV_TAG")
+            else "dev-explorer"
+        ),
         integrations=[
             FlaskIntegration(),
         ],

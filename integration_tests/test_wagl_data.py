@@ -1,6 +1,7 @@
 """
 Tests that load pages and check the contained text.
 """
+
 from datetime import datetime
 
 import pytest

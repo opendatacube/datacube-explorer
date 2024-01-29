@@ -1,6 +1,7 @@
 """
 Unit test for various app.config["CUBEDASH_DATA_S3_REGION"]
 """
+
 import pytest
 from flask import Flask, current_app
 
