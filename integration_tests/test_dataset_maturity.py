@@ -3,6 +3,7 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 4 datasets have maturity level: interim
 - 16 datasets have maturity level: final
 """
+
 from pathlib import Path
 
 import pytest

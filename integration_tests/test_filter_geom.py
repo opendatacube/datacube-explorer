@@ -1,6 +1,7 @@
 """
 Unit test for re-cursive geometry filtering
 """
+
 import json
 from pathlib import Path
 
