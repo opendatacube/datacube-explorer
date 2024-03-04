@@ -777,12 +777,12 @@ def search_stac_items(
             rel="next",
             title="Next page of Items",
             type="application/geo+json",
-            merge=True,
         )
         if use_post_request:
             next_link.update(
                 dict(
                     method="POST",
+                    merge=True,
                     # Unlike GET requests, we can tell them to repeat their same request args
                     # themselves.
                     #
