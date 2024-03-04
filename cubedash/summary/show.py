@@ -5,6 +5,7 @@ and time-periods.
 Useful for testing Explorer-generated summaries from
 scripts and the command-line.
 """
+
 import sys
 import time
 from textwrap import dedent

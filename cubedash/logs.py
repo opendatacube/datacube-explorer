@@ -47,9 +47,11 @@ def init_logging(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         # Coloured output if to terminal, otherwise json
-        BytesConsoleRenderer()
-        if not write_as_json
-        else structlog.processors.JSONRenderer(serializer=lenient_json_dump),
+        (
+            BytesConsoleRenderer()
+            if not write_as_json
+            else structlog.processors.JSONRenderer(serializer=lenient_json_dump)
+        ),
     ]
 
     hide_logging_levels = {

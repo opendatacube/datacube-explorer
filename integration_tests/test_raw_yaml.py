@@ -4,6 +4,7 @@ Tests rendered raw yaml pages by passing the rendered content to datacube cli to
 - odc-product.yaml (cli command: datacube product)
 - odc-metadata.yaml (cli command: datacube dataset)
 """
+
 import tempfile
 
 import datacube.scripts.cli_app
