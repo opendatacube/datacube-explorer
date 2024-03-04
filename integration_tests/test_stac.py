@@ -958,10 +958,11 @@ def test_next_link(stac_client: FlaskClient):
     )
     assert geojson.get("numberMatched") > len(geojson.get("features"))
 
-    [next_link] = [link for link in geojson.get("links", []) if link["rel"] == "next"]
-    next_href = next_link[0].get("href").replace("http://localhost", "")
+    next_link = _get_next_href(geojson)
+    assert next_link is not None
+    next_link = next_link.replace("http://localhost", "")
 
-    next_page = get_items(stac_client, next_href)
+    next_page = get_items(stac_client, next_link)
     assert next_page.get("numberMatched") == geojson.get("numberMatched")
     assert next_page["context"]["page"] == 1
 
