@@ -2,7 +2,6 @@ import json
 import logging
 import uuid
 from datetime import datetime, time as dt_time, timedelta
-from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import flask
@@ -19,7 +18,7 @@ from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
-from werkzeug.datastructures import TypeConversionDict
+from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
 from cubedash.summary._stores import DatasetItem
@@ -338,7 +337,7 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
-def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
+def _array_arg(arg: str | list, expect_type=str, expect_size=None) -> List:
     """
     Parse an argument that should be a simple list.
     """
@@ -419,21 +418,25 @@ def _list_arg(arg: list):
 
 
 def _handle_search_request(
-    request_args: TypeConversionDict,
+    method: str,
+    request_args: MultiDict,
     product_names: List[str],
     include_total_count: bool = True,
 ) -> ItemCollection:
-    bbox = request_args.get(
-        "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
-    )
+    bbox = request_args.getlist("bbox")
+    if len(bbox) == 1:
+        bbox = _array_arg(bbox[0], expect_size=4, expect_type=float)
 
     # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
     time = request_args.get("datetime") or request_args.get("time")
 
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
-    ids = request_args.get(
-        "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
-    )
+    ids = request_args.getlist("ids")
+    if len(ids) == 1:
+        ids = _array_arg(ids[0], expect_type=uuid.UUID)
+
+    if not ids:
+        ids = None
     offset = request_args.get("_o", default=0, type=int)
 
     # Request the full Item information. This forces us to go to the
@@ -490,7 +493,7 @@ def _handle_search_request(
         offset=offset,
         intersects=intersects,
         # The /stac/search api only supports intersects over post requests.
-        use_post_request=intersects is not None,
+        use_post_request=method == "POST" or intersects is not None,
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
@@ -771,24 +774,35 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
+        next_link = dict(
+            rel="next",
+            title="Next page of Items",
+            type="application/geo+json",
+            merge=True,
+        )
         if use_post_request:
-            next_link = dict(
-                rel="next",
-                method="POST",
-                merge=True,
-                # Unlike GET requests, we can tell them to repeat their same request args
-                # themselves.
-                #
-                # Same URL:
-                href=flask.request.url,
-                # ... with a new offset.
-                body=dict(
-                    _o=offset + limit,
-                ),
+            next_link.update(
+                dict(
+                    method="POST",
+                    # Unlike GET requests, we can tell them to repeat their same request args
+                    # themselves.
+                    #
+                    # Same URL:
+                    href=flask.request.url,
+                    # ... with a new offset.
+                    body=dict(
+                        _o=offset + limit,
+                    ),
+                )
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link = dict(rel="next", href=get_next_url(offset + limit))
+            next_link.update(
+                dict(
+                    method="GET",
+                    href=get_next_url(offset + limit),
+                )
+            )
 
         result.extra_fields["links"].append(next_link)
 
@@ -993,16 +1007,19 @@ def stac_search():
     if request.method == "GET":
         args = request.args
     else:
-        args = TypeConversionDict(request.get_json())
+        args = MultiDict(request.get_json())
 
-    products = args.get("collections", default=[], type=_array_arg)
+    products = args.getlist("collections")
+
     if "collection" in args:
         products.append(args.get("collection"))
     # Fallback for legacy 'product' argument
     elif "product" in args:
         products.append(args.get("product"))
 
-    return _geojson_stac_response(_handle_search_request(args, products))
+    return _geojson_stac_response(
+        _handle_search_request(request.method, args, products)
+    )
 
 
 # Collections
