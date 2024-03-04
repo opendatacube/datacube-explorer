@@ -425,7 +425,7 @@ def _handle_search_request(
     include_total_count: bool = True,
 ) -> ItemCollection:
     bbox = request_args.get(
-        "bbox", default=[], type=partial(_array_arg, expect_size=4, expect_type=float)
+        "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
     )
 
     # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
