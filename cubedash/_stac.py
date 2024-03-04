@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, time as dt_time, timedelta
+from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import flask
@@ -18,7 +19,7 @@ from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
-from werkzeug.datastructures import MultiDict
+from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
 from cubedash.summary._stores import DatasetItem
@@ -415,24 +416,22 @@ def _list_arg(arg: list):
 
 def _handle_search_request(
     method: str,
-    request_args: MultiDict,
+    request_args: TypeConversionDict,
     product_names: List[str],
     include_total_count: bool = True,
 ) -> ItemCollection:
-    bbox = request_args.getlist("bbox")
-    if len(bbox) == 1:
-        bbox = _array_arg(bbox[0], expect_size=4, expect_type=float)
+    bbox = request_args.get(
+        "bbox", default=[], type=partial(_array_arg, expect_size=4, expect_type=float)
+    )
 
     # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
     time = request_args.get("datetime") or request_args.get("time")
 
     limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
-    ids = request_args.getlist("ids")
-    if len(ids) == 1:
-        ids = _array_arg(ids[0], expect_type=uuid.UUID)
+    ids = request_args.get(
+        "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
+    )
 
-    if not ids:
-        ids = None
     offset = request_args.get("_o", default=0, type=int)
 
     # Request the full Item information. This forces us to go to the
@@ -467,7 +466,7 @@ def _handle_search_request(
     def next_page_url(next_offset):
         return url_for(
             ".stac_search",
-            collections=product_names,
+            collections=",".join(product_names),
             bbox="{},{},{},{}".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             ids=",".join(map(str, ids)) if ids else None,
@@ -1003,9 +1002,9 @@ def stac_search():
     if request.method == "GET":
         args = request.args
     else:
-        args = MultiDict(request.get_json())
+        args = TypeConversionDict(request.get_json())
 
-    products = args.getlist("collections")
+    products = args.get("collections", default=[], type=_array_arg)
 
     if "collection" in args:
         products.append(args.get("collection"))
