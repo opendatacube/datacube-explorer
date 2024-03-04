@@ -950,6 +950,22 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
+def test_next_link(stac_client: FlaskClient):
+    # next link should return next page of results
+    geojson = get_items(
+        stac_client,
+        ("/stac/search?" "collections=ga_ls8c_ard_3,ls7_nbart_albers"),
+    )
+    assert geojson.get("numberMatched") > len(geojson.get("features"))
+
+    [next_link] = [link for link in geojson.get("links", []) if link["rel"] == "next"]
+    next_href = next_link[0].get("href").replace("http://localhost", "")
+
+    next_page = get_items(stac_client, next_href)
+    assert next_page.get("numberMatched") == geojson.get("numberMatched")
+    assert next_page["context"]["page"] == 1
+
+
 def test_stac_search_by_ids(stac_client: FlaskClient):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
