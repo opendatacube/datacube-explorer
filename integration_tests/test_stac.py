@@ -1121,6 +1121,8 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
 
     assert next_link == {
         "rel": "next",
+        "title": "Next page of Items",
+        "type": "application/geo+json",
         "method": "POST",
         "href": "http://localhost/stac/search",
         # Tell the client to merge with their original params, but set a new offset.
