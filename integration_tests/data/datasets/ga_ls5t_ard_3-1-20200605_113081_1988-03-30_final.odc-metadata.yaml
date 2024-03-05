@@ -27,10 +27,10 @@ grids:
     transform: [30.0, 0.0, 233985.0, 0.0, -30.0, -3248685.0, 0.0, 0.0, 1.0]
 
 properties:
-  datetime: 1988-03-30 01:41:16.892044Z
+  datetime: '1988-03-30 01:41:16.892044Z'
   dea:dataset_maturity: final
-  dtr:end_datetime: 1988-03-30 01:41:30.539592Z
-  dtr:start_datetime: 1988-03-30 01:41:03.171855Z
+  dtr:end_datetime: '1988-03-30 01:41:30.539592Z'
+  dtr:start_datetime: '1988-03-30 01:41:03.171855Z'
   eo:cloud_cover: 0.23252452200636467
   eo:gsd: 30.0  # Ground sample distance (m)
   eo:instrument: TM
@@ -69,7 +69,7 @@ properties:
   landsat:wrs_row: 81
   odc:dataset_version: 3.1.20200605
   odc:file_format: GeoTIFF
-  odc:processing_datetime: 2020-06-05 07:15:26.599544Z
+  odc:processing_datetime: '2020-06-05 07:15:26.599544Z'
   odc:producer: ga.gov.au
   odc:product_family: ard
   odc:region_code: '113081'
