@@ -935,7 +935,7 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
                 yield dict(res)
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _get_path_row_shapes():
     path_row_shapes = {}
     for shape_file in _WRS_PATH_ROW:

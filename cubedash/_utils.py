@@ -743,9 +743,9 @@ def prepare_document_formatting(
             for type_, source_dataset_doc in ordered_metadata["lineage"][
                 "source_datasets"
             ].items():
-                ordered_metadata["lineage"]["source_datasets"][
-                    type_
-                ] = prepare_document_formatting(source_dataset_doc)
+                ordered_metadata["lineage"]["source_datasets"][type_] = (
+                    prepare_document_formatting(source_dataset_doc)
+                )
 
     # Products have an embedded metadata doc (subset of dataset metadata)
     if "metadata" in ordered_metadata:

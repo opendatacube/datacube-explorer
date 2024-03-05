@@ -5,10 +5,11 @@ Tests that hit the stac api
 import json
 import urllib.parse
 from collections import Counter, defaultdict
-from functools import lru_cache, partial
+from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, Generator, Iterable, List, Optional, Union
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 import jsonschema
@@ -18,6 +19,7 @@ from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
+from referencing import Registry, Resource
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -188,19 +190,16 @@ def load_schema_doc(
     except SchemaError as e:
         raise RuntimeError(f"Invalid schema {location}") from e
 
-    ref_resolver = jsonschema.RefResolver.from_schema(
-        schema,
-        handlers={
-            "": partial(_local_reference, location),
-            "https": _web_reference,
-            "http": _web_reference,
-        },
-    )
-    return jsonschema.Draft7Validator(schema, resolver=ref_resolver)
+    def retrieve(uri: str):
+        parsed = urlsplit(uri)
+        if parsed.scheme == "https" or parsed.scheme == "http":
+            return Resource.from_contents(_web_reference(uri))
+        return Resource.from_contents(_local_reference(location, uri))
+
+    return jsonschema.Draft7Validator(schema, registry=Registry(retrieve=retrieve))
 
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-# NOTE: you will need to manually update the stac version for the itemcollection schema.
 _CATALOG_SCHEMA = load_validator(
     _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json"
 )
@@ -742,7 +741,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
     expected = {
         "stac_version": "1.0.0",
         "stac_extensions": [
-            "https://stac-extensions.github.io/eo/v1.0.0/schema.json",
+            "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
             "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
         ],
         "type": "Feature",

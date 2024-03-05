@@ -1,5 +1,6 @@
 """Gunicorn config for Prometheus internal metrics
 """
+
 import os
 
 

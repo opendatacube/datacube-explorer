@@ -2,12 +2,12 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 2023.4.1
+    rev: 2024.1.1
     hooks:
     - id: shed
   # Python Linting
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 7.0.0
     hooks:
       - id: flake8
         exclude: ^docs/
@@ -25,7 +25,7 @@ repos:
           - pep8-naming # Follow pep8 naming rules (eg. function names lowercase)
   # Lint Python snippets embedded in Markdown (using flake8)
   - repo: https://github.com/johnfraney/flake8-markdown
-    rev: v0.4.0
+    rev: v0.5.0
     hooks:
       - id: flake8-markdown
   # # Lint Jinja2 templates
@@ -35,13 +35,13 @@ repos:
   #   - id: curlylint
   # Lint Yaml files
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.31.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         args: ['-c', '.yamllint']
   # Common pre-commit checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-added-large-files # We don't want huge files. (Cut down test data!)
         args: ['--maxkb=2000']
@@ -49,18 +49,20 @@ repos:
       - id: check-docstring-first # Avoid common error of code before docstring.
       - id: check-json # Check json file syntax
         # (Exclude Typescript config: it uses json5 extensions)
-        exclude: 'tsconfig.json'
+        exclude: 'tsconfig.json|^integration_tests/schemas/'
       - id: check-merge-conflict # Don't commit merge-conflicts
       - id: check-symlinks # Symlinks that don't point to anything?
       - id: check-yaml # Check Yaml file syntax
         args: [--allow-multiple-documents]
       - id: debug-statements # Avoid commiting debug/breakpoints
       - id: end-of-file-fixer # Normalise on exactly one newline
+        exclude: '^integration_tests/schemas/'
       - id: fix-byte-order-marker # No UTF-8 byte order marks
       - id: mixed-line-ending # Don't allow mixed line endings
       - id: pretty-format-json
         args: ['--no-sort-keys', '--indent=4', '--autofix']
         # (Exclude Typescript config: it uses json5 extensions)
-        exclude: 'tsconfig.json'
+        exclude: 'tsconfig.json|^integration_tests/schemas/'
       - id: requirements-txt-fixer # Keep requirements files sorted.
       - id: trailing-whitespace # Auto remove trailing whitespace
+        exclude: '^integration_tests/schemas/'

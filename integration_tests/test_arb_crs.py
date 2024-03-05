@@ -2,6 +2,7 @@
 Test utility method for creating valid EPSG code based CRS from
 possible WKT String
 """
+
 from pyproj import CRS
 
 from cubedash._utils import infer_crs

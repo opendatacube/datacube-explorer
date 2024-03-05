@@ -116,9 +116,11 @@ def product_page(
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
-        product_region_info=_model.STORE.get_product_region_info(product_name)
-        if region_geojson
-        else None,
+        product_region_info=(
+            _model.STORE.get_product_region_info(product_name)
+            if region_geojson
+            else None
+        ),
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.
@@ -425,9 +427,7 @@ def timeline_page(product_name: str):
     return redirect(url_for("product_page", product_name=product_name))
 
 
-def _load_product(
-    product_name, year, month, day
-) -> Tuple[
+def _load_product(product_name, year, month, day) -> Tuple[
     DatasetType,
     ProductSummary,
     TimePeriodOverview,

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           branch: develop
@@ -26,7 +26,7 @@ jobs:
 
       - name: Build unstable + latest Docker image tag
         if: github.event_name != 'release'
-        uses: whoan/docker-build-with-cache-action@v4
+        uses: whoan/docker-build-with-cache-action@v8
         with:
           image_name: ${{ env.IMAGE_NAME }}
           image_tag: ${{ env.UNSTABLE_TAG }},latest
@@ -45,6 +45,6 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
