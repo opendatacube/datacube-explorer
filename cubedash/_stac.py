@@ -338,7 +338,9 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
-def _array_arg(arg: Union[str, list], expect_type=str, expect_size=None) -> List:
+def _array_arg(
+    arg: Union[str, List[Union[str, float]]], expect_type=str, expect_size=None
+) -> List:
     """
     Parse an argument that should be a simple list.
     """
