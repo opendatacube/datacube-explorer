@@ -338,7 +338,7 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
-def _array_arg(arg: str | list, expect_type=str, expect_size=None) -> List:
+def _array_arg(arg: Union[str, list], expect_type=str, expect_size=None) -> List:
     """
     Parse an argument that should be a simple list.
     """
@@ -347,6 +347,8 @@ def _array_arg(arg: str | list, expect_type=str, expect_size=None) -> List:
 
     # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
     try:
+        if not isinstance(arg, str):
+            raise ValueError
         arg = arg.strip()
         # Legacy json-like format. This is what sat-api seems to do too.
         if arg.startswith("["):
