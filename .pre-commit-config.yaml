@@ -2,12 +2,12 @@
 repos:
   # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
   - repo: https://github.com/Zac-HD/shed
-    rev: 2023.6.1
+    rev: 2024.1.1
     hooks:
     - id: shed
   # Python Linting
   - repo: https://github.com/pycqa/flake8
-    rev: 6.1.0
+    rev: 7.0.0
     hooks:
       - id: flake8
         exclude: ^docs/
@@ -35,7 +35,7 @@ repos:
   #   - id: curlylint
   # Lint Yaml files
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.33.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
         args: ['-c', '.yamllint']

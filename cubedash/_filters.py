@@ -2,7 +2,6 @@
 Common global filters for templates.
 """
 
-
 import calendar
 import logging
 from datetime import datetime
