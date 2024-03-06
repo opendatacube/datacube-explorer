@@ -471,7 +471,6 @@ def _sort_arg(arg: Union[str, list]):
 
 def _filter_arg(arg: Union[str, dict]):
     # if dict, assume cql2-json and return as-is
-    # or do we need to use parse_cql2_json as well?
     if isinstance(arg, dict):
         return arg
     # if json string, convert to dict
@@ -787,6 +786,10 @@ def _handle_filter_extension(items: List[ItemLike], filter_cql: dict) -> List[It
         )
     else:
         prop = args[0].get("property")
+        if prop not in ["id", "collection", "geometry"] and not prop.startswith(
+            "properties"
+        ):
+            prop = "properties." + prop
         val = args[1]
         results = _predicate_helper(items, prop, op, val)
 
@@ -1066,6 +1069,7 @@ def root():
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
+        "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
         "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
         "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
         "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
