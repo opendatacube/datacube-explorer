@@ -358,7 +358,9 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
-def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
+def _array_arg(
+    arg: Union[str, List[Union[str, float]]], expect_type=str, expect_size=None
+) -> List:
     """
     Parse an argument that should be a simple list.
     """
@@ -367,6 +369,8 @@ def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
 
     # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
     try:
+        if not isinstance(arg, str):
+            raise ValueError
         arg = arg.strip()
         # Legacy json-like format. This is what sat-api seems to do too.
         if arg.startswith("["):
@@ -485,6 +489,7 @@ def _filter_arg(arg: Union[str, dict]):
 
 
 def _handle_search_request(
+    method: str,
     request_args: TypeConversionDict,
     product_names: List[str],
     include_total_count: bool = True,
@@ -500,6 +505,7 @@ def _handle_search_request(
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
     )
+
     offset = request_args.get("_o", default=0, type=int)
 
     # Request the full Item information. This forces us to go to the
@@ -535,7 +541,7 @@ def _handle_search_request(
     def next_page_url(next_offset):
         return url_for(
             ".stac_search",
-            collections=product_names,
+            collections=",".join(product_names),
             bbox="{},{},{},{}".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             ids=",".join(map(str, ids)) if ids else None,
@@ -558,7 +564,7 @@ def _handle_search_request(
         offset=offset,
         intersects=intersects,
         # The /stac/search api only supports intersects over post requests.
-        use_post_request=intersects is not None,
+        use_post_request=method == "POST" or intersects is not None,
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
@@ -867,24 +873,35 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
+        next_link = dict(
+            rel="next",
+            title="Next page of Items",
+            type="application/geo+json",
+        )
         if use_post_request:
-            next_link = dict(
-                rel="next",
-                method="POST",
-                merge=True,
-                # Unlike GET requests, we can tell them to repeat their same request args
-                # themselves.
-                #
-                # Same URL:
-                href=flask.request.url,
-                # ... with a new offset.
-                body=dict(
-                    _o=offset + limit,
-                ),
+            next_link.update(
+                dict(
+                    method="POST",
+                    merge=True,
+                    # Unlike GET requests, we can tell them to repeat their same request args
+                    # themselves.
+                    #
+                    # Same URL:
+                    href=flask.request.url,
+                    # ... with a new offset.
+                    body=dict(
+                        _o=offset + limit,
+                    ),
+                )
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link = dict(rel="next", href=get_next_url(offset + limit))
+            next_link.update(
+                dict(
+                    method="GET",
+                    href=get_next_url(offset + limit),
+                )
+            )
 
         result.extra_fields["links"].append(next_link)
 
@@ -1091,13 +1108,16 @@ def stac_search():
         args = TypeConversionDict(request.get_json())
 
     products = args.get("collections", default=[], type=_array_arg)
+
     if "collection" in args:
         products.append(args.get("collection"))
     # Fallback for legacy 'product' argument
     elif "product" in args:
         products.append(args.get("product"))
 
-    return _geojson_stac_response(_handle_search_request(args, products))
+    return _geojson_stac_response(
+        _handle_search_request(request.method, args, products)
+    )
 
 
 # Collections
