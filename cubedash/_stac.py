@@ -414,9 +414,7 @@ def _list_arg(arg: list):
     """
     if isinstance(arg, str):
         arg = list(arg)
-    return list(
-        map(lambda a: json.loads(a.replace("'", '"')) if isinstance(a, str) else a, arg)
-    )
+    return [json.loads(a.replace("'", '"')) if isinstance(a, str) else a for a in arg]
 
 
 # Search
@@ -508,20 +506,20 @@ def _handle_search_request(
 
     feature_collection.extra_fields["links"].extend(
         (
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="GET",
-            ),
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="POST",
-            ),
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "GET",
+            },
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "POST",
+            },
         )
     )
     return feature_collection
@@ -749,18 +747,18 @@ def search_stac_items(
     page = 0
     if limit != 0:
         page = offset // limit
-    extra_properties = dict(
-        links=[],
+    extra_properties = {
+        "links": [],
         # Stac standard
-        numberReturned=len(returned),
+        "numberReturned": len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
-        context=dict(
-            page=page,
-            limit=limit,
-            returned=len(returned),
-        ),
-    )
+        "context": {
+            "page": page,
+            "limit": limit,
+            "returned": len(returned),
+        },
+    }
     if include_total_count:
         count_matching = _model.STORE.get_count(
             product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
@@ -777,34 +775,34 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
-        next_link = dict(
-            rel="next",
-            title="Next page of Items",
-            type="application/geo+json",
-        )
+        next_link = {
+            "rel": "next",
+            "title": "Next page of Items",
+            "type": "application/geo+json",
+        }
         if use_post_request:
             next_link.update(
-                dict(
-                    method="POST",
-                    merge=True,
+                {
+                    "method": "POST",
+                    "merge": True,
                     # Unlike GET requests, we can tell them to repeat their same request args
                     # themselves.
                     #
                     # Same URL:
-                    href=flask.request.url,
+                    "href": flask.request.url,
                     # ... with a new offset.
-                    body=dict(
-                        _o=offset + limit,
-                    ),
-                )
+                    "body": {
+                        "_o": offset + limit,
+                    },
+                }
             )
         else:
             # Otherwise, let the route create the next url.
             next_link.update(
-                dict(
-                    method="GET",
-                    href=get_next_url(offset + limit),
-                )
+                {
+                    "method": "GET",
+                    "href": get_next_url(offset + limit),
+                }
             )
 
         result.extra_fields["links"].append(next_link)
@@ -906,10 +904,10 @@ def _geojson_stac_response(doc: Union[STACObject, ItemCollection]) -> flask.Resp
 
 def stac_endpoint_information() -> Dict:
     config = _model.app.config
-    o = dict(
-        id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
-    )
+    o = {
+        "id": config.get("STAC_ENDPOINT_ID", "odc-explorer"),
+        "title": config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
+    }
     description = config.get(
         "STAC_ENDPOINT_DESCRIPTION",
         "Configure stac endpoint information in your Explorer `settings.env.py` file",
@@ -997,7 +995,7 @@ def root():
         "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
         "https://api.stacspec.org/v1.0.0-rc.1/collections",
     ]
-    c.extra_fields = dict(conformsTo=conformance_classes)
+    c.extra_fields = {"conformsTo": conformance_classes}
 
     return _stac_response(c)
 
@@ -1035,18 +1033,18 @@ def collections():
      an array (instead of just a link to each collection).
     """
     return _utils.as_json(
-        dict(
-            links=[
-                dict(rel="self", type="application/json", href=request.url),
-                dict(rel="root", type="application/json", href=url_for(".root")),
-                dict(rel="parent", type="application/json", href=url_for(".root")),
+        {
+            "links": [
+                {"rel": "self", "type": "application/json", "href": request.url},
+                {"rel": "root", "type": "application/json", "href": url_for(".root")},
+                {"rel": "parent", "type": "application/json", "href": url_for(".root")},
             ],
-            collections=[
+            "collections": [
                 # TODO: This has a root link, right?
                 _stac_collection(product.name).to_dict()
                 for product, product_summary in _model.get_products_with_summaries()
             ],
-        )
+        }
     )
 
 
