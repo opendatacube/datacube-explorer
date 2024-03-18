@@ -230,7 +230,7 @@ def search_page(  # noqa: C901
 
     if request_wants_json():
         return as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            {"datasets": [build_dataset_info(_model.STORE.index, d) for d in datasets]}
         )
 
     # For display on the page (and future searches).
@@ -329,12 +329,12 @@ def region_page(
         )
     )
 
-    same_region_products = list(
+    same_region_products = [
         product.name
         for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
-    )
+    ]
 
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
@@ -356,7 +356,7 @@ def region_page(
 
     if request_wants_json():
         return as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            {"datasets": [build_dataset_info(_model.STORE.index, d) for d in datasets]}
         )
 
     return utils.render(
@@ -404,10 +404,10 @@ def region_geojson(
 
     geojson = region_info.region(region_code).footprint_geojson
     geojson["properties"].update(
-        dict(
-            product_name=product_name,
-            year_month_day_filter=[year, month, day],
-        )
+        {
+            "product_name": product_name,
+            "year_month_day_filter": [year, month, day],
+        }
     )
     return utils.as_geojson(
         geojson,
@@ -474,25 +474,27 @@ def inject_globals():
         if product_summary:
             last_updated = product_summary.last_successful_summary_time
 
-    return dict(
+    return {
         # Only the known, summarised products in groups.
-        grouped_products=_get_grouped_products(),
+        "grouped_products": _get_grouped_products(),
         # All products in the datacube, summarised or not.
-        datacube_products=list(_model.STORE.index.products.get_all()),
-        hidden_product_list=app.config.get("CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []),
-        datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
-        current_time=datetime.utcnow(),
-        datacube_version=datacube.__version__,
-        app_version=cubedash.__version__,
-        grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
-        last_updated_time=last_updated,
-        explorer_instance_title=app.config.get(
+        "datacube_products": list(_model.STORE.index.products.get_all()),
+        "hidden_product_list": app.config.get(
+            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
+        ),
+        "datacube_metadata_types": list(_model.STORE.index.metadata_types.get_all()),
+        "current_time": datetime.utcnow(),
+        "datacube_version": datacube.__version__,
+        "app_version": cubedash.__version__,
+        "grouping_timezone": tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
+        "last_updated_time": last_updated,
+        "explorer_instance_title": app.config.get(
             "CUBEDASH_INSTANCE_TITLE",
         )
         or app.config.get("STAC_ENDPOINT_TITLE", ""),
-        explorer_sister_instances=app.config.get("CUBEDASH_SISTER_SITES", None),
-        breadcrumb=_get_breadcrumbs(request.path, request.script_root),
-    )
+        "explorer_sister_instances": app.config.get("CUBEDASH_SISTER_SITES", None),
+        "breadcrumb": _get_breadcrumbs(request.path, request.script_root),
+    }
 
 
 HREF = str

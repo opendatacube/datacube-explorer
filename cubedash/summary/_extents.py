@@ -83,7 +83,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 [
                     # If we have geometry, use it as the polygon.
                     (
-                        doc[["geometry"]] != None,
+                        doc[["geometry"]] is not None,
                         func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
                     )
                 ],
@@ -99,7 +99,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 [
                     # If we have valid_data offset, use it as the polygon.
                     (
-                        doc[valid_data_offset] != None,
+                        doc[valid_data_offset] is not None,
                         func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
                     )
                 ],
@@ -409,9 +409,9 @@ def refresh_spatial_extents(
                         .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
                         .values(footprint=bindparam("footprint")),
                         [
-                            dict(
-                                dataset_id=id_,
-                                footprint=from_shape(
+                            {
+                                "dataset_id": id_,
+                                "footprint": from_shape(
                                     shapely.ops.unary_union(
                                         [
                                             shapes[(int(sat_path.lower), row)]
@@ -424,7 +424,7 @@ def refresh_spatial_extents(
                                     srid=4326,
                                     extended=True,
                                 ),
-                            )
+                            }
                             for id_, sat_path, sat_row in rows
                         ],
                     )
@@ -926,7 +926,7 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
                         DATASET.c.dataset_type_ref
                         == bindparam("product_ref", product.id, type_=SmallInteger)
                     )
-                    .where(DATASET.c.archived == None)
+                    .where(DATASET.c.archived is None)
                     .limit(1)
                 )
                 .fetchone()
@@ -968,7 +968,7 @@ def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]
                         ]
                     )
                     .where(DATASET.c.dataset_type_ref == product.id)
-                    .where(DATASET.c.archived == None)
+                    .where(DATASET.c.archived is None)
                     .limit(1)
                 )
                 .fetchone()
