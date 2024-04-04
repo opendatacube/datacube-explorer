@@ -33,9 +33,9 @@ def datasets_geojson(
     time = _utils.as_time_range(year, month, day, tzinfo=_model.STORE.grouping_timezone)
 
     return as_geojson(
-        dict(
-            type="FeatureCollection",
-            features=[
+        {
+            "type": "FeatureCollection",
+            "features": [
                 s.as_geojson()
                 for s in _model.STORE.search_items(
                     product_names=[product_name],
@@ -45,7 +45,7 @@ def datasets_geojson(
                 )
                 if s.geom_geojson is not None
             ],
-        ),
+        },
         downloadable_filename_prefix=_utils.api_path_as_filename_prefix(),
     )
 

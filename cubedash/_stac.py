@@ -358,7 +358,9 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
-def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
+def _array_arg(
+    arg: Union[str, List[Union[str, float]]], expect_type=str, expect_size=None
+) -> List:
     """
     Parse an argument that should be a simple list.
     """
@@ -367,6 +369,8 @@ def _array_arg(arg: str, expect_type=str, expect_size=None) -> List:
 
     # Make invalid arguments loud. The default ValueError behaviour is to quietly forget the param.
     try:
+        if not isinstance(arg, str):
+            raise ValueError
         arg = arg.strip()
         # Legacy json-like format. This is what sat-api seems to do too.
         if arg.startswith("["):
@@ -485,6 +489,7 @@ def _filter_arg(arg: Union[str, dict]):
 
 
 def _handle_search_request(
+    method: str,
     request_args: TypeConversionDict,
     product_names: List[str],
     include_total_count: bool = True,
@@ -500,6 +505,7 @@ def _handle_search_request(
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
     )
+
     offset = request_args.get("_o", default=0, type=int)
 
     # Request the full Item information. This forces us to go to the
@@ -535,7 +541,7 @@ def _handle_search_request(
     def next_page_url(next_offset):
         return url_for(
             ".stac_search",
-            collections=product_names,
+            collections=",".join(product_names),
             bbox="{},{},{},{}".format(*bbox) if bbox else None,
             time=_unparse_time_range(time) if time else None,
             ids=",".join(map(str, ids)) if ids else None,
@@ -558,7 +564,7 @@ def _handle_search_request(
         offset=offset,
         intersects=intersects,
         # The /stac/search api only supports intersects over post requests.
-        use_post_request=intersects is not None,
+        use_post_request=method == "POST" or intersects is not None,
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
@@ -570,20 +576,20 @@ def _handle_search_request(
 
     feature_collection.extra_fields["links"].extend(
         (
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="GET",
-            ),
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="POST",
-            ),
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "GET",
+            },
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "POST",
+            },
         )
     )
     return feature_collection
@@ -839,18 +845,18 @@ def search_stac_items(
     page = 0
     if limit != 0:
         page = offset // limit
-    extra_properties = dict(
-        links=[],
+    extra_properties = {
+        "links": [],
         # Stac standard
-        numberReturned=len(returned),
+        "numberReturned": len(returned),
         # Compatibility with older implementation. Was removed from stac-api standard.
         # (page numbers + limits are not ideal as they prevent some big db optimisations.)
-        context=dict(
-            page=page,
-            limit=limit,
-            returned=len(returned),
-        ),
-    )
+        "context": {
+            "page": page,
+            "limit": limit,
+            "returned": len(returned),
+        },
+    }
     if include_total_count:
         count_matching = _model.STORE.get_count(
             product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
@@ -867,24 +873,35 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
+        next_link = {
+            "rel": "next",
+            "title": "Next page of Items",
+            "type": "application/geo+json",
+        }
         if use_post_request:
-            next_link = dict(
-                rel="next",
-                method="POST",
-                merge=True,
-                # Unlike GET requests, we can tell them to repeat their same request args
-                # themselves.
-                #
-                # Same URL:
-                href=flask.request.url,
-                # ... with a new offset.
-                body=dict(
-                    _o=offset + limit,
-                ),
+            next_link.update(
+                {
+                    "method": "POST",
+                    "merge": True,
+                    # Unlike GET requests, we can tell them to repeat their same request args
+                    # themselves.
+                    #
+                    # Same URL:
+                    "href": flask.request.url,
+                    # ... with a new offset.
+                    "body": {
+                        "_o": offset + limit,
+                    },
+                }
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link = dict(rel="next", href=get_next_url(offset + limit))
+            next_link.update(
+                {
+                    "method": "GET",
+                    "href": get_next_url(offset + limit),
+                }
+            )
 
         result.extra_fields["links"].append(next_link)
 
@@ -985,10 +1002,10 @@ def _geojson_stac_response(doc: Union[STACObject, ItemCollection]) -> flask.Resp
 
 def stac_endpoint_information() -> Dict:
     config = _model.app.config
-    o = dict(
-        id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
-    )
+    o = {
+        "id": config.get("STAC_ENDPOINT_ID", "odc-explorer"),
+        "title": config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
+    }
     description = config.get(
         "STAC_ENDPOINT_DESCRIPTION",
         "Configure stac endpoint information in your Explorer `settings.env.py` file",
@@ -1075,7 +1092,7 @@ def root():
         "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
         "https://api.stacspec.org/v1.0.0-rc.1/collections",
     ]
-    c.extra_fields = dict(conformsTo=conformance_classes)
+    c.extra_fields = {"conformsTo": conformance_classes}
 
     return _stac_response(c)
 
@@ -1091,13 +1108,16 @@ def stac_search():
         args = TypeConversionDict(request.get_json())
 
     products = args.get("collections", default=[], type=_array_arg)
+
     if "collection" in args:
         products.append(args.get("collection"))
     # Fallback for legacy 'product' argument
     elif "product" in args:
         products.append(args.get("product"))
 
-    return _geojson_stac_response(_handle_search_request(args, products))
+    return _geojson_stac_response(
+        _handle_search_request(request.method, args, products)
+    )
 
 
 # Collections
@@ -1110,18 +1130,18 @@ def collections():
      an array (instead of just a link to each collection).
     """
     return _utils.as_json(
-        dict(
-            links=[
-                dict(rel="self", type="application/json", href=request.url),
-                dict(rel="root", type="application/json", href=url_for(".root")),
-                dict(rel="parent", type="application/json", href=url_for(".root")),
+        {
+            "links": [
+                {"rel": "self", "type": "application/json", "href": request.url},
+                {"rel": "root", "type": "application/json", "href": url_for(".root")},
+                {"rel": "parent", "type": "application/json", "href": url_for(".root")},
             ],
-            collections=[
+            "collections": [
                 # TODO: This has a root link, right?
                 _stac_collection(product.name).to_dict()
                 for product, product_summary in _model.get_products_with_summaries()
             ],
-        )
+        }
     )
 
 

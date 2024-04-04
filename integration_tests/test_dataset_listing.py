@@ -48,9 +48,10 @@ def test_parse_query_args(odc_test_db: Datacube):
         product,
     )
 
-    assert res == dict(
-        time=Range(datetime(2017, 8, 8), datetime(2017, 8, 9)), gqa=Range(-3, 3)
-    )
+    assert res == {
+        "time": Range(datetime(2017, 8, 8), datetime(2017, 8, 9)),
+        "gqa": Range(-3, 3),
+    }
 
 
 @pytest.mark.skip(
@@ -70,7 +71,7 @@ def test_default_args(dea_index: Index):
     res = query_to_search(MultiDict(()), product)
 
     # The last month of LANDSAT_5 for this product
-    assert res == dict(
+    assert res == {
         # time=Range(datetime(2011, 10, 30), datetime(2011, 11, 30)),
         # product=product.name
-    )
+    }

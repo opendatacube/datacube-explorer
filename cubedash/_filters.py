@@ -173,9 +173,7 @@ _NULL_VALUE = Markup('<span class="null-value" title="Unspecified">•</span>')
 @bp.app_template_filter("query_value")
 def _format_query_value(val):
     if isinstance(val, Range):
-        return "{} to {}".format(
-            _format_query_value(val.begin), _format_query_value(val.end)
-        )
+        return f"{_format_query_value(val.begin)} to {_format_query_value(val.end)}"
     if isinstance(val, datetime):
         return _format_datetime(val)
     if val is None:

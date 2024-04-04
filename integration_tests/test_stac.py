@@ -437,20 +437,20 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     )
     validate_items(
         all_items,
-        expect_count=dict(
-            wofs_albers=11,
-            ls8_nbar_scene=7,
-            ls8_level1_scene=7,
-            ls8_nbart_scene=7,
-            ls8_pq_legacy_scene=7,
-            ls8_nbart_albers=7,
-            ls8_satellite_telemetry_data=6,
-            ls7_nbart_albers=4,
-            ls7_nbart_scene=4,
-            ls7_nbar_scene=4,
-            ls7_pq_legacy_scene=4,
-            ls7_level1_scene=4,
-        ),
+        expect_count={
+            "wofs_albers": 11,
+            "ls8_nbar_scene": 7,
+            "ls8_level1_scene": 7,
+            "ls8_nbart_scene": 7,
+            "ls8_pq_legacy_scene": 7,
+            "ls8_nbart_albers": 7,
+            "ls8_satellite_telemetry_data": 6,
+            "ls7_nbart_albers": 4,
+            "ls7_nbart_scene": 4,
+            "ls7_nbar_scene": 4,
+            "ls7_pq_legacy_scene": 4,
+            "ls7_level1_scene": 4,
+        },
     )
 
 
@@ -950,6 +950,23 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
+def test_next_link(stac_client: FlaskClient):
+    # next link should return next page of results
+    geojson = get_items(
+        stac_client,
+        ("/stac/search?" "collections=ga_ls8c_ard_3,ls7_nbart_albers"),
+    )
+    assert geojson.get("numberMatched") > len(geojson.get("features"))
+
+    next_link = _get_next_href(geojson)
+    assert next_link is not None
+    next_link = next_link.replace("http://localhost", "")
+
+    next_page = get_items(stac_client, next_link)
+    assert next_page.get("numberMatched") == geojson.get("numberMatched")
+    assert next_page["context"]["page"] == 1
+
+
 def test_stac_search_by_ids(stac_client: FlaskClient):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
@@ -1105,6 +1122,8 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
 
     assert next_link == {
         "rel": "next",
+        "title": "Next page of Items",
+        "type": "application/geo+json",
         "method": "POST",
         "href": "http://localhost/stac/search",
         # Tell the client to merge with their original params, but set a new offset.
@@ -1256,7 +1275,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
 
 def test_stac_query_extension(stac_client: FlaskClient):
-    query = {"properties.dea:dataset_maturity": dict(eq="nrt")}
+    query = {"properties.dea:dataset_maturity": {"eq": "nrt"}}
     rv: Response = stac_client.post(
         "/stac/search",
         data=json.dumps(
