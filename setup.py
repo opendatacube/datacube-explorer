@@ -14,6 +14,7 @@ tests_require = [
     "deepdiff",
     "flake8",
     "jsonschema >= 4.18",
+    "lxml_html_clean",
     "pre-commit",
     "pytest",
     "pytest-benchmark",
