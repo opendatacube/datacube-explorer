@@ -31,13 +31,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-      git \
       # For Psycopg2
       libpq5 \
       tini \
       postgresql-client \
       python3-pip \
-    && apt-get autoclean && \
+    && ([ "$ENVIRONMENT" = "deployment" ] || \
+         apt-get install -y --no-install-recommends \
+           git) && \
+    apt-get autoclean && \
     apt-get autoremove && \
     rm -rf /var/lib/{apt,dpkg,cache,log}
 
