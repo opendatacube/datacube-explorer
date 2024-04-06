@@ -67,7 +67,10 @@ RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
     else \
         pip install --editable .[$ENVIRONMENT]; \
     fi && \
-    pip freeze
+    pip freeze && \
+    ([ "$ENVIRONMENT" != "deployment" ] || \
+        apt-get remove -y \
+            python3-pip)
 
 ENTRYPOINT ["/bin/tini", "--"]
 
