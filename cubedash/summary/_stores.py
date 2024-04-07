@@ -185,18 +185,18 @@ class DatasetItem:
         return self.geometry.__geo_interface__
 
     def as_geojson(self):
-        return {
-            "id": self.dataset_id,
-            "type": "Feature",
-            "bbox": self.bbox,
-            "geometry": self.geom_geojson,
-            "properties": {
+        return dict(
+            id=self.dataset_id,
+            type="Feature",
+            bbox=self.bbox,
+            geometry=self.geom_geojson,
+            properties={
                 "datetime": self.center_time,
                 "odc:product": self.product_name,
                 "odc:processing_datetime": self.creation_time,
                 "cubedash:region_code": self.region_code,
             },
-        }
+        )
 
 
 @dataclass
@@ -784,7 +784,7 @@ class SummaryStore:
 
         _LOG.info(
             "product.links.{kind}",
-            extra={"kind": kind},
+            extra=dict(kind=kind),
             product=product.name,
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2),
@@ -991,7 +991,7 @@ class SummaryStore:
 
         Returns one row for each uri scheme found (http, file etc).
         """
-        search_args = {}
+        search_args = dict()
         if year or month or day:
             search_args["time"] = _utils.as_time_range(year, month, day)
 
@@ -1034,15 +1034,15 @@ class SummaryStore:
             self.index.products.get_by_name(name).id
             for name in product.derived_products
         ]
-        fields = {
-            "dataset_count": product.dataset_count,
-            "time_earliest": product.time_earliest,
-            "time_latest": product.time_latest,
-            "source_product_refs": source_product_ids,
-            "derived_product_refs": derived_product_ids,
-            "fixed_metadata": product.fixed_metadata,
-            "last_refresh": product.last_refresh_time,
-        }
+        fields = dict(
+            dataset_count=product.dataset_count,
+            time_earliest=product.time_earliest,
+            time_latest=product.time_latest,
+            source_product_refs=source_product_ids,
+            derived_product_refs=derived_product_ids,
+            fixed_metadata=product.fixed_metadata,
+            last_refresh=product.last_refresh_time,
+        )
 
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,
         # insert, on_conflict...) and while this works, it triggers the sequence
@@ -1866,30 +1866,30 @@ def _summary_to_row(
         raise ValueError("Geometry without srid", summary)
     if summary.product_refresh_time is None:
         raise ValueError("Product has no refresh time??", summary)
-    return {
-        "dataset_count": summary.dataset_count,
-        "timeline_dataset_start_days": day_values,
-        "timeline_dataset_counts": day_counts,
+    return dict(
+        dataset_count=summary.dataset_count,
+        timeline_dataset_start_days=day_values,
+        timeline_dataset_counts=day_counts,
         # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
-        "regions": func.cast(region_values, type_=postgres.ARRAY(String)),
-        "region_dataset_counts": region_counts,
-        "timeline_period": summary.timeline_period,
-        "time_earliest": begin.astimezone(grouping_timezone) if begin else begin,
-        "time_latest": end.astimezone(grouping_timezone) if end else end,
-        "size_bytes": summary.size_bytes,
-        "product_refresh_time": summary.product_refresh_time,
-        "footprint_geometry": (
+        regions=func.cast(region_values, type_=postgres.ARRAY(String)),
+        region_dataset_counts=region_counts,
+        timeline_period=summary.timeline_period,
+        time_earliest=begin.astimezone(grouping_timezone) if begin else begin,
+        time_latest=end.astimezone(grouping_timezone) if end else end,
+        size_bytes=summary.size_bytes,
+        product_refresh_time=summary.product_refresh_time,
+        footprint_geometry=(
             None
             if summary.footprint_geometry is None
             else geo_shape.from_shape(
                 summary.footprint_geometry, summary.footprint_srid
             )
         ),
-        "footprint_count": summary.footprint_count,
-        "generation_time": func.now(),
-        "newest_dataset_creation_time": summary.newest_dataset_creation_time,
-        "crses": summary.crses,
-    }
+        footprint_count=summary.footprint_count,
+        generation_time=func.now(),
+        newest_dataset_creation_time=summary.newest_dataset_creation_time,
+        crses=summary.crses,
+    )
 
 
 def _common_paths_for_uris(

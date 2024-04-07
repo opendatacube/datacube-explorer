@@ -76,10 +76,10 @@ app.config.setdefault("CACHE_TYPE", "NullCache")
 
 # Global defaults
 app.config.from_mapping(
-    {
-        "CUBEDASH_DEFAULT_API_LIMIT": 500,
-        "CUBEDASH_HARD_API_LIMIT": 4000,
-    }
+    dict(
+        CUBEDASH_DEFAULT_API_LIMIT=500,
+        CUBEDASH_HARD_API_LIMIT=4000,
+    )
 )
 
 cache = Cache(app=app, config=app.config)
@@ -187,15 +187,15 @@ def get_footprint_geojson(
     if not footprint:
         return None
 
-    return {
-        "type": "Feature",
-        "geometry": footprint.__geo_interface__,
-        "properties": {
-            "dataset_count": period.footprint_count,
-            "product_name": product_name,
-            "time_spec": [year, month, day],
-        },
-    }
+    return dict(
+        type="Feature",
+        geometry=footprint.__geo_interface__,
+        properties=dict(
+            dataset_count=period.footprint_count,
+            product_name=product_name,
+            time_spec=[year, month, day],
+        ),
+    )
 
 
 @cache.memoize(timeout=60)
@@ -302,4 +302,4 @@ if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
     from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
 
     metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-    _LOG.info("Prometheus metrics enabled : {metrics}", extra={"metrics": metrics})
+    _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
