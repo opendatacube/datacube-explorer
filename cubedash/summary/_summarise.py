@@ -167,8 +167,9 @@ class Summariser:
                 )
             )
             region_counts = Counter(
-                dict(
-                    self._engine.execute(
+                {
+                    item: count
+                    for item, count in self._engine.execute(
                         select(
                             [
                                 DATASET_SPATIAL.c.region_code.label("region_code"),
@@ -178,7 +179,7 @@ class Summariser:
                         .where(where_clause)
                         .group_by("region_code")
                     )
-                )
+                }
             )
 
         if product_refresh_time is None:

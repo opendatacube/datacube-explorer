@@ -281,6 +281,8 @@ def is_compatible_generate_schema(engine: Engine) -> bool:
 class SchemaNotRefreshable(Exception):
     """The schema is not set-up for running product refreshes"""
 
+    ...
+
 
 class PleaseRefresh(Enum):
     """
