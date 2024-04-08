@@ -28,6 +28,8 @@ from . import (
     _product,
     _stac,
     _stac_legacy,
+)
+from . import (
     _utils as utils,
 )
 from ._utils import as_rich_json, get_sorted_product_summaries
@@ -160,7 +162,7 @@ def legacy_search_page(
 @app.route("/products/<product_name>/datasets/<int:year>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>")
 @app.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
-def search_page(  # noqa: C901
+def search_page(
     product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     (
@@ -427,7 +429,9 @@ def timeline_page(product_name: str):
     return redirect(url_for("product_page", product_name=product_name))
 
 
-def _load_product(product_name, year, month, day) -> Tuple[
+def _load_product(
+    product_name, year, month, day
+) -> Tuple[
     DatasetType,
     ProductSummary,
     TimePeriodOverview,

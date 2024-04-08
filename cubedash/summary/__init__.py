@@ -1,4 +1,4 @@
-from ._extents import RegionInfo, UnsupportedWKTProductCRS
+from ._extents import RegionInfo, UnsupportedWKTProductCRSError
 from ._model import TimePeriodOverview
 from ._stores import (
     DatasetItem,
@@ -18,5 +18,5 @@ __all__ = (
     "RegionInfo",
     "SummaryStore",
     "TimePeriodOverview",
-    "UnsupportedWKTProductCRS",
+    "UnsupportedWKTProductCRSError",
 )

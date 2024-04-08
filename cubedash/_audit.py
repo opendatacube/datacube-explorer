@@ -8,7 +8,8 @@ import flask
 from datacube.model import Range
 from flask import Blueprint, Response, redirect, url_for
 
-from . import _model, _utils as utils
+from . import _model
+from . import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint(

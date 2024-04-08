@@ -3,7 +3,8 @@ from datetime import timedelta
 
 from flask import Blueprint, Response, abort, redirect, url_for
 
-from cubedash import _model, _utils, _utils as utils
+from cubedash import _model, _utils
+from cubedash import _utils as utils
 
 _LOG = logging.getLogger(__name__)
 bp = Blueprint("product", __name__)

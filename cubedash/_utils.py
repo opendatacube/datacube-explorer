@@ -18,7 +18,7 @@ from uuid import UUID
 import datacube.drivers.postgres._schema
 import eodatasets3.serialise
 import flask
-import numpy
+import numpy as np
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -578,7 +578,7 @@ def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = No
 
     # TODO: remove the two functions once eo-datasets fix is released
     def _represent_float(self, value):
-        text = numpy.format_float_scientific(value)
+        text = np.format_float_scientific(value)
         return self.represent_scalar("tag:yaml.org,2002:float", text)
 
     def dumps_yaml(yml, stream, *docs) -> None:

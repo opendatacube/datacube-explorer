@@ -61,7 +61,7 @@ def test_nested_exception(testing_polygon):
         )
 
     polygonlist = _polygon_chain(testing_polygon)
-    assert type(polygonlist) is list
+    assert isinstance(polygonlist, list)
     assert len(polygonlist) == 262
     filtered_geom = _filter_geom(polygonlist)
     assert len(filtered_geom) == 199

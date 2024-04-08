@@ -52,6 +52,7 @@ Drop all of Explorer’s additions to the database:
 
 
 """
+
 import collections
 import multiprocessing
 import re
@@ -64,7 +65,8 @@ from typing import List, Optional, Sequence, Tuple
 
 import click
 import structlog
-from click import secho as click_secho, style
+from click import secho as click_secho
+from click import style
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
 from datacube.model import DatasetType
@@ -75,7 +77,7 @@ from cubedash.summary import (
     GenerateResult,
     SummaryStore,
     TimePeriodOverview,
-    UnsupportedWKTProductCRS,
+    UnsupportedWKTProductCRSError,
 )
 from cubedash.summary._stores import DEFAULT_EPSG
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
@@ -132,7 +134,7 @@ def generate_report(
             minimum_change_scan_window=settings.minimum_change_scan_window,
         )
         return product_name, result, updated_summary
-    except UnsupportedWKTProductCRS as e:
+    except UnsupportedWKTProductCRSError as e:
         log.warning("product.unsupported", reason=e.reason)
         return product_name, GenerateResult.UNSUPPORTED, None
     except Exception:
@@ -230,7 +232,7 @@ def _load_products(index: Index, product_names) -> List[DatasetType]:
                 p.name for p in index.products.get_all()
             )
             raise click.BadParameter(
-                f"Unknown product {repr(product_name)}.\n\n"
+                f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
                 param_hint="product_names",
             )

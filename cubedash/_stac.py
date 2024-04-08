@@ -1,7 +1,8 @@
 import json
 import logging
 import uuid
-from datetime import datetime, time as dt_time, timedelta
+from datetime import datetime, timedelta
+from datetime import time as dt_time
 from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -10,7 +11,8 @@ import pystac
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
-from eodatasets3 import serialise, stac as eo3stac
+from eodatasets3 import serialise
+from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
@@ -288,7 +290,7 @@ def field_path_row(key, value):
     elif key == "sat_row":
         kind = "landsat:wrs_row"
     else:
-        raise ValueError(f"Path/row kind {repr(key)}")
+        raise ValueError(f"Path/row kind {key!r}")
 
     # If there's only one value in the range, return it.
     if isinstance(value, Range):
@@ -623,7 +625,7 @@ def _handle_fields_extension(
                 keys=inc.split("."),
                 # get corresponding field from item
                 # disallow default to avoid None values being inserted
-                func=lambda _: _get_property(inc, item, no_default=True),  # noqa: B023
+                func=lambda _: _get_property(inc, item, no_default=True),
             )
 
         for exc in fields.get("exclude") or []:
