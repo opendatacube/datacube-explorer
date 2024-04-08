@@ -62,19 +62,24 @@ def test_yearly_dataset_count(client: FlaskClient):
 def test_dataset_search_page_localised_time(client: FlaskClient):
     html = get_html(client, "/products/ls5_fc_albers/datasets/2011")
 
-    assert "2011-01-01 09:03:13" in [
-        a.find("td", first=True).text.strip() for a in html.find(".search-result")
-    ], "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert (
+        "2011-01-01 09:03:13"
+        in [a.find("td", first=True).text.strip() for a in html.find(".search-result")]
+    ), "datestring does not match expected center_time recorded in dataset_spatial table"
 
-    assert "Time UTC: 2010-12-31 23:33:13" in [
-        a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
-    ], "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert (
+        "Time UTC: 2010-12-31 23:33:13"
+        in [
+            a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
+        ]
+    ), "datestring does not match expected center_time recorded in dataset_spatial table"
 
     html = get_html(client, "/products/ls5_fc_albers/datasets/2010")
 
-    assert "2010-12-31 09:56:02" in [
-        a.find("td", first=True).text.strip() for a in html.find(".search-result")
-    ], "datestring does not match expected center_time recorded in dataset_spatial table"
+    assert (
+        "2010-12-31 09:56:02"
+        in [a.find("td", first=True).text.strip() for a in html.find(".search-result")]
+    ), "datestring does not match expected center_time recorded in dataset_spatial table"
 
 
 def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate):

@@ -25,7 +25,8 @@ import pytz
 import structlog
 from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
-from geoalchemy2 import WKBElement, shape as geo_shape
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
@@ -713,7 +714,7 @@ class SummaryStore:
                 ]
             )
             .select_from(ODC_DATASET)
-            .where(ODC_DATASET.c.id.in_([r for r, in dataset_samples]))
+            .where(ODC_DATASET.c.id.in_([r for (r,) in dataset_samples]))
         ).fetchall()
         assert len(result) == 1
 
@@ -1633,7 +1634,7 @@ class SummaryStore:
         )
         self._product.cache_clear()
 
-    @lru_cache()  # noqa: B019
+    @lru_cache()
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'

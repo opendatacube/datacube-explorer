@@ -23,3 +23,31 @@ exclude = '''
   | cubedash/_version\.py
 )/
 '''
+
+[tool.ruff]
+target-version = "py38"
+
+[tool.ruff.lint]
+# Which checkers to enable?
+select = [
+    "A",  # Don't shadow built-ins
+    "E",  # pycodestyle
+    "EXE",  # Shebangs+Executable permisssions should match
+    "F",  # pyflakes
+    "G",  # Use logging formatter, not manual string concat
+    "I",  # Auto-sort imports
+    "ICN",  # Use standard import names, like np for numpy
+    "N",  # pep8-naming
+    "NPY",  # Numpy
+    # "RUF",  # Ruf-specific python rules?
+    # "S",  # Bandit (security) -- explore warnings and enable in future?
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The file deliberately doesn't put the import at the top, and we can't avoid global overrides
+"docs/conf.py" = ["E402", "A001", "EXE001"]
+
+# Matching old behaviour: We auto-format with the smaller line default
+# ...  but only enforce line length to be under this larger 120 limit.
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120
