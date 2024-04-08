@@ -28,18 +28,17 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONFAULTHANDLER=1
 
 # Apt installation
+# git: required by setuptools_scm.
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
+      git \
       # For Psycopg2
       libpq5 \
       tini \
       postgresql-client \
       python3-pip \
-    && ([ "$ENVIRONMENT" = "deployment" ] || \
-         apt-get install -y --no-install-recommends \
-           git) && \
-    apt-get autoclean && \
+    && apt-get autoclean && \
     apt-get autoremove && \
     rm -rf /var/lib/{apt,dpkg,cache,log}
 
@@ -73,6 +72,8 @@ RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
     pip freeze && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
         apt-get remove -y \
+            git \
+            git-man \
             python3-pip)
 
 ENTRYPOINT ["/bin/tini", "--"]
