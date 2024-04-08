@@ -49,7 +49,8 @@ ARG ENVIRONMENT=deployment
 # ARG ENVIRONMENT=test
 
 RUN echo "Environment is: $ENVIRONMENT" && \
-    [ "$ENVIRONMENT" = "deployment" ] || pip install pip-tools pytest-cov
+    [ "$ENVIRONMENT" = "deployment" ] || \
+      pip install --disable-pip-version-check pip-tools pytest-cov
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
@@ -64,10 +65,10 @@ RUN python3.10 -m pip --disable-pip-version-check -q install *.whl && \
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
-        pip install .[$ENVIRONMENT]; \
+        pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT]; \
         rm -rf /code/* /code/.git* ; \
     else \
-        pip install --editable .[$ENVIRONMENT]; \
+        pip --disable-pip-version-check install --editable .[$ENVIRONMENT]; \
     fi && \
     pip freeze && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
