@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta
 from enum import Enum, auto
 from itertools import groupby
 from typing import (
+    Any,
     Dict,
     Generator,
     Iterable,
@@ -25,10 +26,27 @@ import pytz
 import structlog
 from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
+from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement, shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
+from pygeofilter import ast
+from pygeofilter.backends.evaluator import handle
+from pygeofilter.backends.sqlalchemy.evaluate import SQLAlchemyFilterEvaluator
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
+from pygeofilter.parsers.ecql import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, String, and_, exists, func, literal, or_, select, union_all
+from sqlalchemy import (
+    DDL,
+    String,
+    and_,
+    exists,
+    func,
+    literal,
+    null,
+    or_,
+    select,
+    union_all,
+)
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.engine import Engine
@@ -1191,6 +1209,87 @@ class SummaryStore:
 
         return query
 
+    def _get_field_exprs(
+        self,
+        product_names: Optional[List[str]] = None,
+    ) -> dict[str, Any]:
+        """
+        Map properties to their sqlalchemy expressions.
+        Allow for properties to be provided as their STAC property name (ex: created),
+        their eo3 property name (ex: odc:processing_datetime),
+        or their searchable field name as defined by the metadata type (ex: creation_time).
+        """
+        if product_names:
+            products = {self.index.products.get_by_name(name) for name in product_names}
+        else:
+            products = set(self.index.products.get_all())
+        field_exprs = {}
+        for product in products:
+            for value in _utils.get_mutable_dataset_search_fields(
+                self.index, product.metadata_type
+            ).values():
+                expr = value.alchemy_expression
+                if hasattr(value, "offset"):
+                    field_exprs[value.offset[-1]] = expr
+                field_exprs[value.name] = expr
+
+        # add stac property names as well
+        for k, v in MAPPING_EO3_TO_STAC.items():
+            field_exprs[v] = field_exprs[k]
+        # manually add fields that aren't included in the metadata search fields
+        field_exprs["collection"] = (
+            select([ODC_DATASET_TYPE.c.name])
+            .where(ODC_DATASET_TYPE.c.id == DATASET_SPATIAL.c.dataset_type_ref)
+            .scalar_subquery()
+        )
+        geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
+        field_exprs["geometry"] = geom
+        field_exprs["bbox"] = func.Box2D(geom).cast(String)
+
+        return field_exprs
+
+    def _add_filter_to_query(
+        self,
+        query: Select,
+        field_exprs: dict[str, Any],
+        filter_lang: str,
+        filter_cql: dict,
+    ) -> Select:
+        # use pygeofilter's SQLAlchemy integration to construct the filter query
+        filter_cql = (
+            parse_cql2_text(filter_cql)
+            if filter_lang == "cql2-text"
+            else parse_cql2_json(filter_cql)
+        )
+        query = query.filter(FilterEvaluator(field_exprs).evaluate(filter_cql))
+
+        return query
+
+    def _add_order_to_query(
+        self,
+        query: Select,
+        field_exprs: dict[str, Any],
+        sortby: list[dict[str, str]],
+    ) -> Select:
+        order_clauses = []
+        for s in sortby:
+            try:
+                field = field_exprs.get(s.get("field"))
+                # is there any way to check if sortable?
+                if field is not None:
+                    asc = s.get("direction") == "asc"
+                    if asc:
+                        order_clauses.append(field)
+                    else:
+                        order_clauses.append(field.desc())
+            except AttributeError:  # there is no field by that name, ignore
+                # the spec does not specify a handling directive for unspecified fields,
+                # so we've chosen to ignore them to be in line with the other extensions
+                continue
+
+        query = query.order_by(*order_clauses)
+        return query
+
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_arrivals(
         self, period_length: timedelta
@@ -1242,10 +1341,13 @@ class SummaryStore:
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
+        intersects: BaseGeometry = None,
         dataset_ids: Sequence[UUID] = None,
+        filter_lang: str | None = None,
+        filter_cql: str | dict | None = None,
     ) -> int:
         """
-        Do the most simple select query to get the count of matching datasets.
+        Do the base select query to get the count of matching datasets.
         """
         query: Select = select([func.count()]).select_from(DATASET_SPATIAL)
 
@@ -1254,8 +1356,17 @@ class SummaryStore:
             product_names=product_names,
             time=time,
             bbox=bbox,
+            intersects=intersects,
             dataset_ids=dataset_ids,
         )
+
+        if filter_cql:
+            query = self._add_filter_to_query(
+                query,
+                self._get_field_exprs(product_names),
+                filter_lang,
+                filter_cql,
+            )
 
         result = self._engine.execute(query).fetchall()
 
@@ -1275,7 +1386,9 @@ class SummaryStore:
         offset: int = 0,
         full_dataset: bool = False,
         dataset_ids: Sequence[UUID] = None,
-        order: ItemSort = ItemSort.DEFAULT_SORT,
+        filter_lang: str | None = None,
+        filter_cql: str | dict | None = None,
+        order: ItemSort | list[dict[str, str]] = ItemSort.DEFAULT_SORT,
     ) -> Generator[DatasetItem, None, None]:
         """
         Search datasets using Explorer's spatial table
@@ -1321,6 +1434,13 @@ class SummaryStore:
             dataset_ids=dataset_ids,
         )
 
+        field_exprs = self._get_field_exprs(product_names)
+
+        if filter_cql:
+            query = self._add_filter_to_query(
+                query, field_exprs, filter_lang, filter_cql
+            )
+
         # Maybe sort
         if order == ItemSort.DEFAULT_SORT:
             query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
@@ -1332,10 +1452,8 @@ class SummaryStore:
                     "Only full-dataset searches can be sorted by recently added"
                 )
             query = query.order_by(ODC_DATASET.c.added.desc())
-        else:
-            raise RuntimeError(
-                f"Unknown item sort order {order!r} (perhaps this is a bug?)"
-            )
+        else:  # order was provided as a sortby query
+            query = self._add_order_to_query(query, field_exprs, order)
 
         query = query.limit(limit).offset(
             # TODO: Offset/limit isn't particularly efficient for paging...
@@ -1751,6 +1869,19 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
+
+
+class FilterEvaluator(SQLAlchemyFilterEvaluator):
+    """
+    Since pygeofilter's SQLAlchemyFilterEvaluator doesn't support treating
+    invalid/undefined attributes as NULL as per the STAC API Filter spec,
+    this class overwrites the Evaluator's handling of attributes to return NULL
+    as the default value if a field is not present in the mapping of sqlalchemy expressions.
+    """
+
+    @handle(ast.Attribute)
+    def attribute(self, node: ast.Attribute):
+        return self.field_mapping.get(node.name, null())
 
 
 def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):

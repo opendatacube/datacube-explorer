@@ -15,8 +15,6 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, request
-from pygeofilter.backends.cql2_json import to_cql2
-from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -358,6 +356,13 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
+def _remove_prefixes(arg: str):
+    # remove potential 'item.', 'properties.', or 'item.properties.' prefixes for ease of handling
+    arg = arg.replace("item.", "")
+    arg = arg.replace("properties.", "")
+    return arg
+
+
 def _array_arg(
     arg: Union[str, List[Union[str, float]]], expect_type=str, expect_size=None
 ) -> List:
@@ -428,7 +433,7 @@ def _dict_arg(arg: Union[str, dict]):
     return arg
 
 
-def _field_arg(arg: Union[str, list, dict]):
+def _field_arg(arg: Union[str, list, dict]) -> dict[str, list[str]]:
     """
     Parse field argument into a dict
     """
@@ -450,12 +455,13 @@ def _field_arg(arg: Union[str, list, dict]):
         return {"include": include, "exclude": exclude}
 
 
-def _sort_arg(arg: Union[str, list]):
+def _sort_arg(arg: Union[str, list]) -> list[dict]:
     """
     Parse sortby argument into a list of dicts
     """
 
     def _format(val: str) -> dict[str, str]:
+        val = _remove_prefixes(val)
         if val.startswith("-"):
             return {"field": val[1:], "direction": "desc"}
         if val.startswith("+"):
@@ -473,16 +479,25 @@ def _sort_arg(arg: Union[str, list]):
     return arg
 
 
-def _filter_arg(arg: Union[str, dict]):
-    # if dict, assume cql2-json and return as-is
+def _filter_arg(arg: Union[str, dict]) -> str:
+    # convert dict to arg to more easily remove prefixes
     if isinstance(arg, dict):
-        return arg
-    # if json string, convert to dict
+        arg = json.dumps(arg)
+    return _remove_prefixes(arg)
+
+
+def _validate_filter(filter_lang: str, cql: str):
+    # check filter-lang and actual cql format are aligned
+    is_json = True
     try:
-        return json.loads(arg)
-    except ValueError:
-        # else assume cql2-text and convert to json format
-        return json.loads(to_cql2(parse_cql2_text(arg)))
+        json.loads(cql)
+    except json.decoder.JSONDecodeError:
+        is_json = False
+
+    if filter_lang == "cql2-text" and is_json:
+        abort(400, "Expected filter to be cql2-text, but received cql2-json")
+    if filter_lang == "cql2-json" and not is_json:
+        abort(400, "Expected filter to be cql2-json, but received cql2-text")
 
 
 # Search
@@ -516,14 +531,40 @@ def _handle_search_request(
 
     intersects = request_args.get("intersects", default=None, type=_geojson_arg)
 
-    query = request_args.get("query", default=None, type=_dict_arg)
-
     fields = request_args.get("fields", default=None, type=_field_arg)
 
     sortby = request_args.get("sortby", default=None, type=_sort_arg)
+    # not sure if there's a neater way to check sortable attribute type in _stores
+    # but the handling logic (i.e. 400 status code) would still need to live in here
+    if sortby:
+        for s in sortby:
+            field = s.get("field")
+            if field in [
+                "type",
+                "stac_version",
+                "properties",
+                "geometry",
+                "links",
+                "assets",
+                "bbox",
+                "stac_extensions",
+            ]:
+                abort(
+                    400,
+                    f"Cannot sort by {field}. "
+                    "Only 'id', 'collection', and Item properties can be used to sort results.",
+                )
 
     filter_cql = request_args.get("filter", default=None, type=_filter_arg)
-    # do we really need to return filter_lang? Or can we convert everything to cql-json
+    filter_lang = request.args.get("filter-lang", default=None)
+    if filter_lang is None and filter_cql is not None:
+        # If undefined, defaults to cql2-text for a GET request and cql2-json for a POST request.
+        if method == "GET":
+            filter_lang = "cql2-text"
+        else:
+            filter_lang = "cql2-json"
+    if filter_cql:
+        _validate_filter(filter_lang, filter_cql)
 
     if limit > PAGE_SIZE_LIMIT:
         abort(
@@ -549,9 +590,10 @@ def _handle_search_request(
             _o=next_offset,
             _full=full_information,
             intersects=intersects,
-            query=query,
             fields=fields,
             sortby=sortby,
+            # so that it doesn't get named 'filter_lang'
+            **{"filter-lang": filter_lang},
             filter=filter_cql,
         )
 
@@ -568,9 +610,9 @@ def _handle_search_request(
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
-        query=query,
         fields=fields,
         sortby=sortby,
+        filter_lang=filter_lang,
         filter_cql=filter_cql,
     )
 
@@ -603,56 +645,6 @@ def _get_property(prop: str, item: ItemLike, no_default=False):
     if isinstance(item, pystac.Item):
         item = item.to_dict()
     return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
-
-
-def _predicate_helper(items: List[ItemLike], prop: str, op: str, val) -> filter:
-    """Common comparison predicates used in both query and filter"""
-    if op == "eq" or op == "=":
-        return filter(lambda item: _get_property(prop, item) == val, items)
-    if op == "gte" or op == ">=":
-        return filter(lambda item: _get_property(prop, item) >= val, items)
-    if op == "lte" or op == "<=":
-        return filter(lambda item: _get_property(prop, item) <= val, items)
-    elif op == "gt" or op == ">":
-        return filter(lambda item: _get_property(prop, item) > val, items)
-    elif op == "lt" or op == "<":
-        return filter(lambda item: _get_property(prop, item) < val, items)
-    elif op == "neq" or op == "<>":
-        return filter(lambda item: _get_property(prop, item) != val, items)
-
-
-def _handle_query_extension(items: List[ItemLike], query: dict) -> List[ItemLike]:
-    """
-    Implementation of item search query extension (https://github.com/stac-api-extensions/query/blob/main/README.md)
-    The documentation doesn't specify whether multiple properties should be treated as logical AND or OR; this
-    implementation has assumed AND.
-
-    query = {'property': {'op': 'value'}, 'property': {'op': 'value', 'op': 'value'}}
-    """
-    filtered = items
-    # split on '.' to use dicttoolz for nested items
-    for prop in query.keys():
-        # Retrieve nested dict values
-        for op, val in query[prop].items():
-            if op == "startsWith":
-                matched = filter(
-                    lambda item: _get_property(prop, item).startswith(val), items
-                )
-            elif op == "endsWith":
-                matched = filter(
-                    lambda item: _get_property(prop, item).endswith(val), items
-                )
-            elif op == "contains":
-                matched = filter(lambda item: val in _get_property(prop, item), items)
-            elif op == "in":
-                matched = filter(lambda item: _get_property(prop, item) in val, items)
-            else:
-                matched = _predicate_helper(items, prop, op, val)
-
-            # achieve logical and between queries with set intersection
-            filtered = list(set(filtered).intersection(set(matched)))
-
-    return filtered
 
 
 def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLike]:
@@ -730,78 +722,6 @@ def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLi
     return res
 
 
-def _handle_sortby_extension(
-    items: List[ItemLike], sortby: List[dict]
-) -> List[ItemLike]:
-    """
-    Implementation of sort extension (https://github.com/stac-api-extensions/sort/blob/main/README.md)
-
-    sortby = [ {'field': 'field_name', 'direction': <'asc' or 'desc'>} ]
-    """
-    sorted_items = items
-    sortby.reverse()
-
-    # reverse sortby to ensure the first field is prioritised
-    for s in sortby:
-        field = s.get("field")
-        if not (field.startswith("properties.") or field in ["id", "collection"]):
-            abort(
-                400,
-                f"Cannot sort results by field {field}. Only 'id', 'collection', "
-                "or a propery attribute (prefixed with 'properties.') may be used to sort results.",
-            )
-        reverse = s.get("direction").lower().startswith("desc")
-        # should this error if the field doesn't exist?
-        sorted_items = sorted(
-            sorted_items, key=lambda i: _get_property(field, i), reverse=reverse
-        )
-
-    return list(sorted_items)
-
-
-def _handle_filter_extension(items: List[ItemLike], filter_cql: dict) -> List[ItemLike]:
-    """
-    Implementation of filter extension (https://github.com/stac-api-extensions/filter/blob/main/README.md)
-    Currently only supporting logical expression (and/or), null and binary comparisons, provided in cql-json
-    Assumes comparisons to be done between a property value and a literal
-
-    filter = {'op': 'and','args':
-    [{'op': '=', 'args': [{'property': 'prop_name'}, val]}, {'op': 'isNull', 'args': {'property': 'prop_name'}}]
-    }
-    """
-    results = []
-    op = filter_cql.get("op")
-    args = filter_cql.get("args")
-    # if there is a nested operation in the args, recur to resolve those, creating
-    # a list of lists that we can then apply the top level operator to
-    for arg in [a for a in args if isinstance(a, dict) and a.get("op")]:
-        results.append(_handle_filter_extension(items, arg))
-
-    if op == "and":
-        # set intersection between each result
-        # need to pass results as a list of sets to intersection
-        results = list(set.intersection(*map(set, results)))
-    elif op == "or":
-        # set union between each result
-        results = list(set.union(*map(set, results)))
-    elif op == "isNull":
-        # args is a single property rather than a list
-        prop = args.get("property")
-        results = filter(
-            lambda item: _get_property(prop, item) in [None, "None"], items
-        )
-    else:
-        prop = args[0].get("property")
-        if prop not in ["id", "collection", "geometry"] and not prop.startswith(
-            "properties"
-        ):
-            prop = "properties." + prop
-        val = args[1]
-        results = _predicate_helper(items, prop, op, val)
-
-    return list(results)
-
-
 def search_stac_items(
     get_next_url: Callable[[int], str],
     limit: int = DEFAULT_PAGE_SIZE,
@@ -815,10 +735,10 @@ def search_stac_items(
     order: ItemSort = ItemSort.DEFAULT_SORT,
     include_total_count: bool = False,
     use_post_request: bool = False,
-    query: Optional[dict] = None,
     fields: Optional[dict] = None,
     sortby: Optional[List[dict]] = None,
-    filter_cql: Optional[dict] = None,
+    filter_lang: Optional[str] = None,
+    filter_cql: Optional[str | dict] = None,
 ) -> ItemCollection:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
@@ -826,6 +746,8 @@ def search_stac_items(
     :param get_next_url: A function that calculates a page url for the given offset.
     """
     offset = offset or 0
+    if sortby is not None:
+        order = sortby
     items = list(
         _model.STORE.search_items(
             product_names=product_names,
@@ -836,6 +758,8 @@ def search_stac_items(
             intersects=intersects,
             offset=offset,
             full_dataset=full_information,
+            filter_lang=filter_lang,
+            filter_cql=filter_cql,
             order=order,
         )
     )
@@ -865,9 +789,6 @@ def search_stac_items(
         extra_properties["context"]["matched"] = count_matching
 
     items = [as_stac_item(f) for f in returned]
-    items = _handle_query_extension(items, query) if query else items
-    items = _handle_filter_extension(items, filter_cql) if filter_cql else items
-    items = _handle_sortby_extension(items, sortby) if sortby else items
     items = _handle_fields_extension(items, fields) if fields else items
 
     result = ItemCollection(items, extra_fields=extra_properties)
@@ -1082,13 +1003,14 @@ def root():
         "https://api.stacspec.org/v1.0.0-rc.1/core",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search",
         "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#query",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
         "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
         "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
         "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
+        "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
+        "http://www.opengis.net/spec/cql2/1.0/conf/spatial-operators",
         "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
         "https://api.stacspec.org/v1.0.0-rc.1/collections",
     ]

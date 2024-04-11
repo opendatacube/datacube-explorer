@@ -1274,25 +1274,25 @@ def test_stac_search_by_post(stac_client: FlaskClient):
             validate_item(feature)
 
 
-def test_stac_query_extension(stac_client: FlaskClient):
-    query = {"properties.dea:dataset_maturity": {"eq": "nrt"}}
-    rv: Response = stac_client.post(
-        "/stac/search",
-        data=json.dumps(
-            {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
-                "limit": OUR_DATASET_LIMIT,
-                "_full": True,
-                "query": query,
-            }
-        ),
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
-    )
-    assert rv.status_code == 200
-    doc = rv.json
-    assert len(doc.get("features")) == 1
-    assert doc["features"][0]["properties"]["dea:dataset_maturity"] == "nrt"
+# def test_stac_query_extension(stac_client: FlaskClient):
+#     query = {"properties.dea:dataset_maturity": {"eq": "nrt"}}
+#     rv: Response = stac_client.post(
+#         "/stac/search",
+#         data=json.dumps(
+#             {
+#                 "product": "ga_ls8c_ard_3",
+#                 "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+#                 "limit": OUR_DATASET_LIMIT,
+#                 "_full": True,
+#                 "query": query,
+#             }
+#         ),
+#         headers={"Content-Type": "application/json", "Accept": "application/json"},
+#     )
+#     assert rv.status_code == 200
+#     doc = rv.json
+#     assert len(doc.get("features")) == 1
+#     assert doc["features"][0]["properties"]["dea:dataset_maturity"] == "nrt"
 
 
 def test_stac_fields_extension(stac_client: FlaskClient):
@@ -1451,16 +1451,40 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
     for i in range(1, len(doc["features"])):
         assert doc["features"][i - 1]["id"] < doc["features"][i]["id"]
 
+    # use of property prefixes shouldn't impact result
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=item.id,-datetime"
+    )
+    assert rv.json == doc
+
+    # ignore undefined field
+    rv: Response = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-datetime,foo"
+    )
+    assert rv.json == doc
+
+    # sorting across pages
+    next_link = _get_next_href(doc)
+    next_link = next_link.replace("http://localhost", "")
+    rv: Response = stac_client.get(next_link)
+    last_item = doc["features"][-1]
+    next_item = rv.json["features"][0]
+    assert last_item["id"] < next_item["id"]
+    assert last_item["properties"]["datetime"] > next_item["properties"]["datetime"]
+
 
 def test_stac_filter_extension(stac_client: FlaskClient):
-    filter_cql = {
+    filter_json = {
         "op": "and",
         "args": [
             {
                 "op": "<>",
-                "args": [{"property": "properties.dea:dataset_maturity"}, "final"],
+                "args": [{"property": "dea:dataset_maturity"}, "final"],
             },
-            {"op": ">=", "args": [{"property": "properties.eo:cloud_cover"}, float(2)]},
+            {
+                "op": ">=",
+                "args": [{"property": "cloud_cover"}, float(2)],
+            },
         ],
     }
     rv: Response = stac_client.post(
@@ -1471,16 +1495,48 @@ def test_stac_filter_extension(stac_client: FlaskClient):
                 "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
-                "filter": filter_cql,
+                "filter": filter_json,
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     assert rv.status_code == 200
-    doc = rv.json
-    features = doc.get("features")
+    features = rv.json.get("features")
     assert len(features) == 2
     ids = [f["id"] for f in features]
-    assert "fc792b3b-a685-4c0f-9cf6-f5257f042c64", (
-        "192276c6-8fa4-46a9-8bc6-e04e157974b9" in ids
+    assert "fc792b3b-a685-4c0f-9cf6-f5257f042c64" in ids
+    assert "192276c6-8fa4-46a9-8bc6-e04e157974b9" in ids
+
+    # test cql2-text
+    filter_text = "collection='ga_ls8c_ard_3' AND view:sun_azimuth > 5"
+    rv: Response = stac_client.get(f"/stac/search?filter={filter_text}")
+    features = rv.json.get("features")
+    assert len(features) == 9
+
+    # test lang mismatch
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "filter-lang": "cql2-text",
+                "filter": filter_json,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
+    assert rv.status_code == 400
+
+    # test invalid property name treated as null
+    rv: Response = stac_client.get(
+        "/stac/search?filter=item.collection='ga_ls8c_ard_3' AND properties.foo != 2"
+    )
+    assert len(rv.json.get("features")) == 0
+
+    rv: Response = stac_client.get(
+        "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
+    )
+    assert (len(rv.json.get("features"))) == 21
