@@ -9,7 +9,8 @@ import structlog
 from cachetools.func import lru_cache
 from datacube.model import Range
 from dateutil import tz
-from geoalchemy2 import Geometry, shape as geo_shape
+from geoalchemy2 import Geometry
+from geoalchemy2 import shape as geo_shape
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import ColumnElement
@@ -167,8 +168,9 @@ class Summariser:
                 )
             )
             region_counts = Counter(
-                dict(
-                    self._engine.execute(
+                {
+                    item: count
+                    for item, count in self._engine.execute(
                         select(
                             [
                                 DATASET_SPATIAL.c.region_code.label("region_code"),
@@ -178,7 +180,7 @@ class Summariser:
                         .where(where_clause)
                         .group_by("region_code")
                     )
-                )
+                }
             )
 
         if product_refresh_time is None:
@@ -237,7 +239,7 @@ class Summariser:
         )
         return begin_time, end_time, where_clause
 
-    @lru_cache()  # noqa: B019
+    @lru_cache()
     def _get_srid_name(self, srid: int):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'

@@ -18,7 +18,8 @@ from markupsafe import Markup, escape
 from orjson import orjson
 from shapely.geometry import MultiPolygon
 
-from . import _model, _utils, _utils as utils
+from . import _model, _utils
+from . import _utils as utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {

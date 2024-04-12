@@ -12,7 +12,6 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
-    Enum as SqlEnum,
     ForeignKey,
     Index,
     Integer,
@@ -25,6 +24,9 @@ from sqlalchemy import (
     bindparam,
     func,
     select,
+)
+from sqlalchemy import (
+    Enum as SqlEnum,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -278,8 +280,10 @@ def is_compatible_generate_schema(engine: Engine) -> bool:
     return is_latest and pg_column_exists(engine, ODC_DATASET.fullname, "updated")
 
 
-class SchemaNotRefreshable(Exception):
+class SchemaNotRefreshableError(Exception):
     """The schema is not set-up for running product refreshes"""
+
+    ...
 
 
 class PleaseRefresh(Enum):
@@ -366,7 +370,7 @@ def check_or_update_odc_schema(engine: Engine):
             _utils.install_timestamp_trigger(engine)
     except ProgrammingError as e:
         # We don't have permission.
-        raise SchemaNotRefreshable(
+        raise SchemaNotRefreshableError(
             dedent(
                 """
             Missing update triggers.

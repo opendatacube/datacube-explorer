@@ -227,7 +227,7 @@ def get_extension(url: str) -> jsonschema.Draft7Validator:
 def get_collection(client: FlaskClient, url: str, validate=True) -> Dict:
     """
     Get a URL, expecting a valid stac collection document to be there"""
-    with DebugContext(f"Requested {repr(url)}"):
+    with DebugContext(f"Requested {url!r}"):
         data = get_json(client, url)
         if validate:
             assert_collection(data)
@@ -237,7 +237,7 @@ def get_collection(client: FlaskClient, url: str, validate=True) -> Dict:
 def get_items(client: FlaskClient, url: str) -> Dict:
     """
     Get a URL, expecting a valid stac item collection document to be there"""
-    with DebugContext(f"Requested {repr(url)}"):
+    with DebugContext(f"Requested {url!r}"):
         data = get_geojson(client, url)
         assert_item_collection(data)
     return data
@@ -247,7 +247,7 @@ def get_item(client: FlaskClient, url: str) -> Dict:
     """
     Get a URL, expecting a single valid Stac Item to be there
     """
-    with DebugContext(f"Requested {repr(url)}"):
+    with DebugContext(f"Requested {url!r}"):
         data = get_json(client, url)
         validate_item(data)
     return data
@@ -342,7 +342,7 @@ def validate_items(
     product_counts = Counter()
     for item in items:
         id_ = item["id"]
-        with DebugContext(f"Invalid item {i}, id {repr(str(id_))}"):
+        with DebugContext(f"Invalid item {i}, id {str(id_)!r}"):
             validate_item(item)
         product_counts[item["properties"].get("odc:product", item["collection"])] += 1
 
@@ -437,20 +437,20 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     )
     validate_items(
         all_items,
-        expect_count={
-            "wofs_albers": 11,
-            "ls8_nbar_scene": 7,
-            "ls8_level1_scene": 7,
-            "ls8_nbart_scene": 7,
-            "ls8_pq_legacy_scene": 7,
-            "ls8_nbart_albers": 7,
-            "ls8_satellite_telemetry_data": 6,
-            "ls7_nbart_albers": 4,
-            "ls7_nbart_scene": 4,
-            "ls7_nbar_scene": 4,
-            "ls7_pq_legacy_scene": 4,
-            "ls7_level1_scene": 4,
-        },
+        expect_count=dict(
+            wofs_albers=11,
+            ls8_nbar_scene=7,
+            ls8_level1_scene=7,
+            ls8_nbart_scene=7,
+            ls8_pq_legacy_scene=7,
+            ls8_nbart_albers=7,
+            ls8_satellite_telemetry_data=6,
+            ls7_nbart_albers=4,
+            ls7_nbart_scene=4,
+            ls7_nbar_scene=4,
+            ls7_pq_legacy_scene=4,
+            ls7_level1_scene=4,
+        ),
     )
 
 
@@ -601,7 +601,7 @@ def test_stac_links(stac_client: FlaskClient):
         href: str = child_link["href"]
         # ignore child links corresponding to catalogs
         if "catalogs" not in href:
-            print(f"Loading collection page for {product_name}: {repr(href)}")
+            print(f"Loading collection page for {product_name}: {href!r}")
 
             collection_data = get_collection(stac_client, href, validate=True)
             assert collection_data["id"] == product_name
@@ -1255,7 +1255,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
             # TODO: These are the same file in a NetCDF. They should probably be one asset?
             assert len(feature["assets"]) == len(
                 bands
-            ), f"Expected an asset per band, got {repr(feature['assets'])}"
+            ), f"Expected an asset per band, got {feature['assets']!r}"
             assert set(feature["assets"].keys()) == set(bands)
             while bands:
                 band = bands.pop()
@@ -1272,27 +1272,6 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
             # Validate stac item with jsonschema
             validate_item(feature)
-
-
-# def test_stac_query_extension(stac_client: FlaskClient):
-#     query = {"properties.dea:dataset_maturity": {"eq": "nrt"}}
-#     rv: Response = stac_client.post(
-#         "/stac/search",
-#         data=json.dumps(
-#             {
-#                 "product": "ga_ls8c_ard_3",
-#                 "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
-#                 "limit": OUR_DATASET_LIMIT,
-#                 "_full": True,
-#                 "query": query,
-#             }
-#         ),
-#         headers={"Content-Type": "application/json", "Accept": "application/json"},
-#     )
-#     assert rv.status_code == 200
-#     doc = rv.json
-#     assert len(doc.get("features")) == 1
-#     assert doc["features"][0]["properties"]["dea:dataset_maturity"] == "nrt"
 
 
 def test_stac_fields_extension(stac_client: FlaskClient):

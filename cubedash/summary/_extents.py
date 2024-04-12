@@ -40,6 +40,8 @@ from sqlalchemy.sql.elements import ClauseElement, Label
 
 from cubedash._utils import (
     ODC_DATASET as DATASET,
+)
+from cubedash._utils import (
     alchemy_engine,
     expects_eo3_metadata_type,
     infer_crs,
@@ -54,7 +56,7 @@ _WRS_PATH_ROW = [
 ]
 
 
-class UnsupportedWKTProductCRS(NotImplementedError):
+class UnsupportedWKTProductCRSError(NotImplementedError):
     """We can't, within Postgis, support arbitrary WKT CRSes at the moment."""
 
     def __init__(self, reason: str) -> None:
@@ -83,7 +85,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 [
                     # If we have geometry, use it as the polygon.
                     (
-                        doc[["geometry"]] is not None,
+                        doc[["geometry"]].is_not(None),
                         func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
                     )
                 ],
@@ -99,7 +101,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 [
                     # If we have valid_data offset, use it as the polygon.
                     (
-                        doc[valid_data_offset] is not None,
+                        doc[valid_data_offset].is_not(None),
                         func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
                     )
                 ],
@@ -168,7 +170,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             # HACK: Change default CRS with inference
             inferred_crs = infer_crs(default_crs)
             if inferred_crs is None:
-                raise UnsupportedWKTProductCRS(
+                raise UnsupportedWKTProductCRSError(
                     f"WKT Product CRSes are not currently well supported, and "
                     f"we can't infer this product's one. "
                     f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
@@ -319,7 +321,8 @@ def refresh_spatial_extents(
             "spatial_deletion_full_scan",
         )
         changed += engine.execute(
-            DATASET_SPATIAL.delete().where(
+            DATASET_SPATIAL.delete()
+            .where(
                 DATASET_SPATIAL.c.dataset_type_ref == product.id,
             )
             # Where it doesn't exist in the ODC dataset table.
@@ -409,9 +412,9 @@ def refresh_spatial_extents(
                         .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
                         .values(footprint=bindparam("footprint")),
                         [
-                            {
-                                "dataset_id": id_,
-                                "footprint": from_shape(
+                            dict(
+                                dataset_id=id_,
+                                footprint=from_shape(
                                     shapely.ops.unary_union(
                                         [
                                             shapes[(int(sat_path.lower), row)]
@@ -424,7 +427,7 @@ def refresh_spatial_extents(
                                     srid=4326,
                                     extended=True,
                                 ),
-                            }
+                            )
                             for id_, sat_path, sat_row in rows
                         ],
                     )
@@ -926,7 +929,7 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
                         DATASET.c.dataset_type_ref
                         == bindparam("product_ref", product.id, type_=SmallInteger)
                     )
-                    .where(DATASET.c.archived is None)
+                    .where(DATASET.c.archived.is_(None))
                     .limit(1)
                 )
                 .fetchone()
@@ -968,7 +971,7 @@ def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]
                         ]
                     )
                     .where(DATASET.c.dataset_type_ref == product.id)
-                    .where(DATASET.c.archived is None)
+                    .where(DATASET.c.archived.is_(None))
                     .limit(1)
                 )
                 .fetchone()
