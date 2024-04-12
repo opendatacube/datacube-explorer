@@ -27,7 +27,8 @@ import structlog
 from cachetools.func import lru_cache, ttl_cache
 from dateutil import tz
 from eodatasets3.stac import MAPPING_EO3_TO_STAC
-from geoalchemy2 import WKBElement, shape as geo_shape
+from geoalchemy2 import WKBElement
+from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
 from pygeofilter import ast
 from pygeofilter.backends.evaluator import handle

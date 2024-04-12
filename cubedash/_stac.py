@@ -713,7 +713,9 @@ def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLi
                     d=filtered_item,
                     keys=inc.split("."),
                     func=lambda _: _get_property(
-                        inc, item, no_default=True  # noqa: B023
+                        inc,
+                        item,
+                        no_default=True,  # noqa: B023
                     ),
                 )
             except KeyError:
