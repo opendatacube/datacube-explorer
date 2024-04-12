@@ -557,8 +557,14 @@ def _handle_search_request(
                     "Only 'id', 'collection', and Item properties can be used to sort results.",
                 )
 
-    filter_cql = request_args.get("filter", default=None, type=_filter_arg)
     filter_lang = request.args.get("filter-lang", default=None)
+    filter_cql = request_args.get("filter", default=None, type=_filter_arg)
+    filter_crs = request.args.get("filter-crs", default=None)
+    if filter_crs and filter_crs != "https://www.opengis.net/def/crs/OGC/1.3/CRS84":
+        abort(
+            400,
+            "filter-crs only accepts 'https://www.opengis.net/def/crs/OGC/1.3/CRS84' as a valid value.",
+        )
     if filter_lang is None and filter_cql is not None:
         # If undefined, defaults to cql2-text for a GET request and cql2-json for a POST request.
         if method == "GET":

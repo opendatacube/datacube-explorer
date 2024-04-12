@@ -1519,3 +1519,20 @@ def test_stac_filter_extension(stac_client: FlaskClient):
         "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
     )
     assert (len(rv.json.get("features"))) == 21
+
+    # filter-crs invalid value
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "filter-crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS83",
+                "filter": filter_json,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 400
