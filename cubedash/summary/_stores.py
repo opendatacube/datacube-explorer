@@ -1236,7 +1236,11 @@ class SummaryStore:
 
         # add stac property names as well
         for k, v in MAPPING_EO3_TO_STAC.items():
-            field_exprs[v] = field_exprs[k]
+            try:
+                # map to same alchemy expression as the eo3 counterparts
+                field_exprs[v] = field_exprs[k]
+            except KeyError:
+                continue
         # manually add fields that aren't included in the metadata search fields
         field_exprs["collection"] = (
             select([ODC_DATASET_TYPE.c.name])
