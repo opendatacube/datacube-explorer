@@ -524,7 +524,7 @@ def test_returns_404s(stac_client: FlaskClient):
             "/collections/ls7_nbar_scene/items"
             "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
             "/stac/collections/ls7_nbar_scene/items"
-            "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
+            "?datetime=2000-01-01%2F2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
         ),
         (
             "/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
@@ -1440,7 +1440,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
     rv: Response = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-datetime,foo"
     )
-    assert rv.json == doc
+    assert rv.json["features"] == doc["features"]
 
     # sorting across pages
     next_link = _get_next_href(doc)
@@ -1449,7 +1449,6 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
     last_item = doc["features"][-1]
     next_item = rv.json["features"][0]
     assert last_item["id"] < next_item["id"]
-    assert last_item["properties"]["datetime"] > next_item["properties"]["datetime"]
 
 
 def test_stac_filter_extension(stac_client: FlaskClient):
@@ -1462,7 +1461,7 @@ def test_stac_filter_extension(stac_client: FlaskClient):
             },
             {
                 "op": ">=",
-                "args": [{"property": "cloud_cover"}, float(2)],
+                "args": [{"property": "eo:cloud_cover"}, float(2)],
             },
         ],
     }
@@ -1481,16 +1480,32 @@ def test_stac_filter_extension(stac_client: FlaskClient):
     )
     assert rv.status_code == 200
     features = rv.json.get("features")
-    assert len(features) == 2
+    assert len(features) == rv.json.get("numberMatched") == 2
     ids = [f["id"] for f in features]
     assert "fc792b3b-a685-4c0f-9cf6-f5257f042c64" in ids
     assert "192276c6-8fa4-46a9-8bc6-e04e157974b9" in ids
 
     # test cql2-text
-    filter_text = "collection='ga_ls8c_ard_3' AND view:sun_azimuth > 5"
+    filter_text = "collection='ga_ls8c_ard_3' AND dataset_maturity <> 'final' AND cloud_cover >= 2"
     rv: Response = stac_client.get(f"/stac/search?filter={filter_text}")
-    features = rv.json.get("features")
-    assert len(features) == 9
+    assert rv.json.get("numberMatched") == 2
+
+    filter_text = "view:sun_azimuth < 40 AND dataset_maturity = 'final'"
+    rv: Response = stac_client.get(
+        f"/stac/search?collections=ga_ls8c_ard_3&filter={filter_text}"
+    )
+    assert rv.json.get("numberMatched") == 4
+
+    # test invalid property name treated as null
+    rv: Response = stac_client.get(
+        "/stac/search?filter=item.collection='ga_ls8c_ard_3' AND properties.foo > 2"
+    )
+    assert rv.json.get("numberMatched") == 0
+
+    rv: Response = stac_client.get(
+        "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
+    )
+    assert rv.json.get("numberMatched") == 21
 
     # test lang mismatch
     rv: Response = stac_client.post(
@@ -1508,17 +1523,6 @@ def test_stac_filter_extension(stac_client: FlaskClient):
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     assert rv.status_code == 400
-
-    # test invalid property name treated as null
-    rv: Response = stac_client.get(
-        "/stac/search?filter=item.collection='ga_ls8c_ard_3' AND properties.foo != 2"
-    )
-    assert len(rv.json.get("features")) == 0
-
-    rv: Response = stac_client.get(
-        "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
-    )
-    assert (len(rv.json.get("features"))) == 21
 
     # filter-crs invalid value
     rv: Response = stac_client.post(

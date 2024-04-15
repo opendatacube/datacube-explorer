@@ -468,6 +468,7 @@ def _sort_arg(arg: Union[str, list]) -> list[dict]:
             return {"field": val[1:], "direction": "desc"}
         if val.startswith("+"):
             return {"field": val[1:], "direction": "asc"}
+        # default is ascending
         return {"field": val.strip(), "direction": "asc"}
 
     if isinstance(arg, str):
@@ -476,7 +477,8 @@ def _sort_arg(arg: Union[str, list]) -> list[dict]:
         if isinstance(arg[0], str):
             return [_format(a) for a in arg]
         if isinstance(arg[0], dict):
-            return arg
+            for a in arg:
+                a["field"] = _remove_prefixes(a["field"])
 
     return arg
 
@@ -557,9 +559,9 @@ def _handle_search_request(
                     "Only 'id', 'collection', and Item properties can be used to sort results.",
                 )
 
-    filter_lang = request.args.get("filter-lang", default=None)
+    filter_lang = request_args.get("filter-lang", default=None, type=str)
     filter_cql = request_args.get("filter", default=None, type=_filter_arg)
-    filter_crs = request.args.get("filter-crs", default=None)
+    filter_crs = request_args.get("filter-crs", default=None)
     if filter_crs and filter_crs != "https://www.opengis.net/def/crs/OGC/1.3/CRS84":
         abort(
             400,
@@ -793,7 +795,13 @@ def search_stac_items(
     )
     if include_total_count:
         count_matching = _model.STORE.get_count(
-            product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
+            product_names=product_names,
+            time=time,
+            bbox=bbox,
+            intersects=intersects,
+            dataset_ids=dataset_ids,
+            filter_lang=filter_lang,
+            filter_cql=filter_cql,
         )
         extra_properties["numberMatched"] = count_matching
         extra_properties["context"]["matched"] = count_matching

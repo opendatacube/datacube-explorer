@@ -1247,6 +1247,7 @@ class SummaryStore:
             .where(ODC_DATASET_TYPE.c.id == DATASET_SPATIAL.c.dataset_type_ref)
             .scalar_subquery()
         )
+        field_exprs["datetime"] = DATASET_SPATIAL.c.center_time
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
         field_exprs["geometry"] = geom
         field_exprs["bbox"] = func.Box2D(geom).cast(String)
@@ -1278,20 +1279,17 @@ class SummaryStore:
     ) -> Select:
         order_clauses = []
         for s in sortby:
-            try:
-                field = field_exprs.get(s.get("field"))
-                # is there any way to check if sortable?
-                if field is not None:
-                    asc = s.get("direction") == "asc"
-                    if asc:
-                        order_clauses.append(field)
-                    else:
-                        order_clauses.append(field.desc())
-            except AttributeError:  # there is no field by that name, ignore
-                # the spec does not specify a handling directive for unspecified fields,
-                # so we've chosen to ignore them to be in line with the other extensions
-                continue
-
+            field = field_exprs.get(s.get("field"))
+            # is there any way to check if sortable?
+            if field is not None:
+                asc = s.get("direction") == "asc"
+                if asc:
+                    order_clauses.append(field.asc())
+                else:
+                    order_clauses.append(field.desc())
+            # there is no field by that name, ignore
+            # the spec does not specify a handling directive for unspecified fields,
+            # so we've chosen to ignore them to be in line with the other extensions
         query = query.order_by(*order_clauses)
         return query
 
@@ -1354,7 +1352,14 @@ class SummaryStore:
         """
         Do the base select query to get the count of matching datasets.
         """
-        query: Select = select([func.count()]).select_from(DATASET_SPATIAL)
+        if filter_cql:  # to account the possibiity of 'collection' in the filter
+            query: Select = select([func.count()]).select_from(
+                DATASET_SPATIAL.join(
+                    ODC_DATASET, onclause=ODC_DATASET.c.id == DATASET_SPATIAL.c.id
+                )
+            )
+        else:
+            query: Select = select([func.count()]).select_from(DATASET_SPATIAL)
 
         query = self._add_fields_to_query(
             query,
@@ -1457,7 +1462,7 @@ class SummaryStore:
                     "Only full-dataset searches can be sorted by recently added"
                 )
             query = query.order_by(ODC_DATASET.c.added.desc())
-        else:  # order was provided as a sortby query
+        elif order:  # order was provided as a sortby query
             query = self._add_order_to_query(query, field_exprs, order)
 
         query = query.limit(limit).offset(
