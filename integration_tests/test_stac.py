@@ -524,7 +524,7 @@ def test_returns_404s(stac_client: FlaskClient):
             "/collections/ls7_nbar_scene/items"
             "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
             "/stac/collections/ls7_nbar_scene/items"
-            "?datetime=2000-01-01%2F2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
+            "?datetime=2000-01-01/2000-01-01&bbox=-48.206,-14.195,-45.067,-12.272",
         ),
         (
             "/collections/ls7_nbar_scene/items/0c5b625e-5432-4911-9f7d-f6b894e27f3c",

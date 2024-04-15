@@ -34,7 +34,7 @@ from pygeofilter import ast
 from pygeofilter.backends.evaluator import handle
 from pygeofilter.backends.sqlalchemy.evaluate import SQLAlchemyFilterEvaluator
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
-from pygeofilter.parsers.ecql import parse as parse_cql2_text
+from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import (
     DDL,
