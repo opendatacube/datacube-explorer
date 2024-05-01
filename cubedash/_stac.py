@@ -820,7 +820,7 @@ def search_stac_items(
 def _stac_collection(collection: str) -> Collection:
     summary = _model.get_product_summary(collection)
     try:
-        dataset_type = _model.STORE.get_dataset_type(collection)
+        product = _model.STORE.get_product(collection)
     except KeyError:
         abort(404, f"Unknown collection {collection!r}")
 
@@ -830,15 +830,15 @@ def _stac_collection(collection: str) -> Collection:
         (summary.time_earliest, summary.time_latest) if summary else (None, None)
     )
     footprint = all_time_summary.footprint_wgs84
-    if "title" in dataset_type.definition.get("metadata"):
-        title = dataset_type.definition.get("metadata")["title"]
+    if "title" in product.definition.get("metadata"):
+        title = product.definition.get("metadata")["title"]
     else:
         title = summary.name
     stac_collection = Collection(
         id=summary.name,
         title=title,
-        license=_utils.product_license(dataset_type),
-        description=dataset_type.definition.get("description"),
+        license=_utils.product_license(product),
+        description=product.definition.get("description"),
         providers=[],
         extent=Extent(
             pystac.SpatialExtent(
@@ -1098,11 +1098,11 @@ def collection_queryables(collection: str):
     The queryables resources for a given collection (barebones implementation)
     """
     try:
-        dataset_type = _model.STORE.get_dataset_type(collection)
+        product = _model.STORE.get_product(collection)
     except KeyError:
         abort(404, f"Unknown collection {collection!r}")
 
-    collection_title = dataset_type.definition.get("description")
+    collection_title = product.definition.get("description")
     return _utils.as_json(
         {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1151,7 +1151,7 @@ def collection_items(collection: str):
     same FeatureCollection result.
     """
     try:
-        _model.STORE.get_dataset_type(collection)
+        _model.STORE.get_product(collection)
     except KeyError:
         abort(404, f"Product {collection!r} not found")
 

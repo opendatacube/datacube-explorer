@@ -14,7 +14,7 @@ import structlog
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
 from datacube.index import Index
-from datacube.model import Dataset, DatasetType, Field, MetadataType, Range
+from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import from_shape, to_shape
 from psycopg2._range import Range as PgRange
@@ -138,12 +138,14 @@ def _bounds_polygon(doc, projection_offset):
     )
 
 
-def _size_bytes_field(dt: DatasetType):
-    md_fields = dt.metadata_type.dataset_fields
+def _size_bytes_field(product: Product):
+    md_fields = product.metadata_type.dataset_fields
     if "size_bytes" in md_fields:
         return md_fields["size_bytes"].alchemy_expression
 
-    return _jsonb_doc_expression(dt.metadata_type)["size_bytes"].astext.cast(BigInteger)
+    return _jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
+        BigInteger
+    )
 
 
 def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = None):
@@ -275,7 +277,7 @@ def _gis_point(doc, doc_offset):
 
 def refresh_spatial_extents(
     index: Index,
-    product: DatasetType,
+    product: Product,
     clean_up_deleted=False,
     assume_after_date: datetime = None,
 ):
@@ -438,23 +440,27 @@ def refresh_spatial_extents(
     return changed
 
 
-def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
+def _select_dataset_extent_columns(product: Product) -> List[Label]:
     """
     Get columns for all fields which go into the spatial table
-    for this DatasetType.
+    for this Product.
     """
-    md_type = dt.metadata_type
+    md_type = product.metadata_type
     # If this product has lat/lon fields, we can take spatial bounds.
 
     footprint_expression = get_dataset_extent_alchemy_expression(
-        md_type, default_crs=_default_crs(dt)
+        md_type, default_crs=_default_crs(product)
     )
 
     # Some time-series-derived products have seemingly-rectangular but *huge* footprints
     # (because they union many almost-indistinguishable footprints)
     # If they specify a resolution, we can simplify the geometry based on it.
-    if footprint_expression is not None and dt.grid_spec and dt.grid_spec.resolution:
-        resolution = min(abs(r) for r in dt.grid_spec.resolution)
+    if (
+        footprint_expression is not None
+        and product.grid_spec
+        and product.grid_spec.resolution
+    ):
+        resolution = min(abs(r) for r in product.grid_spec.resolution)
         footprint_expression = func.ST_SimplifyPreserveTopology(
             footprint_expression, resolution / 4
         )
@@ -466,8 +472,8 @@ def _select_dataset_extent_columns(dt: DatasetType) -> List[Label]:
         (null() if footprint_expression is None else footprint_expression).label(
             "footprint"
         ),
-        _region_code_field(dt).label("region_code"),
-        _size_bytes_field(dt).label("size_bytes"),
+        _region_code_field(product).label("region_code"),
+        _size_bytes_field(product).label("size_bytes"),
         _dataset_creation_expression(md_type).label("creation_time"),
     ]
 
@@ -513,8 +519,8 @@ def dataset_changed_expression(dataset=DATASET):
     return dataset_changed
 
 
-def _default_crs(dt: DatasetType) -> Optional[str]:
-    storage = dt.definition.get("storage")
+def _default_crs(product: Product) -> Optional[str]:
+    storage = product.definition.get("storage")
     if not storage:
         return None
 
@@ -636,7 +642,7 @@ def products_by_region(
     time_range: Range,
     limit: int,
     offset: int = 0,
-) -> Generator[DatasetType, None, None]:
+) -> Generator[Product, None, None]:
     query = (
         select([DATASET_SPATIAL.c.dataset_type_ref])
         .distinct()
@@ -694,7 +700,7 @@ class ProductArrival:
 
 class RegionInfo:
     def __init__(
-        self, product: DatasetType, known_regions: Optional[Dict[str, RegionSummary]]
+        self, product: Product, known_regions: Optional[Dict[str, RegionSummary]]
     ) -> None:
         self.product = product
         self._known_regions = known_regions
@@ -709,24 +715,24 @@ class RegionInfo:
 
     @classmethod
     def for_product(
-        cls, dataset_type: DatasetType, known_regions: Dict[str, RegionSummary] = None
+        cls, product: Product, known_regions: Dict[str, RegionSummary] = None
     ):
-        region_code_field: Field = dataset_type.metadata_type.dataset_fields.get(
+        region_code_field: Field = product.metadata_type.dataset_fields.get(
             "region_code"
         )
 
-        grid_spec = dataset_type.grid_spec
+        grid_spec = product.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
         #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
         # Therefore: only assume there's a grid if tile_size is specified.
         if region_code_field is not None:
             # Generic region info
-            return RegionInfo(dataset_type, known_regions)
+            return RegionInfo(product, known_regions)
         elif grid_spec is not None and grid_spec.tile_size:
-            return GridRegionInfo(dataset_type, known_regions)
-        elif "sat_path" in dataset_type.metadata_type.dataset_fields:
-            return SceneRegionInfo(dataset_type, known_regions)
+            return GridRegionInfo(product, known_regions)
+        elif "sat_path" in product.metadata_type.dataset_fields:
+            return SceneRegionInfo(product, known_regions)
 
         return None
 
@@ -750,8 +756,10 @@ class RegionInfo:
 
         Classes that override this should also override dataset_region_code to match.
         """
-        dt = self.product
-        region_code_field: Field = dt.metadata_type.dataset_fields.get("region_code")
+        product = self.product
+        region_code_field: Field = product.metadata_type.dataset_fields.get(
+            "region_code"
+        )
         # `alchemy_expression` is part of the postgres driver (PgDocField),
         # not the base Field class.
         if not hasattr(region_code_field, "alchemy_expression"):
@@ -793,11 +801,11 @@ class GridRegionInfo(RegionInfo):
         On Sentinel this is MGRS number
 
         """
-        dt = self.product
-        grid_spec = dt.grid_spec
+        product = self.product
+        grid_spec = product.grid_spec
 
-        doc = _jsonb_doc_expression(dt.metadata_type)
-        projection_offset = _projection_doc_offset(dt.metadata_type)
+        doc = _jsonb_doc_expression(product.metadata_type)
+        projection_offset = _projection_doc_offset(product.metadata_type)
         # Calculate tile refs
         geo_ref_points_offset = projection_offset + ["geo_ref_points"]
         center_point = func.ST_Centroid(
@@ -859,9 +867,9 @@ class SceneRegionInfo(RegionInfo):
             return f"Path {region_code}"
 
     def alchemy_expression(self):
-        dt = self.product
+        product = self.product
         # Generate region code for older sat_path/sat_row pairs.
-        md_fields = dt.metadata_type.dataset_fields
+        md_fields = product.metadata_type.dataset_fields
         path_field: RangeDocField = md_fields["sat_path"]
         row_field: RangeDocField = md_fields["sat_row"]
 
@@ -896,12 +904,12 @@ class SceneRegionInfo(RegionInfo):
             return f"{path_range[0]}"
 
 
-def _region_code_field(dt: DatasetType):
+def _region_code_field(product: Product):
     """
     Get an sqlalchemy expression to calculate the region code (a string)
     """
     region_info = RegionInfo.for_product(
-        dt,
+        product,
         # The None is here bad OO design. The class probably should be split in two for different use-cases.
         None,
     )
@@ -910,8 +918,8 @@ def _region_code_field(dt: DatasetType):
     else:
         _LOG.debug(
             "no_region_code",
-            product_name=dt.name,
-            metadata_type_name=dt.metadata_type.name,
+            product_name=product.name,
+            metadata_type_name=product.metadata_type.name,
         )
         return null()
 

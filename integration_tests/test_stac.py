@@ -591,8 +591,8 @@ def test_stac_links(stac_client: FlaskClient):
 
     # All expected products and their dataset counts.
     expected_product_counts = {
-        dt.name: _model.STORE.index.datasets.count(product=dt.name)
-        for dt in _model.STORE.all_dataset_types()
+        product.name: _model.STORE.index.datasets.count(product=product.name)
+        for product in _model.STORE.all_products()
     }
 
     found_collection_ids = set()

@@ -144,7 +144,7 @@ def test_all_products_are_shown(client: FlaskClient):
     found_product_names = sorted(
         a.text.strip() for a in html.find(".product-selection-header .option-menu-link")
     )
-    indexed_product_names = sorted(p.name for p in _model.STORE.all_dataset_types())
+    indexed_product_names = sorted(p.name for p in _model.STORE.all_products())
     assert (
         found_product_names == indexed_product_names
     ), "Product shown in menu don't match the indexed products"

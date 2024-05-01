@@ -5,7 +5,7 @@ from typing import List, Tuple
 import datacube
 import flask
 import structlog
-from datacube.model import DatasetType, Range
+from datacube.model import Product, Range
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
 from flask import abort, redirect, request, url_for
@@ -432,7 +432,7 @@ def timeline_page(product_name: str):
 def _load_product(
     product_name, year, month, day
 ) -> Tuple[
-    DatasetType,
+    Product,
     ProductSummary,
     TimePeriodOverview,
     TimePeriodOverview,
@@ -441,7 +441,7 @@ def _load_product(
     product = None
     if product_name:
         try:
-            product = _model.STORE.get_dataset_type(product_name)
+            product = _model.STORE.get_product(product_name)
         except KeyError:
             abort(404, f"Unknown product {product_name!r}")
 

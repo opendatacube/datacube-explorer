@@ -69,7 +69,7 @@ from click import secho as click_secho
 from click import style
 from datacube.config import LocalConfig
 from datacube.index import Index, index_connect
-from datacube.model import DatasetType
+from datacube.model import Product
 from datacube.ui.click import config_option, environment_option, pass_config
 
 from cubedash.logs import init_logging
@@ -155,7 +155,7 @@ def _get_index(config: LocalConfig, variant: str) -> Index:
 
 def run_generation(
     settings: GenerateSettings,
-    products: Sequence[DatasetType],
+    products: Sequence[Product],
     grouping_time_zone=DEFAULT_TIMEZONE,
     workers=3,
 ) -> Tuple[int, int]:
@@ -222,7 +222,7 @@ def run_generation(
     return creation_count, failure_count
 
 
-def _load_products(index: Index, product_names) -> List[DatasetType]:
+def _load_products(index: Index, product_names) -> List[Product]:
     for product_name in product_names:
         product = index.products.get_by_name(product_name)
         if product:
@@ -480,7 +480,7 @@ def cli(
         sys.exit(-2)
 
     if generate_all_products:
-        products = sorted(store.all_dataset_types(), key=lambda p: p.name)
+        products = sorted(store.all_products(), key=lambda p: p.name)
     else:
         products = list(_load_products(store.index, product_names))
 

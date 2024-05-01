@@ -10,7 +10,7 @@ from uuid import UUID
 import pytest
 from datacube import Datacube
 from datacube.index import Index
-from datacube.model import DatasetType, Range
+from datacube.model import Product, Range
 from dateutil import tz
 from dateutil.tz import tzutc
 
@@ -220,7 +220,7 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     ), "Expected dataset to be added again after the product changed back"
 
 
-def _change_dataset_product(index: Index, dataset_id: UUID, other_product: DatasetType):
+def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
     rows_changed = (
         _utils.alchemy_engine(index)
         .execute(

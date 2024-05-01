@@ -53,7 +53,7 @@ def storage_csv():
 def product_list_text():
     # This is useful for bash scripts when we want to loop products :)
     return Response(
-        "\n".join(t.name for t in _model.STORE.all_dataset_types()),
+        "\n".join(t.name for t in _model.STORE.all_products()),
         content_type="text/plain",
     )
 
@@ -174,7 +174,7 @@ def raw_all_products_doc():
                     ".raw_product_doc", name=product.name, _external=True
                 ),
             )
-            for product in _model.STORE.all_dataset_types()
+            for product in _model.STORE.all_products()
         )
     )
     # Add Explorer ID to the download filename if they have one.

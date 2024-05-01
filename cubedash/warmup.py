@@ -43,8 +43,8 @@ def find_examples_of_all_public_urls(index: Index):
         yield f"/metadata-types/{name}"
         yield f"/metadata-types/{name}.odc-type.yaml"
 
-    for dt in index.products.get_all():
-        name = dt.name
+    for p in index.products.get_all():
+        name = p.name
         yield f"/{name}"
         yield f"/datasets/{name}"
         yield f"/products/{name}"
@@ -71,7 +71,7 @@ def find_examples_of_all_public_urls(index: Index):
             yield f"/api/datasets/{name}"
             yield f"/api/footprint/{name}/{time:%Y/%m/%d}"
 
-            region_info = RegionInfo.for_product(dt)
+            region_info = RegionInfo.for_product(p)
             if region_info is not None:
                 region_code = region_info.dataset_region_code(dataset)
                 if region_code is not None:

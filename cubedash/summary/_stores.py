@@ -42,7 +42,7 @@ except ModuleNotFoundError:
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils.geometry import Geometry
 
 from cubedash import _utils
@@ -338,7 +338,7 @@ class SummaryStore:
     def refresh_all_product_extents(
         self,
     ):
-        for product in self.all_dataset_types():
+        for product in self.all_products():
             self.refresh_product_extent(
                 product.name,
             )
@@ -348,14 +348,14 @@ class SummaryStore:
         """
         Find the database-local time of the last dataset that changed for this product.
         """
-        dataset_type = self.get_dataset_type(product_name)
+        product = self.get_product(product_name)
 
         return self._engine.execute(
             select(
                 [
                     func.max(dataset_changed_expression()),
                 ]
-            ).where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+            ).where(ODC_DATASET.c.dataset_type_ref == product.id)
         ).scalar()
 
     def find_months_needing_update(
@@ -366,7 +366,7 @@ class SummaryStore:
         """
         What months have had dataset changes since they were last generated?
         """
-        dataset_type = self.get_dataset_type(product_name)
+        product = self.get_product(product_name)
 
         # Find the most-recently updated datasets and group them by month.
         return sorted(
@@ -375,12 +375,12 @@ class SummaryStore:
                 select(
                     [
                         func.date_trunc(
-                            "month", datetime_expression(dataset_type.metadata_type)
+                            "month", datetime_expression(product.metadata_type)
                         ).label("month"),
                         func.count(),
                     ]
                 )
-                .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+                .where(ODC_DATASET.c.dataset_type_ref == product.id)
                 .where(dataset_changed_expression() > only_those_newer_than)
                 .group_by("month")
                 .order_by("month")
@@ -565,8 +565,8 @@ class SummaryStore:
         self._persist_product_extent(new_summary)
         return change_count, new_summary
 
-    def _refresh_product_regions(self, dataset_type: DatasetType) -> int:
-        log = _LOG.bind(product_name=dataset_type.name, engine=str(self._engine))
+    def _refresh_product_regions(self, product: Product) -> int:
+        log = _LOG.bind(product_name=product.name, engine=str(self._engine))
         log.info("refresh.regions.start")
 
         log.info("refresh.regions.update.count.and.insert.new")
@@ -603,7 +603,7 @@ class SummaryStore:
             returning dataset_type_ref, region_code, footprint, count
 
                 """,
-                dataset_type.id,
+                product.id,
             )
             log.info("refresh.regions.inserted", list(result))
             changed_rows = result.rowcount
@@ -624,8 +624,8 @@ class SummaryStore:
                  group by cubedash.dataset_spatial.region_code
             )
                 """,
-                dataset_type.id,
-                dataset_type.id,
+                product.id,
+                product.id,
             )
             changed_rows = result.rowcount
         log.info("refresh.regions.delete.empty.regions.end")
@@ -643,7 +643,7 @@ class SummaryStore:
 
     def _find_product_fixed_metadata(
         self,
-        product: DatasetType,
+        product: Product,
         sample_datasets_size=1000,
     ) -> Dict[str, any]:
         """
@@ -733,7 +733,7 @@ class SummaryStore:
         return fixed_fields
 
     def _get_linked_products(
-        self, product: DatasetType, kind="source", sample_percentage=0.05
+        self, product: Product, kind="source", sample_percentage=0.05
     ) -> List[str]:
         """
         Find products with upstream or downstream datasets from this product.
@@ -873,26 +873,26 @@ class SummaryStore:
 
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
-    def all_dataset_types(self) -> Iterable[DatasetType]:
+    def all_products(self) -> Iterable[Product]:
         return tuple(self.index.products.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def all_metadata_types(self) -> Iterable[DatasetType]:
+    def all_metadata_types(self) -> Iterable[MetadataType]:
         return tuple(self.index.metadata_types.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def get_dataset_type(self, name) -> DatasetType:
-        for d in self.all_dataset_types():
+    def get_product(self, name) -> Product:
+        for d in self.all_products():
             if d.name == name:
                 return d
         raise KeyError(f"Unknown dataset type {name!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def _dataset_type_by_id(self, id_) -> DatasetType:
-        for d in self.all_dataset_types():
+    def _product_by_id(self, id_) -> Product:
+        for d in self.all_products():
             if d.id == id_:
                 return d
-        raise KeyError(f"Unknown dataset type id {id_!r}")
+        raise KeyError(f"Unknown product id {id_!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _product(self, name: str) -> ProductSummary:
@@ -918,11 +918,10 @@ class SummaryStore:
 
         row = dict(row)
         source_products = [
-            self._dataset_type_by_id(id_).name for id_ in row.pop("source_product_refs")
+            self._product_by_id(id_).name for id_ in row.pop("source_product_refs")
         ]
         derived_products = [
-            self._dataset_type_by_id(id_).name
-            for id_ in row.pop("derived_product_refs")
+            self._product_by_id(id_).name for id_ in row.pop("derived_product_refs")
         ]
 
         return ProductSummary(
@@ -947,11 +946,11 @@ class SummaryStore:
          cloud instances.)
         """
         queries = []
-        for dataset_type in self.all_dataset_types():
+        for product in self.all_products():
             subquery = (
                 select(
                     [
-                        literal(dataset_type.name).label("name"),
+                        literal(product.name).label("name"),
                         (
                             ODC_DATASET_LOCATION.c.uri_scheme
                             + ":"
@@ -960,7 +959,7 @@ class SummaryStore:
                     ]
                 )
                 .select_from(ODC_DATASET_LOCATION.join(ODC_DATASET))
-                .where(ODC_DATASET.c.dataset_type_ref == dataset_type.id)
+                .where(ODC_DATASET.c.dataset_type_ref == product.id)
                 .where(ODC_DATASET.c.archived.is_(None))
                 .limit(sample_size)
             )
@@ -1010,7 +1009,7 @@ class SummaryStore:
         stats = self._engine.execute(select([SPATIAL_QUALITY_STATS]))
         for row in stats:
             d = dict(row)
-            d["product"] = self._dataset_type_by_id(row["dataset_type_ref"])
+            d["product"] = self._product_by_id(row["dataset_type_ref"])
             d["avg_footprint_bytes"] = (
                 row["footprint_size"] / row["count"] if row["footprint_size"] else 0
             )
@@ -1607,8 +1606,7 @@ class SummaryStore:
                 )
             )
             .where(
-                DATASET_SPATIAL.c.dataset_type_ref
-                == self.get_dataset_type(product_name).id
+                DATASET_SPATIAL.c.dataset_type_ref == self.get_product(product_name).id
             )
         ).scalar()
 
@@ -1647,7 +1645,7 @@ class SummaryStore:
         """
         return sorted(
             product.name
-            for product in self.all_dataset_types()
+            for product in self.all_products()
             if self.has(product.name, None, None, None)
         )
 
@@ -1682,7 +1680,7 @@ class SummaryStore:
         day: int,
         limit: int,
         offset: int = 0,
-    ) -> Iterable[DatasetType]:
+    ) -> Iterable[Product]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
@@ -1697,7 +1695,7 @@ class SummaryStore:
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
-        dt = self.get_dataset_type(product_name)
+        product = self.get_product(product_name)
         return {
             code: RegionSummary(
                 product_name=product_name,
@@ -1715,7 +1713,7 @@ class SummaryStore:
                         REGION.c.footprint,
                     ]
                 )
-                .where(REGION.c.dataset_type_ref == dt.id)
+                .where(REGION.c.dataset_type_ref == product.id)
                 .order_by(REGION.c.region_code)
             )
             if geom is not None
@@ -1723,7 +1721,7 @@ class SummaryStore:
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         return RegionInfo.for_product(
-            dataset_type=self.get_dataset_type(product_name),
+            product=self.get_product(product_name),
             known_regions=self._region_summaries(product_name),
         )
 
@@ -1764,8 +1762,8 @@ def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
     )
 
     if refresh_products:
-        for dt in store.all_dataset_types():
-            name = dt.name
+        for product in store.all_products():
+            name = product.name
             # Skip product if it's never been summarised at all.
             if store.get_product_summary(name) is None:
                 continue

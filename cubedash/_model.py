@@ -8,7 +8,7 @@ import flask
 import sentry_sdk
 import structlog
 from datacube.index import index_connect
-from datacube.model import DatasetType
+from datacube.model import Product
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
@@ -144,7 +144,7 @@ def get_product_summary(product_name: str) -> ProductSummary:
     return STORE.get_product_summary(product_name)
 
 
-ProductWithSummary = Tuple[DatasetType, Optional[ProductSummary]]
+ProductWithSummary = Tuple[Product, Optional[ProductSummary]]
 
 
 @cache.memoize(timeout=120)
@@ -153,8 +153,7 @@ def get_products() -> List[ProductWithSummary]:
     The list of all products that we have generated reports for.
     """
     products = [
-        (product, get_product_summary(product.name))
-        for product in STORE.all_dataset_types()
+        (product, get_product_summary(product.name)) for product in STORE.all_products()
     ]
     if products and not STORE.list_complete_products():
         raise RuntimeError(
@@ -205,7 +204,7 @@ def get_regions_geojson(
     month: Optional[int] = None,
     day: Optional[int] = None,
 ) -> Optional[Dict]:
-    product = STORE.get_dataset_type(product_name)
+    product = STORE.get_product(product_name)
 
     region_info = STORE.get_product_region_info(product_name)
     if not region_info:

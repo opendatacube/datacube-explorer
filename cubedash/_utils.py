@@ -29,7 +29,7 @@ from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, MetadataType, Range
+from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils import geometry, jsonify_document
 from datacube.utils.geometry import CRS
 from dateutil import tz
@@ -226,7 +226,7 @@ def get_sorted_product_summaries(product_summaries: dict, key: str) -> List:
     )
 
 
-def query_to_search(request: MultiDict, product: DatasetType) -> dict:
+def query_to_search(request: MultiDict, product: Product) -> dict:
     args = _parse_url_query_args(request, product)
 
     # If their range is backwards (high, low), let's reverse it.
@@ -299,7 +299,7 @@ def _get_reasonable_file_label(uri: str) -> Optional[str]:
     return None
 
 
-def product_license(dt: DatasetType) -> Optional[str]:
+def product_license(product: Product) -> Optional[str]:
     """
     What is the license to display for this product?
 
@@ -311,13 +311,13 @@ def product_license(dt: DatasetType) -> Optional[str]:
     Example value: "CC-BY-SA-4.0"
     """
     # Does the metadata type has a 'license' field defined?
-    if "license" in dt.metadata.fields:
-        return dt.metadata.fields["license"]
+    if "license" in product.metadata.fields:
+        return product.metadata.fields["license"]
 
     # Otherwise, look in a default location in the document, matching stac collections.
     # (Note that datacube > 1.8.0b6 is required to allow licenses in products).
-    if "license" in dt.definition:
-        return dt.definition["license"]
+    if "license" in product.definition:
+        return product.definition["license"]
 
     # Otherwise is there a global default?
     return flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
@@ -361,7 +361,7 @@ def as_time_range(
     return Range(start.replace(tzinfo=tzinfo), end.replace(tzinfo=tzinfo))
 
 
-def _parse_url_query_args(request: MultiDict, product: DatasetType) -> dict:
+def _parse_url_query_args(request: MultiDict, product: Product) -> dict:
     """
     Convert search arguments from url query args into datacube index search parameters
     """
