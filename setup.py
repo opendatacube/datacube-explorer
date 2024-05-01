@@ -33,7 +33,7 @@ extras_require = {
         "ciso8601",
         "bottleneck",
         # The default run.sh and docs use gunicorn+meinheld
-        "gunicorn",
+        "gunicorn>=22.0.0",
         "setproctitle",
         "gevent",
         # Monitoring
