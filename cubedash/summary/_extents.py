@@ -533,7 +533,9 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     else:
         doc = md.dataset_fields["metadata_doc"].alchemy_expression
         creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-        creation_expression = text(doc[creation_dt].astext + "::timestamp at time zone 'utc'")
+        creation_expression = text(
+            doc[creation_dt].astext + "::timestamp at time zone 'utc'"
+        )
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
     return func.coalesce(creation_expression, DATASET.c.added)
