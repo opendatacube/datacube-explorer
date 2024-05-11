@@ -27,6 +27,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     PYTHONFAULTHANDLER=1
 
+# Environment can be whatever is supported by setup.py
+# so, either deployment, test
+ARG ENVIRONMENT=deployment
+# ARG ENVIRONMENT=test
+
 # Apt installation
 # git: required by setuptools_scm.
 RUN apt-get update && \
@@ -40,16 +45,10 @@ RUN apt-get update && \
       python3-pip \
     && apt-get autoclean && \
     apt-get autoremove && \
-    rm -rf /var/lib/{apt,dpkg,cache,log}
-
-# Environment can be whatever is supported by setup.py
-# so, either deployment, test
-ARG ENVIRONMENT=deployment
-# ARG ENVIRONMENT=test
-
-RUN echo "Environment is: $ENVIRONMENT" && \
-    [ "$ENVIRONMENT" = "deployment" ] || \
-      pip install --disable-pip-version-check pip-tools pytest-cov
+    rm -rf /var/lib/{apt,dpkg,cache,log} && \
+    echo "Environment is: $ENVIRONMENT" && \
+    ([ "$ENVIRONMENT" = "deployment" ] || \
+      pip install --disable-pip-version-check pip-tools pytest-cov)
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
