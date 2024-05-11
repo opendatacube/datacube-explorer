@@ -55,14 +55,13 @@ ENV APPDIR=/code
 WORKDIR $APPDIR
 COPY . $APPDIR
 
-COPY --from=builder --link /build/*.whl ./
-RUN python3.10 -m pip --disable-pip-version-check -q install *.whl && \
-    rm *.whl
-
 # These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
-RUN if [ "$ENVIRONMENT" = "deployment" ] ; then\
+COPY --from=builder --link /build/*.whl ./
+RUN python3.10 -m pip --disable-pip-version-check -q install *.whl && \
+    rm *.whl && \
+    if [ "$ENVIRONMENT" = "deployment" ] ; then\
         pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT]; \
         rm -rf /code/* /code/.git* ; \
     else \
