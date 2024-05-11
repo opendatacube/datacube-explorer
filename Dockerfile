@@ -61,12 +61,11 @@ COPY . $APPDIR
 COPY --from=builder --link /build/*.whl ./
 RUN python3.10 -m pip --disable-pip-version-check -q install *.whl && \
     rm *.whl && \
-    if [ "$ENVIRONMENT" = "deployment" ] ; then\
-        pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT]; \
-        rm -rf /code/* /code/.git* ; \
-    else \
-        pip --disable-pip-version-check install --editable .[$ENVIRONMENT]; \
-    fi && \
+    ([ "$ENVIRONMENT" = "deployment" ] || \
+        pip --disable-pip-version-check install --editable .[$ENVIRONMENT]) && \
+    ([ "$ENVIRONMENT" != "deployment" ] || \
+        (pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT] && \
+         rm -rf /code/* /code/.git*)) && \
     pip freeze && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
         apt-get remove -y \
