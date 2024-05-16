@@ -40,7 +40,7 @@ def postgresql_server():
     else:
         client = docker.from_env()
         container = client.containers.run(
-            "postgis/postgis:14-3.3-alpine",
+            "postgis/postgis:16-3.4",
             auto_remove=True,
             remove=True,
             detach=True,

@@ -30,12 +30,12 @@ from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
-from datacube.utils import geometry, jsonify_document
-from datacube.utils.geometry import CRS
+from datacube.utils import jsonify_document
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
+from odc.geo import geom
 from orjson import orjson
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
@@ -490,7 +490,7 @@ def as_json(
 
 
 def _json_fallback(o, *args, **kwargs):
-    if isinstance(o, (geometry.BoundingBox, Affine)):
+    if isinstance(o, (geom.BoundingBox, Affine)):
         return tuple(o)
 
     # I think orjson swallows our nicer error message?
@@ -854,15 +854,15 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
     if extent is None:
         log.warning("invalid_dataset.empty_extent")
         return None, False
-    geom = shape(extent.to_crs(CRS(_TARGET_CRS)))
+    ds_geom = shape(extent.to_crs(geom.CRS(_TARGET_CRS)))
 
-    if not geom.is_valid:
+    if not ds_geom.is_valid:
         log.warning(
             "invalid_dataset.invalid_extent",
-            reason_text=shapely.validation.explain_validity(geom),
+            reason_text=shapely.validation.explain_validity(ds_geom),
         )
         # A zero distance may be used to “tidy” a polygon.
-        clean = geom.buffer(0.0)
+        clean = ds_geom.buffer(0.0)
         assert clean.geom_type in (
             "Polygon",
             "MultiPolygon",
@@ -870,18 +870,18 @@ def dataset_shape(ds: Dataset) -> Tuple[Optional[Polygon], bool]:
         assert clean.is_valid
         return clean, False
 
-    if geom.is_empty:
+    if ds_geom.is_empty:
         _LOG.warning("invalid_dataset.empty_extent_geom", dataset_id=ds.id)
         return None, False
 
-    return geom, True
+    return ds_geom, True
 
 
 def bbox_as_geom(dataset):
     """Get dataset bounds as to Geometry object projected to target CRS"""
     if dataset.crs is None:
         return None
-    return geometry.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
+    return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(geom.CRS(_TARGET_CRS))
 
 
 # ######################### WARNING ############################### #

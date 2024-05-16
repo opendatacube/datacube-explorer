@@ -13,7 +13,7 @@ from textwrap import dedent
 import click
 import structlog
 from click import echo, secho
-from datacube.config import LocalConfig
+from datacube.cfg import ODCConfig
 from datacube.index import Index, index_connect
 from datacube.ui.click import config_option, environment_option, pass_config
 
@@ -24,7 +24,7 @@ from cubedash.summary import SummaryStore
 _LOG = structlog.get_logger()
 
 
-def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
+def _get_store(config: ODCConfig, variant: str, log=_LOG) -> SummaryStore:
     index: Index = index_connect(
         config, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
@@ -62,7 +62,7 @@ def _get_store(config: LocalConfig, variant: str, log=_LOG) -> SummaryStore:
 @click.argument("month", type=int, required=False)
 @click.argument("day", type=int, required=False)
 def cli(
-    config: LocalConfig,
+    config: ODCConfig,
     product_name: str,
     year: int,
     month: int,

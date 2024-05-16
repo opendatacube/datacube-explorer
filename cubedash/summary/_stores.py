@@ -43,7 +43,7 @@ from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
-from datacube.utils.geometry import Geometry
+from odc.geo.geom import Geometry
 
 from cubedash import _utils
 from cubedash._utils import ODC_DATASET, ODC_DATASET_LOCATION, ODC_DATASET_TYPE

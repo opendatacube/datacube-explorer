@@ -8,7 +8,7 @@ import shapely
 import shapely.ops
 import structlog
 from datacube.model import Dataset, Range
-from datacube.utils.geometry import Geometry
+from odc.geo.geom import Geometry
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 

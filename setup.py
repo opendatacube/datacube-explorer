@@ -72,7 +72,7 @@ setup(
     install_requires=[
         "cachetools",
         "click",
-        "datacube>=1.8.10",
+        "datacube>=1.9.0-rc4",
         "eodatasets3>=0.30.1",
         "fiona",
         "flask",
@@ -94,6 +94,7 @@ setup(
         "sqlalchemy>=1.4",
         "structlog>=20.2.0",
         "pytz",
+        "odc-geo",
     ],
     tests_require=tests_require,
     extras_require=extras_require,
