@@ -527,7 +527,7 @@ def test_search_time_completion(client: FlaskClient):
     # if not provided as a span, it should become a span of one day
     html = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
     assert one_element(html, "#search-time-before").attrs["value"] == "2022-07-18"
-    assert one_element(html, "#search-time-after").attrs["value"] == "2022-07-18"
+    assert one_element(html, "#search-time-after").attrs["value"] == "2022-07-19"
     search_results = html.find(".search-result a")
     assert len(search_results) == 2
 
