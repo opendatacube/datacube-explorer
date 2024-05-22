@@ -6,7 +6,7 @@ write_to = "cubedash/_version.py"
 
 [tool.black]
 line-length = 88
-target_version = ['py36', 'py37', 'py38']
+target_version = ['py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
 exclude = '''
 /(
