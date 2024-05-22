@@ -72,7 +72,7 @@ setup(
     install_requires=[
         "cachetools",
         "click",
-        "datacube>=1.8.10",
+        "datacube>=1.8.18",
         "eodatasets3>=0.30.1",
         "fiona",
         "flask",

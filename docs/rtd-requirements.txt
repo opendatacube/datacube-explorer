@@ -79,12 +79,14 @@ dask[array]==2023.1.1
     # via
     #   datacube
     #   distributed
-datacube==1.8.10
+datacube==1.8.18
     # via
     #   datacube-explorer (setup.py)
     #   eodatasets3
 defusedxml==0.7.1
     # via eodatasets3
+deprecat==2.1.1
+    # via datacube
 distributed==2023.1.1
     # via datacube
 eodatasets3==0.30.1
@@ -290,6 +292,8 @@ urllib3==1.26.14
     #   sentry-sdk
 werkzeug==2.2.2
     # via flask
+wrapt==1.16.0
+    # via deprecat
 xarray==2023.1.0
     # via
     #   datacube
