@@ -13,6 +13,7 @@ from datacube.index import Index
 from datacube.model import Product, Range
 from dateutil import tz
 from dateutil.tz import tzutc
+from sqlalchemy import text
 
 from cubedash import _utils
 from cubedash._utils import alchemy_engine
@@ -221,15 +222,16 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
 
 
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
-    rows_changed = (
-        _utils.alchemy_engine(index)
-        .execute(
-            f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=%s where id=%s",
-            other_product.id,
-            dataset_id,
-        )
-        .rowcount
-    )
+    with alchemy_engine(index).begin() as conn:
+        rows_changed = conn.execute(
+            text(
+                f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=:product_id where id=:dataset_id"
+            ),
+            {
+                "product_id": other_product.id,
+                "dataset_id": dataset_id,
+            },
+        ).rowcount
     assert rows_changed == 1
 
 
@@ -428,20 +430,23 @@ def test_force_dataset_regeneration(
     assert original_footprint is not None
 
     # Now let's break the footprint!
-    alchemy_engine(odc_test_db.index).execute(
-        f"update {CUBEDASH_SCHEMA}.dataset_spatial "
-        "    set footprint="
-        "        ST_SetSRID("
-        "            ST_GeomFromText("
-        "                'POLYGON((-71.1776585052917 42.3902909739571,-71.1776820268866 42.3903701743239,"
-        "                          -71.1776063012595 42.3903825660754,-71.1775826583081 42.3903033653531,"
-        "                          -71.1776585052917 42.3902909739571))'"
-        "            ),"
-        "            4326"
-        "        )"
-        "    where id=%s",
-        example_dataset.id,
-    )
+    with alchemy_engine(odc_test_db.index).begin() as conn:
+        conn.execute(
+            text(
+                f"update {CUBEDASH_SCHEMA}.dataset_spatial "
+                "    set footprint="
+                "        ST_SetSRID("
+                "            ST_GeomFromText("
+                "                'POLYGON((-71.1776585052917 42.3902909739571,-71.1776820268866 42.3903701743239,"
+                "                          -71.1776063012595 42.3903825660754,-71.1775826583081 42.3903033653531,"
+                "                          -71.1776585052917 42.3902909739571))'"
+                "            ),"
+                "            4326"
+                "        )"
+                "    where id=:ds_id"
+            ),
+            {"ds_id": example_dataset.id},
+        )
     # Make sure it worked
     footprint = summary_store.get_dataset_footprint_region(example_dataset.id)
     assert footprint != original_footprint, "Test data didn't successfully override"
@@ -506,12 +511,11 @@ def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube):
     """
 
     def _get_product_seq_value():
-        [new_val] = (
-            alchemy_engine(odc_test_db.index)
-            .execute(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
-            .fetchone()
-        )
-        return new_val
+        with alchemy_engine(odc_test_db.index).begin() as conn:
+            [new_val] = conn.execute(
+                text(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
+            ).fetchone()
+            return new_val
 
     # Once
     run_generate("--all")

@@ -177,4 +177,9 @@ def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
             # Not supported for materialised views.
             continue
         else:
-            engine.execute(f"""alter table {table.selectable.fullname} set unlogged;""")
+            with engine.begin() as conn:
+                conn.execute(
+                    sqlalchemy.text(
+                        f"""alter table {table.selectable.fullname} set unlogged;"""
+                    )
+                )

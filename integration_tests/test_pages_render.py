@@ -5,6 +5,7 @@ import pytest
 from datacube import Datacube
 from flask import Response
 from flask.testing import FlaskClient
+from sqlalchemy import text
 
 from cubedash import _utils
 from cubedash.summary import SummaryStore, _schema
@@ -96,12 +97,11 @@ def test_allows_null_product_fixed_fields(
     ), "There's no summarised products to test"
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
-    update_count = (
-        _utils.alchemy_engine(odc_test_db.index)
-        .execute(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
-        .rowcount
-    )
-    assert update_count > 0, "There were no test products to update?"
+    with _utils.alchemy_engine(odc_test_db.index).begin() as conn:
+        update_count = conn.execute(
+            text(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
+        ).rowcount
+        assert update_count > 0, "There were no test products to update?"
 
     # THEN All pages should still render fine.
     assert_all_urls_render(all_urls, client)

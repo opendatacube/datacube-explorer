@@ -951,29 +951,30 @@ def get_dataset_sources(
     """
     dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
     query = select(
-        [dataset_source.c.source_dataset_ref, dataset_source.c.classifier]
+        dataset_source.c.source_dataset_ref, dataset_source.c.classifier
     ).where(dataset_source.c.dataset_ref == dataset_id)
     if limit:
         # We add one to detect if there are more records after out limit.
         query = query.limit(limit + 1)
 
     engine = alchemy_engine(index)
-    dataset_classifier = engine.execute(query).fetchall()
+    with engine.begin() as conn:
+        dataset_classifier = conn.execute(query).fetchall()
 
-    if not dataset_classifier:
-        return {}, 0
+        if not dataset_classifier:
+            return {}, 0
 
-    remaining_records = 0
-    if limit and len(dataset_classifier) > limit:
-        dataset_classifier = dataset_classifier[:limit]
-        remaining_records = (
-            engine.execute(
-                select(func.count())
-                .select_from(dataset_source)
-                .where(dataset_source.c.dataset_ref == dataset_id)
-            ).scalar()
-            - limit
-        )
+        remaining_records = 0
+        if limit and len(dataset_classifier) > limit:
+            dataset_classifier = dataset_classifier[:limit]
+            remaining_records = (
+                conn.execute(
+                    select(func.count())
+                    .select_from(dataset_source)
+                    .where(dataset_source.c.dataset_ref == dataset_id)
+                ).scalar()
+                - limit
+            )
 
     classifier = dict(dataset_classifier)
     return {
@@ -993,7 +994,7 @@ def get_datasets_derived(
     """
     dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
     query = (
-        select(DATASET_SELECT_FIELDS)
+        select(*DATASET_SELECT_FIELDS)
         .select_from(
             ODC_DATASET.join(
                 dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
@@ -1006,23 +1007,23 @@ def get_datasets_derived(
         query = query.limit(limit + 1)
 
     engine = alchemy_engine(index)
+    with engine.begin() as conn:
+        remaining_records = 0
+        total_count = 0
+        datasets = conn.execute(query).fetchall()
 
-    remaining_records = 0
-    total_count = 0
-    datasets = engine.execute(query).fetchall()
-
-    if limit and len(datasets) > limit:
-        datasets = datasets[:limit]
-        total_count = engine.execute(
-            select(func.count())
-            .select_from(
-                ODC_DATASET.join(
-                    dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
+        if limit and len(datasets) > limit:
+            datasets = datasets[:limit]
+            total_count = conn.execute(
+                select(func.count())
+                .select_from(
+                    ODC_DATASET.join(
+                        dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
+                    )
                 )
-            )
-            .where(dataset_source.c.source_dataset_ref == dataset_id)
-        ).scalar()
-        remaining_records = total_count - limit
+                .where(dataset_source.c.source_dataset_ref == dataset_id)
+            ).scalar()
+            remaining_records = total_count - limit
 
     return [
         make_dataset_from_select_fields(index, dataset) for dataset in datasets

@@ -14,6 +14,7 @@ from datacube.index import index_connect
 from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.utils import read_documents
+from sqlalchemy import text
 
 from cubedash import _utils
 
@@ -34,7 +35,9 @@ def postgresql_server():
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     if Path("/.dockerenv").exists() and (
-        "DATACUBE_DB_URL" in os.environ or "DB_DATABASE" in os.environ
+        "DATACUBE_DB_URL" in os.environ
+        or "ODC_DATACUBE_DB_URL" in os.environ
+        or "DB_DATABASE" in os.environ
     ):
         yield GET_DB_FROM_ENV
     else:
@@ -110,13 +113,15 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         # This environment variable points to the configuration file, and is used by the odc-tools CLI apps
         # as well as direct ODC API access, eg creating `Datacube()`
         mp.setenv(
-            "DATACUBE_CONFIG_PATH",
+            "ODC_CONFIG_PATH",
             str(temp_datacube_config_file.absolute()),
         )
         # This environment is used by the `datacube ...` CLI tools, which don't obey the same environment variables
         # as the API and odc-tools apps.
         # See https://github.com/opendatacube/datacube-core/issues/1258 for more
         # pylint:disable=consider-using-f-string
+        mp.setenv("ODC_DATACUBE_DB_URL", postgres_url)
+        # TODO: datacube_db_url env variable is still being prioritised
         mp.setenv("DATACUBE_DB_URL", postgres_url)
         yield postgres_url
         mp.undo()
@@ -139,25 +144,26 @@ def odc_test_db(odc_db, request):
     # during testing, and need any performance gains we can get.
 
     engine = _utils.alchemy_engine(index)
-    for table in [
-        "agdc.dataset_location",
-        "agdc.dataset_source",
-        "agdc.dataset",
-        "agdc.dataset_type",
-        "agdc.metadata_type",
-    ]:
-        engine.execute(f"""alter table {table} set unlogged;""")
+    with engine.begin() as conn:
+        for table in [
+            "agdc.dataset_location",
+            "agdc.dataset_source",
+            "agdc.dataset",
+            "agdc.dataset_type",
+            "agdc.metadata_type",
+        ]:
+            conn.execute(text(f"alter table {table} set unlogged"))
 
-    yield dc
+        yield dc
 
-    dc.close()
+        dc.close()
 
-    # This actually drops the schema, not the DB
-    pgres_core.drop_db(index._db._engine)  # pylint:disable=protected-access
+        # This actually drops the schema, not the DB
+        pgres_core.drop_db(conn)  # pylint:disable=protected-access
 
-    # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-    # and attempts to recreate them.
-    _remove_postgres_dynamic_indexes()
+        # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+        # and attempts to recreate them.
+        _remove_postgres_dynamic_indexes()
 
 
 def _remove_postgres_dynamic_indexes():
@@ -215,8 +221,8 @@ def auto_odc_db(odc_test_db, request):
                 )
                 assert dataset is not None, err
                 created = odc_test_db.index.datasets.add(dataset)
-                assert created.uris
-                dataset_count[created.type.name] += 1
+                assert created.uri
+                dataset_count[created.product.name] += 1
 
             print(f"Loaded Datasets: {dataset_count}")
     return dataset_count

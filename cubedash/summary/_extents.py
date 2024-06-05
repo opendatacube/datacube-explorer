@@ -82,13 +82,11 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
     if expects_eo3_metadata_type(md):
         return func.ST_SetSRID(
             case(
-                [
-                    # If we have geometry, use it as the polygon.
-                    (
-                        doc[["geometry"]].is_not(None),
-                        func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
-                    )
-                ],
+                # If we have geometry, use it as the polygon.
+                (
+                    doc[["geometry"]].is_not(None),
+                    func.ST_GeomFromGeoJSON(doc[["geometry"]], type_=Geometry),
+                ),
                 # Otherwise construct a polygon from the computed bounds that ODC added on index.
                 else_=_bounds_polygon(doc, projection_offset),
             ),
@@ -98,13 +96,11 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
         valid_data_offset = projection_offset + ["valid_data"]
         return func.ST_SetSRID(
             case(
-                [
-                    # If we have valid_data offset, use it as the polygon.
-                    (
-                        doc[valid_data_offset].is_not(None),
-                        func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
-                    )
-                ],
+                # If we have valid_data offset, use it as the polygon.
+                (
+                    doc[valid_data_offset].is_not(None),
+                    func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
+                ),
                 # Otherwise construct a polygon from the four corner points.
                 else_=_bounds_polygon(doc, projection_offset),
             ),
@@ -182,7 +178,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
         auth_name, auth_srid = default_crs.split(":")
         default_crs_expression = (
-            select([SPATIAL_REF_SYS.c.srid])
+            select(SPATIAL_REF_SYS.c.srid)
             .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
             .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
             .scalar_subquery()
@@ -190,72 +186,66 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
 
     expression = func.coalesce(
         case(
-            [
-                (
-                    # If matches shorthand code: eg. "epsg:1234"
-                    spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
-                    select([SPATIAL_REF_SYS.c.srid])
-                    .where(
-                        func.lower(SPATIAL_REF_SYS.c.auth_name)
-                        == func.lower(func.split_part(spatial_ref, ":", 1))
-                    )
-                    .where(
-                        SPATIAL_REF_SYS.c.auth_srid
-                        == func.split_part(spatial_ref, ":", 2).cast(Integer)
-                    )
-                    .scalar_subquery(),
+            (
+                # If matches shorthand code: eg. "epsg:1234"
+                spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
+                select(SPATIAL_REF_SYS.c.srid)
+                .where(
+                    func.lower(SPATIAL_REF_SYS.c.auth_name)
+                    == func.lower(func.split_part(spatial_ref, ":", 1))
                 )
-            ],
+                .where(
+                    SPATIAL_REF_SYS.c.auth_srid
+                    == func.split_part(spatial_ref, ":", 2).cast(Integer)
+                )
+                .scalar_subquery(),
+            ),
             else_=None,
         ),
         case(
-            [
-                (
-                    # Plain WKT that ends in an authority code.
-                    # Extract the authority name and code using regexp. Yuck!
-                    # Eg: ".... AUTHORITY["EPSG","32756"]]"
-                    spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
-                    select([SPATIAL_REF_SYS.c.srid])
-                    .where(
-                        func.lower(SPATIAL_REF_SYS.c.auth_name)
-                        == func.lower(
-                            func.substring(
-                                spatial_ref,
-                                r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
-                            )
+            (
+                # Plain WKT that ends in an authority code.
+                # Extract the authority name and code using regexp. Yuck!
+                # Eg: ".... AUTHORITY["EPSG","32756"]]"
+                spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
+                select(SPATIAL_REF_SYS.c.srid)
+                .where(
+                    func.lower(SPATIAL_REF_SYS.c.auth_name)
+                    == func.lower(
+                        func.substring(
+                            spatial_ref,
+                            r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
                         )
                     )
-                    .where(
-                        SPATIAL_REF_SYS.c.auth_srid
-                        == func.substring(
-                            spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
-                        ).cast(Integer)
-                    )
-                    .scalar_subquery(),
                 )
-            ],
+                .where(
+                    SPATIAL_REF_SYS.c.auth_srid
+                    == func.substring(
+                        spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
+                    ).cast(Integer)
+                )
+                .scalar_subquery(),
+            ),
             else_=None,
         ),
         # Some older datasets have datum/zone fields instead.
         # The only remaining ones in DEA are 'GDA94'.
         case(
-            [
-                (
-                    doc[(projection_offset + ["datum"])].astext == "GDA94",
-                    select([SPATIAL_REF_SYS.c.srid])
-                    .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
-                    .where(
-                        SPATIAL_REF_SYS.c.auth_srid
-                        == (
-                            "283"
-                            + func.abs(
-                                doc[(projection_offset + ["zone"])].astext.cast(Integer)
-                            )
-                        ).cast(Integer)
-                    )
-                    .scalar_subquery(),
+            (
+                doc[(projection_offset + ["datum"])].astext == "GDA94",
+                select(SPATIAL_REF_SYS.c.srid)
+                .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
+                .where(
+                    SPATIAL_REF_SYS.c.auth_srid
+                    == (
+                        "283"
+                        + func.abs(
+                            doc[(projection_offset + ["zone"])].astext.cast(Integer)
+                        )
+                    ).cast(Integer)
                 )
-            ],
+                .scalar_subquery(),
+            ),
             else_=None,
         ),
         default_crs_expression,
@@ -288,154 +278,154 @@ def refresh_spatial_extents(
                               If None, all datasets will be regenerated.
     :param clean_up_deleted: Scan for any manually deleted rows too. Slow.
     """
-    engine: Engine = alchemy_engine(index)
+    # conn: Connection = alchemy_connection(index)
+    with alchemy_engine(index).begin() as conn:
+        log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
-    log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
-
-    # First, remove any archived datasets from our spatial table.
-    datasets_to_delete = (
-        select([DATASET.c.id])
-        .where(DATASET.c.archived.isnot(None))
-        .where(DATASET.c.dataset_type_ref == product.id)
-    )
-    if assume_after_date is not None:
-        # Note that we use "dataset_changed_expression" to scan the datasets,
-        # rather than "where archived > date", because the latter has no index!
-        # (.... and we're using dataset_changed_expression's index everywhere else,
-        #       so it's probably still in memory and super fast!)
-        datasets_to_delete = datasets_to_delete.where(
-            dataset_changed_expression() > assume_after_date
+        # First, remove any archived datasets from our spatial table.
+        datasets_to_delete = (
+            select(DATASET.c.id)
+            .where(DATASET.c.archived.isnot(None))
+            .where(DATASET.c.dataset_type_ref == product.id)
         )
-    log.info(
-        "spatial_archival",
-    )
-    changed = engine.execute(
-        DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
-    ).rowcount
-    log.info(
-        "spatial_archival.end",
-        change_count=changed,
-    )
-
-    # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
-    if clean_up_deleted:
-        log.warning(
-            "spatial_deletion_full_scan",
+        if assume_after_date is not None:
+            # Note that we use "dataset_changed_expression" to scan the datasets,
+            # rather than "where archived > date", because the latter has no index!
+            # (.... and we're using dataset_changed_expression's index everywhere else,
+            #       so it's probably still in memory and super fast!)
+            datasets_to_delete = datasets_to_delete.where(
+                dataset_changed_expression() > assume_after_date
+            )
+        log.info(
+            "spatial_archival",
         )
-        changed += engine.execute(
-            DATASET_SPATIAL.delete()
-            .where(
-                DATASET_SPATIAL.c.dataset_type_ref == product.id,
-            )
-            # Where it doesn't exist in the ODC dataset table.
-            .where(
-                ~DATASET_SPATIAL.c.id.in_(
-                    select([DATASET.c.id]).where(
-                        DATASET.c.dataset_type_ref == product.id,
-                    )
-                )
-            )
+        changed = conn.execute(
+            DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
         ).rowcount
         log.info(
-            "spatial_deletion_scan.end",
+            "spatial_archival.end",
             change_count=changed,
         )
 
-    # We'll update first, then insert new records.
-    # -> We do it in this order so that inserted records aren't immediately updated.
-    # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
-    #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
-    #        Maybe you can figure out a workaround, though?)
-
-    column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
-    only_where = [
-        DATASET.c.dataset_type_ref
-        == bindparam("product_ref", product.id, type_=SmallInteger),
-        DATASET.c.archived.is_(None),
-    ]
-    if assume_after_date is not None:
-        only_where.append(dataset_changed_expression() > assume_after_date)
-    else:
-        log.warning("spatial_update.recreating_everything")
-
-    # Update any changed datasets
-    log.info(
-        "spatial_update",
-        product_name=product.name,
-        after_date=assume_after_date,
-    )
-    changed += engine.execute(
-        DATASET_SPATIAL.update()
-        .values(**column_values)
-        .where(DATASET_SPATIAL.c.id == column_values["id"])
-        .where(and_(*only_where))
-    ).rowcount
-    log.info("spatial_update.end", product_name=product.name, change_count=changed)
-
-    # ... and insert new ones.
-    log.info(
-        "spatial_insert",
-        product_name=product.name,
-        after_date=assume_after_date,
-    )
-    changed += engine.execute(
-        postgres.insert(DATASET_SPATIAL)
-        .from_select(
-            column_values.keys(),
-            select(column_values.values())
-            .where(and_(*only_where))
-            .order_by(column_values["center_time"]),
-        )
-        .on_conflict_do_nothing(index_elements=["id"])
-    ).rowcount
-    log.info("spatial_insert.end", product_name=product.name, change_count=changed)
-
-    # If we changed data...
-    if changed:
-        # And it's a non-spatial product...
-        if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
-            # And it has WRS path/rows...
-            if "sat_path" in product.metadata_type.dataset_fields:
-                # We can synthesize the polygons!
-                log.info(
-                    "spatial_synthesizing",
-                )
-                shapes = _get_path_row_shapes()
-                rows = [
-                    row
-                    for row in index.datasets.search_returning(
-                        ("id", "sat_path", "sat_row"), product=product.name
-                    )
-                    if row.sat_path.lower is not None
-                ]
-                if rows:
-                    engine.execute(
-                        DATASET_SPATIAL.update()
-                        .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
-                        .values(footprint=bindparam("footprint")),
-                        [
-                            dict(
-                                dataset_id=id_,
-                                footprint=from_shape(
-                                    shapely.ops.unary_union(
-                                        [
-                                            shapes[(int(sat_path.lower), row)]
-                                            for row in range(
-                                                int(sat_row.lower),
-                                                int(sat_row.upper) + 1,
-                                            )
-                                        ]
-                                    ),
-                                    srid=4326,
-                                    extended=True,
-                                ),
-                            )
-                            for id_, sat_path, sat_row in rows
-                        ],
-                    )
-            log.info(
-                "spatial_synthesizing.end",
+        # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
+        if clean_up_deleted:
+            log.warning(
+                "spatial_deletion_full_scan",
             )
+            changed += conn.execute(
+                DATASET_SPATIAL.delete()
+                .where(
+                    DATASET_SPATIAL.c.dataset_type_ref == product.id,
+                )
+                # Where it doesn't exist in the ODC dataset table.
+                .where(
+                    ~DATASET_SPATIAL.c.id.in_(
+                        select(DATASET.c.id).where(
+                            DATASET.c.dataset_type_ref == product.id,
+                        )
+                    )
+                )
+            ).rowcount
+            log.info(
+                "spatial_deletion_scan.end",
+                change_count=changed,
+            )
+
+        # We'll update first, then insert new records.
+        # -> We do it in this order so that inserted records aren't immediately updated.
+        # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
+        #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
+        #        Maybe you can figure out a workaround, though?)
+
+        column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
+        only_where = [
+            DATASET.c.dataset_type_ref
+            == bindparam("product_ref", product.id, type_=SmallInteger),
+            DATASET.c.archived.is_(None),
+        ]
+        if assume_after_date is not None:
+            only_where.append(dataset_changed_expression() > assume_after_date)
+        else:
+            log.warning("spatial_update.recreating_everything")
+
+        # Update any changed datasets
+        log.info(
+            "spatial_update",
+            product_name=product.name,
+            after_date=assume_after_date,
+        )
+        changed += conn.execute(
+            DATASET_SPATIAL.update()
+            .values(**column_values)
+            .where(DATASET_SPATIAL.c.id == column_values["id"])
+            .where(and_(*only_where))
+        ).rowcount
+        log.info("spatial_update.end", product_name=product.name, change_count=changed)
+
+        # ... and insert new ones.
+        log.info(
+            "spatial_insert",
+            product_name=product.name,
+            after_date=assume_after_date,
+        )
+        changed += conn.execute(
+            postgres.insert(DATASET_SPATIAL)
+            .from_select(
+                list(column_values.keys()),
+                select(*list(column_values.values()))
+                .where(and_(*only_where))
+                .order_by(column_values["center_time"]),
+            )
+            .on_conflict_do_nothing(index_elements=["id"])
+        ).rowcount
+        log.info("spatial_insert.end", product_name=product.name, change_count=changed)
+
+        # If we changed data...
+        if changed:
+            # And it's a non-spatial product...
+            if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
+                # And it has WRS path/rows...
+                if "sat_path" in product.metadata_type.dataset_fields:
+                    # We can synthesize the polygons!
+                    log.info(
+                        "spatial_synthesizing",
+                    )
+                    shapes = _get_path_row_shapes()
+                    rows = [
+                        row
+                        for row in index.datasets.search_returning(
+                            ("id", "sat_path", "sat_row"), product=product.name
+                        )
+                        if row.sat_path.lower is not None
+                    ]
+                    if rows:
+                        conn.execute(
+                            DATASET_SPATIAL.update()
+                            .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
+                            .values(footprint=bindparam("footprint")),
+                            [
+                                dict(
+                                    dataset_id=id_,
+                                    footprint=from_shape(
+                                        shapely.ops.unary_union(
+                                            [
+                                                shapes[(int(sat_path.lower), row)]
+                                                for row in range(
+                                                    int(sat_row.lower),
+                                                    int(sat_row.upper) + 1,
+                                                )
+                                            ]
+                                        ),
+                                        srid=4326,
+                                        extended=True,
+                                    ),
+                                )
+                                for id_, sat_path, sat_row in rows
+                            ],
+                        )
+                log.info(
+                    "spatial_synthesizing.end",
+                )
 
     return changed
 
@@ -609,7 +599,7 @@ def datasets_by_region(
 ) -> Generator[Dataset, None, None]:
     product = index.products.get_by_name(product_name)
     query = (
-        select(postgres_api._DATASET_SELECT_FIELDS)
+        select(*postgres_api._DATASET_SELECT_FIELDS)
         .select_from(
             DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
         )
@@ -628,11 +618,11 @@ def datasets_by_region(
         .limit(bindparam("limit", limit))
         .offset(bindparam("offset", offset))
     )
-
-    return (
-        index.datasets._make(res, full_info=True)
-        for res in engine.execute(query).fetchall()
-    )
+    with engine.begin() as conn:
+        return (
+            index.datasets._make(res, full_info=True)
+            for res in conn.execute(query).fetchall()
+        )
 
 
 def products_by_region(
@@ -644,7 +634,7 @@ def products_by_region(
     offset: int = 0,
 ) -> Generator[Product, None, None]:
     query = (
-        select([DATASET_SPATIAL.c.dataset_type_ref])
+        select(DATASET_SPATIAL.c.dataset_type_ref)
         .distinct()
         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
     )
@@ -658,11 +648,11 @@ def products_by_region(
         .limit(bindparam("limit", limit))
         .offset(bindparam("offset", offset))
     )
-
-    return (
-        index.products.get(res.dataset_type_ref)
-        for res in engine.execute(query).fetchall()
-    )
+    with engine.begin() as conn:
+        return (
+            index.products.get(res.dataset_type_ref)
+            for res in conn.execute(query).fetchall()
+        )
 
 
 @dataclass
@@ -874,18 +864,16 @@ class SceneRegionInfo(RegionInfo):
         row_field: RangeDocField = md_fields["sat_row"]
 
         return case(
-            [
-                # Is this just one scene? Include it specifically
-                (
-                    row_field.lower.alchemy_expression
-                    == row_field.greater.alchemy_expression,
-                    func.concat(
-                        path_field.lower.alchemy_expression.cast(String),
-                        "_",
-                        row_field.greater.alchemy_expression.cast(String),
-                    ),
+            # Is this just one scene? Include it specifically
+            (
+                row_field.lower.alchemy_expression
+                == row_field.greater.alchemy_expression,
+                func.concat(
+                    path_field.lower.alchemy_expression.cast(String),
+                    "_",
+                    row_field.greater.alchemy_expression.cast(String),
                 ),
-            ],
+            ),
             # Otherwise it's a range of rows, so our region-code is the whole path.
             else_=path_field.lower.alchemy_expression.cast(String),
         )
@@ -929,21 +917,18 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
         index = dc.index
         for product_name in product_names:
             product = index.products.get_by_name(product_name)
-            res = (
-                alchemy_engine(index)
-                .execute(
-                    select(_select_dataset_extent_columns(product))
+            with alchemy_engine(index).begin() as conn:
+                res = conn.execute(
+                    select(*_select_dataset_extent_columns(product))
                     .where(
                         DATASET.c.dataset_type_ref
                         == bindparam("product_ref", product.id, type_=SmallInteger)
                     )
                     .where(DATASET.c.archived.is_(None))
                     .limit(1)
-                )
-                .fetchone()
-            )
-            if res:
-                yield dict(res)
+                ).fetchone()
+                if res:
+                    yield dict(res._mapping)
 
 
 @functools.lru_cache
@@ -962,30 +947,25 @@ def _get_path_row_shapes():
 def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:
     with Datacube(index=index) as dc:
         index = dc.index
-        for product_name in product_names:
-            product = index.products.get_by_name(product_name)
+        with alchemy_engine(index).begin() as conn:
+            for product_name in product_names:
+                product = index.products.get_by_name(product_name)
 
-            # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
-            # pylint: disable=singleton-comparison
-            res = (
-                alchemy_engine(index)
-                .execute(
+                # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
+                # pylint: disable=singleton-comparison
+                res = conn.execute(
                     select(
-                        [
-                            literal(product.name).label("product"),
-                            get_dataset_srid_alchemy_expression(
-                                product.metadata_type
-                            ).label("crs"),
-                        ]
+                        literal(product.name).label("product"),
+                        get_dataset_srid_alchemy_expression(
+                            product.metadata_type
+                        ).label("crs"),
                     )
                     .where(DATASET.c.dataset_type_ref == product.id)
                     .where(DATASET.c.archived.is_(None))
                     .limit(1)
-                )
-                .fetchone()
-            )
-            if res:
-                yield dict(res)
+                ).fetchone()
+                if res:
+                    yield dict(res._mapping)
 
 
 if __name__ == "__main__":

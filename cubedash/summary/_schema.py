@@ -24,12 +24,13 @@ from sqlalchemy import (
     bindparam,
     func,
     select,
+    text,
 )
 from sqlalchemy import (
     Enum as SqlEnum,
 )
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
 
 from cubedash import _utils
@@ -39,7 +40,7 @@ _LOG = structlog.get_logger()
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
-GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
+# GRIDCELL_COL_SPEC = f"{CUBEDASH_SCHEMA}.gridcell"
 
 DATASET_SPATIAL = Table(
     "dataset_spatial",
@@ -244,40 +245,31 @@ SPATIAL_QUALITY_STATS = Table(
 )
 
 
-def has_schema(engine: Engine) -> bool:
+def has_schema(conn: Connection) -> bool:
     """
     Does the cubedash schema already exist?
     """
-    return engine.dialect.has_schema(engine, CUBEDASH_SCHEMA)
+    return conn.dialect.has_schema(conn, CUBEDASH_SCHEMA)
 
 
-def is_compatible_schema(engine: Engine) -> bool:
+def is_compatible_schema(conn: Connection) -> bool:
     """Do we have the latest schema changes?"""
     is_latest = True
 
     if not pg_column_exists(
-        engine, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
+        conn, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
     ):
         is_latest = False
-
-    if pg_exists(engine, f"{CUBEDASH_SCHEMA}.mv_region"):
-        warnings.warn(
-            "Your database has item `cubedash.mv_region` from an unstable version of Explorer. "
-            "It will not harm you, but feel free to drop it once all Explorer instances "
-            "have been upgraded: "
-            "    drop materialised view cubedash.mv_region",
-            stacklevel=2,
-        )
 
     return is_latest
 
 
-def is_compatible_generate_schema(engine: Engine) -> bool:
+def is_compatible_generate_schema(conn: Connection) -> bool:
     """Is the schema complete enough to run generate/refresh commands?"""
-    is_latest = is_compatible_schema(engine)
+    is_latest = is_compatible_schema(conn)
 
     # Incremental update scanning requires the optional `update` column on ODC.
-    return is_latest and pg_column_exists(engine, ODC_DATASET.fullname, "updated")
+    return is_latest and pg_column_exists(conn, ODC_DATASET.fullname, "updated")
 
 
 class SchemaNotRefreshableError(Exception):
@@ -297,7 +289,7 @@ class PleaseRefresh(Enum):
     DATASET_EXTENTS = 1
 
 
-def update_schema(engine: Engine) -> Set[PleaseRefresh]:
+def update_schema(conn: Connection) -> Set[PleaseRefresh]:
     """
     Update the schema if needed.
 
@@ -306,57 +298,41 @@ def update_schema(engine: Engine) -> Set[PleaseRefresh]:
 
     refresh = set()
 
-    if not pg_column_exists(engine, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
+    if not pg_column_exists(conn, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
         _LOG.warning("schema.applying_update.add_fixed_metadata")
-        engine.execute(
-            f"""
-        alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb
-        """
+        conn.execute(
+            text(
+                f"alter table {CUBEDASH_SCHEMA}.product add column fixed_metadata jsonb"
+            )
         )
         refresh.add(PleaseRefresh.DATASET_EXTENTS)
 
-    if not pg_exists(
-        engine,
-        f"{CUBEDASH_SCHEMA}.{_COLLECTION_ITEMS_INDEX.name}",
-    ):
-        _LOG.warning("schema.applying_update.add_collection_items_idx")
-        _COLLECTION_ITEMS_INDEX.create(engine)
+    _COLLECTION_ITEMS_INDEX.create(conn, checkfirst=True)
 
-    if not pg_exists(
-        engine,
-        f"{CUBEDASH_SCHEMA}.{_ALL_COLLECTIONS_ORDER_INDEX.name}",
-    ):
-        _LOG.warning("schema.applying_update.add_all_collections_idx")
-        _ALL_COLLECTIONS_ORDER_INDEX.create(engine)
+    _ALL_COLLECTIONS_ORDER_INDEX.create(conn, checkfirst=True)
 
-    if not pg_column_exists(
-        engine, f"{CUBEDASH_SCHEMA}.time_overview", "product_refresh_time"
-    ):
-        _LOG.warning("schema.applying_update.add_refresh_time")
-        engine.execute(
-            f"""
-            alter table {CUBEDASH_SCHEMA}.time_overview
-            add column product_refresh_time timestamp with time zone null
-        """
-        )
+    pg_add_column(
+        conn,
+        CUBEDASH_SCHEMA,
+        "time_overview",
+        "product_refresh_time",
+        "timestamp with time zone null",
+    )
 
-    if not pg_column_exists(
-        engine, f"{CUBEDASH_SCHEMA}.product", "last_successful_summary"
-    ):
-        _LOG.warning("schema.applying_update.add_summary_success_time")
-        engine.execute(
-            f"""
-            alter table {CUBEDASH_SCHEMA}.product
-            add column last_successful_summary timestamp with time zone null
-        """
-        )
+    pg_add_column(
+        conn,
+        CUBEDASH_SCHEMA,
+        "product",
+        "last_successful_summary",
+        "timestamp with time zone null",
+    )
 
-    check_or_update_odc_schema(engine)
+    check_or_update_odc_schema(conn)
 
     return refresh
 
 
-def check_or_update_odc_schema(engine: Engine):
+def check_or_update_odc_schema(conn: Connection):
     """
     Check that the ODC schema is updated enough to run Explorer,
 
@@ -365,9 +341,9 @@ def check_or_update_odc_schema(engine: Engine):
     # We need the `update` column on ODC's dataset table in order to run incremental product refreshes.
     try:
         # We can try to install it ourselves if we have permission, using ODC's code.
-        if not pg_column_exists(engine, ODC_DATASET.fullname, "updated"):
+        if not pg_column_exists(conn, ODC_DATASET.fullname, "updated"):
             _LOG.warning("schema.applying_update.add_odc_change_triggers")
-            _utils.install_timestamp_trigger(engine)
+            _utils.install_timestamp_trigger(conn)
     except ProgrammingError as e:
         # We don't have permission.
         raise SchemaNotRefreshableError(
@@ -387,50 +363,33 @@ def check_or_update_odc_schema(engine: Engine):
 
     # Add optional indexes to AGDC if we have permission.
     # (otherwise we warn the user that it may be slow, and how to add it themselves)
-    statements = []
+    # statements = []
     try:
-        if not pg_index_exists(
-            engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_added"
-        ):
-            _LOG.warning("schema.applying_update.add_odc_added_index")
-            statements.append(
-                f"create index ix_dataset_added on {ODC_DATASET.fullname}(added desc);"
-            )
-        if not pg_index_exists(
-            engine, ODC_DATASET.schema, ODC_DATASET.name, "ix_dataset_type_changed"
-        ):
-            _LOG.warning("schema.applying_update.add_odc_changed_index")
-            statements.append(
-                f"create index ix_dataset_type_changed on "
-                f"{ODC_DATASET.fullname}(dataset_type_ref, greatest(added, updated, archived) desc);"
-            )
-        while statements:
-            engine.execute(statements[-1])
-            statements.pop()
+        pg_create_index(conn, "ix_dataset_added", ODC_DATASET.fullname, "added desc")
+        pg_create_index(
+            conn,
+            "ix_dataset_type_changed",
+            ODC_DATASET.fullname,
+            "dataset_type_ref, greatest(added, updated, archived) desc",
+        )
     except ProgrammingError:
-        unexecuted_sql = "\n                ".join(statements)
         warnings.warn(
             dedent(
-                f"""
-            No recently-added index.
-            Explorer recommends adding an index for recently-added datasets to your ODC,
-            but does not have permission to add it to the current ODC database.
-
-            It's recommended to add it manually in Postgres:
-
-                {unexecuted_sql}
-        """
+                """
+                No recently-added index.
+                Explorer recommends adding an index for recently-added datasets to your ODC,
+                but does not have permission to add it to the current ODC database.
+                """
             ),
             stacklevel=2,
         )
         raise
 
 
-def pg_exists(conn, name: str) -> bool:
-    """
-    Does a postgres object exist?
-    """
-    return conn.execute("select to_regclass(%s)", name).scalar() is not None
+def pg_create_index(conn, idx_name: str, table_name: str, col_expr: str | None = None):
+    conn.execute(
+        text(f"create index if not exists {idx_name} on {table_name}({col_expr})")
+    )
 
 
 def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) -> bool:
@@ -444,16 +403,18 @@ def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) ->
     """
     return (
         conn.execute(
-            """
-        select indexname
-        from pg_indexes
-        where schemaname=%(schema_name)s and
-              tablename=%(table_name)s and
-              indexname=%(index_name)s
-              """,
-            schema_name=schema_name,
-            table_name=table_name,
-            index_name=index_name,
+            text("""
+                select indexname
+                from pg_indexes
+                where schemaname=:schema_name and
+                    tablename=:table_name and
+                    indexname=:index_name
+              """),
+            {
+                "schema_name": schema_name,
+                "table_name": table_name,
+                "index_name": index_name,
+            },
         ).scalar()
         is not None
     )
@@ -461,43 +422,58 @@ def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) ->
 
 def get_postgis_versions(conn) -> str:
     """What versions of Postgis, Postgres and libs do we have?"""
-    return conn.execute(select([func.postgis_full_version()])).scalar()
+    return conn.execute(select(func.postgis_full_version())).scalar()
+
+
+def pg_add_column(
+    conn, schema_name: str, table_name: str, column_name: str, column_type: str
+):
+    conn.execute(
+        text(
+            f"alter table {schema_name}.{table_name} add column if not exists {column_name} {column_type}"
+        )
+    )
 
 
 def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
     """
-    Does a postgres object exist?
+    Does a postgres column exist?
     """
+    schema_name, table_name = table_name.split(".")
     return (
         conn.execute(
-            """
-                    select 1
-                    from pg_attribute
-                    where attrelid = to_regclass(%s)
-                        and attname = %s
-                        and not attisdropped
-                    """,
-            table_name,
-            column_name,
+            text("""
+                select 1
+                from information_schema.columns
+                where table_name = :table_name
+                    and table_schema = :schema_name
+                    and column_name = :column_name
+            """),
+            {
+                "table_name": table_name,
+                "schema_name": schema_name,
+                "column_name": column_name,
+            },
         ).scalar()
         is not None
     )
 
 
-def _epsg_to_srid(engine: Engine, code: int) -> int:
+def _epsg_to_srid(conn: Connection, code: int) -> int:
     """
     Convert an epsg code to Postgis' srid number.
 
     They're usually the same in Postgis' default srid table... but they don't
     have to be. We'll do this lookup anyway to be good citizens.
     """
-    return engine.execute(
-        "select srid from spatial_ref_sys where auth_name = 'EPSG' and auth_srid=%(epsg_code)s",
-        epsg_code=code,
+    return conn.execute(
+        text(
+            f"select srid from spatial_ref_sys where auth_name = 'EPSG' and auth_srid={code}"
+        )
     ).scalar()
 
 
-def create_schema(engine: Engine, epsg_code: int):
+def create_schema(conn: Connection, epsg_code: int):
     """
     Create any missing parts of the cubedash schema
     """
@@ -508,22 +484,22 @@ def create_schema(engine: Engine, epsg_code: int):
     #
     # Doing it separately allows users to run this tool without `create` permission.
     #
-    if not engine.dialect.has_schema(engine, CUBEDASH_SCHEMA):
-        engine.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
+    if not conn.dialect.has_schema(conn, CUBEDASH_SCHEMA):
+        conn.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
 
     # Add Postgis if needed
     #
     # Note that, as above, we deliberately don't use the built-in "if not exists"
     #
     if (
-        engine.execute(
-            "select count(*) from pg_extension where extname='postgis';"
+        conn.execute(
+            text("select count(*) from pg_extension where extname='postgis';")
         ).scalar()
         == 0
     ):
-        engine.execute(DDL("create extension postgis"))
+        conn.execute(DDL("create extension postgis"))
 
-    srid = _epsg_to_srid(engine, epsg_code)
+    srid = _epsg_to_srid(conn, epsg_code)
     if srid is None:
         raise RuntimeError(
             f"Postgis doesn't seem to know about epsg code {epsg_code!r}."
@@ -535,33 +511,33 @@ def create_schema(engine: Engine, epsg_code: int):
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.
     # So we create our own copy as a materialised view (it's a very small table).
-    engine.execute(
-        f"""
+    conn.execute(
+        text(f"""
     create materialized view if not exists {CUBEDASH_SCHEMA}.mv_spatial_ref_sys
         as select * from spatial_ref_sys;
-    """
+    """)
     )
     # The normal primary key.
-    engine.execute(
-        f"""
+    conn.execute(
+        text(f"""
         create unique index if not exists mv_spatial_ref_sys_srid_idx on
             {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srid);
-        """
+        """)
     )
     # For case insensitive auth name/code lookups.
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
-    engine.execute(
-        f"""
+    conn.execute(
+        text(f"""
         create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on
             {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
-    """
+        """)
     )
 
-    METADATA.create_all(engine, checkfirst=True)
+    METADATA.create_all(conn, checkfirst=True)
 
     # Useful reporting.
-    engine.execute(
-        f"""
+    conn.execute(
+        text(f"""
     create materialized view if not exists {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality as (
         select
             dataset_type_ref,
@@ -575,43 +551,41 @@ def create_schema(engine: Engine, epsg_code: int):
         from {CUBEDASH_SCHEMA}.dataset_spatial
         group by dataset_type_ref
     ) with no data;
-    """
+    """)
     )
 
-    engine.execute(
-        f"""
+    conn.execute(
+        text(f"""
     create unique index if not exists mv_dataset_spatial_quality_dataset_type_ref
         on {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality(dataset_type_ref);
-    """
+    """)
     )
 
 
 def refresh_supporting_views(conn, concurrently=False):
     args = "concurrently" if concurrently else ""
     conn.execute(
-        f"""
+        text(f"""
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_spatial_ref_sys;
-    """
+    """)
     )
     conn.execute(
-        f"""
+        text(f"""
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
-    """
+    """)
     )
 
 
-def get_srid_name(engine: Engine, srid: int):
+def get_srid_name(conn: Connection, srid: int):
     """
     Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
     """
-    return engine.execute(
+    return conn.execute(
         select(
-            [
-                func.concat(
-                    SPATIAL_REF_SYS.c.auth_name,
-                    ":",
-                    SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
-                )
-            ]
+            func.concat(
+                SPATIAL_REF_SYS.c.auth_name,
+                ":",
+                SPATIAL_REF_SYS.c.auth_srid.cast(Integer),
+            )
         ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
     ).scalar()

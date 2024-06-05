@@ -72,19 +72,17 @@ class Summariser:
 
         select_by_srid = (
             select(
-                (
-                    func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
-                    func.count().label("dataset_count"),
-                    func.ST_Transform(
-                        func.ST_Union(DATASET_SPATIAL.c.footprint),
-                        FOOTPRINT_SRID_EXPRESSION,
-                        type_=Geometry(),
-                    ).label("footprint_geometry"),
-                    func.sum(DATASET_SPATIAL.c.size_bytes).label("size_bytes"),
-                    func.max(DATASET_SPATIAL.c.creation_time).label(
-                        "newest_dataset_creation_time"
-                    ),
-                )
+                func.ST_SRID(DATASET_SPATIAL.c.footprint).label("srid"),
+                func.count().label("dataset_count"),
+                func.ST_Transform(
+                    func.ST_Union(DATASET_SPATIAL.c.footprint),
+                    FOOTPRINT_SRID_EXPRESSION,
+                    type_=Geometry(),
+                ).label("footprint_geometry"),
+                func.sum(DATASET_SPATIAL.c.size_bytes).label("size_bytes"),
+                func.max(DATASET_SPATIAL.c.creation_time).label(
+                    "newest_dataset_creation_time"
+                ),
             )
             .where(where_clause)
             .group_by("srid")
@@ -92,9 +90,9 @@ class Summariser:
         )
 
         # Union all srid groups into one summary.
-        result = self._engine.execute(
-            select(
-                (
+        with self._engine.begin() as conn:
+            result = conn.execute(
+                select(
                     func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
                     func.array_agg(select_by_srid.c.srid).label("srids"),
                     func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
@@ -108,50 +106,57 @@ class Summariser:
                     func.now().label("summary_gen_time"),
                 )
             )
-        )
 
-        rows = result.fetchall()
-        log.debug("summary.query.done", srid_rows=len(rows))
+            rows = result.fetchall()
+            log.debug("summary.query.done", srid_rows=len(rows))
 
-        assert len(rows) == 1
-        row = dict(rows[0])
-        row["dataset_count"] = int(row["dataset_count"]) if row["dataset_count"] else 0
-        if row["footprint_geometry"] is not None:
-            row["footprint_crs"] = self._get_srid_name(row["footprint_geometry"].srid)
-            row["footprint_geometry"] = geo_shape.to_shape(row["footprint_geometry"])
-        else:
-            row["footprint_crs"] = None
-        row["crses"] = None
-        if row["srids"] is not None:
-            row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
-        del row["srids"]
-
-        # Convert from Python Decimal
-        if row["size_bytes"] is not None:
-            row["size_bytes"] = int(row["size_bytes"])
-
-        has_data = row["dataset_count"] > 0
-
-        log.debug("counter.calc")
-
-        # Initialise all requested days as zero
-        day_counts = Counter(
-            {
-                d.date(): 0
-                for d in pd.date_range(
-                    begin_time, end_time, inclusive="left", nonexistent="shift_forward"
+            assert len(rows) == 1
+            row = dict(rows[0]._mapping)
+            row["dataset_count"] = (
+                int(row["dataset_count"]) if row["dataset_count"] else 0
+            )
+            if row["footprint_geometry"] is not None:
+                row["footprint_crs"] = self._get_srid_name(
+                    row["footprint_geometry"].srid
                 )
-            }
-        )
-        region_counts = Counter()
-        if has_data:
-            day_counts.update(
-                Counter(
-                    {
-                        day.date(): count
-                        for day, count in self._engine.execute(
-                            select(
-                                [
+                row["footprint_geometry"] = geo_shape.to_shape(
+                    row["footprint_geometry"]
+                )
+            else:
+                row["footprint_crs"] = None
+            row["crses"] = None
+            if row["srids"] is not None:
+                row["crses"] = {self._get_srid_name(s) for s in row["srids"]}
+            del row["srids"]
+
+            # Convert from Python Decimal
+            if row["size_bytes"] is not None:
+                row["size_bytes"] = int(row["size_bytes"])
+
+            has_data = row["dataset_count"] > 0
+
+            log.debug("counter.calc")
+
+            # Initialise all requested days as zero
+            day_counts = Counter(
+                {
+                    d.date(): 0
+                    for d in pd.date_range(
+                        begin_time,
+                        end_time,
+                        inclusive="left",
+                        nonexistent="shift_forward",
+                    )
+                }
+            )
+            region_counts = Counter()
+            if has_data:
+                day_counts.update(
+                    Counter(
+                        {
+                            day.date(): count
+                            for day, count in conn.execute(
+                                select(
                                     func.date_trunc(
                                         "day",
                                         DATASET_SPATIAL.c.center_time.op(
@@ -159,29 +164,26 @@ class Summariser:
                                         )(self.grouping_time_zone),
                                     ).label("day"),
                                     func.count(),
-                                ]
+                                )
+                                .where(where_clause)
+                                .group_by("day")
+                            )
+                        }
+                    )
+                )
+                region_counts = Counter(
+                    {
+                        item: count
+                        for item, count in conn.execute(
+                            select(
+                                DATASET_SPATIAL.c.region_code.label("region_code"),
+                                func.count(),
                             )
                             .where(where_clause)
-                            .group_by("day")
+                            .group_by("region_code")
                         )
                     }
                 )
-            )
-            region_counts = Counter(
-                {
-                    item: count
-                    for item, count in self._engine.execute(
-                        select(
-                            [
-                                DATASET_SPATIAL.c.region_code.label("region_code"),
-                                func.count(),
-                            ]
-                        )
-                        .where(where_clause)
-                        .group_by("region_code")
-                    )
-                }
-            )
 
         if product_refresh_time is None:
             raise RuntimeError(
@@ -228,7 +230,7 @@ class Summariser:
             ),
             DATASET_SPATIAL.c.dataset_type_ref
             == _scalar_subquery(
-                select([ODC_DATASET_TYPE.c.id]).where(
+                select(ODC_DATASET_TYPE.c.id).where(
                     ODC_DATASET_TYPE.c.name == product_name
                 )
             ),
@@ -244,4 +246,5 @@ class Summariser:
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """
-        return get_srid_name(self._engine, srid)
+        with self._engine.begin() as conn:
+            return get_srid_name(conn, srid)
