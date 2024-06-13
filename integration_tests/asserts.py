@@ -231,10 +231,10 @@ def expect_values(
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range:
-            - {repr(s.time_range.begin.astimezone(tzutc()))}
-            - {repr(s.time_range.end.astimezone(tzutc()))}
-        newest: {repr(s.newest_dataset_creation_time.astimezone(tzutc()))}
-        crses: {repr(s.crses)}
+            - {s.time_range.begin.astimezone(tzutc())!r}
+            - {s.time_range.end.astimezone(tzutc())!r}
+        newest: {s.newest_dataset_creation_time.astimezone(tzutc())!r}
+        crses: {s.crses!r}
         size_bytes: {s.size_bytes}
         timeline
             period: {s.timeline_period}
@@ -244,12 +244,12 @@ def expect_values(
         if was_timeline_error:
             print("timeline keys:")
             for day, count in s.timeline_dataset_counts.items():
-                print(f"\t{repr(day)}: {count}")
+                print(f"\t{day!r}: {count}")
 
         if was_regions_error:
             print("region keys:")
             for region, count in s.region_dataset_counts.items():
-                print(f"\t{repr(region)}: {count}")
+                print(f"\t{region!r}: {count}")
         raise
 
 

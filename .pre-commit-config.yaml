@@ -1,28 +1,11 @@
 ---
 repos:
-  # Normalise all Python code. (Black + isort + pyupgrade + autoflake)
-  - repo: https://github.com/Zac-HD/shed
-    rev: 2024.1.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.8
     hooks:
-    - id: shed
-  # Python Linting
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        exclude: ^docs/
-        additional_dependencies:
-          - flake8-bugbear # Lint-checks too opinionated for flake8 proper
-          - flake8-builtins # Don't allow built-in names like list
-          - flake8-coding # Only UTF-8
-          - flake8-debugger # Don't commit debugger calls
-          - flake8-executable # Check shebangs and executable permissions
-          - flake8-logging-format # Use log arguments, not string format
-          - flake8-pep3101 # Don't use old string % formatting
-          - flake8-pytest-style # Avoid common pytest mistakes
-          - flake8-pytest # Use plain assert, not unittest assertions
-          - flake8-rst-docstrings # docstring should be valid ReST
-          - pep8-naming # Follow pep8 naming rules (eg. function names lowercase)
+    - id: ruff
+      args: [--fix, --show-fixes, --output-format, grouped]
+    - id: ruff-format
   # Lint Python snippets embedded in Markdown (using flake8)
   - repo: https://github.com/johnfraney/flake8-markdown
     rev: v0.5.0
@@ -41,7 +24,7 @@ repos:
         args: ['-c', '.yamllint']
   # Common pre-commit checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files # We don't want huge files. (Cut down test data!)
         args: ['--maxkb=2000']

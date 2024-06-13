@@ -11,14 +11,15 @@ from urllib.parse import quote_plus
 import flask
 import pytz
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, Product, Range
 from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
 from orjson import orjson
 from shapely.geometry import MultiPolygon
 
-from . import _model, _utils, _utils as utils
+from . import _model, _utils
+from . import _utils as utils
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
@@ -173,9 +174,7 @@ _NULL_VALUE = Markup('<span class="null-value" title="Unspecified">•</span>')
 @bp.app_template_filter("query_value")
 def _format_query_value(val):
     if isinstance(val, Range):
-        return "{} to {}".format(
-            _format_query_value(val.begin), _format_query_value(val.end)
-        )
+        return f"{_format_query_value(val.begin)} to {_format_query_value(val.end)}"
     if isinstance(val, datetime):
         return _format_datetime(val)
     if val is None:
@@ -227,7 +226,7 @@ def _max_val(ls):
 
 
 @bp.app_template_filter("product_license_link")
-def _product_license(product: DatasetType):
+def _product_license(product: Product):
     license_ = _utils.product_license(product)
 
     if license_ is None:
@@ -245,7 +244,7 @@ def _product_license(product: DatasetType):
 
 
 @bp.app_template_filter("searchable_fields")
-def _searchable_fields(product: DatasetType):
+def _searchable_fields(product: Product):
     """Searchable field names for a product"""
 
     # No point searching fields that are fixed for this product
@@ -255,12 +254,12 @@ def _searchable_fields(product: DatasetType):
     return sorted(
         (key, field)
         for key, field in product.metadata_type.dataset_fields.items()
-        if key not in skippable_product_keys and key != "product"
+        if key not in skippable_product_keys and key != "product" and field.indexed
     )
 
 
 @bp.app_template_filter("searchable_fields_keys")
-def _searchable_fields_keys(product: DatasetType):
+def _searchable_fields_keys(product: Product):
     """List of keys of searchable field names for a product"""
     fields = _searchable_fields(product)
     return [k for k, _ in fields]

@@ -70,7 +70,10 @@ def test_default_args(dea_index: Index):
     res = query_to_search(MultiDict(()), product)
 
     # The last month of LANDSAT_5 for this product
-    assert res == dict(
-        # time=Range(datetime(2011, 10, 30), datetime(2011, 11, 30)),
-        # product=product.name
+    assert (
+        res
+        == dict(
+            # time=Range(datetime(2011, 10, 30), datetime(2011, 11, 30)),
+            # product=product.name
+        )
     )
