@@ -24,7 +24,7 @@ services:
       - postgres
 
   postgres:
-    image: postgis/postgis:13-3.4
+    image: postgis/postgis:16-3.4
     hostname: postgres
     environment:
       - POSTGRES_DB=opendatacube

@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/.pytest_cache/
+
+# Unit test / coverage reports
+**/htmlcov/
+**/.tox/
+**/.coverage
+**/.coverage.*
+**/.cache
+**/nosetests.xml
+**/coverage.xml
+**/*.cover
+**/.hypothesis
+
+# Translations
+**/*.mo
+**/*.pot
+
+# Django stuff:
+**/*.log
+
+# Sphinx documentation
+**/docs/_build/
+
+# PyBuilder
+**/target/
+**/.idea/
+
+# iPython Notebook
+**/.ipynb_checkpoints
+
+# Mac OS X
+**/.DS_Store
+
+# Environment-specific templates
+**/*.env.html
+**/settings.env.py
+
+# Ignore vscode
+**/.vscode
+
+.dockerignore

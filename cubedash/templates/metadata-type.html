@@ -46,19 +46,42 @@
         </h3>
         <div class="{% if metadata_type.dataset_fields | length > 8 %}columned{% endif %}">
         {% for key, field in metadata_type.dataset_fields | dictsort %}
-            <div>
-                {{ key }}
+            {%- if field.indexed is true %}
+                <div>
+                    {{ key }}
 
-                <span class="badge">
-                    {{- field.type_name -}}
-                    {%- if field.indexed is true %}
-                        <span title="indexed"><i class="fa fa-square" aria-hidden="true"></i></span>
-                    {%- endif -%}
-                </span>
-                {% if field.description and ('TODO' not in field.description) %}
-                    <span class="muted">{{ field.description }}</span>
-                {% endif %}
-            </div>
+                    <span class="badge">
+                        {{- field.type_name -}}
+                    </span>
+                    {% if field.description and ('TODO' not in field.description) %}
+                        <span class="muted">{{ field.description }}</span>
+                    {% endif %}
+                </div>
+            {%- endif -%}
+        {% endfor %}
+        </div>
+    </div>
+
+
+    <div class="panel">
+        <h3>
+            Additional Fields
+            {{ hanchor('additional-fields') }}
+        </h3>
+        <div class="{% if metadata_type.dataset_fields | length > 8 %}columned{% endif %}">
+        {% for key, field in metadata_type.dataset_fields | dictsort %}
+            {%- if field.indexed is false %}
+                <div>
+                    {{ key }}
+
+                    <span class="badge">
+                        {{- field.type_name -}}
+                    </span>
+                    {% if field.description and ('TODO' not in field.description) %}
+                        <span class="muted">{{ field.description }}</span>
+                    {% endif %}
+                </div>
+            {%- endif -%}
         {% endfor %}
         </div>
     </div>

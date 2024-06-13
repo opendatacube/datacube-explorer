@@ -11,7 +11,7 @@ from urllib.parse import quote_plus
 import flask
 import pytz
 from datacube.index.fields import Field
-from datacube.model import Dataset, DatasetType, Range
+from datacube.model import Dataset, Product, Range
 from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
@@ -226,7 +226,7 @@ def _max_val(ls):
 
 
 @bp.app_template_filter("product_license_link")
-def _product_license(product: DatasetType):
+def _product_license(product: Product):
     license_ = _utils.product_license(product)
 
     if license_ is None:
@@ -244,7 +244,7 @@ def _product_license(product: DatasetType):
 
 
 @bp.app_template_filter("searchable_fields")
-def _searchable_fields(product: DatasetType):
+def _searchable_fields(product: Product):
     """Searchable field names for a product"""
 
     # No point searching fields that are fixed for this product
@@ -254,12 +254,12 @@ def _searchable_fields(product: DatasetType):
     return sorted(
         (key, field)
         for key, field in product.metadata_type.dataset_fields.items()
-        if key not in skippable_product_keys and key != "product"
+        if key not in skippable_product_keys and key != "product" and field.indexed
     )
 
 
 @bp.app_template_filter("searchable_fields_keys")
-def _searchable_fields_keys(product: DatasetType):
+def _searchable_fields_keys(product: Product):
     """List of keys of searchable field names for a product"""
     fields = _searchable_fields(product)
     return [k for k, _ in fields]
