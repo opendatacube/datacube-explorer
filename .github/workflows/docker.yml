@@ -11,7 +11,7 @@ on:
       - "**"
 
   release:
-    types: [created, edited, published]
+    types: [published]
 
 env:
   IMAGE_NAME: opendatacube/explorer
