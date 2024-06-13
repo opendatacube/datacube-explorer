@@ -96,6 +96,7 @@ setup(
         "sqlalchemy>=1.4",
         "structlog>=20.2.0",
         "pytz",
+        "pygeofilter",
     ],
     tests_require=tests_require,
     extras_require=extras_require,
