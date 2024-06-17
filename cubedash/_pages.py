@@ -1,8 +1,10 @@
+import decimal
 import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
 import datacube
+import dateutil.parser
 import flask
 import structlog
 from datacube.model import DatasetType, Range
@@ -177,7 +179,14 @@ def search_page(
     )
 
     args = MultiDict(flask.request.args)
-    query = utils.query_to_search(args, product=product)
+    try:
+        query = utils.query_to_search(args, product=product)
+    except ValueError as e:  # invalid query val
+        abort(400, str(e))
+    except dateutil.parser._parser.ParserError:
+        abort(400, "Invalid datetime format")
+    except decimal.InvalidOperation:
+        abort(400, "Could not convert value to decimal")
 
     # Always add time range, selected product to query
     if product_name:
