@@ -8,7 +8,7 @@ import structlog
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from flask import abort, redirect, request, url_for
+from flask import abort, redirect, request, send_from_directory, url_for
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
 
@@ -672,6 +672,11 @@ def about_page():
         stac_endpoint_config=_stac.stac_endpoint_information(),
         explorer_root_url=url_for("default_redirect", _external=True),
     )
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    return send_from_directory("static", "robots.txt")
 
 
 @app.route("/")

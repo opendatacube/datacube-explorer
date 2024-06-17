@@ -961,6 +961,14 @@ def test_raw_documents(client: FlaskClient):
     )
 
 
+def test_get_robots(client: FlaskClient):
+    """
+    Check that robots.txt is correctly served from root
+    """
+    text, rv = get_text_response(client, "/robots.txt")
+    assert "User-Agent: *" in text
+
+
 def test_all_give_404s(client: FlaskClient):
     """
     We should get 404 messages, not exceptions, for missing things.
