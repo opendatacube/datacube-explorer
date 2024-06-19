@@ -8,7 +8,7 @@ import structlog
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from flask import abort, redirect, request, url_for
+from flask import abort, make_response, redirect, request, url_for
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
 
@@ -680,9 +680,11 @@ def about_page():
 
 @app.route("/robots.txt")
 def robots_txt():
-    return utils.as_json(
-        flask.current_app.config.get("ROBOTS_TXT", _ROBOTS_TXT_DEFAULT)
+    resp = make_response(
+        flask.current_app.config.get("ROBOTS_TXT", _ROBOTS_TXT_DEFAULT), 200
     )
+    resp.headers["Content-Type"] = "text/plain"
+    return resp
 
 
 @app.route("/")
