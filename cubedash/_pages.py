@@ -10,7 +10,7 @@ import structlog
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
-from flask import abort, redirect, request, url_for
+from flask import abort, make_response, redirect, request, url_for
 from sqlalchemy.exc import DataError
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
@@ -53,6 +53,10 @@ _HARD_SEARCH_LIMIT = app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
 _DEFAULT_GROUP_NAME = app.config.get("CUBEDASH_DEFAULT_GROUP_NAME", "Other Products")
 
 _DEFAULT_ARRIVALS_DAYS: int = app.config.get("CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT", 14)
+
+_ROBOTS_TXT_DEFAULT = (
+    "User-Agent: *\nAllow: /\nDisallow: /products/*/*\nDisallow: /stac/**"
+)
 
 # Add server timings to http headers.
 if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
@@ -685,6 +689,15 @@ def about_page():
         stac_endpoint_config=_stac.stac_endpoint_information(),
         explorer_root_url=url_for("default_redirect", _external=True),
     )
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    resp = make_response(
+        flask.current_app.config.get("ROBOTS_TXT", _ROBOTS_TXT_DEFAULT), 200
+    )
+    resp.headers["Content-Type"] = "text/plain"
+    return resp
 
 
 @app.route("/")
