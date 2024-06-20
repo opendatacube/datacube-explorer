@@ -999,3 +999,20 @@ def test_all_give_404s(client: FlaskClient):
 
     expect_404(f"/dataset/{dataset_id}")
     expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")
+
+
+def test_invalid_query_gives_400(client: FlaskClient):
+    """
+    We should get 400 errors, not errors, for an invalid field values in a query
+    """
+
+    def expect_400(url: str):
+        __tracebackhide__ = True
+        get_text_response(client, url, expect_status_code=400)
+
+    # errors that are caught when parsing query args
+    expect_400("/products/ga_ls8c_ard_3/datasets?time=asdf")
+    expect_400("/products/ga_ls8c_ard_3/datasets?lat=asdf")
+    # errors that aren't caught until the db query
+    expect_400("/products/ga_ls8c_ard_3/datasets?indexed_time=asdf")
+    expect_400("/products/ga_ls8c_ard_3/datasets?id=asdf")
