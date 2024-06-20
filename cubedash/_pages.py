@@ -1,14 +1,17 @@
+import decimal
 import re
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
 import datacube
+import dateutil.parser
 import flask
 import structlog
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
 from dateutil import tz
 from flask import abort, make_response, redirect, request, url_for
+from sqlalchemy.exc import DataError
 from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import HTTPException
 
@@ -181,7 +184,14 @@ def search_page(
     )
 
     args = MultiDict(flask.request.args)
-    query = utils.query_to_search(args, product=product)
+    try:
+        query = utils.query_to_search(args, product=product)
+    except ValueError as e:  # invalid query val
+        abort(400, str(e))
+    except dateutil.parser._parser.ParserError:
+        abort(400, "Invalid datetime format")
+    except decimal.InvalidOperation:
+        abort(400, "Could not convert value to decimal")
 
     # Always add time range, selected product to query
     if product_name:
@@ -224,10 +234,13 @@ def search_page(
     _LOG.info("query", query=query)
 
     # TODO: Add sort option to index API
-    datasets = sorted(
-        _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
-        key=lambda d: default_utc(d.center_time),
-    )
+    try:
+        datasets = sorted(
+            _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
+            key=lambda d: default_utc(d.center_time),
+        )
+    except DataError:
+        abort(400, "Invalid field value provided in query")
 
     more_datasets_exist = False
     if len(datasets) > _HARD_SEARCH_LIMIT:
