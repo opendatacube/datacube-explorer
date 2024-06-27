@@ -68,7 +68,7 @@
                         </div>
                     {% endif %}
 
-                    <a href="{{ url_for('search_page', **product_args) }}" class="muted dataset-count"
+                    <a href="{{ url_for('pages.search_page', **product_args) }}" class="muted dataset-count"
                     >{{ '{:,d}'.format(selected_summary.dataset_count) if selected_summary else 'Unknown number of' }}
                         dataset{% if selected_summary.dataset_count != 1 %}s{% endif %}
                     </a>
@@ -334,8 +334,8 @@
                   defaultCenter = {{ default_center }};
 
             const routes = new ApplicationRoutes(
-                '{{ url_for('region_page', region_code='__REGION_CODE__', **product_args)}}',
-                '{{ url_for('region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) }}',
+                '{{ url_for('pages.region_page', region_code='__REGION_CODE__', **product_args)}}',
+                '{{ url_for('pages.region_page', region_code='__REGION_CODE__', feelinglucky=True, **product_args) }}',
                 '{{ url_for('dataset.dataset_page', id_='__DATASET_ID__') }}',
                 '{{ url_for('api.regions_geojson', **product_args) }}',
                 '{{ url_for('api.datasets_geojson', limit=dataset_limit, **product_args)}}',

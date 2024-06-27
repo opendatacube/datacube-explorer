@@ -16,7 +16,7 @@ from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
-from flask import abort, request
+from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -32,16 +32,16 @@ from .summary import ItemSort
 _LOG = logging.getLogger(__name__)
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
-PAGE_SIZE_LIMIT = _model.app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
-DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
-DEFAULT_CATALOG_SIZE = _model.app.config.get("STAC_DEFAULT_CATALOG_SIZE", 500)
+PAGE_SIZE_LIMIT = current_app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
+DEFAULT_PAGE_SIZE = current_app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
+DEFAULT_CATALOG_SIZE = current_app.config.get("STAC_DEFAULT_CATALOG_SIZE", 500)
 
 # Should we force all URLs to include the full hostname?
-FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
+FORCE_ABSOLUTE_LINKS = current_app.config.get("STAC_ABSOLUTE_HREFS", True)
 
 # Should searches return the full properties for every stac item by default?
 # These searches are much slower we're forced us to use ODC's own metadata table.
-DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
+DEFAULT_RETURN_FULL_ITEMS = current_app.config.get(
     "STAC_DEFAULT_FULL_ITEM_INFORMATION", True
 )
 
@@ -248,7 +248,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             dataset_id=dataset.dataset_id,
         ),
         odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
-        explorer_base_url=url_for("default_redirect"),
+        explorer_base_url=url_for("pages.default_redirect"),
     )
 
     # Add the region code that Explorer inferred.
@@ -940,7 +940,7 @@ def _geojson_stac_response(doc: Union[STACObject, ItemCollection]) -> flask.Resp
 
 
 def stac_endpoint_information() -> Dict:
-    config = _model.app.config
+    config = current_app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
         title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),

@@ -16,6 +16,7 @@ from flask_themer import Themer
 # pylint: disable=import-error
 from sentry_sdk.integrations.flask import FlaskIntegration
 from shapely.geometry import MultiPolygon
+from werkzeug.exceptions import HTTPException
 
 # Fix up URL Scheme handling using this
 # from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
@@ -25,6 +26,8 @@ from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
 from cubedash.summary._stores import ProductSummary
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
+
+from . import _utils as utils
 
 try:
     from ._version import version as __version__
@@ -57,70 +60,113 @@ if os.getenv("SENTRY_DSN"):
         # release="myapp@1.0.0",
     )
 
+cache = Cache()
 
-app = flask.Flask(NAME)
-
-
-# Also part of the fix from ^
-app.wsgi_app = ProxyFix(app.wsgi_app)
-
-# Optional environment settings file or variable
-app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
-app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
-
-# Enable do template extension
-app.jinja_env.add_extension("jinja2.ext.do")
-
-app.config.setdefault("CACHE_TYPE", "NullCache")
-
-
-# Global defaults
-app.config.from_mapping(
-    dict(
-        CUBEDASH_DEFAULT_API_LIMIT=500,
-        CUBEDASH_HARD_API_LIMIT=4000,
-    )
-)
-
-cache = Cache(app=app, config=app.config)
-
-cors = (
-    CORS(app, resources=[r"/stac/*", r"/api/*"])
-    if app.config.get("CUBEDASH_CORS", True)
-    else None
-)
-
-app.config.setdefault("CUBEDASH_THEME", "odc")
-themer = Themer(app)
-
-
-@themer.current_theme_loader
-def get_current_theme():
-    return app.config["CUBEDASH_THEME"]
-
-
-# The theme can set its own default config options.
-with (Path(app.root_path) / "themes" / themer.current_theme / "info.json").open(
-    "r"
-) as f:
-    for key, value in json.load(f)["defaults"].items():
-        app.config.setdefault(key, value)
-
-DEFAULT_GROUPING_TIMEZONE = app.config.get(
-    "CUBEDASH_DEFAULT_TIMEZONE", DEFAULT_TIMEZONE
-)
+DEFAULT_GROUPING_TIMEZONE = DEFAULT_TIMEZONE
 
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
 # (hence validate=False).
 STORE: SummaryStore = SummaryStore.create(
     index_connect(application_name=NAME, validate_connection=False),
-    grouping_time_zone=DEFAULT_GROUPING_TIMEZONE,
+    grouping_time_zone=DEFAULT_TIMEZONE,
 )
 
-DEFAULT_GROUPING_TIMEZONE = app.config.get(
-    "CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin"
-)
+
+def create_app():
+    app = flask.Flask(NAME)
+
+    # Also part of the fix from ^
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+
+    # Optional environment settings file or variable
+    app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
+    app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
+
+    # Enable do template extension
+    app.jinja_env.add_extension("jinja2.ext.do")
+
+    app.config.setdefault("CACHE_TYPE", "NullCache")
+
+    # Global defaults
+    app.config.from_mapping(
+        dict(
+            CUBEDASH_DEFAULT_API_LIMIT=500,
+            CUBEDASH_HARD_API_LIMIT=4000,
+        )
+    )
+
+    cache.init_app(app=app, config=app.config)
+
+    cors = (  # noqa: F841
+        CORS(app, resources=[r"/stac/*", r"/api/*"])
+        if app.config.get("CUBEDASH_CORS", True)
+        else None
+    )
+
+    app.config.setdefault("CUBEDASH_THEME", "odc")
+    themer = Themer(app)
+
+    @themer.current_theme_loader
+    def get_current_theme():
+        return app.config["CUBEDASH_THEME"]
+
+    # The theme can set its own default config options.
+    with (Path(app.root_path) / "themes" / themer.current_theme / "info.json").open(
+        "r"
+    ) as f:
+        for key, value in json.load(f)["defaults"].items():
+            app.config.setdefault(key, value)
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return flask.render_template("500.html")
+
+    @app.errorhandler(HTTPException)
+    def handle_exception(e: HTTPException):
+        return (
+            utils.render(
+                "message.html",
+                title=e.code,
+                message=e.description,
+                e=e,
+            ),
+            e.code,
+        )
+
+    # Enable deployment specific code for Prometheus metrics
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
+        from prometheus_flask_exporter.multiprocess import (
+            GunicornInternalPrometheusMetrics,
+        )
+
+        metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
+        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
+    with app.app_context():
+        from . import (
+            _api,
+            _audit,
+            _dataset,
+            _filters,
+            _pages,
+            _platform,
+            _product,
+            _stac,
+            _stac_legacy,
+        )
+
+        app.register_blueprint(_filters.bp)
+        app.register_blueprint(_api.bp)
+        app.register_blueprint(_dataset.bp)
+        app.register_blueprint(_product.bp)
+        app.register_blueprint(_platform.bp)
+        app.register_blueprint(_audit.bp)
+        app.register_blueprint(_stac.bp)
+        app.register_blueprint(_stac_legacy.bp)
+        app.register_blueprint(_pages.bp)
+
+    return app
+
 
 _LOG = structlog.get_logger()
 
@@ -290,16 +336,3 @@ def _get_regions_geojson(
             if region_info.region(region_code) is not None
         ],
     }
-
-
-@app.errorhandler(500)
-def internal_server_error(error):
-    return flask.render_template("500.html")
-
-
-# Enable deployment specific code for Prometheus metrics
-if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
-    from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics
-
-    metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-    _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))

@@ -1,6 +1,6 @@
+import os
 from collections import Counter
 from datetime import datetime
-from os import environ
 from typing import Optional, Tuple
 
 import pandas as pd
@@ -29,7 +29,19 @@ _LOG = structlog.get_logger()
 
 _NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
 
-DEFAULT_TIMEZONE = environ.get("CUBEDASH_DEFAULT_TIMEZONE", "Australia/Darwin")
+# Get default timezone via CUBEDASH_SETTINGS specified config file if it exists,
+# otherwise default to Australia/Darwin
+default_timezone = "Australia/Darwin"
+settings_file = os.environ.get("CUBEDASH_SETTINGS", "settings.env.py")
+try:
+    with open(os.path.join(os.getcwd(), settings_file)) as config_file:
+        for line in config_file:
+            val = line.rstrip().split("=")
+            if val[0] == "CUBEDASH_DEFAULT_TIMEZONE":
+                default_timezone = val[1]
+except FileNotFoundError:
+    pass
+DEFAULT_TIMEZONE = default_timezone
 
 
 def _scalar_subquery(selectable):

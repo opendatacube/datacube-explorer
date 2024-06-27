@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 
 import flask
-from flask import Blueprint, abort, url_for
+from flask import Blueprint, abort, current_app, url_for
 
 from . import _model
 from . import _utils as utils
@@ -13,7 +13,7 @@ bp = Blueprint(
     __name__,
 )
 
-PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
+PROVENANCE_DISPLAY_LIMIT = current_app.config.get(
     "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", 25
 )
 

@@ -15,7 +15,7 @@
             Total indexed products: <span class="indexed-product-count">{{ datacube_products | length }}</span>,
             hidden products: <span class="hidden-product-count">{{ hidden_product_list | length }}</span> <br/>
             Download csv for all products dataset count
-            <a href="{{ url_for('.dsreport_csv') }}" class="badge header-badge">
+            <a href="{{ url_for('audit.dsreport_csv') }}" class="badge header-badge">
                 csv
                 <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
             </a>
@@ -43,7 +43,7 @@
                             <td>{{ period[1] or '' }}</td>
                             <td>{{ period[2] | month_name if period[2] else '' }}</td>
                             <td class="numeric {% if count == 0 %}muted{% endif %}">
-                                <a href="{{ url_for('product_page',
+                                <a href="{{ url_for('pages.product_page',
                                                 product_name=period[0],
                                                 year=period[1],
                                                 month=period[2])

@@ -130,8 +130,7 @@ Datacube-explorer default timezone is configured to: `Australia/Darwin`.
 
 To configure the instance to a different timezone, the following configuration needs to be applied:
 
-- `os.environment` variable `CUBEDASH_DEFAULT_TIMEZONE`
-- `app.config` variable `CUBEDASH_DEFAULT_TIMEZONE`
+- `app.config` variable `CUBEDASH_DEFAULT_TIMEZONE` (via environment variable `CUBEDASH_SETTINGS`, which points to a `.env.py` file)
 
 ### Can I add custom scripts or text to the page (such as analytics)?
 

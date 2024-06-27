@@ -4,6 +4,7 @@ import sys
 import time
 
 import flask
+from flask import current_app
 from sqlalchemy import event
 
 from . import _model
@@ -23,7 +24,7 @@ def init_app_monitoring():
 
     _INITIALISED = True
 
-    @_model.app.before_request
+    @current_app.before_request
     def time_start():
         flask.g.start_render = time.time()
         flask.g.datacube_query_time = 0
@@ -44,7 +45,7 @@ def init_app_monitoring():
             flask.g.datacube_query_count += 1
         # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
 
-    @_model.app.after_request
+    @current_app.after_request
     def time_end(response: flask.Response):
         render_time = time.time() - flask.g.start_render
         response.headers.add_header(
