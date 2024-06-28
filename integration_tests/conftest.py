@@ -10,8 +10,7 @@ from datacube import Datacube
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
-import cubedash
-from cubedash import _model, _utils, generate, logs
+from cubedash import _model, _utils, create_app, generate, logs
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
 from cubedash.warmup import find_examples_of_all_public_urls
@@ -95,16 +94,17 @@ def all_urls(summary_store: SummaryStore):
 
 @pytest.fixture()
 def empty_client(summary_store: SummaryStore) -> FlaskClient:
-    _model.cache.clear()
     _model.STORE = summary_store
-    cubedash.app.config["TESTING"] = True
-    cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = []
-    cubedash.app.config["CUBEDASH_SISTER_SITES"] = None
-    cubedash.app.config["CUBEDASH_DEFAULT_TIMEZONE"] = "Australia/Darwin"
-    cubedash.app.config["SHOW_DATA_LOCATION"] = {
-        "dea-public-data": "data.dea.ga.gov.au"
-    }
-    return cubedash.app.test_client()
+    app = create_app(
+        {
+            "TESTING": True,
+            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST": [],
+            "CUBEDASH_SISTER_SITES": None,
+            "CUBEDASH_DEFAULT_TIMEZONE": "Australia/Darwin",
+            "SHOW_DATA_LOCATION": {"dea-public-data": "data.dea.ga.gov.au"},
+        }
+    )
+    return app.test_client()
 
 
 @pytest.fixture()

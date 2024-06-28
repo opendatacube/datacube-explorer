@@ -73,16 +73,18 @@ STORE: SummaryStore = SummaryStore.create(
 )
 
 
-def create_app():
+def create_app(test_config=None):
     app = flask.Flask(NAME)
 
     # Also part of the fix from ^
     app.wsgi_app = ProxyFix(app.wsgi_app)
 
     # Optional environment settings file or variable
-    app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
-    app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
-
+    if test_config is None:
+        app.config.from_pyfile(BASE_DIR / "settings.env.py", silent=True)
+        app.config.from_envvar("CUBEDASH_SETTINGS", silent=True)
+    else:
+        app.config.from_mapping(test_config)
     # Enable do template extension
     app.jinja_env.add_extension("jinja2.ext.do")
 

@@ -452,7 +452,7 @@ def request_wants_json():
     )
 
 
-@current_app.context_processor
+@bp.app_context_processor
 def inject_globals():
     # The footer "Last updated" date.
     # The default is the currently-viewed product's summary refresh date.
