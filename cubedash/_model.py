@@ -22,6 +22,7 @@ from werkzeug.exceptions import HTTPException
 # from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from cubedash import _monitoring
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
 from cubedash.summary._stores import ProductSummary
@@ -144,6 +145,11 @@ def create_app(test_config=None):
 
         metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
         _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
+
+    # Add server timings to http headers.
+    if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
+        _monitoring.init_app_monitoring()
+
     with app.app_context():
         from . import (
             _api,

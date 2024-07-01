@@ -23,7 +23,6 @@ from sqlalchemy.exc import DataError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
-from cubedash import _monitoring
 from cubedash._model import ProductWithSummary
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
@@ -36,22 +35,14 @@ bp = Blueprint("pages", __name__)
 
 _LOG = structlog.getLogger()
 
-_HARD_SEARCH_LIMIT = current_app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
-_DEFAULT_GROUP_NAME = current_app.config.get(
-    "CUBEDASH_DEFAULT_GROUP_NAME", "Other Products"
-)
+_HARD_SEARCH_LIMIT = 150
+_DEFAULT_GROUP_NAME = "Other Products"
 
-_DEFAULT_ARRIVALS_DAYS: int = current_app.config.get(
-    "CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT", 14
-)
+_DEFAULT_ARRIVALS_DAYS = 14
 
 _ROBOTS_TXT_DEFAULT = (
     "User-Agent: *\nAllow: /\nDisallow: /products/*/*\nDisallow: /stac/**"
 )
-
-# Add server timings to http headers.
-if current_app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
-    _monitoring.init_app_monitoring()
 
 
 @bp.route("/<product_name>")
@@ -216,18 +207,21 @@ def search_page(
     _LOG.info("query", query=query)
 
     # TODO: Add sort option to index API
+    hard_search_limit = current_app.config.get(
+        "CUBEDASH_HARD_SEARCH_LIMIT", _HARD_SEARCH_LIMIT
+    )
     try:
         datasets = sorted(
-            _model.STORE.index.datasets.search(**query, limit=_HARD_SEARCH_LIMIT + 1),
+            _model.STORE.index.datasets.search(**query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
     except DataError:
         abort(400, "Invalid field value provided in query")
 
     more_datasets_exist = False
-    if len(datasets) > _HARD_SEARCH_LIMIT:
+    if len(datasets) > hard_search_limit:
         more_datasets_exist = True
-        datasets = datasets[:_HARD_SEARCH_LIMIT]
+        datasets = datasets[:hard_search_limit]
 
     if request_wants_json():
         return utils.as_rich_json(
@@ -323,7 +317,7 @@ def region_page(
         abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
     offset = flask.request.args.get("_o", default=0, type=int)
-    limit = _HARD_SEARCH_LIMIT
+    limit = current_app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", _HARD_SEARCH_LIMIT)
     datasets = list(
         _model.STORE.find_datasets_for_region(
             product_name, region_code, year, month, day, limit=limit + 1, offset=offset
@@ -350,7 +344,7 @@ def region_page(
 
     previous_page_url = None
     if offset > 0:
-        previous_page_url = url_with_offset(max(offset - _HARD_SEARCH_LIMIT, 0))
+        previous_page_url = url_with_offset(max(offset - limit, 0))
 
     if len(datasets) == 1 and "feelinglucky" in flask.request.args:
         return flask.redirect(url_for("dataset.dataset_page", id_=datasets[0].id))
@@ -554,6 +548,9 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
     )
     group_field_size = current_app.config.get("CUBEDASH_PRODUCT_GROUP_SIZE", 5)
     group_by_regex = current_app.config.get("CUBEDASH_PRODUCT_GROUP_BY_REGEX", None)
+    default_group_name = current_app.config.get(
+        "CUBEDASH_DEFAULT_GROUP_NAME", _DEFAULT_GROUP_NAME
+    )
 
     if group_by_regex:
         try:
@@ -571,13 +568,13 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
             for regex, group in regex_group.items():
                 if regex.search(t[0].name):
                     return group
-            return _DEFAULT_GROUP_NAME
+            return default_group_name
 
         key = regex_key
     else:
         # Group using the configured key, or fall back to the product name.
         def field_key(t):
-            return t[0].fields.get(group_by_field) or _DEFAULT_GROUP_NAME
+            return t[0].fields.get(group_by_field) or default_group_name
 
         key = field_key
 
@@ -594,9 +591,12 @@ def _partition_default(
     """
     For default items and place them at the end in batches.
     """
+    default_group_name = current_app.config.get(
+        "CUBEDASH_DEFAULT_GROUP_NAME", _DEFAULT_GROUP_NAME
+    )
     lonely_products = []
     for i, group_tuple in enumerate(grouped_product_summarise.copy()):
-        if group_tuple[0] == _DEFAULT_GROUP_NAME:
+        if group_tuple[0] == default_group_name:
             lonely_products = group_tuple[1]
             grouped_product_summarise.pop(i)
             break
@@ -607,7 +607,7 @@ def _partition_default(
     for i, lonely_group in enumerate(chunks(lonely_products, remainder_group_size)):
         group_name = ""
         if i == 0:
-            group_name = _DEFAULT_GROUP_NAME if there_are_groups else "Products"
+            group_name = default_group_name if there_are_groups else "Products"
         grouped_product_summarise.append((group_name, lonely_group))
     return grouped_product_summarise
 
@@ -633,7 +633,10 @@ def chunks(ls: List, n: int):
 
 @bp.route("/arrivals")
 def arrivals_page():
-    period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
+    default_days = current_app.config.get(
+        "CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT", _DEFAULT_ARRIVALS_DAYS
+    )
+    period_length = timedelta(days=default_days)
     arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
     return utils.render(
         "arrivals.html",
@@ -644,7 +647,10 @@ def arrivals_page():
 
 @bp.route("/arrivals.csv")
 def arrivals_csv():
-    period_length = timedelta(days=_DEFAULT_ARRIVALS_DAYS)
+    default_days = current_app.config.get(
+        "CUBEDASH_DEFAULT_ARRIVALS_DAY_COUNT", _DEFAULT_ARRIVALS_DAYS
+    )
+    period_length = timedelta(days=default_days)
 
     def _flat_arrivals_rows():
         for _, arrivals in _model.STORE.get_arrivals(period_length=period_length):
