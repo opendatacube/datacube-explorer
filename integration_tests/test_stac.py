@@ -23,7 +23,7 @@ from referencing import Registry, Resource
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
-from cubedash import _model
+from cubedash import _model, _stac
 from integration_tests.asserts import (
     DebugContext,
     assert_matching_eo3,
@@ -42,7 +42,7 @@ OUR_PAGE_SIZE = 4
 
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
 # Can't import STAC_VERSION from cubedash._stac since that needs app context
-_STAC_SCHEMA_BASE = _SCHEMA_BASE / "stac/1.0.0"
+_STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{_stac.STAC_VERSION}"
 
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
