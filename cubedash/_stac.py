@@ -559,6 +559,13 @@ def _handle_search_request(
                     "Only 'id', 'collection', and Item properties can be used to sort results.",
                 )
 
+    # Make sure users know that the query extension isn't implemented
+    if request_args.get("query") is not None:
+        abort(
+            400,
+            "The Query extension is no longer supported. Please use the Filter extension instead.",
+        )
+
     filter_lang = request_args.get("filter-lang", default=None, type=str)
     filter_cql = request_args.get("filter", default=None, type=_filter_arg)
     filter_crs = request_args.get("filter-crs", default=None)
