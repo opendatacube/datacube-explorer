@@ -107,7 +107,7 @@ build-prod: ## Build the prod Docker image
 up-prod: ## Start using the prod Docker image
 	docker compose \
 		--file docker-compose.yml \
-		up -d --quiet-pull
+		up -d --wait --quiet-pull
 
 init-odc: ## Initialise ODC Database
 	docker compose exec -T explorer \
