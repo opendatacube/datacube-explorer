@@ -68,7 +68,7 @@ A `cubedash-run` command is available to run Explorer locally:
 But Explorer can be run using any typical Python WSGI server, for example [gunicorn](https://gunicorn.org/):
 
     pip install gunicorn
-    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
+    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:create_app()
 
 Products will begin appearing one-by-one as the summaries are generated in the
 background.  If impatient, you can manually navigate to a product using

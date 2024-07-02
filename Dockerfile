@@ -88,4 +88,4 @@ CMD ["gunicorn", \
      "90", \
      "--config", \
      "python:cubedash.gunicorn_config", \
-     "cubedash:app"]
+     "cubedash:create_app()"]
