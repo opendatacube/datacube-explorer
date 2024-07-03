@@ -148,7 +148,7 @@ def create_app(test_config=None):
 
     # Add server timings to http headers.
     if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
-        _monitoring.init_app_monitoring()
+        _monitoring.init_app_monitoring(app)
 
     with app.app_context():
         from . import (
