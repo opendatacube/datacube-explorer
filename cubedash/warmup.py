@@ -55,7 +55,7 @@ def find_examples_of_all_public_urls(index: Index):
         yield f"/stac/search?collection={name}&limit=1"
         yield f"/stac/search?collection={name}&limit=1&_full=true"
 
-        has_datasets = index.datasets.search_eager(product=name, limit=1)
+        has_datasets = list(index.datasets.search(product=name, limit=1))
         if has_datasets:
             dataset = has_datasets[0]
             time = dataset.center_time

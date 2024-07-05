@@ -326,7 +326,7 @@ Then, to add sample datasets required for the test case, create a `.yaml` file w
                 )
                 assert dataset is not None, err
                 created = module_dea_index.datasets.add(dataset)
-                assert created.type.name == "s2_l2a"
+                assert created.product.name == "s2_l2a"
                 dataset_count += 1
             except AttributeError as ae:
                 assert dataset_count == 5

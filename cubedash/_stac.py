@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import flask
 import pystac
@@ -123,17 +123,6 @@ def url_for(*args, **kwargs):
     return flask.url_for(*args, **kwargs)
 
 
-def _pick_remote_uri(uris: Sequence[str]) -> Optional[int]:
-    """
-    Return the offset of the first uri with a remote path, if any.
-    """
-    for i, uri in enumerate(uris):
-        scheme, *_ = uri.split(":")
-        if scheme in ("https", "http", "ftp", "s3", "gfs"):
-            return i
-    return None
-
-
 # Conversions
 
 
@@ -156,7 +145,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
 
     if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
-        dataset_doc.locations = ds.uris
+        dataset_doc.locations = [ds.uri]
 
         # Geometry is optional in eo3, and needs to be calculated from grids if missing.
         # We can use ODC's own calculation that happens on index.
@@ -186,7 +175,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             # Filled-in below.
             label=None,
             product=ProductDoc(dataset.product_name),
-            locations=ds.uris if ds is not None else None,
+            locations=[ds.uri] if ds is not None else None,
             crs=str(dataset.geometry.crs) if dataset.geometry is not None else None,
             geometry=dataset.geometry.geom if dataset.geometry is not None else None,
             grids=None,
@@ -202,9 +191,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
                 {
                     name: _band_to_measurement(
                         b,
-                        dataset_location=(
-                            ds.uris[0] if ds is not None and ds.uris else None
-                        ),
+                        dataset_location=(ds.uri if ds is not None else None),
                     )
                     for name, b in ds.measurements.items()
                 }
@@ -239,13 +226,13 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     item.properties["cubedash:region_code"] = dataset.region_code
 
     # add canonical ref pointing to the JSON file on s3
-    if ds is not None and ds.uris:
-        media_type = "application/json" if ds.uris[0].endswith("json") else "text/yaml"
+    if ds is not None and ds.uri:
+        media_type = "application/json" if ds.uri.endswith("json") else "text/yaml"
         item.links.append(
             Link(
                 rel="canonical",
                 media_type=media_type,
-                target=_utils.as_resolved_remote_url(None, ds.uris[0]),
+                target=_utils.as_resolved_remote_url(None, ds.uri),
             )
         )
 

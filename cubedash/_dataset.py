@@ -28,7 +28,9 @@ def dataset_page(id_):
 
     return flask.redirect(
         url_for(
-            "dataset.dataset_full_page", product_name=dataset.type.name, id_=dataset.id
+            "dataset.dataset_full_page",
+            product_name=dataset.product.name,
+            id_=dataset.id,
         )
     )
 
@@ -43,9 +45,11 @@ def dataset_full_page(product_name: str, id_: UUID):
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
 
-    if product_name != dataset.type.name:
+    if product_name != dataset.product.name:
         actual_url = url_for(
-            "dataset.dataset_full_page", product_name=dataset.type.name, id_=dataset.id
+            "dataset.dataset_full_page",
+            product_name=dataset.product.name,
+            id_=dataset.id,
         )
         abort(
             404,
@@ -57,8 +61,6 @@ def dataset_full_page(product_name: str, id_: UUID):
     source_datasets, source_dataset_overflow = utils.get_dataset_sources(
         index, id_, limit=PROVENANCE_DISPLAY_LIMIT
     )
-
-    archived_location_times = index.datasets.get_archived_location_times(id_)
 
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
@@ -84,7 +86,6 @@ def dataset_full_page(product_name: str, id_: UUID):
         dataset_metadata=ordered_metadata,
         derived_datasets=derived_datasets,
         source_datasets=source_datasets,
-        archive_location_times=archived_location_times,
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
         # get dataset bounds for better image overlay

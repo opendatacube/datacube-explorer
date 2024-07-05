@@ -817,7 +817,7 @@ class GridRegionInfo(RegionInfo):
     def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
         tiles = [
             tile
-            for tile, _ in dataset.type.grid_spec.tiles(
+            for tile, _ in dataset.product.grid_spec.tiles(
                 dataset.extent.centroid.boundingbox
             )
         ]

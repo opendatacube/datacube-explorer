@@ -126,7 +126,7 @@ def _dataset_file_paths(dataset: Dataset):
 def _dataset_thumbnail_url(dataset: Dataset):
     file_paths = _dataset_file_paths(dataset)
     offset = file_paths.get("thumbnail:nbart") or file_paths.get("thumbnail")
-    return "" if not offset else _to_remote_url(offset, dataset.uris[0])
+    return "" if not offset else _to_remote_url(offset, dataset.uri)
 
 
 @bp.app_template_filter("resolve_remote_url")
@@ -148,7 +148,7 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
         t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for(
         "product_page",
-        product_name=dataset.type.name,
+        product_name=dataset.product.name,
         year=t.year,
         month=t.month,
         day=t.day,

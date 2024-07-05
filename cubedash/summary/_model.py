@@ -245,7 +245,7 @@ class TimePeriodOverview:
 
         return (
             Geometry(self.footprint_geometry, crs=self.footprint_crs)
-            .to_crs("EPSG:4326", wrapdateline=True, check_and_fix=True)
+            .to_crs("EPSG:4326", wrapdateline=True)
             .geom
         )
 

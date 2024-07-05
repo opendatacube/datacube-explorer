@@ -40,7 +40,7 @@
     <div class="panel highlight">
         <h2 class="followed"><strong>{{ dataset | printable_dataset }}</strong></h2>
         <div class="header-follow">
-                dataset of product {{ dataset.type.name | product_link }}
+                dataset of product {{ dataset.product.name | product_link }}
         </div>
         <div class="sub-header">
             <span>
@@ -60,7 +60,7 @@
         <div class="sub-header">
             {% if dataset_region_code %}
                 Region
-                <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
+                <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.product.name)}}">
                     {{- dataset_region_code -}}
                 </a>
             {% endif %}
@@ -82,7 +82,7 @@
             dataset.metadata.fields,
             wide=true,
             show_dicts=false,
-            descriptions=dataset.type.metadata_type.dataset_fields,
+            descriptions=dataset.product.metadata_type.dataset_fields,
             dataset=dataset
             ) }}
     </div>
@@ -113,7 +113,7 @@
                 </strong>
                 {% for d_dataset in derived_datasets %}
                     <div class="tree-node">
-                        <span title="Derived {{ d_dataset.type.name }}">
+                        <span title="Derived {{ d_dataset.product.name }}">
                             <i class="fa fa-level-down" aria-hidden="true"></i>
                             <a href="{{ url_for('dataset.dataset_page', id_=d_dataset.id) }}">
                                 {{ d_dataset | printable_dataset }}
@@ -130,12 +130,12 @@
 
     <div class="panel odd overflowable">
         <h3>
-            Location{% if dataset.uris | length > 1 %}s{% endif %}
-            {{ hanchor('locations') }}
+            Location
+            {{ hanchor('location') }}
         </h3>
-        {% for uri in dataset.uris %}
+        {% if dataset.uri %}
             <div class="dataset-location">
-                <p class="uri-path"><a href="{{ uri | resolve_remote_url }}">{{ uri }}</a></p>
+                <p class="uri-path"><a href="{{ dataset.uri | resolve_remote_url }}">{{ dataset.uri }}</a></p>
                 {% set dataset_paths = dataset | dataset_file_paths %}
                 {% if dataset_paths %}
                     <table>
@@ -146,7 +146,7 @@
                                     <i class="fa fa-caret-right" aria-hidden="true"></i>
                                 </th>
                                 <td>
-                                    <a href="{{ offset | resolve_remote_url(uri) }}"
+                                    <a href="{{ offset | resolve_remote_url(dataset.uri) }}"
                                        class="uri-path">
                                         {{ offset }}
                                     </a>
@@ -159,15 +159,6 @@
 
         {% else %}
             No known active locations
-        {% endfor %}
-
-        {% if archive_location_times %}
-            {% for uri, archive_time in archive_location_times %}
-                <div class="dataset-location p">
-                    <div><strong>Archived {{ archive_time | timesince }}:</strong></div>
-                    <a class="uri-path archived" href="{{ uri | resolve_remote_url }}">{{ uri }}</a>
-                </div>
-            {% endfor %}
         {% endif %}
     </div>
 
@@ -180,7 +171,7 @@
         </h3>
         <div class="header-follow">
             <a href="{{ url_for('dataset.raw_doc', id_=dataset.id) }}" class="badge">RAW <i class="fa-solid fa-file-text" aria-hidden="true"></i></a>
-            <a href="{{ url_for('stac.item', collection=dataset.type.name, dataset_id=dataset.id) }}"
+            <a href="{{ url_for('stac.item', collection=dataset.product.name, dataset_id=dataset.id) }}"
                class="badge">As Stac <i class="fa-solid fa-file-text" aria-hidden="true"></i></a>
         </div>
         {{ show_raw_document(dataset_metadata) }}

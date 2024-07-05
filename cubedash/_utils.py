@@ -251,8 +251,8 @@ def dataset_label(dataset: Dataset) -> str:
         return label
 
     # Otherwise try to get a file/folder name for the dataset's location.
-    for uri in dataset.uris:
-        name = _get_reasonable_file_label(uri)
+    if dataset.uri:
+        name = _get_reasonable_file_label(dataset.uri)
         if name:
             return name
 
@@ -653,10 +653,7 @@ def prepare_dataset_formatting(
     doc = dict(dataset.metadata_doc)
 
     if include_locations:
-        if len(dataset.uris) == 1:
-            doc["location"] = dataset.uris[0]
-        else:
-            doc["locations"] = dataset.uris
+        doc["location"] = dataset.uri
 
     # If it's EO3, use eodatasets's formatting. It's better.
     if is_doc_eo3(doc):
