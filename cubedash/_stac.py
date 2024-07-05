@@ -16,7 +16,7 @@ from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
-from flask import abort, request
+from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -32,18 +32,16 @@ from .summary import ItemSort
 _LOG = logging.getLogger(__name__)
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
-PAGE_SIZE_LIMIT = _model.app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
-DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
-DEFAULT_CATALOG_SIZE = _model.app.config.get("STAC_DEFAULT_CATALOG_SIZE", 500)
+DEFAULT_PAGE_SIZE_LIMIT = 1000
+DEFAULT_PAGE_SIZE = 20
+DEFAULT_CATALOG_SIZE = 500
 
 # Should we force all URLs to include the full hostname?
-FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
+DEFAULT_FORCE_ABSOLUTE_LINKS = True
 
 # Should searches return the full properties for every stac item by default?
 # These searches are much slower we're forced us to use ODC's own metadata table.
-DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
-    "STAC_DEFAULT_FULL_ITEM_INFORMATION", True
-)
+DEFAULT_RETURN_FULL_ITEMS = True
 
 STAC_VERSION = "1.0.0"
 
@@ -52,6 +50,22 @@ ItemLike = Union[pystac.Item, dict]
 ############################
 #  Helpers
 ############################
+
+
+def get_default_limit() -> int:
+    return current_app.config.get("STAC_DEFAULT_PAGE_SIZE", DEFAULT_PAGE_SIZE)
+
+
+def check_page_limit(limit: int):
+    page_size_limit = current_app.config.get(
+        "STAC_PAGE_SIZE_LIMIT", DEFAULT_PAGE_SIZE_LIMIT
+    )
+    if limit > page_size_limit:
+        abort(
+            400,
+            f"Max page size is {page_size_limit}. "
+            f"Use the next links instead of a large limit.",
+        )
 
 
 def dissoc_in(d: dict, key: str):
@@ -136,7 +150,10 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
 
 
 def url_for(*args, **kwargs):
-    if FORCE_ABSOLUTE_LINKS:
+    force_absolute_links = current_app.config.get(
+        "STAC_ABSOLUTE_HREFS", DEFAULT_FORCE_ABSOLUTE_LINKS
+    )
+    if force_absolute_links:
         kwargs["_external"] = True
     return flask.url_for(*args, **kwargs)
 
@@ -248,7 +265,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             dataset_id=dataset.dataset_id,
         ),
         odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
-        explorer_base_url=url_for("default_redirect"),
+        explorer_base_url=url_for("pages.default_redirect"),
     )
 
     # Add the region code that Explorer inferred.
@@ -520,7 +537,7 @@ def _handle_search_request(
     # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
     time = request_args.get("datetime") or request_args.get("time")
 
-    limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    limit = request_args.get("limit", default=get_default_limit(), type=int)
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
     )
@@ -529,8 +546,11 @@ def _handle_search_request(
 
     # Request the full Item information. This forces us to go to the
     # ODC dataset table for every record, which can be extremely slow.
+    default_full_items = current_app.config.get(
+        "STAC_DEFAULT_FULL_ITEM_INFORMATION", DEFAULT_RETURN_FULL_ITEMS
+    )
     full_information = request_args.get(
-        "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=_bool_argument
+        "_full", default=default_full_items, type=_bool_argument
     )
 
     intersects = request_args.get("intersects", default=None, type=_geojson_arg)
@@ -576,12 +596,7 @@ def _handle_search_request(
     if filter_cql:
         _validate_filter(filter_lang, filter_cql)
 
-    if limit > PAGE_SIZE_LIMIT:
-        abort(
-            400,
-            f"Max page size is {PAGE_SIZE_LIMIT}. "
-            f"Use the next links instead of a large limit.",
-        )
+    check_page_limit(limit)
 
     if bbox is not None and len(bbox) != 4:
         abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
@@ -736,7 +751,7 @@ def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLi
 
 def search_stac_items(
     get_next_url: Callable[[int], str],
-    limit: int = DEFAULT_PAGE_SIZE,
+    limit: int = 0,
     offset: int = 0,
     dataset_ids: Optional[str] = None,
     product_names: Optional[List[str]] = None,
@@ -757,6 +772,9 @@ def search_stac_items(
 
     :param get_next_url: A function that calculates a page url for the given offset.
     """
+    if limit < 1:
+        limit = get_default_limit()
+
     offset = offset or 0
     if sortby is not None:
         order = sortby
@@ -940,7 +958,7 @@ def _geojson_stac_response(doc: Union[STACObject, ItemCollection]) -> flask.Resp
 
 
 def stac_endpoint_information() -> Dict:
-    config = _model.app.config
+    config = current_app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
         title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
@@ -1227,8 +1245,11 @@ def collection_month(collection: str, year: int, month: int):
     if not all_time_summary:
         abort(404, f"No data for {collection!r} {year} {month}")
 
+    default_catalog_size = current_app.config.get(
+        "STAC_DEFAULT_CATALOG_SIZE", DEFAULT_CATALOG_SIZE
+    )
     request_args = request.args
-    limit = request_args.get("limit", default=DEFAULT_CATALOG_SIZE, type=int)
+    limit = request_args.get("limit", default=default_catalog_size, type=int)
     offset = request_args.get("_o", default=0, type=int)
 
     items = list(
@@ -1319,14 +1340,9 @@ def arrivals_items():
 
     This returns a Stac FeatureCollection of complete Stac Items, with paging links.
     """
-    limit = request.args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    limit = request.args.get("limit", default=get_default_limit(), type=int)
     offset = request.args.get("_o", default=0, type=int)
-    if limit > PAGE_SIZE_LIMIT:
-        abort(
-            400,
-            f"Max page size is {PAGE_SIZE_LIMIT}. "
-            f"Use the next links instead of a large limit.",
-        )
+    check_page_limit(limit)
 
     def next_page_url(next_offset):
         return url_for(

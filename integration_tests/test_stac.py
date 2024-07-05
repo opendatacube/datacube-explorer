@@ -23,8 +23,7 @@ from referencing import Registry, Resource
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
-import cubedash._stac
-from cubedash import _model
+from cubedash import _model, _stac
 from integration_tests.asserts import (
     DebugContext,
     assert_matching_eo3,
@@ -42,7 +41,8 @@ OUR_DATASET_LIMIT = 20
 OUR_PAGE_SIZE = 4
 
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
-_STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{cubedash._stac.STAC_VERSION}"
+# Can't import STAC_VERSION from cubedash._stac since that needs app context
+_STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{_stac.STAC_VERSION}"
 
 _SCHEMAS_BY_NAME = defaultdict(list)
 for schema_path in _SCHEMA_BASE.rglob("*.json"):
@@ -389,9 +389,13 @@ def stac_client(client: FlaskClient):
     """
     Get a client with populated data and standard settings
     """
-    cubedash._stac.PAGE_SIZE_LIMIT = OUR_DATASET_LIMIT
-    cubedash._stac.DEFAULT_PAGE_SIZE = OUR_PAGE_SIZE
-    _model.app.config["CUBEDASH_DEFAULT_LICENSE"] = "CC-BY-4.0"
+    client.application.config.update(
+        {
+            "STAC_PAGE_SIZE_LIMIT": OUR_DATASET_LIMIT,
+            "STAC_DEFAULT_PAGE_SIZE": OUR_PAGE_SIZE,
+            "CUBEDASH_DEFAULT_LICENSE": "CC-BY-4.0",
+        }
+    )
     return client
 
 

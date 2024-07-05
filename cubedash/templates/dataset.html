@@ -60,7 +60,7 @@
         <div class="sub-header">
             {% if dataset_region_code %}
                 Region
-                <a href="{{ url_for('region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
+                <a href="{{ url_for('pages.region_page', region_code=dataset_region_code, product_name=dataset.type.name)}}">
                     {{- dataset_region_code -}}
                 </a>
             {% endif %}

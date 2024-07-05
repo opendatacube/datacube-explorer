@@ -897,11 +897,8 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 
 
-@pytest.mark.skip(
-    reason="TODO: fix issue https://github.com/opendatacube/datacube-explorer/issues/92"
-)
 def test_with_timings(client: FlaskClient):
-    _monitoring.init_app_monitoring()
+    _monitoring.init_app_monitoring(client.application)
     # ls7_level1_scene dataset
     rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
     assert "Server-Timing" in rv.headers
