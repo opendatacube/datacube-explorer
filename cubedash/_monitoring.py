@@ -18,31 +18,11 @@ def init_app_monitoring(app: flask.Flask):
     # pylint: disable=global-statement
     global _INITIALISED
 
-    if _INITIALISED:
-        return
-
-    _INITIALISED = True
-
     @app.before_request
     def time_start():
         flask.g.start_render = time.time()
         flask.g.datacube_query_time = 0
         flask.g.datacube_query_count = 0
-
-    @event.listens_for(alchemy_engine(_model.STORE.index), "before_cursor_execute")
-    def before_cursor_execute(
-        conn, cursor, statement, parameters, context, executemany
-    ):
-        conn.info.setdefault("query_start_time", []).append(time.time())
-
-    @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
-    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-        if flask.has_app_context():
-            flask.g.datacube_query_time += time.time() - conn.info[
-                "query_start_time"
-            ].pop(-1)
-            flask.g.datacube_query_count += 1
-        # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
 
     @app.after_request
     def time_end(response: flask.Response):
@@ -55,6 +35,26 @@ def init_app_monitoring(app: flask.Flask):
             f'desc="{flask.g.datacube_query_count} ODC queries"',
         )
         return response
+
+    if _INITIALISED:
+        return
+
+    _INITIALISED = True
+
+    @event.listens_for(alchemy_engine(_model.STORE.index), "before_cursor_execute")
+    def before_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ):
+        conn.info.setdefault("query_start_time", []).append(time.time())
+
+    @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
+    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        if flask.has_app_context() and hasattr(flask.g, "datacube_query_time"):
+            flask.g.datacube_query_time += time.time() - conn.info[
+                "query_start_time"
+            ].pop(-1)
+            flask.g.datacube_query_count += 1
+        # print(f"===== {flask.g.datacube_query_time*1000} ===: {repr(statement)}")
 
     def decorate_all_methods(cls, decorator):
         """
