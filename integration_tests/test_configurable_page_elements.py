@@ -1,7 +1,6 @@
 import pytest
 from flask.testing import FlaskClient
 
-import cubedash
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import get_html
 
@@ -22,18 +21,22 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 @pytest.fixture()
 def app_configured_client(client: FlaskClient):
-    cubedash.app.config["CUBEDASH_INSTANCE_TITLE"] = "Development - ODC"
-    cubedash.app.config["CUBEDASH_SISTER_SITES"] = (
-        ("Production - ODC", "http://prod.odc.example"),
-        ("Production - NCI", "http://nci.odc.example"),
+    client.application.config.update(
+        {
+            "CUBEDASH_INSTANCE_TITLE": "Development - ODC",
+            "CUBEDASH_SISTER_SITES": (
+                ("Production - ODC", "http://prod.odc.example"),
+                ("Production - NCI", "http://nci.odc.example"),
+            ),
+            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST": [
+                "ls5_pq_scene",
+                "ls7_pq_scene",
+                "ls8_pq_scene",
+                "ls5_pq_legacy_scene",
+                "ls7_pq_legacy_scene",
+            ],
+        }
     )
-    cubedash.app.config["CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST"] = [
-        "ls5_pq_scene",
-        "ls7_pq_scene",
-        "ls8_pq_scene",
-        "ls5_pq_legacy_scene",
-        "ls7_pq_legacy_scene",
-    ]
     return client
 
 

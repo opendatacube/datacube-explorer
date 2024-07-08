@@ -3,6 +3,6 @@ try:
 except ImportError:
     __version__ = "Unknown/Not Installed"
 
-from ._pages import app
+from ._model import create_app
 
-__all__ = ("app", "__version__")
+__all__ = ("create_app", "__version__")

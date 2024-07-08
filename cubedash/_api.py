@@ -2,6 +2,7 @@ import logging
 from datetime import date, datetime
 
 import flask
+from dateutil import tz
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
@@ -30,7 +31,9 @@ def datasets_geojson(
     if limit > hard_limit:
         limit = hard_limit
 
-    time = _utils.as_time_range(year, month, day, tzinfo=_model.STORE.grouping_timezone)
+    time = _utils.as_time_range(
+        year, month, day, tzinfo=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE)
+    )
 
     return as_geojson(
         dict(

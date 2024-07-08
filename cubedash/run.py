@@ -76,13 +76,14 @@ def cli(
     event_log_file: str,
     verbose: bool,
 ):
-    from cubedash import app
+    from cubedash import create_app
     from cubedash.logs import init_logging
 
     init_logging(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
+    app = create_app()
     if debug_mode:
         app.debug = True
     run_simple(hostname, port, app, use_reloader=debug_mode, processes=workers)

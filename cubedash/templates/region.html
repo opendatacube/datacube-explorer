@@ -42,7 +42,7 @@
         {% endif %}
 
         <div>
-            <a href="{{ url_for('region_geojson', region_code=region_code, **product_args) }}"
+            <a href="{{ url_for('pages.region_geojson', region_code=region_code, **product_args) }}"
                 class="badge">
                 GeoJSON
                 <i class="fa-solid fa-file-text" aria-hidden="true"></i>

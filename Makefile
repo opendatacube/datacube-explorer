@@ -88,55 +88,55 @@ clean:  ## Clean all working/temporary files
 
 # DOCKER STUFF
 up: ## Start server using Docker
-	docker-compose up --quiet-pull
+	docker compose up --quiet-pull
 
 up-d: ## Start server using Docker in background
-	docker-compose up -d --quiet-pull
+	docker compose up -d --quiet-pull
 
 build: ## Build the dev Docker image
-	docker-compose build
+	docker compose build
 
 docker-clean: ## Get rid of the local docker env and DB
-	docker-compose down
+	docker compose down
 
 build-prod: ## Build the prod Docker image
-	docker-compose \
+	docker compose \
 		--file docker-compose.yml \
 		build
 
 up-prod: ## Start using the prod Docker image
-	docker-compose \
+	docker compose \
 		--file docker-compose.yml \
-		up -d --quiet-pull
+		up -d --wait --quiet-pull
 
 init-odc: ## Initialise ODC Database
-	docker-compose exec -T explorer \
+	docker compose exec -T explorer \
 		datacube system init
 
 docker-shell: ## Get a shell into local Docker environ
-	docker-compose exec -T explorer \
+	docker compose exec -T explorer \
 		bash
 
 schema: ## Initialise Explorer DB using Docker
-	docker-compose exec -T explorer \
+	docker compose exec -T explorer \
 		cubedash-gen -v --init
 
 index: ## Update Explorer DB using Docker
-	docker-compose exec -T explorer \
+	docker compose exec -T explorer \
 		cubedash-gen --all
 
 force-refresh: ## Entirely refresh the Explorer tables in Docker
-	docker-compose exec -T explorer \
+	docker compose exec -T explorer \
 		cubedash-gen --force-refresh --refresh-stats --all
 
 create-test-db-docker: ## Create a test database inside Docker
-	docker-compose run --rm -T explorer \
+	docker compose run --rm -T explorer \
 		bash /code/.docker/create_db.sh
 
 lint-docker: ## Run linting inside inside Docker
-	docker-compose run --rm explorer \
+	docker compose run --rm explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
-	docker-compose run --rm explorer \
+	docker compose run --rm explorer \
 		pytest --cov=cubedash --cov-report=xml -r sx --durations=5

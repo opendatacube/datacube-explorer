@@ -45,7 +45,7 @@ But Explorer can be run using any typical python wsgi server, for example gunico
 .. code-block:: text
 
     pip install gunicorn
-    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
+    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:create_app()
 
 Products will begin appearing one-by-one as the summaries are generated in the
 background.  If impatient, you can manually navigate to a product using
