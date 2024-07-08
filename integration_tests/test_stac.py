@@ -1544,3 +1544,22 @@ def test_stac_filter_extension(stac_client: FlaskClient):
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     assert rv.status_code == 400
+
+
+def test_stac_query_extension_errors(stac_client: FlaskClient):
+    # Trying to use query extension should error
+    query = {"cloud_cover": {"lt": 1}}
+    rv: Response = stac_client.post(
+        "/stac/search",
+        data=json.dumps(
+            {
+                "product": "ga_ls8c_ard_3",
+                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "query": query,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 400
