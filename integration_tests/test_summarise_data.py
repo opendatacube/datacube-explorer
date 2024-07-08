@@ -70,7 +70,6 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
     )
 
 
-@pytest.mark.skip(reason="multiprocessing not working")
 def test_generate_scene_year(run_generate, summary_store: SummaryStore):
     run_generate(multi_processed=True)
     # One year

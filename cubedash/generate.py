@@ -67,7 +67,7 @@ import click
 import structlog
 from click import secho as click_secho
 from click import style
-from datacube.cfg import ODCEnvironment
+from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.index import Index, index_connect
 from datacube.model import Product
 from datacube.ui.click import config_option, environment_option, pass_config
@@ -91,7 +91,7 @@ user_message = partial(click_secho, err=True)
 
 @dataclass
 class GenerateSettings:
-    config: ODCEnvironment
+    config: str
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
@@ -115,7 +115,7 @@ def generate_report(
                 started_years.add((product_name, year))
 
     store = SummaryStore.create(
-        _get_index(settings.config, product_name),
+        _get_index(ODCConfig.get_environment(settings.config), product_name),
         log=log,
         grouping_time_zone=grouping_time_zone,
     )
@@ -486,7 +486,7 @@ def cli(
 
     updated, failures = run_generation(
         GenerateSettings(
-            config,
+            config._name,
             force_refresh,
             recreate_dataset_extents,
             reset_incremental_position,
