@@ -40,9 +40,7 @@ _DEFAULT_GROUP_NAME = "Other Products"
 
 _DEFAULT_ARRIVALS_DAYS = 14
 
-_ROBOTS_TXT_DEFAULT = (
-    "User-Agent: *\nAllow: /\nDisallow: /products/*/*\nDisallow: /stac/**"
-)
+_ROBOTS_TXT_DEFAULT = "User-Agent: *\nAllow: /\nDisallow: /products/*/*\nDisallow: /stac/**\nDisallow: /dataset/*"
 
 
 @bp.route("/<product_name>")
