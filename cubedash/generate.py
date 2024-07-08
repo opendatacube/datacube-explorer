@@ -67,7 +67,7 @@ import click
 import structlog
 from click import secho as click_secho
 from click import style
-from datacube.cfg import ODCConfig
+from datacube.cfg import ODCEnvironment
 from datacube.index import Index, index_connect
 from datacube.model import Product
 from datacube.ui.click import config_option, environment_option, pass_config
@@ -91,7 +91,7 @@ user_message = partial(click_secho, err=True)
 
 @dataclass
 class GenerateSettings:
-    config: ODCConfig
+    config: ODCEnvironment
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
@@ -144,7 +144,7 @@ def generate_report(
         store.index.close()
 
 
-def _get_index(config: ODCConfig, variant: str) -> Index:
+def _get_index(config: ODCEnvironment, variant: str) -> Index:
     # Avoid long names as they will print warnings all the time.
     short_name = variant.replace("_", "")[:20]
     index: Index = index_connect(
@@ -433,7 +433,7 @@ class TimeDeltaParam(click.ParamType):
 )
 @click.argument("product_names", nargs=-1)
 def cli(
-    config: ODCConfig,
+    config: ODCEnvironment,
     generate_all_products: bool,
     jobs: int,
     timezone: str,

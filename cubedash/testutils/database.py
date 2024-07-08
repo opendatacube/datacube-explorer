@@ -35,9 +35,7 @@ def postgresql_server():
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     if Path("/.dockerenv").exists() and (
-        "DATACUBE_DB_URL" in os.environ
-        or "ODC_DATACUBE_DB_URL" in os.environ
-        or "DB_DATABASE" in os.environ
+        "ODC_DEFAULT_DB_URL" in os.environ or "DB_DATABASE" in os.environ
     ):
         yield GET_DB_FROM_ENV
     else:
@@ -49,7 +47,7 @@ def postgresql_server():
             detach=True,
             environment={
                 "POSTGRES_PASSWORD": "badpassword",
-                "POSTGRES_USER": "odc_tools_test",
+                "POSTGRES_USER": "explorer_test",
             },
             ports={"5432/tcp": None},
         )
@@ -64,13 +62,12 @@ def postgresql_server():
             # is used for both the user and the default database.
             yield {
                 "db_hostname": "127.0.0.1",
-                "db_username": "odc_tools_test",
+                "db_username": "explorer_test",
                 "db_port": host_port,
-                "db_database": "odc_tools_test",
+                "db_database": "explorer_test",
                 "db_password": "badpassword",
                 "index_driver": "default",
             }
-            # 'f"postgresql://odc_tools_test:badpassword@localhost:{host_port}/odc_tools_test",
         finally:
             container.remove(v=True, force=True)
 
@@ -110,19 +107,10 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         # to enable this fixture to not be function scoped
         mp = pytest.MonkeyPatch()
 
-        # This environment variable points to the configuration file, and is used by the odc-tools CLI apps
-        # as well as direct ODC API access, eg creating `Datacube()`
         mp.setenv(
             "ODC_CONFIG_PATH",
             str(temp_datacube_config_file.absolute()),
         )
-        # This environment is used by the `datacube ...` CLI tools, which don't obey the same environment variables
-        # as the API and odc-tools apps.
-        # See https://github.com/opendatacube/datacube-core/issues/1258 for more
-        # pylint:disable=consider-using-f-string
-        mp.setenv("ODC_DATACUBE_DB_URL", postgres_url)
-        # TODO: datacube_db_url env variable is still being prioritised
-        mp.setenv("DATACUBE_DB_URL", postgres_url)
         yield postgres_url
         mp.undo()
 

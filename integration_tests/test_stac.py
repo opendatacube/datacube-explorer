@@ -711,7 +711,6 @@ def test_stac_collection(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
-# @pytest.mark.xfail()
 def test_stac_item(stac_client: FlaskClient, odc_test_db):
     # Load one stac dataset from the test data.
 
@@ -719,6 +718,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
         "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
         "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
     )
+    # add_location is deprecated, but using index.datasets.update here is unwieldy
     odc_test_db.index.datasets.add_location(
         "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
     )
