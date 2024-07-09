@@ -70,7 +70,7 @@ from click import style
 from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.index import Index, index_connect
 from datacube.model import Product
-from datacube.ui.click import config_option, environment_option, pass_config
+from datacube.ui.click import environment_option, pass_config
 
 from cubedash.logs import init_logging
 from cubedash.summary import (
@@ -91,7 +91,7 @@ user_message = partial(click_secho, err=True)
 
 @dataclass
 class GenerateSettings:
-    config: str
+    env_name: str
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
@@ -115,7 +115,7 @@ def generate_report(
                 started_years.add((product_name, year))
 
     store = SummaryStore.create(
-        _get_index(ODCConfig.get_environment(settings.config), product_name),
+        _get_index(ODCConfig.get_environment(settings.env_name), product_name),
         log=log,
         grouping_time_zone=grouping_time_zone,
     )
@@ -161,7 +161,7 @@ def run_generation(
 ) -> Tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for "
-        f"{style(str(settings.config), bold=True)}",
+        f"{style(str(settings.env_name), bold=True)}",
     )
 
     counts = collections.Counter()
@@ -259,7 +259,6 @@ class TimeDeltaParam(click.ParamType):
 
 @click.command(help=__doc__)
 @environment_option
-@config_option
 @pass_config
 @click.option(
     "--all",
@@ -433,7 +432,7 @@ class TimeDeltaParam(click.ParamType):
 )
 @click.argument("product_names", nargs=-1)
 def cli(
-    config: ODCEnvironment,
+    cfg_env: ODCEnvironment,
     generate_all_products: bool,
     jobs: int,
     timezone: str,
@@ -454,7 +453,7 @@ def cli(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
-    index = _get_index(config, "setup")
+    index = _get_index(cfg_env, "setup")
     store = SummaryStore.create(index, grouping_time_zone=timezone)
 
     if drop_database:
@@ -486,7 +485,7 @@ def cli(
 
     updated, failures = run_generation(
         GenerateSettings(
-            config._name,
+            cfg_env._name,
             force_refresh,
             recreate_dataset_extents,
             reset_incremental_position,

@@ -15,7 +15,7 @@ import structlog
 from click import echo, secho
 from datacube.cfg import ODCEnvironment
 from datacube.index import Index, index_connect
-from datacube.ui.click import config_option, environment_option, pass_config
+from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
@@ -24,16 +24,15 @@ from cubedash.summary import SummaryStore
 _LOG = structlog.get_logger()
 
 
-def _get_store(config: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
+def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index: Index = index_connect(
-        config, application_name=f"cubedash.show.{variant}", validate_connection=False
+        cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
     return SummaryStore.create(index, log=log)
 
 
 @click.command(help=__doc__)
 @environment_option
-@config_option
 @pass_config
 @click.option(
     "--verbose",
@@ -62,7 +61,7 @@ def _get_store(config: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
 @click.argument("month", type=int, required=False)
 @click.argument("day", type=int, required=False)
 def cli(
-    config: ODCEnvironment,
+    cfg_env: ODCEnvironment,
     product_name: str,
     year: int,
     month: int,
@@ -77,7 +76,7 @@ def cli(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
-    store = _get_store(config, "setup")
+    store = _get_store(cfg_env, "setup")
 
     t = time.time()
     summary = store.get(product_name, year, month, day)
