@@ -48,7 +48,7 @@ RUN apt-get update && \
     rm -rf /var/lib/{apt,dpkg,cache,log} && \
     echo "Environment is: $ENVIRONMENT" && \
     ([ "$ENVIRONMENT" = "deployment" ] || \
-        pip install --disable-pip-version-check --break-system-packages pip-tools pytest-cov)
+        pip install --disable-pip-version-check pip-tools pytest-cov --break-system-packages)
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
@@ -59,12 +59,12 @@ COPY . $APPDIR
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 COPY --from=builder --link /build/*.whl ./
-RUN python3 -m pip --disable-pip-version-check -q install --break-system-packages *.whl && \
+RUN python3 -m pip --disable-pip-version-check -q install *.whl --break-system-packages && \
     rm *.whl && \
     ([ "$ENVIRONMENT" = "deployment" ] || \
-        pip --disable-pip-version-check install --editable --break-system-packages .[$ENVIRONMENT]) && \
+        pip --disable-pip-version-check install --editable .[$ENVIRONMENT] --break-system-packages) && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
-        (pip --no-cache-dir --disable-pip-version-check install --break-system-packages .[$ENVIRONMENT] && \
+        (pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT] --break-system-packages && \
          rm -rf /code/* /code/.git*)) && \
     pip freeze && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
