@@ -30,9 +30,9 @@ from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
-from pygeofilter import ast
-from pygeofilter.backends.evaluator import handle
-from pygeofilter.backends.sqlalchemy.evaluate import SQLAlchemyFilterEvaluator
+from pygeofilter.backends.sqlalchemy.evaluate import (
+    SQLAlchemyFilterEvaluator as FilterEvaluator,
+)
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
@@ -43,7 +43,6 @@ from sqlalchemy import (
     exists,
     func,
     literal,
-    null,
     or_,
     select,
     union_all,
@@ -1267,7 +1266,7 @@ class SummaryStore:
             if filter_lang == "cql2-text"
             else parse_cql2_json(filter_cql)
         )
-        query = query.filter(FilterEvaluator(field_exprs).evaluate(filter_cql))
+        query = query.filter(FilterEvaluator(field_exprs, True).evaluate(filter_cql))
 
         return query
 
@@ -1879,19 +1878,6 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
-
-
-class FilterEvaluator(SQLAlchemyFilterEvaluator):
-    """
-    Since pygeofilter's SQLAlchemyFilterEvaluator doesn't support treating
-    invalid/undefined attributes as NULL as per the STAC API Filter spec,
-    this class overwrites the Evaluator's handling of attributes to return NULL
-    as the default value if a field is not present in the mapping of sqlalchemy expressions.
-    """
-
-    @handle(ast.Attribute)
-    def attribute(self, node: ast.Attribute):
-        return self.field_mapping.get(node.name, null())
 
 
 def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
