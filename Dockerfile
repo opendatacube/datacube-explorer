@@ -48,7 +48,7 @@ RUN apt-get update && \
     rm -rf /var/lib/{apt,dpkg,cache,log} && \
     echo "Environment is: $ENVIRONMENT" && \
     ([ "$ENVIRONMENT" = "deployment" ] || \
-      pip install --disable-pip-version-check pip-tools pytest-cov)
+        pip install --disable-pip-version-check --break-system-packages pip-tools pytest-cov)
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
