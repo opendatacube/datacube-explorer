@@ -1,4 +1,4 @@
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.5 as builder
+FROM ghcr.io/osgeo/gdal:ubuntu-small-latest as builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
@@ -18,9 +18,9 @@ RUN apt-get update && \
 
 WORKDIR /build
 
-RUN python3.10 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psycopg2
+RUN python3 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psycopg2
 
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.5
+FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
@@ -48,7 +48,7 @@ RUN apt-get update && \
     rm -rf /var/lib/{apt,dpkg,cache,log} && \
     echo "Environment is: $ENVIRONMENT" && \
     ([ "$ENVIRONMENT" = "deployment" ] || \
-      pip install --disable-pip-version-check pip-tools pytest-cov)
+        pip install --disable-pip-version-check pip-tools pytest-cov --break-system-packages)
 
 # Set up a nice workdir and add the live code
 ENV APPDIR=/code
@@ -59,12 +59,12 @@ COPY . $APPDIR
 # then we want to link the source (with the -e flag) and if we're in prod, we
 # want to delete the stuff in the /code folder to keep it simple.
 COPY --from=builder --link /build/*.whl ./
-RUN python3.10 -m pip --disable-pip-version-check -q install *.whl && \
+RUN python3 -m pip --disable-pip-version-check -q install *.whl --break-system-packages && \
     rm *.whl && \
     ([ "$ENVIRONMENT" = "deployment" ] || \
-        pip --disable-pip-version-check install --editable .[$ENVIRONMENT]) && \
+        pip --disable-pip-version-check install --editable .[$ENVIRONMENT] --break-system-packages) && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
-        (pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT] && \
+        (pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT] --break-system-packages && \
          rm -rf /code/* /code/.git*)) && \
     pip freeze && \
     ([ "$ENVIRONMENT" != "deployment" ] || \
