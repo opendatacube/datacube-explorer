@@ -1,4 +1,4 @@
-FROM ghcr.io/osgeo/gdal:ubuntu-small-latest as builder
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.1 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
@@ -20,7 +20,7 @@ WORKDIR /build
 
 RUN python3 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psycopg2
 
-FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.9.1
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
