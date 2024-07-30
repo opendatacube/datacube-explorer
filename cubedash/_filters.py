@@ -108,7 +108,7 @@ def _dataset_geojson(dataset):
 
 @bp.app_template_filter("product_link")
 def _product_link(product_name):
-    url = flask.url_for("product_page", product_name=product_name)
+    url = flask.url_for("pages.product_page", product_name=product_name)
     return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
 
 
@@ -147,7 +147,7 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
     if timezone:
         t = utils.default_utc(t).astimezone(timezone)
     url = flask.url_for(
-        "product_page",
+        "pages.product_page",
         product_name=dataset.product.name,
         year=t.year,
         month=t.month,
@@ -254,7 +254,7 @@ def _searchable_fields(product: Product):
     return sorted(
         (key, field)
         for key, field in product.metadata_type.dataset_fields.items()
-        if key not in skippable_product_keys and key != "product"
+        if key not in skippable_product_keys and key != "product" and field.indexed
     )
 
 

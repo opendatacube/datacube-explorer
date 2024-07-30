@@ -894,6 +894,7 @@ def alchemy_engine(index: Index) -> Engine:
     return index.datasets._db._engine
 
 
+# somewhat misleading name
 def make_dataset_from_select_fields(index, row):
     # pylint: disable=protected-access
     return index.datasets._make(row, full_info=True)

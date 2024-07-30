@@ -525,13 +525,9 @@ def test_search_time_completion(client: FlaskClient):
     assert len(search_results) == 4
 
     # if not provided as a span, it should become a span of one day
-    html = get_html(client, "/datasets/ga_ls8c_ard_3?creation_time=2022-02-14")
-    assert (
-        one_element(html, "#search-creation_time-before").attrs["value"] == "2022-02-14"
-    )
-    assert (
-        one_element(html, "#search-creation_time-after").attrs["value"] == "2022-02-15"
-    )
+    html = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
+    assert one_element(html, "#search-time-before").attrs["value"] == "2022-07-18"
+    assert one_element(html, "#search-time-after").attrs["value"] == "2022-07-19"
     search_results = html.find(".search-result a")
     assert len(search_results) == 2
 
@@ -901,11 +897,8 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 
 
-@pytest.mark.skip(
-    reason="TODO: fix issue https://github.com/opendatacube/datacube-explorer/issues/92"
-)
 def test_with_timings(client: FlaskClient):
-    _monitoring.init_app_monitoring()
+    _monitoring.init_app_monitoring(client.application)
     # ls7_level1_scene dataset
     rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
     assert "Server-Timing" in rv.headers
@@ -965,6 +958,21 @@ def test_raw_documents(client: FlaskClient):
     )
 
 
+def test_get_robots(client: FlaskClient):
+    """
+    Check that robots.txt is correctly served from root
+    """
+    text, rv = get_text_response(client, "/robots.txt")
+    assert "User-Agent:" in text
+
+    num_lines = len(text.split("\n"))
+    assert num_lines > 1, "robots.txt should have multiple lines"
+
+    assert (
+        rv.headers["Content-Type"] == "text/plain"
+    ), "robots.txt content-type should be text/plain"
+
+
 def test_all_give_404s(client: FlaskClient):
     """
     We should get 404 messages, not exceptions, for missing things.
@@ -1003,3 +1011,20 @@ def test_all_give_404s(client: FlaskClient):
 
     expect_404(f"/dataset/{dataset_id}")
     expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")
+
+
+def test_invalid_query_gives_400(client: FlaskClient):
+    """
+    We should get 400 errors, not errors, for an invalid field values in a query
+    """
+
+    def expect_400(url: str):
+        __tracebackhide__ = True
+        get_text_response(client, url, expect_status_code=400)
+
+    # errors that are caught when parsing query args
+    expect_400("/products/ga_ls8c_ard_3/datasets?time=asdf")
+    expect_400("/products/ga_ls8c_ard_3/datasets?lat=asdf")
+    # errors that aren't caught until the db query
+    expect_400("/products/ga_ls8c_ard_3/datasets?indexed_time=asdf")
+    expect_400("/products/ga_ls8c_ard_3/datasets?id=asdf")

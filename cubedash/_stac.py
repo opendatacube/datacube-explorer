@@ -16,7 +16,7 @@ from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
-from flask import abort, request
+from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -32,24 +32,56 @@ from .summary import ItemSort
 _LOG = logging.getLogger(__name__)
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
-PAGE_SIZE_LIMIT = _model.app.config.get("STAC_PAGE_SIZE_LIMIT", 1000)
-DEFAULT_PAGE_SIZE = _model.app.config.get("STAC_DEFAULT_PAGE_SIZE", 20)
-DEFAULT_CATALOG_SIZE = _model.app.config.get("STAC_DEFAULT_CATALOG_SIZE", 500)
+DEFAULT_PAGE_SIZE_LIMIT = 1000
+DEFAULT_PAGE_SIZE = 20
+DEFAULT_CATALOG_SIZE = 500
 
 # Should we force all URLs to include the full hostname?
-FORCE_ABSOLUTE_LINKS = _model.app.config.get("STAC_ABSOLUTE_HREFS", True)
+DEFAULT_FORCE_ABSOLUTE_LINKS = True
 
 # Should searches return the full properties for every stac item by default?
 # These searches are much slower we're forced us to use ODC's own metadata table.
-DEFAULT_RETURN_FULL_ITEMS = _model.app.config.get(
-    "STAC_DEFAULT_FULL_ITEM_INFORMATION", True
-)
+DEFAULT_RETURN_FULL_ITEMS = True
 
 STAC_VERSION = "1.0.0"
+
+ItemLike = Union[pystac.Item, dict]
 
 ############################
 #  Helpers
 ############################
+
+
+def get_default_limit() -> int:
+    return current_app.config.get("STAC_DEFAULT_PAGE_SIZE", DEFAULT_PAGE_SIZE)
+
+
+def check_page_limit(limit: int):
+    page_size_limit = current_app.config.get(
+        "STAC_PAGE_SIZE_LIMIT", DEFAULT_PAGE_SIZE_LIMIT
+    )
+    if limit > page_size_limit:
+        abort(
+            400,
+            f"Max page size is {page_size_limit}. "
+            f"Use the next links instead of a large limit.",
+        )
+
+
+def dissoc_in(d: dict, key: str):
+    # like dicttoolz.dissoc but with support for nested keys
+    split = key.split(".")
+
+    if len(split) > 1:  # if nested
+        if dicttoolz.get_in(split, d) is not None:
+            outer = dicttoolz.get_in(split[:-1], d)
+            return dicttoolz.update_in(
+                d=d,
+                keys=split[:-1],
+                func=lambda _: dicttoolz.dissoc(outer, split[-1]),  # noqa: B023
+            )
+    return dicttoolz.dissoc(d, key)
+
 
 # Time-related
 
@@ -118,7 +150,10 @@ def _unparse_time_range(time: Tuple[datetime, datetime]) -> str:
 
 
 def url_for(*args, **kwargs):
-    if FORCE_ABSOLUTE_LINKS:
+    force_absolute_links = current_app.config.get(
+        "STAC_ABSOLUTE_HREFS", DEFAULT_FORCE_ABSOLUTE_LINKS
+    )
+    if force_absolute_links:
         kwargs["_external"] = True
     return flask.url_for(*args, **kwargs)
 
@@ -217,7 +252,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             dataset_id=dataset.dataset_id,
         ),
         odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
-        explorer_base_url=url_for("default_redirect"),
+        explorer_base_url=url_for("pages.default_redirect"),
     )
 
     # Add the region code that Explorer inferred.
@@ -327,6 +362,13 @@ def _build_properties(d: DocReader):
 # Search arguments
 
 
+def _remove_prefixes(arg: str):
+    # remove potential 'item.', 'properties.', or 'item.properties.' prefixes for ease of handling
+    arg = arg.replace("item.", "")
+    arg = arg.replace("properties.", "")
+    return arg
+
+
 def _array_arg(
     arg: Union[str, List[Union[str, float]]], expect_type=str, expect_size=None
 ) -> List:
@@ -377,7 +419,7 @@ def _geojson_arg(arg: dict) -> BaseGeometry:
         raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
 
 
-def _bool_argument(s: str):
+def _bool_argument(s: Union[str, bool]):
     """
     Parse an argument that should be a bool
     """
@@ -388,7 +430,7 @@ def _bool_argument(s: str):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: dict):
+def _dict_arg(arg: Union[str, dict]):
     """
     Parse stac extension arguments as dicts
     """
@@ -397,15 +439,73 @@ def _dict_arg(arg: dict):
     return arg
 
 
-def _list_arg(arg: list):
+def _field_arg(arg: Union[str, list, dict]) -> dict[str, list[str]]:
     """
-    Parse sortby argument as a list of dicts
+    Parse field argument into a dict
     """
+    if isinstance(arg, dict):
+        return _dict_arg(arg)
     if isinstance(arg, str):
-        arg = list(arg)
-    return list(
-        map(lambda a: json.loads(a.replace("'", '"')) if isinstance(a, str) else a, arg)
-    )
+        if arg.startswith("{"):
+            return _dict_arg(arg)
+        arg = arg.split(",")
+    if isinstance(arg, list):
+        include = []
+        exclude = []
+        for a in arg:
+            if a.startswith("-"):
+                exclude.append(a[1:])
+            else:
+                # account for '+' showing up as a space if not encoded
+                include.append(a[1:] if a.startswith("+") else a.strip())
+        return {"include": include, "exclude": exclude}
+
+
+def _sort_arg(arg: Union[str, list]) -> list[dict]:
+    """
+    Parse sortby argument into a list of dicts
+    """
+
+    def _format(val: str) -> dict[str, str]:
+        val = _remove_prefixes(val)
+        if val.startswith("-"):
+            return {"field": val[1:], "direction": "desc"}
+        if val.startswith("+"):
+            return {"field": val[1:], "direction": "asc"}
+        # default is ascending
+        return {"field": val.strip(), "direction": "asc"}
+
+    if isinstance(arg, str):
+        arg = arg.split(",")
+    if len(arg):
+        if isinstance(arg[0], str):
+            return [_format(a) for a in arg]
+        if isinstance(arg[0], dict):
+            for a in arg:
+                a["field"] = _remove_prefixes(a["field"])
+
+    return arg
+
+
+def _filter_arg(arg: Union[str, dict]) -> str:
+    # convert dict to arg to more easily remove prefixes
+    if isinstance(arg, dict):
+        arg = json.dumps(arg)
+    return _remove_prefixes(arg)
+
+
+def _validate_filter(filter_lang: str, cql: str):
+    # check filter-lang and actual cql format are aligned
+    is_json = True
+    try:
+        json.loads(cql)
+    except json.decoder.JSONDecodeError:
+        is_json = False
+
+    if filter_lang == "cql2-text" and is_json:
+        abort(400, "Expected filter to be cql2-text, but received cql2-json")
+    if filter_lang == "cql2-json" and not is_json:
+        abort(400, "Expected filter to be cql2-json, but received cql2-text")
 
 
 # Search
@@ -424,7 +524,7 @@ def _handle_search_request(
     # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
     time = request_args.get("datetime") or request_args.get("time")
 
-    limit = request_args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    limit = request_args.get("limit", default=get_default_limit(), type=int)
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
     )
@@ -433,26 +533,64 @@ def _handle_search_request(
 
     # Request the full Item information. This forces us to go to the
     # ODC dataset table for every record, which can be extremely slow.
+    default_full_items = current_app.config.get(
+        "STAC_DEFAULT_FULL_ITEM_INFORMATION", DEFAULT_RETURN_FULL_ITEMS
+    )
     full_information = request_args.get(
-        "_full", default=DEFAULT_RETURN_FULL_ITEMS, type=_bool_argument
+        "_full", default=default_full_items, type=_bool_argument
     )
 
     intersects = request_args.get("intersects", default=None, type=_geojson_arg)
 
-    query = request_args.get("query", default=None, type=_dict_arg)
+    fields = request_args.get("fields", default=None, type=_field_arg)
 
-    fields = request_args.get("fields", default=None, type=_dict_arg)
+    sortby = request_args.get("sortby", default=None, type=_sort_arg)
+    # not sure if there's a neater way to check sortable attribute type in _stores
+    # but the handling logic (i.e. 400 status code) would still need to live in here
+    if sortby:
+        for s in sortby:
+            field = s.get("field")
+            if field in [
+                "type",
+                "stac_version",
+                "properties",
+                "geometry",
+                "links",
+                "assets",
+                "bbox",
+                "stac_extensions",
+            ]:
+                abort(
+                    400,
+                    f"Cannot sort by {field}. "
+                    "Only 'id', 'collection', and Item properties can be used to sort results.",
+                )
 
-    sortby = request_args.get("sortby", default=None, type=_list_arg)
-
-    filter_cql = request_args.get("filter", default=None, type=_dict_arg)
-
-    if limit > PAGE_SIZE_LIMIT:
+    # Make sure users know that the query extension isn't implemented
+    if request_args.get("query") is not None:
         abort(
             400,
-            f"Max page size is {PAGE_SIZE_LIMIT}. "
-            f"Use the next links instead of a large limit.",
+            "The Query extension is no longer supported. Please use the Filter extension instead.",
         )
+
+    filter_lang = request_args.get("filter-lang", default=None, type=str)
+    filter_cql = request_args.get("filter", default=None, type=_filter_arg)
+    filter_crs = request_args.get("filter-crs", default=None)
+    if filter_crs and filter_crs != "https://www.opengis.net/def/crs/OGC/1.3/CRS84":
+        abort(
+            400,
+            "filter-crs only accepts 'https://www.opengis.net/def/crs/OGC/1.3/CRS84' as a valid value.",
+        )
+    if filter_lang is None and filter_cql is not None:
+        # If undefined, defaults to cql2-text for a GET request and cql2-json for a POST request.
+        if method == "GET":
+            filter_lang = "cql2-text"
+        else:
+            filter_lang = "cql2-json"
+    if filter_cql:
+        _validate_filter(filter_lang, filter_cql)
+
+    check_page_limit(limit)
 
     if bbox is not None and len(bbox) != 4:
         abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
@@ -470,9 +608,11 @@ def _handle_search_request(
             limit=limit,
             _o=next_offset,
             _full=full_information,
-            query=query,
+            intersects=intersects,
             fields=fields,
             sortby=sortby,
+            # so that it doesn't get named 'filter_lang'
+            **{"filter-lang": filter_lang},
             filter=filter_cql,
         )
 
@@ -489,9 +629,9 @@ def _handle_search_request(
         get_next_url=next_page_url,
         full_information=full_information,
         include_total_count=include_total_count,
-        query=query,
         fields=fields,
         sortby=sortby,
+        filter_lang=filter_lang,
         filter_cql=filter_cql,
     )
 
@@ -519,185 +659,93 @@ def _handle_search_request(
 # Item search extensions
 
 
-def _get_property(prop: str, item: pystac.Item, no_default=False):
+def _get_property(prop: str, item: ItemLike, no_default=False):
     """So that we don't have to keep using this bulky expression"""
-    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
+    if isinstance(item, pystac.Item):
+        item = item.to_dict()
+    return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
 
 
-def _predicate_helper(items: List[pystac.Item], prop: str, op: str, val) -> filter:
-    """Common comparison predicates used in both query and filter"""
-    if op == "eq" or op == "=":
-        return filter(lambda item: _get_property(prop, item) == val, items)
-    if op == "gte" or op == ">=":
-        return filter(lambda item: _get_property(prop, item) >= val, items)
-    if op == "lte" or op == "<=":
-        return filter(lambda item: _get_property(prop, item) <= val, items)
-    elif op == "gt" or op == ">":
-        return filter(lambda item: _get_property(prop, item) > val, items)
-    elif op == "lt" or op == "<":
-        return filter(lambda item: _get_property(prop, item) < val, items)
-    elif op == "neq" or op == "<>":
-        return filter(lambda item: _get_property(prop, item) != val, items)
-
-
-def _handle_query_extension(items: List[pystac.Item], query: dict) -> List[pystac.Item]:
-    """
-    Implementation of item search query extension (https://github.com/stac-api-extensions/query/blob/main/README.md)
-    The documentation doesn't specify whether multiple properties should be treated as logical AND or OR; this
-    implementation has assumed AND.
-
-    query = {'property': {'op': 'value'}, 'property': {'op': 'value', 'op': 'value'}}
-    """
-    filtered = items
-    # split on '.' to use dicttoolz for nested items
-    for prop in query.keys():
-        # Retrieve nested dict values
-        for op, val in query[prop].items():
-            if op == "startsWith":
-                matched = filter(
-                    lambda item: _get_property(prop, item).startswith(val), items
-                )
-            elif op == "endsWith":
-                matched = filter(
-                    lambda item: _get_property(prop, item).endswith(val), items
-                )
-            elif op == "contains":
-                matched = filter(lambda item: val in _get_property(prop, item), items)
-            elif op == "in":
-                matched = filter(lambda item: _get_property(prop, item) in val, items)
-            else:
-                matched = _predicate_helper(items, prop, op, val)
-
-            # achieve logical and between queries with set intersection
-            filtered = list(set(filtered).intersection(set(matched)))
-
-    return filtered
-
-
-def _handle_fields_extension(
-    items: List[pystac.Item], fields: dict
-) -> List[pystac.Item]:
+def _handle_fields_extension(items: List[ItemLike], fields: dict) -> List[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
-    This implementation differs slightly from the documented semantics in that if only `exclude` is specified, those
-    attributes will be subtracted from the complete set of the item's attributes, not just the default. `exclude` will
-    also not remove any of the default attributes so as to prevent errors due to invalid stac items.
+    This implementation differs slightly from the documented semantics in that the default fields will always
+    be included regardless of `include` or `exclude` values so as to ensure valid stac items.
 
     fields = {'include': [...], 'exclude': [...]}
     """
     res = []
-    # minimum fields needed for a valid stac item
-    default_fields = [
-        "id",
-        "type",
-        "geometry",
-        "bbox",
-        "links",
-        "assets",
-        "properties.datetime",
-        "stac_version",
-    ]
 
     for item in items:
-        include = fields.get("include") or []
-        # if 'include' is provided we build up from an empty slate;
-        # but if only 'exclude' is provided we remove from all existing fields
-        filtered_item = {} if fields.get("include") else item.to_dict()
-        # union of 'include' and default fields to ensure a valid stac item
+        # minimum fields needed for a valid stac item
+        default_fields = [
+            "id",
+            "type",
+            "geometry",
+            "bbox",
+            "links",
+            "assets",
+            "stac_version",
+            # while not necessary for a valid stac item, we still want them included
+            "stac_extensions",
+            "collection",
+        ]
+
+        # datetime is one of the default fields, but might be included as start_datetime/end_datetime instead
+        if _get_property("properties.start_datetime", item) is None:
+            dt_field = ["properties.start_datetime", "properties.end_datetime"]
+        else:
+            dt_field = ["properties.datetime"]
+
+        try:
+            # if 'include' is present at all, start with default fields to add to or extract from
+            include = fields["include"]
+            if include is None:
+                include = []
+
+            filtered_item = {k: _get_property(k, item) for k in default_fields}
+            # handle datetime separately due to nested keys
+            for f in dt_field:
+                filtered_item = dicttoolz.assoc_in(
+                    filtered_item, f.split("."), _get_property(f, item)
+                )
+        except KeyError:
+            # if 'include' wasn't provided, remove 'exclude' fields from set of all available fields
+            filtered_item = item.to_dict()
+            include = []
+
+        # add datetime field names to list of defaults for easy access
+        default_fields.extend(dt_field)
         include = list(set(include + default_fields))
 
-        for inc in include:
-            filtered_item = dicttoolz.update_in(
-                d=filtered_item,
-                keys=inc.split("."),
-                # get corresponding field from item
-                # disallow default to avoid None values being inserted
-                func=lambda _: _get_property(inc, item, no_default=True),
-            )
-
-        for exc in fields.get("exclude") or []:
-            # don't remove a field if it will make for an invalid stac item
+        for exc in fields.get("exclude", []):
             if exc not in default_fields:
-                # what about a field that isn't there?
-                split = exc.split(".")
-                # have to manually take care of nested case because dicttoolz doesn't have a dissoc_in
-                if len(split):
-                    filtered_item[split[0]] = dicttoolz.dissoc(
-                        filtered_item[split[0]], split[1]
-                    )
-                else:
-                    filtered_item = dicttoolz.dissoc(filtered_item, exc)
+                filtered_item = dissoc_in(filtered_item, exc)
 
-        res.append(pystac.Item.from_dict(filtered_item))
+        # include takes precedence over exclude, plus account for a nested field of an excluded field
+        for inc in include:
+            # we don't want to insert None values if a field doesn't exist, but we also don't want to error
+            try:
+                filtered_item = dicttoolz.update_in(
+                    d=filtered_item,
+                    keys=inc.split("."),
+                    func=lambda _: _get_property(
+                        inc,
+                        item,
+                        no_default=True,  # noqa: B023
+                    ),
+                )
+            except KeyError:
+                continue
+
+        res.append(filtered_item)
 
     return res
 
 
-def _handle_sortby_extension(
-    items: List[pystac.Item], sortby: List[dict]
-) -> List[pystac.Item]:
-    """
-    Implementation of sort extension (https://github.com/stac-api-extensions/sort/blob/main/README.md)
-
-    sortby = [ {'field': 'field_name', 'direction': <'asc' or 'desc'>} ]
-    """
-    sorted_items = items
-
-    for s in sortby:
-        field = s.get("field")
-        reverse = s.get("direction") == "desc"
-        # should we enforce correct names and raise error if not?
-        sorted_items = sorted(
-            sorted_items, key=lambda i: _get_property(field, i), reverse=reverse
-        )
-
-    return list(sorted_items)
-
-
-def _handle_filter_extension(
-    items: List[pystac.Item], filter_cql: dict
-) -> List[pystac.Item]:
-    """
-    Implementation of filter extension (https://github.com/stac-api-extensions/filter/blob/main/README.md)
-    Currently only supporting logical expression (and/or), null and binary comparisons, provided in cql-json
-    Assumes comparisons to be done between a property value and a literal
-
-    filter = {'op': 'and','args':
-    [{'op': '=', 'args': [{'property': 'prop_name'}, val]}, {'op': 'isNull', 'args': {'property': 'prop_name'}}]
-    }
-    """
-    results = []
-    op = filter_cql.get("op")
-    args = filter_cql.get("args")
-    # if there is a nested operation in the args, recur to resolve those, creating
-    # a list of lists that we can then apply the top level operator to
-    for arg in [a for a in args if isinstance(a, dict) and a.get("op")]:
-        results.append(_handle_filter_extension(items, arg))
-
-    if op == "and":
-        # set intersection between each result
-        # need to pass results as a list of sets to intersection
-        results = list(set.intersection(*map(set, results)))
-    elif op == "or":
-        # set union between each result
-        results = list(set.union(*map(set, results)))
-    elif op == "isNull":
-        # args is a single property rather than a list
-        prop = args.get("property")
-        results = filter(
-            lambda item: _get_property(prop, item) in [None, "None"], items
-        )
-    else:
-        prop = args[0].get("property")
-        val = args[1]
-        results = _predicate_helper(items, prop, op, val)
-
-    return list(results)
-
-
 def search_stac_items(
     get_next_url: Callable[[int], str],
-    limit: int = DEFAULT_PAGE_SIZE,
+    limit: int = 0,
     offset: int = 0,
     dataset_ids: Optional[str] = None,
     product_names: Optional[List[str]] = None,
@@ -708,17 +756,22 @@ def search_stac_items(
     order: ItemSort = ItemSort.DEFAULT_SORT,
     include_total_count: bool = False,
     use_post_request: bool = False,
-    query: Optional[dict] = None,
     fields: Optional[dict] = None,
     sortby: Optional[List[dict]] = None,
-    filter_cql: Optional[dict] = None,
+    filter_lang: Optional[str] = None,
+    filter_cql: Optional[str | dict] = None,
 ) -> ItemCollection:
     """
     Perform a search, returning a FeatureCollection of stac Item results.
 
     :param get_next_url: A function that calculates a page url for the given offset.
     """
+    if limit < 1:
+        limit = get_default_limit()
+
     offset = offset or 0
+    if sortby is not None:
+        order = sortby
     items = list(
         _model.STORE.search_items(
             product_names=product_names,
@@ -729,6 +782,8 @@ def search_stac_items(
             intersects=intersects,
             offset=offset,
             full_dataset=full_information,
+            filter_lang=filter_lang,
+            filter_cql=filter_cql,
             order=order,
         )
     )
@@ -752,15 +807,18 @@ def search_stac_items(
     )
     if include_total_count:
         count_matching = _model.STORE.get_count(
-            product_names=product_names, time=time, bbox=bbox, dataset_ids=dataset_ids
+            product_names=product_names,
+            time=time,
+            bbox=bbox,
+            intersects=intersects,
+            dataset_ids=dataset_ids,
+            filter_lang=filter_lang,
+            filter_cql=filter_cql,
         )
         extra_properties["numberMatched"] = count_matching
         extra_properties["context"]["matched"] = count_matching
 
     items = [as_stac_item(f) for f in returned]
-    items = _handle_query_extension(items, query) if query else items
-    items = _handle_filter_extension(items, filter_cql) if filter_cql else items
-    items = _handle_sortby_extension(items, sortby) if sortby else items
     items = _handle_fields_extension(items, fields) if fields else items
 
     result = ItemCollection(items, extra_fields=extra_properties)
@@ -894,7 +952,7 @@ def _geojson_stac_response(doc: Union[STACObject, ItemCollection]) -> flask.Resp
 
 
 def stac_endpoint_information() -> Dict:
-    config = _model.app.config
+    config = current_app.config
     o = dict(
         id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
         title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
@@ -975,14 +1033,14 @@ def root():
         "https://api.stacspec.org/v1.0.0-rc.1/core",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search",
         "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#query",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
-        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#fields",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
-        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features#sort",
         "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
+        "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
         "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
         "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
+        "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
+        "http://www.opengis.net/spec/cql2/1.0/conf/spatial-operators",
         "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
         "https://api.stacspec.org/v1.0.0-rc.1/collections",
     ]
@@ -1181,8 +1239,11 @@ def collection_month(collection: str, year: int, month: int):
     if not all_time_summary:
         abort(404, f"No data for {collection!r} {year} {month}")
 
+    default_catalog_size = current_app.config.get(
+        "STAC_DEFAULT_CATALOG_SIZE", DEFAULT_CATALOG_SIZE
+    )
     request_args = request.args
-    limit = request_args.get("limit", default=DEFAULT_CATALOG_SIZE, type=int)
+    limit = request_args.get("limit", default=default_catalog_size, type=int)
     offset = request_args.get("_o", default=0, type=int)
 
     items = list(
@@ -1273,14 +1334,9 @@ def arrivals_items():
 
     This returns a Stac FeatureCollection of complete Stac Items, with paging links.
     """
-    limit = request.args.get("limit", default=DEFAULT_PAGE_SIZE, type=int)
+    limit = request.args.get("limit", default=get_default_limit(), type=int)
     offset = request.args.get("_o", default=0, type=int)
-    if limit > PAGE_SIZE_LIMIT:
-        abort(
-            400,
-            f"Max page size is {PAGE_SIZE_LIMIT}. "
-            f"Use the next links instead of a large limit.",
-        )
+    check_page_limit(limit)
 
     def next_page_url(next_offset):
         return url_for(

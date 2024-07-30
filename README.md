@@ -68,7 +68,7 @@ A `cubedash-run` command is available to run Explorer locally:
 But Explorer can be run using any typical Python WSGI server, for example [gunicorn](https://gunicorn.org/):
 
     pip install gunicorn
-    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:app
+    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:create_app()
 
 Products will begin appearing one-by-one as the summaries are generated in the
 background.  If impatient, you can manually navigate to a product using
@@ -130,8 +130,7 @@ Datacube-explorer default timezone is configured to: `Australia/Darwin`.
 
 To configure the instance to a different timezone, the following configuration needs to be applied:
 
-- `os.environment` variable `CUBEDASH_DEFAULT_TIMEZONE`
-- `app.config` variable `CUBEDASH_DEFAULT_TIMEZONE`
+- `app.config` variable `CUBEDASH_DEFAULT_TIMEZONE` (via environment variable `CUBEDASH_SETTINGS`, which points to a `.env.py` file)
 
 ### Can I add custom scripts or text to the page (such as analytics)?
 
@@ -248,10 +247,12 @@ edit `.docker/settings_docker.py` and setup application config. Then `docker-com
 
 ## STAC API Extensions
 
-The STAC endpoint implements the [query](https://github.com/stac-api-extensions/query), [filter](https://github.com/stac-api-extensions/filter), [fields](https://github.com/stac-api-extensions/fields), and [sort](https://github.com/stac-api-extensions/sort) extensions, all of which are bound to the `search` endpoint as used with POST requests, with fields and sort additionally bound to the features endpoint.
+The STAC endpoint implements the [filter](https://github.com/stac-api-extensions/filter), [fields](https://github.com/stac-api-extensions/fields), and [sort](https://github.com/stac-api-extensions/sort) extensions, all of which are bound to the STAC API - Item Search (`/search`) endpoint. All support both GET and POST request syntax.
 
 Fields contained in the item properties must be prefixed with `properties.`, ex `properties.dea:dataset_maturity`.
 
-The implementation of `fields` differs somewhat from the suggested include/exclude semantics in that it does not permit for invalid STAC entities, so the `id`, `type`, `geometry`, `bbox`, `links`, `assets`, `properties.datetime`, and `stac_version` fields will always be included, regardless of user input.
+The implementation of `fields` differs somewhat from the suggested include/exclude semantics in that it does not permit for invalid STAC entities, so the `id`, `type`, `geometry`, `bbox`, `links`, `assets`, `properties.datetime`, `collection`, and `stac_version` fields will always be included, regardless of user input.
 
-The implementation of `filter` is limited, and currently only supports CQL2 JSON syntax with the following basic CQL2 operators: `AND`, `OR`, `=`, `>`, `>=`, `<`, `<=`, `<>`, `IS NULL`.
+The `sort` and `filter` implementations will recognise any syntactically valid version of a property name, which is the say, the STAC, eo3, and search field (as defined by the metadata type) variants of the name, with or without the `item.` or `properties.` prefixes. If a property does not exist for an item, `sort` will ignore it while `filter` will treat it as `NULL`.
+
+The `filter` extension supports both `cql2-text` and `cql2-json` for both GET and POST requesets, and uses [pygeofilter](https://github.com/geopython/pygeofilter) to parse the cql and convert it to a sqlalchemy filter expression. `filter-crs` only accepts http://www.opengis.net/def/crs/OGC/1.3/CRS84 as a valid value.

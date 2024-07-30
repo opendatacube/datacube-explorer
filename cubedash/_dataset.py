@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 
 import flask
-from flask import Blueprint, abort, url_for
+from flask import Blueprint, abort, current_app, url_for
 
 from . import _model
 from . import _utils as utils
@@ -13,9 +13,7 @@ bp = Blueprint(
     __name__,
 )
 
-PROVENANCE_DISPLAY_LIMIT = _model.app.config.get(
-    "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", 25
-)
+PROVENANCE_DISPLAY_LIMIT = 25
 
 
 @bp.route("/dataset/<uuid:id_>")
@@ -58,15 +56,18 @@ def dataset_full_page(product_name: str, id_: UUID):
             f"Perhaps you meant to visit {actual_url!r}",
         )
 
+    provenance_display_limit = current_app.config.get(
+        "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", PROVENANCE_DISPLAY_LIMIT
+    )
     source_datasets, source_dataset_overflow = utils.get_dataset_sources(
-        index, id_, limit=PROVENANCE_DISPLAY_LIMIT
+        index, id_, limit=provenance_display_limit
     )
 
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
     derived_datasets, derived_dataset_overflow = utils.get_datasets_derived(
-        index, id_, limit=PROVENANCE_DISPLAY_LIMIT
+        index, id_, limit=provenance_display_limit
     )
     derived_datasets.sort(key=utils.dataset_label)
 

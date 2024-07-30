@@ -96,6 +96,7 @@ setup(
         "structlog>=20.2.0",
         "pytz",
         "odc-geo",
+        "pygeofilter>=0.2.2",
     ],
     tests_require=tests_require,
     extras_require=extras_require,

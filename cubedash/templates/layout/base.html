@@ -33,7 +33,7 @@
 <div class="content-wrapper">
     <div class="header">
         <div id="logo">
-            <a href="{{ url_for('default_redirect') }}">
+            <a href="{{ url_for('pages.default_redirect') }}">
                 {% include theme('logo.html') %}
             </a>
             {%- if explorer_instance_title -%}
@@ -59,7 +59,7 @@
                     <ul>
                         {% for product in datacube_products %}
                             {% if product.name not in hidden_product_list %}
-                                <li><a class="datacube-product-name" href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
+                                <li><a class="datacube-product-name" href="{{ url_for('pages.product_page', product_name=product.name) }}">{{ product.name }}</a></li>
                             {% endif %}
                         {% endfor %}
                         {% if hidden_product_list %}
@@ -67,7 +67,7 @@
                         {% endif %}
                         {% for product in datacube_products %}
                             {% if product.name in hidden_product_list %}
-                                <li><a class="configured-hide-product hide" href="{{ url_for('product_page', product_name=product.name) }}">{{ product.name }}</a></li>
+                                <li><a class="configured-hide-product hide" href="{{ url_for('pages.product_page', product_name=product.name) }}">{{ product.name }}</a></li>
                             {% endif %}
                         {% endfor %}
                     </ul>
@@ -83,19 +83,19 @@
                 <li class="top-menu ex-menu">
                     <span class="ex-menu-title">Explore</span>
                     <ul class="left">
-                        <li><a href="{{url_for('arrivals_page')}}">Recently Added</a></li>
+                        <li><a href="{{url_for('pages.arrivals_page')}}">Recently Added</a></li>
                         <li><a href="{{ url_for('product.storage_page') }}">Storage</a></li>
                         <li><a href="{{ url_for('audit.datasets_metadata_page' )}}">Metadata Issues</a></li>
                         <li><a href="{{ url_for('audit.products_overview_page' )}}">Products Overview</a></li>
                         <li><a href="{{ url_for('audit.dscount_report_page') }}">Dataset Counts</a></li>
-                        <li><a href="{{ url_for('about_page') }}">About Explorer</a></li>
+                        <li><a href="{{ url_for('pages.about_page') }}">About Explorer</a></li>
                     </ul>
                 </li>
             </ul>
         </div>
     </div>
     <div id="breadcrumb">
-        <a class="item" href="{{url_for('default_redirect')}}">home</a>
+        <a class="item" href="{{url_for('pages.default_redirect')}}">home</a>
         {% if breadcrumb %}
             {% for url, title, valid_link in breadcrumb %}
                 {% if valid_link %}
