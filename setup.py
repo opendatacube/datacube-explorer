@@ -76,7 +76,7 @@ setup(
         "click",
         "datacube>=1.8.18",
         "eodatasets3>=0.30.1",
-        "fiona",
+        "fiona>=1.10.0",
         "flask",
         "Flask-Caching",
         "flask-cors",
