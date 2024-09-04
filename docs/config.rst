@@ -11,7 +11,7 @@ The following configuration values are used internally by Datacube-explorer:
 
 .. py:data:: CACHE_TYPE
 
-    Enable Flask-Cache https://pythonhosted.org/Flask-Caching/#configuring-flask-caching settings.
+    Enable Flask-Cache https://flask-caching.readthedocs.io/en/latest/index.html#configuring-flask-caching settings.
 
     Default: ``NullCache``
 
