@@ -33,6 +33,7 @@ from sqlalchemy import (
     literal,
     null,
     select,
+    text,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Engine
@@ -532,7 +533,9 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     else:
         doc = md.dataset_fields["metadata_doc"].alchemy_expression
         creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-        creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
+        creation_expression = text(
+            str(doc[creation_dt].astext) + "::timestamp at time zone 'utc'"
+        )
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
     return func.coalesce(creation_expression, DATASET.c.added)
