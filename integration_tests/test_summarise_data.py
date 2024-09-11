@@ -16,7 +16,6 @@ from dateutil.tz import tzutc
 from sqlalchemy import text
 
 from cubedash import _utils
-from cubedash._utils import alchemy_engine
 from cubedash.summary import SummaryStore
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
@@ -222,7 +221,8 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
 
 
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
-    with alchemy_engine(index).begin() as conn:
+    # with alchemy_engine(index).begin() as conn:
+    with index._active_connection() as conn:
         rows_changed = conn.execute(
             text(
                 f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=:product_id where id=:dataset_id"
@@ -430,7 +430,8 @@ def test_force_dataset_regeneration(
     assert original_footprint is not None
 
     # Now let's break the footprint!
-    with alchemy_engine(odc_test_db.index).begin() as conn:
+    # with alchemy_engine(odc_test_db.index).begin() as conn:
+    with odc_test_db.index._active_connection() as conn:
         conn.execute(
             text(
                 f"update {CUBEDASH_SCHEMA}.dataset_spatial "
@@ -511,7 +512,8 @@ def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube):
     """
 
     def _get_product_seq_value():
-        with alchemy_engine(odc_test_db.index).begin() as conn:
+        # with alchemy_engine(odc_test_db.index).begin() as conn:
+        with odc_test_db.index._active_connection() as conn:
             [new_val] = conn.execute(
                 text(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
             ).fetchone()

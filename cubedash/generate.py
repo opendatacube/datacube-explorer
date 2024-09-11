@@ -122,7 +122,7 @@ def generate_report(
     store.add_change_listener(print_status)
 
     try:
-        product = store.index.products.get_by_name(product_name)
+        product = store.get_product(product_name)
         if product is None:
             raise ValueError(f"Unknown product: {product_name}")
         user_message(f"{product_name} refresh")
@@ -222,15 +222,13 @@ def run_generation(
     return creation_count, failure_count
 
 
-def _load_products(index: Index, product_names) -> List[Product]:
+def _load_products(store: SummaryStore, product_names) -> List[Product]:
     for product_name in product_names:
-        product = index.products.get_by_name(product_name)
+        product = store.get_product(product_name)
         if product:
             yield product
         else:
-            possible_product_names = "\n\t".join(
-                p.name for p in index.products.get_all()
-            )
+            possible_product_names = "\n\t".join(p.name for p in store.all_products())
             raise click.BadParameter(
                 f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
@@ -481,7 +479,7 @@ def cli(
     if generate_all_products:
         products = sorted(store.all_products(), key=lambda p: p.name)
     else:
-        products = list(_load_products(store.index, product_names))
+        products = list(_load_products(store, product_names))
 
     updated, failures = run_generation(
         GenerateSettings(

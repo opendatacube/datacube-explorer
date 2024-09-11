@@ -47,7 +47,7 @@ def product_timings() -> Iterable[ProductTiming]:
         day = middle_period.replace(hour=0, minute=0, second=0)
 
         start = time.time()
-        dataset_count = store.index.datasets.count(
+        dataset_count = _model.INDEX.index.datasets.count(
             product=product_name, time=Range(day, day + timedelta(days=1))
         )
         end = time.time()
@@ -69,7 +69,7 @@ def legacy_product_audit_page():
 @bp.route("/audit/datasets-metadata")
 def datasets_metadata_page():
     store = _model.STORE
-    all_products = {p.name for p in store.index.products.get_all()}
+    all_products = {p.name for p in store.all_products()}
     summarised_products = set(store.list_complete_products())
     unsummarised_product_names = all_products - summarised_products
 

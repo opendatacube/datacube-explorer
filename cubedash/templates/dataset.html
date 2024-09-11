@@ -93,9 +93,9 @@
                 Related Datasets
                 {{ hanchor('related-datasets') }}
             </h3>
-            {% for classifier, s_dataset in source_datasets.items() %}
+            {% for s_dataset in source_datasets %}
                 <div>
-                    <span title="Source '{{ classifier }}'">
+                    <span title="Source dataset">
                         <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>
                         <a href="{{ url_for('dataset.dataset_page', id_=s_dataset.id) }}">
                             {{ s_dataset | printable_dataset }}

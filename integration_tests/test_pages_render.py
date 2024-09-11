@@ -7,7 +7,6 @@ from flask import Response
 from flask.testing import FlaskClient
 from sqlalchemy import text
 
-from cubedash import _utils
 from cubedash.summary import SummaryStore, _schema
 
 METADATA_TYPES = [
@@ -97,7 +96,8 @@ def test_allows_null_product_fixed_fields(
     ), "There's no summarised products to test"
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
-    with _utils.alchemy_engine(odc_test_db.index).begin() as conn:
+    # with _utils.alchemy_engine(odc_test_db.index).begin() as conn:
+    with odc_test_db.index._active_connection() as conn:
         update_count = conn.execute(
             text(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
         ).rowcount

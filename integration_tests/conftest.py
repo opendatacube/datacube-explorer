@@ -10,7 +10,8 @@ from datacube import Datacube
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
-from cubedash import _model, _utils, create_app, generate, logs
+from cubedash import _model, create_app, generate, logs
+from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
 from cubedash.warmup import find_examples_of_all_public_urls
@@ -32,7 +33,7 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 @pytest.fixture()
 def summary_store(odc_test_db: Datacube) -> SummaryStore:
     store = SummaryStore.create(
-        odc_test_db.index, grouping_time_zone="Australia/Darwin"
+        ExplorerIndex(odc_test_db.index), grouping_time_zone="Australia/Darwin"
     )
     store.drop_all()
     odc_test_db.close()
@@ -41,9 +42,7 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
         # Some CRS/storage tests use test data that is 3577
         store.init(grouping_epsg_code=3577)
 
-    _make_all_tables_unlogged(
-        _utils.alchemy_engine(odc_test_db.index), CUBEDASH_METADATA
-    )
+    _make_all_tables_unlogged(odc_test_db.index, CUBEDASH_METADATA)
     return store
 
 
@@ -164,7 +163,7 @@ def pytest_assertrepr_compare(op, left, right):
         return format_doc_diffs(left, right)
 
 
-def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
+def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData):
     """
     Set all tables in this alchemy metadata to unlogged.
 
@@ -177,7 +176,8 @@ def _make_all_tables_unlogged(engine, metadata: sqlalchemy.MetaData):
             # Not supported for materialised views.
             continue
         else:
-            with engine.begin() as conn:
+            # with engine.begin() as conn:
+            with index._active_connection() as conn:
                 conn.execute(
                     sqlalchemy.text(
                         f"""alter table {table.selectable.fullname} set unlogged;"""

@@ -74,7 +74,7 @@ setup(
         "cachetools",
         "click",
         "datacube>=1.9.0-rc9",
-        "eodatasets3 @ git+https://github.com/opendatacube/eo-datasets@integrate-1.9",
+        # "eodatasets3 @ git+https://github.com/opendatacube/eo-datasets@integrate-1.9",
         "fiona",
         "flask",
         "Flask-Caching",

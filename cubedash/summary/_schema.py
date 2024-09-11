@@ -4,6 +4,7 @@ from textwrap import dedent
 from typing import Set
 
 import structlog
+from datacube.drivers.postgres._schema import DATASET as ODC_DATASET
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     DDL,
@@ -32,9 +33,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
-
-from cubedash import _utils
-from cubedash._utils import ODC_DATASET
 
 _LOG = structlog.get_logger()
 
@@ -252,8 +250,13 @@ def has_schema(conn: Connection) -> bool:
     return conn.dialect.has_schema(conn, CUBEDASH_SCHEMA)
 
 
-def is_compatible_schema(conn: Connection) -> bool:
-    """Do we have the latest schema changes?"""
+def is_compatible_schema(
+    conn: Connection, odc_table_name: str, generate: bool = False
+) -> bool:
+    """
+    Do we have the latest schema changes?
+    If generate: Is the schema complete enough to run generate/refresh commands?
+    """
     is_latest = True
 
     if not pg_column_exists(
@@ -261,15 +264,11 @@ def is_compatible_schema(conn: Connection) -> bool:
     ):
         is_latest = False
 
+    if generate:
+        # Incremental update scanning requires the optional `update` column on ODC.
+        return is_latest and pg_column_exists(conn, odc_table_name, "updated")
+
     return is_latest
-
-
-def is_compatible_generate_schema(conn: Connection) -> bool:
-    """Is the schema complete enough to run generate/refresh commands?"""
-    is_latest = is_compatible_schema(conn)
-
-    # Incremental update scanning requires the optional `update` column on ODC.
-    return is_latest and pg_column_exists(conn, ODC_DATASET.fullname, "updated")
 
 
 class SchemaNotRefreshableError(Exception):
@@ -295,6 +294,7 @@ def update_schema(conn: Connection) -> Set[PleaseRefresh]:
 
     Returns what data should be resummarised.
     """
+    # Will never return PleaseRefresh.PRODUCTS...
 
     refresh = set()
 
@@ -307,6 +307,7 @@ def update_schema(conn: Connection) -> Set[PleaseRefresh]:
         )
         refresh.add(PleaseRefresh.DATASET_EXTENTS)
 
+    # why are these in update_schema rather than create_schema?
     _COLLECTION_ITEMS_INDEX.create(conn, checkfirst=True)
 
     _ALL_COLLECTIONS_ORDER_INDEX.create(conn, checkfirst=True)
@@ -343,7 +344,10 @@ def check_or_update_odc_schema(conn: Connection):
         # We can try to install it ourselves if we have permission, using ODC's code.
         if not pg_column_exists(conn, ODC_DATASET.fullname, "updated"):
             _LOG.warning("schema.applying_update.add_odc_change_triggers")
-            _utils.install_timestamp_trigger(conn)
+            from datacube.drivers.postgres._core import install_timestamp_trigger
+
+            # shouldn't be a need to account for ImportError anymore
+            install_timestamp_trigger(conn)
     except ProgrammingError as e:
         # We don't have permission.
         raise SchemaNotRefreshableError(
@@ -386,9 +390,17 @@ def check_or_update_odc_schema(conn: Connection):
         raise
 
 
-def pg_create_index(conn, idx_name: str, table_name: str, col_expr: str | None = None):
+def pg_create_index(
+    conn,
+    idx_name: str,
+    table_name: str,
+    col_expr: str | None = None,
+    unique: bool = False,
+):
     conn.execute(
-        text(f"create index if not exists {idx_name} on {table_name}({col_expr})")
+        text(
+            f"create {'unique' if unique else ''} index if not exists {idx_name} on {table_name}({col_expr})"
+        )
     )
 
 
@@ -484,7 +496,7 @@ def create_schema(conn: Connection, epsg_code: int):
     #
     # Doing it separately allows users to run this tool without `create` permission.
     #
-    if not conn.dialect.has_schema(conn, CUBEDASH_SCHEMA):
+    if not has_schema(conn):
         conn.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
 
     # Add Postgis if needed
@@ -518,24 +530,39 @@ def create_schema(conn: Connection, epsg_code: int):
     """)
     )
     # The normal primary key.
-    conn.execute(
-        text(f"""
-        create unique index if not exists mv_spatial_ref_sys_srid_idx on
-            {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srid);
-        """)
+    # conn.execute(
+    #     text(f"""
+    #     create unique index if not exists mv_spatial_ref_sys_srid_idx on
+    #         {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(srid);
+    #     """)
+    # )
+    pg_create_index(
+        conn,
+        "mv_spatial_ref_sys_srid_idx",
+        f"{CUBEDASH_SCHEMA}.mv_spatial_ref_sys",
+        "srid",
+        unique=True,
     )
     # For case insensitive auth name/code lookups.
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
-    conn.execute(
-        text(f"""
-        create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on
-            {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
-        """)
+    # conn.execute(
+    #     text(f"""
+    #     create unique index if not exists mv_spatial_ref_sys_lower_auth_srid_idx on
+    #         {CUBEDASH_SCHEMA}.mv_spatial_ref_sys(lower(auth_name::text), auth_srid);
+    #     """)
+    # )
+    pg_create_index(
+        conn,
+        "mv_spatial_ref_sys_lower_auth_srid_idx",
+        f"{CUBEDASH_SCHEMA}.mv_spatial_ref_sys",
+        "lower(auth_name::text), auth_srid",
+        unique=True,
     )
 
     METADATA.create_all(conn, checkfirst=True)
 
     # Useful reporting.
+    # could move this out of create_schema, and then call it in index.api.init_schema
     conn.execute(
         text(f"""
     create materialized view if not exists {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality as (
@@ -589,3 +616,41 @@ def get_srid_name(conn: Connection, srid: int):
             )
         ).where(SPATIAL_REF_SYS.c.srid == bindparam("srid", srid, type_=Integer))
     ).scalar()
+
+
+def init_elements(conn: Connection, grouping_epsg_code: int):
+    """
+    Initialise any schema elements that don't exist.
+
+    Takes an epsg_code, of the CRS used internally for summaries.
+
+    (Requires `create` permissions in the db)
+    """
+    srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
+    grouping_crs = get_srid_name(conn, srid)
+    # Add any missing schema items or patches.
+    create_schema(conn, epsg_code=grouping_epsg_code)
+
+    # If they specified an epsg code, make sure the existing schema uses it.
+    if grouping_epsg_code:
+        crs_used_by_schema = grouping_crs
+        if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
+            raise RuntimeError(
+                f"""
+                Tried to initialise with EPSG:{grouping_epsg_code!r},
+                but the schema is already using {crs_used_by_schema}.
+
+                To change the CRS, you need to recreate Explorer's schema.
+
+                Eg.
+
+                    # Drop schema
+                    cubedash-gen --drop
+
+                    # Create schema with new epsg, and summarise all products again.
+                    cubedash-gen --init --epsg {grouping_epsg_code} --all
+
+                (Warning: Resummarising all of your products may take a long time!)
+                """
+            )
+    return update_schema(conn)

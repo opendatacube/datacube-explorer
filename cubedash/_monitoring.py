@@ -7,7 +7,6 @@ import flask
 from sqlalchemy import event
 
 from . import _model
-from ._utils import alchemy_engine
 
 _INITIALISED = False
 
@@ -41,13 +40,13 @@ def init_app_monitoring(app: flask.Flask):
 
     _INITIALISED = True
 
-    @event.listens_for(alchemy_engine(_model.STORE.index), "before_cursor_execute")
+    @event.listens_for(_model.INDEX.engine, "before_cursor_execute")
     def before_cursor_execute(
         conn, cursor, statement, parameters, context, executemany
     ):
         conn.info.setdefault("query_start_time", []).append(time.time())
 
-    @event.listens_for(alchemy_engine(_model.STORE.index), "after_cursor_execute")
+    @event.listens_for(_model.INDEX.engine, "after_cursor_execute")
     def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
         if flask.has_app_context() and hasattr(flask.g, "datacube_query_time"):
             flask.g.datacube_query_time += time.time() - conn.info[
@@ -89,8 +88,6 @@ def init_app_monitoring(app: flask.Flask):
             return decorator
 
         # Print call time for all db layer calls.
-        import datacube.drivers.postgres._api as api
-
-        decorate_all_methods(api.PostgresDbAPI, with_timings)
+        decorate_all_methods(_model.INDEX.db_api, with_timings)
 
     print_datacube_query_times()

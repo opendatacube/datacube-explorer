@@ -23,6 +23,8 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from cubedash import _monitoring
+from cubedash.index import ExplorerIndex
+from cubedash.index.postgres._api import ExplorerIndex as ExplorerPgIndex
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
 from cubedash.summary._stores import ProductSummary
@@ -68,8 +70,12 @@ DEFAULT_GROUPING_TIMEZONE = DEFAULT_TIMEZONE
 # Thread and multiprocess safe.
 # As long as we don't run queries (ie. open db connections) before forking
 # (hence validate=False).
+# how to do this generically?
+INDEX: ExplorerIndex = ExplorerPgIndex(
+    index_connect(application_name=NAME, validate_connection=False)
+)
 STORE: SummaryStore = SummaryStore.create(
-    index_connect(application_name=NAME, validate_connection=False),
+    e_index=INDEX,
     grouping_time_zone=DEFAULT_TIMEZONE,
 )
 

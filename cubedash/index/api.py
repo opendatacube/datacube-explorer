@@ -1,0 +1,192 @@
+from abc import ABC, abstractmethod
+from datetime import datetime, timedelta
+from typing import Generator, Iterable
+from uuid import UUID
+
+from datacube.index import Index
+from datacube.model import Dataset, MetadataType, Product, Range
+from sqlalchemy.sql import ColumnElement
+
+
+class EmptyDbError(Exception):
+    pass
+
+
+class ExplorerAbstractIndex(ABC):
+    name: str = ""
+    index: Index = None
+    engine = None
+
+    # need to add an odc_index accessor
+    def execute_query(self, query):
+        # with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
+            return conn.execute(query)
+
+    def make_dataset(self, row):
+        # pylint: disable=protected-access
+        return self.index.datasets._make(row, full_info=True)
+
+    def get_ds(self, dataset_id: UUID, include_sources: bool = False):
+        return self.index.datasets.get(dataset_id, include_sources=include_sources)
+
+    def ds_search(self, limit=None, **query):
+        return self.index.datasets.search(query, limit=limit)
+
+    def ds_search_returning(
+        self,
+        fields: Iterable[str] | None = None,
+        limit: int | None = None,
+        order_by=None,
+        **query,
+    ):
+        return self.index.datasets.search_returning(
+            query, field_names=fields, limit=limit, order_by=order_by
+        )
+
+    def get_all_products(self):
+        return self.index.products.get_all()
+
+    def get_all_metadata_types(self):
+        return self.index.metadata_types.get_all()
+
+    def product_most_recent_change(self, product_name: str):
+        return self.index.products.most_recent_change(product_name)
+
+    @abstractmethod
+    def ds_added_expr(self): ...
+
+    @abstractmethod
+    def get_mutable_dataset_search_fields(self, md: MetadataType): ...
+
+    @abstractmethod
+    def get_datasets_derived(self, dataset_id: UUID, limit: int = None): ...
+
+    @abstractmethod
+    def get_dataset_sources(self, dataset_id: UUID, limit: int = None): ...
+
+    @abstractmethod
+    def dataset_footprint_region(self, dataset_id): ...
+
+    @abstractmethod
+    def dataset_spatial_field_exprs(self): ...
+
+    @abstractmethod
+    def delete_datasets(
+        self, product_id: int, after_date: datetime = None, full: bool = False
+    ): ...
+
+    @abstractmethod
+    def upsert_datasets(self, product_id, column_values): ...
+
+    @abstractmethod
+    def synthesize_dataset_footprint(self, rows, shapes): ...
+
+    @abstractmethod
+    def product_ds_count_per_period(self): ...
+
+    @abstractmethod
+    def latest_arrivals(self, period_length: timedelta): ...
+
+    @abstractmethod
+    def latest_dataset_added_time(self, product_id: int): ...
+
+    @abstractmethod
+    def outdated_months(self, product: Product, only_those_newer_than: datetime): ...
+
+    @abstractmethod
+    def outdated_years(self, product_id: int): ...
+
+    @abstractmethod
+    def already_summarised_period(self, period: str, product_id: int): ...
+
+    @abstractmethod
+    def product_time_overview(self, product_id: int): ...
+
+    @abstractmethod
+    def product_time_summary(self, product_id: int, start_day, period): ...
+
+    @abstractmethod
+    def put_summary(self, product_id: int, start_day, period, summary_row: dict): ...
+
+    @abstractmethod
+    def product_summary_cols(self, product_name: str): ...
+
+    @abstractmethod
+    def upsert_product_record(self, product_name: str, **fields): ...
+
+    @abstractmethod
+    def upsert_product_regions(self, product_id: int): ...
+
+    @abstractmethod
+    def delete_product_emtpy_regions(self, product_id: int): ...
+
+    @abstractmethod
+    def product_region_summary(self, product_id: int): ...
+
+    @abstractmethod
+    def update_product_refresh_timestamp(
+        self, product_id: int, refresh_timestamp: datetime
+    ): ...
+
+    @abstractmethod
+    def find_fixed_columns(self, field_values, candidate_fields, sample_ids): ...
+
+    @abstractmethod
+    def linked_products_search(
+        self, product_id: int, sample_sql: str, direction: str
+    ): ...
+
+    @abstractmethod
+    def all_products_location_samples(
+        self, products: list[Product], sample_size: int = 50
+    ): ...
+
+    @abstractmethod
+    def datasets_by_region(
+        self,
+        product: Product,
+        region_code: str,
+        time_range: Range,
+        limit: int,
+        offset: int = 0,
+    ) -> Generator[Dataset, None, None]: ...
+
+    @abstractmethod
+    def products_by_region(
+        self, region_code: str, time_range: Range, limit: int, offset: int = 0
+    ) -> Generator[int, None, None]: ...
+
+    @abstractmethod
+    def spatial_select_query(self, *clauses, full: bool = False): ...
+
+    @abstractmethod
+    def select_spatial_stats(self): ...
+    @abstractmethod
+    def schema_initialised(self) -> bool: ...
+
+    @abstractmethod
+    def schema_compatible_info(self, for_writing_operations_too=False): ...
+
+    @abstractmethod
+    def init_schema(self, grouping_epsg_code: int): ...
+
+    @abstractmethod
+    def refresh_stats(self, concurrently=False): ...
+
+    @abstractmethod
+    def get_srid_name(self, srid: int): ...
+
+    @abstractmethod
+    def summary_where_clause(
+        self, product_name: str, begin_time: datetime, end_time: datetime
+    ) -> ColumnElement: ...
+
+    @abstractmethod
+    def srid_summary(self, where_clause: ColumnElement): ...
+
+    @abstractmethod
+    def day_counts(self, grouping_time_zone, where_clause: ColumnElement): ...
+
+    @abstractmethod
+    def region_counts(self, where_clause): ...

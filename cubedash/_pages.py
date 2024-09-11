@@ -215,7 +215,7 @@ def search_page(
     )
     try:
         datasets = sorted(
-            _model.STORE.index.datasets.search(**query, limit=hard_search_limit + 1),
+            _model.INDEX.ds_search(**query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
     except DataError:
@@ -228,7 +228,7 @@ def search_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(_model.INDEX.index, d) for d in datasets])
         )
 
     # For display on the page (and future searches).
@@ -323,7 +323,7 @@ def region_page(
     limit = current_app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", _HARD_SEARCH_LIMIT)
     datasets = list(
         _model.STORE.find_datasets_for_region(
-            product_name, region_code, year, month, day, limit=limit + 1, offset=offset
+            product, region_code, year, month, day, limit=limit + 1, offset=offset
         )
     )
 
@@ -354,7 +354,7 @@ def region_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(_model.INDEX.index, d) for d in datasets])
         )
 
     return utils.render(
@@ -478,11 +478,11 @@ def inject_globals():
         # Only the known, summarised products in groups.
         grouped_products=_get_grouped_products(),
         # All products in the datacube, summarised or not.
-        datacube_products=list(_model.STORE.index.products.get_all()),
+        datacube_products=list(_model.STORE.all_products()),
         hidden_product_list=current_app.config.get(
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
-        datacube_metadata_types=list(_model.STORE.index.metadata_types.get_all()),
+        datacube_metadata_types=list(_model.STORE.all_metadata_types()),
         current_time=datetime.utcnow(),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,

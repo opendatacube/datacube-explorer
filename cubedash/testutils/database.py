@@ -16,8 +16,6 @@ from datacube.model import MetadataType
 from datacube.utils import read_documents
 from sqlalchemy import text
 
-from cubedash import _utils
-
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 
 
@@ -131,8 +129,8 @@ def odc_test_db(odc_db, request):
     # Disable PostgreSQL Table logging. We don't care about storage reliability
     # during testing, and need any performance gains we can get.
 
-    engine = _utils.alchemy_engine(index)
-    with engine.begin() as conn:
+    # with index._active_connection() as conn:
+    with index._db._engine.begin() as conn:
         for table in [
             "agdc.dataset_location",
             "agdc.dataset_source",

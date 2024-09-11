@@ -5,48 +5,44 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Generator, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
-import datacube.drivers.postgres._api as postgres_api
 import fiona
-import shapely.ops
 import structlog
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField, RangeDocField
 from datacube.index import Index
-from datacube.model import Dataset, Field, MetadataType, Product, Range
+from datacube.model import Dataset, Field, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
-from geoalchemy2.shape import from_shape, to_shape
+from geoalchemy2.shape import to_shape
 from psycopg2._range import Range as PgRange
 from shapely.geometry import shape
 from sqlalchemy import (
-    TIMESTAMP,
     BigInteger,
     Integer,
     SmallInteger,
     String,
-    and_,
     bindparam,
     case,
-    column,
     func,
     literal,
     null,
     select,
 )
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Engine
 from sqlalchemy.sql.elements import ClauseElement, Label
 
 from cubedash._utils import (
     ODC_DATASET as DATASET,
 )
 from cubedash._utils import (
-    alchemy_engine,
+    datetime_expression,
     expects_eo3_metadata_type,
     infer_crs,
+    jsonb_doc_expression,
 )
-from cubedash.summary._schema import DATASET_SPATIAL, SPATIAL_REF_SYS
+from cubedash.index import ExplorerIndex
+from cubedash.summary._schema import SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
 
@@ -71,7 +67,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
 
     The logic here mirrors the extent() function of datacube.model.Dataset.
     """
-    doc = _jsonb_doc_expression(md)
+    doc = jsonb_doc_expression(md)
 
     if "grid_spatial" not in md.definition["dataset"]:
         # Non-spatial product
@@ -114,11 +110,6 @@ def _projection_doc_offset(md):
     return projection_offset
 
 
-def _jsonb_doc_expression(md):
-    doc = md.dataset_fields["metadata_doc"].alchemy_expression
-    return doc
-
-
 def _bounds_polygon(doc, projection_offset):
     geo_ref_points_offset = projection_offset + ["geo_ref_points"]
     return func.ST_MakePolygon(
@@ -139,13 +130,14 @@ def _size_bytes_field(product: Product):
     if "size_bytes" in md_fields:
         return md_fields["size_bytes"].alchemy_expression
 
-    return _jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
+    return jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
         BigInteger
     )
 
 
+# can any of this be replaced with odc-geo logic?
 def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = None):
-    doc = md.dataset_fields["metadata_doc"].alchemy_expression
+    doc = jsonb_doc_expression(md)
 
     if "grid_spatial" not in md.definition["dataset"]:
         # Non-spatial product
@@ -177,6 +169,7 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
             default_crs = inferred_crs
 
         auth_name, auth_srid = default_crs.split(":")
+        # this logic may or may not need to be moved
         default_crs_expression = (
             select(SPATIAL_REF_SYS.c.srid)
             .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
@@ -266,7 +259,7 @@ def _gis_point(doc, doc_offset):
 
 
 def refresh_spatial_extents(
-    index: Index,
+    e_index: ExplorerIndex,
     product: Product,
     clean_up_deleted=False,
     assume_after_date: datetime = None,
@@ -278,107 +271,84 @@ def refresh_spatial_extents(
                               If None, all datasets will be regenerated.
     :param clean_up_deleted: Scan for any manually deleted rows too. Slow.
     """
-    # conn: Connection = alchemy_connection(index)
-    with alchemy_engine(index).begin() as conn:
-        log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
-        # First, remove any archived datasets from our spatial table.
-        datasets_to_delete = (
-            select(DATASET.c.id)
-            .where(DATASET.c.archived.isnot(None))
-            .where(DATASET.c.dataset_type_ref == product.id)
+    log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
+
+    log.info(
+        "spatial_archival",
+    )
+    # First, remove any archived datasets from our spatial table.
+    changed = e_index.delete_datasets(product.id, assume_after_date)
+
+    log.info(
+        "spatial_archival.end",
+        change_count=changed,
+    )
+
+    # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
+    if clean_up_deleted:
+        log.warning(
+            "spatial_deletion_full_scan",
         )
-        if assume_after_date is not None:
-            # Note that we use "dataset_changed_expression" to scan the datasets,
-            # rather than "where archived > date", because the latter has no index!
-            # (.... and we're using dataset_changed_expression's index everywhere else,
-            #       so it's probably still in memory and super fast!)
-            datasets_to_delete = datasets_to_delete.where(
-                dataset_changed_expression() > assume_after_date
-            )
+        changed += e_index.delete_datasets(product.id, full=True)
         log.info(
-            "spatial_archival",
-        )
-        changed = conn.execute(
-            DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.id.in_(datasets_to_delete))
-        ).rowcount
-        log.info(
-            "spatial_archival.end",
+            "spatial_deletion_scan.end",
             change_count=changed,
         )
-
-        # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
-        if clean_up_deleted:
-            log.warning(
-                "spatial_deletion_full_scan",
-            )
-            changed += conn.execute(
-                DATASET_SPATIAL.delete()
-                .where(
-                    DATASET_SPATIAL.c.dataset_type_ref == product.id,
-                )
-                # Where it doesn't exist in the ODC dataset table.
-                .where(
-                    ~DATASET_SPATIAL.c.id.in_(
-                        select(DATASET.c.id).where(
-                            DATASET.c.dataset_type_ref == product.id,
-                        )
-                    )
-                )
-            ).rowcount
-            log.info(
-                "spatial_deletion_scan.end",
-                change_count=changed,
-            )
 
         # We'll update first, then insert new records.
         # -> We do it in this order so that inserted records aren't immediately updated.
         # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
         #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
         #        Maybe you can figure out a workaround, though?)
-
+        # I don't understand this comment
         column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
-        only_where = [
-            DATASET.c.dataset_type_ref
-            == bindparam("product_ref", product.id, type_=SmallInteger),
-            DATASET.c.archived.is_(None),
-        ]
-        if assume_after_date is not None:
-            only_where.append(dataset_changed_expression() > assume_after_date)
-        else:
+        # only_where = [
+        #     DATASET.c.dataset_type_ref
+        #     == bindparam("product_ref", product.id, type_=SmallInteger),
+        #     DATASET.c.archived.is_(None),
+        # ]
+        # if assume_after_date is not None:
+        #     only_where.append(DATASET.c.updated > assume_after_date)
+        # else:
+        if assume_after_date is None:
             log.warning("spatial_update.recreating_everything")
 
         # Update any changed datasets
         log.info(
-            "spatial_update",
+            "spatial_upsert",
             product_name=product.name,
             after_date=assume_after_date,
         )
-        changed += conn.execute(
-            DATASET_SPATIAL.update()
-            .values(**column_values)
-            .where(DATASET_SPATIAL.c.id == column_values["id"])
-            .where(and_(*only_where))
-        ).rowcount
-        log.info("spatial_update.end", product_name=product.name, change_count=changed)
+        # select extent column values from active datasets of the product,
+        # and update the corresponding entry in dataset_spatial
+        # values = select(*columns).where(only_where)
+        # changed += conn.execute(
+        #     DATASET_SPATIAL.update()
+        #     .values(**column_values)
+        #     .where(DATASET_SPATIAL.c.id == column_values["id"])
+        #     .where(and_(*only_where))
+        # ).rowcount
+        # log.info("spatial_update.end", product_name=product.name, change_count=changed)
 
-        # ... and insert new ones.
-        log.info(
-            "spatial_insert",
-            product_name=product.name,
-            after_date=assume_after_date,
-        )
-        changed += conn.execute(
-            postgres.insert(DATASET_SPATIAL)
-            .from_select(
-                list(column_values.keys()),
-                select(*list(column_values.values()))
-                .where(and_(*only_where))
-                .order_by(column_values["center_time"]),
-            )
-            .on_conflict_do_nothing(index_elements=["id"])
-        ).rowcount
-        log.info("spatial_insert.end", product_name=product.name, change_count=changed)
+        # # ... and insert new ones.
+        # log.info(
+        #     "spatial_insert",
+        #     product_name=product.name,
+        #     after_date=assume_after_date,
+        # )
+        # changed += conn.execute(
+        #     postgres.insert(DATASET_SPATIAL)
+        #     .from_select( # why can't we insert values the same way we do for update?
+        #         list(column_values.keys()),
+        #         select(*list(column_values.values()))
+        #         .where(and_(*only_where))
+        #         .order_by(column_values["center_time"]), # why do we order_by???
+        #     )
+        #     .on_conflict_do_nothing(index_elements=["id"])
+        # ).rowcount
+        changed = e_index.upsert_datasets(product.id, column_values, assume_after_date)
+        log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
 
         # If we changed data...
         if changed:
@@ -393,36 +363,13 @@ def refresh_spatial_extents(
                     shapes = _get_path_row_shapes()
                     rows = [
                         row
-                        for row in index.datasets.search_returning(
+                        for row in e_index.ds_search_returning(
                             ("id", "sat_path", "sat_row"), product=product.name
                         )
                         if row.sat_path.lower is not None
                     ]
                     if rows:
-                        conn.execute(
-                            DATASET_SPATIAL.update()
-                            .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
-                            .values(footprint=bindparam("footprint")),
-                            [
-                                dict(
-                                    dataset_id=id_,
-                                    footprint=from_shape(
-                                        shapely.ops.unary_union(
-                                            [
-                                                shapes[(int(sat_path.lower), row)]
-                                                for row in range(
-                                                    int(sat_row.lower),
-                                                    int(sat_row.upper) + 1,
-                                                )
-                                            ]
-                                        ),
-                                        srid=4326,
-                                        extended=True,
-                                    ),
-                                )
-                                for id_, sat_path, sat_row in rows
-                            ],
-                        )
+                        e_index.synthesize_dataset_footprint(rows, shapes)
                 log.info(
                     "spatial_synthesizing.end",
                 )
@@ -456,8 +403,6 @@ def _select_dataset_extent_columns(product: Product) -> List[Label]:
         )
 
     return [
-        DATASET.c.id,
-        DATASET.c.dataset_type_ref,
         datetime_expression(md_type),
         (null() if footprint_expression is None else footprint_expression).label(
             "footprint"
@@ -468,45 +413,45 @@ def _select_dataset_extent_columns(product: Product) -> List[Label]:
     ]
 
 
-def datetime_expression(md_type: MetadataType):
-    """
-    Get an Alchemy expression for a timestamp of datasets of the given metadata type.
-    There is another function sharing the same logic but is for flask template
-    in file: _utils.py function center_time_from_metadata
-    """
-    # If EO3+Stac formats, there's already has a plain 'datetime' field,
-    # So we can use it directly.
-    if expects_eo3_metadata_type(md_type):
-        props = _jsonb_doc_expression(md_type)["properties"]
+# def datetime_expression(md_type: MetadataType):
+#     """
+#     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
+#     There is another function sharing the same logic but is for flask template
+#     in file: _utils.py function center_time_from_metadata
+#     """
+#     # If EO3+Stac formats, there's already has a plain 'datetime' field,
+#     # So we can use it directly.
+#     if expects_eo3_metadata_type(md_type):
+#         props = jsonb_doc_expression(md_type)["properties"]
 
-        # .... but in newer Stac, datetime is optional.
-        # .... in which case we fall back to the start time.
-        #      (which I think makes more sense in large ranges than a calculated center time)
-        return (
-            func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
-            .cast(TIMESTAMP(timezone=True))
-            .label("center_time")
-        )
+#         # .... but in newer Stac, datetime is optional.
+#         # .... in which case we fall back to the start time.
+#         #      (which I think makes more sense in large ranges than a calculated center time)
+#         return (
+#             func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
+#             .cast(TIMESTAMP(timezone=True))
+#             .label("center_time")
+#         )
 
-    # On older EO datasets, there's only a time range, so we take the center time.
-    # (This matches the logic in ODC's Dataset.center_time)
-    time = md_type.dataset_fields["time"].alchemy_expression
-    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
-        "center_time"
-    )
-    return center_time
+#     # On older EO datasets, there's only a time range, so we take the center time.
+#     # (This matches the logic in ODC's Dataset.center_time)
+#     time = md_type.dataset_fields["time"].alchemy_expression
+#     center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+#         "center_time"
+#     )
+#     return center_time
 
 
-def dataset_changed_expression(dataset=DATASET):
-    """Expression for the latest time a dataset was changed"""
-    # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
-    dataset_changed = func.greatest(
-        dataset.c.added,
-        # The 'updated' column doesn't exist on ODC's definition as it's optional.
-        column("updated"),
-        dataset.c.archived,
-    )
-    return dataset_changed
+# def dataset_changed_expression(dataset=DATASET):
+#     """Expression for the latest time a dataset was changed"""
+#     # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
+#     dataset_changed = func.greatest(
+#         dataset.c.added,
+#         # The 'updated' column doesn't exist on ODC's definition as it's optional.
+#         column("updated"),
+#         dataset.c.archived,
+#     )
+#     return dataset_changed
 
 
 def _default_crs(product: Product) -> Optional[str]:
@@ -526,14 +471,16 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
         assert isinstance(created_field, PgDocField)
         creation_expression = created_field.alchemy_expression
     else:
-        doc = md.dataset_fields["metadata_doc"].alchemy_expression
-        creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-        creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
+        # doc = md.dataset_fields["metadata_doc"].alchemy_expression
+        # creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
+        # creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
+        creation_expression = md.dataset_fields.get("creation_time").alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
-    return func.coalesce(creation_expression, DATASET.c.added)
+    return func.coalesce(creation_expression, md.dataset_fields.get("indexed_time"))
 
 
+# not used anywhere?
 def get_dataset_bounds_query(md_type):
     if "lat" not in md_type.dataset_fields:
         # Not a spatial product
@@ -588,71 +535,68 @@ def _as_json(obj):
 # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
 # When region_code is integrated into core (as is being discussed) this can be replaced.
 # pylint: disable=protected-access
-def datasets_by_region(
-    engine: Engine,
-    index: Index,
-    product_name: str,
-    region_code: str,
-    time_range: Range,
-    limit: int,
-    offset: int = 0,
-) -> Generator[Dataset, None, None]:
-    product = index.products.get_by_name(product_name)
-    query = (
-        select(*postgres_api._DATASET_SELECT_FIELDS)
-        .select_from(
-            DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
-        )
-        .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
-        .where(
-            DATASET_SPATIAL.c.dataset_type_ref
-            == bindparam("dataset_type_ref", product.id)
-        )
-    )
-    if time_range:
-        query = query.where(
-            DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
-        ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-    query = (
-        query.order_by(DATASET_SPATIAL.c.center_time.desc())
-        .limit(bindparam("limit", limit))
-        .offset(bindparam("offset", offset))
-    )
-    with engine.begin() as conn:
-        return (
-            index.datasets._make(res, full_info=True)
-            for res in conn.execute(query).fetchall()
-        )
+# def datasets_by_region(
+#     index: Index,
+#     product: Product,
+#     region_code: str,
+#     time_range: Range,
+#     limit: int,
+#     offset: int = 0,
+# ) -> Generator[Dataset, None, None]:
+#     query = (
+#         select(*postgres_api._DATASET_SELECT_FIELDS)
+#         .select_from(
+#             DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
+#         )
+#         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
+#         .where(
+#             DATASET_SPATIAL.c.dataset_type_ref
+#             == bindparam("dataset_type_ref", product.id)
+#         )
+#     )
+#     if time_range:
+#         query = query.where(
+#             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
+#         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
+#     query = (
+#         query.order_by(DATASET_SPATIAL.c.center_time.desc())
+#         .limit(bindparam("limit", limit))
+#         .offset(bindparam("offset", offset))
+#     )
+#     with index._active_connection() as conn:
+#         return (
+#             index.datasets._make(res, full_info=True)
+#             for res in conn.execute(query).fetchall()
+#         )
 
 
-def products_by_region(
-    engine: Engine,
-    index: Index,
-    region_code: str,
-    time_range: Range,
-    limit: int,
-    offset: int = 0,
-) -> Generator[Product, None, None]:
-    query = (
-        select(DATASET_SPATIAL.c.dataset_type_ref)
-        .distinct()
-        .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
-    )
-    if time_range:
-        query = query.where(
-            DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
-        ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
+# def products_by_region(
+#     index: Index,
+#     region_code: str,
+#     time_range: Range,
+#     limit: int,
+#     offset: int = 0,
+# ) -> Generator[int, None, None]:
+#     query = (
+#         select(DATASET_SPATIAL.c.dataset_type_ref)
+#         .distinct()
+#         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
+#     )
+#     if time_range:
+#         query = query.where(
+#             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
+#         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
 
-    query = (
-        query.order_by(DATASET_SPATIAL.c.dataset_type_ref)
-        .limit(bindparam("limit", limit))
-        .offset(bindparam("offset", offset))
-    )
-    with engine.begin() as conn:
-        return (
-            index.products.get(res.dataset_type_ref)
-            for res in conn.execute(query).fetchall()
-        )
+#     query = (
+#         query.order_by(DATASET_SPATIAL.c.dataset_type_ref)
+#         .limit(bindparam("limit", limit))
+#         .offset(bindparam("offset", offset))
+#     )
+#     with index._active_connection() as conn:
+#         return (
+#             res.dataset_type_ref
+#             for res in conn.execute(query).fetchall()
+#         )
 
 
 @dataclass
@@ -794,7 +738,7 @@ class GridRegionInfo(RegionInfo):
         product = self.product
         grid_spec = product.grid_spec
 
-        doc = _jsonb_doc_expression(product.metadata_type)
+        doc = jsonb_doc_expression(product.metadata_type)
         projection_offset = _projection_doc_offset(product.metadata_type)
         # Calculate tile refs
         geo_ref_points_offset = projection_offset + ["geo_ref_points"]
@@ -912,14 +856,22 @@ def _region_code_field(product: Product):
         return null()
 
 
+# given that we're using either the Datacube index or the test db index, this doesn't need to be an index api method
+# the only problem is with the use of the DATASET schema...
+# would be able to replace with index.datasets.search_returning except that there's no way for us to specify the
+# alchemy expressions for the columns that don't exist in the core tables
 def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
     with Datacube(index=index) as dc:
         index = dc.index
         for product_name in product_names:
             product = index.products.get_by_name(product_name)
-            with alchemy_engine(index).begin() as conn:
+            with index._active_connection() as conn:
                 res = conn.execute(
-                    select(*_select_dataset_extent_columns(product))
+                    select(
+                        DATASET.c.id,
+                        DATASET.c.dataset_type_ref,
+                        *_select_dataset_extent_columns(product),
+                    )
                     .where(
                         DATASET.c.dataset_type_ref
                         == bindparam("product_ref", product.id, type_=SmallInteger)
@@ -927,6 +879,8 @@ def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dic
                     .where(DATASET.c.archived.is_(None))
                     .limit(1)
                 ).fetchone()
+                # at this point can we not select the values from DATASET_SPATIAL,
+                # or is there a reason we need them to be calculated?
                 if res:
                     yield dict(res._mapping)
 
@@ -944,10 +898,11 @@ def _get_path_row_shapes():
     return path_row_shapes
 
 
+# see comment on get_sample_dataset
 def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:
     with Datacube(index=index) as dc:
         index = dc.index
-        with alchemy_engine(index).begin() as conn:
+        with index._active_connection() as conn:
             for product_name in product_names:
                 product = index.products.get_by_name(product_name)
 
@@ -957,6 +912,7 @@ def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]
                     select(
                         literal(product.name).label("product"),
                         get_dataset_srid_alchemy_expression(
+                            # unfortunately, I don't think this can be passed to ds_search
                             product.metadata_type
                         ).label("crs"),
                     )

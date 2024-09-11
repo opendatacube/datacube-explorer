@@ -24,7 +24,7 @@ from uuid import UUID
 import dateutil.parser
 import pytz
 import structlog
-from cachetools.func import lru_cache, ttl_cache
+from cachetools.func import ttl_cache
 from dateutil import tz
 from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
@@ -39,18 +39,11 @@ from shapely.geometry.base import BaseGeometry
 from sqlalchemy import (
     DDL,
     String,
-    and_,
-    exists,
     func,
-    literal,
-    or_,
     select,
-    text,
-    union_all,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.engine import Engine
 from sqlalchemy.sql import Select
 
 try:
@@ -59,29 +52,18 @@ except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField
-from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
 from cubedash import _utils
-from cubedash._utils import ODC_DATASET, ODC_DATASET_LOCATION, ODC_DATASET_TYPE
+from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
     ProductArrival,
     RegionSummary,
-    dataset_changed_expression,
-    datetime_expression,
 )
 from cubedash.summary._schema import (
-    DATASET_SPATIAL,
-    FOOTPRINT_SRID_EXPRESSION,
-    PRODUCT,
-    REGION,
-    SPATIAL_QUALITY_STATS,
-    TIME_OVERVIEW,
     PleaseRefresh,
-    get_srid_name,
-    refresh_supporting_views,
 )
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
@@ -235,12 +217,13 @@ class ProductLocationSample:
 
 
 class SummaryStore:
-    def __init__(self, index: Index, summariser: Summariser, log=_LOG) -> None:
-        self.index = index
+    def __init__(
+        self, e_index: ExplorerIndex, summariser: Summariser, log=_LOG
+    ) -> None:
+        self.e_index = e_index
         self.log = log
         self._update_listeners = []
 
-        self._engine: Engine = _utils.alchemy_engine(index)
         self._summariser = summariser
 
         # How much extra time to include in incremental update scans?
@@ -268,23 +251,21 @@ class SummaryStore:
         """
         Do our DB schemas exist?
         """
-        with self._engine.begin() as conn:
-            return _schema.has_schema(conn)
+        return self.e_index.schema_initialised()
 
     def is_schema_compatible(self, for_writing_operations_too=False) -> bool:
         """
-        Have all schema update been applied?
+        Have all schema updates been applied?
         """
-        with self._engine.begin() as conn:
-            _LOG.debug(
-                "software.version",
-                postgis=_schema.get_postgis_versions(conn),
-                explorer=explorer_version,
-            )
-            if for_writing_operations_too:
-                return _schema.is_compatible_generate_schema(conn)
-            else:
-                return _schema.is_compatible_schema(conn)
+        postgis_ver, is_compatible = self.e_index.schema_compatible_info(
+            for_writing_operations_too
+        )
+        _LOG.debug(
+            "software.version",
+            postgis=postgis_ver,
+            explorer=explorer_version,
+        )
+        return is_compatible
 
     def init(self, grouping_epsg_code: int = None):
         """
@@ -294,64 +275,46 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        with self._engine.begin() as conn:
-            # Add any missing schema items or patches.
-            _schema.create_schema(conn, epsg_code=grouping_epsg_code or DEFAULT_EPSG)
-
-            # If they specified an epsg code, make sure the existing schema uses it.
-            if grouping_epsg_code:
-                crs_used_by_schema = self.grouping_crs
-                if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
-                    raise RuntimeError(
-                        f"""
-                    Tried to initialise with EPSG:{grouping_epsg_code!r},
-                    but the schema is already using {crs_used_by_schema}.
-
-                    To change the CRS, you need to recreate Explorer's schema.
-
-                    Eg.
-
-                        # Drop schema
-                        cubedash-gen --drop
-
-                        # Create schema with new epsg, and summarise all products again.
-                        cubedash-gen --init --epsg {grouping_epsg_code} --all
-
-                    (Warning: Resummarising all of your products may take a long time!)
-                    """
-                    )
-            refresh_also = _schema.update_schema(conn)
-
-            if refresh_also:
-                _refresh_data(refresh_also, store=self)
+        refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        if refresh_also:
+            # Refresh product information after a schema update, plus the given kind of data.
+            for product in self.all_products():
+                name = product.name
+                # Skip product if it's never been summarised at all.
+                if self.get_product_summary(name) is None:
+                    continue
+                _LOG.info("data.refreshing_extents", product=name)
+                self.refresh_product_extent(
+                    name,
+                    scan_for_deleted=PleaseRefresh.DATASET_EXTENTS
+                    in refresh_also,  # I believe this is always True
+                )
+            _LOG.info("data.refreshing_extents.complete")
 
     @classmethod
     def create(
-        cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
+        cls, e_index: ExplorerIndex, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
     ) -> "SummaryStore":
         return cls(
-            index,
-            Summariser(
-                _utils.alchemy_engine(index), grouping_time_zone=grouping_time_zone
-            ),
+            e_index,
+            Summariser(e_index, grouping_time_zone=grouping_time_zone),
             log=log,
         )
 
-    @property
-    def grouping_crs(self):
-        """
-        Get the crs name used for grouping summaries.
+    # @property
+    # def grouping_crs(self):
+    #     """
+    #     Get the crs name used for grouping summaries.
 
-        (the value that was set on ``init()`` of the schema)
-        """
-        with self._engine.begin() as conn:
-            srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
-        return self._get_srid_name(srid)
+    #     (the value that was set on ``init()`` of the schema)
+    #     """
+    #     srid = self.e_index.execute_query(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
+    #     return self._get_srid_name(srid)
 
-    def close(self):
+    def close(self):  # do we still need this?
         """Close any pooled/open connections. Necessary before forking."""
         self.index.close()
-        self._engine.dispose()
+        # self._engine.dispose()
 
     def refresh_all_product_extents(
         self,
@@ -360,19 +323,7 @@ class SummaryStore:
             self.refresh_product_extent(
                 product.name,
             )
-        self.refresh_stats()
-
-    def find_most_recent_change(self, product_name: str):
-        """
-        Find the database-local time of the last dataset that changed for this product.
-        """
-        product = self.get_product(product_name)
-        with self._engine.begin() as conn:
-            return conn.execute(
-                select(
-                    func.max(dataset_changed_expression()),
-                ).where(ODC_DATASET.c.dataset_type_ref == product.id)
-            ).scalar()
+        self.e_index.refresh_stats()
 
     def find_months_needing_update(
         self,
@@ -385,22 +336,12 @@ class SummaryStore:
         product = self.get_product(product_name)
 
         # Find the most-recently updated datasets and group them by month.
-        with self._engine.begin() as conn:
-            return sorted(
-                (month.date(), count)
-                for month, count in conn.execute(
-                    select(
-                        func.date_trunc(
-                            "month", datetime_expression(product.metadata_type)
-                        ).label("month"),
-                        func.count(),
-                    )
-                    .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                    .where(dataset_changed_expression() > only_those_newer_than)
-                    .group_by("month")
-                    .order_by("month")
-                )
+        return sorted(
+            (month.date(), count)
+            for month, count in self.e_index.outdated_months(
+                product, only_those_newer_than
             )
+        )
 
     def find_years_needing_update(self, product_name: str) -> List[int]:
         """
@@ -411,72 +352,37 @@ class SummaryStore:
            2) They existed before and has been deleted or archived, or
            3) They have month-records that are newer than our year-record.
         """
-        updated_months = TIME_OVERVIEW.alias("updated_months")
-        years = TIME_OVERVIEW.alias("years_needing_update")
         product = self.get_product_summary(product_name)
 
-        with self._engine.begin() as conn:
-            # Years that have already been summarised
-            summarised_years = {
-                r[0].year
-                for r in conn.execute(
-                    select(years.c.start_day)
-                    .where(years.c.period_type == "year")
-                    .where(
-                        years.c.product_ref == product.id_,
-                    )
-                )
-            }
+        # Years that have already been summarised
+        summarised_years = {
+            r[0].year
+            for r in self.e_index.already_summarised_period("year", product.id_)
+        }
 
-            # Empty product? No years
-            if product.dataset_count == 0:
-                # check if the timeoverview needs cleanse
-                if not summarised_years:
-                    return []
-                else:
-                    return summarised_years
+        # Empty product? No years
+        if product.dataset_count == 0:
+            # check if the timeoverview needs cleanse
+            if not summarised_years:
+                return []
+            else:
+                return summarised_years
 
-            # All years we are expected to have
-            expected_years = set(
-                range(
-                    product.time_earliest.astimezone(self.grouping_timezone).year,
-                    product.time_latest.astimezone(self.grouping_timezone).year + 1,
-                )
+        # All years we are expected to have
+        expected_years = set(
+            range(
+                product.time_earliest.astimezone(self.grouping_timezone).year,
+                product.time_latest.astimezone(self.grouping_timezone).year + 1,
             )
+        )
 
-            missing_years = expected_years.difference(summarised_years)
+        missing_years = expected_years.difference(summarised_years)
 
-            # Years who have month-records updated more recently than their own record.
-            outdated_years = {
-                start_day.year
-                for [start_day] in conn.execute(
-                    # Select years
-                    select(years.c.start_day)
-                    .where(years.c.period_type == "year")
-                    .where(
-                        years.c.product_ref == product.id_,
-                    )
-                    # Where there exist months that are more newly created.
-                    .where(
-                        exists(
-                            select(updated_months.c.start_day)
-                            .where(updated_months.c.period_type == "month")
-                            .where(
-                                func.extract("year", updated_months.c.start_day)
-                                == func.extract("year", years.c.start_day)
-                            )
-                            .where(
-                                updated_months.c.product_ref == product.id_,
-                            )
-                            .where(
-                                updated_months.c.generation_time
-                                > years.c.generation_time
-                            )
-                        )
-                    )
-                )
-            }
-            return sorted(missing_years.union(outdated_years))
+        # Years who have month-records updated more recently than their own record.
+        outdated_years = {
+            start_day.year for [start_day] in self.e_index.outdated_years(product.id_)
+        }
+        return sorted(missing_years.union(outdated_years))
 
     def needs_extent_refresh(self, product_name: str) -> bool:
         """
@@ -487,7 +393,7 @@ class SummaryStore:
             # Never been summarised. So, yes!
             return True
 
-        most_recent_change = self.find_most_recent_change(product_name)
+        most_recent_change = self.e_index.product_most_recent_change(product_name)
         has_new_changes = most_recent_change and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
@@ -521,11 +427,11 @@ class SummaryStore:
         # be in our summaries.
         covers_up_to = self._database_time_now()
 
-        product = self.index.products.get_by_name(product_name)
+        product = self.get_product(product_name)
 
         _LOG.info("init.product", product_name=product.name)
         change_count = _extents.refresh_spatial_extents(
-            self.index,
+            self.e_index,
             product,
             clean_up_deleted=scan_for_deleted,
             assume_after_date=only_those_newer_than,
@@ -539,15 +445,8 @@ class SummaryStore:
             self._persist_product_extent(new_summary)
             return 0, new_summary
 
-        with self._engine.begin() as conn:
-            # if change_count or force_dataset_extent_recompute:
-            earliest, latest, total_count = conn.execute(
-                select(
-                    func.min(DATASET_SPATIAL.c.center_time),
-                    func.max(DATASET_SPATIAL.c.center_time),
-                    func.count(),
-                ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
-            ).fetchone()
+        # if change_count or force_dataset_extent_recompute:
+        earliest, latest, total_count = self.e_index.product_time_overview(product.id)
 
         source_products = []
         derived_products = []
@@ -582,78 +481,36 @@ class SummaryStore:
         return change_count, new_summary
 
     def _refresh_product_regions(self, product: Product) -> int:
-        log = _LOG.bind(product_name=product.name, engine=str(self._engine))
+        log = _LOG.bind(product_name=product.name)  # , engine=str(self._engine))
         log.info("refresh.regions.start")
 
         log.info("refresh.regions.update.count.and.insert.new")
 
-        # add new regions row and/or update existing regions based on dataset_spatial
-        with self._engine.begin() as conn:
-            result = conn.execute(
-                text(f"""
-            with srid_groups as (
-                select cubedash.dataset_spatial.dataset_type_ref                         as dataset_type_ref,
-                        cubedash.dataset_spatial.region_code                             as region_code,
-                        ST_Transform(ST_Union(cubedash.dataset_spatial.footprint), 4326) as footprint,
-                        count(*)                                                         as count
-                from cubedash.dataset_spatial
-                where cubedash.dataset_spatial.dataset_type_ref = {product.id}
-                        and
-                        st_isvalid(cubedash.dataset_spatial.footprint)
-                group by cubedash.dataset_spatial.dataset_type_ref,
-                        cubedash.dataset_spatial.region_code,
-                        st_srid(cubedash.dataset_spatial.footprint)
-            )
-            insert into cubedash.region (dataset_type_ref, region_code, footprint, count)
-                select srid_groups.dataset_type_ref,
-                    coalesce(srid_groups.region_code, '')                          as region_code,
-                    ST_SimplifyPreserveTopology(
-                            ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
-                    sum(srid_groups.count)                                         as count
-                from srid_groups
-                group by srid_groups.dataset_type_ref, srid_groups.region_code
-            on conflict (dataset_type_ref, region_code)
-                do update set count           = excluded.count,
-                            generation_time = now(),
-                            footprint       = excluded.footprint
-            returning dataset_type_ref, region_code, footprint, count
+        result = self.e_index.upsert_product_regions(product.id)
+        log.info("refresh.regions.inserted", list(result))
+        changed_rows = result.rowcount
+        log.info(
+            "refresh.regions.update.count.and.insert.new.end",
+            changed_rows=changed_rows,
+        )
 
-                """)
-            )
-            log.info("refresh.regions.inserted", list(result))
-            changed_rows = result.rowcount
-            log.info(
-                "refresh.regions.update.count.and.insert.new.end",
-                changed_rows=changed_rows,
-            )
-
-            # delete region rows with no related datasets in dataset_spatial table
-            log.info("refresh.regions.delete.empty.regions")
-            result = conn.execute(
-                text(f"""
-            delete from cubedash.region
-            where dataset_type_ref = {product.id} and region_code not in (
-                select cubedash.dataset_spatial.region_code
-                from cubedash.dataset_spatial
-                where cubedash.dataset_spatial.dataset_type_ref = {product.id}
-                group by cubedash.dataset_spatial.region_code
-            )
-                """)
-            )
-            changed_rows = result.rowcount
+        # delete region rows with no related datasets in dataset_spatial table
+        log.info("refresh.regions.delete.empty.regions")
+        result = self.e_index.delete_product_empty_regions(product.id)
+        changed_rows = result.rowcount
         log.info("refresh.regions.delete.empty.regions.end")
 
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
 
-    def refresh_stats(self, concurrently=False):
-        """
-        Refresh general statistics tables that cover all products.
+    # def refresh_stats(self, concurrently=False):
+    #     """
+    #     Refresh general statistics tables that cover all products.
 
-        This is ideally done once after all needed products have been refreshed.
-        """
-        with self._engine.begin() as conn:
-            refresh_supporting_views(conn, concurrently=concurrently)
+    #     This is ideally done once after all needed products have been refreshed.
+    #     """
+    #     with self.index._active_connection() as conn:
+    #         refresh_supporting_views(conn, concurrently=concurrently)
 
     def _find_product_fixed_metadata(
         self,
@@ -669,7 +526,7 @@ class SummaryStore:
         """
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = list(
-            self.index.datasets.search(product=product.name, limit=1)
+            self.e_index.ds_search(product=product.name, limit=1)
         )[0].metadata.fields
 
         simple_field_types = {
@@ -682,12 +539,13 @@ class SummaryStore:
 
         candidate_fields: List[Tuple[str, PgDocField]] = [
             (name, field)
-            for name, field in _utils.get_mutable_dataset_search_fields(
-                self.index, product.metadata_type
+            for name, field in self.e_index.get_mutable_dataset_search_fields(
+                product.metadata_type
             ).items()
             if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
+        # I don't think this check is necessary?
         # Give a friendlier error message when a product doesn't match the dataset.
         for name, field in candidate_fields:
             sample_value = first_dataset_fields[name]
@@ -701,38 +559,22 @@ class SummaryStore:
                     f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
                 )
 
-        with self._engine.begin() as conn:
-            dataset_samples = conn.execute(
-                select(ODC_DATASET.c.id)
-                .select_from(ODC_DATASET)
-                .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                .where(ODC_DATASET.c.archived.is_(None))
-                .limit(sample_datasets_size)
-                .order_by(func.random())
-            ).fetchall()
+        dataset_samples = self.e_index.ds_search_returning(
+            ["id"],
+            limit=sample_datasets_size,
+            order_by=[func.random()],
+            product=product.name,
+        ).fetchall()
 
-            _LOG.info(
-                "product.fixed_metadata_search",
-                product=product.name,
-                sampled_dataset_count=sample_datasets_size,
-            )
-
-            result = conn.execute(
-                select(
-                    *[
-                        (
-                            func.every(
-                                field.alchemy_expression
-                                == first_dataset_fields[field_name]
-                            )
-                        ).label(field_name)
-                        for field_name, field in candidate_fields
-                    ]
-                )
-                .select_from(ODC_DATASET)
-                .where(ODC_DATASET.c.id.in_([r for (r,) in dataset_samples]))
-            ).fetchall()
-            assert len(result) == 1
+        _LOG.info(
+            "product.fixed_metadata_search",
+            product=product.name,
+            sampled_dataset_count=sample_datasets_size,
+        )
+        result = self.e_index.find_fixed_columns(
+            first_dataset_fields, candidate_fields, dataset_samples
+        ).fetchall()
+        assert len(result) == 1
 
         fixed_fields = {
             key: first_dataset_fields[key]
@@ -764,39 +606,14 @@ class SummaryStore:
                 f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
             )
 
-        from_ref, to_ref = "source_dataset_ref", "dataset_ref"
-        if kind == "derived":
-            to_ref, from_ref = from_ref, to_ref
-
         # Avoid tablesample (full table scan) when we're getting all of the product anyway.
         sample_sql = ""
         if sample_percentage < 100:
             sample_sql = f"tablesample system ({sample_percentage})"
 
-        with self._engine.begin() as conn:
-            (linked_product_names,) = conn.execute(
-                text(f"""
-                with datasets as (
-                    select id from agdc.dataset {sample_sql}
-                    where dataset_type_ref={product.id}
-                    and archived is null
-                ),
-                linked_datasets as (
-                    select distinct {from_ref} as linked_dataset_ref
-                    from agdc.dataset_source
-                    inner join datasets d on d.id = {to_ref}
-                ),
-                linked_products as (
-                    select distinct dataset_type_ref
-                    from agdc.dataset
-                    inner join linked_datasets on id = linked_dataset_ref
-                    where archived is null
-                )
-                select array_agg(name order by name)
-                from agdc.dataset_type
-                inner join linked_products sp on id = dataset_type_ref;
-            """)
-            ).fetchone()
+        (linked_product_names,) = self.e_index.linked_product_search(
+            product.id, sample_sql, kind
+        ).fetchone()
 
         _LOG.info(
             "product.links.{kind}",
@@ -811,10 +628,9 @@ class SummaryStore:
         """
         Drop all cubedash-specific tables/schema.
         """
-        with self._engine.begin() as conn:
-            conn.execute(
-                DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
-            )
+        self.e_index.execute_query(
+            DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
+        )
 
     def get(
         self,
@@ -838,16 +654,9 @@ class SummaryStore:
         if not product:
             return None
 
-        with self._engine.begin() as conn:
-            res = conn.execute(
-                select(TIME_OVERVIEW).where(
-                    and_(
-                        TIME_OVERVIEW.c.product_ref == product.id_,
-                        TIME_OVERVIEW.c.start_day == start_day,
-                        TIME_OVERVIEW.c.period_type == period,
-                    )
-                )
-            ).fetchone()
+        res = self.e_index.product_time_summary(
+            product.id_, start_day, period
+        ).fetchone()
 
         if not res:
             return None
@@ -863,22 +672,7 @@ class SummaryStore:
         """
         Get dataset count for all (product, year, month) combinations.
         """
-        with self._engine.begin() as conn:
-            res = conn.execute(
-                select(
-                    PRODUCT.c.name,
-                    TIME_OVERVIEW.c.start_day,
-                    TIME_OVERVIEW.c.period_type,
-                    TIME_OVERVIEW.c.dataset_count,
-                )
-                .select_from(TIME_OVERVIEW.join(PRODUCT))
-                .where(TIME_OVERVIEW.c.product_ref == PRODUCT.c.id)
-                .order_by(
-                    PRODUCT.c.name,
-                    TIME_OVERVIEW.c.start_day,
-                    TIME_OVERVIEW.c.period_type,
-                )
-            )
+        res = self.e_index.product_ds_count_per_period()
 
         return {
             (
@@ -893,11 +687,11 @@ class SummaryStore:
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
     def all_products(self) -> Iterable[Product]:
-        return tuple(self.index.products.get_all())
+        return tuple(self.e_index.get_all_products())
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def all_metadata_types(self) -> Iterable[MetadataType]:
-        return tuple(self.index.metadata_types.get_all())
+        return tuple(self.e_index.get_all_metadata_types())
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_product(self, name) -> Product:
@@ -905,6 +699,13 @@ class SummaryStore:
             if d.name == name:
                 return d
         raise KeyError(f"Unknown dataset type {name!r}")
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def get_metadata_type(self, name) -> MetadataType:
+        for d in self.all_metadata_types():
+            if d.name == name:
+                return d
+        raise KeyError(f"Unknown metadata type {name!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _product_by_id(self, id_) -> Product:
@@ -915,22 +716,7 @@ class SummaryStore:
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _product(self, name: str) -> ProductSummary:
-        with self._engine.begin() as conn:
-            row = conn.execute(
-                select(
-                    PRODUCT.c.dataset_count,
-                    PRODUCT.c.time_earliest,
-                    PRODUCT.c.time_latest,
-                    PRODUCT.c.last_refresh.label("last_refresh_time"),
-                    PRODUCT.c.last_successful_summary.label(
-                        "last_successful_summary_time"
-                    ),
-                    PRODUCT.c.id.label("id_"),
-                    PRODUCT.c.source_product_refs,
-                    PRODUCT.c.derived_product_refs,
-                    PRODUCT.c.fixed_metadata,
-                ).where(PRODUCT.c.name == name)
-            ).fetchone()
+        row = self.e_index.product_summary_cols(name)
         if not row:
             raise ValueError(f"Unknown product {name!r} (initialised?)")
         row = dict(row._mapping)
@@ -962,29 +748,14 @@ class SummaryStore:
          number of products). The latency of repeated round-trips adds up tremendously on
          cloud instances.)
         """
-        queries = []
-        for product in self.all_products():
-            subquery = (
-                select(
-                    literal(product.name).label("name"),
-                    (
-                        ODC_DATASET_LOCATION.c.uri_scheme
-                        + ":"
-                        + ODC_DATASET_LOCATION.c.uri_body
-                    ).label("uri"),
-                )
-                .select_from(ODC_DATASET_LOCATION.join(ODC_DATASET))
-                .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                .where(ODC_DATASET.c.archived.is_(None))
-                .limit(sample_size)
-            )
-            queries.append(subquery)
-
         product_urls = defaultdict(list)
-        if queries:  # Don't run invalid SQL on empty database
-            with self._engine.begin() as conn:
-                for product_name, uri in conn.execute(union_all(*queries)):
-                    product_urls[product_name].append(uri)
+        try:
+            for product_name, uri in self.e_index.all_products_location_samples(
+                self.all_products()
+            ):
+                product_urls[product_name].append(uri)
+        except EmptyDbError:
+            return {}
 
         return {
             name: list(_common_paths_for_uris(uris))
@@ -1014,7 +785,7 @@ class SummaryStore:
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
-            for [uri] in self.index.datasets.search_returning(
+            for [uri] in self.e_index.ds_search_returning(
                 ("uri",), product=name, **search_args, limit=sample_size
             )
         )
@@ -1022,16 +793,15 @@ class SummaryStore:
         return list(_common_paths_for_uris(uri_samples))
 
     def get_quality_stats(self) -> Iterable[Dict]:
-        with self._engine.begin() as conn:
-            stats = conn.execute(select(SPATIAL_QUALITY_STATS))
-            for row in stats:
-                row = row._mapping
-                d = dict(row)
-                d["product"] = self._product_by_id(row["dataset_type_ref"])
-                d["avg_footprint_bytes"] = (
-                    row["footprint_size"] / row["count"] if row["footprint_size"] else 0
-                )
-                yield d
+        stats = self.e_index.select_spatial_stats()
+        for row in stats:
+            row = row._mapping
+            d = dict(row)
+            d["product"] = self._product_by_id(row["product_ref"])
+            d["avg_footprint_bytes"] = (
+                row["footprint_size"] / row["count"] if row["footprint_size"] else 0
+            )
+            yield d
 
     def get_product_summary(self, name: str) -> Optional[ProductSummary]:
         try:
@@ -1046,11 +816,10 @@ class SummaryStore:
 
     def _persist_product_extent(self, product: ProductSummary):
         source_product_ids = [
-            self.index.products.get_by_name(name).id for name in product.source_products
+            self.get_product(name).id for name in product.source_products
         ]
         derived_product_ids = [
-            self.index.products.get_by_name(name).id
-            for name in product.derived_products
+            self.get_product(name).id for name in product.derived_products
         ]
         fields = dict(
             dataset_count=product.dataset_count,
@@ -1062,38 +831,11 @@ class SummaryStore:
             last_refresh=product.last_refresh_time,
         )
 
-        # Dear future reader. This section used to use an 'UPSERT' statement (as in,
-        # insert, on_conflict...) and while this works, it triggers the sequence
-        # `product_id_seq` to increment as part of the check for insertion. This
-        # is bad because there's only 32 k values in the sequence and we have run out
-        # a couple of times! So, It appears that this update-else-insert must be done
-        # in two transactions...
-        with self._engine.begin() as conn:
-            row = conn.execute(
-                select(PRODUCT.c.id, PRODUCT.c.last_refresh).where(
-                    PRODUCT.c.name == product.name
-                )
-            ).fetchone()
+        row = self.e_index.upsert_product_record(product.name, **fields)
+        self._product.cache_clear()
+        product_id, last_refresh_time = row
 
-            if row:
-                # Product already exists, so update it
-                row = conn.execute(
-                    PRODUCT.update()
-                    .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
-                    .where(PRODUCT.c.id == row[0])
-                    .values(fields)
-                ).fetchone()
-            else:
-                # Product doesn't exist, so insert it
-                row = conn.execute(
-                    postgres.insert(PRODUCT)
-                    .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
-                    .values(**fields, name=product.name)
-                ).fetchone()
-            self._product.cache_clear()
-            product_id, last_refresh_time = row
-
-            product.id_ = product_id
+        product.id_ = product_id
 
     def _put(
         self,
@@ -1108,28 +850,9 @@ class SummaryStore:
         period, start_day = summary.as_flat_period()
 
         row = _summary_to_row(summary, grouping_timezone=self.grouping_timezone)
-        with self._engine.begin() as conn:
-            ret = conn.execute(
-                postgres.insert(TIME_OVERVIEW)
-                .returning(TIME_OVERVIEW.c.generation_time)
-                .on_conflict_do_update(
-                    index_elements=["product_ref", "start_day", "period_type"],
-                    set_=row,
-                    where=and_(
-                        TIME_OVERVIEW.c.product_ref == product.id_,
-                        TIME_OVERVIEW.c.start_day == start_day,
-                        TIME_OVERVIEW.c.period_type == period,
-                    ),
-                )
-                .values(
-                    product_ref=product.id_,
-                    start_day=start_day,
-                    period_type=period,
-                    **row,
-                )
-            )
-            [gen_time] = ret.fetchone()
-            summary.summary_gen_time = gen_time
+        ret = self.e_index.put_summary(product.id_, start_day, period, row)
+        [gen_time] = ret.fetchone()
+        summary.summary_gen_time = gen_time
 
     def has(
         self,
@@ -1164,6 +887,7 @@ class SummaryStore:
     def _add_fields_to_query(
         self,
         query: Select,
+        field_exprs,
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
         bbox: Tuple[float, float, float, float] = None,
@@ -1171,7 +895,7 @@ class SummaryStore:
         dataset_ids: Sequence[UUID] = None,
     ) -> Select:
         if dataset_ids is not None:
-            query = query.where(DATASET_SPATIAL.c.id.in_(dataset_ids))
+            query = query.where(field_exprs["id"].in_(dataset_ids))
 
         if time:
             query = query.where(
@@ -1180,37 +904,31 @@ class SummaryStore:
                     _utils.default_utc(time[1]),
                     "[]",
                     type_=TSTZRANGE,
-                ).contains(DATASET_SPATIAL.c.center_time)
+                ).contains(field_exprs["datetime"])
             )
 
         if bbox:
             query = query.where(
-                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
-                    func.ST_MakeEnvelope(*bbox)
-                )
+                field_exprs["geometry"].intersects(func.ST_MakeEnvelope(*bbox))
             )
         if intersects:
             query = query.where(
-                func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).intersects(
-                    from_shape(intersects)
-                )
+                field_exprs["geometry"].intersects(from_shape(intersects))
             )
         if product_names:
-            if len(product_names) == 1:
-                query = query.where(
-                    DATASET_SPATIAL.c.dataset_type_ref
-                    == select(ODC_DATASET_TYPE.c.id)
-                    .where(ODC_DATASET_TYPE.c.name == product_names[0])
-                    .scalar_subquery()
-                )
-            else:
-                query = query.where(
-                    DATASET_SPATIAL.c.dataset_type_ref.in_(
-                        select(ODC_DATASET_TYPE.c.id)
-                        .where(ODC_DATASET_TYPE.c.name.in_(product_names))
-                        .scalar_subquery()
-                    )
-                )
+            # product_ids = [self.get_product(name).id for name in product_names]
+            # I don't think there's a need to handle a singular product name differently, it's still a list
+            # query = query.where(
+            #     DATASET_SPATIAL.c.dataset_type_ref.in_(
+            #         select(ODC_DATASET_TYPE.c.id)
+            #         .where(ODC_DATASET_TYPE.c.name.in_(product_names))
+            #         .scalar_subquery()
+            #     )
+            # )
+            query = query.where(
+                # field_exprs["product_ref"].in_(product_ids)
+                field_exprs["collection"].in_(product_names)
+            )
 
         return query
 
@@ -1225,13 +943,15 @@ class SummaryStore:
         or their searchable field name as defined by the metadata type (ex: creation_time).
         """
         if product_names:
-            products = {self.index.products.get_by_name(name) for name in product_names}
+            products = {self.get_product(name) for name in product_names}
         else:
-            products = set(self.index.products.get_all())
+            products = set(self.all_products())
         field_exprs = {}
         for product in products:
-            for value in _utils.get_mutable_dataset_search_fields(
-                self.index, product.metadata_type
+            # aren't these tied to the ODC_DATASET schema?
+            # could we handle 'added' in here?
+            for value in self.e_index.get_mutable_dataset_search_fields(
+                product.metadata_type
             ).values():
                 expr = value.alchemy_expression
                 if hasattr(value, "offset"):
@@ -1246,16 +966,16 @@ class SummaryStore:
             except KeyError:
                 continue
         # manually add fields that aren't included in the metadata search fields
-        field_exprs["collection"] = (
-            select([ODC_DATASET_TYPE.c.name])
-            .where(ODC_DATASET_TYPE.c.id == DATASET_SPATIAL.c.dataset_type_ref)
-            .scalar_subquery()
-        )
-        field_exprs["datetime"] = DATASET_SPATIAL.c.center_time
-        geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
-        field_exprs["geometry"] = geom
-        field_exprs["bbox"] = func.Box2D(geom).cast(String)
-
+        # field_exprs["collection"] = (
+        #     select([ODC_DATASET_TYPE.c.name])
+        #     .where(ODC_DATASET_TYPE.c.id == DATASET_SPATIAL.c.dataset_type_ref)
+        #     .scalar_subquery()
+        # )
+        # field_exprs["datetime"] = DATASET_SPATIAL.c.center_time
+        # geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
+        # field_exprs["geometry"] = geom
+        # field_exprs["bbox"] = func.Box2D(geom).cast(String)
+        field_exprs.update(self.e_index.dataset_spatial_field_exprs())
         return field_exprs
 
     def _add_filter_to_query(
@@ -1304,47 +1024,25 @@ class SummaryStore:
         """
         Get a list of products with newly added datasets for the last few days.
         """
-        with self._engine.begin() as conn:
-            latest_arrival_date: datetime = conn.execute(
-                text("select max(added) from agdc.dataset;")
-            ).scalar()
-            if latest_arrival_date is None:
-                return []
+        current_day = None
+        products = []
+        out_groups = []
+        for day, product_name, count, dataset_ids in self.e_index.latest_arrivals(
+            period_length
+        ):
+            if current_day is None:
+                current_day = day
 
-            datasets_since_date = (latest_arrival_date - period_length).date()
+            if day != current_day:
+                out_groups.append((current_day, products))
+                products = []
+                current_day = day
+            products.append(ProductArrival(product_name, day, count, dataset_ids))
 
-            current_day = None
-            products = []
-            out_groups = []
-            for day, product_name, count, dataset_ids in conn.execute(
-                text("""
-                    select
-                    date_trunc('day', added) as arrival_date,
-                    (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
-                    count(*),
-                    (array_agg(id))[0:3]
-                    from agdc.dataset d
-                    where d.added > :datasets_since
-                    group by arrival_date, product_name
-                    order by arrival_date desc, product_name;
-                """),
-                {
-                    "datasets_since": datasets_since_date,
-                },
-            ):
-                if current_day is None:
-                    current_day = day
+        if products:
+            out_groups.append((products[0].day, products))
 
-                if day != current_day:
-                    out_groups.append((current_day, products))
-                    products = []
-                    current_day = day
-                products.append(ProductArrival(product_name, day, count, dataset_ids))
-
-            if products:
-                out_groups.append((products[0].day, products))
-
-            return out_groups
+        return out_groups
 
     def get_count(
         self,
@@ -1360,13 +1058,9 @@ class SummaryStore:
         Do the base select query to get the count of matching datasets.
         """
         if filter_cql:  # to account the possibiity of 'collection' in the filter
-            query: Select = select(func.count()).select_from(
-                DATASET_SPATIAL.join(
-                    ODC_DATASET, onclause=ODC_DATASET.c.id == DATASET_SPATIAL.c.id
-                )
-            )
+            query: Select = self.e_index.spatial_select_query(func.count(), full=True)
         else:
-            query: Select = select(func.count()).select_from(DATASET_SPATIAL)
+            query: Select = self.e_index.spatial_select_query(func.count())
 
         query = self._add_fields_to_query(
             query,
@@ -1377,15 +1071,14 @@ class SummaryStore:
             dataset_ids=dataset_ids,
         )
 
-        with self._engine.begin() as conn:
-            if filter_cql:
-                query = self._add_filter_to_query(
-                    query,
-                    self._get_field_exprs(product_names),
-                    filter_lang,
-                    filter_cql,
-                )
-            result = conn.execute(query).fetchall()
+        if filter_cql:
+            query = self._add_filter_to_query(
+                query,
+                self._get_field_exprs(product_names),
+                filter_lang,
+                filter_cql,
+            )
+        result = self.e_index.execute_query(query).fetchall()
 
         if len(result) != 0:
             return result[0][0]
@@ -1415,29 +1108,35 @@ class SummaryStore:
 
         Returned results are always sorted by (center_time, id)
         """
-        geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
+        # geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
+        field_exprs = self._get_field_exprs(product_names)
 
         columns = [
-            geom.label("geometry"),
-            func.Box2D(geom).cast(String).label("bbox"),
+            field_exprs["geometry"].label("geometry"),  # geom.label("geometry"),
+            field_exprs["bbox"].label(
+                "bbox"
+            ),  # func.Box2D(geom).cast(String).label("bbox"),
             # TODO: dataset label?
-            DATASET_SPATIAL.c.region_code.label("region_code"),
-            DATASET_SPATIAL.c.creation_time,
-            DATASET_SPATIAL.c.center_time,
+            field_exprs["region_code"].label("region_code"),
+            field_exprs["creation_time"],
+            field_exprs["datetime"],  # DATASET_SPATIAL.c.center_time,
+            # added
+            field_exprs["id"].label("id"),
+            # field_exprs["product_ref"],
+            field_exprs["collection"].label("product_name"),
         ]
 
-        # If fetching the whole dataset, we need to join the ODC dataset table.
-        if full_dataset:
-            query: Select = select(*columns, *_utils.DATASET_SELECT_FIELDS).select_from(
-                DATASET_SPATIAL.join(
-                    ODC_DATASET, onclause=ODC_DATASET.c.id == DATASET_SPATIAL.c.id
-                )
-            )
-        # Otherwise query purely from the spatial table.
-        else:
-            query: Select = select(
-                *columns, DATASET_SPATIAL.c.id, DATASET_SPATIAL.c.dataset_type_ref
-            ).select_from(DATASET_SPATIAL)
+        # # If fetching the whole dataset, we need to join the ODC dataset table.
+        # if full_dataset:
+        #     query: Select = self.e_index.spatial_select_query(*columns, *_utils.DATASET_SELECT_FIELDS, full=True)
+        #       # do we actually need all of the DATASET_SELECT_FIELDS?
+        # # Otherwise query purely from the spatial table.
+        # else:
+        #     query: Select = self.e_index.spatial_select_query(
+        #         *columns, field_exprs["id_"], field_exprs["product_ref"]
+        #     ) # should this still operate on the joined table to prevent misleading queries? or add an extra check
+
+        query: Select = self.e_index.spatial_select_query(*columns, full=full_dataset)
 
         # Add all the filters
         query = self._add_fields_to_query(
@@ -1449,7 +1148,7 @@ class SummaryStore:
             dataset_ids=dataset_ids,
         )
 
-        field_exprs = self._get_field_exprs(product_names)
+        # field_exprs = self._get_field_exprs(product_names)
 
         if filter_cql:
             query = self._add_filter_to_query(
@@ -1458,7 +1157,7 @@ class SummaryStore:
 
         # Maybe sort
         if order == ItemSort.DEFAULT_SORT:
-            query = query.order_by(DATASET_SPATIAL.c.center_time, DATASET_SPATIAL.c.id)
+            query = query.order_by(field_exprs["datetime"], field_exprs["id"])
         elif order == ItemSort.UNSORTED:
             ...  # Nothing! great!
         elif order == ItemSort.RECENTLY_ADDED:
@@ -1466,7 +1165,7 @@ class SummaryStore:
                 raise NotImplementedError(
                     "Only full-dataset searches can be sorted by recently added"
                 )
-            query = query.order_by(ODC_DATASET.c.added.desc())
+            query = query.order_by(self.e_index.ds_added_expr().desc())
         elif order:  # order was provided as a sortby query
             query = self._add_order_to_query(query, field_exprs, order)
 
@@ -1475,26 +1174,24 @@ class SummaryStore:
             offset
         )
 
-        with self._engine.begin() as conn:
-            for r in conn.execute(query):
-                yield DatasetItem(
-                    dataset_id=r.id,
-                    bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
-                    product_name=self.index.products.get(r.dataset_type_ref).name,
-                    geometry=(
-                        _get_shape(r.geometry, self._get_srid_name(r.geometry.srid))
-                        if r.geometry is not None
-                        else None
-                    ),
-                    region_code=r.region_code,
-                    creation_time=r.creation_time,
-                    center_time=r.center_time,
-                    odc_dataset=(
-                        _utils.make_dataset_from_select_fields(self.index, r)
-                        if full_dataset
-                        else None
-                    ),
-                )
+        for r in self.e_index.execute_query(query):
+            yield DatasetItem(
+                dataset_id=r.id,
+                bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
+                product_name=r.product_name,  # self._product_by_id(r.product_ref).name,
+                geometry=(
+                    _get_shape(r.geometry, self.e_index.get_srid_name(r.geometry.srid))
+                    if r.geometry is not None
+                    else None
+                ),
+                region_code=r.region_code,
+                creation_time=r.creation_time,
+                center_time=r.center_time,
+                odc_dataset=(
+                    # self.e_index.make_dataset(r)
+                    self.e_index.get_ds(r.id) if full_dataset else None
+                ),
+            )
 
     def _recalculate_period(
         self,
@@ -1709,15 +1406,12 @@ class SummaryStore:
         if not existing_product:
             return set()
 
-        with self._engine.begin() as conn:
-            return {
-                r.start_day
-                for r in conn.execute(
-                    select(TIME_OVERVIEW.c.start_day).where(
-                        TIME_OVERVIEW.c.product_ref == existing_product.id_
-                    )
-                )
-            }
+        return {
+            r.start_day
+            for r in self.e_index.already_summarised_period(
+                "month", existing_product.id_
+            )
+        }
 
     def _database_time_now(self) -> datetime:
         """
@@ -1726,27 +1420,16 @@ class SummaryStore:
         Any change timestamps stored in the database are using database-local
         time, which could be different to the time on this current machine!
         """
-        with self._engine.begin() as conn:
-            return conn.execute(select(func.now())).scalar()
+        self.e_index.execute_query(select(func.now())).scalar()
 
     def _newest_known_dataset_addition_time(self, product_name) -> datetime:
         """
         Of all the datasets that are present in Explorer's own tables, when
         was the most recent one indexed to ODC?
         """
-        with self._engine.begin() as conn:
-            return conn.execute(
-                select(func.max(ODC_DATASET.c.added))
-                .select_from(
-                    DATASET_SPATIAL.join(
-                        ODC_DATASET, onclause=DATASET_SPATIAL.c.id == ODC_DATASET.c.id
-                    )
-                )
-                .where(
-                    DATASET_SPATIAL.c.dataset_type_ref
-                    == self.get_product(product_name).id
-                )
-            ).scalar()
+        return self.e_index.latest_dataset_added_time(
+            self.get_product(product_name).id
+        ).scalar()
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
@@ -1757,28 +1440,16 @@ class SummaryStore:
         (so future runs will be incremental from this point onwards)
         """
         assert product.id_ is not None
-        with self._engine.begin() as conn:
-            conn.execute(
-                PRODUCT.update()
-                .where(PRODUCT.c.id == product.id_)
-                .where(
-                    or_(
-                        PRODUCT.c.last_successful_summary.is_(None),
-                        PRODUCT.c.last_successful_summary
-                        < refresh_timestamp.isoformat(),
-                    )
-                )
-                .values(last_successful_summary=refresh_timestamp)
-            )
+        self.e_index.update_product_refresh_timestamp(product.id_, refresh_timestamp)
         self._product.cache_clear()
 
-    @lru_cache()
-    def _get_srid_name(self, srid: int):
-        """
-        Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
-        """
-        with self._engine.begin() as conn:
-            return get_srid_name(conn, srid)
+    # @lru_cache()
+    # def _get_srid_name(self, srid: int):
+    #     """
+    #     Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
+    #     """
+    #     with self.index._active_connection() as conn:
+    #         return get_srid_name(conn, srid)
 
     def list_complete_products(self) -> List[str]:
         """
@@ -1792,7 +1463,7 @@ class SummaryStore:
 
     def find_datasets_for_region(
         self,
-        product_name: str,
+        product: Product,
         region_code: str,
         year: int,
         month: int,
@@ -1803,10 +1474,8 @@ class SummaryStore:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
-        return _extents.datasets_by_region(
-            self._engine,
-            self.index,
-            product_name,
+        return self.e_index.datasets_by_region(
+            product,
             region_code,
             time_range,
             limit,
@@ -1825,39 +1494,32 @@ class SummaryStore:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
-        return _extents.products_by_region(
-            self._engine,
-            self.index,
-            region_code,
-            time_range,
-            limit,
-            offset=offset,
+        return (
+            self._product_by_id(res)
+            for res in self.e_index.products_by_region(
+                region_code,
+                time_range,
+                limit,
+                offset=offset,
+            )
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
         product = self.get_product(product_name)
-        with self._engine.begin() as conn:
-            return {
-                code: RegionSummary(
-                    product_name=product_name,
-                    region_code=code,
-                    count=count,
-                    generation_time=generation_time,
-                    footprint_wgs84=to_shape(geom),
-                )
-                for code, count, generation_time, geom in conn.execute(
-                    select(
-                        REGION.c.region_code,
-                        REGION.c.count,
-                        REGION.c.generation_time,
-                        REGION.c.footprint,
-                    )
-                    .where(REGION.c.dataset_type_ref == product.id)
-                    .order_by(REGION.c.region_code)
-                )
-                if geom is not None
-            }
+        return {
+            code: RegionSummary(
+                product_name=product_name,
+                region_code=code,
+                count=count,
+                generation_time=generation_time,
+                footprint_wgs84=to_shape(geom),
+            )
+            for code, count, generation_time, geom in self.e_index.product_region_summary(
+                product.id
+            )
+            if geom is not None
+        }
 
     def get_product_region_info(self, product_name: str) -> RegionInfo:
         return RegionInfo.for_product(
@@ -1871,15 +1533,7 @@ class SummaryStore:
 
         Note that these will be None if the product has not been summarised.
         """
-        with self._engine.begin() as conn:
-            rows = conn.execute(
-                select(
-                    func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326).label(
-                        "footprint"
-                    ),
-                    DATASET_SPATIAL.c.region_code,
-                ).where(DATASET_SPATIAL.c.id == dataset_id)
-            ).fetchall()
+        rows = self.e_index.dataset_footprint_region(dataset_id).fetchall()
         if not rows:
             return None, None
         row = rows[0]
@@ -1891,29 +1545,29 @@ class SummaryStore:
         )
 
 
-def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
-    """
-    Refresh product information after a schema update, plus the given kind of data.
-    """
-    recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
-    refresh_products = recompute_dataset_extents or (
-        PleaseRefresh.PRODUCTS in please_refresh
-    )
+# def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
+#     """
+#     Refresh product information after a schema update, plus the given kind of data.
+#     """
+#     recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
+#     refresh_products = recompute_dataset_extents or (
+#         PleaseRefresh.PRODUCTS in please_refresh
+#     ) # doesn't this ultimately amount to the set not being empty?
 
-    if refresh_products:
-        for product in store.all_products():
-            name = product.name
-            # Skip product if it's never been summarised at all.
-            if store.get_product_summary(name) is None:
-                continue
+#     if refresh_products:
+#         for product in store.all_products():
+#             name = product.name
+#             # Skip product if it's never been summarised at all.
+#             if store.get_product_summary(name) is None:
+#                 continue
 
-            if recompute_dataset_extents:
-                _LOG.info("data.refreshing_extents", product=name)
-            store.refresh_product_extent(
-                name,
-                scan_for_deleted=recompute_dataset_extents,
-            )
-    _LOG.info("data.refreshing_extents.complete")
+#             if recompute_dataset_extents: # this check seems unnecessary
+#                 _LOG.info("data.refreshing_extents", product=name)
+#             store.refresh_product_extent(
+#                 name,
+#                 scan_for_deleted=recompute_dataset_extents,
+#             )
+#     _LOG.info("data.refreshing_extents.complete")
 
 
 def _safe_read_date(d):
@@ -2079,26 +1733,27 @@ def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple
     return tuple(k for k, v in items), tuple(v for k, v in items)
 
 
-def _datasets_to_feature(datasets: Iterable[Dataset]):
-    return {
-        "type": "FeatureCollection",
-        "features": [_dataset_to_feature(ds_valid) for ds_valid in datasets],
-    }
+# these 2 methods don't appear to be used anywhere
+# def _datasets_to_feature(datasets: Iterable[Dataset]):
+#     return {
+#         "type": "FeatureCollection",
+#         "features": [_dataset_to_feature(ds_valid) for ds_valid in datasets],
+#     }
 
 
-def _dataset_to_feature(dataset: Dataset):
-    shape, valid_extent = _utils.dataset_shape(dataset)
-    return {
-        "type": "Feature",
-        "geometry": shape.__geo_interface__,
-        "properties": {
-            "id": str(dataset.id),
-            "label": _utils.dataset_label(dataset),
-            "valid_extent": valid_extent,
-            "start_time": dataset.time.begin.isoformat(),
-            "creation_time": _utils.dataset_created(dataset),
-        },
-    }
+# def _dataset_to_feature(dataset: Dataset):
+#     shape, valid_extent = _utils.dataset_shape(dataset)
+#     return {
+#         "type": "Feature",
+#         "geometry": shape.__geo_interface__,
+#         "properties": {
+#             "id": str(dataset.id),
+#             "label": _utils.dataset_label(dataset),
+#             "valid_extent": valid_extent,
+#             "start_time": dataset.time.begin.isoformat(),
+#             "creation_time": _utils.dataset_created(dataset),
+#         },
+#     }
 
 
 _BOX2D_PATTERN = re.compile(

@@ -14,10 +14,11 @@ import click
 import structlog
 from click import echo, secho
 from datacube.cfg import ODCEnvironment
-from datacube.index import Index, index_connect
+from datacube.index import index_connect
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
+from cubedash.index import ExplorerIndex
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
 
@@ -25,8 +26,12 @@ _LOG = structlog.get_logger()
 
 
 def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
-    index: Index = index_connect(
-        cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
+    index = ExplorerIndex(  # can I do it this way
+        index_connect(
+            cfg_env,
+            application_name=f"cubedash.show.{variant}",
+            validate_connection=False,
+        )
     )
     return SummaryStore.create(index, log=log)
 
@@ -82,7 +87,7 @@ def cli(
     summary = store.get(product_name, year, month, day)
     t_end = time.time()
 
-    if not store.index.products.get_by_name(product_name):
+    if not store.get_product(product_name):
         echo(f"Unknown product {product_name!r}", err=True)
         sys.exit(-1)
     product = store.get_product_summary(product_name)

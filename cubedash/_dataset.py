@@ -18,8 +18,8 @@ PROVENANCE_DISPLAY_LIMIT = 25
 
 @bp.route("/dataset/<uuid:id_>")
 def dataset_page(id_):
-    index = _model.STORE.index
-    dataset = index.datasets.get(id_)
+    index = _model.INDEX
+    dataset = index.get_ds(id_)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
@@ -37,8 +37,8 @@ def dataset_page(id_):
 def dataset_full_page(product_name: str, id_: UUID):
     derived_dataset_overflow = source_dataset_overflow = 0
 
-    index = _model.STORE.index
-    dataset = index.datasets.get(id_, include_sources=False)
+    index = _model.INDEX
+    dataset = index.get_ds(id_, include_sources=False)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
@@ -59,14 +59,14 @@ def dataset_full_page(product_name: str, id_: UUID):
     provenance_display_limit = current_app.config.get(
         "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", PROVENANCE_DISPLAY_LIMIT
     )
-    source_datasets, source_dataset_overflow = utils.get_dataset_sources(
+    source_datasets, source_dataset_overflow = index.get_dataset_sources(
         index, id_, limit=provenance_display_limit
     )
 
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
-    derived_datasets, derived_dataset_overflow = utils.get_datasets_derived(
+    derived_datasets, derived_dataset_overflow = index.get_datasets_derived(
         index, id_, limit=provenance_display_limit
     )
     derived_datasets.sort(key=utils.dataset_label)
@@ -96,8 +96,8 @@ def dataset_full_page(product_name: str, id_: UUID):
 
 @bp.route("/dataset/<uuid:id_>.odc-metadata.yaml")
 def raw_doc(id_):
-    index = _model.STORE.index
-    dataset = index.datasets.get(id_, include_sources=True)
+    index = _model.INDEX
+    dataset = index.get_ds(id_, include_sources=True)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
