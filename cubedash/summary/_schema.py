@@ -626,31 +626,30 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
 
     (Requires `create` permissions in the db)
     """
-    srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
-    grouping_crs = get_srid_name(conn, srid)
     # Add any missing schema items or patches.
     create_schema(conn, epsg_code=grouping_epsg_code)
 
     # If they specified an epsg code, make sure the existing schema uses it.
-    if grouping_epsg_code:
-        crs_used_by_schema = grouping_crs
-        if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
-            raise RuntimeError(
-                f"""
-                Tried to initialise with EPSG:{grouping_epsg_code!r},
-                but the schema is already using {crs_used_by_schema}.
+    srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
+    crs_used_by_schema = get_srid_name(conn, srid)
+    # hopefully default epsg wouldn't case an issue?
+    if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
+        raise RuntimeError(
+            f"""
+            Tried to initialise with EPSG:{grouping_epsg_code!r},
+            but the schema is already using {crs_used_by_schema}.
 
-                To change the CRS, you need to recreate Explorer's schema.
+            To change the CRS, you need to recreate Explorer's schema.
 
-                Eg.
+            Eg.
 
-                    # Drop schema
-                    cubedash-gen --drop
+                # Drop schema
+                cubedash-gen --drop
 
-                    # Create schema with new epsg, and summarise all products again.
-                    cubedash-gen --init --epsg {grouping_epsg_code} --all
+                # Create schema with new epsg, and summarise all products again.
+                cubedash-gen --init --epsg {grouping_epsg_code} --all
 
-                (Warning: Resummarising all of your products may take a long time!)
-                """
-            )
+            (Warning: Resummarising all of your products may take a long time!)
+            """
+        )
     return update_schema(conn)

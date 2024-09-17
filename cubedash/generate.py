@@ -72,6 +72,7 @@ from datacube.index import Index, index_connect
 from datacube.model import Product
 from datacube.ui.click import environment_option, pass_config
 
+from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.logs import init_logging
 from cubedash.summary import (
     GenerateResult,
@@ -115,7 +116,9 @@ def generate_report(
                 started_years.add((product_name, year))
 
     store = SummaryStore.create(
-        _get_index(ODCConfig.get_environment(settings.env_name), product_name),
+        ExplorerIndex(
+            _get_index(ODCConfig.get_environment(settings.env_name), product_name)
+        ),
         log=log,
         grouping_time_zone=grouping_time_zone,
     )
@@ -141,7 +144,7 @@ def generate_report(
         log.exception("product.error")
         return product_name, GenerateResult.ERROR, None
     finally:
-        store.index.close()
+        store.close()
 
 
 def _get_index(config: ODCEnvironment, variant: str) -> Index:
@@ -224,10 +227,9 @@ def run_generation(
 
 def _load_products(store: SummaryStore, product_names) -> List[Product]:
     for product_name in product_names:
-        product = store.get_product(product_name)
-        if product:
-            yield product
-        else:
+        try:
+            yield store.get_product(product_name)
+        except KeyError:
             possible_product_names = "\n\t".join(p.name for p in store.all_products())
             raise click.BadParameter(
                 f"Unknown product {product_name!r}.\n\n"
@@ -451,7 +453,7 @@ def cli(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
-    index = _get_index(cfg_env, "setup")
+    index = ExplorerIndex(_get_index(cfg_env, "setup"))
     store = SummaryStore.create(index, grouping_time_zone=timezone)
 
     if drop_database:
@@ -495,7 +497,7 @@ def cli(
     )
     if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)
-        store.refresh_stats(concurrently=force_concurrently)
+        index.refresh_stats(concurrently=force_concurrently)
         user_message("done", color="green")
         _LOG.info("stats.refresh")
     sys.exit(failures)

@@ -1,6 +1,6 @@
 import math
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -221,6 +221,7 @@ class SummaryStore:
         self, e_index: ExplorerIndex, summariser: Summariser, log=_LOG
     ) -> None:
         self.e_index = e_index
+        self.index = e_index.index
         self.log = log
         self._update_listeners = []
 
@@ -314,7 +315,7 @@ class SummaryStore:
     def close(self):  # do we still need this?
         """Close any pooled/open connections. Necessary before forking."""
         self.index.close()
-        # self._engine.dispose()
+        self.e_index.engine.dispose()
 
     def refresh_all_product_extents(
         self,
@@ -526,7 +527,7 @@ class SummaryStore:
         """
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = list(
-            self.e_index.ds_search(product=product.name, limit=1)
+            self.e_index.ds_search({"product": product.name}, limit=1)
         )[0].metadata.fields
 
         simple_field_types = {
@@ -563,8 +564,8 @@ class SummaryStore:
             ["id"],
             limit=sample_datasets_size,
             order_by=[func.random()],
-            product=product.name,
-        ).fetchall()
+            args={"product": product.name},
+        )
 
         _LOG.info(
             "product.fixed_metadata_search",
@@ -611,7 +612,7 @@ class SummaryStore:
         if sample_percentage < 100:
             sample_sql = f"tablesample system ({sample_percentage})"
 
-        (linked_product_names,) = self.e_index.linked_product_search(
+        (linked_product_names,) = self.e_index.linked_products_search(
             product.id, sample_sql, kind
         ).fetchone()
 
@@ -698,7 +699,7 @@ class SummaryStore:
         for d in self.all_products():
             if d.name == name:
                 return d
-        raise KeyError(f"Unknown dataset type {name!r}")
+        raise KeyError(f"Unknown product {name!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_metadata_type(self, name) -> MetadataType:
@@ -748,19 +749,16 @@ class SummaryStore:
          number of products). The latency of repeated round-trips adds up tremendously on
          cloud instances.)
         """
-        product_urls = defaultdict(list)
+        product_urls = {}
         try:
-            for product_name, uri in self.e_index.all_products_location_samples(
+            for product_name, uris in self.e_index.all_products_location_samples(
                 self.all_products()
             ):
-                product_urls[product_name].append(uri)
+                if uris is not None:
+                    product_urls[product_name] = list(_common_paths_for_uris(uris))
+            return product_urls
         except EmptyDbError:
             return {}
-
-        return {
-            name: list(_common_paths_for_uris(uris))
-            for name, uris in product_urls.items()
-        }
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def product_location_samples(
@@ -781,12 +779,12 @@ class SummaryStore:
         search_args = dict()
         if year or month or day:
             search_args["time"] = _utils.as_time_range(year, month, day)
-
+        search_args["product"] = name
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
             for [uri] in self.e_index.ds_search_returning(
-                ("uri",), product=name, **search_args, limit=sample_size
+                fields=("uri",), limit=sample_size, args=search_args
             )
         )
 
@@ -831,7 +829,7 @@ class SummaryStore:
             last_refresh=product.last_refresh_time,
         )
 
-        row = self.e_index.upsert_product_record(product.name, **fields)
+        row = self.e_index.upsert_product_record(product.name, fields)
         self._product.cache_clear()
         product_id, last_refresh_time = row
 
@@ -1058,12 +1056,14 @@ class SummaryStore:
         Do the base select query to get the count of matching datasets.
         """
         if filter_cql:  # to account the possibiity of 'collection' in the filter
-            query: Select = self.e_index.spatial_select_query(func.count(), full=True)
+            query: Select = self.e_index.spatial_select_query([func.count()], full=True)
         else:
-            query: Select = self.e_index.spatial_select_query(func.count())
+            query: Select = self.e_index.spatial_select_query([func.count()])
 
+        field_exprs = self._get_field_exprs(product_names)
         query = self._add_fields_to_query(
             query,
+            field_exprs,
             product_names=product_names,
             time=time,
             bbox=bbox,
@@ -1074,7 +1074,7 @@ class SummaryStore:
         if filter_cql:
             query = self._add_filter_to_query(
                 query,
-                self._get_field_exprs(product_names),
+                field_exprs,
                 filter_lang,
                 filter_cql,
             )
@@ -1136,11 +1136,12 @@ class SummaryStore:
         #         *columns, field_exprs["id_"], field_exprs["product_ref"]
         #     ) # should this still operate on the joined table to prevent misleading queries? or add an extra check
 
-        query: Select = self.e_index.spatial_select_query(*columns, full=full_dataset)
+        query: Select = self.e_index.spatial_select_query(columns, full=full_dataset)
 
         # Add all the filters
         query = self._add_fields_to_query(
             query,
+            field_exprs,
             product_names=product_names,
             time=time,
             bbox=bbox,
@@ -1368,6 +1369,7 @@ class SummaryStore:
         #    as from previous interrupted runs.)
         years_to_update = self.find_years_needing_update(product_name)
         for year in years_to_update:
+            print(len(self._update_listeners))
             self._recalculate_period(
                 new_product,
                 year,
@@ -1420,7 +1422,7 @@ class SummaryStore:
         Any change timestamps stored in the database are using database-local
         time, which could be different to the time on this current machine!
         """
-        self.e_index.execute_query(select(func.now())).scalar()
+        return self.e_index.execute_query(select(func.now())).scalar()
 
     def _newest_known_dataset_addition_time(self, product_name) -> datetime:
         """

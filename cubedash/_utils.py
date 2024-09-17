@@ -27,7 +27,7 @@ from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
-from datacube.utils import jsonify_document
+from datacube.utils import InvalidDocException, jsonify_document
 from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
@@ -102,14 +102,11 @@ def expects_eo3_metadata_type(md: MetadataType) -> bool:
     """
     Does the given metadata type expect EO3 datasets?
     """
-    # We don't have a clean way to say that a product expects EO3
-
-    # measurements_offset = md.definition["dataset"].get("measurements")
-
-    # In EO3, the measurements are in ['measurments'],
-    # In EO1, they are in ['image', 'bands'].
-    # return measurements_offset == ["measurements"]
-    return MetadataType.validate_eo3(md.definition)
+    try:
+        MetadataType.validate_eo3(md.definition)
+        return True
+    except InvalidDocException:
+        return False
 
 
 def jsonb_doc_expression(md: MetadataType):

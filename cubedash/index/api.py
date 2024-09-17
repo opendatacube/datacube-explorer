@@ -30,18 +30,18 @@ class ExplorerAbstractIndex(ABC):
     def get_ds(self, dataset_id: UUID, include_sources: bool = False):
         return self.index.datasets.get(dataset_id, include_sources=include_sources)
 
-    def ds_search(self, limit=None, **query):
-        return self.index.datasets.search(query, limit=limit)
+    def ds_search(self, query, limit=None):
+        return self.index.datasets.search(**query, limit=limit)
 
     def ds_search_returning(
         self,
         fields: Iterable[str] | None = None,
         limit: int | None = None,
         order_by=None,
-        **query,
+        args={},
     ):
         return self.index.datasets.search_returning(
-            query, field_names=fields, limit=limit, order_by=order_by
+            field_names=fields, limit=limit, order_by=order_by, **args
         )
 
     def get_all_products(self):
@@ -119,7 +119,7 @@ class ExplorerAbstractIndex(ABC):
     def upsert_product_regions(self, product_id: int): ...
 
     @abstractmethod
-    def delete_product_emtpy_regions(self, product_id: int): ...
+    def delete_product_empty_regions(self, product_id: int): ...
 
     @abstractmethod
     def product_region_summary(self, product_id: int): ...
@@ -158,10 +158,11 @@ class ExplorerAbstractIndex(ABC):
     ) -> Generator[int, None, None]: ...
 
     @abstractmethod
-    def spatial_select_query(self, *clauses, full: bool = False): ...
+    def spatial_select_query(self, clauses, full: bool = False): ...
 
     @abstractmethod
     def select_spatial_stats(self): ...
+
     @abstractmethod
     def schema_initialised(self) -> bool: ...
 

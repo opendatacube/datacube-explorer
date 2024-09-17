@@ -109,8 +109,9 @@ def legacy_raw_product_doc(name):
 
 @bp.route("/products/<name>.odc-product.yaml")
 def raw_product_doc(name):
-    product = _model.STORE.get_product(name)
-    if not product:
+    try:
+        product = _model.STORE.get_product(name)
+    except KeyError:
         abort(404, f"Unknown product {name!r}")
 
     ordered_metadata = utils.prepare_document_formatting(
@@ -126,8 +127,9 @@ def legacy_metadata_type_page(name):
 
 @bp.route("/metadata-types/<name>")
 def metadata_type_page(name):
-    metadata_type = _model.STORE.get_metadata_type(name)
-    if not metadata_type:
+    try:
+        metadata_type = _model.STORE.get_metadata_type(name)
+    except KeyError:
         abort(404, f"Unknown metadata type {name!r}")
     ordered_metadata = utils.prepare_document_formatting(metadata_type.definition)
 
@@ -150,8 +152,9 @@ def legacy_metadata_type_doc(name):
 
 @bp.route("/metadata-types/<name>.odc-type.yaml")
 def raw_metadata_type_doc(name):
-    metadata_type = _model.STORE.get_metadata_type(name)
-    if not metadata_type:
+    try:
+        metadata_type = _model.STORE.get_metadata_type(name)
+    except KeyError:
         abort(404, f"Unknown metadata type {name!r}")
     ordered_metadata = utils.prepare_document_formatting(
         metadata_type.definition, "Metadata Type", include_source_url=True

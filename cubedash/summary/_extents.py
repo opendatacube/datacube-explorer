@@ -296,83 +296,83 @@ def refresh_spatial_extents(
             change_count=changed,
         )
 
-        # We'll update first, then insert new records.
-        # -> We do it in this order so that inserted records aren't immediately updated.
-        # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
-        #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
-        #        Maybe you can figure out a workaround, though?)
-        # I don't understand this comment
-        column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
-        # only_where = [
-        #     DATASET.c.dataset_type_ref
-        #     == bindparam("product_ref", product.id, type_=SmallInteger),
-        #     DATASET.c.archived.is_(None),
-        # ]
-        # if assume_after_date is not None:
-        #     only_where.append(DATASET.c.updated > assume_after_date)
-        # else:
-        if assume_after_date is None:
-            log.warning("spatial_update.recreating_everything")
+    # We'll update first, then insert new records.
+    # -> We do it in this order so that inserted records aren't immediately updated.
+    # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
+    #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
+    #        Maybe you can figure out a workaround, though?)
+    # I don't understand this comment
+    column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
+    # only_where = [
+    #     DATASET.c.dataset_type_ref
+    #     == bindparam("product_ref", product.id, type_=SmallInteger),
+    #     DATASET.c.archived.is_(None),
+    # ]
+    # if assume_after_date is not None:
+    #     only_where.append(DATASET.c.updated > assume_after_date)
+    # else:
+    if assume_after_date is None:
+        log.warning("spatial_update.recreating_everything")
 
-        # Update any changed datasets
-        log.info(
-            "spatial_upsert",
-            product_name=product.name,
-            after_date=assume_after_date,
-        )
-        # select extent column values from active datasets of the product,
-        # and update the corresponding entry in dataset_spatial
-        # values = select(*columns).where(only_where)
-        # changed += conn.execute(
-        #     DATASET_SPATIAL.update()
-        #     .values(**column_values)
-        #     .where(DATASET_SPATIAL.c.id == column_values["id"])
-        #     .where(and_(*only_where))
-        # ).rowcount
-        # log.info("spatial_update.end", product_name=product.name, change_count=changed)
+    # Update any changed datasets
+    log.info(
+        "spatial_upsert",
+        product_name=product.name,
+        after_date=assume_after_date,
+    )
+    # select extent column values from active datasets of the product,
+    # and update the corresponding entry in dataset_spatial
+    # values = select(*columns).where(only_where)
+    # changed += conn.execute(
+    #     DATASET_SPATIAL.update()
+    #     .values(**column_values)
+    #     .where(DATASET_SPATIAL.c.id == column_values["id"])
+    #     .where(and_(*only_where))
+    # ).rowcount
+    # log.info("spatial_update.end", product_name=product.name, change_count=changed)
 
-        # # ... and insert new ones.
-        # log.info(
-        #     "spatial_insert",
-        #     product_name=product.name,
-        #     after_date=assume_after_date,
-        # )
-        # changed += conn.execute(
-        #     postgres.insert(DATASET_SPATIAL)
-        #     .from_select( # why can't we insert values the same way we do for update?
-        #         list(column_values.keys()),
-        #         select(*list(column_values.values()))
-        #         .where(and_(*only_where))
-        #         .order_by(column_values["center_time"]), # why do we order_by???
-        #     )
-        #     .on_conflict_do_nothing(index_elements=["id"])
-        # ).rowcount
-        changed = e_index.upsert_datasets(product.id, column_values, assume_after_date)
-        log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
+    # # ... and insert new ones.
+    # log.info(
+    #     "spatial_insert",
+    #     product_name=product.name,
+    #     after_date=assume_after_date,
+    # )
+    # changed += conn.execute(
+    #     postgres.insert(DATASET_SPATIAL)
+    #     .from_select( # why can't we insert values the same way we do for update?
+    #         list(column_values.keys()),
+    #         select(*list(column_values.values()))
+    #         .where(and_(*only_where))
+    #         .order_by(column_values["center_time"]), # why do we order_by???
+    #     )
+    #     .on_conflict_do_nothing(index_elements=["id"])
+    # ).rowcount
+    changed += e_index.upsert_datasets(product.id, column_values, assume_after_date)
+    log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
 
-        # If we changed data...
-        if changed:
-            # And it's a non-spatial product...
-            if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
-                # And it has WRS path/rows...
-                if "sat_path" in product.metadata_type.dataset_fields:
-                    # We can synthesize the polygons!
-                    log.info(
-                        "spatial_synthesizing",
-                    )
-                    shapes = _get_path_row_shapes()
-                    rows = [
-                        row
-                        for row in e_index.ds_search_returning(
-                            ("id", "sat_path", "sat_row"), product=product.name
-                        )
-                        if row.sat_path.lower is not None
-                    ]
-                    if rows:
-                        e_index.synthesize_dataset_footprint(rows, shapes)
+    # If we changed data...
+    if changed:
+        # And it's a non-spatial product...
+        if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
+            # And it has WRS path/rows...
+            if "sat_path" in product.metadata_type.dataset_fields:
+                # We can synthesize the polygons!
                 log.info(
-                    "spatial_synthesizing.end",
+                    "spatial_synthesizing",
                 )
+                shapes = _get_path_row_shapes()
+                rows = [
+                    row
+                    for row in e_index.ds_search_returning(
+                        ("id", "sat_path", "sat_row"), args={"product": product.name}
+                    )
+                    if row.sat_path.lower is not None
+                ]
+                if rows:
+                    e_index.synthesize_dataset_footprint(rows, shapes)
+            log.info(
+                "spatial_synthesizing.end",
+            )
 
     return changed
 
@@ -477,7 +477,9 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
         creation_expression = md.dataset_fields.get("creation_time").alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
-    return func.coalesce(creation_expression, md.dataset_fields.get("indexed_time"))
+    return func.coalesce(
+        creation_expression, md.dataset_fields.get("indexed_time").alchemy_expression
+    )
 
 
 # not used anywhere?

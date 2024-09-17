@@ -18,6 +18,7 @@ from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
 
 from cubedash import _utils
+from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.summary import SummaryStore, _extents
 from cubedash.warmup import find_examples_of_all_public_urls
 from integration_tests.asserts import assert_matching_eo3
@@ -60,7 +61,7 @@ def eo3_index(odc_test_db: Datacube, auto_odc_db):
     )
 
     # We need postgis and some support tables (eg. srid lookup).
-    store = SummaryStore.create(odc_test_db.index)
+    store = SummaryStore.create(ExplorerIndex(odc_test_db.index))
     store.drop_all()
     store.init(grouping_epsg_code=3577)
 
@@ -156,7 +157,7 @@ def test_eo3_dateless_extents(eo3_index: Index):
 
 
 def test_location_sampling(eo3_index: Index):
-    summary_store = SummaryStore.create(eo3_index)
+    summary_store = SummaryStore.create(ExplorerIndex(eo3_index))
 
     assert summary_store.product_location_samples("ls8_nbar_scene") == []
 

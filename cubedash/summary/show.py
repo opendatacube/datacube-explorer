@@ -18,7 +18,7 @@ from datacube.index import index_connect
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
-from cubedash.index import ExplorerIndex
+from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
 
@@ -87,7 +87,9 @@ def cli(
     summary = store.get(product_name, year, month, day)
     t_end = time.time()
 
-    if not store.get_product(product_name):
+    try:
+        store.get_product(product_name)
+    except KeyError:
         echo(f"Unknown product {product_name!r}", err=True)
         sys.exit(-1)
     product = store.get_product_summary(product_name)

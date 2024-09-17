@@ -215,7 +215,7 @@ def search_page(
     )
     try:
         datasets = sorted(
-            _model.INDEX.ds_search(**query, limit=hard_search_limit + 1),
+            _model.INDEX.ds_search(query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
     except DataError:

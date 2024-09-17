@@ -94,6 +94,7 @@ def all_urls(summary_store: SummaryStore):
 @pytest.fixture()
 def empty_client(summary_store: SummaryStore) -> FlaskClient:
     _model.STORE = summary_store
+    _model.INDEX = summary_store.e_index
     app = create_app(
         {
             "TESTING": True,
@@ -137,7 +138,7 @@ def disable_logging():
 @pytest.fixture()
 def client(unpopulated_client: FlaskClient) -> FlaskClient:
     with disable_logging():
-        for product in _model.STORE.index.products.get_all():
+        for product in _model.STORE.all_products():
             _model.STORE.refresh(product.name)
 
     return unpopulated_client

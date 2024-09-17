@@ -60,14 +60,14 @@ def dataset_full_page(product_name: str, id_: UUID):
         "CUBEDASH_PROVENANCE_DISPLAY_LIMIT", PROVENANCE_DISPLAY_LIMIT
     )
     source_datasets, source_dataset_overflow = index.get_dataset_sources(
-        index, id_, limit=provenance_display_limit
+        id_, limit=provenance_display_limit
     )
 
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
     derived_datasets, derived_dataset_overflow = index.get_datasets_derived(
-        index, id_, limit=provenance_display_limit
+        id_, limit=provenance_display_limit
     )
     derived_datasets.sort(key=utils.dataset_label)
 

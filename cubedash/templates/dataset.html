@@ -93,7 +93,7 @@
                 Related Datasets
                 {{ hanchor('related-datasets') }}
             </h3>
-            {% for s_dataset in source_datasets %}
+            {% for s_dataset in source_datasets.values() %}
                 <div>
                     <span title="Source dataset">
                         <i class="fa fa-level-up fa-flip-horizontal" aria-hidden="true"></i>

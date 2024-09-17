@@ -27,6 +27,7 @@ from sqlalchemy import (
     String,
     and_,
     bindparam,
+    column,
     exists,
     func,
     literal,
@@ -193,8 +194,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     ).label("month"),
                     func.count(),
                 )
+                .select_from(ODC_DATASET)
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                .where(ODC_DATASET.c.updated > only_those_newer_than)
+                .where(column("updated") > only_those_newer_than)
                 .group_by("month")
                 .order_by("month")
             )
@@ -204,7 +206,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         years = TIME_OVERVIEW.alias("years_needing_update")
 
         with self.index._active_connection() as conn:
-            conn.execute(
+            return conn.execute(
                 # Select years
                 select(years.c.start_day)
                 .where(years.c.period_type == "year")
@@ -248,7 +250,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
-    def upsert_product_record(self, product_name: str, **fields):
+    def upsert_product_record(self, product_name: str, fields):
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,
         # insert, on_conflict...) and while this works, it triggers the sequence
         # `product_id_seq` to increment as part of the check for insertion. This
@@ -268,14 +270,15 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     PRODUCT.update()
                     .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
                     .where(PRODUCT.c.id == row[0])
-                    .values(fields)
+                    .values(**fields)
                 ).fetchone()
             else:
                 # Product doesn't exist, so insert it
+                fields["name"] = product_name
                 return conn.execute(
                     insert(PRODUCT)
                     .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
-                    .values(**fields, name=product_name)
+                    .values(**fields)
                 ).fetchone()
 
     def put_summary(self, product_id: int, start_day, period, summary_row: dict):
@@ -353,7 +356,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 """)
             )
 
-    def delete_product_emtpy_regions(self, product_id: int):
+    def delete_product_empty_regions(self, product_id: int):
         with self.index._active_connection() as conn:
             # not_empty_regions = select(
             #     DATASET_SPATIAL.c.region_code
@@ -386,20 +389,20 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     def product_time_overview(self, product_id: int):
         with self.index._active_connection() as conn:
-            # earliest, latest, total_count = conn.execute(
-            #     select(
-            #         func.min(DATASET_SPATIAL.c.center_time),
-            #         func.max(DATASET_SPATIAL.c.center_time),
-            #         func.count(),
-            #     ).where(DATASET_SPATIAL.c.dataset_type_ref == product.id)
-            # ).fetchone()
             return conn.execute(
                 select(
-                    TIME_OVERVIEW.c.time_earliest,
-                    TIME_OVERVIEW.c.time_latest,
-                    TIME_OVERVIEW.c.dataset_count,
-                ).where(TIME_OVERVIEW.c.product_ref == product_id)
+                    func.min(DATASET_SPATIAL.c.center_time),
+                    func.max(DATASET_SPATIAL.c.center_time),
+                    func.count(),
+                ).where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
             ).fetchone()
+            # return conn.execute(
+            #     select(
+            #         TIME_OVERVIEW.c.time_earliest,
+            #         TIME_OVERVIEW.c.time_latest,
+            #         TIME_OVERVIEW.c.dataset_count,
+            #     ).where(TIME_OVERVIEW.c.product_ref == product_id)
+            # ).fetchone()
 
     def product_time_summary(self, product_id: int, start_day, period):
         with self.index._active_connection() as conn:
@@ -414,7 +417,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     def latest_arrivals(self, period_length: timedelta):
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             latest_arrival_date: datetime = conn.execute(
                 text("select max(added) from agdc.dataset;")
             ).scalar()
@@ -527,7 +530,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self, product_id: int, refresh_timestamp: datetime
     ):
         with self.index._active_connection() as conn:
-            conn.execute(
+            return conn.execute(
                 PRODUCT.update()
                 .where(PRODUCT.c.id == product_id)
                 .where(
@@ -703,12 +706,21 @@ class ExplorerIndex(ExplorerAbstractIndex):
             # we could replace this with a ds_search_returning but that would mean two executions instead of one
             archived_datasets = (
                 select(ODC_DATASET.c.id)
-                .where(ODC_DATASET.c.archived.isnot(None))
-                .where(ODC_DATASET.c.dataset_type_ref == product_id)
+                .select_from(ODC_DATASET)
+                .where(
+                    and_(
+                        ODC_DATASET.c.archived.isnot(None),
+                        ODC_DATASET.c.dataset_type_ref == product_id,
+                    )
+                )
             )
             if after_date is not None:
                 archived_datasets = archived_datasets.where(
-                    ODC_DATASET.c.updated > after_date
+                    or_(
+                        ODC_DATASET.c.added
+                        > after_date,  # should eventually be able to remove this
+                        column("updated") > after_date,
+                    )
                 )
 
             return conn.execute(
@@ -751,32 +763,34 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def upsert_datasets(self, product_id, column_values, after_date):
         column_values["id"] = ODC_DATASET.c.id
         column_values["dataset_type_ref"] = ODC_DATASET.c.dataset_type_ref
-
+        only_where = [
+            ODC_DATASET.c.dataset_type_ref
+            == bindparam("product_ref", product_id, type_=SmallInteger),
+            ODC_DATASET.c.archived.is_(None),
+        ]
+        if after_date is not None:
+            only_where.append(
+                or_(
+                    ODC_DATASET.c.added
+                    > after_date,  # should eventually be able to remove this
+                    column("updated") > after_date,
+                )
+            )
         with self.index._active_connection() as conn:
-            only_where = [
-                ODC_DATASET.c.dataset_type_ref
-                == bindparam(
-                    "product_ref", product_id, type_=SmallInteger
-                ),  # why the need for bindparam?
-                ODC_DATASET.c.archived.is_(None),
-            ]
-            if after_date is not None:
-                only_where.append(ODC_DATASET.c.updated > after_date)
-
+            stmt = insert(DATASET_SPATIAL).from_select(
+                list(column_values.keys()),
+                select(*column_values.values()).where(and_(*only_where)),
+            )
             return conn.execute(
-                insert(DATASET_SPATIAL)
-                .values(**column_values)
-                .where(and_(*only_where))
-                .on_conflict_do_update(
-                    # is this right?
+                stmt.on_conflict_do_update(
                     index_elements=["id"],
-                    set_=column_values,
-                    where=DATASET_SPATIAL.c.id == ODC_DATASET.c.id,
+                    set_=stmt.excluded,
                 )
             ).rowcount
 
     def synthesize_dataset_footprint(self, rows, shapes):
-        with self.index._active_connection() as conn:
+        # don't believe there's a way to pass parameter to _active_connection
+        with self.engine.begin() as conn:
             return conn.execute(
                 DATASET_SPATIAL.update()
                 .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
@@ -819,8 +833,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
         return field_exprs
 
-    def spatial_select_query(self, *clauses, full: bool = False):
-        query = select(clauses)
+    def spatial_select_query(self, clauses, full: bool = False):
+        query = select(*clauses)
         if full:
             return query.select_from(
                 DATASET_SPATIAL.join(
@@ -849,7 +863,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         """
         Do our DB schemas exist?
         """
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             return _schema.has_schema(conn)
 
     def schema_compatible_info(self, for_writing_operations_too=False):
@@ -857,7 +871,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         Schema compatibility information
         postgis version, if schema has latest changes (optional: and has updated column)
         """
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             return _schema.get_postgis_versions(conn), _schema.is_compatible_schema(
                 conn, ODC_DATASET.fullname, for_writing_operations_too
             )
@@ -873,7 +887,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         This is ideally done once after all needed products have been refreshed.
         """
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             _schema.refresh_supporting_views(conn, concurrently=concurrently)
 
     @lru_cache()
@@ -881,7 +895,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             return _schema.get_srid_name(conn, srid)
 
     def summary_where_clause(

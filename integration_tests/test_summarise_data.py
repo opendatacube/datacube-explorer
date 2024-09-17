@@ -185,8 +185,8 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     index = summary_store.index
 
     dataset_id = _one_dataset(index, "ls8_nbar_scene")
-    our_product = index.products.get_by_name("ls8_nbar_scene")
-    other_product = index.products.get_by_name("ls8_nbar_albers")
+    our_product = summary_store.get_product("ls8_nbar_scene")
+    other_product = summary_store.get_product("ls8_nbar_albers")
 
     # When we have a summarised product...
     original_summary = summary_store.get("ls8_nbar_scene")
@@ -221,8 +221,7 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
 
 
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
-    # with alchemy_engine(index).begin() as conn:
-    with index._active_connection() as conn:
+    with index._db._engine.begin() as conn:
         rows_changed = conn.execute(
             text(
                 f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=:product_id where id=:dataset_id"
@@ -430,8 +429,7 @@ def test_force_dataset_regeneration(
     assert original_footprint is not None
 
     # Now let's break the footprint!
-    # with alchemy_engine(odc_test_db.index).begin() as conn:
-    with odc_test_db.index._active_connection() as conn:
+    with summary_store.e_index.engine.begin() as conn:
         conn.execute(
             text(
                 f"update {CUBEDASH_SCHEMA}.dataset_spatial "
@@ -506,7 +504,7 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     ), "A new, rather than cached, summary was returned"
 
 
-def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube):
+def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client):
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
