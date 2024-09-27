@@ -18,7 +18,6 @@ from datacube.index import index_connect
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
-from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
 
@@ -26,12 +25,10 @@ _LOG = structlog.get_logger()
 
 
 def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
-    index = ExplorerIndex(  # can I do it this way
-        index_connect(
-            cfg_env,
-            application_name=f"cubedash.show.{variant}",
-            validate_connection=False,
-        )
+    index = index_connect(
+        cfg_env,
+        application_name=f"cubedash.show.{variant}",
+        validate_connection=False,
     )
     return SummaryStore.create(index, log=log)
 

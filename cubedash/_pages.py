@@ -213,9 +213,10 @@ def search_page(
     hard_search_limit = current_app.config.get(
         "CUBEDASH_HARD_SEARCH_LIMIT", _HARD_SEARCH_LIMIT
     )
+    index = _model.STORE.index
     try:
         datasets = sorted(
-            _model.INDEX.ds_search(query, limit=hard_search_limit + 1),
+            index.datasets.search(**query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
     except DataError:
@@ -228,7 +229,7 @@ def search_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.INDEX.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(index, d) for d in datasets])
         )
 
     # For display on the page (and future searches).
@@ -354,7 +355,7 @@ def region_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.INDEX.index, d) for d in datasets])
+            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
         )
 
     return utils.render(

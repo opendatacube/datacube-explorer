@@ -72,7 +72,6 @@ from datacube.index import Index, index_connect
 from datacube.model import Product
 from datacube.ui.click import environment_option, pass_config
 
-from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.logs import init_logging
 from cubedash.summary import (
     GenerateResult,
@@ -116,9 +115,7 @@ def generate_report(
                 started_years.add((product_name, year))
 
     store = SummaryStore.create(
-        ExplorerIndex(
-            _get_index(ODCConfig.get_environment(settings.env_name), product_name)
-        ),
+        _get_index(ODCConfig.get_environment(settings.env_name), product_name),
         log=log,
         grouping_time_zone=grouping_time_zone,
     )
@@ -453,9 +450,9 @@ def cli(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )
 
-    index = ExplorerIndex(_get_index(cfg_env, "setup"))
-    store = SummaryStore.create(index, grouping_time_zone=timezone)
-
+    store = SummaryStore.create(
+        _get_index(cfg_env, "setup"), grouping_time_zone=timezone
+    )
     if drop_database:
         user_message("Dropping all Explorer additions to the database")
         store.drop_all()
@@ -497,7 +494,7 @@ def cli(
     )
     if updated > 0 and refresh_stats:
         user_message("Refreshing statistics...", nl=False)
-        index.refresh_stats(concurrently=force_concurrently)
+        store.refresh_stats(concurrently=force_concurrently)
         user_message("done", color="green")
         _LOG.info("stats.refresh")
     sys.exit(failures)

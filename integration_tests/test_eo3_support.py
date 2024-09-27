@@ -18,8 +18,8 @@ from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
 
 from cubedash import _utils
-from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.summary import SummaryStore, _extents
+from cubedash.summary._stores import explorer_index
 from cubedash.warmup import find_examples_of_all_public_urls
 from integration_tests.asserts import assert_matching_eo3
 from integration_tests.test_pages_render import assert_all_urls_render
@@ -35,7 +35,7 @@ TEST_EO3_DATASET_ARD = (
 METADATA_TYPES = [
     "metadata/eo3_landsat_l1.odc-type.yaml",
     "metadata/eo3_landsat_ard.odc-type.yaml",
-    "metadata/landsat_l1_scene.yaml",
+    "metadata/landsat_l1_scene.yaml",  # this isn't an eo3 metadata type, so why is it used here?
 ]
 PRODUCTS = [
     "products/l1_ls5.odc-product.yaml",
@@ -61,7 +61,7 @@ def eo3_index(odc_test_db: Datacube, auto_odc_db):
     )
 
     # We need postgis and some support tables (eg. srid lookup).
-    store = SummaryStore.create(ExplorerIndex(odc_test_db.index))
+    store = SummaryStore.create(odc_test_db.index)
     store.drop_all()
     store.init(grouping_epsg_code=3577)
 
@@ -74,7 +74,10 @@ def test_eo3_extents(eo3_index: Index):
 
     (ie. not the older grid_spatial definitions)
     """
-    [dataset_extent_row] = _extents.get_sample_dataset("ga_ls5t_ard_3", index=eo3_index)
+    product = eo3_index.products.get_by_name("ga_ls5t_ard_3")
+    [dataset_extent_row] = _extents.get_sample_dataset(
+        [product], explorer_index(eo3_index)
+    )
     pprint(dataset_extent_row)
 
     assert dataset_extent_row["id"] == UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14")
@@ -89,7 +92,7 @@ def test_eo3_extents(eo3_index: Index):
         2020, 6, 5, 7, 15, 26, 599544, tzinfo=tz.tzutc()
     )
     assert (
-        dataset_extent_row["dataset_type_ref"]
+        dataset_extent_row["product_ref"]
         == eo3_index.products.get_by_name("ga_ls5t_ard_3").id
     )
 
@@ -137,8 +140,9 @@ def test_eo3_dateless_extents(eo3_index: Index):
 
     (Stac makes it optional if you have a start/end date)
     """
+    product = eo3_index.products.get_by_name("gm_s2_semiannual_lowres")
     [dataset_extent_row] = _extents.get_sample_dataset(
-        "gm_s2_semiannual_lowres", index=eo3_index
+        [product], explorer_index(eo3_index)
     )
     pprint(dataset_extent_row)
 
@@ -157,7 +161,7 @@ def test_eo3_dateless_extents(eo3_index: Index):
 
 
 def test_location_sampling(eo3_index: Index):
-    summary_store = SummaryStore.create(ExplorerIndex(eo3_index))
+    summary_store = SummaryStore.create(eo3_index)
 
     assert summary_store.product_location_samples("ls8_nbar_scene") == []
 

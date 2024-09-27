@@ -18,6 +18,7 @@ from ruamel.yaml import YAML, YAMLError
 import cubedash
 from cubedash import _model, _monitoring
 from cubedash.summary import SummaryStore, _extents, show
+from cubedash.summary._stores import explorer_index
 from integration_tests.asserts import (
     check_area,
     check_dataset_count,
@@ -882,9 +883,12 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
 
 
 def test_extent_debugging_method(odc_test_db, client: FlaskClient):
-    [cols] = _extents.get_sample_dataset("ls7_nbar_scene", index=odc_test_db.index)
+    index = odc_test_db.index
+    product = index.products.get_by_name("ls7_nbar_scene")
+    e_index = explorer_index(index)
+    [cols] = _extents.get_sample_dataset([product], e_index)
     assert cols["id"] is not None
-    assert cols["dataset_type_ref"] is not None
+    assert cols["product_ref"] is not None
     assert cols["center_time"] is not None
     assert cols["footprint"] is not None
 
@@ -892,7 +896,7 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     output_json = _extents._as_json(cols)
     assert str(cols["id"]) in output_json
 
-    [cols] = _extents.get_mapped_crses("ls7_nbar_scene", index=odc_test_db.index)
+    [cols] = _extents.get_mapped_crses([product], e_index)
     assert cols["product"] == "ls7_nbar_scene"
     assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
 

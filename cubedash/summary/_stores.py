@@ -52,11 +52,14 @@ except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField
+from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
 from cubedash import _utils
 from cubedash.index import EmptyDbError, ExplorerIndex
+from cubedash.index.postgis import ExplorerPgisIndex
+from cubedash.index.postgres import ExplorerPgIndex
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
 from cubedash.summary._extents import (
     ProductArrival,
@@ -79,6 +82,15 @@ _LOG = structlog.get_logger()
 DEFAULT_EPSG = 6933
 
 default_timezone = pytz.timezone(DEFAULT_TIMEZONE)
+
+
+def explorer_index(index: Index) -> ExplorerIndex:
+    if index.name == "pg_index":
+        return ExplorerPgIndex(index)
+    elif index.name == "pgis_index":
+        return ExplorerPgisIndex(index)
+    else:  # should we permit memory? default to postgres? other handling?
+        raise ValueError(f"Cannot run explorer with index {index.name}")
 
 
 class ItemSort(Enum):
@@ -294,8 +306,9 @@ class SummaryStore:
 
     @classmethod
     def create(
-        cls, e_index: ExplorerIndex, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
+        cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
     ) -> "SummaryStore":
+        e_index = explorer_index(index)
         return cls(
             e_index,
             Summariser(e_index, grouping_time_zone=grouping_time_zone),
@@ -324,7 +337,7 @@ class SummaryStore:
             self.refresh_product_extent(
                 product.name,
             )
-        self.e_index.refresh_stats()
+        self.refresh_stats()
 
     def find_months_needing_update(
         self,
@@ -394,7 +407,7 @@ class SummaryStore:
             # Never been summarised. So, yes!
             return True
 
-        most_recent_change = self.e_index.product_most_recent_change(product_name)
+        most_recent_change = self.index.products.most_recent_change(product_name)
         has_new_changes = most_recent_change and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
@@ -504,14 +517,13 @@ class SummaryStore:
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
 
-    # def refresh_stats(self, concurrently=False):
-    #     """
-    #     Refresh general statistics tables that cover all products.
+    def refresh_stats(self, concurrently=False):
+        """
+        Refresh general statistics tables that cover all products.
 
-    #     This is ideally done once after all needed products have been refreshed.
-    #     """
-    #     with self.index._active_connection() as conn:
-    #         refresh_supporting_views(conn, concurrently=concurrently)
+        This is ideally done once after all needed products have been refreshed.
+        """
+        self.e_index.refresh_stats(concurrently)
 
     def _find_product_fixed_metadata(
         self,
@@ -527,7 +539,7 @@ class SummaryStore:
         """
         # Get a single dataset, then we'll compare the rest against its values.
         first_dataset_fields = list(
-            self.e_index.ds_search({"product": product.name}, limit=1)
+            self.index.datasets.search(product=product.name, limit=1)
         )[0].metadata.fields
 
         simple_field_types = {
@@ -688,11 +700,11 @@ class SummaryStore:
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
     def all_products(self) -> Iterable[Product]:
-        return tuple(self.e_index.get_all_products())
+        return tuple(self.index.products.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def all_metadata_types(self) -> Iterable[MetadataType]:
-        return tuple(self.e_index.get_all_metadata_types())
+        return tuple(self.index.metadata_types.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_product(self, name) -> Product:
@@ -1190,7 +1202,7 @@ class SummaryStore:
                 center_time=r.center_time,
                 odc_dataset=(
                     # self.e_index.make_dataset(r)
-                    self.e_index.get_ds(r.id) if full_dataset else None
+                    self.index.datasets.get(r.id) if full_dataset else None
                 ),
             )
 
@@ -1369,7 +1381,6 @@ class SummaryStore:
         #    as from previous interrupted runs.)
         years_to_update = self.find_years_needing_update(product_name)
         for year in years_to_update:
-            print(len(self._update_listeners))
             self._recalculate_period(
                 new_product,
                 year,

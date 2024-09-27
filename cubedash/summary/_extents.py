@@ -1,17 +1,17 @@
 import functools
 import json
-import sys
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, TypeAlias
 
 import fiona
 import structlog
-from datacube import Datacube
-from datacube.drivers.postgres._fields import PgDocField, RangeDocField
-from datacube.index import Index
+from datacube.drivers.postgis._fields import PgDocField as PgisDocField
+from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
+from datacube.drivers.postgres._fields import PgDocField as PgresDocField
+from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
 from datacube.model import Dataset, Field, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
@@ -19,22 +19,19 @@ from psycopg2._range import Range as PgRange
 from shapely.geometry import shape
 from sqlalchemy import (
     BigInteger,
-    Integer,
-    SmallInteger,
     String,
-    bindparam,
     case,
+    cast,
     func,
-    literal,
     null,
-    select,
 )
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql.elements import ClauseElement, Label
+from sqlalchemy.types import TIMESTAMP
 
-from cubedash._utils import (
-    ODC_DATASET as DATASET,
-)
+# from cubedash._utils import (
+#     ODC_DATASET as DATASET,
+# )
 from cubedash._utils import (
     datetime_expression,
     expects_eo3_metadata_type,
@@ -42,7 +39,6 @@ from cubedash._utils import (
     jsonb_doc_expression,
 )
 from cubedash.index import ExplorerIndex
-from cubedash.summary._schema import SPATIAL_REF_SYS
 
 _LOG = structlog.get_logger()
 
@@ -50,6 +46,9 @@ _WRS_PATH_ROW = [
     Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp",
     Path(__file__).parent.parent / "data" / "WRS2_ascending" / "WRS2_acsending.shp",
 ]
+
+PgDocField: TypeAlias = PgresDocField | PgisDocField
+RangeDocField: TypeAlias = PgresRangeDocField | PgisRangeDocField
 
 
 class UnsupportedWKTProductCRSError(NotImplementedError):
@@ -59,7 +58,9 @@ class UnsupportedWKTProductCRSError(NotImplementedError):
         self.reason = reason
 
 
-def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = None):
+def get_dataset_extent_alchemy_expression(
+    e_index: ExplorerIndex, md: MetadataType, default_crs: str = None
+):
     """
     Build an SQLAlchemy expression to get the extent for a dataset.
 
@@ -86,7 +87,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 # Otherwise construct a polygon from the computed bounds that ODC added on index.
                 else_=_bounds_polygon(doc, projection_offset),
             ),
-            get_dataset_srid_alchemy_expression(md, default_crs),
+            get_dataset_srid_alchemy_expression(e_index, md, default_crs),
         )
     else:
         valid_data_offset = projection_offset + ["valid_data"]
@@ -100,7 +101,7 @@ def get_dataset_extent_alchemy_expression(md: MetadataType, default_crs: str = N
                 # Otherwise construct a polygon from the four corner points.
                 else_=_bounds_polygon(doc, projection_offset),
             ),
-            get_dataset_srid_alchemy_expression(md, default_crs),
+            get_dataset_srid_alchemy_expression(e_index, md, default_crs),
             type_=Geometry,
         )
 
@@ -135,25 +136,28 @@ def _size_bytes_field(product: Product):
     )
 
 
-# can any of this be replaced with odc-geo logic?
-def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = None):
+def get_dataset_srid_alchemy_expression(
+    e_index: ExplorerIndex, md: MetadataType, default_crs: str = None
+):
     doc = jsonb_doc_expression(md)
 
     if "grid_spatial" not in md.definition["dataset"]:
         # Non-spatial product
         return None
 
-    projection_offset = md.definition["dataset"]["grid_spatial"]
+    doc_projection = doc[_projection_doc_offset(md)]
 
     if expects_eo3_metadata_type(md):
         spatial_ref = doc[["crs"]].astext
     else:
         # Most have a spatial_reference field we can use directly.
-        spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
+        # spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
+        spatial_ref = doc_projection["spatial_reference"].astext
 
     # When datasets have no CRS, optionally use this as default.
-    default_crs_expression = None
+    # default_crs_expression = None
     if default_crs:
+        # can this be replaced with odc-geo logic?
         if not default_crs.lower().startswith(
             "epsg:"
         ) and not default_crs.lower().startswith("esri:"):
@@ -168,87 +172,87 @@ def get_dataset_srid_alchemy_expression(md: MetadataType, default_crs: str = Non
                 )
             default_crs = inferred_crs
 
-        auth_name, auth_srid = default_crs.split(":")
-        # this logic may or may not need to be moved
-        default_crs_expression = (
-            select(SPATIAL_REF_SYS.c.srid)
-            .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
-            .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
-            .scalar_subquery()
-        )
+        # auth_name, auth_srid = default_crs.split(":")
+        # default_crs_expression = (
+        #     select(SPATIAL_REF_SYS.c.srid)
+        #     .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
+        #     .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
+        #     .scalar_subquery()
+        # )
 
-    expression = func.coalesce(
-        case(
-            (
-                # If matches shorthand code: eg. "epsg:1234"
-                spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
-                select(SPATIAL_REF_SYS.c.srid)
-                .where(
-                    func.lower(SPATIAL_REF_SYS.c.auth_name)
-                    == func.lower(func.split_part(spatial_ref, ":", 1))
-                )
-                .where(
-                    SPATIAL_REF_SYS.c.auth_srid
-                    == func.split_part(spatial_ref, ":", 2).cast(Integer)
-                )
-                .scalar_subquery(),
-            ),
-            else_=None,
-        ),
-        case(
-            (
-                # Plain WKT that ends in an authority code.
-                # Extract the authority name and code using regexp. Yuck!
-                # Eg: ".... AUTHORITY["EPSG","32756"]]"
-                spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
-                select(SPATIAL_REF_SYS.c.srid)
-                .where(
-                    func.lower(SPATIAL_REF_SYS.c.auth_name)
-                    == func.lower(
-                        func.substring(
-                            spatial_ref,
-                            r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
-                        )
-                    )
-                )
-                .where(
-                    SPATIAL_REF_SYS.c.auth_srid
-                    == func.substring(
-                        spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
-                    ).cast(Integer)
-                )
-                .scalar_subquery(),
-            ),
-            else_=None,
-        ),
-        # Some older datasets have datum/zone fields instead.
-        # The only remaining ones in DEA are 'GDA94'.
-        case(
-            (
-                doc[(projection_offset + ["datum"])].astext == "GDA94",
-                select(SPATIAL_REF_SYS.c.srid)
-                .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
-                .where(
-                    SPATIAL_REF_SYS.c.auth_srid
-                    == (
-                        "283"
-                        + func.abs(
-                            doc[(projection_offset + ["zone"])].astext.cast(Integer)
-                        )
-                    ).cast(Integer)
-                )
-                .scalar_subquery(),
-            ),
-            else_=None,
-        ),
-        default_crs_expression,
-        # TODO: Handle arbitrary WKT strings (?)
-        # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
-        #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
-        # "degree\\",0.0174532925199433]]'
-    )
+    # expression = func.coalesce(
+    #     case(
+    #         (
+    #             # If matches shorthand code: eg. "epsg:1234"
+    #             spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
+    #             select(SPATIAL_REF_SYS.c.srid)
+    #             .where(
+    #                 func.lower(SPATIAL_REF_SYS.c.auth_name)
+    #                 == func.lower(func.split_part(spatial_ref, ":", 1))
+    #             )
+    #             .where(
+    #                 SPATIAL_REF_SYS.c.auth_srid
+    #                 == func.split_part(spatial_ref, ":", 2).cast(Integer)
+    #             )
+    #             .scalar_subquery(),
+    #         ),
+    #         else_=None,
+    #     ),
+    #     case(
+    #         (
+    #             # Plain WKT that ends in an authority code.
+    #             # Extract the authority name and code using regexp. Yuck!
+    #             # Eg: ".... AUTHORITY["EPSG","32756"]]"
+    #             spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
+    #             select(SPATIAL_REF_SYS.c.srid)
+    #             .where(
+    #                 func.lower(SPATIAL_REF_SYS.c.auth_name)
+    #                 == func.lower(
+    #                     func.substring(
+    #                         spatial_ref,
+    #                         r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
+    #                     )
+    #                 )
+    #             )
+    #             .where(
+    #                 SPATIAL_REF_SYS.c.auth_srid
+    #                 == func.substring(
+    #                     spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
+    #                 ).cast(Integer)
+    #             )
+    #             .scalar_subquery(),
+    #         ),
+    #         else_=None,
+    #     ),
+    #     # Some older datasets have datum/zone fields instead.
+    #     # The only remaining ones in DEA are 'GDA94'.
+    #     case(
+    #         (
+    #             doc_projection["datum"].astext == "GDA94",
+    #             select(SPATIAL_REF_SYS.c.srid)
+    #             .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
+    #             .where(
+    #                 SPATIAL_REF_SYS.c.auth_srid
+    #                 == (
+    #                     "283"
+    #                     + func.abs(
+    #                         doc_projection["zone"].astext.cast(Integer)
+    #                     )
+    #                 ).cast(Integer)
+    #             )
+    #             .scalar_subquery(),
+    #         ),
+    #         else_=None,
+    #     ),
+    #     default_crs_expression,
+    #     # TODO: Handle arbitrary WKT strings (?)
+    #     # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
+    #     #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
+    #     # "degree\\",0.0174532925199433]]'
+    # )
     # print(as_sql(expression))
-    return expression
+    # return expression
+    return e_index.ds_srid_expression(spatial_ref, doc_projection, default_crs)
 
 
 def _gis_point(doc, doc_offset):
@@ -302,7 +306,9 @@ def refresh_spatial_extents(
     #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
     #        Maybe you can figure out a workaround, though?)
     # I don't understand this comment
-    column_values = {c.name: c for c in _select_dataset_extent_columns(product)}
+    column_values = {
+        c.name: c for c in _select_dataset_extent_columns(e_index, product)
+    }
     # only_where = [
     #     DATASET.c.dataset_type_ref
     #     == bindparam("product_ref", product.id, type_=SmallInteger),
@@ -353,7 +359,10 @@ def refresh_spatial_extents(
     # If we changed data...
     if changed:
         # And it's a non-spatial product...
-        if get_dataset_extent_alchemy_expression(product.metadata_type) is None:
+        if (
+            get_dataset_extent_alchemy_expression(e_index, product.metadata_type)
+            is None
+        ):
             # And it has WRS path/rows...
             if "sat_path" in product.metadata_type.dataset_fields:
                 # We can synthesize the polygons!
@@ -377,7 +386,9 @@ def refresh_spatial_extents(
     return changed
 
 
-def _select_dataset_extent_columns(product: Product) -> List[Label]:
+def _select_dataset_extent_columns(
+    e_index: ExplorerIndex, product: Product
+) -> List[Label]:
     """
     Get columns for all fields which go into the spatial table
     for this Product.
@@ -386,7 +397,7 @@ def _select_dataset_extent_columns(product: Product) -> List[Label]:
     # If this product has lat/lon fields, we can take spatial bounds.
 
     footprint_expression = get_dataset_extent_alchemy_expression(
-        md_type, default_crs=_default_crs(product)
+        e_index, md_type, default_crs=_default_crs(product)
     )
 
     # Some time-series-derived products have seemingly-rectangular but *huge* footprints
@@ -478,7 +489,9 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
     return func.coalesce(
-        creation_expression, md.dataset_fields.get("indexed_time").alchemy_expression
+        # might need to do casting conditionally
+        cast(creation_expression, TIMESTAMP(timezone=True)),
+        md.dataset_fields.get("indexed_time").alchemy_expression,
     )
 
 
@@ -862,29 +875,31 @@ def _region_code_field(product: Product):
 # the only problem is with the use of the DATASET schema...
 # would be able to replace with index.datasets.search_returning except that there's no way for us to specify the
 # alchemy expressions for the columns that don't exist in the core tables
-def get_sample_dataset(*product_names: str, index: Index = None) -> Iterable[Dict]:
-    with Datacube(index=index) as dc:
-        index = dc.index
-        for product_name in product_names:
-            product = index.products.get_by_name(product_name)
-            with index._active_connection() as conn:
-                res = conn.execute(
-                    select(
-                        DATASET.c.id,
-                        DATASET.c.dataset_type_ref,
-                        *_select_dataset_extent_columns(product),
-                    )
-                    .where(
-                        DATASET.c.dataset_type_ref
-                        == bindparam("product_ref", product.id, type_=SmallInteger)
-                    )
-                    .where(DATASET.c.archived.is_(None))
-                    .limit(1)
-                ).fetchone()
-                # at this point can we not select the values from DATASET_SPATIAL,
-                # or is there a reason we need them to be calculated?
-                if res:
-                    yield dict(res._mapping)
+def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[Dict]:
+    for product in products:
+        res = e_index.sample_dataset(
+            product.id, _select_dataset_extent_columns(e_index, product)
+        ).fetchone()
+        if res:
+            yield dict(res._mapping)
+        # with index._active_connection() as conn:
+        #     res = conn.execute(
+        #         select(
+        #             DATASET.c.id,
+        #             DATASET.c.dataset_type_ref,
+        #             *_select_dataset_extent_columns(product),
+        #         )
+        #         .where(
+        #             DATASET.c.dataset_type_ref
+        #             == bindparam("product_ref", product.id, type_=SmallInteger)
+        #         )
+        #         .where(DATASET.c.archived.is_(None))
+        #         .limit(1)
+        #     ).fetchone()
+        #     # at this point can we not select the values from DATASET_SPATIAL,
+        #     # or is there a reason we need them to be calculated?
+        #     if res:
+        #         yield dict(res._mapping)
 
 
 @functools.lru_cache
@@ -901,47 +916,56 @@ def _get_path_row_shapes():
 
 
 # see comment on get_sample_dataset
-def get_mapped_crses(*product_names: str, index: Index = None) -> Iterable[Dict]:
-    with Datacube(index=index) as dc:
-        index = dc.index
-        with index._active_connection() as conn:
-            for product_name in product_names:
-                product = index.products.get_by_name(product_name)
+def get_mapped_crses(products, e_index: ExplorerIndex) -> Iterable[Dict]:
+    for product in products:
+        res = e_index.mapped_crses(
+            product,
+            get_dataset_srid_alchemy_expression(e_index, product.metadata_type).label(
+                "crs"
+            ),
+        ).fetchone()
+        if res:
+            yield dict(res._mapping)
+    # with Datacube(index=index) as dc:
+    #     index = dc.index
+    #     with index._active_connection() as conn:
+    #         for product_name in product_names:
+    #             product = index.products.get_by_name(product_name)
 
-                # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
-                # pylint: disable=singleton-comparison
-                res = conn.execute(
-                    select(
-                        literal(product.name).label("product"),
-                        get_dataset_srid_alchemy_expression(
-                            # unfortunately, I don't think this can be passed to ds_search
-                            product.metadata_type
-                        ).label("crs"),
-                    )
-                    .where(DATASET.c.dataset_type_ref == product.id)
-                    .where(DATASET.c.archived.is_(None))
-                    .limit(1)
-                ).fetchone()
-                if res:
-                    yield dict(res._mapping)
+    #             # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
+    #             # pylint: disable=singleton-comparison
+    #             res = conn.execute(
+    #                 select(
+    #                     literal(product.name).label("product"),
+    #                     get_dataset_srid_alchemy_expression(
+    #                         # unfortunately, I don't think this can be passed to ds_search
+    #                         product.metadata_type
+    #                     ).label("crs"),
+    #                 )
+    #                 .where(DATASET.c.dataset_type_ref == product.id)
+    #                 .where(DATASET.c.archived.is_(None))
+    #                 .limit(1)
+    #             ).fetchone()
+    #             if res:
+    #                 yield dict(res._mapping)
 
 
-if __name__ == "__main__":
-    print(
-        _as_json(
-            list(
-                get_mapped_crses(
-                    *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
-                )
-            )
-        )
-    )
-    print(
-        _as_json(
-            list(
-                get_sample_dataset(
-                    *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
-                )
-            )
-        )
-    )
+# if __name__ == "__main__":
+#     print(
+#         _as_json(
+#             list(
+#                 get_mapped_crses(
+#                     *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
+#                 )
+#             )
+#         )
+#     )
+#     print(
+#         _as_json(
+#             list(
+#                 get_sample_dataset(
+#                     *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
+#                 )
+#             )
+#         )
+#     )

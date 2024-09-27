@@ -11,7 +11,6 @@ from flask.testing import FlaskClient
 from structlog import DropEvent
 
 from cubedash import _model, create_app, generate, logs
-from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
 from cubedash.warmup import find_examples_of_all_public_urls
@@ -33,7 +32,7 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 @pytest.fixture()
 def summary_store(odc_test_db: Datacube) -> SummaryStore:
     store = SummaryStore.create(
-        ExplorerIndex(odc_test_db.index), grouping_time_zone="Australia/Darwin"
+        odc_test_db.index, grouping_time_zone="Australia/Darwin"
     )
     store.drop_all()
     odc_test_db.close()
@@ -54,9 +53,10 @@ def _init_logs(pytestconfig):
 
 
 @pytest.fixture()
-def clirunner():
+def clirunner(env_name: str):
     def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
         runner = CliRunner()
+        opts += ("--env", env_name)
         result = runner.invoke(cli_method, opts, catch_exceptions=catch_exceptions)
         if expect_success:
             assert (
@@ -94,7 +94,6 @@ def all_urls(summary_store: SummaryStore):
 @pytest.fixture()
 def empty_client(summary_store: SummaryStore) -> FlaskClient:
     _model.STORE = summary_store
-    _model.INDEX = summary_store.e_index
     app = create_app(
         {
             "TESTING": True,

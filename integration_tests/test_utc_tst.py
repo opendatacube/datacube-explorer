@@ -13,7 +13,6 @@ from dateutil import tz
 from flask.testing import FlaskClient
 
 from cubedash._utils import center_time_from_metadata, default_utc
-from cubedash.index.postgres._api import ExplorerIndex
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import check_dataset_count, get_html
 
@@ -87,14 +86,12 @@ def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_c
     res: Result = run_generate("ls5_fc_albers", grouping_time_zone="America/Chicago")
     assert "2010" in res.output
 
-    store = SummaryStore.create(
-        ExplorerIndex(odc_test_db.index), grouping_time_zone="America/Chicago"
-    )
+    store = SummaryStore.create(odc_test_db.index, grouping_time_zone="America/Chicago")
 
     # simulate search pages
     datasets = sorted(
-        store.e_index.ds_search(
-            {
+        store.index.datasets.search(
+            **{
                 "product": "ls5_fc_albers",
                 "time": Range(
                     begin=datetime(
@@ -113,8 +110,8 @@ def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_c
 
     # search pages
     datasets = sorted(
-        store.e_index.ds_search(
-            {
+        store.index.datasets.search(
+            **{
                 "product": "ls5_fc_albers",
                 "time": Range(
                     begin=datetime(
@@ -142,7 +139,7 @@ def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_c
 
 # Unit tests
 def test_dataset_day_link(summary_store):
-    ds = summary_store.e_index.get_ds("5da416a9-faed-4600-880d-033d0b0f7b85")
+    ds = summary_store.index.datasets.get("5da416a9-faed-4600-880d-033d0b0f7b85")
     t = center_time_from_metadata(ds)
     t = default_utc(t).astimezone(pytz.timezone("Australia/Darwin"))
     assert t.year == 2011

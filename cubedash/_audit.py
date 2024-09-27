@@ -47,7 +47,7 @@ def product_timings() -> Iterable[ProductTiming]:
         day = middle_period.replace(hour=0, minute=0, second=0)
 
         start = time.time()
-        dataset_count = _model.INDEX.index.datasets.count(
+        dataset_count = store.index.datasets.count(
             product=product_name, time=Range(day, day + timedelta(days=1))
         )
         end = time.time()

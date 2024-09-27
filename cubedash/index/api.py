@@ -27,12 +27,6 @@ class ExplorerAbstractIndex(ABC):
         # pylint: disable=protected-access
         return self.index.datasets._make(row, full_info=True)
 
-    def get_ds(self, dataset_id: UUID, include_sources: bool = False):
-        return self.index.datasets.get(dataset_id, include_sources=include_sources)
-
-    def ds_search(self, query, limit=None):
-        return self.index.datasets.search(**query, limit=limit)
-
     def ds_search_returning(
         self,
         fields: Iterable[str] | None = None,
@@ -40,18 +34,10 @@ class ExplorerAbstractIndex(ABC):
         order_by=None,
         args={},
     ):
+        # keeping since it's used in _extents without direct access to index but perhaps should remove
         return self.index.datasets.search_returning(
             field_names=fields, limit=limit, order_by=order_by, **args
         )
-
-    def get_all_products(self):
-        return self.index.products.get_all()
-
-    def get_all_metadata_types(self):
-        return self.index.metadata_types.get_all()
-
-    def product_most_recent_change(self, product_name: str):
-        return self.index.products.most_recent_change(product_name)
 
     @abstractmethod
     def ds_added_expr(self): ...
@@ -191,3 +177,12 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def region_counts(self, where_clause): ...
+
+    @abstractmethod
+    def ds_srid_expression(self, spatial_ref, projection, default_crs: str = None): ...
+
+    @abstractmethod
+    def sample_dataset(self, product_id: int, columns): ...
+
+    @abstractmethod
+    def mapped_crses(self, product: Product, srid_expression): ...

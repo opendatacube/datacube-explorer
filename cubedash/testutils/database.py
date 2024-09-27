@@ -9,6 +9,8 @@ import psycopg2
 import psycopg2.extensions
 import pytest
 from datacube import Datacube
+from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
 from datacube.index.hl import Doc2Dataset
@@ -32,6 +34,7 @@ def postgresql_server():
 
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
+    # I think this may be copypasta from odc-tools
     if Path("/.dockerenv").exists() and (
         "ODC_DEFAULT_DB_URL" in os.environ or "DB_DATABASE" in os.environ
     ):
@@ -98,7 +101,9 @@ def odc_db(postgresql_server, tmp_path_factory, request):
             tmp_path_factory.mktemp("odc") / "test_datacube.conf"
         )
         config = configparser.ConfigParser()
-        config["default"] = postgresql_server
+        config["datacube"] = postgresql_server
+        postgresql_server["index_driver"] = "postgis"
+        config["experimental"] = postgresql_server
         with open(temp_datacube_config_file, "w", encoding="utf8") as fout:
             config.write(fout)
         # Use pytest.MonkeyPatch instead of the monkeypatch fixture
@@ -113,15 +118,26 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         mp.undo()
 
 
+@pytest.fixture(scope="module", params=["datacube", "experimental"])
+def env_name(request) -> str:
+    return request.param
+
+
 @pytest.fixture(scope="module")
-def odc_test_db(odc_db, request):
+def cfg_env(odc_db, env_name) -> ODCEnvironment:
+    """Provides a :class:`ODCEnvironment` configured with suitable config file paths."""
+    return ODCConfig()[env_name]
+
+
+@pytest.fixture(scope="module")
+def odc_test_db(cfg_env):
     """
     Provide a temporary PostgreSQL server initialised by ODC, usable as
     the default ODC DB by setting environment variables.
     :return: Datacube instance
     """
 
-    index = index_connect(validate_connection=False)
+    index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
 
     dc = Datacube(index=index)
@@ -131,25 +147,51 @@ def odc_test_db(odc_db, request):
 
     # with index._active_connection() as conn:
     with index._db._engine.begin() as conn:
-        for table in [
-            "agdc.dataset_location",
-            "agdc.dataset_source",
-            "agdc.dataset",
-            "agdc.dataset_type",
-            "agdc.metadata_type",
-        ]:
-            conn.execute(text(f"alter table {table} set unlogged"))
+        if index.name == "pg_index":
+            for table in [
+                "agdc.dataset_location",
+                "agdc.dataset_source",
+                "agdc.dataset",
+                "agdc.dataset_type",
+                "agdc.metadata_type",
+            ]:
+                conn.execute(text(f"alter table {table} set unlogged"))
 
-        yield dc
+            yield dc
 
-        dc.close()
+            dc.close()
 
-        # This actually drops the schema, not the DB
-        pgres_core.drop_db(conn)  # pylint:disable=protected-access
+            # This actually drops the schema, not the DB
+            pgres_core.drop_db(conn)  # pylint:disable=protected-access
 
-        # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-        # and attempts to recreate them.
-        _remove_postgres_dynamic_indexes()
+            # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+            # and attempts to recreate them.
+            _remove_postgres_dynamic_indexes()
+        else:
+            for table in [
+                "odc.location",
+                "odc.dataset_lineage",
+                "odc.dataset_search_string",
+                "odc.dataset_search_num",
+                "odc.dataset_search_datetime",
+                "odc.spatial_indicies",
+                "odc.spatial_4326",
+                "odc.dataset",
+                "odc.product",
+                "odc.metadata_type",
+            ]:
+                conn.execute(text(f"alter table {table} set unlogged"))
+            yield dc
+
+            dc.close()
+
+            # This actually drops the schema, not the DB
+            pgis_core.drop_db(conn)  # pylint:disable=protected-access
+
+            # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+            # and attempts to recreate them.
+            # is removing postgis indexes unnecessary? this function is all commented out in core
+            # _remove_postgis_dynamic_indexes()
 
 
 def _remove_postgres_dynamic_indexes():

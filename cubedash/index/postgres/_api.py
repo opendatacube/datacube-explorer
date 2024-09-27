@@ -23,10 +23,12 @@ from datacube.model import Dataset, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
+    Integer,
     SmallInteger,
     String,
     and_,
     bindparam,
+    case,
     column,
     exists,
     func,
@@ -39,16 +41,22 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import TSTZRANGE, insert
 from sqlalchemy.sql import ColumnElement
 
-import cubedash.summary._schema as _schema  # this would be the postgres version of the schema
+import cubedash.summary._schema as _schema
 from cubedash._utils import datetime_expression
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
-from cubedash.summary._schema import (
+
+from ._schema import (
     DATASET_SPATIAL,
     FOOTPRINT_SRID_EXPRESSION,
     PRODUCT,
     REGION,
     SPATIAL_QUALITY_STATS,
+    SPATIAL_REF_SYS,
     TIME_OVERVIEW,
+    init_elements,
+)
+from ._schema import (
+    get_srid_name as srid_name,
 )
 
 
@@ -879,7 +887,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def init_schema(self, grouping_epsg_code: int):
         # with self.index._active_connection() as conn:
         with self.engine.begin() as conn:
-            return _schema.init_elements(conn, grouping_epsg_code)
+            return init_elements(conn, grouping_epsg_code)
 
     def refresh_stats(self, concurrently=False):
         """
@@ -896,7 +904,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """
         with self.engine.begin() as conn:
-            return _schema.get_srid_name(conn, srid)
+            return srid_name(conn, srid)
 
     def summary_where_clause(
         self, product_name: str, begin_time: datetime, end_time: datetime
@@ -979,3 +987,129 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(where_clause)
                 .group_by("region_code")
             )
+
+    def ds_srid_expression(self, spatial_ref, projection, default_crs: str = None):
+        default_crs_expression = None
+        if default_crs:
+            auth_name, auth_srid = default_crs.split(":")
+            default_crs_expression = (
+                select(SPATIAL_REF_SYS.c.srid)
+                .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
+                .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
+                .scalar_subquery()
+            )
+            # # alt
+            # default_crs_expression = (
+            #     select(SPATIAL_REF_SYS.c.srid)
+            #     .where(
+            #         func.concat(
+            #             func.lower(SPATIAL_REF_SYS.c.auth_name),
+            #             ":",
+            #             SPATIAL_REF_SYS.c.auth_srid
+            #         ) == default_crs.lower()
+            #     )
+            #     .scalar_subquery()
+            # )
+        return func.coalesce(
+            case(
+                (
+                    # If matches shorthand code: eg. "epsg:1234"
+                    spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
+                    select(SPATIAL_REF_SYS.c.srid)
+                    .where(
+                        func.lower(SPATIAL_REF_SYS.c.auth_name)
+                        == func.lower(func.split_part(spatial_ref, ":", 1))
+                    )
+                    .where(
+                        SPATIAL_REF_SYS.c.auth_srid
+                        == func.split_part(spatial_ref, ":", 2).cast(Integer)
+                    )
+                    .scalar_subquery(),
+                ),
+                else_=None,
+            ),
+            case(
+                (
+                    # Plain WKT that ends in an authority code.
+                    # Extract the authority name and code using regexp. Yuck!
+                    # Eg: ".... AUTHORITY["EPSG","32756"]]"
+                    spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
+                    select(SPATIAL_REF_SYS.c.srid)
+                    .where(
+                        func.lower(SPATIAL_REF_SYS.c.auth_name)
+                        == func.lower(
+                            func.substring(
+                                spatial_ref,
+                                r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
+                            )
+                        )
+                    )
+                    .where(
+                        SPATIAL_REF_SYS.c.auth_srid
+                        == func.substring(
+                            spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
+                        ).cast(Integer)
+                    )
+                    .scalar_subquery(),
+                ),
+                else_=None,
+            ),
+            # Some older datasets have datum/zone fields instead.
+            # The only remaining ones in DEA are 'GDA94'.
+            case(
+                (
+                    projection["datum"].astext == "GDA94",
+                    select(SPATIAL_REF_SYS.c.srid)
+                    .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
+                    .where(
+                        SPATIAL_REF_SYS.c.auth_srid
+                        == (
+                            "283" + func.abs(projection["zone"].astext.cast(Integer))
+                        ).cast(Integer)
+                    )
+                    .scalar_subquery(),
+                ),
+                else_=None,
+            ),
+            default_crs_expression,
+            # TODO: Handle arbitrary WKT strings (?)
+            # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
+            #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
+            # "degree\\",0.0174532925199433]]'
+        )
+
+    def sample_dataset(self, product_id: int, columns):
+        with self.index._active_connection() as conn:
+            res = conn.execute(
+                select(
+                    ODC_DATASET.c.id,
+                    ODC_DATASET.c.dataset_type_ref.label("product_ref"),
+                    *columns,
+                )
+                .where(
+                    and_(
+                        ODC_DATASET.c.dataset_type_ref
+                        == bindparam("product_ref", product_id, type_=SmallInteger),
+                        ODC_DATASET.c.archived.is_(None),
+                    )
+                )
+                .limit(1)
+            )
+            # at this point can we not select the values from DATASET_SPATIAL,
+            # or is there a reason we need them to be calculated?
+            return res
+
+    def mapped_crses(self, product, srid_expression):
+        with self.index._active_connection() as conn:
+            # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
+            # pylint: disable=singleton-comparison
+            res = conn.execute(
+                select(
+                    literal(product.name).label("product"),
+                    srid_expression,
+                )
+                .where(ODC_DATASET.c.dataset_type_ref == product.id)
+                .where(ODC_DATASET.c.archived.is_(None))
+                .limit(1)
+            )
+            return res

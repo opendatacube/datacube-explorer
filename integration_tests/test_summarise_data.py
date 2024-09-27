@@ -220,6 +220,7 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     ), "Expected dataset to be added again after the product changed back"
 
 
+# TODO: change
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
     with index._db._engine.begin() as conn:
         rows_changed = conn.execute(

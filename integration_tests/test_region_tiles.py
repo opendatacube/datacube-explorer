@@ -8,7 +8,9 @@ from flask.testing import FlaskClient
 
 from integration_tests.asserts import check_dataset_count, get_html
 
-METADATA_TYPES = ["metadata/eo3_metadata.yaml"]
+METADATA_TYPES = [
+    "metadata/eo3_metadata.yaml"
+]  # why isn't eo_metadata.yaml included as well, given the nbart products use it??
 PRODUCTS = [
     "products/ga_ls_wo_fq_nov_mar_3.odc-product.yaml",
     "products/ls5_nbart_tmad_annual.odc-product.yaml",

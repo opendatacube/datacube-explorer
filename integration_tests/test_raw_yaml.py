@@ -100,6 +100,7 @@ def dataset_yaml_from_raw(client: FlaskClient):
     return f.name
 
 
+# Why are we testing core scripts here??
 def test_update_type(type_yaml_from_raw, clirunner):
     result = clirunner(
         datacube.scripts.cli_app.cli,
