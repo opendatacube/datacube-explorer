@@ -8,14 +8,11 @@ import shapely.ops
 from cachetools.func import lru_cache
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import PgDocField
-from datacube.drivers.postgres._schema import (
+
+from datacube.drivers.postgres._schema import (  # isort: skip
     DATASET as ODC_DATASET,
-)
-from datacube.drivers.postgres._schema import (
     DATASET_LOCATION,
     DATASET_SOURCE,
-)
-from datacube.drivers.postgres._schema import (
     PRODUCT as ODC_PRODUCT,
 )
 from datacube.index import Index
@@ -65,9 +62,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     def __init__(self, index: Index):
         self.index = index
-        self.engine = (
-            index._db._engine
-        )  # PostgresDb.from_config(index.environment)._engine
+        # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+        # We could create our own from config, but there's no api for getting the ODC config for the index either.
+        # could use: PostgresDb.from_config(index.environment, validate_connection=False)._engine
+        # but either approach involves accessing a protected attribute - which is better?
+        self.engine = index._db._engine
         self.db_api = PostgresDbAPI
 
     def get_mutable_dataset_search_fields(
@@ -134,12 +133,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
         }, remaining_records
 
     # Same as PostgresDbApi.get_derived_datasets but with limit
-    # not implemented in pgis- what has it been replaced by? presumably something with lineage
-    # load_lineage_relations can be used to get derived, but that doesn't return a Dataset, would need an extra step
-    # of searching by id. Also doesn't permit limit, although given it's only returning UUIDs, limit may not need
-    # to be implemented as part of the query.
-    # get_dataset_sources could similarly be replaced with load_lineage_relations
-    # Neither can be replaced by Postgres API, however
     def get_datasets_derived(
         self, dataset_id: UUID, limit=None
     ) -> tuple[list[Dataset], int]:
@@ -595,7 +588,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                         DATASET_LOCATION.c.uri_scheme
                         + ":"
                         + DATASET_LOCATION.c.uri_body
-                    ).label("uris"),  # Postgis.DatasetLocation has a 'uri' field direct
+                    ).label("uris"),
                 )
                 .select_from(DATASET_LOCATION.join(ODC_DATASET))
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
@@ -692,7 +685,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     def delete_datasets(
         self, product_id: int, after_date: datetime = None, full: bool = False
-    ):
+    ) -> int:
         with self.index._active_connection() as conn:
             # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
             if full:
@@ -725,8 +718,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if after_date is not None:
                 archived_datasets = archived_datasets.where(
                     or_(
-                        ODC_DATASET.c.added
-                        > after_date,  # should eventually be able to remove this
+                        ODC_DATASET.c.added > after_date,
                         column("updated") > after_date,
                     )
                 )
@@ -768,7 +760,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             #     )
             # ).rowcount
 
-    def upsert_datasets(self, product_id, column_values, after_date):
+    def upsert_datasets(self, product_id, column_values, after_date) -> int:
         column_values["id"] = ODC_DATASET.c.id
         column_values["dataset_type_ref"] = ODC_DATASET.c.dataset_type_ref
         only_where = [
@@ -779,8 +771,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         if after_date is not None:
             only_where.append(
                 or_(
-                    ODC_DATASET.c.added
-                    > after_date,  # should eventually be able to remove this
+                    ODC_DATASET.c.added > after_date,
                     column("updated") > after_date,
                 )
             )
@@ -788,6 +779,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             stmt = insert(DATASET_SPATIAL).from_select(
                 list(column_values.keys()),
                 select(*column_values.values()).where(and_(*only_where)),
+                # original version includes an order_by... is it needed?
             )
             return conn.execute(
                 stmt.on_conflict_do_update(
@@ -874,7 +866,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.engine.begin() as conn:
             return _schema.has_schema(conn)
 
-    def schema_compatible_info(self, for_writing_operations_too=False):
+    def schema_compatible_info(
+        self, for_writing_operations_too=False
+    ) -> tuple[str, bool]:
         """
         Schema compatibility information
         postgis version, if schema has latest changes (optional: and has updated column)
@@ -885,7 +879,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     def init_schema(self, grouping_epsg_code: int):
-        # with self.index._active_connection() as conn:
         with self.engine.begin() as conn:
             return init_elements(conn, grouping_epsg_code)
 
@@ -899,7 +892,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             _schema.refresh_supporting_views(conn, concurrently=concurrently)
 
     @lru_cache()
-    def get_srid_name(self, srid: int):
+    def get_srid_name(self, srid: int) -> str | None:
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
         """

@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional, Set, Tuple, Union
 import shapely
 import shapely.ops
 import structlog
-from datacube.model import Dataset, Range
+from datacube.model import Range
 from odc.geo.geom import Geometry
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
@@ -278,11 +278,6 @@ class TimePeriodOverview:
         return int(epsg.split(":")[1])
 
 
-def _has_shape(datasets: Tuple[Dataset, Tuple[BaseGeometry, bool]]) -> bool:
-    dataset, (shape, was_valid) = datasets
-    return shape is not None
-
-
 def _erase_elements_from(items: List, start_i: int):
     """
     Erase from the given 'i' onward
@@ -310,6 +305,7 @@ def _create_unified_footprint(
     if not with_valid_geometries:
         return None
 
+    # TODO: transition away from bare shapely
     try:
         geometry_union = shapely.ops.unary_union(
             [p.footprint_geometry for p in with_valid_geometries]

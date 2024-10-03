@@ -15,7 +15,6 @@ from dateutil import tz
 from dateutil.tz import tzutc
 from sqlalchemy import text
 
-from cubedash import _utils
 from cubedash.summary import SummaryStore
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
@@ -220,12 +219,17 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     ), "Expected dataset to be added again after the product changed back"
 
 
-# TODO: change
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
+    if index.name == "pg_index":
+        table_name = "agdc.dataset"
+        ref_column = "dataset_type_ref"
+    else:
+        table_name = "odc.dataset"
+        ref_column = "product_ref"
     with index._db._engine.begin() as conn:
         rows_changed = conn.execute(
             text(
-                f"update {_utils.ODC_DATASET.fullname} set dataset_type_ref=:product_id where id=:dataset_id"
+                f"update {table_name} set {ref_column}=:product_id where id=:dataset_id"
             ),
             {
                 "product_id": other_product.id,

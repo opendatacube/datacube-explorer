@@ -145,7 +145,6 @@ def odc_test_db(cfg_env):
     # Disable PostgreSQL Table logging. We don't care about storage reliability
     # during testing, and need any performance gains we can get.
 
-    # with index._active_connection() as conn:
     with index._db._engine.begin() as conn:
         if index.name == "pg_index":
             for table in [
@@ -185,13 +184,9 @@ def odc_test_db(cfg_env):
 
             dc.close()
 
-            # This actually drops the schema, not the DB
             pgis_core.drop_db(conn)  # pylint:disable=protected-access
 
-            # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
-            # and attempts to recreate them.
-            # is removing postgis indexes unnecessary? this function is all commented out in core
-            # _remove_postgis_dynamic_indexes()
+            _remove_postgis_dynamic_indexes()
 
 
 def _remove_postgres_dynamic_indexes():
@@ -203,6 +198,16 @@ def _remove_postgres_dynamic_indexes():
         table.indexes.intersection_update(
             [i for i in table.indexes if not i.name.startswith("dix_")]
         )
+
+
+def _remove_postgis_dynamic_indexes():
+    """
+    Clear any dynamically created postgis indexes from the schema.
+    """
+    # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+    # for table in pgis_core.METADATA.tables.values():
+    #    table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    # Dynamic indexes disabled.
 
 
 @pytest.fixture(scope="module")

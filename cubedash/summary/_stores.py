@@ -976,15 +976,6 @@ class SummaryStore:
             except KeyError:
                 continue
         # manually add fields that aren't included in the metadata search fields
-        # field_exprs["collection"] = (
-        #     select([ODC_DATASET_TYPE.c.name])
-        #     .where(ODC_DATASET_TYPE.c.id == DATASET_SPATIAL.c.dataset_type_ref)
-        #     .scalar_subquery()
-        # )
-        # field_exprs["datetime"] = DATASET_SPATIAL.c.center_time
-        # geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
-        # field_exprs["geometry"] = geom
-        # field_exprs["bbox"] = func.Box2D(geom).cast(String)
         field_exprs.update(self.e_index.dataset_spatial_field_exprs())
         return field_exprs
 
@@ -1120,33 +1111,18 @@ class SummaryStore:
 
         Returned results are always sorted by (center_time, id)
         """
-        # geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
         field_exprs = self._get_field_exprs(product_names)
 
         columns = [
-            field_exprs["geometry"].label("geometry"),  # geom.label("geometry"),
-            field_exprs["bbox"].label(
-                "bbox"
-            ),  # func.Box2D(geom).cast(String).label("bbox"),
+            field_exprs["geometry"].label("geometry"),
+            field_exprs["bbox"].label("bbox"),
             # TODO: dataset label?
             field_exprs["region_code"].label("region_code"),
             field_exprs["creation_time"],
-            field_exprs["datetime"],  # DATASET_SPATIAL.c.center_time,
-            # added
+            field_exprs["datetime"],
             field_exprs["id"].label("id"),
-            # field_exprs["product_ref"],
             field_exprs["collection"].label("product_name"),
         ]
-
-        # # If fetching the whole dataset, we need to join the ODC dataset table.
-        # if full_dataset:
-        #     query: Select = self.e_index.spatial_select_query(*columns, *_utils.DATASET_SELECT_FIELDS, full=True)
-        #       # do we actually need all of the DATASET_SELECT_FIELDS?
-        # # Otherwise query purely from the spatial table.
-        # else:
-        #     query: Select = self.e_index.spatial_select_query(
-        #         *columns, field_exprs["id_"], field_exprs["product_ref"]
-        #     ) # should this still operate on the joined table to prevent misleading queries? or add an extra check
 
         query: Select = self.e_index.spatial_select_query(columns, full=full_dataset)
 
@@ -1160,8 +1136,6 @@ class SummaryStore:
             intersects=intersects,
             dataset_ids=dataset_ids,
         )
-
-        # field_exprs = self._get_field_exprs(product_names)
 
         if filter_cql:
             query = self._add_filter_to_query(
@@ -1191,7 +1165,7 @@ class SummaryStore:
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
-                product_name=r.product_name,  # self._product_by_id(r.product_ref).name,
+                product_name=r.product_name,
                 geometry=(
                     _get_shape(r.geometry, self.e_index.get_srid_name(r.geometry.srid))
                     if r.geometry is not None
@@ -1200,10 +1174,7 @@ class SummaryStore:
                 region_code=r.region_code,
                 creation_time=r.creation_time,
                 center_time=r.center_time,
-                odc_dataset=(
-                    # self.e_index.make_dataset(r)
-                    self.index.datasets.get(r.id) if full_dataset else None
-                ),
+                odc_dataset=(self.index.datasets.get(r.id) if full_dataset else None),
             )
 
     def _recalculate_period(
@@ -1456,14 +1427,6 @@ class SummaryStore:
         self.e_index.update_product_refresh_timestamp(product.id_, refresh_timestamp)
         self._product.cache_clear()
 
-    # @lru_cache()
-    # def _get_srid_name(self, srid: int):
-    #     """
-    #     Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
-    #     """
-    #     with self.index._active_connection() as conn:
-    #         return get_srid_name(conn, srid)
-
     def list_complete_products(self) -> List[str]:
         """
         List all names of products that have summaries available.
@@ -1556,31 +1519,6 @@ class SummaryStore:
             to_shape(footprint) if footprint is not None else None,
             row.region_code,
         )
-
-
-# def _refresh_data(please_refresh: Set[PleaseRefresh], store: SummaryStore):
-#     """
-#     Refresh product information after a schema update, plus the given kind of data.
-#     """
-#     recompute_dataset_extents = PleaseRefresh.DATASET_EXTENTS in please_refresh
-#     refresh_products = recompute_dataset_extents or (
-#         PleaseRefresh.PRODUCTS in please_refresh
-#     ) # doesn't this ultimately amount to the set not being empty?
-
-#     if refresh_products:
-#         for product in store.all_products():
-#             name = product.name
-#             # Skip product if it's never been summarised at all.
-#             if store.get_product_summary(name) is None:
-#                 continue
-
-#             if recompute_dataset_extents: # this check seems unnecessary
-#                 _LOG.info("data.refreshing_extents", product=name)
-#             store.refresh_product_extent(
-#                 name,
-#                 scan_for_deleted=recompute_dataset_extents,
-#             )
-#     _LOG.info("data.refreshing_extents.complete")
 
 
 def _safe_read_date(d):
@@ -1744,29 +1682,6 @@ def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple
         key=lambda t: (null_sort_key, t[1]) if t[0] is None else t,
     )
     return tuple(k for k, v in items), tuple(v for k, v in items)
-
-
-# these 2 methods don't appear to be used anywhere
-# def _datasets_to_feature(datasets: Iterable[Dataset]):
-#     return {
-#         "type": "FeatureCollection",
-#         "features": [_dataset_to_feature(ds_valid) for ds_valid in datasets],
-#     }
-
-
-# def _dataset_to_feature(dataset: Dataset):
-#     shape, valid_extent = _utils.dataset_shape(dataset)
-#     return {
-#         "type": "Feature",
-#         "geometry": shape.__geo_interface__,
-#         "properties": {
-#             "id": str(dataset.id),
-#             "label": _utils.dataset_label(dataset),
-#             "valid_extent": valid_extent,
-#             "start_time": dataset.time.begin.isoformat(),
-#             "creation_time": _utils.dataset_created(dataset),
-#         },
-#     }
 
 
 _BOX2D_PATTERN = re.compile(

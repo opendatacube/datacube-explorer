@@ -29,9 +29,6 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql.elements import ClauseElement, Label
 from sqlalchemy.types import TIMESTAMP
 
-# from cubedash._utils import (
-#     ODC_DATASET as DATASET,
-# )
 from cubedash._utils import (
     datetime_expression,
     expects_eo3_metadata_type,
@@ -172,86 +169,6 @@ def get_dataset_srid_alchemy_expression(
                 )
             default_crs = inferred_crs
 
-        # auth_name, auth_srid = default_crs.split(":")
-        # default_crs_expression = (
-        #     select(SPATIAL_REF_SYS.c.srid)
-        #     .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == auth_name.lower())
-        #     .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
-        #     .scalar_subquery()
-        # )
-
-    # expression = func.coalesce(
-    #     case(
-    #         (
-    #             # If matches shorthand code: eg. "epsg:1234"
-    #             spatial_ref.op("~")(r"^[A-Za-z0-9]+:[0-9]+$"),
-    #             select(SPATIAL_REF_SYS.c.srid)
-    #             .where(
-    #                 func.lower(SPATIAL_REF_SYS.c.auth_name)
-    #                 == func.lower(func.split_part(spatial_ref, ":", 1))
-    #             )
-    #             .where(
-    #                 SPATIAL_REF_SYS.c.auth_srid
-    #                 == func.split_part(spatial_ref, ":", 2).cast(Integer)
-    #             )
-    #             .scalar_subquery(),
-    #         ),
-    #         else_=None,
-    #     ),
-    #     case(
-    #         (
-    #             # Plain WKT that ends in an authority code.
-    #             # Extract the authority name and code using regexp. Yuck!
-    #             # Eg: ".... AUTHORITY["EPSG","32756"]]"
-    #             spatial_ref.op("~")(r'AUTHORITY\["[a-zA-Z0-9]+", *"[0-9]+"\]\]$'),
-    #             select(SPATIAL_REF_SYS.c.srid)
-    #             .where(
-    #                 func.lower(SPATIAL_REF_SYS.c.auth_name)
-    #                 == func.lower(
-    #                     func.substring(
-    #                         spatial_ref,
-    #                         r'AUTHORITY\["([a-zA-Z0-9]+)", *"[0-9]+"\]\]$',
-    #                     )
-    #                 )
-    #             )
-    #             .where(
-    #                 SPATIAL_REF_SYS.c.auth_srid
-    #                 == func.substring(
-    #                     spatial_ref, r'AUTHORITY\["[a-zA-Z0-9]+", *"([0-9]+)"\]\]$'
-    #                 ).cast(Integer)
-    #             )
-    #             .scalar_subquery(),
-    #         ),
-    #         else_=None,
-    #     ),
-    #     # Some older datasets have datum/zone fields instead.
-    #     # The only remaining ones in DEA are 'GDA94'.
-    #     case(
-    #         (
-    #             doc_projection["datum"].astext == "GDA94",
-    #             select(SPATIAL_REF_SYS.c.srid)
-    #             .where(func.lower(SPATIAL_REF_SYS.c.auth_name) == "epsg")
-    #             .where(
-    #                 SPATIAL_REF_SYS.c.auth_srid
-    #                 == (
-    #                     "283"
-    #                     + func.abs(
-    #                         doc_projection["zone"].astext.cast(Integer)
-    #                     )
-    #                 ).cast(Integer)
-    #             )
-    #             .scalar_subquery(),
-    #         ),
-    #         else_=None,
-    #     ),
-    #     default_crs_expression,
-    #     # TODO: Handle arbitrary WKT strings (?)
-    #     # 'GEOGCS[\\"GEOCENTRIC DATUM of AUSTRALIA\\",DATUM[\\"GDA94\\",SPHEROID[
-    #     #    \\"GRS80\\",6378137,298.257222101]],PRIMEM[\\"Greenwich\\",0],UNIT[\\
-    #     # "degree\\",0.0174532925199433]]'
-    # )
-    # print(as_sql(expression))
-    # return expression
     return e_index.ds_srid_expression(spatial_ref, doc_projection, default_crs)
 
 
@@ -305,18 +222,11 @@ def refresh_spatial_extents(
     # (Note: why don't we do this in one upsert? Because we get our sqlalchemy expressions
     #        through ODC's APIs and can't choose alternative table aliases to make sub-queries.
     #        Maybe you can figure out a workaround, though?)
-    # I don't understand this comment
+    # >> presumably fixed in the upsert_datasets function?
     column_values = {
         c.name: c for c in _select_dataset_extent_columns(e_index, product)
     }
-    # only_where = [
-    #     DATASET.c.dataset_type_ref
-    #     == bindparam("product_ref", product.id, type_=SmallInteger),
-    #     DATASET.c.archived.is_(None),
-    # ]
-    # if assume_after_date is not None:
-    #     only_where.append(DATASET.c.updated > assume_after_date)
-    # else:
+
     if assume_after_date is None:
         log.warning("spatial_update.recreating_everything")
 
@@ -326,33 +236,7 @@ def refresh_spatial_extents(
         product_name=product.name,
         after_date=assume_after_date,
     )
-    # select extent column values from active datasets of the product,
-    # and update the corresponding entry in dataset_spatial
-    # values = select(*columns).where(only_where)
-    # changed += conn.execute(
-    #     DATASET_SPATIAL.update()
-    #     .values(**column_values)
-    #     .where(DATASET_SPATIAL.c.id == column_values["id"])
-    #     .where(and_(*only_where))
-    # ).rowcount
-    # log.info("spatial_update.end", product_name=product.name, change_count=changed)
 
-    # # ... and insert new ones.
-    # log.info(
-    #     "spatial_insert",
-    #     product_name=product.name,
-    #     after_date=assume_after_date,
-    # )
-    # changed += conn.execute(
-    #     postgres.insert(DATASET_SPATIAL)
-    #     .from_select( # why can't we insert values the same way we do for update?
-    #         list(column_values.keys()),
-    #         select(*list(column_values.values()))
-    #         .where(and_(*only_where))
-    #         .order_by(column_values["center_time"]), # why do we order_by???
-    #     )
-    #     .on_conflict_do_nothing(index_elements=["id"])
-    # ).rowcount
     changed += e_index.upsert_datasets(product.id, column_values, assume_after_date)
     log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
 
@@ -424,47 +308,6 @@ def _select_dataset_extent_columns(
     ]
 
 
-# def datetime_expression(md_type: MetadataType):
-#     """
-#     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
-#     There is another function sharing the same logic but is for flask template
-#     in file: _utils.py function center_time_from_metadata
-#     """
-#     # If EO3+Stac formats, there's already has a plain 'datetime' field,
-#     # So we can use it directly.
-#     if expects_eo3_metadata_type(md_type):
-#         props = jsonb_doc_expression(md_type)["properties"]
-
-#         # .... but in newer Stac, datetime is optional.
-#         # .... in which case we fall back to the start time.
-#         #      (which I think makes more sense in large ranges than a calculated center time)
-#         return (
-#             func.coalesce(props["datetime"].astext, props["dtr:start_datetime"].astext)
-#             .cast(TIMESTAMP(timezone=True))
-#             .label("center_time")
-#         )
-
-#     # On older EO datasets, there's only a time range, so we take the center time.
-#     # (This matches the logic in ODC's Dataset.center_time)
-#     time = md_type.dataset_fields["time"].alchemy_expression
-#     center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
-#         "center_time"
-#     )
-#     return center_time
-
-
-# def dataset_changed_expression(dataset=DATASET):
-#     """Expression for the latest time a dataset was changed"""
-#     # This expression matches our 'ix_dataset_type_changed' index, so we can scan it quickly.
-#     dataset_changed = func.greatest(
-#         dataset.c.added,
-#         # The 'updated' column doesn't exist on ODC's definition as it's optional.
-#         column("updated"),
-#         dataset.c.archived,
-#     )
-#     return dataset_changed
-
-
 def _default_crs(product: Product) -> Optional[str]:
     storage = product.definition.get("storage")
     if not storage:
@@ -482,14 +325,10 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
         assert isinstance(created_field, PgDocField)
         creation_expression = created_field.alchemy_expression
     else:
-        # doc = md.dataset_fields["metadata_doc"].alchemy_expression
-        # creation_dt = md.definition["dataset"].get("creation_dt") or ["creation_dt"]
-        # creation_expression = func.agdc.common_timestamp(doc[creation_dt].astext)
         creation_expression = md.dataset_fields.get("creation_time").alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
     return func.coalesce(
-        # might need to do casting conditionally
         cast(creation_expression, TIMESTAMP(timezone=True)),
         md.dataset_fields.get("indexed_time").alchemy_expression,
     )
@@ -545,73 +384,6 @@ def _as_json(obj):
         return repr(o)
 
     return json.dumps(obj, indent=4, default=fallback)
-
-
-# This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
-# When region_code is integrated into core (as is being discussed) this can be replaced.
-# pylint: disable=protected-access
-# def datasets_by_region(
-#     index: Index,
-#     product: Product,
-#     region_code: str,
-#     time_range: Range,
-#     limit: int,
-#     offset: int = 0,
-# ) -> Generator[Dataset, None, None]:
-#     query = (
-#         select(*postgres_api._DATASET_SELECT_FIELDS)
-#         .select_from(
-#             DATASET_SPATIAL.join(DATASET, DATASET_SPATIAL.c.id == DATASET.c.id)
-#         )
-#         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
-#         .where(
-#             DATASET_SPATIAL.c.dataset_type_ref
-#             == bindparam("dataset_type_ref", product.id)
-#         )
-#     )
-#     if time_range:
-#         query = query.where(
-#             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
-#         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-#     query = (
-#         query.order_by(DATASET_SPATIAL.c.center_time.desc())
-#         .limit(bindparam("limit", limit))
-#         .offset(bindparam("offset", offset))
-#     )
-#     with index._active_connection() as conn:
-#         return (
-#             index.datasets._make(res, full_info=True)
-#             for res in conn.execute(query).fetchall()
-#         )
-
-
-# def products_by_region(
-#     index: Index,
-#     region_code: str,
-#     time_range: Range,
-#     limit: int,
-#     offset: int = 0,
-# ) -> Generator[int, None, None]:
-#     query = (
-#         select(DATASET_SPATIAL.c.dataset_type_ref)
-#         .distinct()
-#         .where(DATASET_SPATIAL.c.region_code == bindparam("region_code", region_code))
-#     )
-#     if time_range:
-#         query = query.where(
-#             DATASET_SPATIAL.c.center_time > bindparam("from_time", time_range.begin)
-#         ).where(DATASET_SPATIAL.c.center_time < bindparam("to_time", time_range.end))
-
-#     query = (
-#         query.order_by(DATASET_SPATIAL.c.dataset_type_ref)
-#         .limit(bindparam("limit", limit))
-#         .offset(bindparam("offset", offset))
-#     )
-#     with index._active_connection() as conn:
-#         return (
-#             res.dataset_type_ref
-#             for res in conn.execute(query).fetchall()
-#         )
 
 
 @dataclass
@@ -871,8 +643,6 @@ def _region_code_field(product: Product):
         return null()
 
 
-# given that we're using either the Datacube index or the test db index, this doesn't need to be an index api method
-# the only problem is with the use of the DATASET schema...
 # would be able to replace with index.datasets.search_returning except that there's no way for us to specify the
 # alchemy expressions for the columns that don't exist in the core tables
 def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[Dict]:
@@ -882,24 +652,6 @@ def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[Dict]:
         ).fetchone()
         if res:
             yield dict(res._mapping)
-        # with index._active_connection() as conn:
-        #     res = conn.execute(
-        #         select(
-        #             DATASET.c.id,
-        #             DATASET.c.dataset_type_ref,
-        #             *_select_dataset_extent_columns(product),
-        #         )
-        #         .where(
-        #             DATASET.c.dataset_type_ref
-        #             == bindparam("product_ref", product.id, type_=SmallInteger)
-        #         )
-        #         .where(DATASET.c.archived.is_(None))
-        #         .limit(1)
-        #     ).fetchone()
-        #     # at this point can we not select the values from DATASET_SPATIAL,
-        #     # or is there a reason we need them to be calculated?
-        #     if res:
-        #         yield dict(res._mapping)
 
 
 @functools.lru_cache
@@ -926,46 +678,3 @@ def get_mapped_crses(products, e_index: ExplorerIndex) -> Iterable[Dict]:
         ).fetchone()
         if res:
             yield dict(res._mapping)
-    # with Datacube(index=index) as dc:
-    #     index = dc.index
-    #     with index._active_connection() as conn:
-    #         for product_name in product_names:
-    #             product = index.products.get_by_name(product_name)
-
-    #             # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
-    #             # pylint: disable=singleton-comparison
-    #             res = conn.execute(
-    #                 select(
-    #                     literal(product.name).label("product"),
-    #                     get_dataset_srid_alchemy_expression(
-    #                         # unfortunately, I don't think this can be passed to ds_search
-    #                         product.metadata_type
-    #                     ).label("crs"),
-    #                 )
-    #                 .where(DATASET.c.dataset_type_ref == product.id)
-    #                 .where(DATASET.c.archived.is_(None))
-    #                 .limit(1)
-    #             ).fetchone()
-    #             if res:
-    #                 yield dict(res._mapping)
-
-
-# if __name__ == "__main__":
-#     print(
-#         _as_json(
-#             list(
-#                 get_mapped_crses(
-#                     *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
-#                 )
-#             )
-#         )
-#     )
-#     print(
-#         _as_json(
-#             list(
-#                 get_sample_dataset(
-#                     *(sys.argv[1:] or ["ls8_nbar_scene", "ls8_nbar_albers"])
-#                 )
-#             )
-#         )
-#     )

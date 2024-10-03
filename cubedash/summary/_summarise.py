@@ -33,19 +33,6 @@ except FileNotFoundError:
 DEFAULT_TIMEZONE = default_timezone
 
 
-# def _scalar_subquery(selectable):
-#     """
-#     Make select statement into a scalar subquery.
-
-#     We want to support SQLAlchemy 1.3 (which doesn't have `scalar_subquery()`,
-#     and avoid deprecation warnings on SQLAlchemy 1.4 (which wants you to use `scalar_subquery()`)
-#     """
-#     if _NEWER_SQLALCHEMY:
-#         return selectable.scalar_subquery()
-#     else:
-#         return selectable.as_scalar()
-
-
 class Summariser:
     def __init__(self, e_index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE) -> None:
         self.e_index = e_index
@@ -165,33 +152,3 @@ class Summariser:
         if d.tzinfo is None:
             return d.replace(tzinfo=self._grouping_time_zone_tz)
         return d
-
-    # def _where(
-    #     self, product_name: str, time: Range
-    # ) -> Tuple[datetime, datetime, ColumnElement]:
-    #     begin_time = self._with_default_tz(time.begin)
-    #     end_time = self._with_default_tz(time.end)
-    #     where_clause = and_(
-    #         func.tstzrange(begin_time, end_time, "[]", type_=TSTZRANGE).contains(
-    #             DATASET_SPATIAL.c.center_time
-    #         ),
-    #         DATASET_SPATIAL.c.dataset_type_ref
-    #         == _scalar_subquery(
-    #             select(ODC_DATASET_TYPE.c.id).where(
-    #                 ODC_DATASET_TYPE.c.name == product_name
-    #             )
-    #         ),
-    #         or_(
-    #             func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(True),
-    #             func.st_isvalid(DATASET_SPATIAL.c.footprint).is_(None),
-    #         ),
-    #     )
-    #     return begin_time, end_time, where_clause
-
-    # @lru_cache()
-    # def _get_srid_name(self, srid: int):
-    #     """
-    #     Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
-    #     """
-    #     with self.index._active_connection() as conn:
-    #         return get_srid_name(conn, srid)

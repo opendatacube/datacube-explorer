@@ -44,19 +44,15 @@ import cubedash.summary._schema as _schema
 from cubedash._utils import datetime_expression
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
 
-from ._schema import (
+from ._schema import (  # isort: skip
     FOOTPRINT_SRID_EXPRESSION,
     DatasetSpatial,
+    Product as ProductSpatial,
     Region,
     SpatialQualityStats,
     SpatialRefSys,
     TimeOverview,
     init_elements,
-)
-from ._schema import (
-    Product as ProductSpatial,
-)
-from ._schema import (
     get_srid_name as srid_name,
 )
 
@@ -499,19 +495,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     # does this add much value? and if so, is there a better way to do it?
     def find_fixed_columns(self, field_values, candidate_fields, sample_ids):
-        # alt approach?
-        # as_fields = self.index.datasets.make_select_fields(first_dataset_fields.keys())
-        # filtered_fields = [field for field in as_fields if field.type_name in simple_field_types]
-        # select(
-        #     *[
-        #         (
-        #             func.every(
-        #                 field.alchemy_expression == first_dataset_fields[field.name]
-        #             )
-        #         ).label(field.name)
-        #         for field in filtered_fields
-        #     ]
-        # )
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -561,7 +544,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             queries.append(subquery)
 
         if queries:  # Don't run invalid SQL on empty database
-            # surely there must be a better way to check the database isn't empty before we get to this point?
             with self.index._active_connection() as conn:
                 return conn.execute(union_all(*queries))
         else:
@@ -646,7 +628,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ).rowcount
 
             # Remove any archived datasets from our spatial table.
-            # we could replace this with a ds_search_returning but that would mean two executions instead of one
             archived_datasets = (
                 select(ODC_DATASET.id)
                 .select_from(ODC_DATASET)
@@ -693,7 +674,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     def synthesize_dataset_footprint(self, rows, shapes):
-        # don't believe there's a way to pass parameter to _active_connection
         with self.engine.begin() as conn:
             return conn.execute(
                 update(DatasetSpatial)
@@ -772,19 +752,17 @@ class ExplorerIndex(ExplorerAbstractIndex):
         Schema compatibility information
         postgis version, if schema has latest changes (optional: and has updated column)
         """
-        print("schema compatible info")
         with self.engine.begin() as conn:
             return (
                 _schema.get_postgis_versions(conn),
                 _schema.is_compatible_schema(
                     conn,
-                    "odc.dataset",
-                    for_writing_operations_too,  # is there an ODC_DATASET.fullname equivalent?
+                    "odc.dataset",  # is there an ODC_DATASET.fullname equivalent?
+                    for_writing_operations_too,
                 ),
             )
 
     def init_schema(self, grouping_epsg_code: int):
-        # with self.index._active_connection() as conn:
         with self.engine.begin() as conn:
             return init_elements(conn, grouping_epsg_code)
 
@@ -898,18 +876,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(SpatialRefSys.auth_srid == int(auth_srid))
                 .scalar_subquery()
             )
-            # # alt
-            # default_crs_expression = (
-            #     select(SPATIAL_REF_SYS.c.srid)
-            #     .where(
-            #         func.concat(
-            #             func.lower(SPATIAL_REF_SYS.c.auth_name),
-            #             ":",
-            #             SPATIAL_REF_SYS.c.auth_srid
-            #         ) == default_crs.lower()
-            #     )
-            #     .scalar_subquery()
-            # )
         return func.coalesce(
             case(
                 (

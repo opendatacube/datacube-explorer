@@ -14,7 +14,6 @@ from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
 
-import datacube.drivers.postgres._schema
 import eodatasets3.serialise
 import flask
 import numpy as np
@@ -23,7 +22,6 @@ import shapely.validation
 import structlog
 from affine import Affine
 from datacube import utils as dc_utils
-from datacube.index import Index
 from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
@@ -38,7 +36,6 @@ from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
 from sqlalchemy import TIMESTAMP, func
-from sqlalchemy.engine import Engine
 from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
@@ -908,136 +905,3 @@ def bbox_as_geom(dataset):
     if dataset.crs is None:
         return None
     return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(geom.CRS(_TARGET_CRS))
-
-
-# ######################### WARNING ############################### #
-#  These functions are bad and access non-public parts of datacube  #
-#     They are kept here in one place for easy criticism.           #
-# ################################################################# #
-
-
-def alchemy_engine(index: Index) -> Engine:
-    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
-    # We could create our own from config, but there's no api for getting the ODC config for the index either.
-    # pylint: disable=protected-access
-    return index.datasets._db._engine
-    # return PostgisDb.from_config(index.environment)._engine
-
-
-# somewhat misleading name
-def make_dataset_from_select_fields(index, row):
-    # pylint: disable=protected-access
-    return index.datasets._make(row, full_info=True)
-
-
-# pylint: disable=protected-access
-# DATASET_SELECT_FIELDS = pgapi._DATASET_SELECT_FIELDS
-
-# ODC_DATASET_TYPE = datacube.drivers.postgres._schema.PRODUCT
-
-ODC_DATASET = datacube.drivers.postgres._schema.DATASET
-
-# ODC_DATASET_LOCATION = datacube.drivers.postgres._schema.DATASET_LOCATION
-
-# try:
-#     from datacube.drivers.postgres._core import install_timestamp_trigger
-# except ImportError:
-
-#     def install_timestamp_trigger(connection):
-#         raise RuntimeError(
-#             "ODC version does not contain update-trigger installation. "
-#             "Cannot install dataset-update trigger."
-#         )
-
-
-# def get_dataset_sources(
-#     index: Index, dataset_id: UUID, limit=None
-# ) -> Tuple[Dict[str, Dataset], int]:
-#     """
-#     Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
-
-#     This is a lighter alternative to doing `index.datasets.get(include_source=True)`
-
-#     A limit can also be specified.
-
-#     Returns a source dict and how many more sources exist beyond the limit.
-#     """
-#     dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
-#     query = select(
-#         dataset_source.c.source_dataset_ref, dataset_source.c.classifier
-#     ).where(dataset_source.c.dataset_ref == dataset_id)
-#     if limit:
-#         # We add one to detect if there are more records after out limit.
-#         query = query.limit(limit + 1)
-
-#     # engine = alchemy_engine(index)
-#     with index._active_connection() as conn:
-#         dataset_classifier = conn.execute(query).fetchall()
-
-#         if not dataset_classifier:
-#             return {}, 0
-
-#         remaining_records = 0
-#         if limit and len(dataset_classifier) > limit:
-#             dataset_classifier = dataset_classifier[:limit]
-#             remaining_records = (
-#                 conn.execute(
-#                     select(func.count())
-#                     .select_from(dataset_source)
-#                     .where(dataset_source.c.dataset_ref == dataset_id)
-#                 ).scalar()
-#                 - limit
-#             )
-
-#     classifier = dict(dataset_classifier)
-#     return {
-#         classifier[d.id]: d
-#         for d in (
-#             index.datasets.bulk_get(dataset_id for dataset_id, _ in dataset_classifier)
-#         )
-#     }, remaining_records
-
-
-# def get_datasets_derived(
-#     index: Index, dataset_id: UUID, limit=None
-# ) -> Tuple[List[Dataset], int]:
-#     """
-#     this is similar to ODC's connection.get_derived_datasets() but allows a
-#     limit, and will return a total count.
-#     """
-#     dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
-#     query = (
-#         select(*DATASET_SELECT_FIELDS)
-#         .select_from(
-#             ODC_DATASET.join(
-#                 dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
-#             )
-#         )
-#         .where(dataset_source.c.source_dataset_ref == dataset_id)
-#     ) # this is the same as DbApi.get_derived_datasets
-#     if limit:
-#         # We add one to detect if there are more records after out limit.
-#         query = query.limit(limit + 1)
-
-#     # engine = alchemy_engine(index)
-#     with index._active_connection() as conn:
-#         remaining_records = 0
-#         total_count = 0
-#         datasets = conn.execute(query).fetchall()
-
-#         if limit and len(datasets) > limit:
-#             datasets = datasets[:limit]
-#             total_count = conn.execute(
-#                 select(func.count())
-#                 .select_from(
-#                     ODC_DATASET.join(
-#                         dataset_source, ODC_DATASET.c.id == dataset_source.c.dataset_ref
-#                     )
-#                 )
-#                 .where(dataset_source.c.source_dataset_ref == dataset_id)
-#             ).scalar()
-#             remaining_records = total_count - limit
-
-#     return [
-#         make_dataset_from_select_fields(index, dataset) for dataset in datasets
-#     ], remaining_records
