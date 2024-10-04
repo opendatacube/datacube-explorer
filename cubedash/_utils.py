@@ -134,7 +134,9 @@ def get_dataset_file_offsets(dataset: Dataset) -> Dict[str, str]:
     return uri_list
 
 
-def as_resolved_remote_url(location: str, offset: str) -> str:
+def as_resolved_remote_url(
+    location: str, offset: str, thredds: Optional[bool] = None
+) -> str:
     """
     Convert a dataset location and file offset to a full remote URL.
     """
@@ -142,11 +144,15 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
         urljoin(location, offset),
         (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
         location is None,
+        thredds,
     )
 
 
 def as_external_url(
-    url: str, s3_region: str = None, is_base: bool = False
+    url: str,
+    s3_region: str = None,
+    is_base: bool = False,
+    to_thredds: Optional[bool] = None,
 ) -> Optional[str]:
     """
     Convert a URL to an externally-visible one.
@@ -155,10 +161,10 @@ def as_external_url(
     >>> # Converts s3 to http
     >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
     'https://some-data.s3.ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
-    >>> # Other URLs are left as-is
-    >>> unconvertable_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
-    >>> unconvertable_url == as_external_url(unconvertable_url)
-    True
+    >>> # Converts NCI filepaths to THREDDS location
+    >>> as_external_url('file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml')
+    'https://dapds00.nci.org.au/thredds/fileServer/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
+    >>> # Leaves other urls as-is
     >>> as_external_url('some/relative/path.txt')
     'some/relative/path.txt'
     >>> # if base uri was none, we may want to return the s3 location instead of the metadata yaml
@@ -178,6 +184,17 @@ def as_external_url(
             return f"https://{data_location.get(parsed.netloc)}/{path}"
 
         return f"https://{parsed.netloc}.s3.{s3_region}.amazonaws.com{parsed.path}"
+
+    resolve_nci = (
+        to_thredds
+        if to_thredds is not None
+        else flask.current_app.config.get("NCI_LOCAL_TO_THREDDS", False)
+    )
+    if parsed.scheme == "file" and resolve_nci:
+        path = parsed.path.replace("/g/data/", "")
+        if path.find("/ga/") != -1:
+            path = path.replace("/ga/", "/")
+            return f"https://dapds00.nci.org.au/thredds/fileServer/{path}"
 
     return url
 
