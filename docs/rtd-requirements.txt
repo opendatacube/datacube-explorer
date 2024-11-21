@@ -8,7 +8,12 @@ affine==2.4.0
     # via
     #   datacube
     #   eodatasets3
+    #   odc-geo
     #   rasterio
+alembic==1.14.0
+    # via datacube
+antimeridian==0.3.11
+    # via datacube
 attrs==22.2.0
     # via
     #   cattrs
@@ -35,6 +40,7 @@ cachetools==5.3.0
     # via
     #   datacube
     #   datacube-explorer (setup.py)
+    #   odc-geo
 cattrs==22.2.0
     # via eodatasets3
 certifi==2022.12.7
@@ -44,13 +50,11 @@ certifi==2022.12.7
     #   rasterio
     #   requests
     #   sentry-sdk
-cftime==1.6.2
-    # via netcdf4
 charset-normalizer==3.0.1
     # via requests
 ciso8601==2.3.0
     # via eodatasets3
-click==8.1.3
+click==8.1.7
     # via
     #   click-plugins
     #   cligj
@@ -79,7 +83,7 @@ dask[array]==2023.1.1
     # via
     #   datacube
     #   distributed
-datacube==1.8.18
+datacube==1.9.0rc11
     # via
     #   datacube-explorer (setup.py)
     #   eodatasets3
@@ -91,7 +95,7 @@ deprecat==2.1.1
     # via datacube
 distributed==2023.1.1
     # via datacube
-eodatasets3==0.30.1
+eodatasets3 @ git+https://github.com/opendatacube/eo-datasets@integrate-1.9
     # via datacube-explorer (setup.py)
 fiona==1.9.0
     # via
@@ -151,32 +155,36 @@ locket==1.0.0
     # via
     #   distributed
     #   partd
+mako==1.3.6
+    # via alembic
 markupsafe==2.1.2
     # via
     #   datacube-explorer (setup.py)
     #   jinja2
+    #   mako
     #   werkzeug
 msgpack==1.0.4
     # via distributed
 munch==2.5.0
     # via fiona
-netcdf4==1.6.2
-    # via datacube
 numpy==1.24.1
     # via
-    #   cftime
+    #   antimeridian
     #   dask
     #   datacube
     #   eodatasets3
     #   h5py
-    #   netcdf4
+    #   odc-geo
     #   pandas
     #   pyorbital
     #   rasterio
     #   scipy
     #   shapely
-    #   snuggs
     #   xarray
+odc-geo==0.4.8
+    # via
+    #   datacube
+    #   datacube-explorer (setup.py)
 orjson==3.8.5
     # via datacube-explorer (setup.py)
 packaging==23.0
@@ -194,21 +202,20 @@ partd==1.3.0
     # via dask
 psutil==5.9.4
     # via distributed
-psycopg2==2.9.5
-    # via datacube
 pygeofilter==0.2.4
     # via datacube-explorer (setup.py)
 pygeoif==1.5.0
     # via pygeofilter
-pyorbital==1.7.3
+pyorbital==1.8.3
     # via datacube-explorer (setup.py)
 pyparsing==3.0.9
-    # via snuggs
-pyproj==3.4.1
+    # via rasterio
+pyproj==3.7.0
     # via
     #   datacube
     #   datacube-explorer (setup.py)
     #   eodatasets3
+    #   odc-geo
 pystac==1.9.0
     # via
     #   datacube-explorer (setup.py)
@@ -233,7 +240,7 @@ pyyaml==6.0
     #   dask
     #   datacube
     #   distributed
-rasterio==1.3.5
+rasterio==1.4.2
     # via
     #   datacube
     #   eodatasets3
@@ -263,9 +270,11 @@ sentry-sdk[flask]==1.14.0
     # via datacube-explorer (setup.py)
 shapely==2.0.1
     # via
+    #   antimeridian
     #   datacube
     #   datacube-explorer (setup.py)
     #   eodatasets3
+    #   odc-geo
 simplekml==1.3.6
     # via datacube-explorer (setup.py)
 six==1.16.0
@@ -273,12 +282,11 @@ six==1.16.0
     #   flask-cors
     #   munch
     #   python-dateutil
-snuggs==1.4.7
-    # via rasterio
 sortedcontainers==2.4.0
     # via distributed
-sqlalchemy==1.4.46
+sqlalchemy==2.0.36
     # via
+    #   alembic
     #   datacube
     #   datacube-explorer (setup.py)
     #   geoalchemy2
@@ -297,7 +305,10 @@ toolz==0.12.0
 tornado==6.2
     # via distributed
 typing-extensions==4.12.2
-    # via pygeoif
+    # via
+    #   alembic
+    #   pygeoif
+    #   sqlalchemy
 tzlocal==5.2
     # via dateparser
 urllib3==1.26.14
@@ -316,6 +327,3 @@ xarray==2023.1.0
     #   eodatasets3
 zict==2.2.0
     # via distributed
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
