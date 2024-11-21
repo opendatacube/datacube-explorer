@@ -7,21 +7,19 @@ from flask import Response
 from flask.testing import FlaskClient
 from sqlalchemy import text
 
-from cubedash.summary import SummaryStore, _schema
+from cubedash.summary import SummaryStore
 
 METADATA_TYPES = [
-    "metadata/landsat_l1_scene.yaml",
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo3_landsat_ard.odc-type.yaml",
 ]
 PRODUCTS = [
-    "products/dsm1sv10.odc-product.yaml",
-    "products/wofs_albers.yaml",
-    "products/ls7_scenes.odc-product.yaml",
-    "products/ls7_nbart_albers.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
-    "products/ls8_nbart_albers.odc-product.yaml",
+    "products/ga_ls7e_ard_3.odc-product.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/esa_s2_l2a.product.yaml",
 ]
 DATASETS = [
-    "datasets/wofs-albers-sample.yaml.gz",
+    "datasets/ga_ls7e_ard_3-sample.yaml",
 ]
 
 
@@ -96,10 +94,9 @@ def test_allows_null_product_fixed_fields(
     ), "There's no summarised products to test"
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
-    # with _utils.alchemy_engine(odc_test_db.index).begin() as conn:
     with odc_test_db.index._active_connection() as conn:
         update_count = conn.execute(
-            text(f"update {_schema.PRODUCT.fullname} set fixed_metadata = null")
+            text("update cubedash.product set fixed_metadata = null")
         ).rowcount
         assert update_count > 0, "There were no test products to update?"
 

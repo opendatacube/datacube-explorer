@@ -9,6 +9,7 @@ import tempfile
 
 import datacube.scripts.cli_app
 import pytest
+from click.testing import CliRunner
 from flask.testing import FlaskClient
 
 METADATA_TYPES = [
@@ -100,31 +101,30 @@ def dataset_yaml_from_raw(client: FlaskClient):
     return f.name
 
 
-# Why are we testing core scripts here??
-def test_update_type(type_yaml_from_raw, clirunner):
-    result = clirunner(
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+def test_update_type(type_yaml_from_raw):
+    result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [
             "metadata",
             "update",
             type_yaml_from_raw,
         ],
-        expect_success=False,
     )
 
     assert 'Updated "eo_plus"\n' in result.output
     assert result.exit_code == 0
 
 
-def test_update_product(product_yaml_from_raw, clirunner):
-    result = clirunner(
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+def test_update_product(product_yaml_from_raw):
+    result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [
             "product",
             "update",
             product_yaml_from_raw,
         ],
-        expect_success=False,
     )
 
     assert 'Updated "ls5_fc_albers"\n' in result.output
@@ -134,15 +134,15 @@ def test_update_product(product_yaml_from_raw, clirunner):
     assert result.exit_code == 0
 
 
-def test_update_dataset(dataset_yaml_from_raw, clirunner):
-    result = clirunner(
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+def test_update_dataset(dataset_yaml_from_raw):
+    result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [
             "dataset",
             "update",
             dataset_yaml_from_raw,
         ],
-        expect_success=False,
     )
 
     assert (
