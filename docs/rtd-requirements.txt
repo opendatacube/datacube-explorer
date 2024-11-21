@@ -83,7 +83,7 @@ dask[array]==2023.1.1
     # via
     #   datacube
     #   distributed
-datacube==1.9.0rc11
+datacube[postgres]==1.9.0rc11
     # via
     #   datacube-explorer (setup.py)
     #   eodatasets3
@@ -202,6 +202,8 @@ partd==1.3.0
     # via dask
 psutil==5.9.4
     # via distributed
+psycopg2==2.9.10
+    # via datacube
 pygeofilter==0.2.4
     # via datacube-explorer (setup.py)
 pygeoif==1.5.0

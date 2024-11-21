@@ -73,7 +73,7 @@ setup(
     install_requires=[
         "cachetools",
         "click",
-        "datacube>=1.9.0-rc11",
+        "datacube[postgres]>=1.9.0-rc11",
         "eodatasets3 @ git+https://github.com/opendatacube/eo-datasets@integrate-1.9",
         "fiona",
         "flask",
