@@ -1,14 +1,14 @@
 ---
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.1
+    rev: v0.8.2
     hooks:
     - id: ruff
       args: [--fix, --show-fixes, --output-format, grouped]
     - id: ruff-format
   # Lint Python snippets embedded in Markdown (using flake8)
   - repo: https://github.com/johnfraney/flake8-markdown
-    rev: v0.5.0
+    rev: v0.6.0
     hooks:
       - id: flake8-markdown
   # # Lint Jinja2 templates
