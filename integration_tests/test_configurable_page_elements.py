@@ -4,15 +4,20 @@ from flask.testing import FlaskClient
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import get_html
 
-METADATA_TYPES = ["metadata/eo_metadata.yaml", "metadata/landsat_l1_scene.yaml"]
-PRODUCTS = [
-    "products/ls5_fc_albers.odc-product.yaml",
-    "products/ls5_scenes.odc-product.yaml",
-    "products/ls7_scenes.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
-    "products/dsm1sv10.odc-product.yaml",
+METADATA_TYPES = [
+    "metadata/eo3_metadata.yaml",
+    "metadata/eo3_landsat_l1.odc-type.yaml",
+    "metadata/eo3_landsat_ard.odc-type.yaml",
 ]
-DATASETS = ["datasets/ls5_fc_albers-sample.yaml"]
+PRODUCTS = [
+    "products/ard_ls5.odc-product.yaml",
+    "products/ga_ls7e_ard_3.odc-product.yaml",
+    "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/l1_ls5.odc-product.yaml",
+    "products/l1_ls8_ga.odc-product.yaml",
+    "products/usgs_ls7e_level1_1.odc-product.yaml",
+]
+DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
@@ -29,11 +34,9 @@ def app_configured_client(client: FlaskClient):
                 ("Production - NCI", "http://nci.odc.example"),
             ),
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST": [
-                "ls5_pq_scene",
-                "ls7_pq_scene",
-                "ls8_pq_scene",
-                "ls5_pq_legacy_scene",
-                "ls7_pq_legacy_scene",
+                "usgs_ls5t_level1_1",
+                "ga_ls8c_level1_3",
+                "usgs_ls7e_level1_1",
             ],
         }
     )
@@ -57,12 +60,12 @@ def test_hide_products_audit_page_display(
 ):
     html = get_html(app_configured_client, "/audit/storage")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
-    assert hidden_product_count == "5"
+    assert hidden_product_count == "3"
 
     h2 = html.find("h2", first=True).text
     indexed_product_count = html.find("span.indexed-product-count", first=True).text
     assert indexed_product_count == str(total_indexed_products_count)
-    assert str(total_indexed_products_count - 5) in h2
+    assert str(total_indexed_products_count - 3) in h2
 
 
 def test_hide_products_audit_bulk_dataset_display(
@@ -70,12 +73,12 @@ def test_hide_products_audit_bulk_dataset_display(
 ):
     html = get_html(app_configured_client, "/audit/dataset-counts")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
-    assert hidden_product_count == "5"
+    assert hidden_product_count == "3"
 
     h2 = html.find("h2", first=True).text
     indexed_product_count = html.find("span.indexed-product-count", first=True).text
     assert indexed_product_count == str(total_indexed_products_count)
-    assert str(total_indexed_products_count - 5) in h2
+    assert str(total_indexed_products_count - 3) in h2
 
 
 def test_hide_products_product_page_display(
@@ -83,15 +86,15 @@ def test_hide_products_product_page_display(
 ):
     html = get_html(app_configured_client, "/products")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
-    assert hidden_product_count == "5"
+    assert hidden_product_count == "3"
 
     h2 = html.find("h2", first=True).text
     indexed_product_count = html.find("span.indexed-product-count", first=True).text
     assert indexed_product_count == str(total_indexed_products_count)
-    assert str(total_indexed_products_count - 5) in h2
+    assert str(total_indexed_products_count - 3) in h2
 
     listed_product_count = html.find("tr.collapse-when-small")
-    assert len(listed_product_count) == (total_indexed_products_count - 5)
+    assert len(listed_product_count) == (total_indexed_products_count - 3)
 
 
 def test_hide_products_menu_display(
@@ -100,14 +103,14 @@ def test_hide_products_menu_display(
     html = get_html(app_configured_client, "/about")
 
     hide_products = html.find("#products-menu li a.configured-hide-product")
-    assert len(hide_products) == 5
+    assert len(hide_products) == 3
 
     products_hide_show_switch = html.find("a#show-hidden-product")
     assert products_hide_show_switch
 
-    html = get_html(app_configured_client, "/products/dsm1sv10")
+    html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
     products = html.find(".product-selection-header a.option-menu-link")
-    assert total_indexed_products_count - len(products) == 5
+    assert total_indexed_products_count - len(products) == 3
 
 
 def test_sister_sites(app_configured_client: FlaskClient):
@@ -123,24 +126,24 @@ def test_sister_sites(app_configured_client: FlaskClient):
 
 
 def test_sister_sites_request_path(app_configured_client: FlaskClient):
-    html = get_html(app_configured_client, "/products/ls5_fc_albers")
+    html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
 
     sister_instances = html.find("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
-            "/products/ls5_fc_albers"
+            "/products/ga_ls5t_ard_3"
             in sister_instance.find("a.sister-link", first=True).attrs["href"]
         )
 
-    html = get_html(app_configured_client, "/products/ls5_fc_albers/datasets")
+    html = get_html(app_configured_client, "/products/ga_ls5t_ard_3/datasets")
 
     sister_instances = html.find("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
-            "/products/ls5_fc_albers/datasets"
+            "/products/ga_ls5t_ard_3/datasets"
             in sister_instance.find("a.sister-link", first=True).attrs["href"]
         )

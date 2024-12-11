@@ -24,13 +24,22 @@ from .asserts import expect_values as _expect_values
 DEFAULT_TZ = tz.gettz("Australia/Darwin")
 
 METADATA_TYPES = [
+    "metadata/eo3_landsat_ard.odc-type.yaml",
     "metadata/landsat_l1_scene.yaml",
 ]
 PRODUCTS = [
+    "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/ga_ls9c_ard_3.odc-product.yaml",
+    "products/ga_ls_fc_3.odc-product.yaml",
+    "products/ga_ls_fc_pc_cyear_3.odc-product.yaml",
     "products/ls8_nbar_albers.odc-product.yaml",
     "products/ls8_scenes.odc-product.yaml",
 ]
 DATASETS = [
+    "datasets/ga_ls8c_ard_3-sample.yaml",
+    "datasets/ga_ls9c_ard_3-sample.yaml",
+    "datasets/ga_ls_fc_3-sample.yaml",
+    "datasets/ga_ls_fc_pc_cyear_3-sample.yaml",
     "datasets/ls8-nbar-scene-sample-2017.yaml.gz",
     "datasets/ls8-nbar-albers-sample.yaml.gz",
 ]
@@ -40,6 +49,7 @@ DATASETS = [
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_generate_month(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
     # One Month
@@ -68,6 +78,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_generate_scene_year(run_generate, summary_store: SummaryStore):
     run_generate(multi_processed=True)
     # One year
@@ -96,6 +107,7 @@ def test_generate_scene_year(run_generate, summary_store: SummaryStore):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
 
@@ -132,23 +144,23 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
 
 
 def test_generate_incremental_archivals(run_generate, summary_store: SummaryStore):
-    run_generate("ls8_nbar_scene")
+    run_generate("ga_ls9c_ard_3")
     index = summary_store.index
 
     # When we have a summarised product...
-    original_summary = summary_store.get("ls8_nbar_scene")
+    original_summary = summary_store.get("ga_ls9c_ard_3")
     original_dataset_count = original_summary.dataset_count
 
     # ... and we archive one dataset ...
-    product_name = "ls8_nbar_scene"
+    product_name = "ga_ls9c_ard_3"
     dataset_id = _one_dataset(index, product_name)
     try:
         index.datasets.archive([dataset_id])
 
         # ... the next generation should catch it and update with one less dataset....
-        run_generate("ls8_nbar_scene")
+        run_generate("ga_ls9c_ard_3")
         assert (
-            summary_store.get("ls8_nbar_scene").dataset_count
+            summary_store.get("ga_ls9c_ard_3").dataset_count
             == original_dataset_count - 1
         ), "Expected dataset count to decrease after archival"
     finally:
@@ -157,9 +169,9 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
 
     # It should be in the count again.
     # (this change should work because the new 'updated' column will be bumped on restore)
-    run_generate("ls8_nbar_scene")
+    run_generate("ga_ls9c_ard_3")
     assert (
-        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
+        summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count
     ), "A dataset that was restored from archival was not refreshed by Explorer"
 
 
@@ -180,21 +192,21 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     This is a trickier case than regular updates because everything in Explorer
     is product-specific. Summarising one product at a time, etc.
     """
-    run_generate("ls8_nbar_scene")
+    run_generate("ga_ls9c_ard_3")
     index = summary_store.index
 
-    dataset_id = _one_dataset(index, "ls8_nbar_scene")
-    our_product = summary_store.get_product("ls8_nbar_scene")
-    other_product = summary_store.get_product("ls8_nbar_albers")
+    dataset_id = _one_dataset(index, "ga_ls9c_ard_3")
+    our_product = summary_store.get_product("ga_ls9c_ard_3")
+    other_product = summary_store.get_product("ga_ls8c_ard_3")
 
     # When we have a summarised product...
-    original_summary = summary_store.get("ls8_nbar_scene")
+    original_summary = summary_store.get("ga_ls9c_ard_3")
     original_dataset_count = original_summary.dataset_count
 
     try:
         # Move the dataset to another product
         _change_dataset_product(index, dataset_id, other_product)
-        assert index.datasets.get(dataset_id).product.name == "ls8_nbar_albers"
+        assert index.datasets.get(dataset_id).product.name == "ga_ls8c_ard_3"
 
         # Explorer should remove it too.
         print(f"Test dataset: {dataset_id}")
@@ -202,10 +214,10 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
         #       It's hard because we're scanning for updated datasets in the product...
         #       but it's not in the product. And the incremental updater misses it.
         #       So we have to force the non-incremental updater.
-        run_generate("ls8_nbar_albers", "ls8_nbar_scene", "--force-refresh")
+        run_generate("ga_ls8c_ard_3", "ga_ls9c_ard_3", "--force-refresh")
 
         assert (
-            summary_store.get("ls8_nbar_scene").dataset_count
+            summary_store.get("ga_ls9c_ard_3").dataset_count
             == original_dataset_count - 1
         ), "Expected dataset to be removed after product change"
 
@@ -213,9 +225,9 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
         # Now change it back
         _change_dataset_product(index, dataset_id, our_product)
 
-    run_generate("ls8_nbar_albers", "ls8_nbar_scene", "--force-refresh")
+    run_generate("ga_ls8c_ard_3", "ga_ls9c_ard_3", "--force-refresh")
     assert (
-        summary_store.get("ls8_nbar_scene").dataset_count == original_dataset_count
+        summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count
     ), "Expected dataset to be added again after the product changed back"
 
 
@@ -240,7 +252,7 @@ def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Produ
 
 
 def test_location_sampling(run_generate, summary_store: SummaryStore):
-    location_samples = summary_store.product_location_samples("ls8_nbar_albers")
+    location_samples = summary_store.product_location_samples("ga_ls8c_ard_3")
     assert len(location_samples) == 1
 
     [sample] = location_samples
@@ -256,21 +268,22 @@ def test_location_sampling(run_generate, summary_store: SummaryStore):
 def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
     run_generate()
 
-    albers = summary_store.get_product_summary("ls8_nbar_albers")
-    scene = summary_store.get_product_summary("ls8_nbar_scene")
-    telem = summary_store.get_product_summary("ls8_satellite_telemetry_data")
+    ls_fc_pc = summary_store.get_product_summary("ga_ls_fc_pc_cyear_3")
+    ls_fc = summary_store.get_product_summary("ga_ls_fc_3")
+    ls8_ard = summary_store.get_product_summary("ga_ls8c_ard_3")
 
-    print(repr([albers, scene, telem]))
-    assert albers.source_products == ["ls8_nbar_scene"]
-    assert albers.derived_products == []
+    print(repr([ls_fc_pc, ls_fc, ls8_ard]))
+    assert ls_fc_pc.source_products == ["ga_ls_fc_3"]
+    assert ls_fc_pc.derived_products == []
 
-    assert scene.source_products == ["ls8_level1_scene"]
-    assert scene.derived_products == ["ls8_nbar_albers"]
+    assert ls_fc.source_products == ["ga_ls8c_ard_3"]
+    assert ls_fc.derived_products == ["ga_ls_fc_pc_cyear_3"]
 
-    assert telem.source_products == []
-    assert telem.derived_products == ["ls8_level1_scene"]
+    assert ls8_ard.source_products == []
+    assert ls8_ard.derived_products == ["ga_ls_fc_3"]
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
     run_generate()
 
@@ -314,19 +327,22 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
 
     # Tiled product, sampled
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.index.products.get_by_name("ls8_nbar_albers"),
+        summary_store.index.products.get_by_name("ga_ls9c_ard_3"),
         sample_datasets_size=5,
     )
-    # Ingested products carry little of the original metadata...
+
     assert fixed_fields == {
-        "platform": "LANDSAT_8",
+        "platform": "landsat-9",
         "instrument": "OLI_TIRS",
-        "product_type": "nbar",
-        "format": "NetCDF",
+        "product_family": "ard",
+        "format": "GeoTIFF",
+        "eo_gsd": 15.0,
         "label": None,
+        "dataset_maturity": "final",
     }
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
     # No datasets in 2018
@@ -347,6 +363,7 @@ def test_calc_empty(summary_store: SummaryStore):
     assert summary is None
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_generate_telemetry(run_generate, summary_store: SummaryStore):
     """
     Telemetry data polygons can be synthesized from the path/row values
@@ -401,24 +418,25 @@ def test_generate_telemetry(run_generate, summary_store: SummaryStore):
 
 
 def test_generate_day(run_generate, summary_store: SummaryStore):
-    run_generate("ls8_nbar_albers")
+    run_generate("ga_ls8c_ard_3")
 
     _expect_values(
-        summary_store.get("ls8_nbar_albers", year=2017, month=5, day=2),
-        dataset_count=29,
-        footprint_count=29,
+        summary_store.get("ga_ls8c_ard_3", year=2022, month=7, day=18),
+        dataset_count=21,
+        footprint_count=21,
         time_range=Range(
-            begin=datetime(2017, 5, 2, 0, 0, tzinfo=DEFAULT_TZ),
-            end=datetime(2017, 5, 3, 0, 0, tzinfo=DEFAULT_TZ),
+            begin=datetime(2022, 7, 18, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2022, 7, 19, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2017, 10, 20, 8, 53, 26, 475_609, tzinfo=tzutc()),
+        newest_creation_time=datetime(2022, 7, 31, 11, 12, 43, 914_477, tzinfo=tzutc()),
         timeline_period="day",
         timeline_count=1,
-        crses={"EPSG:3577"},
+        crses={"EPSG:32656"},
         size_bytes=None,
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_force_dataset_regeneration(
     run_generate, summary_store: SummaryStore, odc_test_db: Datacube
 ):
@@ -463,6 +481,7 @@ def test_force_dataset_regeneration(
     assert footprint == original_footprint, "Dataset extent was not regenerated"
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
@@ -515,7 +534,6 @@ def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client)
     """
 
     def _get_product_seq_value():
-        # with alchemy_engine(odc_test_db.index).begin() as conn:
         with odc_test_db.index._active_connection() as conn:
             [new_val] = conn.execute(
                 text(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")

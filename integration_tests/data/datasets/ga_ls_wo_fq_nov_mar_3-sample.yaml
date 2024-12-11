@@ -278,3 +278,72 @@ accessories:
   metadata:processor:
     path: ga_ls_wo_fq_nov_mar_3_x11y46_1991-11--P5M_final.proc-info.yaml
 ...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/974e1e89-3757-4d94-be8d-7acaeb7adf24.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: 974e1e89-3757-4d94-be8d-7acaeb7adf24
+product:
+  name: ga_ls_wo_fq_nov_mar_3
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-2.016e+06, -2.88e+06], [-2.016e+06, -2.976e+06], [-1.92e+06, -2.976e+06],
+      [-1.92e+06, -2.88e+06], [-2.016e+06, -2.88e+06]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [3.e+01, 0.e+00, -2.016e+06, 0.e+00, -3.e+01, -2.88e+06, 0.e+00, 0.e+00,
+      1.e+00]
+
+properties:
+  created: '2024-03-06T07:14:44.054464Z'
+  datetime: '1993-11-01T00:00:00Z'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '1994-03-31T23:59:59.999999Z'
+  dtr:start_datetime: '1993-11-01T00:00:00Z'
+  eo:gsd: 3.e+01  # Ground sample distance (m)
+  eo:instrument: TM
+  eo:platform: landsat-5
+  odc:collection_number: 3
+  odc:dataset_version: 2.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2024-03-06T07:14:44.054464Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_wo_fq_nov_mar_3
+  odc:product_family: wo
+  odc:region_code: x25y41
+  proj:epsg: 3577
+  proj:shape:
+  - 3200
+  - 3200
+  proj:transform:
+  - 3.e+01
+  - 0.e+00
+  - -2.016e+06
+  - 0.e+00
+  - -3.e+01
+  - -2.88e+06
+  - 0.e+00
+  - 0.e+00
+  - 1.e+00
+  title: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11-01_final
+
+measurements:
+  count_wet:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final_count_wet.tif
+  frequency:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final_frequency.tif
+  count_clear:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final_count_clear.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final.sha1
+  metadata:processor:
+    path: ga_ls_wo_fq_nov_mar_3_x25y41_1993-11--P5M_final.proc-info.yaml
+...

@@ -1,0 +1,77 @@
+---
+name: ga_ls_fc_pc_cyear_3
+license: CC-BY-4.0
+metadata_type: eo3
+description: Geoscience Australia Landsat Fractional Cover Percentile Calendar Year
+  Collection 3
+metadata:
+  product:
+    name: ga_ls_fc_pc_cyear_3
+measurements:
+- name: pv_pc_10
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: pv_pc_50
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: pv_pc_90
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: bs_pc_10
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: bs_pc_50
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: bs_pc_90
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: npv_pc_10
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: npv_pc_50
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: npv_pc_90
+  dtype: uint8
+  units: percent
+  nodata: 255
+- name: qa
+  dtype: uint8
+  units: '1'
+  nodata: 255
+  flags_definition:
+    qa:
+      bits:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      values:
+        '0': insufficient observations wet
+        '1': insufficient observations dry
+        '2': sufficient observations
+      description: Quality Assurance
+# Product
+# url: https://explorer.dev.dea.ga.gov.au/products/ga_ls_fc_pc_cyear_3.odc-product.yaml
+load:
+  crs: EPSG:3577
+  align:
+    x: 0
+    y: 0
+  resolution:
+    x: 30
+    y: -30
+...

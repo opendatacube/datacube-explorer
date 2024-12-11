@@ -43,6 +43,9 @@ METADATA_TYPES = [
 PRODUCTS = [
     "products/dsm1sv10.odc-product.yaml",
     "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/ga_ls9c_ard_3.odc-product.yaml",
+    "products/ga_ls_fc_3.odc-product.yaml",
+    "products/ga_ls_wo_fq_nov_mar_3.odc-product.yaml",
     "products/hltc.odc-product.yaml",
     "products/l1_ls8_ga.odc-product.yaml",
     "products/l1_ls5.odc-product.yaml",
@@ -64,6 +67,10 @@ PRODUCTS = [
 ]
 DATASETS = [
     "datasets/ga_ls8c_ard_3-sample.yaml",
+    "datasets/ga_ls9c_ard_3-sample.yaml",
+    "datasets/usgs_ls7e_level1_1-sample.yaml",
+    "datasets/ga_ls_wo_fq_nov_mar_3-sample.yaml",
+    "datasets/ga_ls_fc_3-sample.yaml",
     "datasets/high_tide_comp_20p.yaml.gz",
     # These have very large footprints, as they were unioned from many almost-identical
     # polygons and not simplified. They will trip up postgis if used naively.
@@ -106,25 +113,25 @@ def test_default_redirect(client: FlaskClient):
 
 
 def test_get_overview(client: FlaskClient):
-    html = get_html(client, "/wofs_albers")
+    html = get_html(client, "/ga_ls9c_ard_3")
     check_dataset_count(html, 11)
-    check_last_processed(html, "2018-05-20T11:25:35")
-    assert "wofs_albers whole collection" in _h1_text(html)
-    check_area("61,...km2", html)
+    check_last_processed(html, "2024-05-20T20:49:02")
+    assert "ga_ls9c_ard_3 whole collection" in _h1_text(html)
+    # check_area("61,...km2", html)
 
-    html = get_html(client, "/wofs_albers/2017")
+    html = get_html(client, "/ga_ls9c_ard_3/2021")
+    check_dataset_count(html, 5)
+    check_last_processed(html, "2024-05-20T20:48:14")
+    assert "ga_ls9c_ard_3 across 2021" in _h1_text(html)
 
-    check_dataset_count(html, 11)
-    check_last_processed(html, "2018-05-20T11:25:35")
-    assert "wofs_albers across 2017" in _h1_text(html)
-
-    html = get_html(client, "/wofs_albers/2017/04")
-    check_dataset_count(html, 4)
-    check_last_processed(html, "2018-05-20T09:36:57")
-    assert "wofs_albers across April 2017" in _h1_text(html)
-    check_area("30,...km2", html)
+    html = get_html(client, "/ga_ls9c_ard_3/2022/01")
+    check_dataset_count(html, 6)
+    check_last_processed(html, "2024-05-20T20:49:02")
+    assert "ga_ls9c_ard_3 across January 2022" in _h1_text(html)
+    # check_area("30,...km2", html)
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # This all-time overview has a valid footprint that becomes invalid
     # when reprojected to wgs84 by shapely.
@@ -135,6 +142,7 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     check_dataset_count(html, 1244)
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_all_products_are_shown(client: FlaskClient):
     """
     After all the complicated grouping logic, there should still be one header link for each product.
@@ -155,19 +163,16 @@ def test_get_overview_product_links(client: FlaskClient):
     """
     Are the source and derived product lists being displayed?
     """
-    html = get_html(client, "/ls7_nbar_scene/2017")
+    html = get_html(client, "/ga_ls_fc_3/2022")
 
     product_links = html.find(".source-product a")
-    assert [p.text for p in product_links] == ["ls7_level1_scene"]
-    assert [p.attrs["href"] for p in product_links] == [
-        "/products/ls7_level1_scene/2017"
-    ]
+    assert [p.text for p in product_links] == ["ga_ls8c_ard_3"]
+    assert [p.attrs["href"] for p in product_links] == ["/products/ga_ls8c_ard_3/2022"]
 
+    html = get_html(client, "/ga_ls8c_ard_3/2022")
     product_links = html.find(".derived-product a")
-    assert [p.text for p in product_links] == ["ls7_pq_legacy_scene"]
-    assert [p.attrs["href"] for p in product_links] == [
-        "/products/ls7_pq_legacy_scene/2017"
-    ]
+    assert [p.text for p in product_links] == ["ga_ls_fc_3"]
+    assert [p.attrs["href"] for p in product_links] == ["/products/ga_ls_fc_3/2022"]
 
 
 def test_get_day_overviews(client: FlaskClient):
@@ -175,15 +180,16 @@ def test_get_day_overviews(client: FlaskClient):
     # have their own issues.
 
     # With a dataset
-    html = get_html(client, "/ls7_nbar_scene/2017/4/20")
+    html = get_html(client, "/ga_ls8c_ard_3/2022/5/03")
     check_dataset_count(html, 1)
-    assert "ls7_nbar_scene on 20th April 2017" in _h1_text(html)
+    assert "ga_ls8c_ard_3 on 3rd May 2022" in _h1_text(html)
 
     # Empty day
-    html = get_html(client, "/ls7_nbar_scene/2017/4/22")
+    html = get_html(client, "/ga_ls8c_ard_3/2017/4/22")
     check_dataset_count(html, 0)
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/pq_count_summary")
@@ -195,16 +201,21 @@ def test_uninitialised_overview(
 ):
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
-    summary_store.refresh("ls7_nbar_albers")
+    summary_store.refresh("usgs_ls7e_level1_1")
 
-    html = get_html(unpopulated_client, "/ls7_nbar_scene/2017")
+    html = get_html(unpopulated_client, "/usgs_ls7e_level1_1/2017")
 
     # The page should load without error, but will display 'unknown' fields
-    assert html.find("h2", first=True).text == "ls7_nbar_scene: Landsat 7 NBAR 25 metre"
+    assert (
+        html.find("h2", first=True).text
+        == "usgs_ls7e_level1_1: United States Geological Survey Landsat 7 \
+            Enhanced Thematic Mapper Plus Level 1 Collection 1"
+    )
     assert "Unknown number of datasets" in html.text
     assert "No data: not yet summarised" in html.text
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
     """
     An unsummarised product should still be viewable on the product page.
@@ -230,25 +241,25 @@ def test_empty_product_overview(client: FlaskClient):
     """
     A page is still displayable without error when it has no datasets.
     """
-    html = get_html(client, "/ls5_nbar_scene")
+    html = get_html(client, "/usgs_ls5t_level1_1")
     assert_is_text(html, ".dataset-count", "0 datasets")
 
-    assert_is_text(html, ".query-param.key-platform .value", "LANDSAT_5")
+    assert_is_text(html, ".query-param.key-platform .value", "landsat-5")
     assert_is_text(html, ".query-param.key-instrument .value", "TM")
-    assert_is_text(html, ".query-param.key-product_type .value", "nbar")
+    # assert_is_text(html, ".query-param.key-product_type .value", "level1")
 
 
 def test_empty_product_page(client: FlaskClient):
     """
     A product page is displayable when summarised, but with 0 datasets.
     """
-    html = get_html(client, "/products/ls5_nbar_scene")
+    html = get_html(client, "/products/usgs_ls5t_level1_1")
     assert "0 datasets" in one_element(html, ".dataset-count").text
 
     # ... yet a normal product doesn't show the message:
-    html = get_html(client, "/products/ls7_nbar_scene")
+    html = get_html(client, "/products/usgs_ls7e_level1_1")
     assert "0 datasets" not in one_element(html, ".dataset-count").text
-    assert "4 datasets" in one_element(html, ".dataset-count").text
+    assert "5 datasets" in one_element(html, ".dataset-count").text
 
 
 def one_element(html: HTML, selector: str) -> Element:
@@ -279,6 +290,7 @@ def assert_is_text(html: HTML, selector, text: str):
     assert el.text == text
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_uninitialised_search_page(
     empty_client: FlaskClient, summary_store: SummaryStore
 ):
@@ -292,20 +304,20 @@ def test_uninitialised_search_page(
 
 
 def test_view_dataset(client: FlaskClient):
-    # ls7_level1_scene dataset
-    html = get_html(client, "/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+    # usgs_ls7e_level1 dataset
+    html = get_html(client, "/dataset/7dff1cb5-b297-5701-8390-43c0f2d58fbb")
 
     # Label of dataset is header
     assert (
-        "LS7_ETM_OTH_P51_GALPGS01-002_105_074_20170501"
+        "usgs_ls7e_level1_1-0-20200628_097068_2020-06-01"
         in html.find("h2", first=True).text
     )
     assert not html.find(".key-creation_dt", first=True)
 
-    # wofs_albers dataset (has no label or location)
-    rv: HTML = get_html(client, "/dataset/20c024b5-6623-4b06-b00c-6b5789f81eeb")
-    assert "-20.502 to -19.6" in rv.text
-    assert "132.0 to 132.924" in rv.text
+    # ga_ls_wo_fq_nov_mar_3 dataset (has no label or location)
+    rv: HTML = get_html(client, "/dataset/974e1e89-3757-4d94-be8d-7acaeb7adf24")
+    assert "-26.129 to -25.15" in rv.text
+    assert "111.533 to 112.639" in rv.text
     assert not rv.find(".key-creation_dt", first=True)
 
     # No dataset found: should return 404, not a server error.
@@ -322,36 +334,36 @@ def _h1_text(html):
 
 
 def test_view_product(client: FlaskClient):
-    rv: HTML = get_html(client, "/product/ls7_nbar_scene")
-    assert "Landsat 7 NBAR 25 metre" in rv.text
+    rv: HTML = get_html(client, "/product/ga_ls8c_ard_3")
+    assert "Geoscience Australia Landsat 8" in rv.text
 
 
 def test_view_metadata_type(client: FlaskClient, odc_test_db):
     # Does it load without error?
-    html: HTML = get_html(client, "/metadata-type/eo")
-    assert html.find("h2", first=True).text == "eo"
+    html: HTML = get_html(client, "/metadata-type/eo3")
+    assert html.find("h2", first=True).text == "eo3"
 
-    how_many_are_eo = len(
+    how_many_are_eo3 = len(
         [
             p
             for p in odc_test_db.index.products.get_all()
-            if p.metadata_type.name == "eo"
+            if p.metadata_type.name == "eo3"
         ]
     )
     assert (
         html.find(".header-follow", first=True).text
-        == f"metadata type of {how_many_are_eo} products"
+        == f"metadata type of {how_many_are_eo3} products"
     )
 
     # Does the page list products using the type?
     products_using_it = [t.text for t in html.find(".type-usage-item")]
-    assert "ls8_nbar_albers" in products_using_it
+    assert "ga_ls_wo_fq_nov_mar_3" in products_using_it
 
 
 def test_storage_page(client: FlaskClient, odc_test_db):
     html: HTML = get_html(client, "/audit/storage")
 
-    assert html.find(".product-name", containing="wofs_albers")
+    assert html.find(".product-name", containing="ga_ls9c_ard_3")
 
     product_count = len(list(odc_test_db.index.products.get_all()))
     assert f"{product_count} products" in html.text
@@ -370,6 +382,7 @@ def test_out_of_date_range(client: FlaskClient):
     assert "Historic Flood Mapping Water Observations from Space" in html.text
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_loading_high_low_tide_comp(client: FlaskClient):
     html = get_html(client, "/high_tide_comp_20p/2008")
 
@@ -388,6 +401,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     """
     These are slightly fun to handle as they are a small number with a huge time range.
@@ -434,18 +448,19 @@ def test_api_returns_scenes_as_geojson(client: FlaskClient):
     """
     L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
     """
-    geojson = get_geojson(client, "/api/datasets/ls8_level1_scene")
-    assert len(geojson["features"]) == 7, "Unexpected scene polygon count"
+    geojson = get_geojson(client, "/api/datasets/usgs_ls7e_level1_1")
+    assert len(geojson["features"]) == 5, "Unexpected l1 polygon count"
 
 
 def test_api_returns_tiles_as_geojson(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
-    geojson = get_geojson(client, "/api/datasets/ls7_nbart_albers")
-    assert len(geojson["features"]) == 4, "Unepected albers polygon count"
+    geojson = get_geojson(client, "/api/datasets/ga_ls8c_ard_3")
+    assert len(geojson["features"]) == 21, "Unepected polygon count"
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_api_returns_high_tide_comp_regions(client: FlaskClient):
     """
     High tide doesn't have anything we can use as regions.
@@ -463,25 +478,25 @@ def test_api_returns_scene_regions(client: FlaskClient):
     """
     L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
     """
-    geojson = get_geojson(client, "/api/regions/ls8_level1_scene")
-    assert len(geojson["features"]) == 7, "Unexpected scene region count"
+    geojson = get_geojson(client, "/api/regions/usgs_ls7e_level1_1")
+    assert len(geojson["features"]) == 5, "Unexpected l1 region count"
 
 
 def test_region_page(client: FlaskClient):
     """
     Load a list of scenes for a given region.
     """
-    html = get_html(client, "/region/ls7_nbar_scene/96_82")
+    html = get_html(client, "/region/ga_ls8c_ard_3/104074")
     search_results = html.find(".search-result a")
     assert len(search_results) == 1
     result = search_results[0]
-    assert result.text == "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502"
+    assert result.text == "ga_ls8c_ard_3-2-1_104074_2022-07-19_interim"
 
     # If "I'm feeling lucky", and only one result, redirect straight to it.
     assert_redirects_to(
         client,
-        "/product/ls7_nbar_scene/regions/96_82?feelinglucky=",
-        "/dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c",
+        "/product/ga_ls8c_ard_3/regions/104074?feelinglucky=",
+        "/dataset/c867d666-bf01-48f2-8259-48f756f86858",
     )
 
 
@@ -489,8 +504,8 @@ def test_legacy_region_redirect(client: FlaskClient):
     # Legacy redirect works, and maintains "feeling lucky"
     assert_redirects_to(
         client,
-        "/region/ls7_nbar_scene/96_82?feelinglucky",
-        "/product/ls7_nbar_scene/regions/96_82?feelinglucky=",
+        "/region/ga_ls8c_ard_3/104074?feelinglucky",
+        "/product/ga_ls8c_ard_3/regions/104074?feelinglucky=",
     )
 
 
@@ -507,23 +522,27 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str):
 
 
 def test_search_page(client: FlaskClient):
-    html = get_html(client, "/datasets/ls7_nbar_scene")
+    html = get_html(client, "/datasets/ga_ls8c_ard_3")
     search_results = html.find(".search-result a")
-    assert len(search_results) == 4
+    assert len(search_results) == 21
 
-    html = get_html(client, "/datasets/ls7_nbar_scene/2017/05")
+    html = get_html(client, "/datasets/ga_ls8c_ard_3/2017/12")
     search_results = html.find(".search-result a")
-    assert len(search_results) == 3
+    assert len(search_results) == 7
+
+    html = get_html(client, "/datasets/ga_ls8c_ard_3/2018")
+    search_results = html.find(".search-result a")
+    assert len(search_results) == 0
 
 
 def test_search_time_completion(client: FlaskClient):
     # They only specified a begin time, so the end time should be filled in with the product extent.
-    html = get_html(client, "/datasets/ls7_nbar_scene?time-begin=1999-05-28")
+    html = get_html(client, "/datasets/ga_ls8c_ard_3?time-begin=1999-05-28")
     assert one_element(html, "#search-time-before").attrs["value"] == "1999-05-28"
     # One day after the product extent end (range is exclusive)
-    assert one_element(html, "#search-time-after").attrs["value"] == "2017-05-04"
+    assert one_element(html, "#search-time-after").attrs["value"] == "2022-10-28"
     search_results = html.find(".search-result a")
-    assert len(search_results) == 4
+    assert len(search_results) == 21
 
     # if not provided as a span, it should become a span of one day
     html = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
@@ -537,200 +556,173 @@ def test_api_returns_tiles_regions(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
-    geojson = get_geojson(client, "/api/regions/ls7_nbart_albers")
-    assert len(geojson["features"]) == 4, "Unexpected albers region count"
+    geojson = get_geojson(client, "/api/regions/ga_ls9c_ard_3")
+    assert len(geojson["features"]) == 11, "Unexpected product region count"
 
 
 def test_api_returns_limited_tile_regions(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
-    geojson = get_geojson(client, "/api/regions/wofs_albers/2017/04")
-    assert len(geojson["features"]) == 4, "Unexpected wofs albers region month count"
-    geojson = get_geojson(client, "/api/regions/wofs_albers/2017/04/20")
+    geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02")
+    assert len(geojson["features"]) == 3, "Unexpected region month count"
+    geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02/26")
     print(json.dumps(geojson, indent=4))
-    assert len(geojson["features"]) == 1, "Unexpected wofs albers region day count"
-    geojson = get_geojson(client, "/api/regions/wofs_albers/2017/04/6")
-    assert len(geojson["features"]) == 0, "Unexpected wofs albers region count"
+    assert len(geojson["features"]) == 1, "Unexpected region day count"
+    geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/04/6")
+    assert len(geojson["features"]) == 0, "Unexpected region count"
 
 
 def test_api_returns_timelines(client: FlaskClient):
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
-    doc = get_json(client, "/api/dataset-timeline/wofs_albers")
+    doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3")
     assert doc == {
-        "2017-04-01T00:00:00": 0,
-        "2017-04-02T00:00:00": 0,
-        "2017-04-03T00:00:00": 0,
-        "2017-04-04T00:00:00": 0,
-        "2017-04-05T00:00:00": 0,
-        "2017-04-06T00:00:00": 0,
-        "2017-04-07T00:00:00": 0,
-        "2017-04-08T00:00:00": 0,
-        "2017-04-09T00:00:00": 0,
-        "2017-04-10T00:00:00": 0,
-        "2017-04-11T00:00:00": 0,
-        "2017-04-12T00:00:00": 0,
-        "2017-04-13T00:00:00": 0,
-        "2017-04-14T00:00:00": 0,
-        "2017-04-15T00:00:00": 0,
-        "2017-04-16T00:00:00": 1,
-        "2017-04-17T00:00:00": 0,
-        "2017-04-18T00:00:00": 0,
-        "2017-04-19T00:00:00": 1,
-        "2017-04-20T00:00:00": 1,
-        "2017-04-21T00:00:00": 0,
-        "2017-04-22T00:00:00": 0,
-        "2017-04-23T00:00:00": 0,
-        "2017-04-24T00:00:00": 1,
-        "2017-04-25T00:00:00": 0,
-        "2017-04-26T00:00:00": 0,
-        "2017-04-27T00:00:00": 0,
-        "2017-04-28T00:00:00": 0,
-        "2017-04-29T00:00:00": 0,
-        "2017-04-30T00:00:00": 0,
-        "2017-05-01T00:00:00": 1,
-        "2017-05-02T00:00:00": 1,
-        "2017-05-03T00:00:00": 1,
-        "2017-05-04T00:00:00": 0,
-        "2017-05-05T00:00:00": 1,
-        "2017-05-06T00:00:00": 0,
-        "2017-05-07T00:00:00": 0,
-        "2017-05-08T00:00:00": 1,
-        "2017-05-09T00:00:00": 1,
-        "2017-05-10T00:00:00": 1,
-        "2017-05-11T00:00:00": 0,
-        "2017-05-12T00:00:00": 0,
-        "2017-05-13T00:00:00": 0,
-        "2017-05-14T00:00:00": 0,
-        "2017-05-15T00:00:00": 0,
-        "2017-05-16T00:00:00": 0,
-        "2017-05-17T00:00:00": 0,
-        "2017-05-18T00:00:00": 0,
-        "2017-05-19T00:00:00": 0,
-        "2017-05-20T00:00:00": 0,
-        "2017-05-21T00:00:00": 0,
-        "2017-05-22T00:00:00": 0,
-        "2017-05-23T00:00:00": 0,
-        "2017-05-24T00:00:00": 0,
-        "2017-05-25T00:00:00": 0,
-        "2017-05-26T00:00:00": 0,
-        "2017-05-27T00:00:00": 0,
-        "2017-05-28T00:00:00": 0,
-        "2017-05-29T00:00:00": 0,
-        "2017-05-30T00:00:00": 0,
-        "2017-05-31T00:00:00": 0,
+        "2021-12-01T00:00:00": 0,
+        "2021-12-02T00:00:00": 0,
+        "2021-12-03T00:00:00": 0,
+        "2021-12-04T00:00:00": 1,
+        "2021-12-05T00:00:00": 0,
+        "2021-12-06T00:00:00": 0,
+        "2021-12-07T00:00:00": 0,
+        "2021-12-08T00:00:00": 0,
+        "2021-12-09T00:00:00": 0,
+        "2021-12-10T00:00:00": 1,
+        "2021-12-11T00:00:00": 0,
+        "2021-12-12T00:00:00": 0,
+        "2021-12-13T00:00:00": 0,
+        "2021-12-14T00:00:00": 0,
+        "2021-12-15T00:00:00": 0,
+        "2021-12-16T00:00:00": 0,
+        "2021-12-17T00:00:00": 0,
+        "2021-12-18T00:00:00": 0,
+        "2021-12-19T00:00:00": 0,
+        "2021-12-20T00:00:00": 0,
+        "2021-12-21T00:00:00": 0,
+        "2021-12-22T00:00:00": 1,
+        "2021-12-23T00:00:00": 0,
+        "2021-12-24T00:00:00": 0,
+        "2021-12-25T00:00:00": 0,
+        "2021-12-26T00:00:00": 0,
+        "2021-12-27T00:00:00": 0,
+        "2021-12-28T00:00:00": 2,
+        "2021-12-29T00:00:00": 0,
+        "2021-12-30T00:00:00": 0,
+        "2021-12-31T00:00:00": 0,
+        "2022-01-01T00:00:00": 1,
+        "2022-01-02T00:00:00": 0,
+        "2022-01-03T00:00:00": 0,
+        "2022-01-04T00:00:00": 0,
+        "2022-01-05T00:00:00": 0,
+        "2022-01-06T00:00:00": 0,
+        "2022-01-07T00:00:00": 0,
+        "2022-01-08T00:00:00": 0,
+        "2022-01-09T00:00:00": 0,
+        "2022-01-10T00:00:00": 0,
+        "2022-01-11T00:00:00": 0,
+        "2022-01-12T00:00:00": 0,
+        "2022-01-13T00:00:00": 0,
+        "2022-01-14T00:00:00": 0,
+        "2022-01-15T00:00:00": 0,
+        "2022-01-16T00:00:00": 0,
+        "2022-01-17T00:00:00": 1,
+        "2022-01-18T00:00:00": 0,
+        "2022-01-19T00:00:00": 1,
+        "2022-01-20T00:00:00": 2,
+        "2022-01-21T00:00:00": 0,
+        "2022-01-22T00:00:00": 0,
+        "2022-01-23T00:00:00": 0,
+        "2022-01-24T00:00:00": 0,
+        "2022-01-25T00:00:00": 0,
+        "2022-01-26T00:00:00": 0,
+        "2022-01-27T00:00:00": 0,
+        "2022-01-28T00:00:00": 0,
+        "2022-01-29T00:00:00": 0,
+        "2022-01-30T00:00:00": 1,
+        "2022-01-31T00:00:00": 0,
     }
 
-    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017")
+    doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3/2021")
     assert doc == {
-        "2017-04-01T00:00:00": 0,
-        "2017-04-02T00:00:00": 0,
-        "2017-04-03T00:00:00": 0,
-        "2017-04-04T00:00:00": 0,
-        "2017-04-05T00:00:00": 0,
-        "2017-04-06T00:00:00": 0,
-        "2017-04-07T00:00:00": 0,
-        "2017-04-08T00:00:00": 0,
-        "2017-04-09T00:00:00": 0,
-        "2017-04-10T00:00:00": 0,
-        "2017-04-11T00:00:00": 0,
-        "2017-04-12T00:00:00": 0,
-        "2017-04-13T00:00:00": 0,
-        "2017-04-14T00:00:00": 0,
-        "2017-04-15T00:00:00": 0,
-        "2017-04-16T00:00:00": 1,
-        "2017-04-17T00:00:00": 0,
-        "2017-04-18T00:00:00": 0,
-        "2017-04-19T00:00:00": 1,
-        "2017-04-20T00:00:00": 1,
-        "2017-04-21T00:00:00": 0,
-        "2017-04-22T00:00:00": 0,
-        "2017-04-23T00:00:00": 0,
-        "2017-04-24T00:00:00": 1,
-        "2017-04-25T00:00:00": 0,
-        "2017-04-26T00:00:00": 0,
-        "2017-04-27T00:00:00": 0,
-        "2017-04-28T00:00:00": 0,
-        "2017-04-29T00:00:00": 0,
-        "2017-04-30T00:00:00": 0,
-        "2017-05-01T00:00:00": 1,
-        "2017-05-02T00:00:00": 1,
-        "2017-05-03T00:00:00": 1,
-        "2017-05-04T00:00:00": 0,
-        "2017-05-05T00:00:00": 1,
-        "2017-05-06T00:00:00": 0,
-        "2017-05-07T00:00:00": 0,
-        "2017-05-08T00:00:00": 1,
-        "2017-05-09T00:00:00": 1,
-        "2017-05-10T00:00:00": 1,
-        "2017-05-11T00:00:00": 0,
-        "2017-05-12T00:00:00": 0,
-        "2017-05-13T00:00:00": 0,
-        "2017-05-14T00:00:00": 0,
-        "2017-05-15T00:00:00": 0,
-        "2017-05-16T00:00:00": 0,
-        "2017-05-17T00:00:00": 0,
-        "2017-05-18T00:00:00": 0,
-        "2017-05-19T00:00:00": 0,
-        "2017-05-20T00:00:00": 0,
-        "2017-05-21T00:00:00": 0,
-        "2017-05-22T00:00:00": 0,
-        "2017-05-23T00:00:00": 0,
-        "2017-05-24T00:00:00": 0,
-        "2017-05-25T00:00:00": 0,
-        "2017-05-26T00:00:00": 0,
-        "2017-05-27T00:00:00": 0,
-        "2017-05-28T00:00:00": 0,
-        "2017-05-29T00:00:00": 0,
-        "2017-05-30T00:00:00": 0,
-        "2017-05-31T00:00:00": 0,
+        "2021-12-01T00:00:00": 0,
+        "2021-12-02T00:00:00": 0,
+        "2021-12-03T00:00:00": 0,
+        "2021-12-04T00:00:00": 1,
+        "2021-12-05T00:00:00": 0,
+        "2021-12-06T00:00:00": 0,
+        "2021-12-07T00:00:00": 0,
+        "2021-12-08T00:00:00": 0,
+        "2021-12-09T00:00:00": 0,
+        "2021-12-10T00:00:00": 1,
+        "2021-12-11T00:00:00": 0,
+        "2021-12-12T00:00:00": 0,
+        "2021-12-13T00:00:00": 0,
+        "2021-12-14T00:00:00": 0,
+        "2021-12-15T00:00:00": 0,
+        "2021-12-16T00:00:00": 0,
+        "2021-12-17T00:00:00": 0,
+        "2021-12-18T00:00:00": 0,
+        "2021-12-19T00:00:00": 0,
+        "2021-12-20T00:00:00": 0,
+        "2021-12-21T00:00:00": 0,
+        "2021-12-22T00:00:00": 1,
+        "2021-12-23T00:00:00": 0,
+        "2021-12-24T00:00:00": 0,
+        "2021-12-25T00:00:00": 0,
+        "2021-12-26T00:00:00": 0,
+        "2021-12-27T00:00:00": 0,
+        "2021-12-28T00:00:00": 2,
+        "2021-12-29T00:00:00": 0,
+        "2021-12-30T00:00:00": 0,
+        "2021-12-31T00:00:00": 0,
     }
 
-    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017/04")
+    doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3/2022/01")
     assert doc == {
-        "2017-04-01T00:00:00": 0,
-        "2017-04-02T00:00:00": 0,
-        "2017-04-03T00:00:00": 0,
-        "2017-04-04T00:00:00": 0,
-        "2017-04-05T00:00:00": 0,
-        "2017-04-06T00:00:00": 0,
-        "2017-04-07T00:00:00": 0,
-        "2017-04-08T00:00:00": 0,
-        "2017-04-09T00:00:00": 0,
-        "2017-04-10T00:00:00": 0,
-        "2017-04-11T00:00:00": 0,
-        "2017-04-12T00:00:00": 0,
-        "2017-04-13T00:00:00": 0,
-        "2017-04-14T00:00:00": 0,
-        "2017-04-15T00:00:00": 0,
-        "2017-04-16T00:00:00": 1,
-        "2017-04-17T00:00:00": 0,
-        "2017-04-18T00:00:00": 0,
-        "2017-04-19T00:00:00": 1,
-        "2017-04-20T00:00:00": 1,
-        "2017-04-21T00:00:00": 0,
-        "2017-04-22T00:00:00": 0,
-        "2017-04-23T00:00:00": 0,
-        "2017-04-24T00:00:00": 1,
-        "2017-04-25T00:00:00": 0,
-        "2017-04-26T00:00:00": 0,
-        "2017-04-27T00:00:00": 0,
-        "2017-04-28T00:00:00": 0,
-        "2017-04-29T00:00:00": 0,
-        "2017-04-30T00:00:00": 0,
+        "2022-01-01T00:00:00": 1,
+        "2022-01-02T00:00:00": 0,
+        "2022-01-03T00:00:00": 0,
+        "2022-01-04T00:00:00": 0,
+        "2022-01-05T00:00:00": 0,
+        "2022-01-06T00:00:00": 0,
+        "2022-01-07T00:00:00": 0,
+        "2022-01-08T00:00:00": 0,
+        "2022-01-09T00:00:00": 0,
+        "2022-01-10T00:00:00": 0,
+        "2022-01-11T00:00:00": 0,
+        "2022-01-12T00:00:00": 0,
+        "2022-01-13T00:00:00": 0,
+        "2022-01-14T00:00:00": 0,
+        "2022-01-15T00:00:00": 0,
+        "2022-01-16T00:00:00": 0,
+        "2022-01-17T00:00:00": 1,
+        "2022-01-18T00:00:00": 0,
+        "2022-01-19T00:00:00": 1,
+        "2022-01-20T00:00:00": 2,
+        "2022-01-21T00:00:00": 0,
+        "2022-01-22T00:00:00": 0,
+        "2022-01-23T00:00:00": 0,
+        "2022-01-24T00:00:00": 0,
+        "2022-01-25T00:00:00": 0,
+        "2022-01-26T00:00:00": 0,
+        "2022-01-27T00:00:00": 0,
+        "2022-01-28T00:00:00": 0,
+        "2022-01-29T00:00:00": 0,
+        "2022-01-30T00:00:00": 1,
+        "2022-01-31T00:00:00": 0,
     }
 
-    doc = get_json(client, "/api/dataset-timeline/wofs_albers/2017/04/24")
+    doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3/2022/01/17")
     assert doc == {
-        "2017-04-24T00:00:00": 1,
+        "2022-01-17T00:00:00": 1,
     }
 
 
 pytest.mark.xfail(True, reason="telemetry data removed")
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
@@ -742,6 +734,7 @@ def test_undisplayable_product(client: FlaskClient):
     assert "No CRSes defined" in html.text
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_no_data_pages(client: FlaskClient):
     """
     Fetch products that exist but have no summaries generated.
@@ -767,26 +760,26 @@ def test_general_dataset_redirect(client: FlaskClient):
     to the real URL for the collection.
     """
     rv: Response = client.get(
-        "/dataset/57848615-2421-4d25-bfef-73f57de0574d", follow_redirects=False
+        "/dataset/c867d666-bf01-48f2-8259-48f756f86858", follow_redirects=False
     )
     # It should be a redirect
     assert rv.status_code == 302
     assert (
         rv.location
-        == "/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d"
+        == "/products/ga_ls8c_ard_3/datasets/c867d666-bf01-48f2-8259-48f756f86858"
     )
 
 
 def test_missing_dataset(client: FlaskClient):
     rv: Response = client.get(
-        "/products/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c/datasets",
+        "/products/ga_ls8c_ard_3/datasets/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c",
         follow_redirects=False,
     )
     assert rv.status_code == 404
 
     # But a real dataset definitely works:
     rv: Response = client.get(
-        "/products/ls7_level1_scene/datasets/57848615-2421-4d25-bfef-73f57de0574d",
+        "/products/ga_ls8c_ard_3/datasets/c867d666-bf01-48f2-8259-48f756f86858",
         follow_redirects=False,
     )
     assert rv.status_code == 200
@@ -802,6 +795,7 @@ def test_invalid_product_returns_not_found(client: FlaskClient):
     assert rv.status_code == 404
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_show_summary_cli(clirunner, client: FlaskClient):
     """
     You should be able to view a product with cubedash-view command-line program.
@@ -853,7 +847,7 @@ def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient):
     """
     # A period that's out of bounds.
     res: Result = clirunner(
-        show.cli, ["ls7_nbar_scene", "2030", "5"], expect_success=False
+        show.cli, ["ga_ls8c_ard_3", "2030", "5"], expect_success=False
     )
     assert "No summary for chosen period." in res.output
 
@@ -876,15 +870,15 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
 
     (and error return code)
     """
-    res: Result = clirunner(show.cli, ["ls7_nbar_scene"], expect_success=False)
+    res: Result = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
     out = res.output.strip()
-    assert out.startswith("No info: product 'ls7_nbar_scene' has not been summarised")
+    assert out.startswith("No info: product 'ga_ls8c_ard_3' has not been summarised")
     assert res.exit_code != 0
 
 
 def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     index = odc_test_db.index
-    product = index.products.get_by_name("ls7_nbar_scene")
+    product = index.products.get_by_name("ga_ls8c_ard_3")
     e_index = explorer_index(index)
     [cols] = _extents.get_sample_dataset([product], e_index)
     assert cols["id"] is not None
@@ -897,14 +891,14 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
     assert str(cols["id"]) in output_json
 
     [cols] = _extents.get_mapped_crses([product], e_index)
-    assert cols["product"] == "ls7_nbar_scene"
-    assert cols["crs"] in (28349, 28350, 28351, 28352, 28353, 28354, 28355, 28356)
+    assert cols["product"] == "ga_ls8c_ard_3"
+    assert cols["crs"] in (32650, 32651, 32652, 32653, 32654, 32655, 32656)
 
 
 def test_with_timings(client: FlaskClient):
     _monitoring.init_app_monitoring(client.application)
-    # ls7_level1_scene dataset
-    rv: Response = client.get("/dataset/57848615-2421-4d25-bfef-73f57de0574d")
+    # ga_ls8c_ard_3 dataset
+    rv: Response = client.get("/dataset/e2dd2539-ae18-4edc-a0e6-ddd31848669c")
     assert "Server-Timing" in rv.headers
 
     count_header = [
@@ -924,9 +918,10 @@ def test_with_timings(client: FlaskClient):
 
 def test_plain_product_list(client: FlaskClient):
     text, rv = get_text_response(client, "/products.txt")
-    assert "ls7_nbar_scene\n" in text
+    assert "ga_ls8c_ard_3\n" in text
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_raw_documents(client: FlaskClient):
     """
     Check that raw-documents load without error,

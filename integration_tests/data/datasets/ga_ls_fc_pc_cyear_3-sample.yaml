@@ -1,0 +1,162 @@
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/4129babb-851f-4b6a-b27f-55a5102ea8e0.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+id: 4129babb-851f-4b6a-b27f-55a5102ea8e0
+
+label: ga_ls_fc_pc_cyear_3_x47y19_2022-01-01_final
+product:
+  href: https://collections.dea.ga.gov.au/product/ga_ls_fc_pc_cyear_3
+  name: ga_ls_fc_pc_cyear_3
+
+location:
+  s3://dea-public-data-dev/derivative/ga_ls_fc_pc_cyear_3/3-0-0/x47/y19/2022--P1Y/ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final.odc-metadata.yaml
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[1.824e+06, -3.552e+06], [1.824e+06, -3.648e+06], [1.92e+06, -3.648e+06],
+      [1.92e+06, -3.552e+06], [1.824e+06, -3.552e+06]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [3.e+01, 0.e+00, 1.824e+06, 0.e+00, -3.e+01, -3.552e+06, 0.e+00, 0.e+00,
+      1.e+00]
+
+properties:
+  datetime: '2022-01-01T00:00:00+00:00'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '2022-12-31T23:59:59.999999+00:00'
+  dtr:start_datetime: '2022-01-01T00:00:00+00:00'
+  eo:instrument: ETM_OLI_TIRS
+  eo:platform: landsat-7,landsat-8
+  odc:collection_number: 3
+  odc:dataset_version: 3.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2023-02-07T02:16:26.798212+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_fc_pc_cyear_3
+  odc:product_family: fc_percentile
+  odc:region_code: x47y19
+
+measurements:
+  qa:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_qa.tif
+  bs_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_bs_pc_10.tif
+  bs_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_bs_pc_50.tif
+  bs_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_bs_pc_90.tif
+  pv_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_pv_pc_10.tif
+  pv_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_pv_pc_50.tif
+  pv_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_pv_pc_90.tif
+  npv_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_npv_pc_10.tif
+  npv_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_npv_pc_50.tif
+  npv_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_npv_pc_90.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final.sha1
+  metadata:processor:
+    path: ga_ls_fc_pc_cyear_3_x47y19_2022--P1Y_final.proc-info.yaml
+
+lineage:
+  ard:
+  - 531d067a-4fa7-50cb-8918-b53429a73c2c
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/4e545677-b494-4163-b350-db7cae751a21.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: 4e545677-b494-4163-b350-db7cae751a21
+product:
+  name: ga_ls_fc_pc_cyear_3
+
+location:
+  s3://dea-public-data/derivative/ga_ls_fc_pc_cyear_3/4-0-0/x25/y41/2022--P1Y/ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final.stac-item.json
+
+crs: epsg:3577
+geometry:
+  type: Polygon
+  coordinates: [[[-2.016e+06, -2.88e+06], [-2.016e+06, -2.976e+06], [-1.92e+06, -2.976e+06],
+      [-1.92e+06, -2.88e+06], [-2.016e+06, -2.88e+06]]]
+grids:
+  default:
+    shape: [3200, 3200]
+    transform: [3.e+01, 0.e+00, -2.016e+06, 0.e+00, -3.e+01, -2.88e+06, 0.e+00, 0.e+00,
+      1.e+00]
+
+properties:
+  created: '2024-06-29T03:55:46.366288Z'
+  datetime: '2022-01-01T00:00:00Z'
+  dea:dataset_maturity: final
+  dtr:end_datetime: '2022-12-31T23:59:59.999999Z'
+  dtr:start_datetime: '2022-01-01T00:00:00Z'
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8,landsat-9
+  odc:collection_number: 3
+  odc:dataset_version: 4.0.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2024-06-29T03:55:46.366288Z'
+  odc:producer: ga.gov.au
+  odc:product: ga_ls_fc_pc_cyear_3
+  odc:product_family: fc_percentile
+  odc:region_code: x25y41
+  proj:epsg: 3577
+  proj:shape:
+  - 3200
+  - 3200
+  proj:transform:
+  - 3.e+01
+  - 0.e+00
+  - -2.016e+06
+  - 0.e+00
+  - -3.e+01
+  - -2.88e+06
+  - 0.e+00
+  - 0.e+00
+  - 1.e+00
+  title: ga_ls_fc_pc_cyear_3_x25y41_2022-01-01_final
+
+measurements:
+  qa:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_qa.tif
+  bs_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_bs_pc_10.tif
+  bs_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_bs_pc_50.tif
+  bs_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_bs_pc_90.tif
+  pv_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_pv_pc_10.tif
+  pv_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_pv_pc_50.tif
+  pv_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_pv_pc_90.tif
+  npv_pc_10:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_npv_pc_10.tif
+  npv_pc_50:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_npv_pc_50.tif
+  npv_pc_90:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_npv_pc_90.tif
+
+accessories:
+  thumbnail:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final.sha1
+  metadata:processor:
+    path: ga_ls_fc_pc_cyear_3_x25y41_2022--P1Y_final.proc-info.yaml
+
+lineage: {}
+...

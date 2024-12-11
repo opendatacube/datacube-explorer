@@ -35,13 +35,12 @@ TEST_EO3_DATASET_ARD = (
 METADATA_TYPES = [
     "metadata/eo3_landsat_l1.odc-type.yaml",
     "metadata/eo3_landsat_ard.odc-type.yaml",
-    "metadata/landsat_l1_scene.yaml",  # this isn't an eo3 metadata type, so why is it used here?
 ]
 PRODUCTS = [
     "products/l1_ls5.odc-product.yaml",
     "products/ard_ls5.odc-product.yaml",
     "gm_s2_semiannual/gm_s2_semiannual_lowres.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
+    "products/l1_ls8_ga.odc-product.yaml",
 ]
 DATASETS = [
     "datasets/LT05_L1TP_113081_19880330_20170209_01_T1.odc-metadata.yaml",
@@ -163,7 +162,7 @@ def test_eo3_dateless_extents(eo3_index: Index):
 def test_location_sampling(eo3_index: Index):
     summary_store = SummaryStore.create(eo3_index)
 
-    assert summary_store.product_location_samples("ls8_nbar_scene") == []
+    assert summary_store.product_location_samples("ga_ls8c_level1_3") == []
 
 
 def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):

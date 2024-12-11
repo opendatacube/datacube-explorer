@@ -16,6 +16,7 @@ from datacube.index import index_connect
 from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.utils import read_documents
+from datacube.utils.documents import InvalidDocException, UnknownMetadataType
 from sqlalchemy import text
 
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
@@ -168,7 +169,6 @@ def odc_test_db(cfg_env):
             _remove_postgres_dynamic_indexes()
         else:
             for table in [
-                "odc.location",
                 "odc.dataset_lineage",
                 "odc.dataset_search_string",
                 "odc.dataset_search_num",
@@ -234,13 +234,20 @@ def auto_odc_db(odc_test_db, request):
         for filename in request.module.METADATA_TYPES:
             filename = data_path / filename
             for _, meta_doc in read_documents(filename):
-                odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
+                try:
+                    odc_test_db.index.metadata_types.add(MetadataType(meta_doc))
+                except InvalidDocException:
+                    # skip non-eo3 metadata/products/datasets when using the postgis index
+                    continue
 
     if hasattr(request.module, "PRODUCTS"):
         for filename in request.module.PRODUCTS:
             filename = data_path / filename
             for _, prod_doc in read_documents(filename):
-                odc_test_db.index.products.add_document(prod_doc)
+                try:
+                    odc_test_db.index.products.add_document(prod_doc)
+                except UnknownMetadataType:
+                    continue
 
     dataset_count = Counter()
     if hasattr(request.module, "DATASETS"):
@@ -249,13 +256,16 @@ def auto_odc_db(odc_test_db, request):
             filename = data_path / filename
             for _, doc in read_documents(filename):
                 label = doc["ga_label"] if ("ga_label" in doc) else doc["id"]
-                dataset, err = create_dataset(
-                    doc, f"file://example.com/test_dataset/{label}"
-                )
-                assert dataset is not None, err
-                created = odc_test_db.index.datasets.add(dataset)
-                assert created.uri
-                dataset_count[created.product.name] += 1
+                try:
+                    dataset, err = create_dataset(
+                        doc, f"file://example.com/test_dataset/{label}"
+                    )
+                    assert dataset is not None, err
+                    created = odc_test_db.index.datasets.add(dataset)
+                    assert created.uri
+                    dataset_count[created.product.name] += 1
+                except ValueError:
+                    continue
 
             print(f"Loaded Datasets: {dataset_count}")
     return dataset_count

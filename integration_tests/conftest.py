@@ -176,7 +176,6 @@ def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData):
             # Not supported for materialised views.
             continue
         else:
-            # with engine.begin() as conn:
             with index._active_connection() as conn:
                 conn.execute(
                     sqlalchemy.text(

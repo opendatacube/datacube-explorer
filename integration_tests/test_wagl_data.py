@@ -22,6 +22,7 @@ DATASETS = ["datasets/s2a_ard_granule.yaml.gz"]
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2a_ard_granule")
     expect_values(
@@ -40,6 +41,7 @@ def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
     run_generate("s2a_level1c_granule")
     expect_values(
@@ -58,6 +60,7 @@ def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_product_audit(unpopulated_client: FlaskClient, run_generate):
     run_generate()
     client = unpopulated_client

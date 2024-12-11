@@ -9,7 +9,6 @@ from datacube.drivers.postgis._fields import PgDocField
 
 from datacube.drivers.postgis._schema import (  # isort: skip
     Dataset as ODC_DATASET,  # noqa: N814
-    DatasetLocation,
     Product as ODC_PRODUCT,  # noqa: N814
 )
 from datacube.index import Index
@@ -527,12 +526,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
             subquery = (
                 select(
                     literal(product.name).label("name"),
-                    func.array_agg(DatasetLocation.uri).label("uris"),
+                    func.array_agg(ODC_DATASET.uri).label("uris"),
                 )
-                # can we make use of DatasetLocation's dataset relationship to change this?
-                # not entirely certain of how it works
-                .select_from(DatasetLocation)
-                .join(ODC_DATASET)
                 .where(
                     and_(
                         ODC_DATASET.product_ref == product.id,

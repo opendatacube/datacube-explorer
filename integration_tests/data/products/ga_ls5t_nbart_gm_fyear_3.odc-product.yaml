@@ -1,0 +1,63 @@
+---
+# Product
+# url: https://explorer.dev.dea.ga.gov.au/products/ga_ls5t_nbart_gm_fyear_3.odc-product.yaml
+name: ga_ls5t_nbart_gm_fyear_3
+metadata_type: eo3
+description: Geoscience Australia Landsat Nadir BRDF Adjusted Reflectance Terrain,
+  Landsat 5 Geomedian Financial Year Collection 3
+metadata:
+  product:
+    name: ga_ls5t_nbart_gm_fyear_3
+  properties:
+    odc:file_format: GeoTIFF
+    odc:product_family: geomedian
+measurements:
+- name: blue
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: green
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: red
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: nir
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: swir1
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: swir2
+  dtype: int16
+  units: '1'
+  nodata: -999
+- name: sdev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+- name: edev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+- name: bcdev
+  dtype: float32
+  units: '1'
+  nodata: NaN
+- name: count
+  dtype: int16
+  units: '1'
+  nodata: -999
+storage:
+  crs: EPSG:3577
+  tile_size:
+    x: 3.2e+03
+    y: 3.2e+03
+  resolution:
+    x: 30
+    y: -30
+...

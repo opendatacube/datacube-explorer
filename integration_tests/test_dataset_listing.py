@@ -9,18 +9,14 @@ from werkzeug.datastructures import MultiDict
 from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
 
 METADATA_TYPES = [
-    "metadata/landsat_l1_scene.yaml",
+    "metadata/eo3_landsat_ard.odc-type.yaml",
 ]
 PRODUCTS = [
-    "products/dsm1sv10.odc-product.yaml",
-    "products/wofs_albers.yaml",
-    "products/ls7_scenes.odc-product.yaml",
-    "products/ls7_nbart_albers.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
-    "products/ls8_nbart_albers.odc-product.yaml",
+    "products/ard_ls5.odc-product.yaml",
+    "products/ga_ls7e_ard_3.odc-product.yaml",
 ]
 DATASETS = [
-    "datasets/wofs-albers-sample.yaml.gz",
+    "datasets/ga_ls7e_ard_3-sample.yaml",
 ]
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
@@ -33,7 +29,7 @@ def test_parse_query_args(odc_test_db: Datacube):
     and restricted to the current product.
     """
 
-    product = odc_test_db.index.products.get_by_name("ls7_level1_scene")
+    product = odc_test_db.index.products.get_by_name("ga_ls7e_ard_3")
     res = query_to_search(
         MultiDict(
             (
@@ -65,7 +61,7 @@ def test_default_args(dea_index: Index):
     # Sanity check: we assume this value below.
     assert DEFAULT_PLATFORM_END_DATE["LANDSAT_5"] == datetime(2011, 11, 30)
 
-    product = dea_index.products.get_by_name("ls5_level1_scene")
+    product = dea_index.products.get_by_name("ard_ls5")
 
     res = query_to_search(MultiDict(()), product)
 

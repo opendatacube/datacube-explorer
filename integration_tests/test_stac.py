@@ -402,6 +402,7 @@ def stac_client(client: FlaskClient):
 # Page requests
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_loading_all_pages(stac_client: FlaskClient):
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
@@ -458,6 +459,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_huge_page_request(stac_client: FlaskClient):
     """Return an error if they try to request beyond max-page-size limit"""
     error_message_json = get_json(
@@ -472,6 +474,7 @@ def test_huge_page_request(stac_client: FlaskClient):
     }
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_returns_404s(stac_client: FlaskClient):
     """
     We should get 404 messages, not exceptions, for missing things.
@@ -512,6 +515,7 @@ def test_returns_404s(stac_client: FlaskClient):
     )
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 @pytest.mark.parametrize(
     ("url", "redirect_to_url"),
     [
@@ -548,6 +552,7 @@ def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: s
 # Stac validation
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_links(stac_client: FlaskClient):
     """Check that root contains all expected links"""
     response = get_json(stac_client, "/stac")
@@ -617,6 +622,7 @@ def test_stac_links(stac_client: FlaskClient):
     assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_arrivals_page_validation(stac_client: FlaskClient):
     # Do the virtual 'arrivals' catalog and items validate?
     response = get_json(stac_client, "/stac/catalogs/arrivals")
@@ -633,6 +639,7 @@ def test_arrivals_page_validation(stac_client: FlaskClient):
     assert len(items["features"]) == OUR_PAGE_SIZE
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_collection(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
@@ -715,6 +722,7 @@ def test_stac_collection(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_item(stac_client: FlaskClient, odc_test_db):
     # Load one stac dataset from the test data.
 
@@ -916,6 +924,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
 # Search tests
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_limits(stac_client: FlaskClient):
     # Tell user with error if they request too much.
     large_limit = OUR_DATASET_LIMIT + 1
@@ -935,6 +944,7 @@ def test_stac_search_limits(stac_client: FlaskClient):
     assert len(geojson.get("features")) == OUR_PAGE_SIZE
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_zero(stac_client: FlaskClient):
     # Zero limit is a valid query
     zero_limit = 0
@@ -942,6 +952,7 @@ def test_stac_search_zero(stac_client: FlaskClient):
     assert rv.status_code == 200
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_includes_total(stac_client: FlaskClient):
     geojson = get_items(
         stac_client,
@@ -954,6 +965,7 @@ def test_stac_includes_total(stac_client: FlaskClient):
     assert geojson.get("numberMatched") == 72
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_next_link(stac_client: FlaskClient):
     # next link should return next page of results
     geojson = get_items(
@@ -971,6 +983,7 @@ def test_next_link(stac_client: FlaskClient):
     assert next_page["context"]["page"] == 1
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_by_ids(stac_client: FlaskClient):
     def geojson_feature_ids(d: Dict) -> List[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
@@ -1041,6 +1054,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient):
     assert error_message_json["name"] == "Bad Request"
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_by_intersects(stac_client: FlaskClient):
     """
     We have the polygon for region 16,-33.
@@ -1088,6 +1102,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient):
     assert features[0]["properties"]["cubedash:region_code"] == "16_-33"
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
     """
     When we search by 'intersects', the next page link should use a correct POST request.
@@ -1136,6 +1151,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
     }
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_collections(stac_client: FlaskClient):
     """Can you query a list of multiple collections?"""
 
@@ -1174,6 +1190,7 @@ def test_stac_search_collections(stac_client: FlaskClient):
     assert len(geojson.get("features")) > 0
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_bounds(stac_client: FlaskClient):
     # Outside the box there should be no results
     geojson = get_items(
@@ -1212,6 +1229,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
     assert len(geojson.get("features")) == 0
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_search_by_post(stac_client: FlaskClient):
     # Test POST, product, and assets
     rv: Response = stac_client.post(
@@ -1278,6 +1296,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
             validate_item(feature)
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_fields_extension(stac_client: FlaskClient):
     fields = {"include": ["properties.dea:dataset_maturity"]}
     rv: Response = stac_client.post(
@@ -1376,6 +1395,7 @@ def test_stac_fields_extension(stac_client: FlaskClient):
     assert {"datetime"} == set(properties.keys())
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_sortby_extension(stac_client: FlaskClient):
     sortby = [{"field": "properties.datetime", "direction": "asc"}]
     rv: Response = stac_client.post(
@@ -1455,6 +1475,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
     assert last_item["id"] < next_item["id"]
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_filter_extension(stac_client: FlaskClient):
     filter_json = {
         "op": "and",
@@ -1546,6 +1567,7 @@ def test_stac_filter_extension(stac_client: FlaskClient):
     assert rv.status_code == 400
 
 
+@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
 def test_stac_query_extension_errors(stac_client: FlaskClient):
     # Trying to use query extension should error
     query = {"cloud_cover": {"lt": 1}}
