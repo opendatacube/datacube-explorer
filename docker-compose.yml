@@ -10,7 +10,7 @@ services:
     environment:
       # - DB_HOSTNAME=host.docker.internal
       - POSTGRES_HOSTNAME=postgres
-      - POSTGRES_USERNAME=opendatacube
+      - POSTGRES_USER=opendatacube
       - POSTGRES_PASSWORD=opendatacubepassword
       - POSTGRES_DB=opendatacube
       - POSTGRES_PORT=5432
