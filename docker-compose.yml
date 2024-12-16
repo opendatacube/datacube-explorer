@@ -9,11 +9,15 @@ services:
       - 80:8080
     environment:
       # - DB_HOSTNAME=host.docker.internal
-      - DB_HOSTNAME=postgres
-      - DB_USERNAME=opendatacube
-      - DB_PASSWORD=opendatacubepassword
-      - DB_DATABASE=opendatacube
-      - DB_PORT=5432
+      - POSTGRES_HOSTNAME=postgres
+      - POSTGRES_USERNAME=opendatacube
+      - POSTGRES_PASSWORD=opendatacubepassword
+      - POSTGRES_DB=opendatacube
+      - POSTGRES_PORT=5432
+      - ODC_DEFAULT_INDEX_DRIVER=postgres
+      - ODC_POSTGIS_INDEX_DRIVER=postgis
+      - ODC_DEFAULT_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:5432/opendatacube
+      - ODC_POSTGIS_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:5432/opendatacube
       - FLASK_ENV=development
       - FLASK_APP=cubedash
       - FLASK_DEBUG=1

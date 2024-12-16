@@ -49,7 +49,7 @@ DATASETS = [
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_generate_month(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
     # One Month
@@ -78,7 +78,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
     )
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_generate_scene_year(run_generate, summary_store: SummaryStore):
     run_generate(multi_processed=True)
     # One year
@@ -107,7 +107,7 @@ def test_generate_scene_year(run_generate, summary_store: SummaryStore):
     )
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_scene")
 
@@ -283,7 +283,7 @@ def test_has_source_derived_product_links(run_generate, summary_store: SummarySt
     assert ls8_ard.derived_products == ["ga_ls_fc_3"]
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
     run_generate()
 
@@ -342,7 +342,7 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
     }
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
     # No datasets in 2018
@@ -363,7 +363,7 @@ def test_calc_empty(summary_store: SummaryStore):
     assert summary is None
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_generate_telemetry(run_generate, summary_store: SummaryStore):
     """
     Telemetry data polygons can be synthesized from the path/row values
@@ -436,7 +436,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
     )
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_force_dataset_regeneration(
     run_generate, summary_store: SummaryStore, odc_test_db: Datacube
 ):
@@ -481,7 +481,7 @@ def test_force_dataset_regeneration(
     assert footprint == original_footprint, "Dataset extent was not regenerated"
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)

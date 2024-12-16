@@ -44,7 +44,7 @@ DATASETS = [
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/ls5_fc_albers")

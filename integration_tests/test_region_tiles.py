@@ -65,14 +65,14 @@ def test_landcover_region_dataset_count(client: FlaskClient):
     assert len(search_results) == 3
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_tmad_summary_product(client: FlaskClient):
     html = get_html(client, "/ls5_nbart_tmad_annual")
 
     check_dataset_count(html, 2)
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_tmad_dataset_regions(client: FlaskClient):
     html = get_html(client, "product/ls5_nbart_tmad_annual/regions/-14_-25")
 

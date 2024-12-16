@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOSTNAME} -U ${DB_USERNAME} -c 'create database opendatacube_test'
+PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOSTNAME} -U ${POSTGRES_USERNAME} -c 'create database opendatacube_test'

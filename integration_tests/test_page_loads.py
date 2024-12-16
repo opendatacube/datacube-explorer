@@ -131,7 +131,7 @@ def test_get_overview(client: FlaskClient):
     # check_area("30,...km2", html)
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     # This all-time overview has a valid footprint that becomes invalid
     # when reprojected to wgs84 by shapely.
@@ -142,7 +142,7 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
     check_dataset_count(html, 1244)
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_all_products_are_shown(client: FlaskClient):
     """
     After all the complicated grouping logic, there should still be one header link for each product.
@@ -189,7 +189,7 @@ def test_get_day_overviews(client: FlaskClient):
     check_dataset_count(html, 0)
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_summary_product(client: FlaskClient):
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/pq_count_summary")
@@ -215,7 +215,7 @@ def test_uninitialised_overview(
     assert "No data: not yet summarised" in html.text
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
     """
     An unsummarised product should still be viewable on the product page.
@@ -290,7 +290,7 @@ def assert_is_text(html: HTML, selector, text: str):
     assert el.text == text
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_uninitialised_search_page(
     empty_client: FlaskClient, summary_store: SummaryStore
 ):
@@ -382,7 +382,7 @@ def test_out_of_date_range(client: FlaskClient):
     assert "Historic Flood Mapping Water Observations from Space" in html.text
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_loading_high_low_tide_comp(client: FlaskClient):
     html = get_html(client, "/high_tide_comp_20p/2008")
 
@@ -401,7 +401,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
     )
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     """
     These are slightly fun to handle as they are a small number with a huge time range.
@@ -460,7 +460,7 @@ def test_api_returns_tiles_as_geojson(client: FlaskClient):
     assert len(geojson["features"]) == 21, "Unepected polygon count"
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_api_returns_high_tide_comp_regions(client: FlaskClient):
     """
     High tide doesn't have anything we can use as regions.
@@ -722,7 +722,7 @@ def test_api_returns_timelines(client: FlaskClient):
 pytest.mark.xfail(True, reason="telemetry data removed")
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_undisplayable_product(client: FlaskClient):
     """
     Telemetry products have no footprint available at all.
@@ -734,7 +734,7 @@ def test_undisplayable_product(client: FlaskClient):
     assert "No CRSes defined" in html.text
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_no_data_pages(client: FlaskClient):
     """
     Fetch products that exist but have no summaries generated.
@@ -795,7 +795,7 @@ def test_invalid_product_returns_not_found(client: FlaskClient):
     assert rv.status_code == 404
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_show_summary_cli(clirunner, client: FlaskClient):
     """
     You should be able to view a product with cubedash-view command-line program.
@@ -921,7 +921,7 @@ def test_plain_product_list(client: FlaskClient):
     assert "ga_ls8c_ard_3\n" in text
 
 
-@pytest.mark.parametrize("env_name", ("datacube",), indirect=True)
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_raw_documents(client: FlaskClient):
     """
     Check that raw-documents load without error,

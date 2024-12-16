@@ -37,7 +37,7 @@ def postgresql_server():
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     # I think this may be copypasta from odc-tools
     if Path("/.dockerenv").exists() and (
-        "ODC_DEFAULT_DB_URL" in os.environ or "DATACUBE_DB_URL" in os.environ
+        "ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ
     ):
         yield GET_DB_FROM_ENV
     else:
@@ -102,9 +102,9 @@ def odc_db(postgresql_server, tmp_path_factory, request):
             tmp_path_factory.mktemp("odc") / "test_datacube.conf"
         )
         config = configparser.ConfigParser()
-        config["datacube"] = postgresql_server
+        config["default"] = postgresql_server
         postgresql_server["index_driver"] = "postgis"
-        config["experimental"] = postgresql_server
+        config["postgis"] = postgresql_server
         with open(temp_datacube_config_file, "w", encoding="utf8") as fout:
             config.write(fout)
         # Use pytest.MonkeyPatch instead of the monkeypatch fixture
@@ -119,7 +119,7 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         mp.undo()
 
 
-@pytest.fixture(scope="module", params=["datacube", "experimental"])
+@pytest.fixture(scope="module", params=["default", "postgis"])
 def env_name(request) -> str:
     return request.param
 
