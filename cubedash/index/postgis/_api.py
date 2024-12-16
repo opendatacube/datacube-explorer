@@ -226,8 +226,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # `product_id_seq` to increment as part of the check for insertion. This
         # is bad because there's only 32 k values in the sequence and we have run out
         # a couple of times! So, It appears that this update-else-insert must be done
-        # in two transactions...
-        with self.index._active_connection() as conn:
+        # in two statements...
+        with self.index._active_connection(transaction=True) as conn:
             row = conn.execute(
                 select(ProductSpatial.id, ProductSpatial.last_refresh).where(
                     ProductSpatial.name == product_name
@@ -349,13 +349,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     func.count(),
                 ).where(DatasetSpatial.product_ref == product_id)
             ).fetchone()
-            # return conn.execute(
-            #     select(
-            #         TIME_OVERVIEW.c.time_earliest,
-            #         TIME_OVERVIEW.c.time_latest,
-            #         TIME_OVERVIEW.c.dataset_count,
-            #     ).where(TIME_OVERVIEW.c.product_ref == product_id)
-            # ).fetchone()
 
     def product_time_summary(self, product_id: int, start_day, period):
         with self.index._active_connection() as conn:

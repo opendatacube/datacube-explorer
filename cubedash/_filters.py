@@ -44,7 +44,7 @@ def _format_datetime(date):
 
 @bp.app_template_filter("metadata_center_time")
 def _get_metadata_center_time(dataset):
-    return utils.center_time_from_metadata(dataset)
+    return utils.datetime_from_metadata(dataset)
 
 
 @bp.app_template_filter("localised_metadata_center_time")
@@ -141,7 +141,7 @@ def _all_values_none(d: Mapping):
 
 @bp.app_template_filter("dataset_day_link")
 def _dataset_day_link(dataset: Dataset, timezone=None):
-    t = utils.center_time_from_metadata(dataset)
+    t = utils.datetime_from_metadata(dataset)
     if t is None:
         return "(unknown time)"
     if timezone:

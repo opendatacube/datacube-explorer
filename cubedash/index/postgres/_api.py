@@ -257,8 +257,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # `product_id_seq` to increment as part of the check for insertion. This
         # is bad because there's only 32 k values in the sequence and we have run out
         # a couple of times! So, It appears that this update-else-insert must be done
-        # in two transactions...
-        with self.index._active_connection() as conn:
+        # in two statements...
+        with self.index._active_connection(transaction=True) as conn:
             row = conn.execute(
                 select(PRODUCT.c.id, PRODUCT.c.last_refresh).where(
                     PRODUCT.c.name == product_name
@@ -359,23 +359,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     def delete_product_empty_regions(self, product_id: int):
         with self.index._active_connection() as conn:
-            # not_empty_regions = select(
-            #     DATASET_SPATIAL.c.region_code
-            # ).where(
-            #     DATASET_SPATIAL.c.dataset_type_ref == product.id
-            # ).group_by(
-            #     DATASET_SPATIAL.c.region_code
-            # )
-
-            # result = conn.execute(
-            #     REGION.delete()
-            #     .where(
-            #         and_(
-            #             DATASET_SPATIAL.c.dataset_type_ref == product.id,
-            #             DATASET_SPATIAL.c.id.not_in(not_empty_regions)
-            #         )
-            #     )
-            # )
             return conn.execute(
                 text(f"""
             delete from cubedash.region
@@ -397,13 +380,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     func.count(),
                 ).where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
             ).fetchone()
-            # return conn.execute(
-            #     select(
-            #         TIME_OVERVIEW.c.time_earliest,
-            #         TIME_OVERVIEW.c.time_latest,
-            #         TIME_OVERVIEW.c.dataset_count,
-            #     ).where(TIME_OVERVIEW.c.product_ref == product_id)
-            # ).fetchone()
 
     def product_time_summary(self, product_id: int, start_day, period):
         with self.index._active_connection() as conn:
@@ -546,19 +522,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     # does this add much value? and if so, is there a better way to do it?
     def find_fixed_columns(self, field_values, candidate_fields, sample_ids):
-        # alt approach?
-        # as_fields = self.index.datasets.make_select_fields(first_dataset_fields.keys())
-        # filtered_fields = [field for field in as_fields if field.type_name in simple_field_types]
-        # select(
-        #     *[
-        #         (
-        #             func.every(
-        #                 field.alchemy_expression == first_dataset_fields[field.name]
-        #             )
-        #         ).label(field.name)
-        #         for field in filtered_fields
-        #     ]
-        # )
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -596,13 +559,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .limit(sample_size)
             )
             queries.append(subquery)
-        # can't we operate on the PRODUCT columns rather than doing it in a loop? along the lines of:
-        # select(ODC_PRODUCT.c.name, array_agg(postgres._api._dataset_uri_field))
-        # .select_from(ODC_DATASET_LOCATION.join(ODC_DATASET))
-        # .where(ODC_DATASET.c.dataset_type_ref == ODC_PRODUCT.c.id)
-        # .where(ODC_DATASET.c.archived.is_(None))
-        # .limit(sample_size)
-        # .group_by(ODC_PRODUCT.c.name)
 
         if queries:  # Don't run invalid SQL on empty database
             # surely there must be a better way to check the database isn't empty before we get to this point?
@@ -728,37 +684,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     DATASET_SPATIAL.c.id.in_(archived_datasets)
                 )
             ).rowcount
-
-            # more concise - but less readable
-            # query = DATASET_SPATIAL.delete().where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
-            # odc_datasets = select(ODC_DATASET.c.id).where(ODC_DATASET.c.dataset_type_ref == product_id)
-            # if not full:
-            #     odc_datasets = odc_datasets.where(ODC_DATASET.c.archived.isnot(None))
-            #     if after_date is not None:
-            #         odc_datasets = odc_datasets.where(ODC_DATASET.c.update > after_date)
-            #     query = query.where(DATASET_SPATIAL.c.id.in_(odc_datasets))
-            # else:
-            #     query = query.where(~DATASET_SPATIAL.c.id.in_(odc_datasets))
-            # conn.execute(query).rowcount
-
-            # potential alt approach?
-            # active_datasets = (
-            #     select(ODC_DATASET.c.id)
-            #     .where(ODC_DATASET.c.dataset_type_ref == product_id)
-            # )
-            # if not full:
-            #     active_datasets = active_datasets.where(ODC_DATASET.c.archived.is_(None))
-            #     if after_date is not None:
-            #         active_datasets = active_datasets.where(ODC_DATASET.c.updated > after_date)
-            # conn.execute(
-            #     DATASET_SPATIAL.delete()
-            #     .where(
-            #         and_(
-            #             DATASET_SPATIAL.c.dataset_type_ref == product_id,
-            #             ~DATASET_SPATIAL.c.id.in_(active_datasets)
-            #         )
-            #     )
-            # ).rowcount
 
     def upsert_datasets(self, product_id, column_values, after_date) -> int:
         column_values["id"] = ODC_DATASET.c.id
@@ -991,18 +916,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(SPATIAL_REF_SYS.c.auth_srid == int(auth_srid))
                 .scalar_subquery()
             )
-            # # alt
-            # default_crs_expression = (
-            #     select(SPATIAL_REF_SYS.c.srid)
-            #     .where(
-            #         func.concat(
-            #             func.lower(SPATIAL_REF_SYS.c.auth_name),
-            #             ":",
-            #             SPATIAL_REF_SYS.c.auth_srid
-            #         ) == default_crs.lower()
-            #     )
-            #     .scalar_subquery()
-            # )
         return func.coalesce(
             case(
                 (

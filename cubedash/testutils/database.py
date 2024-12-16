@@ -37,7 +37,7 @@ def postgresql_server():
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     # I think this may be copypasta from odc-tools
     if Path("/.dockerenv").exists() and (
-        "ODC_DEFAULT_DB_URL" in os.environ or "DB_DATABASE" in os.environ
+        "ODC_DEFAULT_DB_URL" in os.environ or "DATACUBE_DB_URL" in os.environ
     ):
         yield GET_DB_FROM_ENV
     else:

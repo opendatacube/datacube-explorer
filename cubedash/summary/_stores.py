@@ -315,16 +315,6 @@ class SummaryStore:
             log=log,
         )
 
-    # @property
-    # def grouping_crs(self):
-    #     """
-    #     Get the crs name used for grouping summaries.
-
-    #     (the value that was set on ``init()`` of the schema)
-    #     """
-    #     srid = self.e_index.execute_query(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
-    #     return self._get_srid_name(srid)
-
     def close(self):  # do we still need this?
         """Close any pooled/open connections. Necessary before forking."""
         self.index.close()

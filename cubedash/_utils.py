@@ -114,7 +114,7 @@ def datetime_expression(md_type: MetadataType):
     """
     Get an Alchemy expression for a timestamp of datasets of the given metadata type.
     There is another function sharing the same logic but is for flask template
-    in file: _utils.py function center_time_from_metadata
+    in file: _utils.py function datetime_from_metadata
     """
     # If EO3+Stac formats, there's already has a plain 'datetime' field,
     # So we can use it directly.
@@ -451,28 +451,25 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
             _LOG.warning(
                 "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
             )
-    # should we fall back to the indexed time, like in _dataset_creation_expression?
-    return None
+    # default to the indexed time
+    return default_utc(dc_utils.parse_time(dataset.metadata.indexed_time))
 
 
-def center_time_from_metadata(dataset: Dataset) -> datetime:
+def datetime_from_metadata(dataset: Dataset) -> datetime:
     """
-    This function shares the same logic as
-    https://github.com/opendatacube/datacube-explorer/blob/4afa0dbbb51d541f377c479e7edb914bdb62aef9/cubedash/summary/_extents.py#L481-L505
+    This function shares similar logic to datetime_expression (above),
+    but retrieves values for the flask template.
+    Get datetime info from metadata_doc rather than Dataset.center_time for EO3
     """
     # seems to be a misleading name...
     md_type = dataset.metadata_type
     if expects_eo3_metadata_type(md_type):
+        # prefer using datetime or start_datetime directly
         properties = dataset.metadata_doc["properties"]
         t = properties.get("datetime") or properties.get("dtr:start_datetime")
         return default_utc(dc_utils.parse_time(t))
-
-    time = md_type.dataset_fields["time"]
-    try:
-        center_time = time.begin + (time.end - time.begin) / 2
-    except AttributeError:
-        center_time = dataset.center_time  # shouldn't this be the first thing we try?
-    return default_utc(center_time)
+    # stick with center time for EO datasets
+    return default_utc(dataset.center_time)
 
 
 def as_rich_json(o):
@@ -797,7 +794,7 @@ def undo_eo3_compatibility(doc):
     if "extent" in doc:
         del doc["extent"]
 
-    lineage = doc.get("lineage")
+    lineage = doc.get("lineage", {})
     # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),
     # flatten to EO3-style ID lists.
 

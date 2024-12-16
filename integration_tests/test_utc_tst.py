@@ -12,7 +12,7 @@ from datacube.model import Range
 from dateutil import tz
 from flask.testing import FlaskClient
 
-from cubedash._utils import center_time_from_metadata, default_utc
+from cubedash._utils import datetime_from_metadata, default_utc
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import check_dataset_count, get_html
 
@@ -147,7 +147,7 @@ def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_c
 # Unit tests
 def test_dataset_day_link(summary_store):
     ds = summary_store.index.datasets.get("6293ac37-7f1d-430e-8d7e-ffdc1bfd556c")
-    t = center_time_from_metadata(ds)
+    t = datetime_from_metadata(ds)
     t = default_utc(t).astimezone(pytz.timezone("Australia/Darwin"))
     assert t.year == 2022
     assert t.month == 1
