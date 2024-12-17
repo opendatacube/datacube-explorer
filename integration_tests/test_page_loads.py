@@ -209,7 +209,7 @@ def test_uninitialised_overview(
     assert (
         html.find("h2", first=True).text
         == "usgs_ls7e_level1_1: United States Geological Survey Landsat 7 \
-            Enhanced Thematic Mapper Plus Level 1 Collection 1"
+Enhanced Thematic Mapper Plus Level 1 Collection 1"
     )
     assert "Unknown number of datasets" in html.text
     assert "No data: not yet summarised" in html.text

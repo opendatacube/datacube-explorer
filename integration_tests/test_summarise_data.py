@@ -421,17 +421,17 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
     run_generate("ga_ls8c_ard_3")
 
     _expect_values(
-        summary_store.get("ga_ls8c_ard_3", year=2022, month=7, day=18),
-        dataset_count=21,
-        footprint_count=21,
+        summary_store.get("ga_ls8c_ard_3", year=2022, month=7, day=19),
+        dataset_count=3,
+        footprint_count=3,
         time_range=Range(
-            begin=datetime(2022, 7, 18, 0, 0, tzinfo=DEFAULT_TZ),
-            end=datetime(2022, 7, 19, 0, 0, tzinfo=DEFAULT_TZ),
+            begin=datetime(2022, 7, 19, 0, 0, tzinfo=DEFAULT_TZ),
+            end=datetime(2022, 7, 20, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2022, 7, 31, 11, 12, 43, 914_477, tzinfo=tzutc()),
+        newest_creation_time=datetime(2022, 8, 23, 14, 56, 45, 940_847, tzinfo=tzutc()),
         timeline_period="day",
         timeline_count=1,
-        crses={"EPSG:32656"},
+        crses={"EPSG:32656", "EPSG:32652"},
         size_bytes=None,
     )
 

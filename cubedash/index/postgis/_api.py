@@ -95,16 +95,16 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self, dataset_id: UUID, limit=None
     ) -> tuple[list[Dataset], int]:
         """
-        Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
+        Get the direct source datasets of a dataset.
 
         A limit can also be specified.
 
-        Returns a source dict and how many more sources exist beyond the limit.
+        Returns a list of sources and how many more sources exist beyond the limit.
         """
         source_ids = self.index.lineage.get_source_tree(
             dataset_id, max_depth=1
         ).child_datasets()
-        if limit:
+        if limit and len(source_ids) > limit:
             remaining_records = len(source_ids) - limit
             source_ids = list(source_ids)[:limit]
         else:

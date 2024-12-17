@@ -451,8 +451,11 @@ def dataset_created(dataset: Dataset) -> Optional[datetime]:
             _LOG.warning(
                 "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
             )
-    # default to the indexed time
-    return default_utc(dc_utils.parse_time(dataset.metadata.indexed_time))
+    # like in _dataset_creation_expression, if there's no creation time
+    # then we fall back to indexed time (if it exists)
+    if dataset.indexed_time:
+        return default_utc(dc_utils.parse_time(dataset.indexed_time))
+    return None
 
 
 def datetime_from_metadata(dataset: Dataset) -> datetime:

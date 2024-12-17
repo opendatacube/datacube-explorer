@@ -86,7 +86,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     def get_dataset_sources(
         self, dataset_id: UUID, limit=None
-    ) -> tuple[dict[str, Dataset], int]:
+    ) -> tuple[list[Dataset], int]:
         """
         Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
 
@@ -94,25 +94,24 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         A limit can also be specified.
 
-        Returns a source dict and how many more sources exist beyond the limit.
+        Returns a list of sources and how many more sources exist beyond the limit.
         """
-        query = select(
-            DATASET_SOURCE.c.source_dataset_ref, DATASET_SOURCE.c.classifier
-        ).where(DATASET_SOURCE.c.dataset_ref == dataset_id)
+        query = select(DATASET_SOURCE.c.source_dataset_ref).where(
+            DATASET_SOURCE.c.dataset_ref == dataset_id
+        )
         if limit:
             # We add one to detect if there are more records after out limit.
             query = query.limit(limit + 1)
 
-        # engine = alchemy_engine(index)
         with self.index._active_connection() as conn:
-            dataset_classifier = conn.execute(query).fetchall()
+            source_ids = conn.execute(query).fetchall()
 
-            if not dataset_classifier:
-                return {}, 0
+            if not source_ids:
+                return [], 0
 
             remaining_records = 0
-            if limit and len(dataset_classifier) > limit:
-                dataset_classifier = dataset_classifier[:limit]
+            if limit and len(source_ids) > limit:
+                source_ids = source_ids[:limit]
                 remaining_records = (
                     conn.execute(
                         select(func.count())
@@ -122,15 +121,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     - limit
                 )
 
-        classifier = dict(dataset_classifier)
-        return {
-            classifier[d.id]: d
-            for d in (
-                self.index.datasets.bulk_get(
-                    dataset_id for dataset_id, _ in dataset_classifier
-                )
-            )
-        }, remaining_records
+        source_ids = [res[0] for res in source_ids]  # unpack the result tuples
+        return self.index.datasets.bulk_get(source_ids), remaining_records
 
     # Same as PostgresDbApi.get_derived_datasets but with limit
     def get_datasets_derived(
