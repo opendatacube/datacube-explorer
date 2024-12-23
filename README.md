@@ -218,8 +218,8 @@ Three roles are created:
 - **explorer-generator**: Suitable for generating and updating summaries (ie. Running `cubedash-gen`)
 - **explorer-owner**: For creating and updating the schema. (ie. Running `cubedash-gen --init`)
 
-Note that these roles extend the built-in datacube role `agdc_user`. If you
-created your datacube without permissions, a stand-alone creator of the `agdc_user`
+Note that these roles extend the built-in datacube role `agdc_user` (using postgres) or `odc_user` (using postgis).
+If you created your datacube without permissions, a stand-alone creator of the appropriate
 role is available as a prerequisite in the same [roles](cubedash/summary/roles)
 directory.
 
