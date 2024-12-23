@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - develop
+      - integrate_1.9
     paths:
       - '**'
 

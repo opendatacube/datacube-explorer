@@ -4,7 +4,7 @@ updates:
   directory: "/"
   schedule:
     interval: "daily"
-  target-branch: "develop"
+  target-branch: "develop" # should this be removed? changed? duplicated?
 - package-ecosystem: docker
   directory: "/"
   schedule:

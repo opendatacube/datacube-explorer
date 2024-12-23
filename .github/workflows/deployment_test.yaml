@@ -9,6 +9,7 @@ on: # yamllint disable-line rule:truthy
   push:
     branches:
       - develop
+      - integrate_1.9
     paths:
       - '**'
 
