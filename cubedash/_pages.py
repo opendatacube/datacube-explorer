@@ -40,11 +40,11 @@ _DEFAULT_GROUP_NAME = "Other Products"
 
 _DEFAULT_ARRIVALS_DAYS = 14
 
-_ROBOTS_TXT_DEFAULT = """User-Agent: *
-Allow: /
-Disallow: /products/*/*
-Disallow: /stac/**
-Disallow: /dataset/*
+_ROBOTS_TXT_DEFAULT = """User-agent: *
+Disallow: /products/
+Disallow: /product/
+Disallow: /stac/
+Disallow: /dataset/
 """
 
 
