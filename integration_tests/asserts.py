@@ -36,9 +36,9 @@ def assert_shapes_mostly_equal(
     # __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
     # Check area first, as it's a nicer error message when they're wildly different.
-    assert shape1.area == pytest.approx(
-        shape2.area, abs=threshold
-    ), "Shapes have different areas"
+    assert shape1.area == pytest.approx(shape2.area, abs=threshold), (
+        "Shapes have different areas"
+    )
 
     s1 = shape1.simplify(tolerance=threshold)
     s2 = shape2.simplify(tolerance=threshold)
@@ -135,17 +135,17 @@ def check_dataset_count(html, count: int):
     __tracebackhide__ = True
     actual = html.find(".dataset-count", first=True).text
     expected = f"{count:,d}"
-    assert (
-        f"{expected} dataset" in actual
-    ), f"Incorrect dataset count: found {actual} instead of {expected}"
+    assert f"{expected} dataset" in actual, (
+        f"Incorrect dataset count: found {actual} instead of {expected}"
+    )
 
 
 def check_datesets_page_datestring(html, datestring: str):
     __tracebackhide__ = True
     actual = html.find(".overview-day-link", first=True).text
-    assert (
-        datestring == actual
-    ), f"Incorrect datestring: found {actual} instead of {datestring}"
+    assert datestring == actual, (
+        f"Incorrect datestring: found {actual} instead of {datestring}"
+    )
 
 
 def expect_values(
@@ -168,22 +168,22 @@ def expect_values(
         assert s.dataset_count == dataset_count, "wrong dataset count"
         assert s.footprint_count == footprint_count, "wrong footprint count"
         if s.footprint_count is not None and s.footprint_count > 0:
-            assert (
-                s.footprint_geometry is not None
-            ), "No footprint, despite footprint count"
+            assert s.footprint_geometry is not None, (
+                "No footprint, despite footprint count"
+            )
             assert s.footprint_geometry.area > 0, "Empty footprint"
 
         assert s.time_range == time_range, "wrong dataset time range"
-        assert s.newest_dataset_creation_time == default_utc(
-            newest_creation_time
-        ), "wrong newest dataset creation"
+        assert s.newest_dataset_creation_time == default_utc(newest_creation_time), (
+            "wrong newest dataset creation"
+        )
         assert s.timeline_period == timeline_period, (
-            f"Should be a {timeline_period}, " f"not {s.timeline_period} timeline"
+            f"Should be a {timeline_period}, not {s.timeline_period} timeline"
         )
 
-        assert (
-            s.summary_gen_time is not None
-        ), "Missing summary_gen_time (there's a default)"
+        assert s.summary_gen_time is not None, (
+            "Missing summary_gen_time (there's a default)"
+        )
 
         assert s.crses == crses, "Wrong dataset CRSes"
 
@@ -202,16 +202,16 @@ def expect_values(
                     f"Expected entry with {timeline_count} records."
                 )
         else:
-            assert (
-                len(s.timeline_dataset_counts) == timeline_count
-            ), "wrong timeline entry count"
+            assert len(s.timeline_dataset_counts) == timeline_count, (
+                "wrong timeline entry count"
+            )
 
-            assert (
-                sum(s.region_dataset_counts.values()) == s.dataset_count
-            ), "region dataset count doesn't match total dataset count"
-            assert (
-                sum(s.timeline_dataset_counts.values()) == s.dataset_count
-            ), "timeline count doesn't match dataset count"
+            assert sum(s.region_dataset_counts.values()) == s.dataset_count, (
+                "region dataset count doesn't match total dataset count"
+            )
+            assert sum(s.timeline_dataset_counts.values()) == s.dataset_count, (
+                "timeline count doesn't match dataset count"
+            )
         was_timeline_error = False
 
         if region_dataset_counts is not None:

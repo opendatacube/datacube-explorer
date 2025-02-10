@@ -219,7 +219,7 @@ _ITEM_COLLECTION_SCHEMA = load_validator(
 def get_extension(url: str) -> jsonschema.Draft7Validator:
     if not is_url(url):
         raise ValueError(
-            f"stac extensions are now expected to be URLs in 1.0.0. " f"Got {url!r}"
+            f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
         )
     return load_schema_doc(_web_reference(url), location=url)
 
@@ -314,9 +314,9 @@ def validate_item(item: Dict):
     if item["geometry"] is not None:
         with DebugContext(f"Failing shape:\n{pformat(item['geometry'])}"):
             shape = shapely_shape(item["geometry"])
-            assert (
-                shape.is_valid
-            ), f"Item has invalid geometry: {explain_validity(shape)}"
+            assert shape.is_valid, (
+                f"Item has invalid geometry: {explain_validity(shape)}"
+            )
             assert shape.geom_type in (
                 "Polygon",
                 "MultiPolygon",
@@ -347,9 +347,9 @@ def validate_items(
         product_counts[item["properties"].get("odc:product", item["collection"])] += 1
 
         # Assert there's no duplicates
-        assert (
-            id_ not in seen_ids
-        ), f"Duplicate dataset item (record {i}) of search results: {id_}"
+        assert id_ not in seen_ids, (
+            f"Duplicate dataset item (record {i}) of search results: {id_}"
+        )
         seen_ids.add(id_)
 
         # Assert they are all ordered (including across pages!)
@@ -357,9 +357,9 @@ def validate_items(
             # TODO: this is actually a (date, id) sort, but our test data has no duplicate dates.
             prev_dt = last_item["properties"]["datetime"]
             this_dt = item["properties"]["datetime"]
-            assert (
-                prev_dt < this_dt
-            ), f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
+            assert prev_dt < this_dt, (
+                f"Items {i} and {i - 1} out of order: {prev_dt} > {this_dt}"
+            )
         i += 1
 
     # Note that the above block stops most paging infinite loops quickly
@@ -371,9 +371,7 @@ def validate_items(
         )
         if isinstance(expect_count, int):
             assert i == expect_count, (
-                f"Expected {expect_count} items.\n"
-                "Got:\n"
-                f"\t{printable_product_counts}"
+                f"Expected {expect_count} items.\nGot:\n\t{printable_product_counts}"
             )
         else:
             assert product_counts == expect_count
@@ -559,9 +557,9 @@ def test_stac_links(stac_client: FlaskClient):
     _CATALOG_SCHEMA.validate(response)
 
     assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
-    assert (
-        response["title"] == "Default ODC Explorer instance"
-    ), "Expected default unconfigured endpoint title"
+    assert response["title"] == "Default ODC Explorer instance", (
+        "Expected default unconfigured endpoint title"
+    )
 
     # A child link to each "collection" (product)
     child_links = [r for r in response["links"] if r["rel"] == "child"]
@@ -970,7 +968,7 @@ def test_next_link(stac_client: FlaskClient):
     # next link should return next page of results
     geojson = get_items(
         stac_client,
-        ("/stac/search?" "collections=ga_ls8c_ard_3,ls7_nbart_albers"),
+        ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers"),
     )
     assert geojson.get("numberMatched") > len(geojson.get("features"))
 
@@ -1048,7 +1046,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient):
     #       least better than the old Postgres error
     error_message_json = get_json(
         stac_client,
-        ("/stac/search?&collection=ls7_nbart_albers" "&ids=7a[-fd04ad[-"),
+        ("/stac/search?&collection=ls7_nbart_albers&ids=7a[-fd04ad[-"),
         expect_status_code=400,
     )
     assert error_message_json["name"] == "Bad Request"
@@ -1158,14 +1156,14 @@ def test_stac_search_collections(stac_client: FlaskClient):
     # Get all in one collection
     geojson = get_items(
         stac_client,
-        ("/stac/search?" "&collections=ls7_nbart_scene" "&limit=20"),
+        ("/stac/search?&collections=ls7_nbart_scene&limit=20"),
     )
     assert len(geojson.get("features")) == 4
 
     # Get all the datasets for two collections
     geojson = get_items(
         stac_client,
-        ("/stac/search?" "&collections=ls7_nbart_scene,ls7_nbar_scene" "&limit=20"),
+        ("/stac/search?&collections=ls7_nbart_scene,ls7_nbar_scene&limit=20"),
     )
     # Four datasets each.
     assert len(geojson.get("features")) == 8
@@ -1185,7 +1183,7 @@ def test_stac_search_collections(stac_client: FlaskClient):
     # (its doesn't mean match-the-empty-list!)
     geojson = get_items(
         stac_client,
-        ("/stac/search?" "&collections=" "&limit=20"),
+        ("/stac/search?&collections=&limit=20"),
     )
     assert len(geojson.get("features")) > 0
 
@@ -1275,9 +1273,9 @@ def test_stac_search_by_post(stac_client: FlaskClient):
         bands = ["blue", "green", "nir", "red", "swir1", "swir2"]
         with DebugContext(f"feature {feature['id']}"):
             # TODO: These are the same file in a NetCDF. They should probably be one asset?
-            assert len(feature["assets"]) == len(
-                bands
-            ), f"Expected an asset per band, got {feature['assets']!r}"
+            assert len(feature["assets"]) == len(bands), (
+                f"Expected an asset per band, got {feature['assets']!r}"
+            )
             assert set(feature["assets"].keys()) == set(bands)
             while bands:
                 band = bands.pop()
@@ -1289,7 +1287,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
                 # These have no path, so they should be the dataset location itself with a layer.
                 # (this is a .nc file in reality, but our test data loading creates weird locations)
                 assert (
-                    band_d["href"] == f'file://example.com/test_dataset/{feature["id"]}'
+                    band_d["href"] == f"file://example.com/test_dataset/{feature['id']}"
                 )
 
             # Validate stac item with jsonschema

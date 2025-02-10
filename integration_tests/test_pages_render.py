@@ -89,9 +89,9 @@ def test_allows_null_product_fixed_fields(
     """
 
     # WHEN we have some products summarised
-    assert (
-        summary_store.list_complete_products()
-    ), "There's no summarised products to test"
+    assert summary_store.list_complete_products(), (
+        "There's no summarised products to test"
+    )
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
     with odc_test_db.index._active_connection() as conn:

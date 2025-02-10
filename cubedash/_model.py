@@ -211,7 +211,7 @@ def get_products() -> List[ProductWithSummary]:
     ]
     if products and not STORE.list_complete_products():
         raise RuntimeError(
-            "No products are summarised. " "Run `cubedash-gen --all` to generate some."
+            "No products are summarised. Run `cubedash-gen --all` to generate some."
         )
 
     return products

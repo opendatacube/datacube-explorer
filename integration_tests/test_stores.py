@@ -198,19 +198,19 @@ def test_put_get_summaries(summary_store: SummaryStore):
     loaded = summary_store.get(product_name, 2017, None, None)
 
     assert o is not loaded, (
-        "Store should not return the original objects " "(they may change)"
+        "Store should not return the original objects (they may change)"
     )
-    assert (
-        o.summary_gen_time is not None
-    ), "Summary-gen-time should have been added by the server"
+    assert o.summary_gen_time is not None, (
+        "Summary-gen-time should have been added by the server"
+    )
     original_gen_time = o.summary_gen_time
 
     assert o.footprint_geometry.area == pytest.approx(4.857_924_619_872)
 
     assert loaded.dataset_count == 4
-    assert (
-        sum(loaded.region_dataset_counts.values()) == 4
-    ), "Region dataset counts don't match total count"
+    assert sum(loaded.region_dataset_counts.values()) == 4, (
+        "Region dataset counts don't match total count"
+    )
     assert sorted(loaded.region_dataset_counts.keys()) == [
         "1_2",
         "3_4",
@@ -232,9 +232,9 @@ def test_put_get_summaries(summary_store: SummaryStore):
     assert loaded.newest_dataset_creation_time == datetime(
         2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
     )
-    assert (
-        loaded.summary_gen_time != original_gen_time
-    ), "An update should update the generation time"
+    assert loaded.summary_gen_time != original_gen_time, (
+        "An update should update the generation time"
+    )
 
 
 def test_generate_empty(run_generate):

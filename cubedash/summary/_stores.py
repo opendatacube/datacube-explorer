@@ -1718,9 +1718,9 @@ def _get_shape(geometry: WKBElement, crs) -> Optional[Geometry]:
 
     if not shape.is_valid:
         newshape = shape.buffer(0)
-        assert math.isclose(
-            shape.area, newshape.area, abs_tol=0.0001
-        ), f"{shape.area} != {newshape.area}"
+        assert math.isclose(shape.area, newshape.area, abs_tol=0.0001), (
+            f"{shape.area} != {newshape.area}"
+        )
         shape = newshape
     return shape
 

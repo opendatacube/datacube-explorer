@@ -170,9 +170,9 @@ def test_generate_incremental_archivals(run_generate, summary_store: SummaryStor
     # It should be in the count again.
     # (this change should work because the new 'updated' column will be bumped on restore)
     run_generate("ga_ls9c_ard_3")
-    assert (
-        summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count
-    ), "A dataset that was restored from archival was not refreshed by Explorer"
+    assert summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count, (
+        "A dataset that was restored from archival was not refreshed by Explorer"
+    )
 
 
 def _one_dataset(index: Index, product_name: str):
@@ -226,9 +226,9 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
         _change_dataset_product(index, dataset_id, our_product)
 
     run_generate("ga_ls8c_ard_3", "ga_ls9c_ard_3", "--force-refresh")
-    assert (
-        summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count
-    ), "Expected dataset to be added again after the product changed back"
+    assert summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count, (
+        "Expected dataset to be added again after the product changed back"
+    )
 
 
 def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
@@ -346,9 +346,9 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
 def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     run_generate("ls8_nbar_albers")
     # No datasets in 2018
-    assert (
-        summary_store.get("ls8_nbar_albers", year=2018) is None
-    ), "There should be no datasets in 2018"
+    assert summary_store.get("ls8_nbar_albers", year=2018) is None, (
+        "There should be no datasets in 2018"
+    )
 
     # Year that does not exist for LS8
     summary = summary_store.get("ls8_nbar_albers", year=2006, month=None, day=None)
@@ -523,9 +523,9 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     assert original is not cached_s
     assert cached_s.dataset_count == original.dataset_count
     assert cached_s.summary_gen_time is not None
-    assert (
-        cached_s.summary_gen_time == original.summary_gen_time
-    ), "A new, rather than cached, summary was returned"
+    assert cached_s.summary_gen_time == original.summary_gen_time, (
+        "A new, rather than cached, summary was returned"
+    )
 
 
 def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client):
@@ -549,9 +549,9 @@ def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client)
 
     # Value wasn't incremented!
     value_after_rerun = _get_product_seq_value()
-    assert (
-        value_after_rerun == original_value
-    ), "Product sequence was incremented without any new products being added."
+    assert value_after_rerun == original_value, (
+        "Product sequence was incremented without any new products being added."
+    )
 
 
 def test_computed_regions_match_those_summarised(summary_store: SummaryStore):

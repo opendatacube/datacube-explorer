@@ -28,8 +28,8 @@ def init_app_monitoring(app: flask.Flask):
         render_time = time.time() - flask.g.start_render
         response.headers.add_header(
             "Server-Timing",
-            f"app;dur={render_time*1000},"
-            f'odcquery;dur={flask.g.datacube_query_time*1000};desc="ODC query time",'
+            f"app;dur={render_time * 1000},"
+            f'odcquery;dur={flask.g.datacube_query_time * 1000};desc="ODC query time",'
             f"odcquerycount_{flask.g.datacube_query_count};"
             f'desc="{flask.g.datacube_query_count} ODC queries"',
         )
@@ -79,7 +79,7 @@ def init_app_monitoring(app: flask.Flask):
                 duration_secs = time.time() - start_time
                 print(
                     f"== Index Call == {style(function.__name__, bold=True)}: "
-                    f"{duration_secs*1000}",
+                    f"{duration_secs * 1000}",
                     file=sys.stderr,
                     flush=True,
                 )

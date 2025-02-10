@@ -59,9 +59,9 @@ def clirunner(env_name: str):
         opts += ("--env", env_name)
         result = runner.invoke(cli_method, opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert (
-                0 == result.exit_code
-            ), f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
+            assert 0 == result.exit_code, (
+                f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
+            )
         return result
 
     return _run_cli

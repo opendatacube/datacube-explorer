@@ -219,7 +219,7 @@ def _format_time(t: float):
     if t > 1:
         return f"{t:.1f}s"
     else:
-        return f"{int(t*1000)}ms"
+        return f"{int(t * 1000)}ms"
 
 
 if __name__ == "__main__":

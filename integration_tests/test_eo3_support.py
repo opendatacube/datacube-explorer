@@ -125,9 +125,9 @@ def test_eo3_extents(eo3_index: Index):
         ),
     }
     assert footprint.is_valid, "Created footprint is not a valid geometry"
-    assert (
-        dataset_extent_row["footprint"].srid == 32650
-    ), "Expected epsg:32650 within the footprint geometry"
+    assert dataset_extent_row["footprint"].srid == 32650, (
+        "Expected epsg:32650 within the footprint geometry"
+    )
 
     assert dataset_extent_row["region_code"] == "113081"
     assert dataset_extent_row["size_bytes"] is None
@@ -210,9 +210,9 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
     with TEST_EO3_DATASET_ARD.open("r") as f:
         raw_doc = YAML(typ="safe", pure=True).load(f)
 
-    assert (
-        indexed_doc == raw_doc
-    ), "Document does not match original after undoing compatibility fields."
+    assert indexed_doc == raw_doc, (
+        "Document does not match original after undoing compatibility fields."
+    )
 
 
 def test_undo_eo3_compatibility_del_handling():

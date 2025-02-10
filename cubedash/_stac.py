@@ -1273,7 +1273,7 @@ def collection_month(collection: str, year: int, month: int):
     date = datetime(year, month, 1).date()
     c = Catalog(
         f"{collection}-{year}-{month}",
-        description=f'{collection} for {date.strftime("%B %Y")}',
+        description=f"{collection} for {date.strftime('%B %Y')}",
     )
 
     c.links.extend(

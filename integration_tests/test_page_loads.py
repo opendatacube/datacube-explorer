@@ -154,9 +154,9 @@ def test_all_products_are_shown(client: FlaskClient):
         a.text.strip() for a in html.find(".product-selection-header .option-menu-link")
     )
     indexed_product_names = sorted(p.name for p in _model.STORE.all_products())
-    assert (
-        found_product_names == indexed_product_names
-    ), "Product shown in menu don't match the indexed products"
+    assert found_product_names == indexed_product_names, (
+        "Product shown in menu don't match the indexed products"
+    )
 
 
 def test_get_overview_product_links(client: FlaskClient):
@@ -407,36 +407,36 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     These are slightly fun to handle as they are a small number with a huge time range.
     """
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p")
-    assert (
-        len(geojson["features"]) == 306
-    ), "Not all high tide datasets returned as geojson"
+    assert len(geojson["features"]) == 306, (
+        "Not all high tide datasets returned as geojson"
+    )
 
     # Search and time summary is only based on center time.
     # These searches are within the dataset time range, but not the center_time.
     # Dataset range: '2000-01-01T00:00:00' to '2016-10-31T00:00:00'
     # year
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008")
-    assert (
-        len(geojson["features"]) == 306
-    ), "Expected high tide datasets within whole dataset range"
+    assert len(geojson["features"]) == 306, (
+        "Expected high tide datasets within whole dataset range"
+    )
     # month
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6")
-    assert (
-        len(geojson["features"]) == 306
-    ), "Expected high tide datasets within whole dataset range"
+    assert len(geojson["features"]) == 306, (
+        "Expected high tide datasets within whole dataset range"
+    )
     # day
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6/1")
-    assert (
-        len(geojson["features"]) == 306
-    ), "Expected high tide datasets within whole dataset range"
+    assert len(geojson["features"]) == 306, (
+        "Expected high tide datasets within whole dataset range"
+    )
 
     # Out of the test dataset time range. No results.
 
     # Completely outside of range
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2018")
-    assert (
-        len(geojson["features"]) == 0
-    ), "Expected no high tide datasets in in this year"
+    assert len(geojson["features"]) == 0, (
+        "Expected no high tide datasets in in this year"
+    )
     # One day before/after (is time zone handling correct?)
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6/2")
     assert len(geojson["features"]) == 0, "Expected no result one-day-after center time"
@@ -469,9 +469,9 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient):
     """
 
     rv: Response = client.get("/api/regions/high_tide_comp_20p")
-    assert (
-        rv.status_code == 404
-    ), "High tide comp does not support regions: it should return not-exist code."
+    assert rv.status_code == 404, (
+        "High tide comp does not support regions: it should return not-exist code."
+    )
 
 
 def test_api_returns_scene_regions(client: FlaskClient):
@@ -908,9 +908,9 @@ def test_with_timings(client: FlaskClient):
         for f in rv.headers["Server-Timing"].split(",")
         if f.startswith("odcquerycount_")
     ]
-    assert (
-        count_header
-    ), f"No query count server timing header found in {rv.headers['Server-Timing']}"
+    assert count_header, (
+        f"No query count server timing header found in {rv.headers['Server-Timing']}"
+    )
 
     # Example header:
     # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
@@ -969,9 +969,9 @@ def test_get_robots(client: FlaskClient):
     num_lines = len(text.split("\n"))
     assert num_lines > 1, "robots.txt should have multiple lines"
 
-    assert (
-        rv.headers["Content-Type"] == "text/plain"
-    ), "robots.txt content-type should be text/plain"
+    assert rv.headers["Content-Type"] == "text/plain", (
+        "robots.txt content-type should be text/plain"
+    )
 
 
 def test_all_give_404s(client: FlaskClient):
