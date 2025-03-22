@@ -45,6 +45,7 @@ extensions = [
     "sphinx_click",
     "sphinx_click.ext",
     "sphinx.ext.autosectionlabel",
+    "sphinx_tabs.tabs",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
