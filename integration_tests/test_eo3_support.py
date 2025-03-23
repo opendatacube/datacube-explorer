@@ -283,10 +283,10 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
 
     # Our item document can still be improved. This is ensuring changes are deliberate.
     expected = {
-        "stac_version": "1.0.0",
+        "stac_version": "1.1.0",
         "stac_extensions": [
             "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
-            "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
+            "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
             "https://stac-extensions.github.io/view/v1.0.0/schema.json",
         ],
         "type": "Feature",
@@ -371,7 +371,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "odc:producer": "ga.gov.au",
             "odc:product_family": "ard",
             "odc:region_code": "113081",
-            "proj:epsg": 32650,
+            "proj:code": "EPSG:32650",
             "proj:shape": [6981, 7791],
             "proj:transform": [
                 30.0,
@@ -391,7 +391,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_nir": {
                 "title": "nbar_nir",
                 "eo:bands": [{"name": "nbar_nir"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band04.tif",
@@ -411,7 +411,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_red": {
                 "title": "nbar_red",
                 "eo:bands": [{"name": "nbar_red"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band03.tif",
@@ -431,7 +431,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_fmask": {
                 "title": "oa_fmask",
                 "eo:bands": [{"name": "oa_fmask"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_oa_3-1-20200605_113081_1988-03-30_final_fmask.tif",
@@ -451,7 +451,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_blue": {
                 "title": "nbar_blue",
                 "eo:bands": [{"name": "nbar_blue"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band01.tif",
@@ -471,7 +471,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_nir": {
                 "title": "nbart_nir",
                 "eo:bands": [{"name": "nbart_nir"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band04.tif",
@@ -491,7 +491,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_red": {
                 "title": "nbart_red",
                 "eo:bands": [{"name": "nbart_red"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band03.tif",
@@ -511,7 +511,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_green": {
                 "title": "nbar_green",
                 "eo:bands": [{"name": "nbar_green"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band02.tif",
@@ -531,7 +531,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_blue": {
                 "title": "nbart_blue",
                 "eo:bands": [{"name": "nbart_blue"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band01.tif",
@@ -551,7 +551,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_swir_1": {
                 "title": "nbar_swir_1",
                 "eo:bands": [{"name": "nbar_swir_1"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band05.tif",
@@ -571,7 +571,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbar_swir_2": {
                 "title": "nbar_swir_2",
                 "eo:bands": [{"name": "nbar_swir_2"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbar_3-1-20200605_113081_1988-03-30_final_band07.tif",
@@ -591,7 +591,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_green": {
                 "title": "nbart_green",
                 "eo:bands": [{"name": "nbart_green"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band02.tif",
@@ -611,7 +611,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_swir_1": {
                 "title": "nbart_swir_1",
                 "eo:bands": [{"name": "nbart_swir_1"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/ga_ls5t_nbart_3-1-20200605_113081_1988-03-30_final_band05.tif",
@@ -631,7 +631,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "nbart_swir_2": {
                 "title": "nbart_swir_2",
                 "eo:bands": [{"name": "nbart_swir_2"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -652,7 +652,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_time_delta": {
                 "title": "oa_time_delta",
                 "eo:bands": [{"name": "oa_time_delta"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -673,7 +673,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_solar_zenith": {
                 "title": "oa_solar_zenith",
                 "eo:bands": [{"name": "oa_solar_zenith"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -694,7 +694,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_exiting_angle": {
                 "title": "oa_exiting_angle",
                 "eo:bands": [{"name": "oa_exiting_angle"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -715,7 +715,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_solar_azimuth": {
                 "title": "oa_solar_azimuth",
                 "eo:bands": [{"name": "oa_solar_azimuth"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -736,7 +736,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_incident_angle": {
                 "title": "oa_incident_angle",
                 "eo:bands": [{"name": "oa_incident_angle"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -757,7 +757,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_relative_slope": {
                 "title": "oa_relative_slope",
                 "eo:bands": [{"name": "oa_relative_slope"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -778,7 +778,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_satellite_view": {
                 "title": "oa_satellite_view",
                 "eo:bands": [{"name": "oa_satellite_view"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -799,7 +799,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_nbar_contiguity": {
                 "title": "oa_nbar_contiguity",
                 "eo:bands": [{"name": "oa_nbar_contiguity"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -820,7 +820,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_nbart_contiguity": {
                 "title": "oa_nbart_contiguity",
                 "eo:bands": [{"name": "oa_nbart_contiguity"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -841,7 +841,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_relative_azimuth": {
                 "title": "oa_relative_azimuth",
                 "eo:bands": [{"name": "oa_relative_azimuth"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -862,7 +862,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_azimuthal_exiting": {
                 "title": "oa_azimuthal_exiting",
                 "eo:bands": [{"name": "oa_azimuthal_exiting"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -883,7 +883,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_satellite_azimuth": {
                 "title": "oa_satellite_azimuth",
                 "eo:bands": [{"name": "oa_satellite_azimuth"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -904,7 +904,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_azimuthal_incident": {
                 "title": "oa_azimuthal_incident",
                 "eo:bands": [{"name": "oa_azimuthal_incident"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"
@@ -925,7 +925,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient):
             "oa_combined_terrain_shadow": {
                 "title": "oa_combined_terrain_shadow",
                 "eo:bands": [{"name": "oa_combined_terrain_shadow"}],
-                "proj:epsg": 32650,
+                "proj:code": "EPSG:32650",
                 "type": "image/tiff; application=geotiff; profile=cloud-optimized",
                 "roles": ["data"],
                 "href": "file://example.com/test_dataset/"

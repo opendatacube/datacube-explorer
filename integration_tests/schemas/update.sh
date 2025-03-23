@@ -3,7 +3,7 @@
 set -eu
 
 
-stac_tag='v1.0.0'
+stac_tag='v1.1.0'
 stac_api_tag='v1.0.0'
 
 
@@ -47,7 +47,7 @@ ln -s "../schemas.stacspec.org/${stac_api_version}" "stac-api/"
 # The ItemCollection was removed from core stac, but is used by stac-api.
 cd "stac/${stac_version}/item-spec/json-schema"
 wget https://raw.githubusercontent.com/radiantearth/stac-spec/568a04821935cc92de7b4b05ea6fa9f6bf8a0592/item-spec/json-schema/itemcollection.json
-perl -pi -e 's#"const": "0.9.0"#"const": "1.0.0"#g' itemcollection.json
+perl -pi -e 's#"const": "0.9.0"#"const": "1.1.0"#g' itemcollection.json
 
 echo "Success"
 echo "If git status shows any changes, rerun tests, and commit them"

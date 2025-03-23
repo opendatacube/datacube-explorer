@@ -43,7 +43,7 @@ DEFAULT_FORCE_ABSOLUTE_LINKS = True
 # These searches are much slower we're forced us to use ODC's own metadata table.
 DEFAULT_RETURN_FULL_ITEMS = True
 
-STAC_VERSION = "1.0.0"
+STAC_VERSION = "1.1.0"
 
 ItemLike = Union[pystac.Item, dict]
 

@@ -663,7 +663,7 @@ def test_stac_collection(stac_client: FlaskClient):
     ]
 
     assert proxy_scene_collection == {
-        "stac_version": "1.0.0",
+        "stac_version": "1.1.0",
         "type": "Collection",
         "id": "high_tide_comp_20p",
         "title": "high_tide_comp_20p",
@@ -749,10 +749,10 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
     # Our item document can still be improved.
     # This is ensuring changes are deliberate.
     expected = {
-        "stac_version": "1.0.0",
+        "stac_version": "1.1.0",
         "stac_extensions": [
             "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
-            "https://stac-extensions.github.io/projection/v1.1.0/schema.json",
+            "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
         ],
         "type": "Feature",
         "collection": "ls7_nbar_scene",
@@ -796,7 +796,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
             "landsat:wrs_path": 96,
             "landsat:wrs_row": 82,
             "cubedash:region_code": "96_82",
-            "proj:epsg": 4326,
+            "proj:code": "EPSG:4326",
         },
         "assets": {
             "1": {
