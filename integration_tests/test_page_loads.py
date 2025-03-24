@@ -964,7 +964,7 @@ def test_get_robots(client: FlaskClient):
     Check that robots.txt is correctly served from root
     """
     text, rv = get_text_response(client, "/robots.txt")
-    assert "User-Agent:" in text
+    assert "User-agent:" in text
 
     num_lines = len(text.split("\n"))
     assert num_lines > 1, "robots.txt should have multiple lines"
