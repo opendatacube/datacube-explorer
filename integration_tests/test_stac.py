@@ -4,6 +4,7 @@ Tests that hit the stac api
 
 import json
 import urllib.parse
+import warnings
 from collections import Counter, defaultdict
 from collections.abc import Generator, Iterable
 from functools import lru_cache
@@ -14,6 +15,7 @@ from urllib.request import urlopen
 
 import jsonschema
 import pytest
+from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
 from dateutil import tz
 from flask import Response
@@ -729,9 +731,11 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
         "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/ga-metadata.yaml"
     )
     # add_location is deprecated, but using index.datasets.update here is unwieldy
-    odc_test_db.index.datasets.add_location(
-        "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ODC2DeprecationWarning)
+        odc_test_db.index.datasets.add_location(
+            "0c5b625e-5432-4911-9f7d-f6b894e27f3c", dataset_uri
+        )
 
     response = get_item(
         stac_client,
