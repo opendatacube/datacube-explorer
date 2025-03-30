@@ -9,7 +9,7 @@ import io
 import itertools
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import StringIO
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin, urlparse
@@ -436,7 +436,7 @@ def default_utc(d: datetime) -> datetime:
 
 
 def now_utc() -> datetime:
-    return default_utc(datetime.utcnow())
+    return default_utc(datetime.now(timezone.utc))
 
 
 def dataset_created(dataset: Dataset) -> Optional[datetime]:

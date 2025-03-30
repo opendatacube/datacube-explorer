@@ -3,7 +3,7 @@ Tests that load pages and check the contained text.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from io import StringIO
 from textwrap import indent
 
@@ -988,7 +988,7 @@ def test_all_give_404s(client: FlaskClient):
             )
 
     name = "does_not_exist"
-    time = datetime.utcnow()
+    time = datetime.now(timezone.utc)
     region_code = "not_a_region"
     dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
 

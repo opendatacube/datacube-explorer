@@ -1,6 +1,6 @@
 import decimal
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
 import datacube
@@ -203,7 +203,7 @@ def search_page(
                 creation_time.begin or product_summary.time_earliest,
                 # product time bounds don't necessarily include the creation time
                 # so use today's date instead as our end bound if needed
-                creation_time.end or datetime.utcnow(),
+                creation_time.end or datetime.now(timezone.utc),
             )
         query["creation_time"] = creation_time
 
@@ -484,7 +484,7 @@ def inject_globals():
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
         datacube_metadata_types=list(_model.STORE.all_metadata_types()),
-        current_time=datetime.utcnow(),
+        current_time=datetime.now(timezone.utc),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
         grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
