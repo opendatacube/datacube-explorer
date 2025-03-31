@@ -39,6 +39,7 @@ services:
     volumes:
       - type: tmpfs
         target: /var/lib/postgresql/data
+    command: -c fsync=off
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "postgres", "-q", "-d", "opendatacube", "-U", "opendatacube"]
       timeout: 45s
