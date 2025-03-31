@@ -36,6 +36,9 @@ services:
     ports:
       - 5432:5432
     restart: always
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "postgres", "-q", "-d", "opendatacube", "-U", "opendatacube"]
       timeout: 45s
