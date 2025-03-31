@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, TypeAlias
+from typing import Any, Dict, Iterable, List, Optional, TypeAlias
 
 import fiona
 import structlog
@@ -15,6 +15,7 @@ from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocFiel
 from datacube.model import Dataset, Field, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
+from odc.geo import CRS
 from shapely.geometry import shape
 from sqlalchemy import (
     BigInteger,
@@ -286,15 +287,14 @@ def _select_dataset_extent_columns(
     # Some time-series-derived products have seemingly-rectangular but *huge* footprints
     # (because they union many almost-indistinguishable footprints)
     # If they specify a resolution, we can simplify the geometry based on it.
-    if (
-        footprint_expression is not None
-        and product.grid_spec
-        and product.grid_spec.resolution
-    ):
-        resolution = min(abs(r) for r in product.grid_spec.resolution)
-        footprint_expression = func.ST_SimplifyPreserveTopology(
-            footprint_expression, resolution / 4
-        )
+    info = _product_info(product)
+    if footprint_expression is not None and info is not None:
+        res = info.get("resolution")
+        if res is not None:
+            resolution = min(abs(r) for r in res)
+            footprint_expression = func.ST_SimplifyPreserveTopology(
+                footprint_expression, resolution / 4
+            )
 
     return [
         datetime_expression(md_type),
@@ -439,7 +439,6 @@ class RegionInfo:
             "region_code"
         )
 
-        grid_spec = product.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
         #
         # hltc has a grid spec, but most attributes are missing, so grid_spec functions fail.
@@ -447,7 +446,8 @@ class RegionInfo:
         if region_code_field is not None:
             # Generic region info
             return RegionInfo(product, known_regions)
-        elif grid_spec is not None and grid_spec.tile_size:
+        info = _product_info(product)
+        if info is not None and info.get("tile_size") is not None:
             return GridRegionInfo(product, known_regions)
         elif "sat_path" in product.metadata_type.dataset_fields:
             return SceneRegionInfo(product, known_regions)
@@ -520,7 +520,6 @@ class GridRegionInfo(RegionInfo):
 
         """
         product = self.product
-        grid_spec = product.grid_spec
 
         doc = jsonb_doc_expression(product.metadata_type)
         projection_offset = _projection_doc_offset(product.metadata_type)
@@ -533,9 +532,10 @@ class GridRegionInfo(RegionInfo):
             )
         )
 
-        # todo: look at grid_spec crs. Use it for defaults, conversion.
-        size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
-        origin_x, origin_y = grid_spec.origin
+        info = _product_info(product) or {}
+        # todo: use the CRS for defaults, conversion.
+        size_x, size_y = info.get("tile_size") or (1000.0, 1000.0)
+        origin_x, origin_y = info.get("origin") or (0.0, 0.0)
         return func.concat(
             func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(String),
             "_",
@@ -556,6 +556,24 @@ class GridRegionInfo(RegionInfo):
             )
         x, y = tiles[0]
         return f"{x}_{y}"
+
+
+def _product_info(product: Product) -> dict[str, Any] | None:
+    storage = product.definition.get("storage")
+    if storage is None:
+        return None
+    storage_crs = storage.get("crs")
+    if storage_crs is None:
+        return None
+    crs = CRS(str(storage_crs).strip())
+
+    def extract_point(name: str) -> tuple[str] | None:
+        xx = storage.get(name)
+        return None if xx is None else tuple(xx[dim] for dim in crs.dimensions)
+
+    info = {name: extract_point(name) for name in ("tile_size", "resolution", "origin")}
+    complete = all(info.get(k) is not None for k in ("tile_size", "resolution"))
+    return info if complete else None
 
 
 def _from_xy_region_code(region_code: str):
