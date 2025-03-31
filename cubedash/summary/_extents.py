@@ -15,7 +15,6 @@ from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocFiel
 from datacube.model import Dataset, Field, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
-from psycopg2._range import Range as PgRange
 from shapely.geometry import shape
 from sqlalchemy import (
     BigInteger,
@@ -379,8 +378,6 @@ def _as_json(obj):
             return str(prefix + to_shape(o).wkt)
         if isinstance(o, datetime):
             return o.isoformat()
-        if isinstance(o, PgRange):
-            return ["∞" if o.lower_inf else o.lower, "∞" if o.upper_inf else o.upper]
         return repr(o)
 
     return json.dumps(obj, indent=4, default=fallback)
