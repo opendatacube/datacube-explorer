@@ -1,13 +1,14 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import shapely.wkt
 from datacube.model import Range
-from psycopg2.tz import FixedOffsetTimezone
 
 from cubedash.summary import TimePeriodOverview
 
+_tz10 = timezone(timedelta(hours=10))
+_tz11 = timezone(timedelta(hours=11))
 #
 # This is a dump of the wofs_summary overview for all-time.
 # It was consistently failing because the valid footprint becomes invalid when
@@ -22,99 +23,37 @@ wofs_time_summary = TimePeriodOverview(
     dataset_count=1244,
     timeline_dataset_counts=Counter(
         {
-            datetime(
-                1970, 1, 1, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 1244,
-            datetime(
-                1970, 1, 2, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 3, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 4, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 5, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 6, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 7, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 8, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 9, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 10, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 11, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 12, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 13, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 14, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 15, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 16, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 17, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 18, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 19, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 20, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 21, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 22, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 23, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 24, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 25, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 26, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 27, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 28, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 29, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 30, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
-            datetime(
-                1970, 1, 31, 0, 0, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-            ): 0,
+            datetime(1970, 1, 1, 0, 0, tzinfo=_tz10): 1244,
+            datetime(1970, 1, 2, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 3, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 4, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 5, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 6, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 7, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 8, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 9, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 10, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 11, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 12, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 13, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 14, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 15, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 16, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 17, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 18, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 19, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 20, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 21, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 22, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 23, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 24, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 25, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 26, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 27, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 28, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 29, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 30, 0, 0, tzinfo=_tz10): 0,
+            datetime(1970, 1, 31, 0, 0, tzinfo=_tz10): 0,
         }
     ),
     region_dataset_counts=Counter(
@@ -1367,12 +1306,8 @@ wofs_time_summary = TimePeriodOverview(
     ),
     timeline_period="day",
     time_range=Range(
-        begin=datetime(
-            1970, 1, 1, 0, 30, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-        ),
-        end=datetime(
-            1970, 2, 1, 0, 30, tzinfo=FixedOffsetTimezone(offset=600, name=None)
-        ),
+        begin=datetime(1970, 1, 1, 0, 30, tzinfo=_tz10),
+        end=datetime(1970, 2, 1, 0, 30, tzinfo=_tz10),
     ),
     footprint_geometry=(
         shapely.wkt.load(
@@ -1384,35 +1319,10 @@ wofs_time_summary = TimePeriodOverview(
     footprint_crs="EPSG:3577",
     footprint_count=1244,
     newest_dataset_creation_time=datetime(
-        2018,
-        7,
-        4,
-        11,
-        24,
-        25,
-        392_500,
-        tzinfo=FixedOffsetTimezone(offset=600, name=None),
+        2018, 7, 4, 11, 24, 25, 392_500, tzinfo=_tz10
     ),
     crses={"EPSG:3577"},
     size_bytes=0,
-    summary_gen_time=datetime(
-        2019,
-        2,
-        22,
-        21,
-        46,
-        16,
-        853_756,
-        tzinfo=FixedOffsetTimezone(offset=660, name=None),
-    ),
-    product_refresh_time=datetime(
-        2019,
-        2,
-        22,
-        21,
-        22,
-        16,
-        853_756,
-        tzinfo=FixedOffsetTimezone(offset=660, name=None),
-    ),
+    summary_gen_time=datetime(2019, 2, 22, 21, 46, 16, 853_756, tzinfo=_tz11),
+    product_refresh_time=datetime(2019, 2, 22, 21, 22, 16, 853_756, tzinfo=_tz11),
 )
