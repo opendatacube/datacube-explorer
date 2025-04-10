@@ -50,7 +50,6 @@ try:
     from cubedash._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
-from datacube import Datacube
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
@@ -1723,16 +1722,3 @@ def _get_shape(geometry: WKBElement, crs) -> Optional[Geometry]:
         )
         shape = newshape
     return shape
-
-
-if __name__ == "__main__":
-    # For debugging store commands...
-    with Datacube() as dc:
-        from pprint import pprint
-
-        store = SummaryStore.create(dc.index)
-        pprint(
-            store._find_product_fixed_metadata(
-                dc.index.products.get_by_name("ls8_nbar_scene"), sample_percentage=50
-            )
-        )
