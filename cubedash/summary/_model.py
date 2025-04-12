@@ -11,6 +11,7 @@ from datacube.model import Range
 from odc.geo.geom import Geometry
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
+from typing_extensions import override
 
 _LOG = structlog.get_logger()
 
@@ -52,6 +53,7 @@ class TimePeriodOverview:
     # When this summary was generated. Set on the server.
     summary_gen_time: datetime = None
 
+    @override
     def __str__(self):
         return (
             f"{self.label} "

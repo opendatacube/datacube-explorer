@@ -6,6 +6,7 @@ import shapely.ops
 from cachetools.func import lru_cache
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import PgDocField
+from typing_extensions import override
 
 from datacube.drivers.postgres._schema import (  # isort: skip
     DATASET as ODC_DATASET,
@@ -67,6 +68,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self.engine = index._db._engine
         self.db_api = PostgresDbAPI
 
+    @override
     def get_mutable_dataset_search_fields(
         self, md: MetadataType
     ) -> dict[str, PgDocField]:
@@ -78,10 +80,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # why not do md.dataset_fields?
         return self.index._db.get_dataset_fields(md.definition)
 
+    @override
     def ds_added_expr(self):
         # what's the best approach with this one?
         return ODC_DATASET.c.added
 
+    @override
     def get_dataset_sources(
         self, dataset_id: UUID, limit=None
     ) -> tuple[list[Dataset], int]:
@@ -123,6 +127,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return self.index.datasets.bulk_get(source_ids), remaining_records
 
     # Same as PostgresDbApi.get_derived_datasets but with limit
+    @override
     def get_datasets_derived(
         self, dataset_id: UUID, limit=None
     ) -> tuple[list[Dataset], int]:
@@ -168,6 +173,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             for dataset in datasets  # is making necessary
         ], remaining_records
 
+    @override
     def outdated_months(
         self,
         product: Product,
@@ -192,6 +198,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .order_by("month")
             )
 
+    @override
     def outdated_years(self, product_id: int):
         updated_months = TIME_OVERVIEW.alias("updated_months")
         years = TIME_OVERVIEW.alias("years_needing_update")
@@ -223,6 +230,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def product_ds_count_per_period(self):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -241,6 +249,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def upsert_product_record(self, product_name: str, fields):
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,
         # insert, on_conflict...) and while this works, it triggers the sequence
@@ -272,6 +281,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     .values(**fields)
                 ).fetchone()
 
+    @override
     def put_summary(self, product_id: int, start_day, period, summary_row: dict):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -294,6 +304,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def product_summary_cols(self, product_name: str):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -312,6 +323,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ).where(PRODUCT.c.name == product_name)
             ).fetchone()
 
+    @override
     def upsert_product_regions(self, product_id: int):
         # add new regions row and/or update existing regions based on dataset_spatial
         with self.index._active_connection() as conn:
@@ -347,6 +359,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 """)
             )
 
+    @override
     def delete_product_empty_regions(self, product_id: int):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -361,6 +374,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 """),
             )
 
+    @override
     def product_time_overview(self, product_id: int):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -371,6 +385,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ).where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
             ).fetchone()
 
+    @override
     def product_time_summary(self, product_id: int, start_day, period):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -383,6 +398,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def latest_arrivals(self, period_length: timedelta):
         with self.engine.begin() as conn:
             latest_arrival_date: datetime = conn.execute(
@@ -412,6 +428,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 },
             )
 
+    @override
     def already_summarised_period(self, period: str, product_id: int):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -423,6 +440,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def linked_products_search(self, product_id: int, sample_sql: str, direction: str):
         from_ref, to_ref = "source_dataset_ref", "dataset_ref"
         if direction == "derived":
@@ -454,6 +472,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             """)
             )
 
+    @override
     def product_region_summary(self, product_id: int):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -467,6 +486,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .order_by(REGION.c.region_code)
             )
 
+    @override
     def dataset_footprint_region(self, dataset_id):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -478,6 +498,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ).where(DATASET_SPATIAL.c.id == dataset_id)
             )
 
+    @override
     def latest_dataset_added_time(self, product_id: int):
         # DATASET_SPATIAL doesn't keep track of when the dataset was indexed,
         # so we have to get that info from ODC_DATASET
@@ -493,6 +514,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
             ).scalar()
 
+    @override
     def update_product_refresh_timestamp(
         self, product_id: int, refresh_timestamp: datetime
     ):
@@ -511,6 +533,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     # does this add much value? and if so, is there a better way to do it?
+    @override
     def find_fixed_columns(self, field_values, candidate_fields, sample_ids):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -529,6 +552,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     # does this really add much value? and if so, is there a better way to do it?
+    @override
     def all_products_location_samples(
         self, products: list[Product], sample_size: int = 50
     ):
@@ -560,6 +584,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     # This is tied to ODC's internal Dataset search implementation as there's no higher-level api to allow this.
     # When region_code is integrated into core (as is being discussed) this can be replaced.
     # pylint: disable=protected-access
+    @override
     def datasets_by_region(
         self,
         product: Product,
@@ -600,6 +625,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 for res in conn.execute(query).fetchall()
             )
 
+    @override
     def products_by_region(
         self,
         region_code: str,
@@ -629,6 +655,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.index._active_connection() as conn:
             return (res.dataset_type_ref for res in conn.execute(query).fetchall())
 
+    @override
     def delete_datasets(
         self, product_id: int, after_date: datetime = None, full: bool = False
     ) -> int:
@@ -675,6 +702,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             ).rowcount
 
+    @override
     def upsert_datasets(self, product_id, column_values, after_date) -> int:
         column_values["id"] = ODC_DATASET.c.id
         column_values["dataset_type_ref"] = ODC_DATASET.c.dataset_type_ref
@@ -703,6 +731,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             ).rowcount
 
+    @override
     def synthesize_dataset_footprint(self, rows, shapes):
         # don't believe there's a way to pass parameter to _active_connection
         with self.engine.begin() as conn:
@@ -731,6 +760,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ],
             )
 
+    @override
     def dataset_spatial_field_exprs(self):
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
         field_exprs = dict(
@@ -748,6 +778,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
         return field_exprs
 
+    @override
     def spatial_select_query(self, clauses, full: bool = False):
         query = select(*clauses)
         if full:
@@ -758,6 +789,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
         return query.select_from(DATASET_SPATIAL)
 
+    @override
     def select_spatial_stats(self):
         # the only reason this needs to be in the api is because of the dataset_type_ref column
         with self.index._active_connection() as conn:
@@ -774,6 +806,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def schema_initialised(self) -> bool:
         """
         Do our DB schemas exist?
@@ -781,6 +814,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.engine.begin() as conn:
             return _schema.has_schema(conn)
 
+    @override
     def schema_compatible_info(
         self, for_writing_operations_too=False
     ) -> tuple[str, bool]:
@@ -793,10 +827,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 conn, ODC_DATASET.fullname, for_writing_operations_too
             )
 
+    @override
     def init_schema(self, grouping_epsg_code: int):
         with self.engine.begin() as conn:
             return init_elements(conn, grouping_epsg_code)
 
+    @override
     def refresh_stats(self, concurrently=False):
         """
         Refresh general statistics tables that cover all products.
@@ -807,6 +843,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             _schema.refresh_supporting_views(conn, concurrently=concurrently)
 
     @lru_cache()
+    @override
     def get_srid_name(self, srid: int) -> str | None:
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
@@ -814,6 +851,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.engine.begin() as conn:
             return srid_name(conn, srid)
 
+    @override
     def summary_where_clause(
         self, product_name: str, begin_time: datetime, end_time: datetime
     ) -> ColumnElement:
@@ -831,6 +869,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ),
         )
 
+    @override
     def srid_summary(self, where_clause: ColumnElement):
         select_by_srid = (
             select(
@@ -869,6 +908,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
 
+    @override
     def day_counts(self, grouping_time_zone, where_clause: ColumnElement):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -885,6 +925,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .group_by("day")
             )
 
+    @override
     def region_counts(self, where_clause):
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -896,6 +937,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .group_by("region_code")
             )
 
+    @override
     def ds_srid_expression(self, spatial_ref, projection, default_crs: str = None):
         default_crs_expression = None
         if default_crs:
@@ -974,6 +1016,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             # "degree\\",0.0174532925199433]]'
         )
 
+    @override
     def sample_dataset(self, product_id: int, columns):
         with self.index._active_connection() as conn:
             res = conn.execute(
@@ -995,6 +1038,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             # or is there a reason we need them to be calculated?
             return res
 
+    @override
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
             # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:

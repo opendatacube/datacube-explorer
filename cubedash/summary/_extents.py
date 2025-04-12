@@ -27,6 +27,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql.elements import ClauseElement, Label
 from sqlalchemy.types import TIMESTAMP
+from typing_extensions import override
 
 from cubedash._utils import (
     datetime_expression,
@@ -502,9 +503,11 @@ class GridRegionInfo(RegionInfo):
     unit_label = "tile"
     units_label = "tiles"
 
+    @override
     def region_label(self, region_code: str) -> str:
         return "Tile {:+d}, {:+d}".format(*_from_xy_region_code(region_code))
 
+    @override
     def alchemy_expression(self):
         """
         Get an sqlalchemy expression to calculate the region code (a string)
@@ -542,6 +545,7 @@ class GridRegionInfo(RegionInfo):
             func.floor((func.ST_Y(center_point) - origin_y) / size_y).cast(String),
         )
 
+    @override
     def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
         tiles = [
             tile
@@ -577,6 +581,7 @@ class SceneRegionInfo(RegionInfo):
     unit_label = "scene"
     units_label = "scenes"
 
+    @override
     def region_label(self, region_code: str) -> str:
         if "_" in region_code:
             x, y = _from_xy_region_code(region_code)
@@ -584,6 +589,7 @@ class SceneRegionInfo(RegionInfo):
         else:
             return f"Path {region_code}"
 
+    @override
     def alchemy_expression(self):
         product = self.product
         # Generate region code for older sat_path/sat_row pairs.
@@ -606,6 +612,7 @@ class SceneRegionInfo(RegionInfo):
             else_=path_field.lower.alchemy_expression.cast(String),
         )
 
+    @override
     def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
         path_range = dataset.metadata.fields["sat_path"]
         row_range = dataset.metadata.fields["sat_row"]
