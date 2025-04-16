@@ -167,7 +167,7 @@ def _create_overview():
     return overview
 
 
-def test_footprint_antimeridian(benchmark):
+def test_footprint_antimeridian(benchmark) -> None:
     """
     When a polygon crosses the antimeridian, check that it's translated correctly.
     """
@@ -177,7 +177,7 @@ def test_footprint_antimeridian(benchmark):
     assert_shapes_mostly_equal(footprint_latlon, EXPECTED_CLEAN_POLY, 0.1)
 
 
-def test_footprint_normal(benchmark):
+def test_footprint_normal(benchmark) -> None:
     # A normal poly that doesn't cross antimeridian.
     normal_poly = shape(
         {
@@ -220,11 +220,11 @@ def test_footprint_normal(benchmark):
     assert_shapes_mostly_equal(res, expected_poly, 0.001)
 
 
-def test_computed_properties():
+def test_computed_properties() -> None:
     o = _create_overview()
     o.product_name = "test_product"
 
-    def check_flat_period(o, expected_period: str, expected_date: date):
+    def check_flat_period(o, expected_period: str, expected_date: date) -> None:
         assert o.as_flat_period() == (expected_period, expected_date)
 
         # Converting the other way should also match.

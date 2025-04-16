@@ -130,7 +130,7 @@ def cli(
     throttle_seconds: float,
     explorer_url: str,
     show_timings: int = 5,
-):
+) -> None:
     """
     A tool to load an example of each Explorer page, reporting if any
     return errors.
@@ -148,7 +148,7 @@ def cli(
         url = urljoin(explorer_url, url_offset)
         secho(f"get {url_offset} ", bold=True, nl=False, err=True)
 
-        def handle_failure():
+        def handle_failure() -> None:
             nonlocal consecutive_failures
             consecutive_failures += 1
             failures.append(url)

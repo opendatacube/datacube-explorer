@@ -2,6 +2,7 @@ import json
 import os
 import time
 from collections import Counter
+from collections.abc import Sequence
 from pathlib import Path
 
 import flask
@@ -202,7 +203,7 @@ ProductWithSummary = tuple[Product, ProductSummary | None]
 
 
 @cache.memoize(timeout=120)
-def get_products() -> list[ProductWithSummary]:
+def get_products() -> Sequence[ProductWithSummary]:
     """
     The list of all products that we have generated reports for.
     """

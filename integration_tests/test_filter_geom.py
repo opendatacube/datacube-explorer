@@ -15,7 +15,7 @@ TEST_DATA_DIR = Path(__file__).parent / "data"
 
 
 class ValidGeometries:
-    def __init__(self, footprint_geometry):
+    def __init__(self, footprint_geometry) -> None:
         self.footprint_geometry = footprint_geometry
 
 
@@ -34,14 +34,14 @@ def testing_polygon():
     return shapely_polygon
 
 
-def test_filter_geom():
+def test_filter_geom() -> None:
     assert _filter_geom([]) == []
     geom = shape(json.loads('{"type": "Point", "coordinates": [0.0, 0.0]}'))
     assert _filter_geom([geom])
 
 
 @pytest.mark.skip("Skipping because the newer Shapely is handling geometry better.")
-def test_nested_exception(testing_polygon):
+def test_nested_exception(testing_polygon) -> None:
     """
     simulating the behaviour in _model.py
     """

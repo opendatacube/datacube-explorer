@@ -19,7 +19,7 @@ DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_pre_archival_dataset_count(client: FlaskClient):
+def test_pre_archival_dataset_count(client: FlaskClient) -> None:
     html = get_html(client, "/products/ga_ls7e_ard_3")
     check_dataset_count(html, 1)
 
@@ -41,7 +41,7 @@ def test_pre_archival_dataset_count(client: FlaskClient):
     assert dataset_count == "1"
 
 
-def test_post_archival_dataset_count(odc_test_db, run_generate, client):
+def test_post_archival_dataset_count(odc_test_db, run_generate, client) -> None:
     odc_test_db.index.datasets.archive(["50014f19-5546-4853-be8d-0185a798c083"])
     run_generate("ga_ls7e_ard_3")
 

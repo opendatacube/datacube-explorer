@@ -45,14 +45,14 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_summary_product(client: FlaskClient):
+def test_summary_product(client: FlaskClient) -> None:
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/ls5_fc_albers")
 
     check_dataset_count(html, 5)
 
 
-def test_yearly_dataset_count(client: FlaskClient):
+def test_yearly_dataset_count(client: FlaskClient) -> None:
     html = get_html(client, "/ga_ls9c_ard_3/2021/12")
     check_dataset_count(html, 5)
 
@@ -63,7 +63,7 @@ def test_yearly_dataset_count(client: FlaskClient):
     check_dataset_count(html, 6)
 
 
-def test_dataset_search_page_localised_time(client: FlaskClient):
+def test_dataset_search_page_localised_time(client: FlaskClient) -> None:
     html = get_html(client, "/products/ga_ls9c_ard_3/datasets/2022")
 
     assert "2022-01-01 08:11:00" in [
@@ -87,7 +87,9 @@ def test_dataset_search_page_localised_time(client: FlaskClient):
     )
 
 
-def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_client):
+def test_clirunner_generate_grouping_timezone(
+    odc_test_db, run_generate, empty_client
+) -> None:
     res: Result = run_generate("ga_ls9c_ard_3", grouping_time_zone="America/Chicago")
     assert "2021" in res.output
 
@@ -146,7 +148,7 @@ def test_clirunner_generate_grouping_timezone(odc_test_db, run_generate, empty_c
 
 
 # Unit tests
-def test_dataset_day_link(summary_store):
+def test_dataset_day_link(summary_store) -> None:
     ds = summary_store.index.datasets.get("6293ac37-7f1d-430e-8d7e-ffdc1bfd556c")
     t = datetime_from_metadata(ds)
     t = default_utc(t).astimezone(pytz.timezone("Australia/Darwin"))
@@ -160,7 +162,7 @@ def test_dataset_day_link(summary_store):
     assert t.day == 31
 
 
-def test_dataset_search_page_ls7e_time(client: FlaskClient):
+def test_dataset_search_page_ls7e_time(client: FlaskClient) -> None:
     html = get_html(client, "/products/usgs_ls7e_level1_1/datasets/2020/6/1")
     search_results = html.find(".search-result a")
     assert len(search_results) == 2

@@ -67,7 +67,7 @@ def pg_create_index(
     table_name: str,
     col_expr: str | None = None,
     unique: bool = False,
-):
+) -> None:
     conn.execute(
         text(
             f"create {'unique' if unique else ''} index if not exists {idx_name} on {table_name}({col_expr})"
@@ -110,7 +110,7 @@ def get_postgis_versions(conn) -> str:
 
 def pg_add_column(
     conn, schema_name: str, table_name: str, column_name: str, column_type: str
-):
+) -> None:
     conn.execute(
         text(
             f"alter table {schema_name}.{table_name} add column if not exists {column_name} {column_type}"
@@ -156,7 +156,7 @@ def epsg_to_srid(conn: Connection, code: int) -> int:
     ).scalar()
 
 
-def refresh_supporting_views(conn, concurrently=False):
+def refresh_supporting_views(conn, concurrently=False) -> None:
     args = "concurrently" if concurrently else ""
     conn.execute(
         text(f"""

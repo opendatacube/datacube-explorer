@@ -10,7 +10,7 @@ from cubedash._utils import get_sorted_product_summaries
 
 
 class FakeProduct:
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
 
 
@@ -46,7 +46,7 @@ def test_product_list():
     return product_summaries
 
 
-def test_group_by_regex(test_product_groupby_regex_list, test_product_list):
+def test_group_by_regex(test_product_groupby_regex_list, test_product_list) -> None:
     regex_group = {}
     for regex, group in test_product_groupby_regex_list:
         regex_group[re.compile(regex)] = group.strip()
@@ -73,7 +73,9 @@ def test_group_by_regex(test_product_groupby_regex_list, test_product_list):
     # assert grouped_product_summarise[5][0] == 'C2 - Deprecated'
 
 
-def test_reverse_group_by_regex(test_product_groupby_regex_list, test_product_list):
+def test_reverse_group_by_regex(
+    test_product_groupby_regex_list, test_product_list
+) -> None:
     """
     reverse the groupby regex config tuple
     """

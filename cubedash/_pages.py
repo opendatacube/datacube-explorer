@@ -57,7 +57,10 @@ Disallow: /dataset/
 @bp.route("/products/<product_name>/extents/<int:year>/<int:month>")
 @bp.route("/products/<product_name>/extents/<int:year>/<int:month>/<int:day>")
 def legacy_product_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+    product_name: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     return redirect(
         url_for(
@@ -75,7 +78,10 @@ def legacy_product_page(
 @bp.route("/products/<product_name>/<int:year>/<int:month>")
 @bp.route("/products/<product_name>/<int:year>/<int:month>/<int:day>")
 def product_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+    product_name: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     (
         product,
@@ -126,7 +132,10 @@ def product_page(
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>")
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>/<int:day>")
 def legacy_search_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+    product_name: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     return redirect(
         url_for(
@@ -145,7 +154,10 @@ def legacy_search_page(
 @bp.route("/products/<product_name>/datasets/<int:year>/<int:month>")
 @bp.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
 def search_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+    product_name: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     (
         product,
@@ -261,11 +273,11 @@ def search_page(
 @bp.route("/region/<product_name>/<region_code>/<int:year>/<int:month>")
 @bp.route("/region/<product_name>/<region_code>/<int:year>/<int:month>/<int:day>")
 def legacy_region_page(
-    product_name: str = None,
-    region_code: str = None,
-    year: int = None,
-    month: int = None,
-    day: int = None,
+    product_name: str | None = None,
+    region_code: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     return redirect(
         url_for(
@@ -298,11 +310,11 @@ def regions_page(product_name: str):
     "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>"
 )
 def region_page(
-    product_name: str = None,
-    region_code: str = None,
-    year: int = None,
-    month: int = None,
-    day: int = None,
+    product_name: str | None = None,
+    region_code: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     (
         product,
@@ -387,11 +399,11 @@ def region_page(
     "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>.geojson"
 )
 def region_geojson(
-    product_name: str = None,
-    region_code: str = None,
-    year: int = None,
-    month: int = None,
-    day: int = None,
+    product_name: str | None = None,
+    region_code: str | None = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     region_info = _model.STORE.get_product_region_info(product_name)
     if not region_info:

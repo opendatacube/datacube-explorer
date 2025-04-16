@@ -67,7 +67,7 @@ def _overview(
     return orig
 
 
-def test_add_period_list():
+def test_add_period_list() -> None:
     total = TimePeriodOverview.add_periods([])
     assert total.dataset_count == 0
 
@@ -88,13 +88,13 @@ def test_add_period_list():
     assert sorted(joined.region_dataset_counts.keys()) == ["1_2", "3_4", "4_5"]
 
 
-def test_srid_calcs():
+def test_srid_calcs() -> None:
     o = _overview()
     assert o.footprint_crs == "EPSG:3577"
     assert o.footprint_srid == 3577
 
 
-def test_add_no_periods(summary_store: SummaryStore):
+def test_add_no_periods(summary_store: SummaryStore) -> None:
     """
     All the get/update methods should work on products with no datasets.
     """
@@ -111,10 +111,10 @@ def test_add_no_periods(summary_store: SummaryStore):
     assert summary_store.get("ga_ls8c_level1_3", 2015, 7, None) is None
 
 
-def test_month_iteration():
+def test_month_iteration() -> None:
     def assert_month_iteration(
         start: datetime, end: datetime, expected_months: list[date]
-    ):
+    ) -> None:
         __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
         product = ProductSummary(
@@ -156,7 +156,7 @@ def test_month_iteration():
     )
 
 
-def test_get_null(summary_store: SummaryStore):
+def test_get_null(summary_store: SummaryStore) -> None:
     """
     An area with nothing generated should come back as null.
 
@@ -172,7 +172,7 @@ def test_get_null(summary_store: SummaryStore):
 #     assert summary_store.grouping_crs == "EPSG:3577"
 
 
-def test_put_get_summaries(summary_store: SummaryStore):
+def test_put_get_summaries(summary_store: SummaryStore) -> None:
     """
     Test the serialisation/deserialisation from postgres
     """
@@ -236,7 +236,7 @@ def test_put_get_summaries(summary_store: SummaryStore):
     )
 
 
-def test_generate_empty(run_generate):
+def test_generate_empty(run_generate) -> None:
     """
     Run cubedash.generate on a cube with no datasets.
 
@@ -246,7 +246,7 @@ def test_generate_empty(run_generate):
     run_generate()
 
 
-def test_generate_raises_error(run_generate, empty_client):
+def test_generate_raises_error(run_generate, empty_client) -> None:
     """
     generate should return an error when an unknown product is asked for explicitly.
     """

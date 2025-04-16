@@ -60,7 +60,7 @@ from ._schema import (  # isort: skip
 class ExplorerIndex(ExplorerAbstractIndex):
     name = "pgis_index"
 
-    def __init__(self, index: Index):
+    def __init__(self, index: Index) -> None:
         self.index = index
         self.engine = index._db._engine
         self.db_api = PostgisDbAPI
@@ -623,7 +623,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def delete_datasets(
-        self, product_id: int, after_date: datetime = None, full: bool = False
+        self, product_id: int, after_date: datetime | None = None, full: bool = False
     ):
         with self.index._active_connection() as conn:
             # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
@@ -790,7 +790,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             return init_elements(conn, grouping_epsg_code)
 
     @override
-    def refresh_stats(self, concurrently=False):
+    def refresh_stats(self, concurrently=False) -> None:
         """
         Refresh general statistics tables that cover all products.
 
@@ -896,7 +896,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def ds_srid_expression(self, spatial_ref, projection, default_crs: str = None):
+    def ds_srid_expression(
+        self, spatial_ref, projection, default_crs: str | None = None
+    ):
         default_crs_expression = None
         if default_crs:
             auth_name, auth_srid = default_crs.split(":")

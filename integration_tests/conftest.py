@@ -46,7 +46,7 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _init_logs(pytestconfig):
+def _init_logs(pytestconfig) -> None:
     logs.init_logging(
         verbosity=pytestconfig.getoption("verbose"), cache_logger_on_first_use=False
     )
@@ -163,7 +163,7 @@ def pytest_assertrepr_compare(op, left, right):
         return format_doc_diffs(left, right)
 
 
-def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData):
+def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
     """
     Set all tables in this alchemy metadata to unlogged.
 

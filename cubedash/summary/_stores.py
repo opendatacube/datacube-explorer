@@ -256,7 +256,7 @@ class SummaryStore:
         #    tldr: "15 minutes == max expected transaction age of indexer"
         self.dataset_overlap_carefulness = timedelta(minutes=15)
 
-    def add_change_listener(self, listener):
+    def add_change_listener(self, listener) -> None:
         self._update_listeners.append(listener)
 
     def is_initialised(self) -> bool:
@@ -279,7 +279,7 @@ class SummaryStore:
         )
         return is_compatible
 
-    def init(self, grouping_epsg_code: int = None):
+    def init(self, grouping_epsg_code: int | None = None) -> None:
         """
         Initialise any schema elements that don't exist.
 
@@ -314,14 +314,14 @@ class SummaryStore:
             log=log,
         )
 
-    def close(self):  # do we still need this?
+    def close(self) -> None:  # do we still need this?
         """Close any pooled/open connections. Necessary before forking."""
         self.index.close()
         self.e_index.engine.dispose()
 
     def refresh_all_product_extents(
         self,
-    ):
+    ) -> None:
         for product in self.all_products():
             self.refresh_product_extent(
                 product.name,
@@ -415,7 +415,7 @@ class SummaryStore:
         product_name: str,
         dataset_sample_size: int = 1000,
         scan_for_deleted: bool = False,
-        only_those_newer_than: datetime = None,
+        only_those_newer_than: datetime | None = None,
         force: bool = False,
     ) -> Tuple[int, ProductSummary]:
         """
@@ -506,7 +506,7 @@ class SummaryStore:
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
 
-    def refresh_stats(self, concurrently=False):
+    def refresh_stats(self, concurrently=False) -> None:
         """
         Refresh general statistics tables that cover all products.
 
@@ -518,7 +518,7 @@ class SummaryStore:
         self,
         product: Product,
         sample_datasets_size=1000,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
 
@@ -626,7 +626,7 @@ class SummaryStore:
         )
         return list(linked_product_names or [])
 
-    def drop_all(self):
+    def drop_all(self) -> None:
         """
         Drop all cubedash-specific tables/schema.
         """
@@ -813,7 +813,7 @@ class SummaryStore:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
-    def _persist_product_extent(self, product: ProductSummary):
+    def _persist_product_extent(self, product: ProductSummary) -> None:
         source_product_ids = [
             self.get_product(name).id for name in product.source_products
         ]
@@ -839,7 +839,7 @@ class SummaryStore:
     def _put(
         self,
         summary: TimePeriodOverview,
-    ):
+    ) -> None:
         log = _LOG.bind(
             period=summary.period_tuple,
             summary_count=summary.dataset_count,
@@ -889,9 +889,9 @@ class SummaryStore:
         field_exprs,
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] = None,
-        intersects: BaseGeometry = None,
-        dataset_ids: Sequence[UUID] = None,
+        bbox: Tuple[float, float, float, float] | None = None,
+        intersects: BaseGeometry | None = None,
+        dataset_ids: Sequence[UUID] | None = None,
     ) -> Select:
         if dataset_ids is not None:
             query = query.where(field_exprs["id"].in_(dataset_ids))
@@ -1038,9 +1038,9 @@ class SummaryStore:
         self,
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] = None,
-        intersects: BaseGeometry = None,
-        dataset_ids: Sequence[UUID] = None,
+        bbox: Tuple[float, float, float, float] | None = None,
+        intersects: BaseGeometry | None = None,
+        dataset_ids: Sequence[UUID] | None = None,
         filter_lang: str | None = None,
         filter_cql: str | dict | None = None,
     ) -> int:
@@ -1082,12 +1082,12 @@ class SummaryStore:
         *,
         product_names: Optional[List[str]] = None,
         time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] = None,
-        intersects: BaseGeometry = None,
+        bbox: Tuple[float, float, float, float] | None = None,
+        intersects: BaseGeometry | None = None,
         limit: int = 500,
         offset: int = 0,
         full_dataset: bool = False,
-        dataset_ids: Sequence[UUID] = None,
+        dataset_ids: Sequence[UUID] | None = None,
         filter_lang: str | None = None,
         filter_cql: str | dict | None = None,
         order: ItemSort | list[dict[str, str]] = ItemSort.DEFAULT_SORT,
@@ -1171,7 +1171,7 @@ class SummaryStore:
         product: ProductSummary,
         year: Optional[int] = None,
         month: Optional[int] = None,
-        product_refresh_time: datetime = None,
+        product_refresh_time: datetime | None = None,
     ) -> TimePeriodOverview:
         """Recalculate the given period and store it in the DB"""
         if year and month:
@@ -1217,7 +1217,7 @@ class SummaryStore:
         force: bool = False,
         recreate_dataset_extents: bool = False,
         reset_incremental_position: bool = False,
-        minimum_change_scan_window: timedelta = None,
+        minimum_change_scan_window: timedelta | None = None,
     ) -> Tuple[GenerateResult, TimePeriodOverview]:
         """
         Update Explorer's information and summaries for a product.
@@ -1406,7 +1406,7 @@ class SummaryStore:
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
-    ):
+    ) -> None:
         """
         Mark the product as successfully refreshed at the given product-table timestamp
 

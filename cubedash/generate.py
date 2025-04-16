@@ -71,6 +71,7 @@ from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.index import Index, index_connect
 from datacube.model import Product
 from datacube.ui.click import environment_option, pass_config
+from typing_extensions import override
 
 from cubedash.logs import init_logging
 from cubedash.summary import (
@@ -107,7 +108,9 @@ def generate_report(
 
     started_years = set()
 
-    def print_status(product_name=None, year=None, month=None, day=None, summary=None):
+    def print_status(
+        product_name=None, year=None, month=None, day=None, summary=None
+    ) -> None:
         """Print status each time we start a year."""
         if year:
             if (product_name, year) not in started_years:
@@ -170,7 +173,7 @@ def run_generation(
 
     def on_complete(
         product_name: str, result: GenerateResult, summary: TimePeriodOverview
-    ):
+    ) -> None:
         counts[result] += 1
         result_color = {
             GenerateResult.ERROR: "red",
@@ -244,6 +247,7 @@ class TimeDeltaParam(click.ParamType):
 
     name = "time-length"
 
+    @override
     def convert(self, value, param, ctx):
         if isinstance(value, timedelta):
             return value
@@ -445,7 +449,7 @@ def cli(
     recreate_dataset_extents: bool,
     reset_incremental_position: bool,
     minimum_scan_window: timedelta | None,
-):
+) -> None:
     init_logging(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose
     )

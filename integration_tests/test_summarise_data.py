@@ -50,7 +50,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_generate_month(run_generate, summary_store: SummaryStore):
+def test_generate_month(run_generate, summary_store: SummaryStore) -> None:
     run_generate("ls8_nbar_scene")
     # One Month
     _expect_values(
@@ -79,7 +79,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_generate_scene_year(run_generate, summary_store: SummaryStore):
+def test_generate_scene_year(run_generate, summary_store: SummaryStore) -> None:
     run_generate(multi_processed=True)
     # One year
     _expect_values(
@@ -108,7 +108,7 @@ def test_generate_scene_year(run_generate, summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
+def test_generate_scene_all_time(run_generate, summary_store: SummaryStore) -> None:
     run_generate("ls8_nbar_scene")
 
     # All time
@@ -143,7 +143,9 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore):
     )
 
 
-def test_generate_incremental_archivals(run_generate, summary_store: SummaryStore):
+def test_generate_incremental_archivals(
+    run_generate, summary_store: SummaryStore
+) -> None:
     run_generate("ga_ls9c_ard_3")
     index = summary_store.index
 
@@ -182,7 +184,7 @@ def _one_dataset(index: Index, product_name: str):
     return dataset_id
 
 
-def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
+def test_dataset_changing_product(run_generate, summary_store: SummaryStore) -> None:
     """
     If a dataset it updated to be in a different product, Explorer should
     correctly update its summaries.
@@ -231,7 +233,9 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore):
     )
 
 
-def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Product):
+def _change_dataset_product(
+    index: Index, dataset_id: UUID, other_product: Product
+) -> None:
     if index.name == "pg_index":
         table_name = "agdc.dataset"
         ref_column = "dataset_type_ref"
@@ -251,7 +255,7 @@ def _change_dataset_product(index: Index, dataset_id: UUID, other_product: Produ
     assert rows_changed == 1
 
 
-def test_location_sampling(run_generate, summary_store: SummaryStore):
+def test_location_sampling(run_generate, summary_store: SummaryStore) -> None:
     location_samples = summary_store.product_location_samples("ga_ls8c_ard_3")
     assert len(location_samples) == 1
 
@@ -265,7 +269,9 @@ def test_location_sampling(run_generate, summary_store: SummaryStore):
     )
 
 
-def test_has_source_derived_product_links(run_generate, summary_store: SummaryStore):
+def test_has_source_derived_product_links(
+    run_generate, summary_store: SummaryStore
+) -> None:
     run_generate()
 
     ls_fc_pc = summary_store.get_product_summary("ga_ls_fc_pc_cyear_3")
@@ -284,7 +290,7 @@ def test_has_source_derived_product_links(run_generate, summary_store: SummarySt
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
+def test_product_fixed_fields(run_generate, summary_store: SummaryStore) -> None:
     run_generate()
 
     albers = summary_store.get_product_summary("ls8_nbar_albers")
@@ -319,7 +325,7 @@ def test_product_fixed_fields(run_generate, summary_store: SummaryStore):
     }
 
 
-def test_sampled_product_fixed_fields(summary_store: SummaryStore):
+def test_sampled_product_fixed_fields(summary_store: SummaryStore) -> None:
     # Compute fixed fields using a sampled percentage.
 
     # (We're doing this manually to force it to use table sampling -- our test data is
@@ -343,7 +349,7 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_generate_empty_time(run_generate, summary_store: SummaryStore):
+def test_generate_empty_time(run_generate, summary_store: SummaryStore) -> None:
     run_generate("ls8_nbar_albers")
     # No datasets in 2018
     assert summary_store.get("ls8_nbar_albers", year=2018) is None, (
@@ -355,7 +361,7 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore):
     assert summary is None
 
 
-def test_calc_empty(summary_store: SummaryStore):
+def test_calc_empty(summary_store: SummaryStore) -> None:
     summary_store.refresh_all_product_extents()
 
     # Should not exist.
@@ -364,7 +370,7 @@ def test_calc_empty(summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_generate_telemetry(run_generate, summary_store: SummaryStore):
+def test_generate_telemetry(run_generate, summary_store: SummaryStore) -> None:
     """
     Telemetry data polygons can be synthesized from the path/row values
     """
@@ -417,7 +423,7 @@ def test_generate_telemetry(run_generate, summary_store: SummaryStore):
     )
 
 
-def test_generate_day(run_generate, summary_store: SummaryStore):
+def test_generate_day(run_generate, summary_store: SummaryStore) -> None:
     run_generate("ga_ls8c_ard_3")
 
     _expect_values(
@@ -439,7 +445,7 @@ def test_generate_day(run_generate, summary_store: SummaryStore):
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_force_dataset_regeneration(
     run_generate, summary_store: SummaryStore, odc_test_db: Datacube
-):
+) -> None:
     """
     We should be able to force-replace dataset extents with the "--recreate-dataset-extents" option
     """
@@ -482,7 +488,7 @@ def test_force_dataset_regeneration(
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
+def test_calc_albers_summary_with_storage(summary_store: SummaryStore) -> None:
     # Should not exist yet.
     summary = summary_store.get("ls8_nbar_albers", year=None, month=None, day=None)
     assert summary is None
@@ -528,7 +534,9 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore):
     )
 
 
-def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client):
+def test_cubedash_gen_refresh(
+    run_generate, odc_test_db: Datacube, empty_client
+) -> None:
     """
     cubedash-gen shouldn't increment the product sequence when run normally
     """
@@ -554,7 +562,7 @@ def test_cubedash_gen_refresh(run_generate, odc_test_db: Datacube, empty_client)
     )
 
 
-def test_computed_regions_match_those_summarised(summary_store: SummaryStore):
+def test_computed_regions_match_those_summarised(summary_store: SummaryStore) -> None:
     """
     The region code for all datasets should be computed identically when
     done in both SQL and Python.

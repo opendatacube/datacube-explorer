@@ -15,7 +15,7 @@ from click import style
 from werkzeug.serving import run_simple
 
 
-def _print_version(ctx, param, value):
+def _print_version(ctx, param, value) -> None:
     """Print version information and exit"""
     if not value or ctx.resilient_parsing:
         return
@@ -75,7 +75,7 @@ def cli(
     workers: int,
     event_log_file: str,
     verbose: bool,
-):
+) -> None:
     from cubedash import create_app
     from cubedash.logs import init_logging
 

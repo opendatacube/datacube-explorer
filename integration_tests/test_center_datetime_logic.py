@@ -23,7 +23,7 @@ DATASETS = ["datasets/rainfall_chirps_daily-sample.yaml"]
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_datestring_on_dataset_page(client: FlaskClient):
+def test_datestring_on_dataset_page(client: FlaskClient) -> None:
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(
         client,
@@ -40,7 +40,7 @@ def test_datestring_on_dataset_page(client: FlaskClient):
     check_datesets_page_datestring(html, "15th May 2019")
 
 
-def test_datestring_on_datasets_search_page(client: FlaskClient):
+def test_datestring_on_datasets_search_page(client: FlaskClient) -> None:
     html = get_html(client, "/products/rainfall_chirps_daily/datasets")
 
     assert "Time UTC: 2019-05-15 00:00:00" in [
@@ -50,7 +50,7 @@ def test_datestring_on_datasets_search_page(client: FlaskClient):
     )
 
 
-def test_datestring_on_regions_page(client: FlaskClient):
+def test_datestring_on_regions_page(client: FlaskClient) -> None:
     html = get_html(client, "/product/rainfall_chirps_daily/regions/x210y106")
 
     assert "2019-05-15 00:00:00" in [
@@ -60,7 +60,7 @@ def test_datestring_on_regions_page(client: FlaskClient):
     )
 
 
-def test_summary_center_datetime(client: FlaskClient):
+def test_summary_center_datetime(client: FlaskClient) -> None:
     html = get_html(client, "/rainfall_chirps_daily/2019/5")
     check_dataset_count(html, 2)
 

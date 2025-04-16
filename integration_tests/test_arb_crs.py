@@ -14,15 +14,15 @@ PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]
 """
 
 
-def test_crs_infer_has_match_floor():
+def test_crs_infer_has_match_floor() -> None:
     """Don't match something that's too different"""
     assert infer_crs("") is None
 
 
-def test_crs_infer_pass():
+def test_crs_infer_pass() -> None:
     assert infer_crs(TEST_CRS_RAW) == "epsg:4283"
 
 
-def test_crs_infers_itself():
+def test_crs_infers_itself() -> None:
     """Sanity check: something should match itself!"""
     assert infer_crs(CRS.from_epsg(4326).to_wkt()) == "epsg:4326"

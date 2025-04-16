@@ -48,7 +48,7 @@ def total_indexed_products_count(summary_store: SummaryStore):
     return len(list(summary_store.index.products.get_all()))
 
 
-def test_instance_title(app_configured_client: FlaskClient):
+def test_instance_title(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/about")
 
     instance_title = html.find(".instance-title", first=True).text
@@ -57,7 +57,7 @@ def test_instance_title(app_configured_client: FlaskClient):
 
 def test_hide_products_audit_page_display(
     app_configured_client: FlaskClient, total_indexed_products_count
-):
+) -> None:
     html = get_html(app_configured_client, "/audit/storage")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
     assert hidden_product_count == "3"
@@ -70,7 +70,7 @@ def test_hide_products_audit_page_display(
 
 def test_hide_products_audit_bulk_dataset_display(
     app_configured_client: FlaskClient, total_indexed_products_count
-):
+) -> None:
     html = get_html(app_configured_client, "/audit/dataset-counts")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
     assert hidden_product_count == "3"
@@ -83,7 +83,7 @@ def test_hide_products_audit_bulk_dataset_display(
 
 def test_hide_products_product_page_display(
     app_configured_client: FlaskClient, total_indexed_products_count
-):
+) -> None:
     html = get_html(app_configured_client, "/products")
     hidden_product_count = html.find("span.hidden-product-count", first=True).text
     assert hidden_product_count == "3"
@@ -99,7 +99,7 @@ def test_hide_products_product_page_display(
 
 def test_hide_products_menu_display(
     app_configured_client: FlaskClient, total_indexed_products_count
-):
+) -> None:
     html = get_html(app_configured_client, "/about")
 
     hide_products = html.find("#products-menu li a.configured-hide-product")
@@ -113,7 +113,7 @@ def test_hide_products_menu_display(
     assert total_indexed_products_count - len(products) == 3
 
 
-def test_sister_sites(app_configured_client: FlaskClient):
+def test_sister_sites(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/about")
 
     sister_instances = html.find("#sister-site-menu ul li")
@@ -125,7 +125,7 @@ def test_sister_sites(app_configured_client: FlaskClient):
         )
 
 
-def test_sister_sites_request_path(app_configured_client: FlaskClient):
+def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
 
     sister_instances = html.find("#sister-site-menu ul li")

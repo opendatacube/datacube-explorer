@@ -12,13 +12,13 @@ _INITIALISED = False
 
 
 # Add server timings to http headers.
-def init_app_monitoring(app: flask.Flask):
+def init_app_monitoring(app: flask.Flask) -> None:
     # This affects global flask app settings.
     # pylint: disable=global-statement
     global _INITIALISED
 
     @app.before_request
-    def time_start():
+    def time_start() -> None:
         flask.g.start_render = time.time()
         flask.g.datacube_query_time = 0
         flask.g.datacube_query_count = 0
@@ -43,11 +43,13 @@ def init_app_monitoring(app: flask.Flask):
     @event.listens_for(_model.STORE.e_index.engine, "before_cursor_execute")
     def before_cursor_execute(
         conn, cursor, statement, parameters, context, executemany
-    ):
+    ) -> None:
         conn.info.setdefault("query_start_time", []).append(time.time())
 
     @event.listens_for(_model.STORE.e_index.engine, "after_cursor_execute")
-    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    def after_cursor_execute(
+        conn, cursor, statement, parameters, context, executemany
+    ) -> None:
         if flask.has_app_context() and hasattr(flask.g, "datacube_query_time"):
             flask.g.datacube_query_time += time.time() - conn.info[
                 "query_start_time"
@@ -64,7 +66,7 @@ def init_app_monitoring(app: flask.Flask):
                 setattr(cls, name, decorator(attr))
         return cls
 
-    def print_datacube_query_times():
+    def print_datacube_query_times() -> None:
         from click import style
 
         def with_timings(function):

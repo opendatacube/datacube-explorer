@@ -20,7 +20,10 @@ bp = Blueprint("api", __name__, url_prefix="/api")
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>")
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>/<int:day>")
 def datasets_geojson(
-    product_name: str, year: int = None, month: int = None, day: int = None
+    product_name: str,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     limit = request.args.get(
         "limit",
@@ -71,7 +74,10 @@ def datasets_geojson(
 @bp.route("/footprint/<product_name>/<int:year>/<int:month>")
 @bp.route("/footprint/<product_name>/<int:year>/<int:month>/<int:day>")
 def footprint_geojson(
-    product_name: str, year: int = None, month: int = None, day: int = None
+    product_name: str,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     return as_geojson(
         _model.get_footprint_geojson(product_name, year, month, day),
@@ -84,7 +90,10 @@ def footprint_geojson(
 @bp.route("/regions/<product_name>/<int:year>/<int:month>")
 @bp.route("/regions/<product_name>/<int:year>/<int:month>/<int:day>")
 def regions_geojson(
-    product_name: str, year: int = None, month: int = None, day: int = None
+    product_name: str,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     regions = _model.get_regions_geojson(product_name, year, month, day)
     if regions is None:
@@ -99,7 +108,10 @@ def regions_geojson(
 @bp.route("/dataset-timeline/<product_name>/<int:year>/<int:month>")
 @bp.route("/dataset-timeline/<product_name>/<int:year>/<int:month>/<int:day>")
 def dataset_timeline(
-    product_name: str, year: int = None, month: int = None, day: int = None
+    product_name: str,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     summary = _model.get_time_summary(product_name, year, month, day)
     if summary is None:

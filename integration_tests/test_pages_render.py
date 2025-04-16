@@ -64,7 +64,7 @@ def assert_all_urls_render(all_urls: list[str], client: FlaskClient):
             )
 
 
-def test_all_pages_render(all_urls, client: FlaskClient):
+def test_all_pages_render(all_urls, client: FlaskClient) -> None:
     """
     Do all expected URLS render with HTTP OK response with our normal test data?
     """
@@ -76,7 +76,7 @@ def test_allows_null_product_fixed_fields(
     client: FlaskClient,
     odc_test_db: Datacube,
     summary_store: SummaryStore,
-):
+) -> None:
     """
     Pages should not fall over when fixed_metadata is null.
 

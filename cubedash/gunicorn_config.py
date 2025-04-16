@@ -3,7 +3,7 @@
 import os
 
 
-def child_exit(server, worker):
+def child_exit(server, worker) -> None:
     if os.environ.get("PROMETHEUS_MULTIPROC_DIR", False):
         from prometheus_flask_exporter.multiprocess import (
             GunicornInternalPrometheusMetrics,

@@ -46,12 +46,12 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def get_datasets_derived(
-        self, dataset_id: UUID, limit: int = None
+        self, dataset_id: UUID, limit: int | None = None
     ) -> tuple[list[Dataset], int]: ...
 
     @abstractmethod
     def get_dataset_sources(
-        self, dataset_id: UUID, limit: int = None
+        self, dataset_id: UUID, limit: int | None = None
     ) -> tuple[list[Dataset], int]: ...
 
     @abstractmethod
@@ -62,7 +62,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def delete_datasets(
-        self, product_id: int, after_date: datetime = None, full: bool = False
+        self, product_id: int, after_date: datetime | None = None, full: bool = False
     ) -> int: ...
 
     @abstractmethod
@@ -184,7 +184,9 @@ class ExplorerAbstractIndex(ABC):
     def region_counts(self, where_clause): ...
 
     @abstractmethod
-    def ds_srid_expression(self, spatial_ref, projection, default_crs: str = None): ...
+    def ds_srid_expression(
+        self, spatial_ref, projection, default_crs: str | None = None
+    ): ...
 
     @abstractmethod
     def sample_dataset(self, product_id: int, columns): ...

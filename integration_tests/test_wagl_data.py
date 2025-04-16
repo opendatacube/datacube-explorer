@@ -23,7 +23,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
+def test_s2_ard_summary(run_generate, summary_store: SummaryStore) -> None:
     run_generate("s2a_ard_granule")
     expect_values(
         summary_store.get("s2a_ard_granule"),
@@ -42,7 +42,7 @@ def test_s2_ard_summary(run_generate, summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
+def test_s2a_l1_summary(run_generate, summary_store: SummaryStore) -> None:
     run_generate("s2a_level1c_granule")
     expect_values(
         summary_store.get("s2a_level1c_granule"),
@@ -61,7 +61,7 @@ def test_s2a_l1_summary(run_generate, summary_store: SummaryStore):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_product_audit(unpopulated_client: FlaskClient, run_generate):
+def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     run_generate()
     client = unpopulated_client
 

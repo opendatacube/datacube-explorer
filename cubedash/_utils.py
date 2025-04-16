@@ -171,7 +171,7 @@ def as_resolved_remote_url(location: str, offset: str) -> str:
 
 
 def as_external_url(
-    url: str, s3_region: str = None, is_base: bool = False
+    url: str, s3_region: str | None = None, is_base: bool = False
 ) -> str | None:
     """
     Convert a URL to an externally-visible one.
@@ -487,7 +487,7 @@ def as_rich_json(o):
 
 
 def as_json(
-    o, content_type="application/json", downloadable_filename_prefix: str = None
+    o, content_type="application/json", downloadable_filename_prefix: str | None = None
 ) -> flask.Response:
     """
     Serialise an object into a json flask response.
@@ -526,7 +526,7 @@ def _json_fallback(o, *args, **kwargs):
     )
 
 
-def as_geojson(o, downloadable_filename_prefix: str = None):
+def as_geojson(o, downloadable_filename_prefix: str | None = None):
     """
     Serialise the given object into a GeoJSON flask response.
 
@@ -580,7 +580,9 @@ def common_uri_prefix(uris: Sequence[str]):
     return result[: result.rfind("/") + 1]
 
 
-def suggest_download_filename(response: flask.Response, prefix: str, suffix: str):
+def suggest_download_filename(
+    response: flask.Response, prefix: str, suffix: str
+) -> None:
     """
     Give the Browser a hint to download the file with the given filename
     (rather than display it in-line).
@@ -594,7 +596,9 @@ def suggest_download_filename(response: flask.Response, prefix: str, suffix: str
     response.headers["Content-Disposition"] = f"attachment; filename={prefix}{suffix}"
 
 
-def as_yaml(*o, content_type="text/yaml", downloadable_filename_prefix: str = None):
+def as_yaml(
+    *o, content_type="text/yaml", downloadable_filename_prefix: str | None = None
+):
     """
     Return a yaml response.
 
@@ -787,7 +791,7 @@ def api_path_as_filename_prefix():
     return "-".join([*period, kind])
 
 
-def undo_eo3_compatibility(doc):
+def undo_eo3_compatibility(doc) -> None:
     """
     In-place removal and undo-ing of the EO-compatibility fields added by ODC to EO3
      documents on index.

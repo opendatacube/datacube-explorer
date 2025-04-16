@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
+from types import TracebackType
 
 import jsonschema
 import pytest
@@ -32,7 +33,7 @@ _FEATURE_COLLECTION_SCHEMA = json.load(_FEATURE_COLLECTION_SCHEMA_PATH.open("r")
 
 def assert_shapes_mostly_equal(
     shape1: BaseGeometry, shape2: BaseGeometry, threshold: float
-):
+) -> None:
     # __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
     # Check area first, as it's a nicer error message when they're wildly different.
@@ -45,7 +46,7 @@ def assert_shapes_mostly_equal(
     assert (s1 - s2).area < threshold, f"{s1} is not mostly equal to {s2}"
 
 
-def assert_matching_eo3(actual_doc: dict, expected_doc: dict):
+def assert_matching_eo3(actual_doc: dict, expected_doc: dict) -> None:
     """
     Assert an EO3 document matches an expected document,
 
@@ -117,21 +118,21 @@ def get_html(client: FlaskClient, url: str) -> HTML:
     return html
 
 
-def check_area(area_pattern, html):
+def check_area(area_pattern, html) -> None:
     assert re.match(
         area_pattern + r" \(approx",
         html.find(".coverage-footprint-area", first=True).text,
     )
 
 
-def check_last_processed(html, time):
+def check_last_processed(html, time) -> None:
     __tracebackhide__ = True
     assert (
         html.find(".last-processed time", first=True).attrs["datetime"].startswith(time)
     )
 
 
-def check_dataset_count(html, count: int):
+def check_dataset_count(html, count: int) -> None:
     __tracebackhide__ = True
     actual = html.find(".dataset-count", first=True).text
     expected = f"{count:,d}"
@@ -140,7 +141,7 @@ def check_dataset_count(html, count: int):
     )
 
 
-def check_datesets_page_datestring(html, datestring: str):
+def check_datesets_page_datestring(html, datestring: str) -> None:
     __tracebackhide__ = True
     actual = html.find(".overview-day-link", first=True).text
     assert datestring == actual, (
@@ -266,17 +267,22 @@ class DebugContext:
     def __init__(self, msg: str) -> None:
         self.msg = msg
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         if exc_type is None:
             return
         if issubclass(exc_type, (AssertionError, InvalidDocException)):
             _add_context(exc_val, self.msg)
 
 
-def _add_context(e: AssertionError, context_message: str):
+def _add_context(e: AssertionError, context_message: str) -> None:
     """
     Append some extra information to an assertion error message .
 

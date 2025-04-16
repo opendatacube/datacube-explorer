@@ -68,7 +68,7 @@ def _fast_tojson(obj):
 
 
 @bp.app_template_filter("printable_data_size")
-def sizeof_fmt(num, suffix="B"):
+def sizeof_fmt(num, suffix="B") -> str:
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(num) < 1024.0:
             return f"{num:3.1f}{unit}{suffix}"
@@ -130,7 +130,7 @@ def _dataset_thumbnail_url(dataset: Dataset):
 
 
 @bp.app_template_filter("resolve_remote_url")
-def _to_remote_url(offset: str, base_uri: str = None):
+def _to_remote_url(offset: str, base_uri: str | None = None):
     return utils.as_resolved_remote_url(base_uri, offset)
 
 
@@ -185,7 +185,7 @@ def _format_query_value(val):
 
 
 @bp.app_template_filter("maybe_to_css_class_name")
-def _maybe_format_css_class(val: str, prefix: str = ""):
+def _maybe_format_css_class(val: str, prefix: str = "") -> str:
     """
     Create a CSS class name for the given string if it is safe to do so.
 
@@ -202,7 +202,7 @@ def _format_month_name(val):
 
 
 @bp.app_template_filter("day_ordinal")
-def _format_ordinal(val):
+def _format_ordinal(val) -> str:
     return f"{val}{_get_ordinal_suffix(val)}"
 
 
@@ -266,12 +266,12 @@ def _searchable_fields_keys(product: Product):
 
 
 @bp.app_template_filter("is_numeric_field")
-def _is_numeric_field(field: Field):
+def _is_numeric_field(field: Field) -> bool:
     return field.type_name in NUMERIC_STEP_SIZE
 
 
 @bp.app_template_filter("is_date_field")
-def _is_date_field(field: Field):
+def _is_date_field(field: Field) -> bool:
     return field.type_name in ("datetime", "datetime-range")
 
 

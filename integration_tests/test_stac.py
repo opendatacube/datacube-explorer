@@ -279,20 +279,20 @@ def _iter_items_across_pages(
 # Assertions and validations
 
 
-def assert_stac_extensions(doc: dict):
+def assert_stac_extensions(doc: dict) -> None:
     stac_extensions = doc.get("stac_extensions", ())
     for extension_name in stac_extensions:
         get_extension(extension_name).validate(doc)
 
 
-def assert_item_collection(collection: dict):
+def assert_item_collection(collection: dict) -> None:
     assert "features" in collection, "No features in collection"
     _ITEM_COLLECTION_SCHEMA.validate(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
 
-def assert_collection(collection: dict):
+def assert_collection(collection: dict) -> None:
     _COLLECTION_SCHEMA.validate(collection)
     assert "features" not in collection
     assert_stac_extensions(collection)
@@ -305,7 +305,7 @@ def assert_collection(collection: dict):
     assert "items" in rels, "Collection has no link to its items"
 
 
-def validate_item(item: dict):
+def validate_item(item: dict) -> None:
     _ITEM_SCHEMA.validate(item)
 
     # Should be a valid polygon
@@ -327,7 +327,7 @@ def validate_item(item: dict):
 
 def validate_items(
     items: Iterable[dict], expect_ordered=True, expect_count: int | dict = None
-):
+) -> None:
     """
     Check that a series of stac Items:
     - has no duplicates,
@@ -402,7 +402,7 @@ def stac_client(client: FlaskClient):
 
 @pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_loading_all_pages(stac_client: FlaskClient):
+def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
     # An unconstrained search returning every dataset.
     # It should return every dataset in order with no duplicates.
     all_items = _iter_items_across_pages(stac_client, "/stac/search")
@@ -459,7 +459,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_huge_page_request(stac_client: FlaskClient):
+def test_huge_page_request(stac_client: FlaskClient) -> None:
     """Return an error if they try to request beyond max-page-size limit"""
     error_message_json = get_json(
         stac_client,
@@ -474,7 +474,7 @@ def test_huge_page_request(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_returns_404s(stac_client: FlaskClient):
+def test_returns_404s(stac_client: FlaskClient) -> None:
     """
     We should get 404 messages, not exceptions, for missing things.
 
@@ -539,7 +539,9 @@ def test_returns_404s(stac_client: FlaskClient):
         ),
     ],
 )
-def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: str):
+def test_legacy_redirects(
+    stac_client: FlaskClient, url: str, redirect_to_url: str
+) -> None:
     resp: Response = stac_client.get(url, follow_redirects=False)
     assert resp.location == redirect_to_url, (
         f"Expected {url} to be redirected to:\n"
@@ -552,7 +554,7 @@ def test_legacy_redirects(stac_client: FlaskClient, url: str, redirect_to_url: s
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_links(stac_client: FlaskClient):
+def test_stac_links(stac_client: FlaskClient) -> None:
     """Check that root contains all expected links"""
     response = get_json(stac_client, "/stac")
     _CATALOG_SCHEMA.validate(response)
@@ -623,7 +625,7 @@ def test_stac_links(stac_client: FlaskClient):
 
 @pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_arrivals_page_validation(stac_client: FlaskClient):
+def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
     # Do the virtual 'arrivals' catalog and items validate?
     response = get_json(stac_client, "/stac/catalogs/arrivals")
     _CATALOG_SCHEMA.validate(response)
@@ -723,7 +725,7 @@ def test_stac_collection(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_item(stac_client: FlaskClient, odc_test_db):
+def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
     # Load one stac dataset from the test data.
 
     dataset_uri = (
@@ -744,7 +746,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
         ),
     )
 
-    def dataset_url(s: str):
+    def dataset_url(s: str) -> str:
         return (
             f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
             f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
@@ -927,7 +929,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_limits(stac_client: FlaskClient):
+def test_stac_search_limits(stac_client: FlaskClient) -> None:
     # Tell user with error if they request too much.
     large_limit = OUR_DATASET_LIMIT + 1
     rv: Response = stac_client.get(f"/stac/search?&limit={large_limit}")
@@ -947,7 +949,7 @@ def test_stac_search_limits(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_zero(stac_client: FlaskClient):
+def test_stac_search_zero(stac_client: FlaskClient) -> None:
     # Zero limit is a valid query
     zero_limit = 0
     rv: Response = stac_client.get(f"/stac/search?&limit={zero_limit}")
@@ -955,7 +957,7 @@ def test_stac_search_zero(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_includes_total(stac_client: FlaskClient):
+def test_stac_includes_total(stac_client: FlaskClient) -> None:
     geojson = get_items(
         stac_client,
         (
@@ -969,7 +971,7 @@ def test_stac_includes_total(stac_client: FlaskClient):
 
 @pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_next_link(stac_client: FlaskClient):
+def test_next_link(stac_client: FlaskClient) -> None:
     # next link should return next page of results
     geojson = get_items(
         stac_client,
@@ -987,7 +989,7 @@ def test_next_link(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_by_ids(stac_client: FlaskClient):
+def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
     def geojson_feature_ids(d: dict) -> list[str]:
         return sorted(d.get("id") for d in geojson.get("features", {}))
 
@@ -1058,7 +1060,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_by_intersects(stac_client: FlaskClient):
+def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     """
     We have the polygon for region 16,-33.
 
@@ -1106,7 +1108,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
+def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
     """
     When we search by 'intersects', the next page link should use a correct POST request.
 
@@ -1155,7 +1157,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_collections(stac_client: FlaskClient):
+def test_stac_search_collections(stac_client: FlaskClient) -> None:
     """Can you query a list of multiple collections?"""
 
     # Get all in one collection
@@ -1194,7 +1196,7 @@ def test_stac_search_collections(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_bounds(stac_client: FlaskClient):
+def test_stac_search_bounds(stac_client: FlaskClient) -> None:
     # Outside the box there should be no results
     geojson = get_items(
         stac_client,
@@ -1233,7 +1235,7 @@ def test_stac_search_bounds(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_by_post(stac_client: FlaskClient):
+def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test POST, product, and assets
     rv: Response = stac_client.post(
         "/stac/search",
@@ -1300,7 +1302,7 @@ def test_stac_search_by_post(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_fields_extension(stac_client: FlaskClient):
+def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"include": ["properties.dea:dataset_maturity"]}
     rv: Response = stac_client.post(
         "/stac/search",
@@ -1399,7 +1401,7 @@ def test_stac_fields_extension(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_sortby_extension(stac_client: FlaskClient):
+def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "asc"}]
     rv: Response = stac_client.post(
         "/stac/search",
@@ -1479,7 +1481,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_filter_extension(stac_client: FlaskClient):
+def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     filter_json = {
         "op": "and",
         "args": [
@@ -1571,7 +1573,7 @@ def test_stac_filter_extension(stac_client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_query_extension_errors(stac_client: FlaskClient):
+def test_stac_query_extension_errors(stac_client: FlaskClient) -> None:
     # Trying to use query extension should error
     query = {"cloud_cover": {"lt": 1}}
     rv: Response = stac_client.post(

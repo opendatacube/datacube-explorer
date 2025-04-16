@@ -26,7 +26,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 def test_product_fixed_metadata_by_sample_percentage(
     summary_store: SummaryStore, client
-):
+) -> None:
     # There are 4 interim and 16 final maturity level datasets
     # at 100% (all 20 datasets), the same dictionary will be returned
     # 100% of the time

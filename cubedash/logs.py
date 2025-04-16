@@ -8,14 +8,15 @@ from functools import partial
 import structlog
 from orjson import orjson
 from structlog.types import EventDict, WrappedLogger
+from typing_extensions import override
 
 
 def init_logging(
-    output_file: io.BytesIO = None,
+    output_file: io.BytesIO | None = None,
     verbosity: int = 0,
-    cache_logger_on_first_use=True,
-    write_as_json: bool = None,
-):
+    cache_logger_on_first_use: bool = True,
+    write_as_json: bool | None = None,
+) -> None:
     """
     Setup structlog for structured logging output.
 
@@ -81,6 +82,7 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
     (orjson emits bytes, so we want to be consistent)
     """
 
+    @override
     def _repr(self, val):
         if isinstance(val, datetime.datetime):
             return val.isoformat()
@@ -88,6 +90,7 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
             return val.as_posix()
         return super()._repr(val)
 
+    @override
     def __call__(
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> bytes:

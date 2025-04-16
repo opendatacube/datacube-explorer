@@ -56,7 +56,7 @@ class UnsupportedWKTProductCRSError(NotImplementedError):
 
 
 def get_dataset_extent_alchemy_expression(
-    e_index: ExplorerIndex, md: MetadataType, default_crs: str = None
+    e_index: ExplorerIndex, md: MetadataType, default_crs: str | None = None
 ):
     """
     Build an SQLAlchemy expression to get the extent for a dataset.
@@ -134,7 +134,7 @@ def _size_bytes_field(product: Product):
 
 
 def get_dataset_srid_alchemy_expression(
-    e_index: ExplorerIndex, md: MetadataType, default_crs: str = None
+    e_index: ExplorerIndex, md: MetadataType, default_crs: str | None = None
 ):
     doc = jsonb_doc_expression(md)
 
@@ -183,7 +183,7 @@ def refresh_spatial_extents(
     e_index: ExplorerIndex,
     product: Product,
     clean_up_deleted=False,
-    assume_after_date: datetime = None,
+    assume_after_date: datetime | None = None,
 ):
     """
     Update the spatial extents to match any changes upstream in ODC.
@@ -434,7 +434,7 @@ class RegionInfo:
 
     @classmethod
     def for_product(
-        cls, product: Product, known_regions: Dict[str, RegionSummary] = None
+        cls, product: Product, known_regions: Dict[str, RegionSummary] | None = None
     ):
         region_code_field: Field = product.metadata_type.dataset_fields.get(
             "region_code"

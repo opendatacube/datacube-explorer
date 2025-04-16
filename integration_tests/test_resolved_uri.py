@@ -36,7 +36,7 @@ def app_s3_region_empty_string():
     return app
 
 
-def test_as_external_url(app_s3_region_unset):
+def test_as_external_url(app_s3_region_unset) -> None:
     with app_s3_region_unset.app_context():
         assert (
             as_external_url(
@@ -63,7 +63,7 @@ def test_as_external_url(app_s3_region_unset):
         )
 
 
-def test_resolved_remote_url_s3_region_unset(app_s3_region_unset):
+def test_resolved_remote_url_s3_region_unset(app_s3_region_unset) -> None:
     with app_s3_region_unset.app_context():
         assert current_app.config.get("CUBEDASH_DATA_S3_REGION") is None
 
@@ -78,7 +78,7 @@ def test_resolved_remote_url_s3_region_unset(app_s3_region_unset):
         )
 
 
-def test_resolved_remote_url_none_s3_region(app_s3_region_none):
+def test_resolved_remote_url_none_s3_region(app_s3_region_none) -> None:
     with app_s3_region_none.app_context():
         assert current_app.config.get("CUBEDASH_DATA_S3_REGION") is None
 
@@ -93,7 +93,7 @@ def test_resolved_remote_url_none_s3_region(app_s3_region_none):
         )
 
 
-def test_resolved_remote_url_string_none_s3_region(app_s3_region_string_none):
+def test_resolved_remote_url_string_none_s3_region(app_s3_region_string_none) -> None:
     with app_s3_region_string_none.app_context():
         assert current_app.config.get("CUBEDASH_DATA_S3_REGION") == "None"
 
@@ -108,7 +108,7 @@ def test_resolved_remote_url_string_none_s3_region(app_s3_region_string_none):
         )
 
 
-def test_resolved_remote_url_empty_string_s3_region(app_s3_region_empty_string):
+def test_resolved_remote_url_empty_string_s3_region(app_s3_region_empty_string) -> None:
     with app_s3_region_empty_string.app_context():
         assert current_app.config.get("CUBEDASH_DATA_S3_REGION") == ""
 
@@ -123,7 +123,7 @@ def test_resolved_remote_url_empty_string_s3_region(app_s3_region_empty_string):
         )
 
 
-def test_resolved_remote_url_data_browser(app_s3_region_string_none):
+def test_resolved_remote_url_data_browser(app_s3_region_string_none) -> None:
     with app_s3_region_string_none.app_context():
         assert current_app.config.get("SHOW_DATA_LOCATION") == {
             "dea-public-data": "data.dea.ga.gov.au"

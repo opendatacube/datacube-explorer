@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
@@ -57,7 +57,7 @@ def get_default_limit() -> int:
     return current_app.config.get("STAC_DEFAULT_PAGE_SIZE", DEFAULT_PAGE_SIZE)
 
 
-def check_page_limit(limit: int):
+def check_page_limit(limit: int) -> None:
     page_size_limit = current_app.config.get(
         "STAC_PAGE_SIZE_LIMIT", DEFAULT_PAGE_SIZE_LIMIT
     )
@@ -493,7 +493,7 @@ def _filter_arg(arg: str | dict) -> str:
     return _remove_prefixes(arg)
 
 
-def _validate_filter(filter_lang: str, cql: str):
+def _validate_filter(filter_lang: str, cql: str) -> None:
     # check filter-lang and actual cql format are aligned
     is_json = True
     try:
@@ -665,7 +665,9 @@ def _get_property(prop: str, item: ItemLike, no_default=False):
     return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
 
 
-def _handle_fields_extension(items: list[ItemLike], fields: dict) -> list[ItemLike]:
+def _handle_fields_extension(
+    items: Sequence[ItemLike], fields: dict
+) -> Sequence[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
     This implementation differs slightly from the documented semantics in that the default fields will always

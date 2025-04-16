@@ -24,21 +24,21 @@ DATASETS = ["datasets/s2_l2a-sample.yaml"]
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_summary_product(client: FlaskClient):
+def test_summary_product(client: FlaskClient) -> None:
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/s2_l2a")
 
     check_dataset_count(html, 4)
 
 
-def test_product_dataset(client: FlaskClient):
+def test_product_dataset(client: FlaskClient) -> None:
     # Check if all datasets are available to be viewed
     html = get_html(client, "/datasets/s2_l2a")
 
     assert len(html.find(".search-result")) == 5
 
 
-def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
+def test_s2_l2a_summary(run_generate, summary_store: SummaryStore) -> None:
     run_generate("s2_l2a")
     expect_values(
         summary_store.get("s2_l2a"),
@@ -56,7 +56,7 @@ def test_s2_l2a_summary(run_generate, summary_store: SummaryStore):
     )
 
 
-def test_product_audit(unpopulated_client: FlaskClient, run_generate):
+def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     run_generate()
     client = unpopulated_client
 
@@ -75,7 +75,7 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate):
     )
 
 
-def test_get_overview_date_selector(client: FlaskClient):
+def test_get_overview_date_selector(client: FlaskClient) -> None:
     # [1] = year, [2] = month, [3] = day
     # check when no year, month, day has been selected
     html = get_html(client, "/s2_l2a")
@@ -105,7 +105,9 @@ def test_get_overview_date_selector(client: FlaskClient):
     assert len(menu[3].find(".option-menu ul li")) == 3
 
 
-def test_refresh_product(empty_client: FlaskClient, summary_store: SummaryStore):
+def test_refresh_product(
+    empty_client: FlaskClient, summary_store: SummaryStore
+) -> None:
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     summary_store.refresh("s2_l2a")
 

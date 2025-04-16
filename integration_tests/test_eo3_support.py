@@ -66,7 +66,7 @@ def eo3_index(odc_test_db: Datacube, auto_odc_db):
     return odc_test_db.index
 
 
-def test_eo3_extents(eo3_index: Index):
+def test_eo3_extents(eo3_index: Index) -> None:
     """
     Do we extract the elements of an EO3 extent properly?
 
@@ -132,7 +132,7 @@ def test_eo3_extents(eo3_index: Index):
     assert dataset_extent_row["size_bytes"] is None
 
 
-def test_eo3_dateless_extents(eo3_index: Index):
+def test_eo3_dateless_extents(eo3_index: Index) -> None:
     """
     Can we support datasets with no datetime field?
 
@@ -158,13 +158,13 @@ def test_eo3_dateless_extents(eo3_index: Index):
     assert dataset_extent_row["region_code"] is None
 
 
-def test_location_sampling(eo3_index: Index):
+def test_location_sampling(eo3_index: Index) -> None:
     summary_store = SummaryStore.create(eo3_index)
 
     assert summary_store.product_location_samples("ga_ls8c_level1_3") == []
 
 
-def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
+def test_eo3_doc_download(eo3_index: Index, client: FlaskClient) -> None:
     response: Response = client.get(
         "/dataset/9989545f-906d-5090-a38e-cdbfbfc1afca.odc-metadata.yaml"
     )
@@ -185,7 +185,7 @@ def test_eo3_doc_download(eo3_index: Index, client: FlaskClient):
 
 
 @pytest.mark.xfail(reason="mismatching date format - to be fixed")
-def test_undo_eo3_doc_compatibility(eo3_index: Index):
+def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
     """
     ODC adds compatibility fields on index. Check that our undo-method
     correctly creates an identical document to the original.
@@ -214,7 +214,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index):
     )
 
 
-def test_undo_eo3_compatibility_del_handling():
+def test_undo_eo3_compatibility_del_handling() -> None:
     doc = {"extent": "a", "lineage": {}}
     assert _utils.undo_eo3_compatibility(doc) is None
 
@@ -243,14 +243,14 @@ def with_parsed_datetimes(v: dict, name=""):
     return v
 
 
-def test_all_eo3_pages_render(eo3_index: Index, client: FlaskClient):
+def test_all_eo3_pages_render(eo3_index: Index, client: FlaskClient) -> None:
     """
     Do all expected URLS render with HTTP OK response with our normal eo3 test data?
     """
     assert_all_urls_render(find_examples_of_all_public_urls(eo3_index), client)
 
 
-def test_can_search_eo3_items(eo3_index, client: FlaskClient):
+def test_can_search_eo3_items(eo3_index, client: FlaskClient) -> None:
     """
     Searching returns lightweight item records, so the conversion code is different.
     """
@@ -273,7 +273,7 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient):
     ] == pytest.approx(0.37)
 
 
-def test_eo3_stac_item(eo3_index, client: FlaskClient):
+def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
     # Load one stac dataset from the test data.
     response = get_item(
         client,

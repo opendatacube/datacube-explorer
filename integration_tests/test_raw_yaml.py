@@ -102,7 +102,7 @@ def dataset_yaml_from_raw(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_update_type(type_yaml_from_raw):
+def test_update_type(type_yaml_from_raw) -> None:
     result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [
@@ -117,7 +117,7 @@ def test_update_type(type_yaml_from_raw):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_update_product(product_yaml_from_raw):
+def test_update_product(product_yaml_from_raw) -> None:
     result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [
@@ -135,7 +135,7 @@ def test_update_product(product_yaml_from_raw):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_update_dataset(dataset_yaml_from_raw):
+def test_update_dataset(dataset_yaml_from_raw) -> None:
     result = CliRunner().invoke(
         datacube.scripts.cli_app.cli,
         [

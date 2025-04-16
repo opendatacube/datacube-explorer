@@ -98,7 +98,7 @@ def _script(html: HTML):
 
 
 @pytest.mark.xfail()
-def test_prometheus(sentry_client: FlaskClient):
+def test_prometheus(sentry_client: FlaskClient) -> None:
     """
     Ensure Prometheus metrics endpoint exists
     """
@@ -106,13 +106,13 @@ def test_prometheus(sentry_client: FlaskClient):
     assert b"flask_exporter_info" in resp.data
 
 
-def test_default_redirect(client: FlaskClient):
+def test_default_redirect(client: FlaskClient) -> None:
     rv: Response = client.get("/", follow_redirects=False)
     # The products page is the default.
     assert rv.location.endswith("/products")
 
 
-def test_get_overview(client: FlaskClient):
+def test_get_overview(client: FlaskClient) -> None:
     html = get_html(client, "/ga_ls9c_ard_3")
     check_dataset_count(html, 11)
     check_last_processed(html, "2024-05-20T20:49:02")
@@ -132,7 +132,7 @@ def test_get_overview(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
+def test_invalid_footprint_wofs_summary_load(client: FlaskClient) -> None:
     # This all-time overview has a valid footprint that becomes invalid
     # when reprojected to wgs84 by shapely.
     from .data_wofs_summary import wofs_time_summary
@@ -143,7 +143,7 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_all_products_are_shown(client: FlaskClient):
+def test_all_products_are_shown(client: FlaskClient) -> None:
     """
     After all the complicated grouping logic, there should still be one header link for each product.
     """
@@ -159,7 +159,7 @@ def test_all_products_are_shown(client: FlaskClient):
     )
 
 
-def test_get_overview_product_links(client: FlaskClient):
+def test_get_overview_product_links(client: FlaskClient) -> None:
     """
     Are the source and derived product lists being displayed?
     """
@@ -175,7 +175,7 @@ def test_get_overview_product_links(client: FlaskClient):
     assert [p.attrs["href"] for p in product_links] == ["/products/ga_ls_fc_3/2022"]
 
 
-def test_get_day_overviews(client: FlaskClient):
+def test_get_day_overviews(client: FlaskClient) -> None:
     # Individual days are computed on-the-fly rather than from summaries, so can
     # have their own issues.
 
@@ -190,7 +190,7 @@ def test_get_day_overviews(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_summary_product(client: FlaskClient):
+def test_summary_product(client: FlaskClient) -> None:
     # These datasets have gigantic footprints that can trip up postgis.
     html = get_html(client, "/pq_count_summary")
     check_dataset_count(html, 20)
@@ -198,7 +198,7 @@ def test_summary_product(client: FlaskClient):
 
 def test_uninitialised_overview(
     unpopulated_client: FlaskClient, summary_store: SummaryStore
-):
+) -> None:
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     # Then load an unpopulated product.
     summary_store.refresh("usgs_ls7e_level1_1")
@@ -216,7 +216,9 @@ Enhanced Thematic Mapper Plus Level 1 Collection 1"
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_uninitialised_product(empty_client: FlaskClient, summary_store: SummaryStore):
+def test_uninitialised_product(
+    empty_client: FlaskClient, summary_store: SummaryStore
+) -> None:
     """
     An unsummarised product should still be viewable on the product page.
 
@@ -237,7 +239,7 @@ def test_uninitialised_product(empty_client: FlaskClient, summary_store: Summary
     assert "not yet summarised" not in one_element(html, "#content").text
 
 
-def test_empty_product_overview(client: FlaskClient):
+def test_empty_product_overview(client: FlaskClient) -> None:
     """
     A page is still displayable without error when it has no datasets.
     """
@@ -249,7 +251,7 @@ def test_empty_product_overview(client: FlaskClient):
     # assert_is_text(html, ".query-param.key-product_type .value", "level1")
 
 
-def test_empty_product_page(client: FlaskClient):
+def test_empty_product_page(client: FlaskClient) -> None:
     """
     A product page is displayable when summarised, but with 0 datasets.
     """
@@ -284,7 +286,7 @@ def one_element(html: HTML, selector: str) -> Element:
     return els[0]
 
 
-def assert_is_text(html: HTML, selector, text: str):
+def assert_is_text(html: HTML, selector, text: str) -> None:
     __tracebackhide__ = True
     el = one_element(html, selector)
     assert el.text == text
@@ -293,7 +295,7 @@ def assert_is_text(html: HTML, selector, text: str):
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_uninitialised_search_page(
     empty_client: FlaskClient, summary_store: SummaryStore
-):
+) -> None:
     # Populate one product, so they don't get the usage error message ("run cubedash generate")
     summary_store.refresh("ls7_nbar_albers")
 
@@ -303,7 +305,7 @@ def test_uninitialised_search_page(
     assert len(search_results) == 4
 
 
-def test_view_dataset(client: FlaskClient):
+def test_view_dataset(client: FlaskClient) -> None:
     # usgs_ls7e_level1 dataset
     html = get_html(client, "/dataset/7dff1cb5-b297-5701-8390-43c0f2d58fbb")
 
@@ -333,12 +335,12 @@ def _h1_text(html):
     return one_element(html, "h1").text
 
 
-def test_view_product(client: FlaskClient):
+def test_view_product(client: FlaskClient) -> None:
     rv: HTML = get_html(client, "/product/ga_ls8c_ard_3")
     assert "Geoscience Australia Landsat 8" in rv.text
 
 
-def test_view_metadata_type(client: FlaskClient, odc_test_db):
+def test_view_metadata_type(client: FlaskClient, odc_test_db) -> None:
     # Does it load without error?
     html: HTML = get_html(client, "/metadata-type/eo3")
     assert html.find("h2", first=True).text == "eo3"
@@ -360,7 +362,7 @@ def test_view_metadata_type(client: FlaskClient, odc_test_db):
     assert "ga_ls_wo_fq_nov_mar_3" in products_using_it
 
 
-def test_storage_page(client: FlaskClient, odc_test_db):
+def test_storage_page(client: FlaskClient, odc_test_db) -> None:
     html: HTML = get_html(client, "/audit/storage")
 
     assert html.find(".product-name", containing="ga_ls9c_ard_3")
@@ -371,7 +373,7 @@ def test_storage_page(client: FlaskClient, odc_test_db):
 
 
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
-def test_out_of_date_range(client: FlaskClient):
+def test_out_of_date_range(client: FlaskClient) -> None:
     """
     We have generated summaries for this product, but the date is out of the product's date range.
     """
@@ -383,7 +385,7 @@ def test_out_of_date_range(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_loading_high_low_tide_comp(client: FlaskClient):
+def test_loading_high_low_tide_comp(client: FlaskClient) -> None:
     html = get_html(client, "/high_tide_comp_20p/2008")
 
     assert (
@@ -402,7 +404,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
+def test_api_returns_high_tide_comp_datasets(client: FlaskClient) -> None:
     """
     These are slightly fun to handle as they are a small number with a huge time range.
     """
@@ -444,7 +446,7 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient):
     assert len(geojson["features"]) == 0, "Expected no result one-day-after center time"
 
 
-def test_api_returns_scenes_as_geojson(client: FlaskClient):
+def test_api_returns_scenes_as_geojson(client: FlaskClient) -> None:
     """
     L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
     """
@@ -452,7 +454,7 @@ def test_api_returns_scenes_as_geojson(client: FlaskClient):
     assert len(geojson["features"]) == 5, "Unexpected l1 polygon count"
 
 
-def test_api_returns_tiles_as_geojson(client: FlaskClient):
+def test_api_returns_tiles_as_geojson(client: FlaskClient) -> None:
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
@@ -461,7 +463,7 @@ def test_api_returns_tiles_as_geojson(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_api_returns_high_tide_comp_regions(client: FlaskClient):
+def test_api_returns_high_tide_comp_regions(client: FlaskClient) -> None:
     """
     High tide doesn't have anything we can use as regions.
 
@@ -474,7 +476,7 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient):
     )
 
 
-def test_api_returns_scene_regions(client: FlaskClient):
+def test_api_returns_scene_regions(client: FlaskClient) -> None:
     """
     L1 scenes have no footprint, falls back to bounds. Have weird CRSes too.
     """
@@ -482,7 +484,7 @@ def test_api_returns_scene_regions(client: FlaskClient):
     assert len(geojson["features"]) == 5, "Unexpected l1 region count"
 
 
-def test_region_page(client: FlaskClient):
+def test_region_page(client: FlaskClient) -> None:
     """
     Load a list of scenes for a given region.
     """
@@ -500,7 +502,7 @@ def test_region_page(client: FlaskClient):
     )
 
 
-def test_legacy_region_redirect(client: FlaskClient):
+def test_legacy_region_redirect(client: FlaskClient) -> None:
     # Legacy redirect works, and maintains "feeling lucky"
     assert_redirects_to(
         client,
@@ -509,7 +511,7 @@ def test_legacy_region_redirect(client: FlaskClient):
     )
 
 
-def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str):
+def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) -> None:
     __tracebackhide__ = True
     response: Response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
@@ -521,7 +523,7 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str):
     )
 
 
-def test_search_page(client: FlaskClient):
+def test_search_page(client: FlaskClient) -> None:
     html = get_html(client, "/datasets/ga_ls8c_ard_3")
     search_results = html.find(".search-result a")
     assert len(search_results) == 21
@@ -535,7 +537,7 @@ def test_search_page(client: FlaskClient):
     assert len(search_results) == 0
 
 
-def test_search_time_completion(client: FlaskClient):
+def test_search_time_completion(client: FlaskClient) -> None:
     # They only specified a begin time, so the end time should be filled in with the product extent.
     html = get_html(client, "/datasets/ga_ls8c_ard_3?time-begin=1999-05-28")
     assert one_element(html, "#search-time-before").attrs["value"] == "1999-05-28"
@@ -552,7 +554,7 @@ def test_search_time_completion(client: FlaskClient):
     assert len(search_results) == 2
 
 
-def test_api_returns_tiles_regions(client: FlaskClient):
+def test_api_returns_tiles_regions(client: FlaskClient) -> None:
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
@@ -560,7 +562,7 @@ def test_api_returns_tiles_regions(client: FlaskClient):
     assert len(geojson["features"]) == 11, "Unexpected product region count"
 
 
-def test_api_returns_limited_tile_regions(client: FlaskClient):
+def test_api_returns_limited_tile_regions(client: FlaskClient) -> None:
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
@@ -573,7 +575,7 @@ def test_api_returns_limited_tile_regions(client: FlaskClient):
     assert len(geojson["features"]) == 0, "Unexpected region count"
 
 
-def test_api_returns_timelines(client: FlaskClient):
+def test_api_returns_timelines(client: FlaskClient) -> None:
     """
     Covers most of the 'normal' products: they have a footprint, bounds and a simple crs epsg code.
     """
@@ -723,7 +725,7 @@ pytest.mark.xfail(True, reason="telemetry data removed")
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_undisplayable_product(client: FlaskClient):
+def test_undisplayable_product(client: FlaskClient) -> None:
     """
     Telemetry products have no footprint available at all.
     """
@@ -735,7 +737,7 @@ def test_undisplayable_product(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_no_data_pages(client: FlaskClient):
+def test_no_data_pages(client: FlaskClient) -> None:
     """
     Fetch products that exist but have no summaries generated.
 
@@ -754,7 +756,7 @@ def test_no_data_pages(client: FlaskClient):
     check_dataset_count(html, 0)
 
 
-def test_general_dataset_redirect(client: FlaskClient):
+def test_general_dataset_redirect(client: FlaskClient) -> None:
     """
     When someone queries a dataset UUID, they should be redirected
     to the real URL for the collection.
@@ -770,7 +772,7 @@ def test_general_dataset_redirect(client: FlaskClient):
     )
 
 
-def test_missing_dataset(client: FlaskClient):
+def test_missing_dataset(client: FlaskClient) -> None:
     rv: Response = client.get(
         "/products/ga_ls8c_ard_3/datasets/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c",
         follow_redirects=False,
@@ -785,7 +787,7 @@ def test_missing_dataset(client: FlaskClient):
     assert rv.status_code == 200
 
 
-def test_invalid_product_returns_not_found(client: FlaskClient):
+def test_invalid_product_returns_not_found(client: FlaskClient) -> None:
     """
     An invalid product should be "not found". No server errors.
     """
@@ -796,7 +798,7 @@ def test_invalid_product_returns_not_found(client: FlaskClient):
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_show_summary_cli(clirunner, client: FlaskClient):
+def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     """
     You should be able to view a product with cubedash-view command-line program.
     """
@@ -841,7 +843,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient):
     assert expected_period in res.output
 
 
-def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient):
+def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient) -> None:
     """
     Can you view a date that doesn't exist?
     """
@@ -852,7 +854,7 @@ def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient):
     assert "No summary for chosen period." in res.output
 
 
-def test_show_summary_cli_missing_product(clirunner, client: FlaskClient):
+def test_show_summary_cli_missing_product(clirunner, client: FlaskClient) -> None:
     """
     A missing product should return a nice error message from cubedash-view.
 
@@ -864,7 +866,9 @@ def test_show_summary_cli_missing_product(clirunner, client: FlaskClient):
     assert res.exit_code != 0
 
 
-def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskClient):
+def test_show_summary_cli_unsummarised_product(
+    clirunner, empty_client: FlaskClient
+) -> None:
     """
     An unsummarised product should return a nice error message from cubedash-view.
 
@@ -876,7 +880,7 @@ def test_show_summary_cli_unsummarised_product(clirunner, empty_client: FlaskCli
     assert res.exit_code != 0
 
 
-def test_extent_debugging_method(odc_test_db, client: FlaskClient):
+def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
     index = odc_test_db.index
     product = index.products.get_by_name("ga_ls8c_ard_3")
     e_index = explorer_index(index)
@@ -897,7 +901,7 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient):
 
 # this test fails in gh with the postgis driver for unknown reasons
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_with_timings(client: FlaskClient):
+def test_with_timings(client: FlaskClient) -> None:
     _monitoring.init_app_monitoring(client.application)
     # ga_ls8c_ard_3 dataset
     rv: Response = client.get("/dataset/e2dd2539-ae18-4edc-a0e6-ddd31848669c")
@@ -918,13 +922,13 @@ def test_with_timings(client: FlaskClient):
     assert int(val) > 0, "At least one query was run, presumably?"
 
 
-def test_plain_product_list(client: FlaskClient):
+def test_plain_product_list(client: FlaskClient) -> None:
     text, rv = get_text_response(client, "/products.txt")
     assert "ga_ls8c_ard_3\n" in text
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_raw_documents(client: FlaskClient):
+def test_raw_documents(client: FlaskClient) -> None:
     """
     Check that raw-documents load without error,
     and have embedded hints on where they came from (source-url)
@@ -959,7 +963,7 @@ def test_raw_documents(client: FlaskClient):
     )
 
 
-def test_get_robots(client: FlaskClient):
+def test_get_robots(client: FlaskClient) -> None:
     """
     Check that robots.txt is correctly served from root
     """
@@ -974,7 +978,7 @@ def test_get_robots(client: FlaskClient):
     )
 
 
-def test_all_give_404s(client: FlaskClient):
+def test_all_give_404s(client: FlaskClient) -> None:
     """
     We should get 404 messages, not exceptions, for missing things.
     """
@@ -1014,12 +1018,12 @@ def test_all_give_404s(client: FlaskClient):
     expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")
 
 
-def test_invalid_query_gives_400(client: FlaskClient):
+def test_invalid_query_gives_400(client: FlaskClient) -> None:
     """
     We should get 400 errors, not errors, for an invalid field values in a query
     """
 
-    def expect_400(url: str):
+    def expect_400(url: str) -> None:
         __tracebackhide__ = True
         get_text_response(client, url, expect_status_code=400)
 

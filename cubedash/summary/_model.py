@@ -40,7 +40,7 @@ class TimePeriodOverview:
     footprint_count: int
 
     # The most newly created dataset
-    newest_dataset_creation_time: datetime
+    newest_dataset_creation_time: datetime | None
 
     # List of CRSes that these datasets are in
     crses: Set[str]
@@ -54,7 +54,7 @@ class TimePeriodOverview:
     summary_gen_time: datetime = None
 
     @override
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"{self.label} "
             f"({self.dataset_count} dataset{'s' if self.dataset_count > 1 else ''})"
@@ -74,7 +74,9 @@ class TimePeriodOverview:
         return self.product_name, self.year, self.month, self.day
 
     @period_tuple.setter
-    def period_tuple(self, v: Tuple[str, Optional[int], Optional[int], Optional[int]]):
+    def period_tuple(
+        self, v: Tuple[str, Optional[int], Optional[int], Optional[int]]
+    ) -> None:
         self.product_name, self.year, self.month, self.day = v
 
     def as_flat_period(self):
@@ -88,7 +90,7 @@ class TimePeriodOverview:
     @classmethod
     def flat_period_representation(
         cls, year: Optional[int], month: Optional[int], day: Optional[int]
-    ) -> Tuple[str, datetime.date]:
+    ) -> Tuple[str, date]:
         period = "all"
         if year:
             period = "year"

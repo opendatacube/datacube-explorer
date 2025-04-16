@@ -23,7 +23,7 @@ DATASETS = [
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_parse_query_args(odc_test_db: Datacube):
+def test_parse_query_args(odc_test_db: Datacube) -> None:
     """
     A user gives time start/end: they should be parsed as a single time field,
     and restricted to the current product.
@@ -52,7 +52,7 @@ def test_parse_query_args(odc_test_db: Datacube):
 @pytest.mark.skip(
     reason="Should be updated to do a flask request. Default params are there."
 )
-def test_default_args(dea_index: Index):
+def test_default_args(dea_index: Index) -> None:
     """
     When the user provides no search args we should constraint their query
 

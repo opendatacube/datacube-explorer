@@ -189,7 +189,7 @@ def odc_test_db(cfg_env):
             _remove_postgis_dynamic_indexes()
 
 
-def _remove_postgres_dynamic_indexes():
+def _remove_postgres_dynamic_indexes() -> None:
     """
     Clear any dynamically created postgresql indexes from the schema.
     """
@@ -200,7 +200,7 @@ def _remove_postgres_dynamic_indexes():
         )
 
 
-def _remove_postgis_dynamic_indexes():
+def _remove_postgis_dynamic_indexes() -> None:
     """
     Clear any dynamically created postgis indexes from the schema.
     """
