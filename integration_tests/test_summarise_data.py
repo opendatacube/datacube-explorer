@@ -573,7 +573,7 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore):
 
             python_calculated_region_code = region_info.dataset_region_code(dataset)
             assert python_calculated_region_code == alchemy_calculated_region_code, (
-                "Python and DB calculated region codes didn't product the same value. "
+                "Python and DB calculated region codes differ. "
                 f"{python_calculated_region_code!r} != {alchemy_calculated_region_code!r}"
                 f"for product {dataset.product.name!r}, dataset {dataset!r}"
             )
