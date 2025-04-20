@@ -31,6 +31,7 @@ from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import geom
+from odc.geo.crs import CRS
 from orjson import orjson
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
@@ -881,7 +882,7 @@ def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
     if extent is None:
         log.warning("invalid_dataset.empty_extent")
         return None, False
-    ds_geom = shape(extent.to_crs(geom.CRS(_TARGET_CRS)))
+    ds_geom = shape(extent.to_crs(CRS(_TARGET_CRS)))
 
     if not ds_geom.is_valid:
         log.warning(
@@ -908,4 +909,4 @@ def bbox_as_geom(dataset):
     """Get dataset bounds as to Geometry object projected to target CRS"""
     if dataset.crs is None:
         return None
-    return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(geom.CRS(_TARGET_CRS))
+    return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
