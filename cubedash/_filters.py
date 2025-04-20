@@ -9,13 +9,13 @@ from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
 import flask
+import orjson
 import pytz
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
 from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
-from orjson import orjson
 from shapely.geometry import MultiPolygon
 
 from . import _model, _utils
