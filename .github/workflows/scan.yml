@@ -16,6 +16,8 @@ concurrency:
 jobs:
   cve-scanner:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
       - name: Checkout git
         uses: actions/checkout@v4

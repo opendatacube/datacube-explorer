@@ -10,6 +10,9 @@ jobs:
     if: github.repository == 'opendatacube/datacube-explorer'
 
     runs-on: ubuntu-latest
+    # Permit authenticating to PyPI
+    permissions:
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
