@@ -8,3 +8,11 @@ updates:
   directory: "/"
   schedule:
     interval: "daily"
+- package-ecosystem: "pip"
+  directory: "/docs"
+  schedule:
+    interval: "daily"
+  groups:
+    pip-deps:
+      patterns:
+        - "*"
