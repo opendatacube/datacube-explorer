@@ -31,10 +31,10 @@ mkdir schemas.stacspec.org
 wget https://github.com/radiantearth/stac-spec/archive/${stac_tag}.tar.gz
 tar -xvf ${stac_tag}.tar.gz --wildcards "${subfolder}/*/json-schema/*.json"
 rm ${stac_tag}.tar.gz
-mv ${subfolder} "schemas.stacspec.org/${stac_version}"
+mv ${subfolder} "schemas.stacspec.org/${stac_tag}"
 rm -f "stac/${stac_version}"
 # The path to the linked folder needs to be relative to the path of the symlink.
-ln -s "../schemas.stacspec.org/${stac_version}" "stac/"
+ln -s "../schemas.stacspec.org/${stac_tag}" "stac/${stac_version}"
 
 api_subfolder="stac-api-spec-${stac_api_version}"
 wget -O api-${stac_api_tag}.tar.gz https://github.com/radiantearth/stac-api-spec/archive/${stac_api_tag}.tar.gz
