@@ -28,7 +28,7 @@ install-flake8:
 
 .PHONY: format
 format: ## Reformat all Python code
-	black cubedash integration_tests ./*.py
+	ruff format cubedash integration_tests ./*.py
 
 .PHONY: lint
 lint: ## Run all Python linting checks

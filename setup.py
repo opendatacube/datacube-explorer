@@ -8,7 +8,6 @@ HERE = pathlib.Path(__file__).parent.resolve()
 README = (HERE / "README.md").read_text()
 
 tests_require = [
-    "black",
     "docutils",
     "boltons",
     "deepdiff",
@@ -21,6 +20,7 @@ tests_require = [
     "requests-html",
     "blinker",
     "prometheus-flask-exporter",
+    "ruff",
     "sphinx_click",
     "docker",
 ]
