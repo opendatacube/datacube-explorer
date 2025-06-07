@@ -15,6 +15,16 @@ warn_unused_ignores = true
 # FIXME: Long term goal to enable the next line.
 # disallow_untyped_defs = true
 
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+testpaths = ["cubedash", "integration_tests"]
+norecursedirs = [".*", "build", "dist", ".git", "tmp*", ".jj"]
+filterwarnings = [
+    "ignore::FutureWarning",
+    "ignore:datetime.datetime.utcnow*:DeprecationWarning:botocore.*",
+    "ignore:.*numpy.ndarray size changed.*:"
+]
+
 [tool.ruff]
 target-version = "py310"
 
