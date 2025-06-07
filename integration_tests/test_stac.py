@@ -326,7 +326,7 @@ def validate_item(item: dict) -> None:
 
 
 def validate_items(
-    items: Iterable[dict], expect_ordered=True, expect_count: int | dict = None
+    items: Iterable[dict], expect_ordered=True, expect_count: int | dict | None = None
 ) -> None:
     """
     Check that a series of stac Items:
