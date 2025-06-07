@@ -400,7 +400,6 @@ def stac_client(client: FlaskClient):
 # Page requests
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
     # An unconstrained search returning every dataset.
@@ -623,7 +622,6 @@ def test_stac_links(stac_client: FlaskClient) -> None:
     assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
     # Do the virtual 'arrivals' catalog and items validate?
@@ -969,7 +967,6 @@ def test_stac_includes_total(stac_client: FlaskClient) -> None:
     assert geojson.get("numberMatched") == 72
 
 
-@pytest.mark.skip(reason="FIXME: JSON schema validation issues")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_next_link(stac_client: FlaskClient) -> None:
     # next link should return next page of results

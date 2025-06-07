@@ -80,7 +80,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '088082'
-  proj:epsg: 32656
+  proj:code: EPSG:32656
   proj:shape:
   - 7831
   - 7771
@@ -234,7 +234,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '088083'
-  proj:epsg: 32656
+  proj:code: EPSG:32656
   proj:shape:
   - 7831
   - 7761
@@ -389,7 +389,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '104074'
-  proj:epsg: 32652
+  proj:code: EPSG:32652
   proj:shape:
   - 7851
   - 7751
@@ -543,7 +543,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '095074'
-  proj:epsg: 32655
+  proj:code: EPSG:32655
   proj:shape:
   - 7721
   - 7611
@@ -698,7 +698,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '095072'
-  proj:epsg: 32655
+  proj:code: EPSG:32655
   proj:shape:
   - 7731
   - 7621
@@ -853,7 +853,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '097073'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7811
   - 7701
@@ -1008,7 +1008,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '097074'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7811
   - 7701
@@ -1163,7 +1163,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '098070'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7781
   - 7661
@@ -1318,7 +1318,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '114075'
-  proj:epsg: 32650
+  proj:code: EPSG:32650
   proj:shape:
   - 7731
   - 7631
@@ -1473,7 +1473,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '098085'
-  proj:epsg: 32653
+  proj:code: EPSG:32653
   proj:shape:
   - 7931
   - 7881
@@ -1628,7 +1628,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '100074'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7681
   - 7571
@@ -1782,7 +1782,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '109084'
-  proj:epsg: 32651
+  proj:code: EPSG:32651
   proj:shape:
   - 7691
   - 7641
@@ -1937,7 +1937,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '109084'
-  proj:epsg: 32651
+  proj:code: EPSG:32651
   proj:shape:
   - 7701
   - 7641
@@ -2089,7 +2089,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '099067'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7751
   - 7621
@@ -2243,7 +2243,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '096067'
-  proj:epsg: 32655
+  proj:code: EPSG:32655
   proj:shape:
   - 7741
   - 7601
@@ -2395,7 +2395,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '096080'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7831
   - 7761
@@ -2548,7 +2548,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '112084'
-  proj:epsg: 32650
+  proj:code: EPSG:32650
   proj:shape:
   - 7761
   - 7711
@@ -2701,7 +2701,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '101073'
-  proj:epsg: 32653
+  proj:code: EPSG:32653
   proj:shape:
   - 7811
   - 7701
@@ -2854,7 +2854,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '104068'
-  proj:epsg: 32653
+  proj:code: EPSG:32653
   proj:shape:
   - 7731
   - 7601
@@ -3007,7 +3007,7 @@ properties:
   odc:product: ga_ls8c_ard_3
   odc:product_family: ard
   odc:region_code: '104083'
-  proj:epsg: 32652
+  proj:code: EPSG:32652
   proj:shape:
   - 7791
   - 7731
@@ -3158,7 +3158,7 @@ properties:
   odc:producer: ga.gov.au
   odc:product_family: ard
   odc:region_code: '100074'
-  proj:epsg: 32654
+  proj:code: EPSG:32654
   proj:shape:
   - 7671
   - 7571
