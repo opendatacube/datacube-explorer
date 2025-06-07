@@ -4,6 +4,33 @@ requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=8"]
 [tool.setuptools_scm]
 write_to = "cubedash/_version.py"
 
+[tool.coverage.run]
+branch = true
+omit = [
+    "cubedash/_version.py",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # From coverage manual (https://coverage.readthedocs.io/en/latest/excluding.html).
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+
+    # OUR EXCEPTIONS:
+    "except ImportError:",
+    "pytest.fail\\(", # Parameter checks in pytest.
+    "raise TypeError\\(", # "Impossible" errors.
+]
+precision = 2
+
 [tool.mypy]
 python_version = "3.10"
 allow_redefinition = true
