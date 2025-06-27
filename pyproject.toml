@@ -44,6 +44,7 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
+console_output_style = "times"
 testpaths = ["cubedash", "integration_tests"]
 norecursedirs = [".*", "build", "dist", ".git", "tmp*", ".jj"]
 filterwarnings = [
