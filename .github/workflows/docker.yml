@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout git
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: Build and Push unstable + latest Docker image tag
         if: github.event_name != 'release'
-        uses: whoan/docker-build-with-cache-action@v8
+        uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
         with:
           image_name: ${{ env.IMAGE_NAME }}
           username: gadockersvc
@@ -63,7 +63,7 @@ jobs:
         run: echo $RELEASE
 
       - name: Build and Push release if we have a tag
-        uses: whoan/docker-build-with-cache-action@v8
+        uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
         if: github.event_name == 'release'
         with:
           image_name: ${{ env.IMAGE_NAME }}
@@ -73,7 +73,7 @@ jobs:
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
       - name: Update Docker Hub Description
-        uses: peter-evans/dockerhub-description@v4
+        uses: peter-evans/dockerhub-description@432a30c9e07499fd01da9f8a49f0faf9e0ca5b77 # v4.0.2
         with:
           username: gadockersvc
           password: ${{ secrets.DockerPassword }}
