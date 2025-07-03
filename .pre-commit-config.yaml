@@ -6,11 +6,6 @@ repos:
     - id: ruff
       args: [--fix, --show-fixes, --output-format, grouped]
     - id: ruff-format
-  # Lint Python snippets embedded in Markdown (using flake8)
-  - repo: https://github.com/johnfraney/flake8-markdown
-    rev: v0.6.0
-    hooks:
-      - id: flake8-markdown
   # # Lint Jinja2 templates
   # - repo: https://github.com/thibaudcolas/curlylint
   #   rev: "v0.13.1"
