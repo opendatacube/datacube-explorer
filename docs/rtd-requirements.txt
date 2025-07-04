@@ -29,9 +29,9 @@ blinker==1.9.0
     #   sentry-sdk
 boltons==25.0.0
     # via eodatasets3
-boto3==1.39.2
+boto3==1.39.3
     # via eodatasets3
-botocore==1.39.2
+botocore==1.39.3
     # via
     #   boto3
     #   eodatasets3
@@ -312,7 +312,7 @@ toolz==1.0.0
     #   partd
 tornado==6.5.1
     # via distributed
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   alembic
     #   cattrs
