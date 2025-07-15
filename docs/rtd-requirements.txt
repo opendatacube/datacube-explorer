@@ -10,7 +10,7 @@ affine==2.4.0
     #   eodatasets3
     #   odc-geo
     #   rasterio
-alembic==1.16.2
+alembic==1.16.4
     # via datacube
 antimeridian==0.4.1
     # via datacube
@@ -29,9 +29,9 @@ blinker==1.9.0
     #   sentry-sdk
 boltons==25.0.0
     # via eodatasets3
-boto3==1.39.2
+boto3==1.39.4
     # via eodatasets3
-botocore==1.39.2
+botocore==1.39.4
     # via
     #   boto3
     #   eodatasets3
@@ -45,7 +45,7 @@ cachetools==6.1.0
     #   odc-geo
 cattrs==25.1.1
     # via eodatasets3
-certifi==2025.6.15
+certifi==2025.7.14
     # via
     #   fiona
     #   pyproj
@@ -120,7 +120,7 @@ flask-cors==6.0.1
     # via datacube-explorer (setup.py)
 flask-themer==2.0.0
     # via datacube-explorer (setup.py)
-fsspec==2025.5.1
+fsspec==2025.7.0
     # via dask
 geoalchemy2==0.17.1
     # via
@@ -191,7 +191,7 @@ odc-geo==0.4.10
     # via
     #   datacube
     #   datacube-explorer (setup.py)
-orjson==3.10.18
+orjson==3.11.0
     # via datacube-explorer (setup.py)
 packaging==25.0
     # via
@@ -200,7 +200,7 @@ packaging==25.0
     #   distributed
     #   geoalchemy2
     #   xarray
-pandas==2.3.0
+pandas==2.3.1
     # via
     #   datacube
     #   xarray
@@ -275,7 +275,7 @@ scipy==1.15.3
     # via
     #   eodatasets3
     #   pyorbital
-sentry-sdk[flask]==2.32.0
+sentry-sdk[flask]==2.33.0
     # via datacube-explorer (setup.py)
 shapely==2.1.1
     # via
@@ -312,7 +312,7 @@ toolz==1.0.0
     #   partd
 tornado==6.5.1
     # via distributed
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   alembic
     #   cattrs
