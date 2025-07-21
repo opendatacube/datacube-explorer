@@ -1,5 +1,101 @@
+[project]
+name = "datacube-explorer"
+dynamic = ["version"]
+description = "Web-based exploration of Open Data Cube collections"
+authors = [
+    {name = "Geoscience Australia", email = "earth.observation@ga.gov.au"},
+]
+dependencies = [
+    "Flask-Caching",
+    "cachetools",
+    # Tests fail with "ValueError: I/O operation on closed file" with Click
+    # 8.2.0 and later.
+    "click<8.2.0",
+    "datacube[postgres]>=1.9.0",
+    "eodatasets3>=1.9",
+    "fiona>=1.10.0",
+    "flask",
+    "flask-cors",
+    "flask-themer>=1.4.3",
+    "geoalchemy2>=0.8",
+    "geographiclib",
+    "jinja2",
+    "markupsafe",
+    "odc-geo",
+    "orjson>=3",
+    "pygeofilter>=0.2.2",
+    "pyorbital",
+    "pyproj",
+    "pystac",
+    "python-dateutil",
+    "pytz",
+    "sentry-sdk[flask]",
+    "shapely",
+    "simplekml",
+    "sqlalchemy>=1.4",
+    "structlog>=20.2.0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = "Apache-2.0"
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/opendatacube/datacube-explorer"
+"Bug Reports" = "https://github.com/opendatacube/datacube-explorer/issues"
+Source = "https://github.com/opendatacube/datacube-explorer"
+
+[project.optional-dependencies]
+deployment = [
+    # Performance.
+    "bottleneck",
+    "ciso8601",
+    # The default run.sh and docs use gunicorn+meinheld
+    "gevent",
+    "gunicorn>=22.0.0",
+    "setproctitle",
+    # Monitoring.
+    "blinker",
+    "prometheus-flask-exporter",
+]
+test = [
+    "datacube-explorer[deployment]",
+    "blinker",
+    "boltons",
+    "deepdiff",
+    "docker",
+    "docutils",
+    "jsonschema >= 4.18",
+    "lxml_html_clean",
+    "pre-commit",
+    "prometheus-flask-exporter",
+    "pytest",
+    "pytest-benchmark",
+    "requests-html",
+    "ruff",
+    "sphinx_click",
+]
+
+[project.scripts]
+cubedash-gen = "cubedash.generate:cli"
+cubedash-page-test = "cubedash.warmup:cli"
+cubedash-run = "cubedash.run:cli"
+cubedash-view = "cubedash.summary.show:cli"
+
 [build-system]
-requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=8"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+exclude = ["integration_tests"]
+include = ["cubedash*"]
 
 [tool.setuptools_scm]
 write_to = "cubedash/_version.py"
