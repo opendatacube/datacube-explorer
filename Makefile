@@ -73,7 +73,7 @@ up: ## Start server using Docker
 	docker compose up --quiet-pull
 
 up-d: ## Start server using Docker in background
-	docker compose up -d --quiet-pull
+	docker compose up -d --wait --quiet-pull
 
 build: ## Build the dev Docker image
 	docker compose build
@@ -81,6 +81,7 @@ build: ## Build the dev Docker image
 docker-clean: ## Get rid of the local docker env and DB
 	docker compose down
 
+# These rules pass --file to avoid loading docker-compose.override.yml.
 build-prod: ## Build the prod Docker image
 	docker compose \
 		--file docker-compose.yml \
