@@ -102,6 +102,20 @@ class ExplorerAbstractIndex(ABC):
     def product_summary_cols(self, product_name: str): ...
 
     @abstractmethod
+    def collection_cols(self): ...
+
+    @abstractmethod
+    def collections_search_query(
+        self,
+        limit: int,
+        offset: int,
+        name: str | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        q: list[str] | None = None,
+    ): ...
+
+    @abstractmethod
     def upsert_product_record(self, product_name: str, fields): ...
 
     @abstractmethod
