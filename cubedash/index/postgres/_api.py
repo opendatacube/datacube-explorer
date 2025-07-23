@@ -400,8 +400,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def collection_cols(self):
-        """Barebones; get all columns necessary for creating a Collection"""
-        # should we retrieve title and description as well?
+        """Get all columns necessary for creating a Collection"""
         product_overview = (
             select(
                 PRODUCT.c.name,
@@ -432,7 +431,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
     ):
         collection = self.collection_cols().alias("collection")
         query = select(collection).where(collection.c.period_type == "all")
-        # do we need period_type to be configurable?
 
         if name:
             query = query.where(collection.c.name == name)
