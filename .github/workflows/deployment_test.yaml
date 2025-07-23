@@ -38,10 +38,6 @@ jobs:
           make build-prod
           make up-prod
 
-      - name: Sleep for 30 seconds
-        run: sleep 30s
-        shell: bash
-
       - name: Prepare explorer schema
         run: |
           make init-odc
