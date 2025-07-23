@@ -379,7 +379,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def collection_cols(self):
-        """Geet all columns necessary for creating a Collection"""
+        """Get all columns necessary for creating a Collection"""
         product_overview = (
             select(
                 ProductSpatial.name,

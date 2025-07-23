@@ -922,8 +922,13 @@ class SummaryStore:
         collections = list(self.search_collections(name=name))
         if not collections:
             return None
-        # can we have multiple collections with the same name?
-        return collections[0]
+        # collection name should function as a unique identifier
+        if len(collections) > 1:
+            raise RuntimeError(
+                "Something is wrong: Multiple collection results for the same name"
+            )
+        [collection] = collections
+        return collection
 
     def _add_fields_to_query(
         self,
@@ -957,19 +962,7 @@ class SummaryStore:
                 field_exprs["geometry"].intersects(from_shape(intersects))
             )
         if product_names:
-            # product_ids = [self.get_product(name).id for name in product_names]
-            # I don't think there's a need to handle a singular product name differently, it's still a list
-            # query = query.where(
-            #     DATASET_SPATIAL.c.dataset_type_ref.in_(
-            #         select(ODC_DATASET_TYPE.c.id)
-            #         .where(ODC_DATASET_TYPE.c.name.in_(product_names))
-            #         .scalar_subquery()
-            #     )
-            # )
-            query = query.where(
-                # field_exprs["product_ref"].in_(product_ids)
-                field_exprs["collection"].in_(product_names)
-            )
+            query = query.where(field_exprs["collection"].in_(product_names))
 
         return query
 

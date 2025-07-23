@@ -1137,9 +1137,6 @@ def stac_search():
 
     if "collection" in args:
         products.append(args.get("collection"))
-    # Fallback for legacy 'product' argument
-    elif "product" in args:
-        products.append(args.get("product"))
 
     return _geojson_stac_response(
         _handle_search_request(request.method, args, products)
@@ -1159,9 +1156,7 @@ def collections():
         results, props = _handle_collection_search(request.args)
     else:
         props = dict(links=[])
-        results = [
-            as_stac_collection(r) for r in _model.STORE.search_collections()
-        ]  # without any params this should return all, right?
+        results = [as_stac_collection(r) for r in _model.STORE.search_collections()]
 
     props["links"].extend(
         [
