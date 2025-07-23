@@ -74,6 +74,7 @@ test = [
     "docutils",
     "jsonschema >= 4.18",
     "lxml_html_clean",
+    "mypy",
     "pre-commit",
     "prometheus-flask-exporter",
     "pytest",
@@ -81,6 +82,9 @@ test = [
     "requests-html",
     "ruff",
     "sphinx_click",
+    "types-cachetools",
+    "types-python-dateutil",
+    "types-pytz",
 ]
 
 [project.scripts]
