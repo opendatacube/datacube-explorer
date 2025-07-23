@@ -29,9 +29,9 @@ blinker==1.9.0
     #   sentry-sdk
 boltons==25.0.0
     # via eodatasets3
-boto3==1.39.9
+boto3==1.39.12
     # via eodatasets3
-botocore==1.39.9
+botocore==1.39.12
     # via
     #   boto3
     #   eodatasets3
@@ -275,7 +275,7 @@ scipy==1.15.3
     # via
     #   eodatasets3
     #   pyorbital
-sentry-sdk[flask]==2.33.0
+sentry-sdk[flask]==2.33.2
     # via datacube-explorer (setup.py)
 shapely==2.1.1
     # via
