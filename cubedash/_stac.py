@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
-from typing import Union
+from typing import Any, Union
 
 import flask
 import pystac
@@ -25,7 +25,7 @@ from toolz import dicttoolz
 from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
-from cubedash.summary._stores import DatasetItem
+from cubedash.summary._stores import CollectionItem, DatasetItem
 
 from . import _model, _utils
 from .summary import ItemSort
@@ -273,6 +273,53 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
         )
 
     return item
+
+
+def as_stac_collection(res: CollectionItem) -> pystac.Collection:
+    stac_collection = Collection(
+        id=res.name,
+        title=res.title,
+        description=res.description,
+        license=res.definition.get(
+            "license", flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
+        ),
+        providers=[],
+        extent=Extent(
+            pystac.SpatialExtent(
+                bboxes=[
+                    res.footprint_wgs84.bounds
+                    if res.footprint_wgs84
+                    else [-180.0, -90.0, 180.0, 90.0]
+                ]
+            ),
+            temporal=pystac.TemporalExtent(
+                intervals=[
+                    [
+                        utc(res.time_earliest) if res.time_earliest else None,
+                        utc(res.time_latest) if res.time_latest else None,
+                    ]
+                ]
+            ),
+        ),
+    )
+
+    stac_collection.set_root(root_catalog())
+
+    stac_collection.links.extend(
+        [
+            Link(rel="self", target=request.url),
+            Link(
+                rel="items",
+                target=url_for(".collection_items", collection=res.name),
+            ),
+            Link(
+                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                target=url_for(".collection_queryables", collection=res.name),
+            ),
+        ]
+    )
+
+    return stac_collection
 
 
 def _accessories_from_eo1(metadata_doc: dict) -> dict[str, AccessoryDoc]:
@@ -655,6 +702,49 @@ def _handle_search_request(
     return feature_collection
 
 
+def _handle_collection_search(
+    request_args: TypeConversionDict,
+) -> tuple[list[Collection], dict[str, Any]]:
+    bbox = request_args.get(
+        "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
+    )
+
+    time = request_args.get("datetime")
+
+    q = request_args.get("q", default=None, type=partial(_array_arg, expect_type=str))
+
+    limit = request_args.get("limit", default=get_default_limit(), type=int)
+
+    offset = request_args.get("_o", default=0, type=int)
+
+    check_page_limit(limit)
+
+    if bbox is not None and len(bbox) != 4:
+        abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
+
+    if time is not None:
+        time = _parse_time_range(time)
+
+    def next_page_url(next_offset):
+        return url_for(
+            ".collections",
+            bbox="{},{},{},{}".format(*bbox) if bbox else None,
+            time=_unparse_time_range(time) if time else None,
+            q=",".join(map(str, q)) if q else None,
+            limit=limit,
+            _o=next_offset,
+        )
+
+    return search_stac_collections(
+        bbox=bbox,
+        time=time,
+        q=q,
+        limit=limit,
+        offset=offset,
+        get_next_url=next_page_url,
+    )
+
+
 # Item search extensions
 
 
@@ -791,20 +881,9 @@ def search_stac_items(
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    page = 0
-    if limit != 0:
-        page = offset // limit
     extra_properties = dict(
         links=[],
-        # Stac standard
         numberReturned=len(returned),
-        # Compatibility with older implementation. Was removed from stac-api standard.
-        # (page numbers + limits are not ideal as they prevent some big db optimisations.)
-        context=dict(
-            page=page,
-            limit=limit,
-            returned=len(returned),
-        ),
     )
     if include_total_count:
         count_matching = _model.STORE.get_count(
@@ -817,7 +896,6 @@ def search_stac_items(
             filter_cql=filter_cql,
         )
         extra_properties["numberMatched"] = count_matching
-        extra_properties["context"]["matched"] = count_matching
 
     items = [as_stac_item(f) for f in returned]
     items = _handle_fields_extension(items, fields) if fields else items
@@ -860,76 +938,62 @@ def search_stac_items(
     return result
 
 
-# Response helpers
+def search_stac_collections(
+    get_next_url: Callable[[int], str],
+    limit: int = 0,
+    offset: int = 0,
+    bbox: tuple[float, float, float, float] | None = None,
+    time: tuple[datetime, datetime] | None = None,
+    q: list[str] | None = None,
+) -> tuple[list[Collection], dict[str, Any]]:
+    if limit < 1:
+        limit = get_default_limit()
 
-
-def _stac_collection(collection: str) -> Collection:
-    summary = _model.get_product_summary(collection)
-    try:
-        product = _model.STORE.get_product(collection)
-    except KeyError:
-        abort(404, f"Unknown collection {collection!r}")
-
-    all_time_summary = _model.get_time_summary(collection)
-
-    begin, end = (
-        (summary.time_earliest, summary.time_latest) if summary else (None, None)
-    )
-    footprint = all_time_summary.footprint_wgs84
-    if "title" in product.definition.get("metadata"):
-        title = product.definition.get("metadata")["title"]
-    else:
-        title = summary.name
-    stac_collection = Collection(
-        id=summary.name,
-        title=title,
-        license=_utils.product_license(product),
-        description=product.definition.get("description"),
-        providers=[],
-        extent=Extent(
-            pystac.SpatialExtent(
-                bboxes=[footprint.bounds if footprint else [-180.0, -90.0, 180.0, 90.0]]
-            ),
-            temporal=pystac.TemporalExtent(
-                intervals=[
-                    [
-                        utc(begin) if begin else None,
-                        utc(end) if end else None,
-                    ]
-                ]
-            ),
-        ),
-    )
-    stac_collection.set_root(root_catalog())
-
-    stac_collection.links.extend(
-        [
-            Link(rel="self", target=request.url),
-            Link(
-                rel="items",
-                target=url_for(".collection_items", collection=collection),
-            ),
-            Link(
-                rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
-                target=url_for(".collection_queryables", collection=collection),
-            ),
-        ]
-    )
-    if all_time_summary.timeline_dataset_counts:
-        stac_collection.links.extend(
-            Link(
-                rel="child",
-                target=url_for(
-                    ".collection_month",
-                    collection=collection,
-                    year=date.year,
-                    month=date.month,
-                ),
-            )
-            for date, count in all_time_summary.timeline_dataset_counts.items()
-            if count > 0
+    collections = list(
+        _model.STORE.search_collections(
+            time=time,
+            bbox=bbox,
+            q=q,
+            limit=limit + 1,
+            offset=offset,
         )
-    return stac_collection
+    )
+    returned = collections[:limit]
+    there_are_more = len(collections) == limit + 1
+
+    count_matching = len(
+        list(
+            _model.STORE.search_collections(
+                time=time,
+                bbox=bbox,
+                q=q,
+            )
+        )
+    )
+
+    extra_properties = dict(
+        links=[],
+        numberReturned=len(returned),
+        numberMatched=count_matching,
+    )
+
+    result = [as_stac_collection(r) for r in returned]
+
+    if there_are_more:
+        next_link = dict(
+            rel="next",
+            title="Next page of Collections",
+            type="application/json",
+            method="GET",
+            href=get_next_url(offset + limit),
+        )
+
+        extra_properties["links"].append(next_link)
+
+    return result, extra_properties
+
+
+# Response helpers
 
 
 def _stac_response(
@@ -979,6 +1043,28 @@ def root_catalog():
 # ENDPOINTS
 ##########################
 
+CONFORMANCE_CLASSES = [
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
+    "https://api.stacspec.org/v1.0.0-rc.1/core",
+    "https://api.stacspec.org/v1.0.0-rc.1/item-search",
+    "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
+    "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
+    "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
+    "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
+    "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
+    "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
+    "http://www.opengis.net/spec/cql2/1.0/conf/spatial-operators",
+    "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
+    "https://api.stacspec.org/v1.0.0-rc.1/collections",
+    "https://api.stacspec.org/v1.0.0-rc.1/collection-search",
+    "https://api.stacspec.org/v1.0.0-rc.1/collection-search#free-text",
+    "http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/simple-query",
+]
+
 
 @bp.route("", strict_slashes=False)
 def root():
@@ -991,7 +1077,7 @@ def root():
             Link(
                 title="Collections",
                 # description="All product collections",
-                rel="children",
+                rel="data",
                 media_type="application/json",
                 target=url_for(".collections"),
             ),
@@ -1023,31 +1109,18 @@ def root():
                     media_type="application/json",
                     target=url_for(".collection", collection=product.name),
                 )
-                for product, product_summary in _model.get_products_with_summaries()
+                for product, _ in _model.get_products_with_summaries()
             ),
         ]
     )
-    conformance_classes = [
-        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
-        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
-        "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-        "https://api.stacspec.org/v1.0.0-rc.1/core",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search",
-        "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
-        "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
-        "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
-        "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
-        "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
-        "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
-        "http://www.opengis.net/spec/cql2/1.0/conf/spatial-operators",
-        "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
-        "https://api.stacspec.org/v1.0.0-rc.1/collections",
-    ]
-    c.extra_fields = dict(conformsTo=conformance_classes)
+    c.extra_fields = dict(conformsTo=CONFORMANCE_CLASSES)
 
     return _stac_response(c)
+
+
+@bp.route("/conformance")
+def conformance():
+    return _utils.as_json(dict(conformsTo=CONFORMANCE_CLASSES))
 
 
 @bp.route("/search", methods=["GET", "POST"])
@@ -1076,24 +1149,32 @@ def stac_search():
 # Collections
 
 
-@bp.route("/collections")
+@bp.route("/collections", methods=["GET"])
 def collections():
     """
     This is like the root "/", but has full information for each collection in
      an array (instead of just a link to each collection).
     """
+    if request.args:
+        results, props = _handle_collection_search(request.args)
+    else:
+        props = dict(links=[])
+        results = [
+            as_stac_collection(r) for r in _model.STORE.search_collections()
+        ]  # without any params this should return all, right?
+
+    props["links"].extend(
+        [
+            dict(rel="self", type="application/json", href=request.url),
+            dict(rel="root", type="application/json", href=url_for(".root")),
+            dict(rel="parent", type="application/json", href=url_for(".root")),
+        ]
+    )
+
     return _utils.as_json(
         dict(
-            links=[
-                dict(rel="self", type="application/json", href=request.url),
-                dict(rel="root", type="application/json", href=url_for(".root")),
-                dict(rel="parent", type="application/json", href=url_for(".root")),
-            ],
-            collections=[
-                # TODO: This has a root link, right?
-                _stac_collection(product.name).to_dict()
-                for product, product_summary in _model.get_products_with_summaries()
-            ],
+            **props,
+            collections=[collection.to_dict() for collection in results],
         )
     )
 
@@ -1187,7 +1268,13 @@ def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
     """
-    return _stac_response(_stac_collection(collection))
+    # return _stac_response(_stac_collection(collection))
+    try:
+        _model.STORE.get_product(collection)
+    except KeyError:
+        abort(404, f"Collection {collection!r} not found")
+
+    return _stac_response(as_stac_collection(_model.STORE.get_collection(collection)))
 
 
 @bp.route("/collections/<collection>/items")
@@ -1199,7 +1286,7 @@ def collection_items(collection: str):
     try:
         _model.STORE.get_product(collection)
     except KeyError:
-        abort(404, f"Product {collection!r} not found")
+        abort(404, f"Collection {collection!r} not found")
 
     return flask.redirect(
         url_for(".stac_search", collection=collection, **request.args)

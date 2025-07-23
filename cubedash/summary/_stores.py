@@ -35,6 +35,7 @@ from pygeofilter.backends.sqlalchemy.evaluate import (
 )
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
+from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import (
     DDL,
@@ -209,6 +210,40 @@ class DatasetItem:
                 "cubedash:region_code": self.region_code,
             },
         )
+
+
+@dataclass
+class CollectionItem:
+    name: str
+    definition: dict
+    time_earliest: datetime | None
+    time_latest: datetime | None
+    footprint_geometry: Geometry | None
+    footprint_crs: str | None
+
+    @property
+    def footprint_wgs84(self) -> MultiPolygon | None:
+        if not self.footprint_geometry:
+            return None
+        if not self.footprint_crs:
+            _LOG.warning(f"Geometry without a crs for {self}", stacklevel=2)
+            return None
+
+        return (
+            Geometry(self.footprint_geometry, crs=self.footprint_crs)
+            .to_crs("EPSG:4326", wrapdateline=True)
+            .geom
+        )
+
+    @property
+    def title(self) -> str:
+        if "title" in self.definition.get("metadata"):
+            return self.definition.get("metadata")["title"]
+        return self.name
+
+    @property
+    def description(self) -> str:
+        return self.definition.get("description")
 
 
 @dataclass
@@ -883,6 +918,13 @@ class SummaryStore:
         [item] = items
         return item
 
+    def get_collection(self, name: str) -> CollectionItem | None:
+        collections = list(self.search_collections(name=name))
+        if not collections:
+            return None
+        # can we have multiple collections with the same name?
+        return collections[0]
+
     def _add_fields_to_query(
         self,
         query: Select,
@@ -1165,6 +1207,25 @@ class SummaryStore:
                 center_time=r.center_time,
                 odc_dataset=(self.index.datasets.get(r.id) if full_dataset else None),
             )
+
+    def search_collections(
+        self,
+        name: str | None = None,
+        time: Tuple[datetime, datetime] | None = None,
+        bbox: Tuple[float, float, float, float] | None = None,
+        q: list[str] | None = None,
+        limit: int = 500,
+        offset: int = 0,
+    ) -> Generator[CollectionItem, None, None]:
+        for r in self.e_index.collections_search_query(
+            name=name,
+            bbox=bbox,
+            time=time,
+            q=q,
+            limit=limit,
+            offset=offset,
+        ):
+            yield _row_to_collection(r)
 
     def _recalculate_period(
         self,
@@ -1621,6 +1682,29 @@ def _summary_to_row(
         generation_time=func.now(),
         newest_dataset_creation_time=summary.newest_dataset_creation_time,
         crses=summary.crses,
+    )
+
+
+def _row_to_collection(res, grouping_timezone=default_timezone):
+    return CollectionItem(
+        name=res.name,
+        time_earliest=res.time_earliest.astimezone(grouping_timezone)
+        if res.time_earliest
+        else None,
+        time_latest=res.time_latest.astimezone(grouping_timezone)
+        if res.time_latest
+        else None,
+        footprint_geometry=(
+            None
+            if res.footprint_geometry is None
+            else geo_shape.to_shape(res.footprint_geometry)
+        ),
+        footprint_crs=(
+            None
+            if res.footprint_geometry is None or res.footprint_geometry.srid == -1
+            else "EPSG:{}".format(res.footprint_geometry.srid)
+        ),
+        definition=res.definition,
     )
 
 

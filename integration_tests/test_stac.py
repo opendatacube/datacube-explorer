@@ -490,13 +490,14 @@ def test_returns_404s(stac_client: FlaskClient) -> None:
 
     # Product
     expect_404(
-        "/stac/collections/does_not_exist", message_contains="Unknown collection"
+        "/stac/collections/does_not_exist",
+        message_contains="Collection 'does_not_exist' not found",
     )
 
     # Product items
     expect_404(
         "/stac/collections/does_not_exist/items",
-        message_contains="Product 'does_not_exist' not found",
+        message_contains="Collection 'does_not_exist' not found",
     )
 
     # Dataset
@@ -579,7 +580,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
             "type": "application/json",
         },
         {
-            "rel": "children",
+            "rel": "data",
             "href": "http://localhost/stac/collections",
             "type": "application/json",
             "title": "Collections",
@@ -705,10 +706,6 @@ def test_stac_collection(stac_client: FlaskClient):
                 "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
                 "href": stac_url("collections/high_tide_comp_20p/queryables"),
             },
-            {
-                "rel": "child",
-                "href": stac_url("catalogs/high_tide_comp_20p/2008-6"),
-            },
         ],
         # "providers": [], // FIXME: These disappeared somewhere along the way ?
         # "stac_extensions": [],
@@ -720,6 +717,13 @@ def test_stac_collection(stac_client: FlaskClient):
             item_links = link["href"]
             break
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
+
+
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
+def test_stac_collection_query(stac_client: FlaskClient) -> None:
+    res = get_json(stac_client, "/stac/collections?q=ard")
+    assert res["numberMatched"] == 1
+    assert_collection(res["collections"][0])
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -982,7 +986,6 @@ def test_next_link(stac_client: FlaskClient) -> None:
 
     next_page = get_items(stac_client, next_link)
     assert next_page.get("numberMatched") == geojson.get("numberMatched")
-    assert next_page["context"]["page"] == 1
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
