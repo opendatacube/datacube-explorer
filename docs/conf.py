@@ -41,7 +41,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx_click",
-    "sphinx_click.ext",
     "sphinx.ext.autosectionlabel",
     "sphinx_tabs.tabs",
 ]

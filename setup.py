@@ -11,7 +11,6 @@ tests_require = [
     "docutils",
     "boltons",
     "deepdiff",
-    "flake8",
     "jsonschema >= 4.18",
     "lxml_html_clean",
     "pre-commit",
