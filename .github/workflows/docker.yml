@@ -27,6 +27,7 @@ concurrency:
 
 jobs:
   docker:
+    timeout-minutes: 35
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' || github.event_name == 'release'
 

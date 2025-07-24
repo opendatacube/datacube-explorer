@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   integration-tests:
+    timeout-minutes: 55
     runs-on: ubuntu-latest
 
     steps:
