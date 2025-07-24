@@ -566,11 +566,14 @@ def _handle_search_request(
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
     )
+    if bbox is not None and len(bbox) != 4:
+        abort(400, "Expected bbox of size 4. [min lon, min lat, max lon, max lat]")
 
-    # Stac-api <=0.7.0 used 'time', later versions use 'datetime'
-    time = request_args.get("datetime") or request_args.get("time")
+    time = request_args.get("datetime")
 
     limit = request_args.get("limit", default=get_default_limit(), type=int)
+    check_page_limit(limit)
+
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
     )
@@ -635,11 +638,6 @@ def _handle_search_request(
             filter_lang = "cql2-json"
     if filter_cql:
         _validate_filter(filter_lang, filter_cql)
-
-    check_page_limit(limit)
-
-    if bbox is not None and len(bbox) != 4:
-        abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
 
     if time is not None:
         time = _parse_time_range(time)
@@ -708,19 +706,17 @@ def _handle_collection_search(
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
     )
+    if bbox is not None and len(bbox) != 4:
+        abort(400, "Expected bbox of size 4. [min lon, min lat, max lon, max lat]")
 
     time = request_args.get("datetime")
 
     q = request_args.get("q", default=None, type=partial(_array_arg, expect_type=str))
 
     limit = request_args.get("limit", default=get_default_limit(), type=int)
-
-    offset = request_args.get("_o", default=0, type=int)
-
     check_page_limit(limit)
 
-    if bbox is not None and len(bbox) != 4:
-        abort(400, "Expected bbox of size 4. [min lon, min lat, max long, max lat]")
+    offset = request_args.get("_o", default=0, type=int)
 
     if time is not None:
         time = _parse_time_range(time)
@@ -962,13 +958,7 @@ def search_stac_collections(
     there_are_more = len(collections) == limit + 1
 
     count_matching = len(
-        list(
-            _model.STORE.search_collections(
-                time=time,
-                bbox=bbox,
-                q=q,
-            )
-        )
+        list(_model.STORE.search_collections(time=time, bbox=bbox, q=q))
     )
 
     extra_properties = dict(
@@ -1047,19 +1037,19 @@ CONFORMANCE_CLASSES = [
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-    "https://api.stacspec.org/v1.0.0-rc.1/core",
-    "https://api.stacspec.org/v1.0.0-rc.1/item-search",
-    "https://api.stacspec.org/v1.0.0-rc.1/ogcapi-features",
-    "https://api.stacspec.org/v1.0.0-rc.1/item-search#fields",
-    "https://api.stacspec.org/v1.0.0-rc.1/item-search#sort",
-    "https://api.stacspec.org/v1.0.0-rc.1/item-search#filter",
+    "https://api.stacspec.org/v1.0.0/core",
+    "https://api.stacspec.org/v1.0.0/item-search",
+    "https://api.stacspec.org/v1.0.0/ogcapi-features",
+    "https://api.stacspec.org/v1.0.0/item-search#fields",
+    "https://api.stacspec.org/v1.1.0/item-search#sort",
+    "https://api.stacspec.org/v1.0.0/item-search#filter",
     "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
     "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
     "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
     "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
     "http://www.opengis.net/spec/cql2/1.0/conf/spatial-operators",
     "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
-    "https://api.stacspec.org/v1.0.0-rc.1/collections",
+    "https://api.stacspec.org/v1.0.0/collections",
     "https://api.stacspec.org/v1.0.0-rc.1/collection-search",
     "https://api.stacspec.org/v1.0.0-rc.1/collection-search#free-text",
     "http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/simple-query",
@@ -1263,7 +1253,6 @@ def collection(collection: str):
     """
     Overview of a WFS Collection (a datacube product)
     """
-    # return _stac_response(_stac_collection(collection))
     try:
         _model.STORE.get_product(collection)
     except KeyError:
