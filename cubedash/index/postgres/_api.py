@@ -454,7 +454,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 description="product title",
                 alchemy_column=collection.c.definition,
                 indexed=False,
-                offset=["metadata", "title"],
+                offset=("metadata", "title"),
             )
 
             description = SimpleDocField(
@@ -462,7 +462,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 description="product description",
                 alchemy_column=collection.c.definition,
                 indexed=False,
-                offset=["description"],
+                offset=("description"),
             )
 
             expressions = []

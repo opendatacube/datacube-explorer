@@ -226,7 +226,7 @@ class CollectionItem:
         if not self.footprint_geometry:
             return None
         if not self.footprint_crs:
-            _LOG.warning(f"Geometry without a crs for {self}", stacklevel=2)
+            _LOG.warning(f"Geometry without a crs for {self.name}", stacklevel=2)
             return None
 
         return (
@@ -1627,7 +1627,7 @@ def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
         footprint_crs=(
             None
             if res["footprint_geometry"] is None or res["footprint_geometry"].srid == -1
-            else "EPSG:{}".format(res["footprint_geometry"].srid)
+            else f"EPSG:{res['footprint_geometry'].srid}"
         ),
         size_bytes=res["size_bytes"],
         footprint_count=res["footprint_count"],
