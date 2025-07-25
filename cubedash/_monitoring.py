@@ -1,6 +1,6 @@
 import functools
 import inspect
-import sys
+import logging
 import time
 
 import flask
@@ -9,6 +9,7 @@ from sqlalchemy import event
 from . import _model
 
 _INITIALISED = False
+_LOG = logging.getLogger(__name__)
 
 
 # Add server timings to http headers.
@@ -79,11 +80,9 @@ def init_app_monitoring(app: flask.Flask) -> None:
                 start_time = time.time()
                 ret = function(*args, **kwargs)
                 duration_secs = time.time() - start_time
-                print(
+                _LOG.debug(
                     f"== Index Call == {style(function.__name__, bold=True)}: "
-                    f"{duration_secs * 1000}",
-                    file=sys.stderr,
-                    flush=True,
+                    f"{duration_secs * 1000}"
                 )
                 return ret
 
