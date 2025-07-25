@@ -647,7 +647,7 @@ def _handle_search_request(
             ".stac_search",
             collections=",".join(product_names),
             bbox="{},{},{},{}".format(*bbox) if bbox else None,
-            time=_unparse_time_range(time) if time else None,
+            datetime=_unparse_time_range(time) if time else None,
             ids=",".join(map(str, ids)) if ids else None,
             limit=limit,
             _o=next_offset,

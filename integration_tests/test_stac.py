@@ -434,7 +434,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
         stac_client,
         (
             "/stac/search?"
-            "&bbox=[114, -33, 153, -10]"
+            "&bbox=114,-33,153,-10"
             "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
@@ -1072,7 +1072,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "wofs_albers",
+                "collections": ["wofs_albers"],
                 # Does it intersect the region 16_-33 geojson?
                 "intersects": {
                     "type": "Polygon",
@@ -1241,9 +1241,9 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "wofs_albers",
+                "collections": ["wofs_albers"],
                 "bbox": [114, -33, 153, -10],
-                "time": "2017-04-16T01:12:16/2017-05-10T00:24:21",
+                "datetime": "2017-04-16T01:12:16/2017-05-10T00:24:21",
                 "limit": OUR_PAGE_SIZE,
                 "_full": True,
             }
@@ -1262,9 +1262,9 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "high_tide_comp_20p",
+                "collections": ["high_tide_comp_20p"],
                 "bbox": [114, -40, 147, -32],
-                "time": "2000-01-01T00:00:00/2016-10-31T00:00:00",
+                "datetime": "2000-01-01T00:00:00/2016-10-31T00:00:00",
                 "limit": 5,
                 "_full": True,
             }
@@ -1308,8 +1308,8 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "fields": fields,
@@ -1342,8 +1342,8 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "fields": fields,
@@ -1407,8 +1407,8 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "sortby": sortby,
@@ -1430,8 +1430,8 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "sortby": sortby,
@@ -1499,8 +1499,8 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "filter": filter_json,
@@ -1542,8 +1542,8 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "filter-lang": "cql2-text",
@@ -1559,8 +1559,8 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "filter-crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS83",
@@ -1580,8 +1580,8 @@ def test_stac_query_extension_errors(stac_client: FlaskClient) -> None:
         "/stac/search",
         data=json.dumps(
             {
-                "product": "ga_ls8c_ard_3",
-                "time": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
                 "limit": OUR_DATASET_LIMIT,
                 "_full": True,
                 "query": query,
