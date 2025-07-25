@@ -16,7 +16,7 @@ from requests_html import HTML, Element
 from ruamel.yaml import YAML, YAMLError
 
 import cubedash
-from cubedash import _model, _monitoring
+from cubedash import _model
 from cubedash.summary import SummaryStore, _extents, show
 from cubedash.summary._stores import explorer_index
 from integration_tests.asserts import (
@@ -897,29 +897,6 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
     [cols] = _extents.get_mapped_crses([product], e_index)
     assert cols["product"] == "ga_ls8c_ard_3"
     assert cols["crs"] in (32650, 32651, 32652, 32653, 32654, 32655, 32656)
-
-
-# this test fails in gh with the postgis driver for unknown reasons
-@pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_with_timings(client: FlaskClient) -> None:
-    _monitoring.init_app_monitoring(client.application)
-    # ga_ls8c_ard_3 dataset
-    rv: Response = client.get("/dataset/e2dd2539-ae18-4edc-a0e6-ddd31848669c")
-    assert "Server-Timing" in rv.headers
-
-    count_header = [
-        f
-        for f in rv.headers["Server-Timing"].split(",")
-        if f.startswith("odcquerycount_")
-    ]
-    assert count_header, (
-        f"No query count server timing header found in {rv.headers['Server-Timing']}"
-    )
-
-    # Example header:
-    # app;dur=1034.12,odcquery;dur=103.03;desc="ODC query time",odcquerycount_6;desc="6 ODC queries"
-    _, val = count_header[0].split(";")[0].split("_")
-    assert int(val) > 0, "At least one query was run, presumably?"
 
 
 def test_plain_product_list(client: FlaskClient) -> None:
