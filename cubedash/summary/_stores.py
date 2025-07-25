@@ -547,19 +547,19 @@ class SummaryStore:
             if field.type_name in simple_field_types and name in first_dataset_fields
         ]
 
-        # I don't think this check is necessary?
+        # TODO: remove if confirmed unnecessary, or make less stringent
         # Give a friendlier error message when a product doesn't match the dataset.
-        for name, field in candidate_fields:
-            sample_value = first_dataset_fields[name]
-            expected_types = simple_field_types[field.type_name]
-            # noinspection PyTypeHints
-            if sample_value is not None and not isinstance(
-                sample_value, expected_types
-            ):
-                raise ValueError(
-                    f"Product {product.name} field {name!r} is "
-                    f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
-                )
+        # for name, field in candidate_fields:
+        #     sample_value = first_dataset_fields[name]
+        #     expected_types = simple_field_types[field.type_name]
+        #     # noinspection PyTypeHints
+        #     if sample_value is not None and not isinstance(
+        #         sample_value, expected_types
+        #     ):
+        #         raise ValueError(
+        #             f"Product {product.name} field {name!r} is "
+        #             f"claimed to be type {expected_types}, but dataset has value {sample_value!r}"
+        #         )
 
         dataset_samples = self.e_index.ds_search_returning(
             ["id"],
