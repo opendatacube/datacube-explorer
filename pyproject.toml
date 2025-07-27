@@ -52,6 +52,18 @@ Homepage = "https://github.com/opendatacube/datacube-explorer"
 "Bug Reports" = "https://github.com/opendatacube/datacube-explorer/issues"
 Source = "https://github.com/opendatacube/datacube-explorer"
 
+[dependency-groups]
+doc = [
+    "autodocsumm",
+    "beautifulsoup4",
+    "nbsphinx",
+    "pydata-sphinx-theme",
+    "sphinx",
+    "sphinx-autodoc-typehints",
+    "sphinx-click",
+    "sphinx-tabs",
+]
+
 [project.optional-dependencies]
 deployment = [
     # Performance.
@@ -81,7 +93,6 @@ test = [
     "pytest-benchmark",
     "requests-html",
     "ruff",
-    "sphinx_click",
     "types-cachetools",
     "types-python-dateutil",
     "types-pytz",
