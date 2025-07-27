@@ -10,14 +10,14 @@ services:
     environment:
       # - DB_HOSTNAME=host.docker.internal
       - POSTGRES_HOSTNAME=postgres
+      - PGPORT=35433
       - POSTGRES_USER=opendatacube
       - POSTGRES_PASSWORD=opendatacubepassword
       - POSTGRES_DB=opendatacube
-      - POSTGRES_PORT=5432
       - ODC_DEFAULT_INDEX_DRIVER=postgres
       - ODC_POSTGIS_INDEX_DRIVER=postgis
-      - ODC_DEFAULT_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:5432/opendatacube
-      - ODC_POSTGIS_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:5432/opendatacube
+      - ODC_DEFAULT_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:35433/opendatacube
+      - ODC_POSTGIS_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:35433/opendatacube
       - FLASK_ENV=development
       - FLASK_APP=cubedash
       - FLASK_DEBUG=1
@@ -33,17 +33,18 @@ services:
     hostname: postgres
     environment:
       - POSTGRES_DB=opendatacube
+      - PGPORT=35433
       - POSTGRES_PASSWORD=opendatacubepassword
       - POSTGRES_USER=opendatacube
     ports:
-      - 5432:5432
+      - "35433:35433"
     restart: always
     volumes:
       - type: tmpfs
         target: /var/lib/postgresql/data
     command: -c fsync=off -c full_page_writes=off -c synchronous_commit=off
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "postgres", "-q", "-d", "opendatacube", "-U", "opendatacube"]
+      test: ["CMD", "pg_isready", "-h", "postgres", "-q", "--port", "35433", "-d", "opendatacube", "-U", "opendatacube"]
       timeout: 45s
       interval: 10s
       retries: 10
