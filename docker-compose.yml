@@ -23,6 +23,8 @@ services:
       - FLASK_DEBUG=1
       - CUBEDASH_DEFAULT_TIMEZONE=Australia/Darwin
       # - VIRTUAL_HOST=datacube.explorer
+    tty: true
+    stdin_open: true
     depends_on:
       - postgres
 
