@@ -96,7 +96,7 @@ class GenerateSettings:
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
-    minimum_change_scan_window: timedelta = None
+    minimum_change_scan_window: timedelta | None = None
 
 
 # pylint: disable=broad-except

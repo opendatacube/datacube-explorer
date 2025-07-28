@@ -22,8 +22,8 @@ bp = Blueprint(
 class ProductTiming:
     name: str
     dataset_count: int
-    time_seconds: float = None
-    selection_date: datetime = None
+    time_seconds: float | None = None
+    selection_date: datetime | None = None
 
 
 def product_timings() -> Iterable[ProductTiming]:
