@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   deployment-image-test:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
 
     steps:
@@ -38,10 +39,6 @@ jobs:
           make build-prod
           make up-prod
 
-      - name: Sleep for 30 seconds
-        run: sleep 30s
-        shell: bash
-
       - name: Prepare explorer schema
         run: |
           make init-odc
@@ -53,6 +50,7 @@ jobs:
           --connect-timeout 5 \
           --max-time 10 \
           --retry 5 \
+          --retry-all-errors \
           --retry-delay 0 \
           --retry-max-time 40 \
           "localhost:80/products" \
