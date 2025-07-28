@@ -1,12 +1,12 @@
-import logging
 from datetime import timedelta
 
+import structlog
 from flask import Blueprint, Response, abort, redirect, url_for
 
 from cubedash import _model, _utils
 from cubedash import _utils as utils
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint("product", __name__)
 
 

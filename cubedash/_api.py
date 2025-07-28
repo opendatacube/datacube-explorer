@@ -1,7 +1,7 @@
-import logging
 from datetime import date, datetime
 
 import flask
+import structlog
 from dateutil import tz
 from flask import Blueprint, abort, request
 
@@ -11,7 +11,7 @@ from . import _model
 from ._utils import as_geojson, as_json
 from .summary import ItemSort
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 

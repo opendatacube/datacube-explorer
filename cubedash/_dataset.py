@@ -1,13 +1,13 @@
-import logging
 from uuid import UUID
 
 import flask
+import structlog
 from flask import Blueprint, abort, current_app, url_for
 
 from . import _model
 from . import _utils as utils
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint(
     "dataset",
     __name__,

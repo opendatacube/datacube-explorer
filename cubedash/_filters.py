@@ -3,7 +3,6 @@ Common global filters for templates.
 """
 
 import calendar
-import logging
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
@@ -11,6 +10,7 @@ from urllib.parse import quote_plus
 import flask
 import orjson
 import pytz
+import structlog
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
 from dateutil import tz
@@ -33,7 +33,7 @@ NUMERIC_STEP_SIZE = {
 
 CROSS_SYMBOL = Markup('<i class="fa fa-times" aria-label="x"></i>')
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint("filters", __name__)
 
 

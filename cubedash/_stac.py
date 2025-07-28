@@ -1,5 +1,4 @@
 import json
-import logging
 import uuid
 from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
@@ -9,6 +8,7 @@ from typing import Any, Union
 
 import flask
 import pystac
+import structlog
 from datacube.model import Dataset, Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
@@ -30,7 +30,7 @@ from cubedash.summary._stores import CollectionItem, DatasetItem
 from . import _model, _utils
 from .summary import ItemSort
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")
 
 DEFAULT_PAGE_SIZE_LIMIT = 1000

@@ -1,15 +1,15 @@
 import functools
 import inspect
-import logging
 import time
 
 import flask
+import structlog
 from sqlalchemy import event
 
 from . import _model
 
 _INITIALISED = False
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 
 
 # Add server timings to http headers.
