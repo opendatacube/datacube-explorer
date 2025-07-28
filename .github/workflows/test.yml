@@ -26,6 +26,7 @@ concurrency:
 
 jobs:
   integration-tests:
+    timeout-minutes: 55
     runs-on: ubuntu-latest
 
     steps:
@@ -40,7 +41,6 @@ jobs:
       - name: Run tests
         run: |
           make up-d
-          sleep 10
           make create-test-db-docker
           make test-docker
           make docker-clean
