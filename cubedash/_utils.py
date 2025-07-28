@@ -160,7 +160,7 @@ def get_dataset_file_offsets(dataset: Dataset) -> dict[str, str]:
     return uri_list
 
 
-def as_resolved_remote_url(location: str, offset: str) -> str:
+def as_resolved_remote_url(location: str | None, offset: str) -> str:
     """
     Convert a dataset location and file offset to a full remote URL.
     """
