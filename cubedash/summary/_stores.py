@@ -563,9 +563,9 @@ class SummaryStore:
 
         """
         # Get a single dataset, then we'll compare the rest against its values.
-        first_dataset_fields = list(
-            self.index.datasets.search(product=product.name, limit=1)
-        )[0].metadata.fields
+        first_dataset_fields = next(
+            iter(self.index.datasets.search(product=product.name, limit=1))
+        ).metadata.fields
 
         simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
 
