@@ -567,13 +567,7 @@ class SummaryStore:
             self.index.datasets.search(product=product.name, limit=1)
         )[0].metadata.fields
 
-        simple_field_types = {
-            "string": str,
-            "numeric": (float, int),
-            "double": (float, int),
-            "integer": int,
-            "datetime": datetime,
-        }
+        simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
 
         candidate_fields: List[Tuple[str, PgDocField]] = [
             (name, field)
