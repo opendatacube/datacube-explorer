@@ -1,17 +1,17 @@
-import logging
 import time
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import flask
+import structlog
 from datacube.model import Range
 from flask import Blueprint, Response, redirect, url_for
 
 from . import _model
 from . import _utils as utils
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint(
     "audit",
     __name__,

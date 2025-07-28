@@ -1,8 +1,7 @@
-import logging
-
+import structlog
 from flask import Blueprint, redirect, url_for
 
-_LOG = logging.getLogger(__name__)
+_LOG = structlog.stdlib.get_logger()
 bp = Blueprint("platform", __name__, url_prefix="/platform")
 
 
