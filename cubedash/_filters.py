@@ -3,7 +3,7 @@ Common global filters for templates.
 """
 
 import calendar
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
@@ -244,7 +244,7 @@ def _product_license(product: Product):
 
 
 @bp.app_template_filter("searchable_fields")
-def _searchable_fields(product: Product):
+def _searchable_fields(product: Product) -> Iterable[tuple]:
     """Searchable field names for a product"""
 
     # No point searching fields that are fixed for this product
@@ -254,7 +254,7 @@ def _searchable_fields(product: Product):
     return sorted(
         (key, field)
         for key, field in product.metadata_type.dataset_fields.items()
-        if key != "product" and key not in skippable_product_keys and field.indexed
+        if key != "product" and key not in skippable_product_keys and field.indexed  # type: ignore[attr-defined]
     )
 
 
