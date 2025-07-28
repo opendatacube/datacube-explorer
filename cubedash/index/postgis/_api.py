@@ -5,7 +5,7 @@ from uuid import UUID
 import shapely.ops
 from cachetools.func import lru_cache
 from datacube.drivers.postgis._api import PostgisDbAPI, _dataset_select_fields
-from datacube.drivers.postgis._fields import PgDocField
+from datacube.drivers.postgis._fields import PgDocField, SimpleDocField
 from typing_extensions import override
 
 from datacube.drivers.postgis._schema import (  # isort: skip
@@ -18,6 +18,8 @@ from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
     Integer,
+    Result,
+    Select,
     SmallInteger,
     String,
     and_,
@@ -41,7 +43,7 @@ from sqlalchemy.sql import ColumnElement
 from sqlalchemy.types import TIMESTAMP
 
 import cubedash.summary._schema as _schema
-from cubedash._utils import datetime_expression
+from cubedash._utils import datetime_expression, default_utc
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
 
 from ._schema import (  # isort: skip
@@ -376,6 +378,89 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     )
                 )
             )
+
+    @override
+    def collection_cols(self) -> Select:
+        product_overview = (
+            select(
+                ProductSpatial.name,
+                TimeOverview.footprint_geometry,
+                ProductSpatial.time_earliest,
+                ProductSpatial.time_latest,
+                TimeOverview.period_type,
+            )
+            .select_from(TimeOverview)
+            .join(ProductSpatial)
+            .cte("product_overview")
+        )
+
+        return (
+            select(ODC_PRODUCT.definition, product_overview)
+            .select_from(product_overview)
+            .join(ODC_PRODUCT, product_overview.c.name == ODC_PRODUCT.name)
+        )
+
+    @override
+    def collections_search_query(
+        self,
+        limit: int,
+        offset: int,
+        name: str | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        q: list[str] | None = None,
+    ) -> Result:
+        collection = self.collection_cols().subquery()
+        query = select(collection).where(collection.c.period_type == "all")
+
+        if name:
+            query = query.where(collection.c.name == name)
+
+        if bbox:
+            query = query.where(
+                collection.c.footprint_geometry.intersects(func.ST_MakeEnvelope(*bbox))
+            )
+
+        if time:
+            query = query.where(
+                and_(
+                    default_utc(time[0]) <= default_utc(collection.c.time_latest),
+                    default_utc(collection.c.time_earliest) <= default_utc(time[1]),
+                )
+            )
+
+        if q:
+            title = SimpleDocField(
+                name="title",
+                description="product title",
+                alchemy_column=collection.c.definition,
+                indexed=False,
+                offset=("metadata", "title"),
+            )
+
+            description = SimpleDocField(
+                name="description",
+                description="product description",
+                alchemy_column=collection.c.definition,
+                indexed=False,
+                offset=("description"),
+            )
+
+            expressions = []
+            for value in q:
+                expressions.extend(
+                    [
+                        title.alchemy_expression.icontains(value),
+                        description.alchemy_expression.icontains(value),
+                        collection.c.name.icontains(value),
+                    ]
+                )
+            query = query.where(or_(*expressions))
+
+        query = query.limit(limit).offset(offset)
+
+        with self.index._active_connection() as conn:
+            return conn.execute(query)
 
     @override
     def latest_arrivals(self, period_length: timedelta):
