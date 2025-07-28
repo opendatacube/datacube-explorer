@@ -39,7 +39,7 @@ def product_timings() -> Iterable[ProductTiming]:
         if not p:
             _LOG.info("product_no_summarised", product_name=product_name)
             continue
-        if not p.dataset_count or not p.time_earliest:
+        if not p.dataset_count or not p.time_earliest or not p.time_latest:
             yield ProductTiming(product_name, dataset_count=0)
             continue
         done += 1
