@@ -57,7 +57,7 @@ import collections
 import multiprocessing
 import re
 import sys
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
@@ -167,12 +167,12 @@ def run_generation(
         f"{style(str(settings.env_name), bold=True)}",
     )
 
-    counts = collections.Counter()
+    counts: collections.Counter = collections.Counter()
 
     user_message("Generating product summaries...")
 
     def on_complete(
-        product_name: str, result: GenerateResult, summary: TimePeriodOverview
+        product_name: str, result: GenerateResult, summary: TimePeriodOverview | None
     ) -> None:
         counts[result] += 1
         result_color = {
@@ -196,7 +196,7 @@ def run_generation(
             on_complete(*generate_report((p.name, settings, grouping_time_zone)))
     else:
         with multiprocessing.Pool(workers) as pool:
-            summary: TimePeriodOverview
+            summary: TimePeriodOverview | None
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
                 ((p.name, settings, grouping_time_zone) for p in products),
@@ -225,7 +225,7 @@ def run_generation(
     return creation_count, failure_count
 
 
-def _load_products(store: SummaryStore, product_names) -> list[Product]:
+def _load_products(store: SummaryStore, product_names) -> Generator[Product]:
     for product_name in product_names:
         try:
             yield store.get_product(product_name)
