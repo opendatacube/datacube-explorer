@@ -249,12 +249,12 @@ def _searchable_fields(product: Product):
 
     # No point searching fields that are fixed for this product
     # (eg: platform is always Landsat 7 on ls7_level1_scene)
-    skippable_product_keys = [k for k, v in product.fields.items() if v is not None]
+    skippable_product_keys = {k for k, v in product.fields.items() if v is not None}
 
     return sorted(
         (key, field)
         for key, field in product.metadata_type.dataset_fields.items()
-        if key not in skippable_product_keys and key != "product" and field.indexed
+        if key != "product" and key not in skippable_product_keys and field.indexed
     )
 
 
