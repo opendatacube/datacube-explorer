@@ -509,7 +509,7 @@ _TIME_PERIOD_FORMAT = re.compile(
 )
 
 
-def parse_timedelta(value: str) -> timedelta | None:
+def parse_timedelta(value: str) -> timedelta:
     """
     Parse a string such as "30h40m" into a timedelta.
 
@@ -533,6 +533,8 @@ def parse_timedelta(value: str) -> timedelta | None:
     ValueError: Invalid time period. Expected something like "24h" or "2h30m".
     """
     parts = _TIME_PERIOD_FORMAT.match(value)
+    if parts is None:
+        raise ValueError(f"Invalid time period: {value}")
     params = {}
     for name, param in parts.groupdict().items():
         if param:
