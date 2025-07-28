@@ -18,6 +18,8 @@ from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
     Integer,
+    Result,
+    Select,
     SmallInteger,
     String,
     and_,
@@ -378,8 +380,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def collection_cols(self):
-        """Get all columns necessary for creating a Collection"""
+    def collection_cols(self) -> Select:
         product_overview = (
             select(
                 ProductSpatial.name,
@@ -408,7 +409,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
         q: list[str] | None = None,
-    ):
+    ) -> Result:
         collection = self.collection_cols().subquery()
         query = select(collection).where(collection.c.period_type == "all")
 

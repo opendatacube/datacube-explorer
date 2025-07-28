@@ -5,6 +5,7 @@ from uuid import UUID
 
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
+from sqlalchemy import Result, Select
 from sqlalchemy.sql import ColumnElement
 
 
@@ -102,7 +103,8 @@ class ExplorerAbstractIndex(ABC):
     def product_summary_cols(self, product_name: str): ...
 
     @abstractmethod
-    def collection_cols(self): ...
+    def collection_cols(self) -> Select:
+        """Get all columns necessary for creating a Collection"""
 
     @abstractmethod
     def collections_search_query(
@@ -113,7 +115,7 @@ class ExplorerAbstractIndex(ABC):
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
         q: list[str] | None = None,
-    ): ...
+    ) -> Result: ...
 
     @abstractmethod
     def upsert_product_record(self, product_name: str, fields): ...

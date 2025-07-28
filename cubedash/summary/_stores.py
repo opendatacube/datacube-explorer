@@ -39,6 +39,7 @@ from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import (
     DDL,
+    Row,
     String,
     func,
     select,
@@ -1204,8 +1205,8 @@ class SummaryStore:
     def search_collections(
         self,
         name: str | None = None,
-        time: Tuple[datetime, datetime] | None = None,
-        bbox: Tuple[float, float, float, float] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
         q: list[str] | None = None,
         limit: int = 500,
         offset: int = 0,
@@ -1678,7 +1679,9 @@ def _summary_to_row(
     )
 
 
-def _row_to_collection(res, grouping_timezone=default_timezone):
+def _row_to_collection(
+    res: Row, grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone
+) -> CollectionItem:
     return CollectionItem(
         name=res.name,
         time_earliest=res.time_earliest.astimezone(grouping_timezone)
