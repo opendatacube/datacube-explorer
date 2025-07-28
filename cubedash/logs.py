@@ -1,9 +1,9 @@
 import datetime
-import io
 import pathlib
 import sys
 import uuid
 from functools import partial
+from typing import BinaryIO
 
 import structlog
 from orjson import orjson
@@ -12,7 +12,7 @@ from typing_extensions import override
 
 
 def init_logging(
-    output_file: io.BytesIO | None = None,
+    output_file: BinaryIO | None = None,
     verbosity: int = 0,
     cache_logger_on_first_use: bool = True,
     write_as_json: bool | None = None,
