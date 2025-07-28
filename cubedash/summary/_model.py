@@ -13,7 +13,7 @@ from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from typing_extensions import override
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 
 @dataclass

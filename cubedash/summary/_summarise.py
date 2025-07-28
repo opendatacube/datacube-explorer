@@ -12,7 +12,7 @@ from geoalchemy2 import shape as geo_shape
 from cubedash import _utils
 from cubedash.summary import TimePeriodOverview
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 
 _NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")

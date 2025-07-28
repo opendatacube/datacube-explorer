@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import Connection
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 CUBEDASH_SCHEMA = "cubedash"
 METADATA = MetaData(schema=CUBEDASH_SCHEMA)
