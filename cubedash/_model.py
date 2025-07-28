@@ -194,7 +194,7 @@ def get_time_summary_all_products() -> dict[tuple[str, int, int], int]:
     return STORE.get_all_dataset_counts()
 
 
-def get_product_summary(product_name: str) -> ProductSummary:
+def get_product_summary(product_name: str) -> ProductSummary | None:
     return STORE.get_product_summary(product_name)
 
 
@@ -300,7 +300,7 @@ def _get_footprint(period: TimePeriodOverview) -> MultiPolygon | None:
     _LOG.info(
         "overview.footprint_size_diff",
         from_len=len(period.footprint_geometry.wkt),
-        to_len=len(footprint_wgs84.wkt),
+        to_len=0 if footprint_wgs84 is None else len(footprint_wgs84.wkt),
     )
     _LOG.debug("overview.footprint_proj", time_sec=time.time() - start)
 
@@ -330,9 +330,7 @@ def _get_regions_geojson(
         "features": [
             {
                 "type": "Feature",
-                "geometry": region_info.region(
-                    region_code
-                ).footprint_wgs84.__geo_interface__,
+                "geometry": region.footprint_wgs84.__geo_interface__,  # type: ignore[attr-defined]
                 "properties": {
                     "region_code": region_code,
                     "label": region_info.region_label(region_code),
@@ -340,6 +338,7 @@ def _get_regions_geojson(
                 },
             }
             for region_code in (region_counts or [])
-            if region_info.region(region_code) is not None
+            if (region := region_info.region(region_code)) is not None
+            and region.footprint_wgs84 is not None
         ],
     }
