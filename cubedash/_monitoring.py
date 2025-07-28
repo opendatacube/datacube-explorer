@@ -89,6 +89,6 @@ def init_app_monitoring(app: flask.Flask) -> None:
             return decorator
 
         # Print call time for all db layer calls.
-        decorate_all_methods(_model.STORE.e_index.db_api, with_timings)
+        decorate_all_methods(_model.STORE.e_index.db_api, with_timings)  # type: ignore[attr-defined]
 
     print_datacube_query_times()
