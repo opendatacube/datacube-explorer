@@ -13,6 +13,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Sequence,
     Set,
@@ -542,7 +543,7 @@ class SummaryStore:
         log.info("refresh.regions.end", changed_regions=changed_rows)
         return changed_rows
 
-    def refresh_stats(self, concurrently=False) -> None:
+    def refresh_stats(self, concurrently: bool = False) -> None:
         """
         Refresh general statistics tables that cover all products.
 
@@ -553,7 +554,7 @@ class SummaryStore:
     def _find_product_fixed_metadata(
         self,
         product: Product,
-        sample_datasets_size=1000,
+        sample_datasets_size: int = 1000,
     ) -> Dict[str, Any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -609,7 +610,10 @@ class SummaryStore:
         return fixed_fields
 
     def _get_linked_products(
-        self, product: Product, kind="source", sample_percentage=0.05
+        self,
+        product: Product,
+        kind: Literal["source", "derived"] = "source",
+        sample_percentage: float = 0.05,
     ) -> List[str]:
         """
         Find products with upstream or downstream datasets from this product.
