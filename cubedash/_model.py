@@ -18,9 +18,6 @@ from flask_themer import Themer
 from sentry_sdk.integrations.flask import FlaskIntegration
 from shapely.geometry import MultiPolygon
 from werkzeug.exceptions import HTTPException
-
-# Fix up URL Scheme handling using this
-# from https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from cubedash import _monitoring
@@ -78,8 +75,10 @@ STORE: SummaryStore = SummaryStore.create(
 def create_app(test_config=None):
     app = flask.Flask(NAME)
 
-    # Also part of the fix from ^
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    # See:
+    # https://stackoverflow.com/questions/23347387/x-forwarded-proto-and-flask and
+    # https://flask.palletsprojects.com/en/stable/quickstart/#hooking-in-wsgi-middleware
+    app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[method-assign]
 
     # Optional environment settings file or variable
     if test_config is None:
