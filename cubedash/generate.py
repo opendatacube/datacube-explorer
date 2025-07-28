@@ -84,7 +84,7 @@ from cubedash.summary._stores import DEFAULT_EPSG
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
 
 # Machine (json) logging.
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 # Interactive messages for a human go to stderr.
 user_message = partial(click_secho, err=True)

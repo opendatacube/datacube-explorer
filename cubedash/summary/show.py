@@ -21,7 +21,7 @@ from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 
 def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:

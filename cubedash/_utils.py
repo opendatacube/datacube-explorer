@@ -61,7 +61,7 @@ DEFAULT_CRS_INFERENCES = [
 ]
 MATCH_CUTOFF = 0.38
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 
 def infer_crs(crs_str: str) -> str | None:

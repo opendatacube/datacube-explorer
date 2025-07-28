@@ -37,7 +37,7 @@ from cubedash._utils import (
 )
 from cubedash.index import ExplorerIndex
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 _WRS_PATH_ROW = [
     Path(__file__).parent.parent / "data" / "WRS2_descending" / "WRS2_descending.shp",

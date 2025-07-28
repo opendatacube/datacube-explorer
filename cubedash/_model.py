@@ -177,7 +177,7 @@ def create_app(test_config=None):
     return app
 
 
-_LOG = structlog.get_logger()
+_LOG = structlog.stdlib.get_logger()
 
 
 @cache.memoize(timeout=60)
