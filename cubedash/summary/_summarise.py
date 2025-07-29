@@ -10,6 +10,7 @@ from dateutil import tz
 from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
+from cubedash.index import ExplorerIndex
 from cubedash.summary import TimePeriodOverview
 
 _LOG = structlog.stdlib.get_logger()
@@ -33,7 +34,12 @@ DEFAULT_TIMEZONE = default_timezone
 
 
 class Summariser:
-    def __init__(self, e_index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE) -> None:
+    def __init__(
+        self,
+        e_index: ExplorerIndex,
+        log=_LOG,
+        grouping_time_zone: str = DEFAULT_TIMEZONE,
+    ) -> None:
         self.e_index = e_index
         self.log = log
         # Group datasets using this timezone when counting them.

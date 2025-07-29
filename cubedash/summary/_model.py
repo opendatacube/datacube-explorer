@@ -2,7 +2,7 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Iterable, List, Optional, Set, Tuple, Union
+from typing import Iterable
 
 import shapely
 import shapely.ops
@@ -22,9 +22,9 @@ class TimePeriodOverview:
     #
     # -> None means "all"
     product_name: str
-    year: Optional[int]
-    month: Optional[int]
-    day: Optional[int]
+    year: int | None
+    month: int | None
+    day: int | None
 
     dataset_count: int
     timeline_dataset_counts: Counter
@@ -34,7 +34,7 @@ class TimePeriodOverview:
 
     time_range: Range
 
-    footprint_geometry: Union[shapely.geometry.MultiPolygon, shapely.geometry.Polygon]
+    footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon
     footprint_crs: str
 
     footprint_count: int
@@ -43,7 +43,7 @@ class TimePeriodOverview:
     newest_dataset_creation_time: datetime | None
 
     # List of CRSes that these datasets are in
-    crses: Set[str]
+    crses: set[str]
 
     size_bytes: int
 
@@ -61,11 +61,11 @@ class TimePeriodOverview:
         )
 
     @property
-    def label(self):
+    def label(self) -> str:
         return " ".join([(str(p) if p else "all") for p in self.period_tuple])
 
     @property
-    def period_tuple(self):
+    def period_tuple(self) -> tuple[str, int | None, int | None, int | None]:
         """
         This is the pseudo-id of the product time period we've summarised.
 
@@ -74,12 +74,10 @@ class TimePeriodOverview:
         return self.product_name, self.year, self.month, self.day
 
     @period_tuple.setter
-    def period_tuple(
-        self, v: Tuple[str, Optional[int], Optional[int], Optional[int]]
-    ) -> None:
+    def period_tuple(self, v: tuple[str, int | None, int | None, int | None]) -> None:
         self.product_name, self.year, self.month, self.day = v
 
-    def as_flat_period(self):
+    def as_flat_period(self) -> tuple[str, date]:
         """
         How we "flatten" the time-slice for storage in DB columns. Must remain stable!
 
@@ -89,8 +87,8 @@ class TimePeriodOverview:
 
     @classmethod
     def flat_period_representation(
-        cls, year: Optional[int], month: Optional[int], day: Optional[int]
-    ) -> Tuple[str, date]:
+        cls, year: int | None, month: int | None, day: int | None
+    ) -> tuple[str, date]:
         period = "all"
         if year:
             period = "year"
@@ -104,7 +102,7 @@ class TimePeriodOverview:
     @classmethod
     def from_flat_period_representation(
         cls, period_type: str, start_day: date
-    ) -> Tuple[int, int, int]:
+    ) -> tuple[int | None, int | None, int | None]:
         year = None
         month = None
         day = None
@@ -117,7 +115,7 @@ class TimePeriodOverview:
         return year, month, day
 
     @classmethod
-    def empty(cls, product_name: str):
+    def empty(cls, product_name: str) -> "TimePeriodOverview":
         p = cls.add_periods([])
         p.product_name = product_name
         return p
@@ -128,8 +126,8 @@ class TimePeriodOverview:
         periods: Iterable["TimePeriodOverview"],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
-        footprint_tolerance=1000.0,
-    ):
+        footprint_tolerance: float = 1000.0,
+    ) -> "TimePeriodOverview":
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
         crses = {p.footprint_crs for p in periods}
@@ -240,7 +238,7 @@ class TimePeriodOverview:
         )
 
     @property
-    def footprint_wgs84(self) -> Optional[MultiPolygon]:
+    def footprint_wgs84(self) -> MultiPolygon | None:
         if not self.footprint_geometry:
             return None
         if not self.footprint_crs:
@@ -254,7 +252,7 @@ class TimePeriodOverview:
         )
 
     @staticmethod
-    def _group_counter_if_needed(counter, period):
+    def _group_counter_if_needed(counter: Counter, period: str):
         if len(counter) > 366:
             if period == "day":
                 counter = Counter(
@@ -271,7 +269,7 @@ class TimePeriodOverview:
         return counter, period
 
     @property
-    def footprint_srid(self):
+    def footprint_srid(self) -> int | None:
         if self.footprint_crs is None:
             return None
         epsg = self.footprint_crs.lower()
@@ -282,7 +280,7 @@ class TimePeriodOverview:
         return int(epsg.split(":")[1])
 
 
-def _erase_elements_from(items: List, start_i: int):
+def _erase_elements_from(items: list, start_i: int) -> list:
     """
     Erase from the given 'i' onward
 
@@ -301,8 +299,8 @@ def _erase_elements_from(items: List, start_i: int):
 
 
 def _create_unified_footprint(
-    with_valid_geometries: List["TimePeriodOverview"], footprint_tolerance: float
-):
+    with_valid_geometries: list["TimePeriodOverview"], footprint_tolerance: float
+) -> BaseGeometry | None:
     """
     Union the given time period's footprints, trying to fix any invalid geometries.
     """
@@ -349,7 +347,7 @@ def _polygon_chain(valid_geometries: Iterable[TimePeriodOverview]) -> list:
     return polygonlist
 
 
-def _filter_geom(geomlist: List[BaseGeometry], start=0) -> List[BaseGeometry]:
+def _filter_geom(geomlist: list[BaseGeometry], start: int = 0) -> list[BaseGeometry]:
     """
     Recursive filtering of un-unionable polygons. Input list is modified in-place.
     Exhaustively searches for a run of polygons that cause a union error

@@ -184,7 +184,7 @@ def refresh_spatial_extents(
     product: Product,
     clean_up_deleted=False,
     assume_after_date: datetime | None = None,
-):
+) -> int:
     """
     Update the spatial extents to match any changes upstream in ODC.
 
@@ -272,7 +272,7 @@ def refresh_spatial_extents(
 
 def _select_dataset_extent_columns(
     e_index: ExplorerIndex, product: Product
-) -> List[Label]:
+) -> list[Label]:
     """
     Get columns for all fields which go into the spatial table
     for this Product.
@@ -308,7 +308,7 @@ def _select_dataset_extent_columns(
     ]
 
 
-def _default_crs(product: Product) -> Optional[str]:
+def _default_crs(product: Product) -> str | None:
     storage = product.definition.get("storage")
     if not storage:
         return None
@@ -352,7 +352,7 @@ def get_dataset_bounds_query(md_type):
     )
 
 
-def as_sql(expression, **params):
+def as_sql(expression, **params) -> str:
     """Convert sqlalchemy expression to SQL string.
 
     (primarily for debugging: to see what sqlalchemy is doing)
@@ -434,7 +434,7 @@ class RegionInfo:
 
     @classmethod
     def for_product(
-        cls, product: Product, known_regions: Dict[str, RegionSummary] | None = None
+        cls, product: Product, known_regions: dict[str, RegionSummary] | None = None
     ):
         region_code_field: Field = product.metadata_type.dataset_fields.get(
             "region_code"
@@ -455,10 +455,10 @@ class RegionInfo:
 
         return None
 
-    def region(self, region_code: str) -> Optional[RegionSummary]:
+    def region(self, region_code: str) -> RegionSummary | None:
         return self._known_regions.get(region_code)
 
-    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+    def dataset_region_code(self, dataset: Dataset) -> str | None:
         """
         Get the region code for a dataset.
 
@@ -546,7 +546,7 @@ class GridRegionInfo(RegionInfo):
         )
 
     @override
-    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+    def dataset_region_code(self, dataset: Dataset) -> str | None:
         tiles = [
             tile
             for tile, _ in dataset.product.grid_spec.tiles(
@@ -613,7 +613,7 @@ class SceneRegionInfo(RegionInfo):
         )
 
     @override
-    def dataset_region_code(self, dataset: Dataset) -> Optional[str]:
+    def dataset_region_code(self, dataset: Dataset) -> str | None:
         path_range = dataset.metadata.fields["sat_path"]
         row_range = dataset.metadata.fields["sat_row"]
         if row_range is None and path_range is None:
@@ -649,7 +649,7 @@ def _region_code_field(product: Product):
 
 # would be able to replace with index.datasets.search_returning except that there's no way for us to specify the
 # alchemy expressions for the columns that don't exist in the core tables
-def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[Dict]:
+def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[dict]:
     for product in products:
         res = e_index.sample_dataset(
             product.id, _select_dataset_extent_columns(e_index, product)
@@ -672,7 +672,7 @@ def _get_path_row_shapes():
 
 
 # see comment on get_sample_dataset
-def get_mapped_crses(products, e_index: ExplorerIndex) -> Iterable[Dict]:
+def get_mapped_crses(products, e_index: ExplorerIndex) -> Iterable[dict]:
     for product in products:
         res = e_index.mapped_crses(
             product,

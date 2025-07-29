@@ -3,22 +3,16 @@ import re
 from collections import Counter
 from copy import copy
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, tzinfo
 from enum import Enum, auto
 from itertools import groupby
 from typing import (
     Any,
-    Dict,
     Generator,
     Iterable,
     Iterator,
-    List,
     Literal,
-    Optional,
     Sequence,
-    Set,
-    Tuple,
-    Union,
 )
 from uuid import UUID
 
@@ -125,15 +119,15 @@ class ProductSummary:
     name: str
     dataset_count: int
     # Null when dataset_count == 0
-    time_earliest: Optional[datetime]
-    time_latest: Optional[datetime]
+    time_earliest: datetime | None
+    time_latest: datetime | None
 
-    source_products: List[str]
-    derived_products: List[str]
+    source_products: list[str]
+    derived_products: list[str]
 
     # Metadata values that are the same on every dataset.
     # (on large products this is judged via sampling, so may not be 100%)
-    fixed_metadata: Dict[str, Union[str, float, int, datetime]]
+    fixed_metadata: dict[str, str | float | int | datetime]
 
     # The db-server-local time when this product record+extent was refreshed.
     last_refresh_time: datetime
@@ -144,7 +138,7 @@ class ProductSummary:
 
     # Not recommended for use by users, as ids are local and internal.
     # The 'name' is typically used as an identifier, and with ODC itself.
-    id_: Optional[int] = None
+    id_: int | None = None
 
     def iter_months(
         self, grouping_timezone=default_timezone
@@ -191,15 +185,15 @@ class DatasetItem:
     region_code: str
     creation_time: datetime
     center_time: datetime
-    odc_dataset: Optional[Dataset] = None
+    odc_dataset: Dataset | None = None
 
     @property
-    def geom_geojson(self) -> Optional[Dict]:
+    def geom_geojson(self) -> dict | None:
         if self.geometry is None:
             return None
         return self.geometry.__geo_interface__
 
-    def as_geojson(self):
+    def as_geojson(self) -> dict:
         return dict(
             id=self.dataset_id,
             type="Feature",
@@ -261,7 +255,7 @@ class ProductLocationSample:
     # The common uri prefix across all samples
     common_prefix: str
     # A few examples of full location URIs
-    example_uris: List[str]
+    example_uris: list[str]
 
 
 class SummaryStore:
@@ -302,7 +296,7 @@ class SummaryStore:
         """
         return self.e_index.schema_initialised()
 
-    def is_schema_compatible(self, for_writing_operations_too=False) -> bool:
+    def is_schema_compatible(self, for_writing_operations_too: bool = False) -> bool:
         """
         Have all schema updates been applied?
         """
@@ -342,7 +336,7 @@ class SummaryStore:
 
     @classmethod
     def create(
-        cls, index: Index, log=_LOG, grouping_time_zone=DEFAULT_TIMEZONE
+        cls, index: Index, log=_LOG, grouping_time_zone: str = DEFAULT_TIMEZONE
     ) -> "SummaryStore":
         e_index = explorer_index(index)
         return cls(
@@ -369,7 +363,7 @@ class SummaryStore:
         self,
         product_name: str,
         only_those_newer_than: datetime,
-    ) -> Iterable[Tuple[date, int]]:
+    ) -> Iterable[tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
@@ -383,7 +377,7 @@ class SummaryStore:
             )
         )
 
-    def find_years_needing_update(self, product_name: str) -> List[int]:
+    def find_years_needing_update(self, product_name: str) -> list[int]:
         """
         Find any years that need to be generated.
 
@@ -454,7 +448,7 @@ class SummaryStore:
         scan_for_deleted: bool = False,
         only_those_newer_than: datetime | None = None,
         force: bool = False,
-    ) -> Tuple[int, ProductSummary]:
+    ) -> tuple[int, ProductSummary]:
         """
         Update Explorer's computed extents for the given product, and record any new
         datasets into the spatial table.
@@ -555,7 +549,7 @@ class SummaryStore:
         self,
         product: Product,
         sample_datasets_size: int = 1000,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
 
@@ -570,7 +564,7 @@ class SummaryStore:
 
         simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
 
-        candidate_fields: List[Tuple[str, PgDocField]] = [
+        candidate_fields: list[tuple[str, PgDocField]] = [
             (name, field)
             for name, field in self.e_index.get_mutable_dataset_search_fields(
                 product.metadata_type
@@ -614,7 +608,7 @@ class SummaryStore:
         product: Product,
         kind: Literal["source", "derived"] = "source",
         sample_percentage: float = 0.05,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Find products with upstream or downstream datasets from this product.
 
@@ -657,10 +651,10 @@ class SummaryStore:
     def get(
         self,
         product_name: str,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        day: Optional[int] = None,
-    ) -> Optional[TimePeriodOverview]:
+        year: int | None = None,
+        month: int | None = None,
+        day: int | None = None,
+    ) -> TimePeriodOverview | None:
         period, start_day = TimePeriodOverview.flat_period_representation(
             year, month, day
         )
@@ -690,7 +684,7 @@ class SummaryStore:
 
     def get_all_dataset_counts(
         self,
-    ) -> Dict[Tuple[str, int, int], int]:
+    ) -> dict[tuple[str, int, int], int]:
         """
         Get dataset count for all (product, year, month) combinations.
         """
@@ -716,21 +710,21 @@ class SummaryStore:
         return tuple(self.index.metadata_types.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def get_product(self, name) -> Product:
+    def get_product(self, name: str) -> Product:
         for d in self.all_products():
             if d.name == name:
                 return d
         raise KeyError(f"Unknown product {name!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def get_metadata_type(self, name) -> MetadataType:
+    def get_metadata_type(self, name: str) -> MetadataType:
         for d in self.all_metadata_types():
             if d.name == name:
                 return d
         raise KeyError(f"Unknown metadata type {name!r}")
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def _product_by_id(self, id_) -> Product:
+    def _product_by_id(self, id_: int) -> Product:
         for d in self.all_products():
             if d.id == id_:
                 return d
@@ -759,7 +753,7 @@ class SummaryStore:
     @ttl_cache(ttl=DEFAULT_TTL)
     def products_location_samples_all(
         self, sample_size: int = 50
-    ) -> Dict[str, List[ProductLocationSample]]:
+    ) -> dict[str, list[ProductLocationSample]]:
         """
         Get sample locations of all products
 
@@ -773,7 +767,7 @@ class SummaryStore:
         product_urls = {}
         try:
             for product_name, uris in self.e_index.all_products_location_samples(
-                self.all_products()
+                self.all_products(), sample_size
             ):
                 if uris is not None:
                     product_urls[product_name] = list(_common_paths_for_uris(uris))
@@ -785,12 +779,12 @@ class SummaryStore:
     def product_location_samples(
         self,
         name: str,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        day: Optional[int] = None,
+        year: int | None = None,
+        month: int | None = None,
+        day: int | None = None,
         *,
         sample_size: int = 100,
-    ) -> List[ProductLocationSample]:
+    ) -> list[ProductLocationSample]:
         """
         Sample some dataset locations for the given product, and return
         the common location.
@@ -811,7 +805,7 @@ class SummaryStore:
 
         return list(_common_paths_for_uris(uri_samples))
 
-    def get_quality_stats(self) -> Iterable[Dict]:
+    def get_quality_stats(self) -> Iterable[dict]:
         stats = self.e_index.select_spatial_stats()
         for row in stats:
             row = row._mapping
@@ -822,14 +816,14 @@ class SummaryStore:
             )
             yield d
 
-    def get_product_summary(self, name: str) -> Optional[ProductSummary]:
+    def get_product_summary(self, name: str) -> ProductSummary | None:
         try:
             return self._product(name)
         except ValueError:
             return None
 
     @property
-    def grouping_timezone(self):
+    def grouping_timezone(self) -> tzinfo:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
@@ -875,16 +869,16 @@ class SummaryStore:
 
     def has(
         self,
-        product_name: Optional[str],
-        year: Optional[int] = None,
-        month: Optional[int] = None,
-        day: Optional[int] = None,
+        product_name: str | None,
+        year: int | None = None,
+        month: int | None = None,
+        day: int | None = None,
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
     def get_item(
-        self, id_: Union[UUID, str], full_dataset: bool = True
-    ) -> Optional[DatasetItem]:
+        self, id_: UUID | str, full_dataset: bool = True
+    ) -> DatasetItem | None:
         """
         Get a DatasetItem record for the given dataset UUID if it exists.
         """
@@ -919,9 +913,9 @@ class SummaryStore:
         self,
         query: Select,
         field_exprs,
-        product_names: Optional[List[str]] = None,
-        time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] | None = None,
+        product_names: list[str] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
         intersects: BaseGeometry | None = None,
         dataset_ids: Sequence[UUID] | None = None,
     ) -> Select:
@@ -953,7 +947,7 @@ class SummaryStore:
 
     def _get_field_exprs(
         self,
-        product_names: Optional[List[str]] = None,
+        product_names: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Map properties to their sqlalchemy expressions.
@@ -1030,7 +1024,7 @@ class SummaryStore:
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_arrivals(
         self, period_length: timedelta
-    ) -> List[Tuple[date, List[ProductArrival]]]:
+    ) -> list[tuple[date, list[ProductArrival]]]:
         """
         Get a list of products with newly added datasets for the last few days.
         """
@@ -1056,9 +1050,9 @@ class SummaryStore:
 
     def get_count(
         self,
-        product_names: Optional[List[str]] = None,
-        time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] | None = None,
+        product_names: list[str] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
         intersects: BaseGeometry | None = None,
         dataset_ids: Sequence[UUID] | None = None,
         filter_lang: str | None = None,
@@ -1100,9 +1094,9 @@ class SummaryStore:
     def search_items(
         self,
         *,
-        product_names: Optional[List[str]] = None,
-        time: Optional[Tuple[datetime, datetime]] = None,
-        bbox: Tuple[float, float, float, float] | None = None,
+        product_names: list[str] | None = None,
+        time: tuple[datetime, datetime] | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
         intersects: BaseGeometry | None = None,
         limit: int = 500,
         offset: int = 0,
@@ -1208,8 +1202,8 @@ class SummaryStore:
     def _recalculate_period(
         self,
         product: ProductSummary,
-        year: Optional[int] = None,
-        month: Optional[int] = None,
+        year: int | None = None,
+        month: int | None = None,
         product_refresh_time: datetime | None = None,
     ) -> TimePeriodOverview:
         """Recalculate the given period and store it in the DB"""
@@ -1257,7 +1251,7 @@ class SummaryStore:
         recreate_dataset_extents: bool = False,
         reset_incremental_position: bool = False,
         minimum_change_scan_window: timedelta | None = None,
-    ) -> Tuple[GenerateResult, TimePeriodOverview]:
+    ) -> tuple[GenerateResult, TimePeriodOverview]:
         """
         Update Explorer's information and summaries for a product.
 
@@ -1411,7 +1405,7 @@ class SummaryStore:
 
         return refresh_type, updated_summary
 
-    def _already_summarised_months(self, product_name: str) -> Set[date]:
+    def _already_summarised_months(self, product_name: str) -> set[date]:
         """Get all months that have a recorded summary already for this product"""
 
         existing_product = self.get_product_summary(product_name)
@@ -1434,7 +1428,7 @@ class SummaryStore:
         """
         return self.e_index.execute_query(select(func.now())).scalar()
 
-    def _newest_known_dataset_addition_time(self, product_name) -> datetime:
+    def _newest_known_dataset_addition_time(self, product_name: str) -> datetime:
         """
         Of all the datasets that are present in Explorer's own tables, when
         was the most recent one indexed to ODC?
@@ -1455,7 +1449,7 @@ class SummaryStore:
         self.e_index.update_product_refresh_timestamp(product.id_, refresh_timestamp)
         self._product.cache_clear()
 
-    def list_complete_products(self) -> List[str]:
+    def list_complete_products(self) -> list[str]:
         """
         List all names of products that have summaries available.
         """
@@ -1509,7 +1503,7 @@ class SummaryStore:
         )
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def _region_summaries(self, product_name: str) -> Dict[str, RegionSummary]:
+    def _region_summaries(self, product_name: str) -> dict[str, RegionSummary]:
         product = self.get_product(product_name)
         return {
             code: RegionSummary(
@@ -1531,7 +1525,7 @@ class SummaryStore:
             known_regions=self._region_summaries(product_name),
         )
 
-    def get_dataset_footprint_region(self, dataset_id):
+    def get_dataset_footprint_region(self, dataset_id: UUID):
         """
         Get the recorded WGS84 footprint and region code for a given dataset.
 
@@ -1556,7 +1550,9 @@ def _safe_read_date(d):
     return None
 
 
-def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
+def _summary_from_row(
+    res, product_name: str, grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone
+):
     timeline_dataset_counts = (
         Counter(
             dict(
@@ -1626,7 +1622,8 @@ def _summary_from_row(res, product_name, grouping_timezone=default_timezone):
 
 
 def _summary_to_row(
-    summary: TimePeriodOverview, grouping_timezone=default_timezone
+    summary: TimePeriodOverview,
+    grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone,
 ) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
@@ -1713,7 +1710,7 @@ def _common_paths_for_uris(
         )
 
 
-def _counter_key_vals(counts: Counter, null_sort_key="ø") -> Tuple[Tuple, Tuple]:
+def _counter_key_vals(counts: Counter, null_sort_key="ø") -> tuple[tuple, tuple]:
     """
     Split counter into a keys sequence and a values sequence.
 
@@ -1742,7 +1739,7 @@ _BOX2D_PATTERN = re.compile(
 )
 
 
-def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
+def _box2d_to_bbox(pg_box2d: str) -> tuple[float, float, float, float]:
     """
     Parse Postgis's box2d to a geojson/stac bbox tuple.
 
@@ -1765,7 +1762,7 @@ def _box2d_to_bbox(pg_box2d: str) -> Tuple[float, float, float, float]:
     return tuple(float(m) for m in m.groups())
 
 
-def _get_shape(geometry: WKBElement, crs) -> Optional[Geometry]:
+def _get_shape(geometry: WKBElement, crs) -> Geometry | None:
     """
     Our shapes are valid in the db, but can become invalid on
     reprojection. We buffer if needed.
