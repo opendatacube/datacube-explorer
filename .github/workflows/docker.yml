@@ -37,12 +37,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get unstable git tag
-        run: >
-          echo "UNSTABLE_TAG=$(git describe --tags)" >> $GITHUB_ENV
-
-      - name: Log the unstable tag
-        run: echo $UNSTABLE_TAG
+      - name: Get and log unstable git tag
+        run: |
+          set -ex
+          UNSTABLE_TAG=$(git describe --tags)
+          echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
 
       - name: Build and Push unstable + latest Docker image tag
         if: github.event_name != 'release'
@@ -55,13 +54,12 @@ jobs:
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
       # This section is for releases
-      - name: Get tag for this build if it exists
+      - name: Get and log tag for this build if it exists
         if: github.event_name == 'release'
-        run: >
-          echo "RELEASE=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
-
-      - name: Log the tag
-        run: echo $RELEASE
+        run: |
+          set -ex
+          RELEASE=$(git describe --abbrev=0 --tags)
+          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
 
       - name: Build and Push release if we have a tag
         uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
