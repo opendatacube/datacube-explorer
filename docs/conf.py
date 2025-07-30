@@ -28,7 +28,7 @@ project_root = os.path.dirname(cwd)
 # version is used.
 sys.path.insert(0, project_root)
 
-from cubedash import __version__  # isort:skip
+from cubedash._version import __version__, __version_tuple__
 
 # -- General configuration ---------------------------------------------
 
@@ -66,8 +66,7 @@ copyright = "2020, Geoscience Australia"
 # the built documents.
 #
 # The short X.Y version.
-# version = cubedash.__version__
-version = __version__
+version = f"{__version_tuple__[0]}.{__version_tuple__[1]}"
 # The full version, including alpha/beta/rc tags.
 release = __version__
 
