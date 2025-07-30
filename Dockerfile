@@ -1,9 +1,11 @@
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3 AS builder
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3@sha256:dab45abca3ca83695d442018692f4f8a0f41955871c57e6101d7f89a92375caa AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
     PYTHONFAULTHANDLER=1
+
+FROM base AS builder
 
 # Apt installation
 RUN apt-get update && \
@@ -20,12 +22,7 @@ WORKDIR /build
 
 RUN python3 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psycopg2
 
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3
-
-ENV DEBIAN_FRONTEND=noninteractive \
-    LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8 \
-    PYTHONFAULTHANDLER=1
+FROM base
 
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
