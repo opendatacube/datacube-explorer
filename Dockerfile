@@ -40,11 +40,6 @@ FROM base
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
 
-# Environment can be whatever is supported by setup.py
-# so, either deployment, test
-ARG ENVIRONMENT=deployment
-# ARG ENVIRONMENT=test
-
 # Apt installation
 # git: required by setuptools_scm.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -60,8 +55,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
             tini \
             postgresql-client \
             python3-dev \
-            python3-pip \
-    && echo "Environment is: $ENVIRONMENT" \
+            python3-pip
+
+# Environment can be whatever is supported by setup.py
+# so, either deployment, test
+ARG ENVIRONMENT=deployment
+RUN echo "Environment is: $ENVIRONMENT" \
     ([ "$ENVIRONMENT" = "deployment" ] || \
         pip install --disable-pip-version-check pip-tools pytest-cov --break-system-packages)
 
