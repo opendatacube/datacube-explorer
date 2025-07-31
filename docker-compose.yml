@@ -9,6 +9,8 @@ services:
     ports:
       - "80:8080"
     environment:
+      - LOCAL_UID=${LOCAL_UID:-1000}
+      - LOCAL_GID=${LOCAL_GID:-1000}
       # - DB_HOSTNAME=host.docker.internal
       - POSTGRES_HOSTNAME=postgres
       - PGPORT=35433

@@ -28,6 +28,9 @@ RUN python3 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psy
 
 FROM base
 
+# Add login-script for UID/GID-remapping.
+COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
+
 # Environment can be whatever is supported by setup.py
 # so, either deployment, test
 ARG ENVIRONMENT=deployment
@@ -39,6 +42,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
       git \
+      gosu \
       # For Psycopg2
       libpq5 \
       tini \
@@ -74,8 +78,7 @@ RUN python3 -m pip --disable-pip-version-check -q install *.whl --break-system-p
             git-man \
             python3-pip)
 
-ENTRYPOINT ["/bin/tini", "--"]
-
+ENTRYPOINT ["/usr/local/bin/remap-user.sh"]
 # This is for prod, and serves as docs. It's usually overwritten
 CMD ["gunicorn", \
      "-b", \
