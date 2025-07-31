@@ -4,7 +4,9 @@ import time
 from collections import Counter
 from pathlib import Path
 
-import docker
+# There is a docker directory in the root, skip sorting that import until
+# this repository uses a src layout.
+import docker  # isort: skip
 import psycopg2
 import psycopg2.extensions
 import pytest

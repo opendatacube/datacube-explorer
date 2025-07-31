@@ -49,6 +49,8 @@ jobs:
 
       - name: Prepare explorer schema
         run: |
+          export LOCAL_UID=$(id -u $USER)
+          export LOCAL_GID=$(id -g $USER)
           make up-prod
           make init-odc
           make schema
