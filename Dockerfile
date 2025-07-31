@@ -1,26 +1,35 @@
+# syntax=docker/dockerfile:1
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3@sha256:dab45abca3ca83695d442018692f4f8a0f41955871c57e6101d7f89a92375caa AS base
 
 LABEL org.opencontainers.image.source=https://github.com/opendatacube/datacube-explorer
 LABEL org.opencontainers.image.description="Datacube Explorer"
 LABEL org.opencontainers.image.licences="Apache-2.0"
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    LC_ALL=C.UTF-8 \
+ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
     PYTHONFAULTHANDLER=1
 
 FROM base AS builder
 
-# Apt installation
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-      build-essential \
-      git \
-      # For Psycopg2
-      libpq-dev \
-      python3-dev \
-      python3-pip
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        git \
+        # For shapely with --no-binary.
+        libgeos-dev \
+        libhdf5-dev \
+        libnetcdf-dev \
+        libudunits2-dev \
+        libproj-dev \
+        # For psycopg2.
+        libpq-dev \
+        proj-bin \
+        python3-dev
 
 WORKDIR /build
 
@@ -38,20 +47,21 @@ ARG ENVIRONMENT=deployment
 
 # Apt installation
 # git: required by setuptools_scm.
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-      git \
-      gosu \
-      # For Psycopg2
-      libpq5 \
-      tini \
-      postgresql-client \
-      python3-pip \
-    && apt-get autoclean && \
-    apt-get autoremove && \
-    rm -rf /var/lib/{apt,dpkg,cache,log} && \
-    echo "Environment is: $ENVIRONMENT" && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+            git \
+            gosu \
+            # For Psycopg2
+            libpq5 \
+            tini \
+            postgresql-client \
+            python3-dev \
+            python3-pip \
+    && echo "Environment is: $ENVIRONMENT" \
     ([ "$ENVIRONMENT" = "deployment" ] || \
         pip install --disable-pip-version-check pip-tools pytest-cov --break-system-packages)
 
