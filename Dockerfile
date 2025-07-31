@@ -13,6 +13,8 @@ ENV LC_ALL=C.UTF-8 \
 
 FROM base AS builder
 
+ARG UV=https://github.com/astral-sh/uv/releases/download/0.8.4/uv-x86_64-unknown-linux-gnu.tar.gz
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive \
@@ -33,61 +35,70 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         proj-bin \
         python3-dev
 
+ENV UV_COMPILE_BYTECODE=0 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=python3.12
+
 WORKDIR /build
 
-RUN python3 -m pip --disable-pip-version-check -q wheel --no-binary psycopg2 psycopg2
+ADD --checksum=sha256:eb61d39fdc6ea21a6d00a24b50376102168240849c5022d3eba331f972ba3934 --chown=root:root --chmod=644 --link $UV uv.tar.gz
+
+RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
+
+COPY --link pyproject.toml uv.lock /build/
+
+# Use a separate cache volume for uv on opendatacube projects, so it is
+# not inseparable from pip/poetry/npm/etc. cache stored in /root/.cache.
+RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
+    uv sync --frozen --extra=deployment --no-install-project \
+      --no-binary-package fiona \
+      --no-binary-package netcdf4 \
+      --no-binary-package pyproj \
+      --no-binary-package psycopg2 \
+      --no-binary-package rasterio \
+      --no-binary-package shapely
+
+COPY --link . /build/
+
+ARG ENVIRONMENT=deployment
+RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
+    EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
+                 echo "--extra=test") \
+    && uv sync --frozen $EXTRAS --no-editable
 
 FROM base
 
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
 
-# Apt installation
-# git: required by setuptools_scm.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
-            git \
             gosu \
-            # For Psycopg2
-            libpq5 \
-            tini \
+            # For .docker/create_db.sh.
             postgresql-client \
-            python3-dev \
-            python3-pip
+            tini \
+    && mkdir /app \
+    && chown ubuntu:ubuntu /app
 
-# Environment can be whatever is supported by setup.py
-# so, either deployment, test
+COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
+
+# Environment is test or deployment.
 ARG ENVIRONMENT=deployment
-RUN echo "Environment is: $ENVIRONMENT" \
-    ([ "$ENVIRONMENT" = "deployment" ] || \
-        pip install --disable-pip-version-check pip-tools pytest-cov --break-system-packages)
+RUN ([ "$ENVIRONMENT" != "deployment" ] || \
+           rm -f /usr/local/bin/uv*)
 
-# Set up a nice workdir and add the live code
-ENV APPDIR=/code
-WORKDIR $APPDIR
-COPY . $APPDIR
+COPY --from=builder --link --chown=1000:1000 /app /app
 
-# These ENVIRONMENT flags make this a bit complex, but basically, if we are in dev
-# then we want to link the source (with the -e flag) and if we're in prod, we
-# want to delete the stuff in the /code folder to keep it simple.
-COPY --from=builder --link /build/*.whl ./
-RUN python3 -m pip --disable-pip-version-check -q install *.whl --break-system-packages && \
-    rm *.whl && \
-    ([ "$ENVIRONMENT" = "deployment" ] || \
-        pip --disable-pip-version-check install --editable .[$ENVIRONMENT] --break-system-packages) && \
-    ([ "$ENVIRONMENT" != "deployment" ] || \
-        (pip --no-cache-dir --disable-pip-version-check install .[$ENVIRONMENT] --break-system-packages && \
-         rm -rf /code/* /code/.git*)) && \
-    pip freeze && \
-    ([ "$ENVIRONMENT" != "deployment" ] || \
-        apt-get remove -y \
-            git \
-            git-man \
-            python3-pip)
+# Configure user
+WORKDIR "/home/ubuntu"
+
+ENV PATH=/app/bin:$PATH
 
 ENTRYPOINT ["/usr/local/bin/remap-user.sh"]
 # This is for prod, and serves as docs. It's usually overwritten

@@ -122,4 +122,4 @@ lint-docker: ## Run linting inside inside Docker
 
 test-docker: ## Run tests inside Docker
 	docker compose run --rm explorer \
-		pytest --cov=cubedash --cov-report=xml -r sx --durations=5
+		bash --login -c "cd /code && pytest --cov=cubedash --cov-report=xml -r sx --durations=5"
