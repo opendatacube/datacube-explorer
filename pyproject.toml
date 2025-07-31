@@ -91,6 +91,7 @@ test = [
     "prometheus-flask-exporter",
     "pytest",
     "pytest-benchmark",
+    "pytest-cov",
     "requests-html",
     "ruff",
     "types-cachetools",
