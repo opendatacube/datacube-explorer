@@ -7,7 +7,9 @@ LABEL org.opencontainers.image.licences="Apache-2.0"
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
-    PYTHONFAULTHANDLER=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONUNBUFFERED=1
 
 FROM base AS builder
 
