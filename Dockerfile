@@ -1,5 +1,9 @@
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3@sha256:dab45abca3ca83695d442018692f4f8a0f41955871c57e6101d7f89a92375caa AS base
 
+LABEL org.opencontainers.image.source=https://github.com/opendatacube/datacube-explorer
+LABEL org.opencontainers.image.description="Datacube Explorer"
+LABEL org.opencontainers.image.licences="Apache-2.0"
+
 ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
