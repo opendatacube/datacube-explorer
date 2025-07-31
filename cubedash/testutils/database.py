@@ -4,7 +4,6 @@ import time
 from collections import Counter
 from pathlib import Path
 
-import docker
 import psycopg2
 import psycopg2.extensions
 import pytest
@@ -18,6 +17,8 @@ from datacube.model import MetadataType
 from datacube.utils import read_documents
 from datacube.utils.documents import InvalidDocException, UnknownMetadataType
 from sqlalchemy import text
+
+import docker
 
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 
