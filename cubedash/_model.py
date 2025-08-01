@@ -72,7 +72,7 @@ STORE: SummaryStore = SummaryStore.create(
 )
 
 
-def create_app(test_config=None):
+def create_app(test_config=None) -> flask.Flask:
     app = flask.Flask(NAME)
 
     # See:
