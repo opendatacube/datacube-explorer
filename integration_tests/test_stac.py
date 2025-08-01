@@ -954,7 +954,7 @@ def test_stac_search_limits(stac_client: FlaskClient) -> None:
             "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
-    assert len(geojson.get("features")) == OUR_PAGE_SIZE
+    assert len(geojson.get("features", [])) == OUR_PAGE_SIZE
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -985,14 +985,14 @@ def test_next_link(stac_client: FlaskClient) -> None:
         stac_client,
         ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers"),
     )
-    assert geojson.get("numberMatched") > len(geojson.get("features"))
+    assert geojson.get("numberMatched", 0) > len(geojson.get("features", []))
 
     next_link = _get_next_href(geojson)
     assert next_link is not None
     next_link = next_link.replace("http://localhost", "")
 
     next_page = get_items(stac_client, next_link)
-    assert next_page.get("numberMatched") == geojson.get("numberMatched")
+    assert next_page.get("numberMatched", -10) == geojson.get("numberMatched", -11)
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -1005,7 +1005,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
         stac_client,
         "/stac/search?&collection=ls7_nbart_albers&ids=",
     )
-    assert len(geojson.get("features")) == 0
+    assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Can request one dataset
     geojson = get_items(
@@ -1045,7 +1045,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
         stac_client,
         "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca",
     )
-    assert len(geojson.get("features")) == 0
+    assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Old JSON-like syntax should be supported for now.
     # (Sat-api and the old code used this?)
@@ -1107,7 +1107,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     assert rv.status_code == 200, f"Error response: {rv.data}"
     doc = rv.json
 
-    features = doc.get("features")
+    features = doc.get("features", [])
 
     # We only returned the feature of that region code?
     assert len(features) == 1
@@ -1146,7 +1146,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
     doc = rv.json
 
     # We got a whole page of features.
-    assert len(doc.get("features")) == OUR_PAGE_SIZE
+    assert len(doc.get("features", [])) == OUR_PAGE_SIZE
 
     # And a POST link to the next page.
     [next_link] = [link for link in doc.get("links", []) if link["rel"] == "next"]
@@ -1172,7 +1172,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
         stac_client,
         ("/stac/search?&collections=ls7_nbart_scene&limit=20"),
     )
-    assert len(geojson.get("features")) == 4
+    assert len(geojson.get("features", [])) == 4
 
     # Get all the datasets for two collections
     geojson = get_items(
@@ -1180,7 +1180,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
         ("/stac/search?&collections=ls7_nbart_scene,ls7_nbar_scene&limit=20"),
     )
     # Four datasets each.
-    assert len(geojson.get("features")) == 8
+    assert len(geojson.get("features", ["bad_element"])) == 8
     returned_feature_ids = sorted(f["id"] for f in geojson["features"])
     assert returned_feature_ids == [
         "0c5b625e-5432-4911-9f7d-f6b894e27f3c",
@@ -1199,7 +1199,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
         stac_client,
         ("/stac/search?&collections=&limit=20"),
     )
-    assert len(geojson.get("features")) > 0
+    assert len(geojson.get("features", [])) > 0
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -1213,7 +1213,7 @@ def test_stac_search_bounds(stac_client: FlaskClient) -> None:
             "&datetime=2017-04-16T01:12:16/2017-05-10T00:24:21"
         ),
     )
-    assert len(geojson.get("features")) == 0
+    assert len(geojson.get("features", [])) == 0
 
     # Search a whole-day for a scene
     geojson = get_items(
@@ -1226,7 +1226,7 @@ def test_stac_search_bounds(stac_client: FlaskClient) -> None:
             "&datetime=2017-04-20"
         ),
     )
-    assert len(geojson.get("features")) == 1
+    assert len(geojson.get("features", [])) == 1
 
     # Search a whole-day on an empty day.
     geojson = get_items(
@@ -1238,7 +1238,7 @@ def test_stac_search_bounds(stac_client: FlaskClient) -> None:
             "&datetime=2017-04-22"
         ),
     )
-    assert len(geojson.get("features")) == 0
+    assert len(geojson.get("features", ["bad_element"])) == 0
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -1259,8 +1259,8 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
-    assert len(doc.get("features")) == OUR_PAGE_SIZE
-    # We requested the full dataset, so band assets etc should be included.
+    assert len(doc.get("features", [])) == OUR_PAGE_SIZE
+    # We requested the full dataset, so band assets etc. should be included.
     assert "water" in doc["features"][0]["assets"]
     assert doc["features"][0]["assets"]["water"].get("href")
 
