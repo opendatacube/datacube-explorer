@@ -22,6 +22,7 @@ from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
 from referencing import Registry, Resource
+from referencing.exceptions import NoSuchResource
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -118,7 +119,7 @@ def read_document(path: Path) -> dict:
     """
     ds = list(read_documents(path))
     if len(ds) != 1:
-        raise ValueError(f"Expected only one document to be in path {path}")
+        raise NoSuchResource(f"Expected only one document to be in path {path}")
 
     _, doc = ds[0]
     return doc
@@ -131,7 +132,7 @@ def _web_reference(ref: str):
     eg http://geojson.org/schemas/Features.json'
     """
     if not is_url(ref):
-        raise ValueError(f"Expected URL? Got {ref!r}")
+        raise NoSuchResource(f"Expected URL? Got {ref!r}")
     (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
     # We used `wget -r` to download the remote schemas locally.
     # It puts into hostname/path folders by default. Eg. 'geojson.org/schema/Feature.json'
@@ -141,9 +142,9 @@ def _web_reference(ref: str):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(urlopen(ref).read())
         else:
-            raise ValueError(
+            raise NoSuchResource(
                 f"No local copy exists of schema {ref!r}.\n"
-                f"\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
+                "\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
                 f"\t(looked in {path})"
             )
     return read_document(path)
@@ -166,12 +167,14 @@ def _local_reference(schema_location: Path, ref):
             )
         [presumed_schema] = similar_schemas
         return read_document(presumed_schema)
-    raise ValueError(f"Schema reference not found: {ref!r} (within {schema_location})")
+    raise NoSuchResource(
+        f"Schema reference not found: {ref!r} (within {schema_location})"
+    )
 
 
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
     if not schema_location.exists():
-        raise ValueError(f"No jsonschema file found at {schema_location}")
+        raise NoSuchResource(f"No jsonschema file found at {schema_location}")
 
     with schema_location.open("r") as s:
         try:
