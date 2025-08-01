@@ -11,7 +11,6 @@ from datacube.index import Index
 from datacube.utils import parse_time
 from dateutil import tz
 from dateutil.tz import tzutc
-from flask import Response
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
@@ -165,7 +164,7 @@ def test_location_sampling(eo3_index: Index) -> None:
 
 
 def test_eo3_doc_download(eo3_index: Index, client: FlaskClient) -> None:
-    response: Response = client.get(
+    response = client.get(
         "/dataset/9989545f-906d-5090-a38e-cdbfbfc1afca.odc-metadata.yaml"
     )
     text = response.data.decode("utf-8")

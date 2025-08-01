@@ -3,7 +3,6 @@ Tests that indexes DEA C3 Summary products region tiles
 """
 
 import pytest
-from flask import Response
 from flask.testing import FlaskClient
 
 from integration_tests.asserts import check_dataset_count, get_html
@@ -96,7 +95,7 @@ def test_archived_dataset_is_excluded(client, run_generate, odc_test_db) -> None
         result = run_generate("ga_ls_wo_fq_nov_mar_3")
         print(result)
 
-        rv: Response = client.get("product/ga_ls_wo_fq_nov_mar_3/regions/x25y41")
+        rv = client.get("product/ga_ls_wo_fq_nov_mar_3/regions/x25y41")
         assert rv.status_code == 404, rv.data
 
     finally:

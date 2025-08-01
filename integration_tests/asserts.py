@@ -87,7 +87,7 @@ def get_geojson(client: FlaskClient, url: str) -> dict:
 def get_text_response(
     client: FlaskClient, url: str, expect_status_code=200
 ) -> tuple[str, Response]:
-    response: Response = client.get(url, follow_redirects=True)
+    response = client.get(url, follow_redirects=True)
     assert response.status_code == expect_status_code, (
         f"Expected status {expect_status_code} not {response.status_code}."
         f"\nGot:\n{indent(response.data.decode('utf-8'), ' ' * 6)}"
@@ -96,7 +96,7 @@ def get_text_response(
 
 
 def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
-    rv: Response = client.get(url, follow_redirects=True)
+    rv = client.get(url, follow_redirects=True)
     try:
         assert rv.status_code == expect_status_code, (
             f"Expected status {expect_status_code} not {rv.status_code}."
@@ -152,7 +152,7 @@ def assert_text_contains(
 
 
 def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
-    response: Response = client.get(url, follow_redirects=True)
+    response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
     html = LexborHTMLParser(response.data.decode("utf-8"))
     return html

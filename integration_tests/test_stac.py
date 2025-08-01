@@ -18,7 +18,6 @@ import pytest
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
 from dateutil import tz
-from flask import Response
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
 from referencing import Registry, Resource
@@ -545,7 +544,7 @@ def test_returns_404s(stac_client: FlaskClient) -> None:
 def test_legacy_redirects(
     stac_client: FlaskClient, url: str, redirect_to_url: str
 ) -> None:
-    resp: Response = stac_client.get(url, follow_redirects=False)
+    resp = stac_client.get(url, follow_redirects=False)
     assert resp.location == redirect_to_url, (
         f"Expected {url} to be redirected to:\n"
         f"             {redirect_to_url}\n"
@@ -937,7 +936,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
 def test_stac_search_limits(stac_client: FlaskClient) -> None:
     # Tell user with error if they request too much.
     large_limit = OUR_DATASET_LIMIT + 1
-    rv: Response = stac_client.get(f"/stac/search?&limit={large_limit}")
+    rv = stac_client.get(f"/stac/search?&limit={large_limit}")
     assert rv.status_code == 400
     assert b"Max page size" in rv.data
 
@@ -957,7 +956,7 @@ def test_stac_search_limits(stac_client: FlaskClient) -> None:
 def test_stac_search_zero(stac_client: FlaskClient) -> None:
     # Zero limit is a valid query
     zero_limit = 0
-    rv: Response = stac_client.get(f"/stac/search?&limit={zero_limit}")
+    rv = stac_client.get(f"/stac/search?&limit={zero_limit}")
     assert rv.status_code == 200
 
 
@@ -1071,7 +1070,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
 
     ... and we should only get the one dataset in that region.
     """
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1117,7 +1116,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
 
     (Stac only supports 'intersects' for POST requests.)
     """
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1240,7 +1239,7 @@ def test_stac_search_bounds(stac_client: FlaskClient) -> None:
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test POST, product, and assets
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1261,7 +1260,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     assert doc["features"][0]["assets"]["water"].get("href")
 
     # Test high_tide_comp_20p with POST and assets
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1307,7 +1306,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"include": ["properties.dea:dataset_maturity"]}
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1341,7 +1340,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
 
     # exclude without include should remove from full set of properties
     fields = {"exclude": ["properties.title"]}
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1363,7 +1362,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert "dea:dataset_maturity" in set(properties.keys())
 
     # with get
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=+properties.title"
     )
     assert rv.status_code == 200
@@ -1373,7 +1372,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert {"datetime", "title"} == set(properties.keys())
 
     # invalid field
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.foo"
     )
     assert rv.status_code == 200
@@ -1383,7 +1382,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert {"datetime"} == set(properties.keys())
 
     # exclude properties, but nested field properties.datetime is included by default
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-properties"
     )
     assert rv.status_code == 200
@@ -1393,9 +1392,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert {"datetime"} == set(properties.keys())
 
     # empty include and exclude should return just default fields
-    rv: Response = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields="
-    )
+    rv = stac_client.get("/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=")
     assert rv.status_code == 200
     doc = rv.json
     assert doc.get("features")
@@ -1406,7 +1403,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "asc"}]
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1429,7 +1426,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
         )
 
     sortby = [{"field": "properties.datetime", "direction": "desc"}]
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1450,12 +1447,10 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
             > doc["features"][i]["properties"]["datetime"]
         )
 
-    rv: Response = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=assets"
-    )
+    rv = stac_client.get("/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=assets")
     assert rv.status_code == 400
 
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-properties.datetime"
     )
     doc = rv.json
@@ -1463,13 +1458,13 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
         assert doc["features"][i - 1]["id"] < doc["features"][i]["id"]
 
     # use of property prefixes shouldn't impact result
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=item.id,-datetime"
     )
     assert rv.json == doc
 
     # ignore undefined field
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-datetime,foo"
     )
     assert rv.json["features"] == doc["features"]
@@ -1477,7 +1472,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     # sorting across pages
     next_link = _get_next_href(doc)
     next_link = next_link.replace("http://localhost", "")
-    rv: Response = stac_client.get(next_link)
+    rv = stac_client.get(next_link)
     last_item = doc["features"][-1]
     next_item = rv.json["features"][0]
     assert last_item["id"] < next_item["id"]
@@ -1498,7 +1493,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
             },
         ],
     }
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1520,28 +1515,26 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
 
     # test cql2-text
     filter_text = "collection='ga_ls8c_ard_3' AND dataset_maturity <> 'final' AND cloud_cover >= 2"
-    rv: Response = stac_client.get(f"/stac/search?filter={filter_text}")
+    rv = stac_client.get(f"/stac/search?filter={filter_text}")
     assert rv.json.get("numberMatched") == 2
 
     filter_text = "view:sun_azimuth < 40 AND dataset_maturity = 'final'"
-    rv: Response = stac_client.get(
-        f"/stac/search?collections=ga_ls8c_ard_3&filter={filter_text}"
-    )
+    rv = stac_client.get(f"/stac/search?collections=ga_ls8c_ard_3&filter={filter_text}")
     assert rv.json.get("numberMatched") == 4
 
     # test invalid property name treated as null
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?filter=item.collection='ga_ls8c_ard_3' AND properties.foo > 2"
     )
     assert rv.json.get("numberMatched") == 0
 
-    rv: Response = stac_client.get(
+    rv = stac_client.get(
         "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
     )
     assert rv.json.get("numberMatched") == 21
 
     # test lang mismatch
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1558,7 +1551,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     assert rv.status_code == 400
 
     # filter-crs invalid value
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
@@ -1579,7 +1572,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
 def test_stac_query_extension_errors(stac_client: FlaskClient) -> None:
     # Trying to use query extension should error
     query = {"cloud_cover": {"lt": 1}}
-    rv: Response = stac_client.post(
+    rv = stac_client.post(
         "/stac/search",
         data=json.dumps(
             {
