@@ -22,6 +22,7 @@ from flask.testing import FlaskClient
 from jsonschema import SchemaError
 from referencing import Registry, Resource
 from referencing.exceptions import NoSuchResource
+from referencing.typing import URI
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -192,13 +193,16 @@ def load_schema_doc(schema: dict, location: str | Path) -> jsonschema.Draft7Vali
     except SchemaError as e:
         raise RuntimeError(f"Invalid schema {location}") from e
 
-    def retrieve(uri: str):
+    def retrieve(uri: URI) -> Resource:
         parsed = urlsplit(uri)
         if parsed.scheme == "https" or parsed.scheme == "http":
             return Resource.from_contents(_web_reference(uri))
-        return Resource.from_contents(_local_reference(location, uri))
+        return Resource.from_contents(_local_reference(Path(location), uri))
 
-    return jsonschema.Draft7Validator(schema, registry=Registry(retrieve=retrieve))
+    return jsonschema.Draft7Validator(
+        schema,
+        registry=Registry(retrieve=retrieve),  # type: ignore[call-arg]
+    )
 
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
@@ -266,7 +270,7 @@ def _get_next_href(geojson: dict) -> str | None:
 
 
 def _iter_items_across_pages(
-    client: FlaskClient, url: str
+    client: FlaskClient, url: str | None
 ) -> Generator[dict, None, None]:
     """
     Keep loading "next" pages and yield every Stac Item in order
@@ -341,7 +345,7 @@ def validate_items(
     seen_ids = set()
     last_item = None
     i = 0
-    product_counts = Counter()
+    product_counts: Counter = Counter()
     for item in items:
         id_ = item["id"]
         with DebugContext(f"Invalid item {i}, id {str(id_)!r}"):
@@ -385,7 +389,7 @@ def validate_items(
 
 
 @pytest.fixture()
-def stac_client(client: FlaskClient):
+def stac_client(client: FlaskClient) -> FlaskClient:
     """
     Get a client with populated data and standard settings
     """
@@ -482,7 +486,7 @@ def test_returns_404s(stac_client: FlaskClient) -> None:
     (and stac errors are expected in json)
     """
 
-    def expect_404(url: str, message_contains: str = None):
+    def expect_404(url: str, message_contains: str | None = None) -> None:
         __tracebackhide__ = True
         data = get_json(stac_client, url, expect_status_code=404)
         if message_contains and message_contains not in data.get("description", ""):
@@ -1472,6 +1476,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
 
     # sorting across pages
     next_link = _get_next_href(doc)
+    assert next_link is not None
     next_link = next_link.replace("http://localhost", "")
     rv = stac_client.get(next_link)
     last_item = doc["features"][-1]

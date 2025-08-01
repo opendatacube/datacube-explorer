@@ -13,11 +13,11 @@ from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 from dateutil.tz import tzutc
 from deepdiff import DeepDiff
-from flask import Response
 from flask.testing import FlaskClient
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
+from werkzeug.test import TestResponse
 
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
@@ -86,7 +86,7 @@ def get_geojson(client: FlaskClient, url: str) -> dict:
 
 def get_text_response(
     client: FlaskClient, url: str, expect_status_code=200
-) -> tuple[str, Response]:
+) -> tuple[str, TestResponse]:
     response = client.get(url, follow_redirects=True)
     assert response.status_code == expect_status_code, (
         f"Expected status {expect_status_code} not {response.status_code}."
@@ -203,7 +203,7 @@ def expect_values(
     timeline_count: int,
     crses: set[str],
     size_bytes: int | None,
-    region_dataset_counts: dict = None,
+    region_dataset_counts: dict | None = None,
 ):
     __tracebackhide__ = True
 
@@ -317,7 +317,7 @@ class DebugContext:
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
+        exc_val: AssertionError,
         exc_tb: TracebackType | None,
     ) -> None:
         if exc_type is None:
