@@ -714,6 +714,7 @@ def test_stac_collection(stac_client: FlaskClient):
     }
     # HACK: Make things float again
     assert_collection(scene_collection)
+    item_links = None
     for link in scene_collection["links"]:
         if link["rel"] == "items":
             item_links = link["href"]
