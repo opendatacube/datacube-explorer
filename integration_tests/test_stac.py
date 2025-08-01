@@ -1106,7 +1106,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200, f"Error response: {rv.data}"
     doc = rv.json
-
+    assert doc is not None, "Empty response from server"
     features = doc.get("features", [])
 
     # We only returned the feature of that region code?
@@ -1144,7 +1144,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200, f"Error response: {rv.data}"
     doc = rv.json
-
+    assert doc is not None, "Empty response from server"
     # We got a whole page of features.
     assert len(doc.get("features", [])) == OUR_PAGE_SIZE
 
@@ -1259,6 +1259,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert len(doc.get("features", [])) == OUR_PAGE_SIZE
     # We requested the full dataset, so band assets etc. should be included.
     assert "water" in doc["features"][0]["assets"]
@@ -1280,7 +1281,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
-
+    assert doc is not None, "Empty response from server"
     # Features should include all bands.
 
     for feature in doc["features"]:
@@ -1326,6 +1327,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     keys = set(doc["features"][0].keys())
     assert {
@@ -1360,6 +1362,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     keys = set(doc["features"][0].keys())
     assert "collection" in keys
     properties = doc["features"][0]["properties"]
@@ -1372,6 +1375,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
     assert {"datetime", "title"} == set(properties.keys())
@@ -1382,6 +1386,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
@@ -1392,6 +1397,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
@@ -1400,6 +1406,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     rv = stac_client.get("/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=")
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
@@ -1423,6 +1430,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     assert doc.get("features")
     for i in range(1, len(doc["features"])):
         assert (
@@ -1446,6 +1454,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     )
     assert rv.status_code == 200
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     for i in range(1, len(doc["features"])):
         assert (
             doc["features"][i - 1]["properties"]["datetime"]
@@ -1459,6 +1468,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-properties.datetime"
     )
     doc = rv.json
+    assert doc is not None, "Empty response from server"
     for i in range(1, len(doc["features"])):
         assert doc["features"][i - 1]["id"] < doc["features"][i]["id"]
 
@@ -1472,6 +1482,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&sortby=id,-datetime,foo"
     )
+    assert rv.json is not None
     assert rv.json["features"] == doc["features"]
 
     # sorting across pages
@@ -1479,6 +1490,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     assert next_link is not None
     next_link = next_link.replace("http://localhost", "")
     rv = stac_client.get(next_link)
+    assert rv.json is not None
     last_item = doc["features"][-1]
     next_item = rv.json["features"][0]
     assert last_item["id"] < next_item["id"]
@@ -1513,6 +1525,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
         headers={"Content-Type": "application/json", "Accept": "application/json"},
     )
     assert rv.status_code == 200
+    assert rv.json is not None
     features = rv.json.get("features")
     assert len(features) == rv.json.get("numberMatched") == 2
     ids = [f["id"] for f in features]
@@ -1522,21 +1535,25 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     # test cql2-text
     filter_text = "collection='ga_ls8c_ard_3' AND dataset_maturity <> 'final' AND cloud_cover >= 2"
     rv = stac_client.get(f"/stac/search?filter={filter_text}")
+    assert rv.json is not None
     assert rv.json.get("numberMatched") == 2
 
     filter_text = "view:sun_azimuth < 40 AND dataset_maturity = 'final'"
     rv = stac_client.get(f"/stac/search?collections=ga_ls8c_ard_3&filter={filter_text}")
+    assert rv.json is not None
     assert rv.json.get("numberMatched") == 4
 
     # test invalid property name treated as null
     rv = stac_client.get(
         "/stac/search?filter=item.collection='ga_ls8c_ard_3' AND properties.foo > 2"
     )
+    assert rv.json is not None
     assert rv.json.get("numberMatched") == 0
 
     rv = stac_client.get(
         "/stac/search?filter=collection='ga_ls8c_ard_3' AND foo IS NULL"
     )
+    assert rv.json is not None
     assert rv.json.get("numberMatched") == 21
 
     # test lang mismatch
