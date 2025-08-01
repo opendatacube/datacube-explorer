@@ -94,6 +94,9 @@ test = [
     "pytest-cov",
     "requests-html",
     "ruff",
+    # No direct dependency on urllib3, but the unmaintained requests-html will force
+    # resolver to urllib3 1.x since it depends on the unmaintained pyppeteer.
+    "urllib3>=2.0",
     "types-cachetools",
     "types-python-dateutil",
     "types-pytz",
