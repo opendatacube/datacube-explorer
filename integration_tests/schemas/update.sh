@@ -12,9 +12,9 @@ function get() {
     wget -r "$1"
 }
 
-get 'http://geojson.org/schema/Geometry.json'
-get 'http://geojson.org/schema/FeatureCollection.json'
-get 'http://geojson.org/schema/Feature.json'
+get 'https://geojson.org/schema/Geometry.json'
+get 'https://geojson.org/schema/FeatureCollection.json'
+get 'https://geojson.org/schema/Feature.json'
 
 
 # strip the 'v' from the start if there.

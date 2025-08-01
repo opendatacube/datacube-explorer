@@ -22,7 +22,7 @@ from shapely.geometry.base import BaseGeometry
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 
-# GeoJSON schema from http://geojson.org/schema/FeatureCollection.json
+# GeoJSON schema from https://geojson.org/schema/FeatureCollection.json
 
 
 _FEATURE_COLLECTION_SCHEMA_PATH = (
