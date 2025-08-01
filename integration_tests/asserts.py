@@ -167,9 +167,9 @@ def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:
 
 def check_last_processed(html: LexborNode | LexborHTMLParser, time: str) -> None:
     __tracebackhide__ = True
-    assert (
-        html.css_first(".last-processed time").attributes["datetime"].startswith(time)
-    )
+    when = html.css_first(".last-processed time").attributes["datetime"]
+    assert when is not None
+    assert when.startswith(time)
 
 
 def check_dataset_count(html: LexborNode | LexborHTMLParser, count: int) -> None:
@@ -271,6 +271,7 @@ def expect_values(
                 assert region_dataset_counts == s.region_dataset_counts
             was_regions_error = False
     except AssertionError:
+        assert s.newest_dataset_creation_time is not None
         print(
             f"""Got:
         dataset_count {s.dataset_count}

@@ -44,7 +44,7 @@ def app_configured_client(client: FlaskClient):
 
 
 @pytest.fixture()
-def total_indexed_products_count(summary_store: SummaryStore):
+def total_indexed_products_count(summary_store: SummaryStore) -> int:
     return len(list(summary_store.index.products.get_all()))
 
 
