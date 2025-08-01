@@ -2,7 +2,6 @@ from textwrap import indent
 
 import pytest
 from datacube import Datacube
-from flask import Response
 from flask.testing import FlaskClient
 from sqlalchemy import text
 
@@ -49,7 +48,7 @@ def assert_all_urls_render(all_urls: list[str], client: FlaskClient):
 
     for url in all_urls:
         try:
-            response: Response = client.get(url, follow_redirects=True)
+            response = client.get(url, follow_redirects=True)
         except Exception as e:
             raise AssertionError(f"Error rendering url f{url}.") from e
 

@@ -5,7 +5,6 @@ The timing decorator modifies global state, run these tests last.
 """
 
 import pytest
-from flask import Response
 from flask.testing import FlaskClient
 
 from cubedash import _monitoring
@@ -16,7 +15,7 @@ from cubedash import _monitoring
 def test_with_timings(client: FlaskClient) -> None:
     _monitoring.init_app_monitoring(client.application)
     # ga_ls8c_ard_3 dataset
-    rv: Response = client.get("/dataset/e2dd2539-ae18-4edc-a0e6-ddd31848669c")
+    rv = client.get("/dataset/e2dd2539-ae18-4edc-a0e6-ddd31848669c")
     assert "Server-Timing" in rv.headers
 
     count_header = [

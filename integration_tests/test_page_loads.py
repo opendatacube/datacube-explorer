@@ -9,7 +9,6 @@ from io import StringIO
 import pytest
 from click.testing import Result
 from dateutil import tz
-from flask import Response
 from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
 
@@ -108,7 +107,7 @@ def test_prometheus(sentry_client: FlaskClient) -> None:
 
 
 def test_default_redirect(client: FlaskClient) -> None:
-    rv: Response = client.get("/", follow_redirects=False)
+    rv = client.get("/", follow_redirects=False)
     # The products page is the default.
     assert rv.location.endswith("/products")
 
@@ -304,7 +303,7 @@ def test_view_dataset(client: FlaskClient) -> None:
     assert not html.css_first(".key-creation_dt")
 
     # No dataset found: should return 404, not a server error.
-    rv: Response = client.get(
+    rv = client.get(
         "/dataset/de071517-af92-4dd7-bf91-12b4e7c9a435", follow_redirects=True
     )
 
@@ -449,7 +448,7 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient) -> None:
     It should be empty (no regions supported) rather than throw an exception.
     """
 
-    rv: Response = client.get("/api/regions/high_tide_comp_20p")
+    rv = client.get("/api/regions/high_tide_comp_20p")
     assert rv.status_code == 404, (
         "High tide comp does not support regions: it should return not-exist code."
     )
@@ -492,7 +491,7 @@ def test_legacy_region_redirect(client: FlaskClient) -> None:
 
 def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) -> None:
     __tracebackhide__ = True
-    response: Response = client.get(url, follow_redirects=False)
+    response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
     assert response.location.endswith(redirects_to_url), (
         f"Expected redirect to end with:\n"
@@ -756,7 +755,7 @@ def test_general_dataset_redirect(client: FlaskClient) -> None:
     When someone queries a dataset UUID, they should be redirected
     to the real URL for the collection.
     """
-    rv: Response = client.get(
+    rv = client.get(
         "/dataset/c867d666-bf01-48f2-8259-48f756f86858", follow_redirects=False
     )
     # It should be a redirect
@@ -768,14 +767,14 @@ def test_general_dataset_redirect(client: FlaskClient) -> None:
 
 
 def test_missing_dataset(client: FlaskClient) -> None:
-    rv: Response = client.get(
+    rv = client.get(
         "/products/ga_ls8c_ard_3/datasets/f22a33f4-42f2-4aa5-9b20-cee4ca4a875c",
         follow_redirects=False,
     )
     assert rv.status_code == 404
 
     # But a real dataset definitely works:
-    rv: Response = client.get(
+    rv = client.get(
         "/products/ga_ls8c_ard_3/datasets/c867d666-bf01-48f2-8259-48f756f86858",
         follow_redirects=False,
     )
@@ -786,9 +785,7 @@ def test_invalid_product_returns_not_found(client: FlaskClient) -> None:
     """
     An invalid product should be "not found". No server errors.
     """
-    rv: Response = client.get(
-        "/products/fake_test_product/2017", follow_redirects=False
-    )
+    rv = client.get("/products/fake_test_product/2017", follow_redirects=False)
     assert rv.status_code == 404
 
 
