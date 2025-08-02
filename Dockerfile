@@ -60,10 +60,18 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 COPY --link . /build/
 
 ARG ENVIRONMENT=deployment
+# The deployment image should not have binaries that aid an attacker to get their
+# rootkit in place, and uv downloads over the network. There is no conditional
+# copy in Docker, so truncate the uv binaries to 0 bytes to render them harmless
+# in the resulting deployment image.
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
-    && uv sync --frozen $EXTRAS --no-editable
+    && uv sync --frozen $EXTRAS --no-editable \
+    && ([ "$ENVIRONMENT" != "deployment" ] || \
+        (chmod 644 /usr/local/bin/uv* && \
+         echo "" > /usr/local/bin/uv && \
+         echo "" > /usr/local/bin/uvx))
 
 FROM base
 
@@ -84,11 +92,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && chown ubuntu:ubuntu /app
 
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
-
-# Environment is test or deployment.
-ARG ENVIRONMENT=deployment
-RUN ([ "$ENVIRONMENT" != "deployment" ] || \
-           rm -f /usr/local/bin/uv*)
 
 COPY --from=builder --link --chown=1000:1000 /app /app
 
