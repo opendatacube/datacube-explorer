@@ -29,10 +29,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libhdf5-dev \
         libnetcdf-dev \
         libudunits2-dev \
-        libproj-dev \
         # For psycopg2.
         libpq-dev \
-        proj-bin \
         python3-dev
 
 ENV UV_COMPILE_BYTECODE=0 \
@@ -55,7 +53,6 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     uv sync --frozen --extra=deployment --no-install-project \
       --no-binary-package fiona \
       --no-binary-package netcdf4 \
-      --no-binary-package pyproj \
       --no-binary-package psycopg2 \
       --no-binary-package rasterio \
       --no-binary-package shapely
