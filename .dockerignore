@@ -1,10 +1,33 @@
-# Byte-compiled / optimized / DLL files
-**/__pycache__/
-**/.pytest_cache/
+# Files that are only used by docker/docker compose.
+docker-compose.yaml
+docker-compose.*.yaml
+docker-compose.yml
+docker-compose.*.yml
+.docker
+.dockerignore
 
-# Unit test / coverage reports
-**/htmlcov/
-**/.tox/
+# Byte-compiled / optimized / DLL files
+**/__pycache__
+**/*.py[cod]
+
+# CI / distribution / packaging
+**/*.egg-info
+.github
+.gitignore
+.mergify.yml
+.pre-commit-config.yaml
+.readthedocs.yaml
+.stylelintrc
+.venv
+.yamllint
+build
+dist
+Makefile
+pylintrc
+
+# Test and coverage reports
+**/htmlcov
+**/.tox
 **/.coverage
 **/.coverage.*
 **/.cache
@@ -12,20 +35,25 @@
 **/coverage.xml
 **/*.cover
 **/.hypothesis
-
-# Translations
-**/*.mo
-**/*.pot
+.mypy_cache
+.pytest_cache
+.ruff_cache
+conftest.py
+integration_tests
+tests
 
 # Django stuff:
 **/*.log
 
-# Sphinx documentation
-**/docs/_build/
+# Documentation
+*.md
+*.png
+*.rst
+docs
+LICENSE
 
 # PyBuilder
-**/target/
-**/.idea/
+**/target
 
 # iPython Notebook
 **/.ipynb_checkpoints
@@ -37,7 +65,6 @@
 **/*.env.html
 **/settings.env.py
 
-# Ignore vscode
-**/.vscode
-
-.dockerignore
+# IDE settings
+.idea
+.vscode
