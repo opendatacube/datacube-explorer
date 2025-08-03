@@ -9,13 +9,13 @@ from types import TracebackType
 
 import jsonschema
 import pytest
+from bs4 import BeautifulSoup
 from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 from dateutil.tz import tzutc
 from deepdiff import DeepDiff
 from flask import Response
 from flask.testing import FlaskClient
-from requests_html import HTML
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
@@ -111,30 +111,28 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
     return data
 
 
-def get_html(client: FlaskClient, url: str) -> HTML:
+def get_html(client: FlaskClient, url: str) -> BeautifulSoup:
     response: Response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
-    html = HTML(html=response.data.decode("utf-8"))
+    html = BeautifulSoup(response.data.decode("utf-8"), "html.parser")
     return html
 
 
 def check_area(area_pattern, html) -> None:
     assert re.match(
         area_pattern + r" \(approx",
-        html.find(".coverage-footprint-area", first=True).text,
+        html.select_one(".coverage-footprint-area").text,
     )
 
 
 def check_last_processed(html, time) -> None:
     __tracebackhide__ = True
-    assert (
-        html.find(".last-processed time", first=True).attrs["datetime"].startswith(time)
-    )
+    assert html.select_one(".last-processed time")["datetime"].startswith(time)
 
 
 def check_dataset_count(html, count: int) -> None:
     __tracebackhide__ = True
-    actual = html.find(".dataset-count", first=True).text
+    actual = html.select_one(".dataset-count").text
     expected = f"{count:,d}"
     assert f"{expected} dataset" in actual, (
         f"Incorrect dataset count: found {actual} instead of {expected}"
@@ -143,7 +141,7 @@ def check_dataset_count(html, count: int) -> None:
 
 def check_datesets_page_datestring(html, datestring: str) -> None:
     __tracebackhide__ = True
-    actual = html.find(".overview-day-link", first=True).text
+    actual = html.select_one(".overview-day-link").text
     assert datestring == actual, (
         f"Incorrect datestring: found {actual} instead of {datestring}"
     )
