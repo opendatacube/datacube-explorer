@@ -313,8 +313,7 @@ def test_view_dataset(client: FlaskClient) -> None:
 
     # Label of dataset is header
     assert (
-        "usgs_ls7e_level1_1-0-20200628_097068_2020-06-01"
-        in soup.select_one("h2").text
+        "usgs_ls7e_level1_1-0-20200628_097068_2020-06-01" in soup.select_one("h2").text
     )
     assert not soup.select_one(".key-creation_dt")
 
@@ -437,9 +436,9 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient) -> None:
 
     # Completely outside of range
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2018")
-    assert (
-        len(geojson["features"]) == 0
-    ), "Expected no high tide datasets in in this year"
+    assert len(geojson["features"]) == 0, (
+        "Expected no high tide datasets in in this year"
+    )
     # One day before/after (is time zone handling correct?)
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6/2")
     assert len(geojson["features"]) == 0, "Expected no result one-day-after center time"
@@ -472,9 +471,9 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient) -> None:
     """
 
     rv: Response = client.get("/api/regions/high_tide_comp_20p")
-    assert (
-        rv.status_code == 404
-    ), "High tide comp does not support regions: it should return not-exist code."
+    assert rv.status_code == 404, (
+        "High tide comp does not support regions: it should return not-exist code."
+    )
 
 
 def test_api_returns_scene_regions(client: FlaskClient) -> None:
@@ -516,9 +515,9 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) ->
     __tracebackhide__ = True
     response: Response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
-    assert response.location.endswith(
-        redirects_to_url
-    ), f"Expected redirect to end with:\n    {redirects_to_url!r}\nbut was redirected to:\n    {response.location!r}"
+    assert response.location.endswith(redirects_to_url), (
+        f"Expected redirect to end with:\n    {redirects_to_url!r}\nbut was redirected to:\n    {response.location!r}"
+    )
 
 
 def test_search_page(client: FlaskClient) -> None:
@@ -948,9 +947,9 @@ def test_get_robots(client: FlaskClient) -> None:
     num_lines = len(text.split("\n"))
     assert num_lines > 1, "robots.txt should have multiple lines"
 
-    assert (
-        rv.headers["Content-Type"] == "text/plain"
-    ), "robots.txt content-type should be text/plain"
+    assert rv.headers["Content-Type"] == "text/plain", (
+        "robots.txt content-type should be text/plain"
+    )
 
 
 def test_all_give_404s(client: FlaskClient) -> None:
