@@ -3,16 +3,17 @@ Tests that load pages and check the contained text.
 """
 
 import json
+import re
 from datetime import datetime, timezone
 from io import StringIO
 from textwrap import indent
 
 import pytest
+from bs4 import BeautifulSoup, Tag
 from click.testing import Result
 from dateutil import tz
 from flask import Response
 from flask.testing import FlaskClient
-from requests_html import HTML, Element
 from ruamel.yaml import YAML, YAMLError
 
 import cubedash
@@ -93,8 +94,8 @@ def sentry_client(client: FlaskClient) -> FlaskClient:
     return client
 
 
-def _script(html: HTML):
-    return html.find("script")
+def _script(soup: BeautifulSoup):
+    return soup.select("script")
 
 
 @pytest.mark.xfail()
@@ -113,22 +114,22 @@ def test_default_redirect(client: FlaskClient) -> None:
 
 
 def test_get_overview(client: FlaskClient) -> None:
-    html = get_html(client, "/ga_ls9c_ard_3")
-    check_dataset_count(html, 11)
-    check_last_processed(html, "2024-05-20T20:49:02")
-    assert "ga_ls9c_ard_3 whole collection" in _h1_text(html)
-    # check_area("61,...km2", html)
+    soup = get_html(client, "/ga_ls9c_ard_3")
+    check_dataset_count(soup, 11)
+    check_last_processed(soup, "2024-05-20T20:49:02")
+    assert "ga_ls9c_ard_3 whole collection" in _h1_text(soup)
+    # check_area("61,...km2", soup)
 
-    html = get_html(client, "/ga_ls9c_ard_3/2021")
-    check_dataset_count(html, 5)
-    check_last_processed(html, "2024-05-20T20:48:14")
-    assert "ga_ls9c_ard_3 across 2021" in _h1_text(html)
+    soup = get_html(client, "/ga_ls9c_ard_3/2021")
+    check_dataset_count(soup, 5)
+    check_last_processed(soup, "2024-05-20T20:48:14")
+    assert "ga_ls9c_ard_3 across 2021" in _h1_text(soup)
 
-    html = get_html(client, "/ga_ls9c_ard_3/2022/01")
-    check_dataset_count(html, 6)
-    check_last_processed(html, "2024-05-20T20:49:02")
-    assert "ga_ls9c_ard_3 across January 2022" in _h1_text(html)
-    # check_area("30,...km2", html)
+    soup = get_html(client, "/ga_ls9c_ard_3/2022/01")
+    check_dataset_count(soup, 6)
+    check_last_processed(soup, "2024-05-20T20:49:02")
+    assert "ga_ls9c_ard_3 across January 2022" in _h1_text(soup)
+    # check_area("30,...km2", soup)
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -138,8 +139,8 @@ def test_invalid_footprint_wofs_summary_load(client: FlaskClient) -> None:
     from .data_wofs_summary import wofs_time_summary
 
     _model.STORE._put(wofs_time_summary)
-    html = get_html(client, "/wofs_summary")
-    check_dataset_count(html, 1244)
+    soup = get_html(client, "/wofs_summary")
+    check_dataset_count(soup, 1244)
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -147,11 +148,12 @@ def test_all_products_are_shown(client: FlaskClient) -> None:
     """
     After all the complicated grouping logic, there should still be one header link for each product.
     """
-    html = get_html(client, "/ls7_nbar_scene")
+    soup = get_html(client, "/ls7_nbar_scene")
 
     # We use a sorted array instead of a Set to detect duplicates too.
     found_product_names = sorted(
-        a.text.strip() for a in html.find(".product-selection-header .option-menu-link")
+        a.text.strip()
+        for a in soup.select(".product-selection-header .option-menu-link")
     )
     indexed_product_names = sorted(p.name for p in _model.STORE.all_products())
     assert found_product_names == indexed_product_names, (
@@ -163,16 +165,16 @@ def test_get_overview_product_links(client: FlaskClient) -> None:
     """
     Are the source and derived product lists being displayed?
     """
-    html = get_html(client, "/ga_ls_fc_3/2022")
+    soup = get_html(client, "/ga_ls_fc_3/2022")
 
-    product_links = html.find(".source-product a")
+    product_links = soup.select(".source-product a")
     assert [p.text for p in product_links] == ["ga_ls8c_ard_3"]
-    assert [p.attrs["href"] for p in product_links] == ["/products/ga_ls8c_ard_3/2022"]
+    assert [p["href"] for p in product_links] == ["/products/ga_ls8c_ard_3/2022"]
 
-    html = get_html(client, "/ga_ls8c_ard_3/2022")
-    product_links = html.find(".derived-product a")
+    soup = get_html(client, "/ga_ls8c_ard_3/2022")
+    product_links = soup.select(".derived-product a")
     assert [p.text for p in product_links] == ["ga_ls_fc_3"]
-    assert [p.attrs["href"] for p in product_links] == ["/products/ga_ls_fc_3/2022"]
+    assert [p["href"] for p in product_links] == ["/products/ga_ls_fc_3/2022"]
 
 
 def test_get_day_overviews(client: FlaskClient) -> None:
@@ -180,20 +182,20 @@ def test_get_day_overviews(client: FlaskClient) -> None:
     # have their own issues.
 
     # With a dataset
-    html = get_html(client, "/ga_ls8c_ard_3/2022/5/03")
-    check_dataset_count(html, 1)
-    assert "ga_ls8c_ard_3 on 3rd May 2022" in _h1_text(html)
+    soup = get_html(client, "/ga_ls8c_ard_3/2022/5/03")
+    check_dataset_count(soup, 1)
+    assert "ga_ls8c_ard_3 on 3rd May 2022" in _h1_text(soup)
 
     # Empty day
-    html = get_html(client, "/ga_ls8c_ard_3/2017/4/22")
-    check_dataset_count(html, 0)
+    soup = get_html(client, "/ga_ls8c_ard_3/2017/4/22")
+    check_dataset_count(soup, 0)
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_summary_product(client: FlaskClient) -> None:
     # These datasets have gigantic footprints that can trip up postgis.
-    html = get_html(client, "/pq_count_summary")
-    check_dataset_count(html, 20)
+    soup = get_html(client, "/pq_count_summary")
+    check_dataset_count(soup, 20)
 
 
 def test_uninitialised_overview(
@@ -203,16 +205,16 @@ def test_uninitialised_overview(
     # Then load an unpopulated product.
     summary_store.refresh("usgs_ls7e_level1_1")
 
-    html = get_html(unpopulated_client, "/usgs_ls7e_level1_1/2017")
+    soup = get_html(unpopulated_client, "/usgs_ls7e_level1_1/2017")
 
     # The page should load without error, but will display 'unknown' fields
     assert (
-        html.find("h2", first=True).text
+        soup.select_one("h2").text
         == "usgs_ls7e_level1_1: United States Geological Survey Landsat 7 \
 Enhanced Thematic Mapper Plus Level 1 Collection 1"
     )
-    assert "Unknown number of datasets" in html.text
-    assert "No data: not yet summarised" in html.text
+    assert "Unknown number of datasets" in soup.get_text()
+    assert "No data: not yet summarised" in soup.get_text()
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -228,43 +230,43 @@ def test_uninitialised_product(
     # Then load an unpopulated product.
     summary_store.refresh("ls7_nbar_albers")
 
-    html = get_html(empty_client, "/products/ls7_nbar_scene")
+    soup = get_html(empty_client, "/products/ls7_nbar_scene")
 
     # The page should load without error, but will mention its lack of information
-    assert "ls7_nbar_scene" in html.find("h2", first=True).text
-    assert "not yet summarised" in one_element(html, "#content").text
+    assert "ls7_nbar_scene" in soup.select_one("h2").text
+    assert "not yet summarised" in one_element(soup, "#content").text
 
     # ... and a product that we populated does not have the message:
-    html = get_html(empty_client, "/products/ls7_nbar_albers")
-    assert "not yet summarised" not in one_element(html, "#content").text
+    soup = get_html(empty_client, "/products/ls7_nbar_albers")
+    assert "not yet summarised" not in one_element(soup, "#content").text
 
 
 def test_empty_product_overview(client: FlaskClient) -> None:
     """
     A page is still displayable without error when it has no datasets.
     """
-    html = get_html(client, "/usgs_ls5t_level1_1")
-    assert_is_text(html, ".dataset-count", "0 datasets")
+    soup = get_html(client, "/usgs_ls5t_level1_1")
+    assert_is_text(soup, ".dataset-count", "0 datasets")
 
-    assert_is_text(html, ".query-param.key-platform .value", "landsat-5")
-    assert_is_text(html, ".query-param.key-instrument .value", "TM")
-    # assert_is_text(html, ".query-param.key-product_type .value", "level1")
+    assert_is_text(soup, ".query-param.key-platform .value", "landsat-5")
+    assert_is_text(soup, ".query-param.key-instrument .value", "TM")
+    # assert_is_text(soup, ".query-param.key-product_type .value", "level1")
 
 
 def test_empty_product_page(client: FlaskClient) -> None:
     """
     A product page is displayable when summarised, but with 0 datasets.
     """
-    html = get_html(client, "/products/usgs_ls5t_level1_1")
-    assert "0 datasets" in one_element(html, ".dataset-count").text
+    soup = get_html(client, "/products/usgs_ls5t_level1_1")
+    assert "0 datasets" in one_element(soup, ".dataset-count").text
 
     # ... yet a normal product doesn't show the message:
-    html = get_html(client, "/products/usgs_ls7e_level1_1")
-    assert "0 datasets" not in one_element(html, ".dataset-count").text
-    assert "5 datasets" in one_element(html, ".dataset-count").text
+    soup = get_html(client, "/products/usgs_ls7e_level1_1")
+    assert "0 datasets" not in one_element(soup, ".dataset-count").text
+    assert "5 datasets" in one_element(soup, ".dataset-count").text
 
 
-def one_element(html: HTML, selector: str) -> Element:
+def one_element(soup: BeautifulSoup, selector: str) -> Tag:
     """
     Expect one element on the page to match the given selector, return it.
     """
@@ -272,11 +274,11 @@ def one_element(html: HTML, selector: str) -> Element:
 
     def err(msg: str):
         __tracebackhide__ = True
-        raw_text = html.raw_html.decode("utf-8")[600:]
+        raw_text = str(soup)[600:]
         print(f"Received error on page: {indent(raw_text, ' ' * 4)}")
         raise AssertionError(msg)
 
-    els = html.find(selector)
+    els = soup.select(selector)
     if not els:
         err(f"{selector!r} is not in the result.")
 
@@ -286,9 +288,9 @@ def one_element(html: HTML, selector: str) -> Element:
     return els[0]
 
 
-def assert_is_text(html: HTML, selector, text: str) -> None:
+def assert_is_text(soup: BeautifulSoup, selector, text: str) -> None:
     __tracebackhide__ = True
-    el = one_element(html, selector)
+    el = one_element(soup, selector)
     assert el.text == text
 
 
@@ -300,27 +302,29 @@ def test_uninitialised_search_page(
     summary_store.refresh("ls7_nbar_albers")
 
     # Then load a completely uninitialised product.
-    html = get_html(empty_client, "/datasets/ls7_nbar_scene")
-    search_results = html.find(".search-result a")
+    soup = get_html(empty_client, "/datasets/ls7_nbar_scene")
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 4
 
 
 def test_view_dataset(client: FlaskClient) -> None:
     # usgs_ls7e_level1 dataset
-    html = get_html(client, "/dataset/7dff1cb5-b297-5701-8390-43c0f2d58fbb")
+    soup = get_html(client, "/dataset/7dff1cb5-b297-5701-8390-43c0f2d58fbb")
 
     # Label of dataset is header
     assert (
         "usgs_ls7e_level1_1-0-20200628_097068_2020-06-01"
-        in html.find("h2", first=True).text
+        in soup.select_one("h2").text
     )
-    assert not html.find(".key-creation_dt", first=True)
+    assert not soup.select_one(".key-creation_dt")
 
     # ga_ls_wo_fq_nov_mar_3 dataset (has no label or location)
-    rv: HTML = get_html(client, "/dataset/974e1e89-3757-4d94-be8d-7acaeb7adf24")
-    assert "-26.129 to -25.15" in rv.text
-    assert "111.533 to 112.639" in rv.text
-    assert not rv.find(".key-creation_dt", first=True)
+    rv_soup: BeautifulSoup = get_html(
+        client, "/dataset/974e1e89-3757-4d94-be8d-7acaeb7adf24"
+    )
+    assert "-26.129 to -25.15" in rv_soup.get_text()
+    assert "111.533 to 112.639" in rv_soup.get_text()
+    assert not rv_soup.select_one(".key-creation_dt")
 
     # No dataset found: should return 404, not a server error.
     rv: Response = client.get(
@@ -331,19 +335,19 @@ def test_view_dataset(client: FlaskClient) -> None:
     assert b"No dataset found" in rv.data, rv.data.decode("utf-8")
 
 
-def _h1_text(html):
-    return one_element(html, "h1").text
+def _h1_text(soup: BeautifulSoup):
+    return one_element(soup, "h1").text
 
 
 def test_view_product(client: FlaskClient) -> None:
-    rv: HTML = get_html(client, "/product/ga_ls8c_ard_3")
-    assert "Geoscience Australia Landsat 8" in rv.text
+    soup: BeautifulSoup = get_html(client, "/product/ga_ls8c_ard_3")
+    assert "Geoscience Australia Landsat 8" in soup.get_text()
 
 
 def test_view_metadata_type(client: FlaskClient, odc_test_db) -> None:
     # Does it load without error?
-    html: HTML = get_html(client, "/metadata-type/eo3")
-    assert html.find("h2", first=True).text == "eo3"
+    soup: BeautifulSoup = get_html(client, "/metadata-type/eo3")
+    assert soup.select_one("h2").text == "eo3"
 
     how_many_are_eo3 = len(
         [
@@ -353,23 +357,23 @@ def test_view_metadata_type(client: FlaskClient, odc_test_db) -> None:
         ]
     )
     assert (
-        html.find(".header-follow", first=True).text
+        soup.select_one(".header-follow").text
         == f"metadata type of {how_many_are_eo3} products"
     )
 
     # Does the page list products using the type?
-    products_using_it = [t.text for t in html.find(".type-usage-item")]
+    products_using_it = [t.text for t in soup.select(".type-usage-item")]
     assert "ga_ls_wo_fq_nov_mar_3" in products_using_it
 
 
 def test_storage_page(client: FlaskClient, odc_test_db) -> None:
-    html: HTML = get_html(client, "/audit/storage")
+    soup: BeautifulSoup = get_html(client, "/audit/storage")
 
-    assert html.find(".product-name", containing="ga_ls9c_ard_3")
+    assert soup.find("td", class_="product-name", string=re.compile("ga_ls9c_ard_3"))
 
     product_count = len(list(odc_test_db.index.products.get_all()))
-    assert f"{product_count} products" in html.text
-    assert len(html.find(".data-table tbody tr")) == product_count
+    assert f"{product_count} products" in soup.get_text()
+    assert len(soup.select(".data-table tbody tr")) == product_count
 
 
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
@@ -377,28 +381,25 @@ def test_out_of_date_range(client: FlaskClient) -> None:
     """
     We have generated summaries for this product, but the date is out of the product's date range.
     """
-    html = get_html(client, "/wofs_albers/2010")
+    soup = get_html(client, "/wofs_albers/2010")
 
     # The common error here is to say "No data: not yet summarised" rather than "0 datasets"
-    assert check_dataset_count(html, 0)
-    assert "Historic Flood Mapping Water Observations from Space" in html.text
+    assert check_dataset_count(soup, 0)
+    assert "Historic Flood Mapping Water Observations from Space" in soup.get_text()
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_loading_high_low_tide_comp(client: FlaskClient) -> None:
-    html = get_html(client, "/high_tide_comp_20p/2008")
+    soup = get_html(client, "/high_tide_comp_20p/2008")
 
-    assert (
-        html.search("High Tide 20 percentage composites for entire coastline")
-        is not None
-    )
+    assert "High Tide 20 percentage composites for entire coastline" in soup.get_text()
 
-    check_dataset_count(html, 306)
+    check_dataset_count(soup, 306)
     # Footprint is not exact due to shapely.simplify()
-    check_area("2,984,...km2", html)
+    check_area("2,984,...km2", soup)
 
     assert (
-        one_element(html, ".last-processed time").attrs["datetime"]
+        one_element(soup, ".last-processed time")["datetime"]
         == "2017-06-08T20:58:07.014314+00:00"
     )
 
@@ -436,9 +437,9 @@ def test_api_returns_high_tide_comp_datasets(client: FlaskClient) -> None:
 
     # Completely outside of range
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2018")
-    assert len(geojson["features"]) == 0, (
-        "Expected no high tide datasets in in this year"
-    )
+    assert (
+        len(geojson["features"]) == 0
+    ), "Expected no high tide datasets in in this year"
     # One day before/after (is time zone handling correct?)
     geojson = get_geojson(client, "/api/datasets/high_tide_comp_20p/2008/6/2")
     assert len(geojson["features"]) == 0, "Expected no result one-day-after center time"
@@ -471,9 +472,9 @@ def test_api_returns_high_tide_comp_regions(client: FlaskClient) -> None:
     """
 
     rv: Response = client.get("/api/regions/high_tide_comp_20p")
-    assert rv.status_code == 404, (
-        "High tide comp does not support regions: it should return not-exist code."
-    )
+    assert (
+        rv.status_code == 404
+    ), "High tide comp does not support regions: it should return not-exist code."
 
 
 def test_api_returns_scene_regions(client: FlaskClient) -> None:
@@ -488,8 +489,8 @@ def test_region_page(client: FlaskClient) -> None:
     """
     Load a list of scenes for a given region.
     """
-    html = get_html(client, "/region/ga_ls8c_ard_3/104074")
-    search_results = html.find(".search-result a")
+    soup = get_html(client, "/region/ga_ls8c_ard_3/104074")
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 1
     result = search_results[0]
     assert result.text == "ga_ls8c_ard_3-2-1_104074_2022-07-19_interim"
@@ -515,42 +516,39 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) ->
     __tracebackhide__ = True
     response: Response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
-    assert response.location.endswith(redirects_to_url), (
-        f"Expected redirect to end with:\n"
-        f"    {redirects_to_url!r}\n"
-        f"but was redirected to:\n"
-        f"    {response.location!r}"
-    )
+    assert response.location.endswith(
+        redirects_to_url
+    ), f"Expected redirect to end with:\n    {redirects_to_url!r}\nbut was redirected to:\n    {response.location!r}"
 
 
 def test_search_page(client: FlaskClient) -> None:
-    html = get_html(client, "/datasets/ga_ls8c_ard_3")
-    search_results = html.find(".search-result a")
+    soup = get_html(client, "/datasets/ga_ls8c_ard_3")
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 21
 
-    html = get_html(client, "/datasets/ga_ls8c_ard_3/2017/12")
-    search_results = html.find(".search-result a")
+    soup = get_html(client, "/datasets/ga_ls8c_ard_3/2017/12")
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 7
 
-    html = get_html(client, "/datasets/ga_ls8c_ard_3/2018")
-    search_results = html.find(".search-result a")
+    soup = get_html(client, "/datasets/ga_ls8c_ard_3/2018")
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 0
 
 
 def test_search_time_completion(client: FlaskClient) -> None:
     # They only specified a begin time, so the end time should be filled in with the product extent.
-    html = get_html(client, "/datasets/ga_ls8c_ard_3?time-begin=1999-05-28")
-    assert one_element(html, "#search-time-before").attrs["value"] == "1999-05-28"
+    soup = get_html(client, "/datasets/ga_ls8c_ard_3?time-begin=1999-05-28")
+    assert one_element(soup, "#search-time-before")["value"] == "1999-05-28"
     # One day after the product extent end (range is exclusive)
-    assert one_element(html, "#search-time-after").attrs["value"] == "2022-10-28"
-    search_results = html.find(".search-result a")
+    assert one_element(soup, "#search-time-after")["value"] == "2022-10-28"
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 21
 
     # if not provided as a span, it should become a span of one day
-    html = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
-    assert one_element(html, "#search-time-before").attrs["value"] == "2022-07-18"
-    assert one_element(html, "#search-time-after").attrs["value"] == "2022-07-19"
-    search_results = html.find(".search-result a")
+    soup = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
+    assert one_element(soup, "#search-time-before")["value"] == "2022-07-18"
+    assert one_element(soup, "#search-time-after")["value"] == "2022-07-19"
+    search_results = soup.select(".search-result a")
     assert len(search_results) == 2
 
 
@@ -729,11 +727,11 @@ def test_undisplayable_product(client: FlaskClient) -> None:
     """
     Telemetry products have no footprint available at all.
     """
-    html = get_html(client, "/ls7_satellite_telemetry_data")
-    check_dataset_count(html, 4)
-    assert "36.6GiB" in one_element(html, ".coverage-filesize").text
-    assert "(None displayable)" in html.text
-    assert "No CRSes defined" in html.text
+    soup = get_html(client, "/ls7_satellite_telemetry_data")
+    check_dataset_count(soup, 4)
+    assert "36.6GiB" in one_element(soup, ".coverage-filesize").text
+    assert "(None displayable)" in soup.get_text()
+    assert "No CRSes defined" in soup.get_text()
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -743,17 +741,17 @@ def test_no_data_pages(client: FlaskClient) -> None:
 
     (these should load with "empty" messages: not throw exceptions)
     """
-    html = get_html(client, "/ls8_nbar_albers/2017")
-    assert "No data: not yet summarised" in html.text
-    assert "Unknown number of datasets" in html.text
+    soup = get_html(client, "/ls8_nbar_albers/2017")
+    assert "No data: not yet summarised" in soup.get_text()
+    assert "Unknown number of datasets" in soup.get_text()
 
-    html = get_html(client, "/ls8_nbar_albers/2017/5")
-    assert "No data: not yet summarised" in html.text
-    assert "Unknown number of datasets" in html.text
+    soup = get_html(client, "/ls8_nbar_albers/2017/5")
+    assert "No data: not yet summarised" in soup.get_text()
+    assert "Unknown number of datasets" in soup.get_text()
 
     # Days are generated on demand: it should query and see that there are no datasets.
-    html = get_html(client, "/ls8_nbar_albers/2017/5/2")
-    check_dataset_count(html, 0)
+    soup = get_html(client, "/ls8_nbar_albers/2017/5/2")
+    check_dataset_count(soup, 0)
 
 
 def test_general_dataset_redirect(client: FlaskClient) -> None:
@@ -950,9 +948,9 @@ def test_get_robots(client: FlaskClient) -> None:
     num_lines = len(text.split("\n"))
     assert num_lines > 1, "robots.txt should have multiple lines"
 
-    assert rv.headers["Content-Type"] == "text/plain", (
-        "robots.txt content-type should be text/plain"
-    )
+    assert (
+        rv.headers["Content-Type"] == "text/plain"
+    ), "robots.txt content-type should be text/plain"
 
 
 def test_all_give_404s(client: FlaskClient) -> None:
