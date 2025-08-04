@@ -28,7 +28,7 @@ def init_logging(
         output_file = sys.stdout.buffer
         if write_as_json is None:
             write_as_json = not sys.stdout.isatty()
-
+    assert output_file is not None
     if write_as_json is None:
         write_as_json = not output_file.isatty()
 
