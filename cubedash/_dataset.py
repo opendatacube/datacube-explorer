@@ -69,7 +69,7 @@ def dataset_full_page(product_name: str, id_: UUID):
     derived_datasets, derived_dataset_overflow = store.e_index.get_datasets_derived(
         id_, limit=provenance_display_limit
     )
-    derived_datasets.sort(key=utils.dataset_label)
+    derived_datasets = sorted(derived_datasets, key=utils.dataset_label)
 
     footprint, region_code = store.get_dataset_footprint_region(id_)
     # We only have a footprint in the spatial table above if summarisation has been

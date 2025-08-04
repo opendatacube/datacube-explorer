@@ -1,11 +1,12 @@
 from collections.abc import Generator, Iterable
 from datetime import date, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import shapely.ops
 from cachetools.func import lru_cache
 from datacube.drivers.postgis._api import PostgisDbAPI, _dataset_select_fields
-from datacube.drivers.postgis._fields import PgDocField, SimpleDocField
+from datacube.drivers.postgis._fields import SimpleDocField
 from typing_extensions import override
 
 from datacube.drivers.postgis._schema import (  # isort: skip
@@ -13,12 +14,15 @@ from datacube.drivers.postgis._schema import (  # isort: skip
     Product as ODC_PRODUCT,  # noqa: N814
 )
 from datacube.index import Index
-from datacube.model import Dataset, MetadataType, Product, Range
+from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
+    ClauseElement,
     Integer,
+    Label,
     Result,
+    Row,
     Select,
     SmallInteger,
     String,
@@ -65,9 +69,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self.db_api = PostgisDbAPI
 
     @override
-    def get_mutable_dataset_search_fields(
-        self, md: MetadataType
-    ) -> dict[str, PgDocField]:
+    def get_mutable_dataset_search_fields(self, md: MetadataType) -> dict[str, Field]:
         """
         Get a copy of a metadata type's fields that we can mutate.
 
@@ -82,9 +84,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def get_datasets_derived(
-        self, dataset_id: UUID, limit=None
-    ) -> tuple[list[Dataset], int]:
-        derived_ids = self.index.lineage.get_derived_tree(
+        self, dataset_id: UUID, limit: int | None = None
+    ) -> tuple[Iterable[Dataset], int]:
+        derived_ids: list | set = self.index.lineage.get_derived_tree(
             dataset_id, max_depth=1
         ).child_datasets()
         if limit:
@@ -96,8 +98,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def get_dataset_sources(
-        self, dataset_id: UUID, limit=None
-    ) -> tuple[list[Dataset], int]:
+        self, dataset_id: UUID, limit: int | None = None
+    ) -> tuple[Iterable[Dataset], int]:
         """
         Get the direct source datasets of a dataset.
 
@@ -150,10 +152,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def outdated_months(
-        self,
-        product: Product,
-        only_those_newer_than: datetime,
-    ):
+        self, product: Product, only_those_newer_than: datetime
+    ) -> Result:
         """
         What months have had dataset changes since they were last generated?
         """
@@ -178,7 +178,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def outdated_years(self, product_id: int):
+    def outdated_years(self, product_id: int) -> Result:
         updated_months = aliased(TimeOverview, name="updated_months")
         years = aliased(TimeOverview, name="years_needing_update")
 
@@ -208,7 +208,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_ds_count_per_period(self):
+    def product_ds_count_per_period(self) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -228,7 +228,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def upsert_product_record(self, product_name: str, fields):
+    def upsert_product_record(
+        self, product_name: str, fields: dict[str, Any]
+    ) -> tuple[int, datetime]:
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,
         # insert, on_conflict...) and while this works, it triggers the sequence
         # `product_id_seq` to increment as part of the check for insertion. This
@@ -260,7 +262,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 ).fetchone()
 
     @override
-    def put_summary(self, product_id: int, start_day, period, summary_row: dict):
+    def put_summary(
+        self, product_id: int, start_day: date, period: str, summary_row: dict
+    ) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 insert(TimeOverview)
@@ -283,7 +287,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_summary_cols(self, product_name: str):
+    def product_summary_cols(self, product_name: str) -> Row:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -302,7 +306,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).fetchone()
 
     @override
-    def upsert_product_regions(self, product_id: int):
+    def upsert_product_regions(self, product_id: int) -> Result:
         # add new regions row and/or update existing regions based on dataset_spatial
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -338,7 +342,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def delete_product_empty_regions(self, product_id: int):
+    def delete_product_empty_regions(self, product_id: int) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 text(f"""
@@ -353,7 +357,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_time_overview(self, product_id: int):
+    def product_time_overview(self, product_id: int) -> tuple[datetime, datetime, int]:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -364,7 +368,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).fetchone()
 
     @override
-    def product_time_summary(self, product_id: int, start_day, period):
+    def product_time_summary(
+        self, product_id: int, start_day: date, period: str
+    ) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(TimeOverview).where(
@@ -460,7 +466,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             return conn.execute(query)
 
     @override
-    def latest_arrivals(self, period_length: timedelta):
+    def latest_arrivals(self, period_length: timedelta) -> Result:
         with self.engine.begin() as conn:
             latest_arrival_date: datetime = conn.execute(
                 text("select max(added) from odc.dataset;")
@@ -490,7 +496,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def already_summarised_period(self, period: str, product_id: int):
+    def already_summarised_period(self, period: str, product_id: int) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(TimeOverview.start_day).where(
@@ -502,7 +508,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def linked_products_search(self, product_id: int, sample_sql: str, direction: str):
+    def linked_products_search(
+        self, product_id: int, sample_sql: str, direction: str
+    ) -> Result:
         from_ref, to_ref = "source_dataset_ref", "derived_dataset_ref"
         if direction == "derived":
             to_ref, from_ref = from_ref, to_ref
@@ -533,7 +541,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_region_summary(self, product_id: int):
+    def product_region_summary(self, product_id: int) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -547,7 +555,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def dataset_footprint_region(self, dataset_id):
+    def dataset_footprint_region(self, dataset_id: UUID) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -559,7 +567,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def latest_dataset_added_time(self, product_id: int):
+    def latest_dataset_added_time(self, product_id: int) -> datetime:
         # DATASET_SPATIAL doesn't keep track of when the dataset was indexed,
         # so we have to get that info from ODC_DATASET
         # join might not be necessary
@@ -574,7 +582,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def update_product_refresh_timestamp(
         self, product_id: int, refresh_timestamp: datetime
-    ):
+    ) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 update(ProductSpatial)
@@ -591,7 +599,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     # does this add much value? and if so, is there a better way to do it?
     @override
-    def find_fixed_columns(self, field_values, candidate_fields, sample_ids):
+    def find_fixed_columns(
+        self,
+        field_values: dict,
+        candidate_fields: list[tuple[str, Field]],
+        sample_ids: Iterable[tuple],
+    ) -> Result:
         with self.index._active_connection() as conn:
             return conn.execute(
                 select(
@@ -619,7 +632,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def all_products_location_samples(
         self, products: list[Product], sample_size: int = 50
-    ):
+    ) -> Result:
         queries = []
         for product in products:
             subquery = (
@@ -746,7 +759,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     @override
-    def upsert_datasets(self, product_id, column_values, after_date):
+    def upsert_datasets(
+        self,
+        product_id: int,
+        column_values: dict[str, list[Label]],
+        after_date: datetime | None,
+    ) -> int:
         column_values["id"] = ODC_DATASET.id
         column_values["product_ref"] = ODC_DATASET.product_ref
         only_where = [
@@ -772,7 +790,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     @override
-    def synthesize_dataset_footprint(self, rows, shapes):
+    def synthesize_dataset_footprint(self, rows: list[tuple], shapes: dict) -> Result:
         with self.engine.begin() as conn:
             return conn.execute(
                 update(DatasetSpatial)
@@ -800,7 +818,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def dataset_spatial_field_exprs(self):
+    def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
         geom = func.ST_Transform(DatasetSpatial.footprint, 4326)
         field_exprs = dict(
             collection=(
@@ -818,7 +836,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return field_exprs
 
     @override
-    def spatial_select_query(self, clauses, full: bool = False):
+    def spatial_select_query(
+        self, clauses: list[Label | ClauseElement], full: bool = False
+    ) -> Select:
         query = select(*clauses)
         if full:
             return query.select_from(DatasetSpatial).join(
