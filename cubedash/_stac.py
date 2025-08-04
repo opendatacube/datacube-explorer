@@ -133,6 +133,7 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
             return t, t + timedelta(days=1)
         else:
             return t, t + timedelta(seconds=1)
+    return None
 
 
 def _unparse_time_range(time: tuple[datetime, datetime]) -> str:
