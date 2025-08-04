@@ -78,7 +78,7 @@ def legacy_product_page(
 @bp.route("/products/<product_name>/<int:year>/<int:month>")
 @bp.route("/products/<product_name>/<int:year>/<int:month>/<int:day>")
 def product_page(
-    product_name: str | None = None,
+    product_name: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
@@ -132,7 +132,7 @@ def product_page(
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>")
 @bp.route("/datasets/<product_name>/<int:year>/<int:month>/<int:day>")
 def legacy_search_page(
-    product_name: str | None = None,
+    product_name: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
@@ -154,7 +154,7 @@ def legacy_search_page(
 @bp.route("/products/<product_name>/datasets/<int:year>/<int:month>")
 @bp.route("/products/<product_name>/datasets/<int:year>/<int:month>/<int:day>")
 def search_page(
-    product_name: str | None = None,
+    product_name: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
@@ -273,8 +273,8 @@ def search_page(
 @bp.route("/region/<product_name>/<region_code>/<int:year>/<int:month>")
 @bp.route("/region/<product_name>/<region_code>/<int:year>/<int:month>/<int:day>")
 def legacy_region_page(
-    product_name: str | None = None,
-    region_code: str | None = None,
+    product_name: str,
+    region_code: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
@@ -310,8 +310,8 @@ def regions_page(product_name: str):
     "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>"
 )
 def region_page(
-    product_name: str | None = None,
-    region_code: str | None = None,
+    product_name: str,
+    region_code: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
@@ -399,8 +399,8 @@ def region_page(
     "/product/<product_name>/regions/<region_code>/<int:year>/<int:month>/<int:day>.geojson"
 )
 def region_geojson(
-    product_name: str | None = None,
-    region_code: str | None = None,
+    product_name: str,
+    region_code: str,
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
