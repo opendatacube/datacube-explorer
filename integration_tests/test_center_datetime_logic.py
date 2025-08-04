@@ -44,7 +44,7 @@ def test_datestring_on_datasets_search_page(client: FlaskClient) -> None:
     html = get_html(client, "/products/rainfall_chirps_daily/datasets")
 
     assert "Time UTC: 2019-05-15 00:00:00" in [
-        a.find("td", first=True).attrs["title"] for a in html.find(".search-result")
+        node.attributes.get("title") for node in html.css(".search-result td")
     ], (
         "datestring does not match expected center_time recorded in dataset_spatial table"
     )
@@ -54,7 +54,7 @@ def test_datestring_on_regions_page(client: FlaskClient) -> None:
     html = get_html(client, "/product/rainfall_chirps_daily/regions/x210y106")
 
     assert "2019-05-15 00:00:00" in [
-        a.find("td", first=True).text.strip() for a in html.find(".search-result")
+        node.text(strip=True) for node in html.css(".search-result td")
     ], (
         "datestring does not match expected center_time recorded in dataset_spatial table"
     )

@@ -25,19 +25,19 @@ def test_pre_archival_dataset_count(client: FlaskClient) -> None:
 
     html = get_html(client, "/audit/dataset-counts")
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-- td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-- td.numeric"
+    ).text(strip=True)
     assert dataset_count == "1"
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric"
+    ).text(strip=True)
     assert dataset_count == "1"
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric"
+    ).text(strip=True)
     assert dataset_count == "1"
 
 
@@ -50,17 +50,17 @@ def test_post_archival_dataset_count(odc_test_db, run_generate, client) -> None:
 
     html = get_html(client, "/audit/dataset-counts")
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-- td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-- td.numeric"
+    ).text(strip=True)
     assert dataset_count == "0"
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric"
+    ).text(strip=True)
     assert dataset_count == "0"
 
-    dataset_count = html.find(
-        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric", first=True
-    ).text
+    dataset_count = html.css_first(
+        "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric"
+    ).text(strip=True)
     assert dataset_count == "0"

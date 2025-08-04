@@ -35,7 +35,7 @@ def test_product_dataset(client: FlaskClient) -> None:
     # Check if all datasets are available to be viewed
     html = get_html(client, "/datasets/s2_l2a")
 
-    assert len(html.find(".search-result")) == 5
+    assert len(html.css(".search-result")) == 5
 
 
 def test_s2_l2a_summary(run_generate, summary_store: SummaryStore) -> None:
@@ -64,13 +64,15 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     # print(res.html)
 
     assert (
-        res.find(".unavailable-metadata .search-result .product-name", first=True).text
+        res.css_first(".unavailable-metadata .search-result .product-name").text(
+            strip=True
+        )
         == "s2_l2a"
     )
     assert (
-        res.find(
-            ".unavailable-metadata .search-result .missing-footprint", first=True
-        ).attrs["title"]
+        res.css_first(
+            ".unavailable-metadata .search-result .missing-footprint"
+        ).attributes["title"]
         == "0 of 5 missing footprint"
     )
 
@@ -79,30 +81,30 @@ def test_get_overview_date_selector(client: FlaskClient) -> None:
     # [1] = year, [2] = month, [3] = day
     # check when no year, month, day has been selected
     html = get_html(client, "/s2_l2a")
-    menu = html.find("#product-headers .header-option")
-    assert len(menu[1].find(".option-menu ul li")) == 3
+    menu = html.css("#product-headers .header-option")
+    assert len(menu[1].css(".option-menu ul li")) == 3
 
     # check only year has been selected
     html = get_html(client, "/s2_l2a/2016")
-    menu = html.find("#product-headers .header-option")
-    assert len(menu[1].find(".option-menu ul li")) == 3
-    assert len(menu[2].find(".option-menu ul li")) == 3
+    menu = html.css("#product-headers .header-option")
+    assert len(menu[1].css(".option-menu ul li")) == 3
+    assert len(menu[2].css(".option-menu ul li")) == 3
 
     # check month has been selected
     html = get_html(client, "/s2_l2a/2016/11")
-    menu = html.find("#product-headers .header-option")
+    menu = html.css("#product-headers .header-option")
 
-    assert len(menu[1].find(".option-menu ul li")) == 3
-    assert len(menu[2].find(".option-menu ul li")) == 3
-    assert len(menu[3].find(".option-menu ul li")) == 3
+    assert len(menu[1].css(".option-menu ul li")) == 3
+    assert len(menu[2].css(".option-menu ul li")) == 3
+    assert len(menu[3].css(".option-menu ul li")) == 3
 
     # checking when day is selected
     html = get_html(client, "/s2_l2a/2016/11/9")
-    menu = html.find("#product-headers .header-option")
+    menu = html.css("#product-headers .header-option")
 
-    assert len(menu[1].find(".option-menu ul li")) == 3
-    assert len(menu[2].find(".option-menu ul li")) == 3
-    assert len(menu[3].find(".option-menu ul li")) == 3
+    assert len(menu[1].css(".option-menu ul li")) == 3
+    assert len(menu[2].css(".option-menu ul li")) == 3
+    assert len(menu[3].css(".option-menu ul li")) == 3
 
 
 def test_refresh_product(
@@ -113,5 +115,5 @@ def test_refresh_product(
 
     # Then load a completely uninitialised product.
     html = get_html(empty_client, "/datasets/s2_l2a")
-    search_results = html.find(".search-result a")
+    search_results = html.css(".search-result a")
     assert len(search_results) == 5
