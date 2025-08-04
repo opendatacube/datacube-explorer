@@ -35,7 +35,7 @@ class ExplorerAbstractIndex(ABC):
 
     def make_dataset(self, row):
         # pylint: disable=protected-access
-        return self.index.datasets._make(row, full_info=True)
+        return self.index.datasets._make(row, full_info=True)  # type: ignore[attr-defined]
 
     def ds_search_returning(
         self,
