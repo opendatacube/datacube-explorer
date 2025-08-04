@@ -399,7 +399,7 @@ def _parse_url_query_args(request: MultiDict, product: Product) -> dict:
     field_groups = group_field_names(request)
 
     for field_name, field_vals in field_groups.items():
-        field: Field = product.metadata_type.dataset_fields.get(field_name)
+        field = product.metadata_type.dataset_fields.get(field_name)
         if not field:
             raise ValueError(f"No field {field_name!r} for product {product.name!r}")
 
