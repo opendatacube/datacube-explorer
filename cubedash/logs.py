@@ -6,7 +6,7 @@ from functools import partial
 from typing import BinaryIO
 
 import structlog
-from orjson import orjson
+from orjson.orjson import OPT_SORT_KEYS, dumps
 from structlog.types import EventDict, WrappedLogger
 from typing_extensions import override
 
@@ -35,14 +35,10 @@ def init_logging(
     # Note that we can't use functools.partial: it JSONRendering will pass its
     # own 'default' property that overrides our own.
     def lenient_json_dump(obj, *args, **kwargs):
-        return orjson.dumps(
-            obj,
-            option=orjson.OPT_SORT_KEYS,
-            default=lenient_json_fallback,
-        )
+        return dumps(obj, option=OPT_SORT_KEYS, default=lenient_json_fallback)
 
     # Direct structlog into standard logging.
-    processors = [
+    processors: list = [
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="ISO"),
         structlog.processors.StackInfoRenderer(),
@@ -91,7 +87,7 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
         return super()._repr(val)
 
     @override
-    def __call__(
+    def __call__(  # type: ignore[override]
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> bytes:
         return super().__call__(logger, name, event_dict).encode("utf-8")
