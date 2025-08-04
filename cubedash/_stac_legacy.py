@@ -15,7 +15,7 @@ bp = flask.Blueprint("stac_legacy", __name__)
 def legacy_collection(collection: str):
     """Legacy redirect for non-stac prefixed offset"""
     return legacy_redirect(
-        url_for("stac.collection", collection=collection, **request.args)
+        url_for("stac.collection", collection=collection, **request.args)  # type: ignore[arg-type]
     )
 
 
@@ -23,7 +23,7 @@ def legacy_collection(collection: str):
 def legacy_collection_items(collection: str):
     """Legacy redirect for non-stac prefixed offset"""
     return legacy_redirect(
-        url_for("stac.collection_items", collection=collection, **request.args)
+        url_for("stac.collection_items", collection=collection, **request.args)  # type: ignore[arg-type]
     )
 
 
@@ -32,7 +32,10 @@ def legacy_item(collection, dataset_id):
     """Legacy redirect for non-stac prefixed offset"""
     return legacy_redirect(
         url_for(
-            "stac.item", collection=collection, dataset_id=dataset_id, **request.args
+            "stac.item",
+            collection=collection,
+            dataset_id=dataset_id,
+            **request.args,  # type: ignore[arg-type]
         )
     )
 
