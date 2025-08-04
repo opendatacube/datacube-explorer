@@ -59,15 +59,8 @@ from ._schema import (
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
-    name = "postgres"
-
     def __init__(self, index: Index) -> None:
-        self.index = index
-        # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
-        # We could create our own from config, but there's no api for getting the ODC config for the index either.
-        # could use: PostgresDb.from_config(index.environment, validate_connection=False)._engine
-        # but either approach involves accessing a protected attribute - which is better?
-        self.engine = index._db._engine
+        super().__init__("postgres", index)
         self.db_api = PostgresDbAPI
 
     @override
