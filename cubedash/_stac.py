@@ -192,7 +192,9 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
                 dataset_doc.crs = str(ds.crs)
 
         if ds.sources:
-            dataset_doc.lineage = {classifier: [d.id] for classifier, d in ds.sources}
+            dataset_doc.lineage = {
+                classifier: [d.id] for classifier, d in ds.sources.items()
+            }
         # Does ODC still put legacy lineage into indexed documents?
         elif ("source_datasets" in dataset_doc.lineage) and len(
             dataset_doc.lineage
@@ -1324,7 +1326,7 @@ def collection_month(collection: str, year: int, month: int):
             time=_utils.as_time_range(year, month),
             limit=limit + 1,
             offset=offset,
-            # We need the full datast to get dataset labels
+            # We need the full dataset to get dataset labels.
             full_dataset=True,
         )
     )
