@@ -60,11 +60,8 @@ from ._schema import (  # isort: skip
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
-    name = "pgis_index"
-
     def __init__(self, index: Index) -> None:
-        self.index = index
-        self.engine = index._db._engine
+        super().__init__("pgis_index", index)
         self.db_api = PostgisDbAPI
 
     @override
