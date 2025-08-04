@@ -45,7 +45,7 @@ def test_wo_summary_product(client: FlaskClient) -> None:
 def test_wo_region_dataset_count(client: FlaskClient) -> None:
     html = get_html(client, "/product/ga_ls_wo_fq_nov_mar_3/regions/x11y46")
 
-    search_results = html.find(".search-result a")
+    search_results = html.css(".search-result a")
     assert len(search_results) == 5
 
 
@@ -61,7 +61,7 @@ def test_landcover_summary_product(client: FlaskClient) -> None:
 def test_landcover_region_dataset_count(client: FlaskClient) -> None:
     html = get_html(client, "/product/ga_ls_landcover_class_cyear_2/regions/au")
 
-    search_results = html.find(".search-result a")
+    search_results = html.css(".search-result a")
     assert len(search_results) == 3
 
 
@@ -76,12 +76,12 @@ def test_tmad_summary_product(client: FlaskClient) -> None:
 def test_tmad_dataset_regions(client: FlaskClient) -> None:
     html = get_html(client, "product/ls5_nbart_tmad_annual/regions/-14_-25")
 
-    search_results = html.find(".search-result a")
+    search_results = html.css(".search-result a")
     assert len(search_results) == 1
 
     html = get_html(client, "product/ls5_nbart_tmad_annual/regions/8_-36")
 
-    search_results = html.find(".search-result a")
+    search_results = html.css(".search-result a")
     assert len(search_results) == 1
 
 
@@ -107,10 +107,10 @@ def test_archived_dataset_is_excluded(client, run_generate, odc_test_db) -> None
 def test_region_switchable_product(client: FlaskClient) -> None:
     # Two products share the same region code
     html = get_html(client, "/product/ga_ls_wo_fq_nov_mar_3/regions/x25y41")
-    product_list = html.find("#product-headers ul.items li:not(.empty)")
+    product_list = html.css("#product-headers ul.items li:not(.empty)")
     assert len(product_list) == 2
 
     # Only one product has the region code
     html = get_html(client, "/product/ga_ls_wo_fq_nov_mar_3/regions/x11y46")
-    product_list = html.find("#product-headers ul.items li:not(.empty)")
+    product_list = html.css("#product-headers ul.items li:not(.empty)")
     assert len(product_list) == 1

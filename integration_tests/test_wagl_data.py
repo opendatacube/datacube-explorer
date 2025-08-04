@@ -68,18 +68,18 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     res = get_html(client, "/product-audit/?timings")
     # print(res.html)
 
-    largest_footprint_size = res.find(".footprint-size .search-result")
+    largest_footprint_size = res.css(".footprint-size .search-result")
     assert len(largest_footprint_size) == 2
 
     largest_product_footprint = (
-        largest_footprint_size[0].find(".product-name", first=True).text
+        largest_footprint_size[0].css_first(".product-name").text(strip=True)
     )
-    largest_val = largest_footprint_size[0].find(".size-value", first=True).text
+    largest_val = largest_footprint_size[0].css_first(".size-value").text(strip=True)
     # They're both the same :/
     assert largest_product_footprint in ("s2a_ard_granule", "s2a_level1c_granule")
     assert largest_val == "181.6B"
 
-    assert len(res.find(".unavailable-metadata .search-result")) == 2
+    assert len(res.css(".unavailable-metadata .search-result")) == 2
 
     res: Response = client.get("/audit/day-query-times.txt")
     plain_timing_results = res.data.decode("utf-8")

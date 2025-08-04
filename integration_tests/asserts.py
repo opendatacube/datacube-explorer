@@ -15,7 +15,7 @@ from dateutil.tz import tzutc
 from deepdiff import DeepDiff
 from flask import Response
 from flask.testing import FlaskClient
-from requests_html import HTML
+from selectolax.lexbor import LexborHTMLParser, LexborNode
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
@@ -111,39 +111,83 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
     return data
 
 
-def get_html(client: FlaskClient, url: str) -> HTML:
+def get_normalized_text(node: LexborNode | LexborHTMLParser) -> str:
+    """Extract text from a selectolax node, normalizes whitespace."""
+    if node is None:
+        return ""
+    # Strip whitespace, join lines with single space, strip overall.
+    return " ".join(node.strip() for node in node.text(strip=True).splitlines()).strip()
+
+
+def assert_text_equals(
+    node: LexborNode | LexborHTMLParser, expected_text: str, selector: str | None = None
+):
+    """Assert that the text content of the first matching element is exactly equal to expected_text."""
+    __tracebackhide__ = True
+    if selector is not None:
+        node = node.css_first(selector, strict=True)
+    actual_text = get_normalized_text(node)
+    assert actual_text == expected_text, (
+        f"Text mismatch for selector '{selector}':\n"
+        f"  Expected: '{expected_text}'\n"
+        f"  Actual:   '{actual_text}'"
+    )
+
+
+def assert_text_contains(
+    node: LexborNode | LexborHTMLParser,
+    expected_substring: str,
+    selector: str | None = None,
+):
+    """Assert that the text content of the first matching element contains the expected_substring."""
+    __tracebackhide__ = True
+    if selector is not None:
+        node = node.css_first(selector, strict=True)
+    actual_text = get_normalized_text(node)
+    assert expected_substring in actual_text, (
+        f"Substring not found for selector '{selector}':\n"
+        f"  Expected to contain: '{expected_substring}'\n"
+        f"  Actual text:         '{actual_text}'"
+    )
+
+
+def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
     response: Response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
-    html = HTML(html=response.data.decode("utf-8"))
+    html = LexborHTMLParser(response.data.decode("utf-8"))
     return html
 
 
-def check_area(area_pattern, html) -> None:
+def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:
     assert re.match(
         area_pattern + r" \(approx",
-        html.find(".coverage-footprint-area", first=True).text,
+        html.css_first(".coverage-footprint-area").text(),
     )
 
 
-def check_last_processed(html, time) -> None:
+def check_last_processed(html: LexborNode | LexborHTMLParser, time: str) -> None:
     __tracebackhide__ = True
     assert (
-        html.find(".last-processed time", first=True).attrs["datetime"].startswith(time)
+        html.css_first(".last-processed time").attributes["datetime"].startswith(time)
     )
 
 
-def check_dataset_count(html, count: int) -> None:
+def check_dataset_count(html: LexborNode | LexborHTMLParser, count: int) -> None:
     __tracebackhide__ = True
-    actual = html.find(".dataset-count", first=True).text
+    actual = html.css_first(".dataset-count")
+    actual = get_normalized_text(actual)
     expected = f"{count:,d}"
     assert f"{expected} dataset" in actual, (
         f"Incorrect dataset count: found {actual} instead of {expected}"
     )
 
 
-def check_datesets_page_datestring(html, datestring: str) -> None:
+def check_datesets_page_datestring(
+    html: LexborNode | LexborHTMLParser, datestring: str
+) -> None:
     __tracebackhide__ = True
-    actual = html.find(".overview-day-link", first=True).text
+    actual = html.css_first(".overview-day-link")
+    actual = get_normalized_text(actual)
     assert datestring == actual, (
         f"Incorrect datestring: found {actual} instead of {datestring}"
     )

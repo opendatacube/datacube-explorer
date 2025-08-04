@@ -51,7 +51,7 @@ def total_indexed_products_count(summary_store: SummaryStore):
 def test_instance_title(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/about")
 
-    instance_title = html.find(".instance-title", first=True).text
+    instance_title = html.css_first(".instance-title").text(strip=True)
     assert instance_title == "Development - ODC"
 
 
@@ -59,11 +59,13 @@ def test_hide_products_audit_page_display(
     app_configured_client: FlaskClient, total_indexed_products_count
 ) -> None:
     html = get_html(app_configured_client, "/audit/storage")
-    hidden_product_count = html.find("span.hidden-product-count", first=True).text
+    hidden_product_count = html.css_first("span.hidden-product-count").text(strip=True)
     assert hidden_product_count == "3"
 
-    h2 = html.find("h2", first=True).text
-    indexed_product_count = html.find("span.indexed-product-count", first=True).text
+    h2 = html.css_first("h2").text(strip=True)
+    indexed_product_count = html.css_first("span.indexed-product-count").text(
+        strip=True
+    )
     assert indexed_product_count == str(total_indexed_products_count)
     assert str(total_indexed_products_count - 3) in h2
 
@@ -72,11 +74,13 @@ def test_hide_products_audit_bulk_dataset_display(
     app_configured_client: FlaskClient, total_indexed_products_count
 ) -> None:
     html = get_html(app_configured_client, "/audit/dataset-counts")
-    hidden_product_count = html.find("span.hidden-product-count", first=True).text
+    hidden_product_count = html.css_first("span.hidden-product-count").text(strip=True)
     assert hidden_product_count == "3"
 
-    h2 = html.find("h2", first=True).text
-    indexed_product_count = html.find("span.indexed-product-count", first=True).text
+    h2 = html.css_first("h2").text(strip=True)
+    indexed_product_count = html.css_first("span.indexed-product-count").text(
+        strip=True
+    )
     assert indexed_product_count == str(total_indexed_products_count)
     assert str(total_indexed_products_count - 3) in h2
 
@@ -85,15 +89,17 @@ def test_hide_products_product_page_display(
     app_configured_client: FlaskClient, total_indexed_products_count
 ) -> None:
     html = get_html(app_configured_client, "/products")
-    hidden_product_count = html.find("span.hidden-product-count", first=True).text
+    hidden_product_count = html.css_first("span.hidden-product-count").text(strip=True)
     assert hidden_product_count == "3"
 
-    h2 = html.find("h2", first=True).text
-    indexed_product_count = html.find("span.indexed-product-count", first=True).text
+    h2 = html.css_first("h2").text(strip=True)
+    indexed_product_count = html.css_first("span.indexed-product-count").text(
+        strip=True
+    )
     assert indexed_product_count == str(total_indexed_products_count)
     assert str(total_indexed_products_count - 3) in h2
 
-    listed_product_count = html.find("tr.collapse-when-small")
+    listed_product_count = html.css("tr.collapse-when-small")
     assert len(listed_product_count) == (total_indexed_products_count - 3)
 
 
@@ -102,48 +108,46 @@ def test_hide_products_menu_display(
 ) -> None:
     html = get_html(app_configured_client, "/about")
 
-    hide_products = html.find("#products-menu li a.configured-hide-product")
+    hide_products = html.css("#products-menu li a.configured-hide-product")
     assert len(hide_products) == 3
 
-    products_hide_show_switch = html.find("a#show-hidden-product")
-    assert products_hide_show_switch
+    products_hide_show_switch = html.css_first("a#show-hidden-product")
+    assert products_hide_show_switch is not None
 
     html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
-    products = html.find(".product-selection-header a.option-menu-link")
+    products = html.css(".product-selection-header a.option-menu-link")
     assert total_indexed_products_count - len(products) == 3
 
 
 def test_sister_sites(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/about")
 
-    sister_instances = html.find("#sister-site-menu ul li")
+    sister_instances = html.css("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
-        assert (
-            "/about" in sister_instance.find("a.sister-link", first=True).attrs["href"]
-        )
+        assert "/about" in sister_instance.css_first("a.sister-link").attributes["href"]
 
 
 def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
     html = get_html(app_configured_client, "/products/ga_ls5t_ard_3")
 
-    sister_instances = html.find("#sister-site-menu ul li")
+    sister_instances = html.css("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
             "/products/ga_ls5t_ard_3"
-            in sister_instance.find("a.sister-link", first=True).attrs["href"]
+            in sister_instance.css_first("a.sister-link").attributes["href"]
         )
 
     html = get_html(app_configured_client, "/products/ga_ls5t_ard_3/datasets")
 
-    sister_instances = html.find("#sister-site-menu ul li")
+    sister_instances = html.css("#sister-site-menu ul li")
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
         assert (
             "/products/ga_ls5t_ard_3/datasets"
-            in sister_instance.find("a.sister-link", first=True).attrs["href"]
+            in sister_instance.css_first("a.sister-link").attributes["href"]
         )
