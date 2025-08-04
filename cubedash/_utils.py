@@ -9,9 +9,10 @@ import io
 import itertools
 import re
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from io import StringIO
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import eodatasets3.serialise
@@ -173,7 +174,7 @@ def as_resolved_remote_url(location: str | None, offset: str) -> str:
 
 def as_external_url(
     url: str, s3_region: str | None = None, is_base: bool = False
-) -> str | None:
+) -> str:
     """
     Convert a URL to an externally-visible one.
 
@@ -217,7 +218,7 @@ def group_field_names(request: dict) -> dict:
     >>> group_field_names({'lat-begin': '1', 'lat-end': '2', 'orbit': 3})
     {'lat': {'begin': '1', 'end': '2'}, 'orbit': {'val': 3}}
     """
-    out = defaultdict(dict)
+    out: dict = defaultdict(dict)
 
     for field_expr, val in request.items():
         comps = field_expr.split("-")
@@ -238,7 +239,9 @@ def group_field_names(request: dict) -> dict:
     return dict(out)
 
 
-def get_sorted_product_summaries(product_summaries: dict, key: str) -> list:
+def get_sorted_product_summaries(
+    product_summaries: dict, key: Callable[[Any], Any]
+) -> list:
     return sorted(
         (
             (name or "", list(items))
@@ -810,7 +813,7 @@ def undo_eo3_compatibility(doc) -> None:
     #       and we're now throwing it all away except the top-level ids.
 
     if "source_datasets" in lineage:
-        new_lineage = {}
+        new_lineage: dict = {}
         for classifier, dataset_doc in lineage["source_datasets"].items():
             new_lineage.setdefault(classifier, []).append(dataset_doc["id"])
         doc["lineage"] = new_lineage
