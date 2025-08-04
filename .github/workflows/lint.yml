@@ -30,7 +30,7 @@ jobs:
         python-version: ["3.10"]
         lintcommand:
           - "ruff check --output-format=github"
-          - "mypy --follow-imports=silent cubedash/_[a-m]*.py"
+          - "mypy --follow-imports=silent cubedash/_[a-m]*.py cubedash/[a-z]*.py"
     name: Linting
     steps:
       - name: checkout git
