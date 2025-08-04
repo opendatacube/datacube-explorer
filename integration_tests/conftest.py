@@ -171,7 +171,6 @@ def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
     trade-off for tests.
     """
     for table in reversed(metadata.sorted_tables):
-        table: sqlalchemy.Table
         if table.name.startswith("mv_"):
             # Not supported for materialised views.
             continue
