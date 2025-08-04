@@ -90,7 +90,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
             tini \
     && mkdir /app \
     && chown ubuntu:ubuntu /app
-
+# In the "deployment" build, these `uv` binaries will be 0 bytes.
+# In the "test" build they're the actual `uv` tools.
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
 
 COPY --from=builder --link --chown=1000:1000 /app /app
