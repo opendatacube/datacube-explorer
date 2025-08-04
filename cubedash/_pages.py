@@ -144,7 +144,7 @@ def legacy_search_page(
             year=year,
             month=month,
             day=day,
-            **request.args,
+            **request.args,  # type: ignore[arg-type]
         )
     )
 
@@ -287,7 +287,7 @@ def legacy_region_page(
             year=year,
             month=month,
             day=day,
-            **request.args,
+            **request.args,  # type: ignore[arg-type]
         )
     )
 
@@ -438,7 +438,7 @@ def timeline_page(product_name: str):
 
 
 def _load_product(
-    product_name, year, month, day
+    product_name: str, year, month, day
 ) -> tuple[
     Product,
     ProductSummary,
