@@ -100,8 +100,12 @@ def cli(
     echo(f"{dataset_count}  datasets")
 
     if product.dataset_count:
-        echo(f"from {product.time_earliest.isoformat()} ")
-        echo(f"  to {product.time_latest.isoformat()} ")
+        echo(
+            f"from {'Unknown' if product.time_earliest is None else product.time_earliest.isoformat()} "
+        )
+        echo(
+            f"  to {'Unknown' if product.time_latest is None else product.time_latest.isoformat()} "
+        )
 
     echo()
     if store.needs_extent_refresh(product_name):
