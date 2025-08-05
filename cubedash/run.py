@@ -22,11 +22,11 @@ def _print_version(ctx, param, value) -> None:
 
     import datacube
 
-    import cubedash
+    from cubedash._version import __version__
 
     click.echo(
         f"Open Data Cube:\n"
-        f"    {style('Explorer', bold=True)} version: {cubedash.__version__}\n"
+        f"    {style('Explorer', bold=True)} version: {__version__}\n"
         f"    {style('Core', bold=True)} version: {datacube.__version__}"
     )
     ctx.exit()

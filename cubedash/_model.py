@@ -28,11 +28,6 @@ from cubedash.summary._summarise import DEFAULT_TIMEZONE
 
 from . import _utils as utils
 
-try:
-    from ._version import version as __version__
-except ImportError:
-    __version__ = "Unknown/Not Installed"
-
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent
 

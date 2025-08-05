@@ -21,9 +21,9 @@ from flask import (
 from sqlalchemy.exc import DataError
 from werkzeug.datastructures import MultiDict
 
-import cubedash
 from cubedash._model import ProductWithSummary
 from cubedash._utils import default_utc
+from cubedash._version import __version__
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 
@@ -497,7 +497,7 @@ def inject_globals():
         datacube_metadata_types=list(_model.STORE.all_metadata_types()),
         current_time=datetime.now(timezone.utc),
         datacube_version=datacube.__version__,
-        app_version=cubedash.__version__,
+        app_version=__version__,
         grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
         last_updated_time=last_updated,
         explorer_instance_title=current_app.config.get(
