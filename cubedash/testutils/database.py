@@ -148,7 +148,7 @@ def odc_test_db(cfg_env):
     # Disable PostgreSQL Table logging. We don't care about storage reliability
     # during testing, and need any performance gains we can get.
 
-    with index._db._engine.begin() as conn:
+    with index._db._engine.begin() as conn:  # type: ignore[attr-defined]
         if index.name == "pg_index":
             for table in [
                 "agdc.dataset_location",
@@ -198,7 +198,7 @@ def _remove_postgres_dynamic_indexes() -> None:
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
     for table in pgres_core.METADATA.tables.values():
         table.indexes.intersection_update(
-            [i for i in table.indexes if not i.name.startswith("dix_")]
+            [i for i in table.indexes if i.name and not i.name.startswith("dix_")]
         )
 
 
