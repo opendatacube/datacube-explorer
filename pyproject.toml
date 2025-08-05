@@ -28,7 +28,6 @@ dependencies = [
     "pyproj",
     "pystac",
     "python-dateutil",
-    "pytz",
     "sentry-sdk[flask]",
     "shapely",
     "simplekml",
@@ -96,7 +95,6 @@ test = [
     "selectolax",
     "types-cachetools",
     "types-python-dateutil",
-    "types-pytz",
 ]
 
 [project.scripts]
