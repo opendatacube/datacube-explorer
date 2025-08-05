@@ -105,7 +105,7 @@ class Summariser:
                 )
             }
         )
-        region_counts = Counter()
+        region_counts: Counter = Counter()
         if has_data:
             day_counts.update(
                 Counter(

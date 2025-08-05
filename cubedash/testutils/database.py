@@ -251,7 +251,7 @@ def auto_odc_db(odc_test_db, request):
                 except UnknownMetadataType:
                     continue
 
-    dataset_count = Counter()
+    dataset_count: Counter = Counter()
     if hasattr(request.module, "DATASETS"):
         create_dataset = Doc2Dataset(odc_test_db.index)
         for filename in request.module.DATASETS:

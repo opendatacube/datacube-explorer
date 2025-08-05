@@ -1029,7 +1029,7 @@ class SummaryStore:
         Get a list of products with newly added datasets for the last few days.
         """
         current_day = None
-        products = []
+        products: list[ProductArrival] = []
         out_groups = []
         for day, product_name, count, dataset_ids in self.e_index.latest_arrivals(
             period_length
