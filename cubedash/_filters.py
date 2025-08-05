@@ -6,10 +6,10 @@ import calendar
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
+from zoneinfo import ZoneInfo
 
 import flask
 import orjson
-import pytz
 import structlog
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
@@ -49,7 +49,7 @@ def _get_metadata_center_time(dataset):
 
 @bp.app_template_filter("localised_metadata_center_time")
 def _get_localised_metadata_center_time(date):
-    return date.astimezone(pytz.timezone(_model.DEFAULT_GROUPING_TIMEZONE))
+    return date.astimezone(ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE))
 
 
 @bp.app_template_filter("printable_dataset")

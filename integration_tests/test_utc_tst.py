@@ -4,9 +4,9 @@ Tests that load pages and check the contained text.
 
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
-import pytz
 from click.testing import Result
 from datacube.model import Range
 from dateutil import tz
@@ -151,12 +151,12 @@ def test_clirunner_generate_grouping_timezone(
 def test_dataset_day_link(summary_store) -> None:
     ds = summary_store.index.datasets.get("6293ac37-7f1d-430e-8d7e-ffdc1bfd556c")
     t = datetime_from_metadata(ds)
-    t = default_utc(t).astimezone(pytz.timezone("Australia/Darwin"))
+    t = default_utc(t).astimezone(ZoneInfo("Australia/Darwin"))
     assert t.year == 2022
     assert t.month == 1
     assert t.day == 1
 
-    t = default_utc(t).astimezone(pytz.timezone("America/Chicago"))
+    t = default_utc(t).astimezone(ZoneInfo("America/Chicago"))
     assert t.year == 2021
     assert t.month == 12
     assert t.day == 31

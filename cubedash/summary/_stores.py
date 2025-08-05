@@ -15,9 +15,9 @@ from typing import (
     Sequence,
 )
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import dateutil.parser
-import pytz
 import structlog
 from cachetools.func import ttl_cache
 from dateutil import tz
@@ -77,7 +77,7 @@ _LOG = structlog.stdlib.get_logger()
 # We'll use a global equal area.
 DEFAULT_EPSG = 6933
 
-default_timezone = pytz.timezone(DEFAULT_TIMEZONE)
+default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 
 
 def explorer_index(index: Index) -> ExplorerIndex:
@@ -1551,7 +1551,7 @@ def _safe_read_date(d):
 
 
 def _summary_from_row(
-    res, product_name: str, grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone
+    res, product_name: str, grouping_timezone: tzinfo = default_timezone
 ):
     timeline_dataset_counts = (
         Counter(
@@ -1622,8 +1622,7 @@ def _summary_from_row(
 
 
 def _summary_to_row(
-    summary: TimePeriodOverview,
-    grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone,
+    summary: TimePeriodOverview, grouping_timezone: tzinfo = default_timezone
 ) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
@@ -1661,7 +1660,7 @@ def _summary_to_row(
 
 
 def _row_to_collection(
-    res: Row, grouping_timezone: pytz.tzinfo.DstTzInfo = default_timezone
+    res: Row, grouping_timezone: tzinfo = default_timezone
 ) -> CollectionItem:
     return CollectionItem(
         name=res.name,
