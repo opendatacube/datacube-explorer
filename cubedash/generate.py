@@ -109,7 +109,11 @@ def generate_report(
     started_years = set()
 
     def print_status(
-        product_name=None, year=None, month=None, day=None, summary=None
+        product_name: str,
+        year: int | None,
+        month: int | None = None,
+        day: int | None = None,
+        summary: TimePeriodOverview | None = None,
     ) -> None:
         """Print status each time we start a year."""
         if year:

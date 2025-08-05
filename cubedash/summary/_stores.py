@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     Iterator,
     Literal,
+    Protocol,
     Sequence,
 )
 from uuid import UUID
@@ -258,6 +259,17 @@ class ProductLocationSample:
     example_uris: list[str]
 
 
+class ChangeListener(Protocol):
+    def __call__(
+        self,
+        product_name: str,
+        year: int | None,
+        month: int | None = None,
+        day: int | None = None,
+        summary: TimePeriodOverview | None = None,
+    ) -> None: ...
+
+
 class SummaryStore:
     def __init__(
         self, e_index: ExplorerIndex, summariser: Summariser, log=_LOG
@@ -265,13 +277,13 @@ class SummaryStore:
         self.e_index = e_index
         self.index = e_index.index
         self.log = log
-        self._update_listeners = []
+        self._update_listeners: list[ChangeListener] = []
 
         self._summariser = summariser
 
         # How much extra time to include in incremental update scans?
         #    The incremental-updater searches for any datasets with a newer change-timestamp than
-        #    its last successul run. But some earlier-timestamped datasets may not have been
+        #    its last successful run. But some earlier-timestamped datasets may not have been
         #    present last run if they were added in a concurrent, open transaction. And we don't
         #    want to miss them! So we give a buffer assuming no transaction was open longer than
         #    this buffer. (It doesn't matter at all if we repeat datasets).
@@ -287,7 +299,7 @@ class SummaryStore:
         #    tldr: "15 minutes == max expected transaction age of indexer"
         self.dataset_overlap_carefulness = timedelta(minutes=15)
 
-    def add_change_listener(self, listener) -> None:
+    def add_change_listener(self, listener: ChangeListener) -> None:
         self._update_listeners.append(listener)
 
     def is_initialised(self) -> bool:
