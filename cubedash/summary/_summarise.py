@@ -3,7 +3,6 @@ from collections import Counter
 from datetime import datetime
 
 import pandas as pd
-import sqlalchemy
 import structlog
 from datacube.model import Range
 from dateutil import tz
@@ -15,8 +14,6 @@ from cubedash.summary import TimePeriodOverview
 
 _LOG = structlog.stdlib.get_logger()
 
-
-_NEWER_SQLALCHEMY = not sqlalchemy.__version__.startswith("1.3")
 
 # Get default timezone via CUBEDASH_SETTINGS specified config file if it exists,
 # otherwise default to Australia/Darwin
