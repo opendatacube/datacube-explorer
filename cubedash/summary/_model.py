@@ -140,7 +140,7 @@ class TimePeriodOverview:
             # output crs setting on an existing cubedash instance.
             raise NotImplementedError("Time summaries use inconsistent CRSes.")
 
-        timeline_counter = Counter()
+        timeline_counter: Counter = Counter()
         for p in periods:
             timeline_counter.update(p.timeline_dataset_counts)
             period = p.timeline_period
@@ -151,7 +151,7 @@ class TimePeriodOverview:
         # The period elements that are the same across all of them.
         # (it will be the period of the result)
         common_time_period = list(periods[0].period_tuple) if periods else ([None] * 4)
-        region_counter = Counter()
+        region_counter: Counter = Counter()
 
         for time_period in periods:
             region_counter.update(time_period.region_dataset_counts)
