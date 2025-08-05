@@ -135,7 +135,7 @@ class ProductSummary:
 
     # The `last_refresh_time` last time when summary generation was last fully completed.
     # (To find changes, we'll scan any datasets newer than this date)
-    last_successful_summary_time: datetime = None
+    last_successful_summary_time: datetime | None = None
 
     # Not recommended for use by users, as ids are local and internal.
     # The 'name' is typically used as an identifier, and with ODC itself.

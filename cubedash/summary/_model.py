@@ -51,7 +51,7 @@ class TimePeriodOverview:
     product_refresh_time: datetime
 
     # When this summary was generated. Set on the server.
-    summary_gen_time: datetime = None
+    summary_gen_time: datetime | None = None
 
     @override
     def __str__(self) -> str:
