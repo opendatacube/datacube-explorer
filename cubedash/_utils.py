@@ -241,7 +241,7 @@ def group_field_names(request: dict) -> dict:
 
 def get_sorted_product_summaries(
     product_summaries: dict, key: Callable[[Any], Any]
-) -> list:
+) -> list[tuple[str, list]]:
     return sorted(
         (
             (name or "", list(items))
@@ -352,7 +352,7 @@ def product_license(product: Product) -> str | None:
     return flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
 
 
-def _next_month(date: datetime):
+def _next_month(date: datetime) -> datetime:
     if date.month == 12:
         return datetime(date.year + 1, 1, 1)
 
