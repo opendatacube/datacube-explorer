@@ -142,7 +142,7 @@ def pg_column_exists(conn, table_name: str, column_name: str) -> bool:
     )
 
 
-def epsg_to_srid(conn: Connection, code: int) -> int:
+def epsg_to_srid(conn: Connection, code: int) -> int | None:
     """
     Convert an epsg code to Postgis' srid number.
 
