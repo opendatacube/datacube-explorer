@@ -94,6 +94,7 @@ test = [
     "ruff",
     "selectolax",
     "types-cachetools",
+    "types-docker",
     "types-python-dateutil",
 ]
 
