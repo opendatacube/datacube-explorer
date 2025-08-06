@@ -182,7 +182,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
 
     if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
-        dataset_doc.locations = [ds.uri]
+        dataset_doc.locations = None if ds.uri is None else [ds.uri]
 
         # Geometry is optional in eo3, and needs to be calculated from grids if missing.
         # We can use ODC's own calculation that happens on index.
@@ -214,7 +214,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             # Filled-in below.
             label=None,
             product=ProductDoc(dataset.product_name),
-            locations=[ds.uri] if ds is not None else None,
+            locations=None if ds is None or ds.uri is None else [ds.uri],
             crs=str(dataset.geometry.crs) if dataset.geometry is not None else None,
             geometry=dataset.geometry.geom if dataset.geometry is not None else None,
             grids=None,
