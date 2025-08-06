@@ -22,7 +22,7 @@ from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
-from werkzeug.datastructures import TypeConversionDict
+from werkzeug.datastructures import ImmutableMultiDict, TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
 from cubedash.summary._stores import CollectionItem, DatasetItem
@@ -904,7 +904,7 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
-        next_link = dict(
+        next_link: dict[str, str | bool | dict] = dict(
             rel="next",
             title="Next page of Items",
             type="application/geo+json",
@@ -966,7 +966,7 @@ def search_stac_collections(
         list(_model.STORE.search_collections(time=time, bbox=bbox, q=q))
     )
 
-    extra_properties = dict(
+    extra_properties: dict[str, int | list[dict]] = dict(
         links=[],
         numberReturned=len(returned),
         numberMatched=count_matching,
@@ -982,7 +982,7 @@ def search_stac_collections(
             method="GET",
             href=get_next_url(offset + limit),
         )
-
+        assert not isinstance(extra_properties["links"], int)
         extra_properties["links"].append(next_link)
 
     return result, extra_properties
@@ -1124,11 +1124,11 @@ def stac_search():
     Search api for stac items.
     """
     if request.method == "GET":
-        args = request.args
+        args: ImmutableMultiDict | TypeConversionDict = request.args
     else:
         args = TypeConversionDict(request.get_json())
 
-    products = args.get("collections", default=[], type=_array_arg)
+    products: list = args.get("collections", default=[], type=_array_arg)
 
     if "collection" in args:
         products.append(args.get("collection"))
