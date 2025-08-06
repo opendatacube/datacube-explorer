@@ -247,10 +247,7 @@ def _change_dataset_product(
             text(
                 f"update {table_name} set {ref_column}=:product_id where id=:dataset_id"
             ),
-            {
-                "product_id": other_product.id,
-                "dataset_id": dataset_id,
-            },
+            {"product_id": other_product.id, "dataset_id": dataset_id},
         ).rowcount
     assert rows_changed == 1
 
@@ -574,10 +571,9 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore) ->
     for product in summary_store.index.products.get_all():
         region_info = GridRegionInfo.for_product(product, None)
         for dataset in summary_store.index.datasets.search(product=product.name):
-            (
-                footprint,
-                alchemy_calculated_region_code,
-            ) = summary_store.get_dataset_footprint_region(dataset.id)
+            (footprint, alchemy_calculated_region_code) = (
+                summary_store.get_dataset_footprint_region(dataset.id)
+            )
 
             python_calculated_region_code = region_info.dataset_region_code(dataset)
             assert python_calculated_region_code == alchemy_calculated_region_code, (

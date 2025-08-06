@@ -26,9 +26,7 @@ _LOG = structlog.stdlib.get_logger()
 
 def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index = index_connect(
-        cfg_env,
-        application_name=f"cubedash.show.{variant}",
-        validate_connection=False,
+        cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
     return SummaryStore.create(index, log=log)
 

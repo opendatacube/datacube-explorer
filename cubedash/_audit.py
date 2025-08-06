@@ -12,10 +12,7 @@ from . import _model
 from . import _utils as utils
 
 _LOG = structlog.stdlib.get_logger()
-bp = Blueprint(
-    "audit",
-    __name__,
-)
+bp = Blueprint("audit", __name__)
 
 
 @dataclass
@@ -89,9 +86,7 @@ def datasets_metadata_page():
 
 @bp.route("/audit/product-overview")
 def products_overview_page():
-    return utils.render(
-        "product-overview.html",
-    )
+    return utils.render("product-overview.html")
 
 
 @bp.route("/audit/dataset-counts")

@@ -7,14 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, tzinfo
 from enum import Enum, auto
 from itertools import groupby
-from typing import (
-    Any,
-    Iterable,
-    Iterator,
-    Literal,
-    Protocol,
-    Sequence,
-)
+from typing import Any, Iterable, Iterator, Literal, Protocol, Sequence
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -53,13 +46,8 @@ from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
-from cubedash.summary._extents import (
-    ProductArrival,
-    RegionSummary,
-)
-from cubedash.summary._schema import (
-    PleaseRefresh,
-)
+from cubedash.summary._extents import ProductArrival, RegionSummary
+from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 90
@@ -306,11 +294,7 @@ class SummaryStore:
         postgis_ver, is_compatible = self.e_index.schema_compatible_info(
             for_writing_operations_too
         )
-        _LOG.debug(
-            "software.version",
-            postgis=postgis_ver,
-            explorer=explorer_version,
-        )
+        _LOG.debug("software.version", postgis=postgis_ver, explorer=explorer_version)
         return is_compatible
 
     def init(self, grouping_epsg_code: int | None = None) -> None:
@@ -343,9 +327,7 @@ class SummaryStore:
     ) -> "SummaryStore":
         e_index = explorer_index(index)
         return cls(
-            e_index,
-            Summariser(e_index, grouping_time_zone=grouping_time_zone),
-            log=log,
+            e_index, Summariser(e_index, grouping_time_zone=grouping_time_zone), log=log
         )
 
     def close(self) -> None:  # do we still need this?
@@ -353,19 +335,13 @@ class SummaryStore:
         self.index.close()
         self.e_index.engine.dispose()
 
-    def refresh_all_product_extents(
-        self,
-    ) -> None:
+    def refresh_all_product_extents(self) -> None:
         for product in self.all_products():
-            self.refresh_product_extent(
-                product.name,
-            )
+            self.refresh_product_extent(product.name)
         self.refresh_stats()
 
     def find_months_needing_update(
-        self,
-        product_name: str,
-        only_those_newer_than: datetime,
+        self, product_name: str, only_those_newer_than: datetime
     ) -> list[tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
@@ -524,8 +500,7 @@ class SummaryStore:
         log.info("refresh.regions.inserted", list(result))
         changed_rows = result.rowcount
         log.info(
-            "refresh.regions.update.count.and.insert.new.end",
-            changed_rows=changed_rows,
+            "refresh.regions.update.count.and.insert.new.end", changed_rows=changed_rows
         )
 
         # delete region rows with no related datasets in dataset_spatial table
@@ -546,9 +521,7 @@ class SummaryStore:
         self.e_index.refresh_stats(concurrently)
 
     def _find_product_fixed_metadata(
-        self,
-        product: Product,
-        sample_datasets_size: int = 1000,
+        self, product: Product, sample_datasets_size: int = 1000
     ) -> dict[str, Any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -680,9 +653,7 @@ class SummaryStore:
             grouping_timezone=self.grouping_timezone,
         )
 
-    def get_all_dataset_counts(
-        self,
-    ) -> dict[tuple[str, int, int], int]:
+    def get_all_dataset_counts(self) -> dict[tuple[str, int, int], int]:
         """
         Get dataset count for all (product, year, month) combinations.
         """
@@ -848,13 +819,9 @@ class SummaryStore:
 
         product.id_ = product_id
 
-    def _put(
-        self,
-        summary: TimePeriodOverview,
-    ) -> None:
+    def _put(self, summary: TimePeriodOverview) -> None:
         log = _LOG.bind(
-            period=summary.period_tuple,
-            summary_count=summary.dataset_count,
+            period=summary.period_tuple, summary_count=summary.dataset_count
         )
         log.info("product.put")
         product = self._product(summary.product_name)
@@ -944,8 +911,7 @@ class SummaryStore:
         return query
 
     def _get_field_exprs(
-        self,
-        product_names: list[str] | None = None,
+        self, product_names: list[str] | None = None
     ) -> dict[str, Any]:
         """
         Map properties to their sqlalchemy expressions.
@@ -998,10 +964,7 @@ class SummaryStore:
         return query
 
     def _add_order_to_query(
-        self,
-        query: Select,
-        field_exprs: dict[str, Any],
-        sortby: list[dict[str, str]],
+        self, query: Select, field_exprs: dict[str, Any], sortby: list[dict[str, str]]
     ) -> Select:
         order_clauses = []
         for s in sortby:
@@ -1075,10 +1038,7 @@ class SummaryStore:
 
         if filter_cql:
             query = self._add_filter_to_query(
-                query,
-                field_exprs,
-                filter_lang,
-                filter_cql,
+                query, field_exprs, filter_lang, filter_cql
             )
         result = self.e_index.execute_query(query).fetchall()
 
@@ -1186,12 +1146,7 @@ class SummaryStore:
         offset: int = 0,
     ) -> Generator[CollectionItem, None, None]:
         for r in self.e_index.collections_search_query(
-            name=name,
-            bbox=bbox,
-            time=time,
-            q=q,
-            limit=limit,
-            offset=offset,
+            name=name, bbox=bbox, time=time, q=q, limit=limit, offset=offset
         ):
             yield _row_to_collection(r)
 
@@ -1459,11 +1414,7 @@ class SummaryStore:
             year, month, day, tzinfo=self.grouping_timezone
         )
         return self.e_index.datasets_by_region(
-            product,
-            region_code,
-            time_range,
-            limit,
-            offset=offset,
+            product, region_code, time_range, limit, offset=offset
         )
 
     def find_products_for_region(
@@ -1481,10 +1432,7 @@ class SummaryStore:
         return (
             self._product_by_id(res)
             for res in self.e_index.products_by_region(
-                region_code,
-                time_range,
-                limit,
-                offset=offset,
+                region_code, time_range, limit, offset=offset
             )
         )
 
@@ -1523,10 +1471,7 @@ class SummaryStore:
         row = rows[0]
 
         footprint = row.footprint
-        return (
-            to_shape(footprint) if footprint is not None else None,
-            row.region_code,
-        )
+        return (to_shape(footprint) if footprint is not None else None, row.region_code)
 
 
 def _safe_read_date(d):

@@ -160,8 +160,7 @@ def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
 
 def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:
     assert re.match(
-        area_pattern + r" \(approx",
-        html.css_first(".coverage-footprint-area").text(),
+        area_pattern + r" \(approx", html.css_first(".coverage-footprint-area").text()
     )
 
 

@@ -16,9 +16,7 @@ PRODUCTS = [
     "products/ga_ls8c_ard_3.odc-product.yaml",
     "products/esa_s2_l2a.product.yaml",
 ]
-DATASETS = [
-    "datasets/ga_ls7e_ard_3-sample.yaml",
-]
+DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
@@ -71,10 +69,7 @@ def test_all_pages_render(all_urls, client: FlaskClient) -> None:
 
 
 def test_allows_null_product_fixed_fields(
-    all_urls,
-    client: FlaskClient,
-    odc_test_db: Datacube,
-    summary_store: SummaryStore,
+    all_urls, client: FlaskClient, odc_test_db: Datacube, summary_store: SummaryStore
 ) -> None:
     """
     Pages should not fall over when fixed_metadata is null.

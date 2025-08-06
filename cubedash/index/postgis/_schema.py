@@ -18,9 +18,7 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy import (
-    Enum as SqlEnum,
-)
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import registry
@@ -130,9 +128,7 @@ class TimeOverview:
             r"array_length(timeline_dataset_counts, 1)",
             name="timeline_lengths_equal",
         ),
-        {
-            "schema": CUBEDASH_SCHEMA,
-        },
+        {"schema": CUBEDASH_SCHEMA},
     )
     # Uniquely identified by three values:
     product_ref = Column(None, ForeignKey(Product.id))
@@ -143,12 +139,10 @@ class TimeOverview:
     time_earliest = Column(DateTime(timezone=True))
     time_latest = Column(DateTime(timezone=True))
     timeline_period = Column(
-        SqlEnum("year", "month", "week", "day", name="timelineperiod"),
-        nullable=False,
+        SqlEnum("year", "month", "week", "day", name="timelineperiod"), nullable=False
     )
     timeline_dataset_start_days = Column(
-        postgres.ARRAY(DateTime(timezone=True)),
-        nullable=False,
+        postgres.ARRAY(DateTime(timezone=True)), nullable=False
     )
     timeline_dataset_counts = Column(postgres.ARRAY(Integer), nullable=False)
     regions = Column(postgres.ARRAY(String), nullable=False)
@@ -157,9 +151,7 @@ class TimeOverview:
     newest_dataset_creation_time = Column(DateTime(timezone=True))
     # When this summary was generated
     generation_time = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     product_refresh_time = Column(
         DateTime(timezone=True),
@@ -200,9 +192,7 @@ class Region:
     region_code = Column(String, nullable=False)
     count = Column(Integer, nullable=False)
     generation_time = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     footprint = Column(Geometry(srid=4326, spatial_index=False))
 
@@ -212,12 +202,7 @@ class Region:
 @orm_registry.mapped
 class SpatialRefSys:
     __tablename__ = "mv_spatial_ref_sys"
-    __table_args__ = (
-        REF_TABLE_METADATA,
-        {
-            "schema": CUBEDASH_SCHEMA,
-        },
-    )
+    __table_args__ = (REF_TABLE_METADATA, {"schema": CUBEDASH_SCHEMA})
     srid = Column(Integer, primary_key=True)
     auth_name = Column(String(255))
     auth_srid = Column(Integer)
@@ -228,12 +213,7 @@ class SpatialRefSys:
 @orm_registry.mapped
 class SpatialQualityStats:
     __tablename__ = "mv_dataset_spatial_quality"
-    __table_args__ = (
-        REF_TABLE_METADATA,
-        {
-            "schema": CUBEDASH_SCHEMA,
-        },
-    )
+    __table_args__ = (REF_TABLE_METADATA, {"schema": CUBEDASH_SCHEMA})
     product_ref = Column(SmallInteger, primary_key=True)
     count = Column(Integer)
     missing_footprint = Column(Integer)

@@ -23,9 +23,7 @@ PRODUCTS = [
     "products/ls5_fc_albers.odc-product.yaml",
     "products/dsm1sv10.odc-product.yaml",
 ]
-DATASETS = [
-    "datasets/s2a_ard_granule.yaml.gz",
-]
+DATASETS = ["datasets/s2a_ard_granule.yaml.gz"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
@@ -104,12 +102,7 @@ def dataset_yaml_from_raw(client: FlaskClient):
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_type(type_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "metadata",
-            "update",
-            type_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["metadata", "update", type_yaml_from_raw]
     )
 
     assert 'Updated "eo_plus"\n' in result.output
@@ -119,12 +112,7 @@ def test_update_type(type_yaml_from_raw) -> None:
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_product(product_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "product",
-            "update",
-            product_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["product", "update", product_yaml_from_raw]
     )
 
     assert 'Updated "ls5_fc_albers"\n' in result.output
@@ -137,12 +125,7 @@ def test_update_product(product_yaml_from_raw) -> None:
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_dataset(dataset_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "dataset",
-            "update",
-            dataset_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["dataset", "update", dataset_yaml_from_raw]
     )
 
     assert (

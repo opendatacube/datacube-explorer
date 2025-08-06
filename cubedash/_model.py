@@ -40,9 +40,7 @@ if os.getenv("SENTRY_DSN"):
             if os.getenv("SENTRY_ENV_TAG")
             else "dev-explorer"
         ),
-        integrations=[
-            FlaskIntegration(),
-        ],
+        integrations=[FlaskIntegration()],
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
@@ -88,10 +86,7 @@ def create_app(test_config=None) -> flask.Flask:
 
     # Global defaults
     app.config.from_mapping(
-        dict(
-            CUBEDASH_DEFAULT_API_LIMIT=500,
-            CUBEDASH_HARD_API_LIMIT=4000,
-        )
+        dict(CUBEDASH_DEFAULT_API_LIMIT=500, CUBEDASH_HARD_API_LIMIT=4000)
     )
 
     cache.init_app(app=app, config=app.config)
@@ -123,12 +118,7 @@ def create_app(test_config=None) -> flask.Flask:
     @app.errorhandler(HTTPException)
     def handle_exception(e: HTTPException):
         return (
-            utils.render(
-                "message.html",
-                title=e.code,
-                message=e.description,
-                e=e,
-            ),
+            utils.render("message.html", title=e.code, message=e.description, e=e),
             e.code,
         )
 

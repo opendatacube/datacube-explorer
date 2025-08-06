@@ -295,12 +295,7 @@ def legacy_region_page(
 @bp.route("/product/<product_name>/regions")
 def regions_page(product_name: str):
     # A map of regions is shown on the overview page.
-    return redirect(
-        url_for(
-            "pages.product_page",
-            product_name=product_name,
-        )
-    )
+    return redirect(url_for("pages.product_page", product_name=product_name))
 
 
 @bp.route("/product/<product_name>/regions/<region_code>")
@@ -414,14 +409,10 @@ def region_geojson(
 
     geojson = region_info.region(region_code).footprint_geojson
     geojson["properties"].update(
-        dict(
-            product_name=product_name,
-            year_month_day_filter=[year, month, day],
-        )
+        dict(product_name=product_name, year_month_day_filter=[year, month, day])
     )
     return utils.as_geojson(
-        geojson,
-        downloadable_filename_prefix=utils.api_path_as_filename_prefix(),
+        geojson, downloadable_filename_prefix=utils.api_path_as_filename_prefix()
     )
 
 
@@ -440,11 +431,7 @@ def timeline_page(product_name: str):
 def _load_product(
     product_name: str, year, month, day
 ) -> tuple[
-    Product,
-    ProductSummary,
-    TimePeriodOverview,
-    TimePeriodOverview,
-    TimePeriodOverview,
+    Product, ProductSummary, TimePeriodOverview, TimePeriodOverview, TimePeriodOverview
 ]:
     product = None
     if product_name:
@@ -500,9 +487,7 @@ def inject_globals():
         app_version=cubedash.__version__,
         grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
         last_updated_time=last_updated,
-        explorer_instance_title=current_app.config.get(
-            "CUBEDASH_INSTANCE_TITLE",
-        )
+        explorer_instance_title=current_app.config.get("CUBEDASH_INSTANCE_TITLE")
         or current_app.config.get("STAC_ENDPOINT_TITLE", ""),
         explorer_sister_instances=current_app.config.get("CUBEDASH_SISTER_SITES", None),
         breadcrumb=_get_breadcrumbs(request.path, request.script_root),
@@ -654,9 +639,7 @@ def arrivals_page():
     period_length = timedelta(days=default_days)
     arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
     return utils.render(
-        "arrivals.html",
-        arrival_days=arrivals,
-        period_length=period_length,
+        "arrivals.html", arrival_days=arrivals, period_length=period_length
     )
 
 

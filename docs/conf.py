@@ -215,7 +215,7 @@ latex_documents = [
         "datacube-explorer Documentation",
         "Datacube Explorer Team",
         "manual",
-    ),
+    )
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -271,7 +271,7 @@ texinfo_documents = [
         "datacube_explorer",
         "Web explorer for the OpenDataCube.",
         "Miscellaneous",
-    ),
+    )
 ]
 
 # Documents to append as an appendix to all manuals.

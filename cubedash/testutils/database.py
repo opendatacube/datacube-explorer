@@ -113,10 +113,7 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         # to enable this fixture to not be function scoped
         mp = pytest.MonkeyPatch()
 
-        mp.setenv(
-            "ODC_CONFIG_PATH",
-            str(temp_datacube_config_file.absolute()),
-        )
+        mp.setenv("ODC_CONFIG_PATH", str(temp_datacube_config_file.absolute()))
         yield postgres_url
         mp.undo()
 
@@ -227,9 +224,7 @@ def auto_odc_db(odc_test_db, request):
     added, not including derivatives.
     """
     odc_test_db.index.metadata_types.check_field_indexes(
-        allow_table_lock=True,
-        rebuild_indexes=False,
-        rebuild_views=True,
+        allow_table_lock=True, rebuild_indexes=False, rebuild_views=True
     )
     data_path = request.path.parent.joinpath("data")
     if hasattr(request.module, "METADATA_TYPES"):

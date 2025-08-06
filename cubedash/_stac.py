@@ -229,8 +229,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             measurements=(
                 {
                     name: _band_to_measurement(
-                        b,
-                        dataset_location=ds.uri if ds is not None else None,
+                        b, dataset_location=ds.uri if ds is not None else None
                     )
                     for name, b in ds.measurements.items()
                 }
@@ -251,9 +250,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     item = eo3stac.to_pystac_item(
         dataset=dataset_doc,
         stac_item_destination_url=url_for(
-            ".item",
-            collection=dataset.product_name,
-            dataset_id=dataset.dataset_id,
+            ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
         ),
         odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
         explorer_base_url=url_for("pages.default_redirect"),
@@ -312,10 +309,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
     stac_collection.links.extend(
         [
             Link(rel="self", target=request.url),
-            Link(
-                rel="items",
-                target=url_for(".collection_items", collection=res.name),
-            ),
+            Link(rel="items", target=url_for(".collection_items", collection=res.name)),
             Link(
                 rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
                 target=url_for(".collection_queryables", collection=res.name),
@@ -882,10 +876,7 @@ def search_stac_items(
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    extra_properties = dict(
-        links=[],
-        numberReturned=len(returned),
-    )
+    extra_properties = dict(links=[], numberReturned=len(returned))
     if include_total_count:
         count_matching = _model.STORE.get_count(
             product_names=product_names,
@@ -905,9 +896,7 @@ def search_stac_items(
 
     if there_are_more:
         next_link: dict[str, str | bool | dict] = dict(
-            rel="next",
-            title="Next page of Items",
-            type="application/geo+json",
+            rel="next", title="Next page of Items", type="application/geo+json"
         )
         if use_post_request:
             next_link.update(
@@ -920,19 +909,12 @@ def search_stac_items(
                     # Same URL:
                     href=flask.request.url,
                     # ... with a new offset.
-                    body=dict(
-                        _o=offset + limit,
-                    ),
+                    body=dict(_o=offset + limit),
                 )
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link.update(
-                dict(
-                    method="GET",
-                    href=get_next_url(offset + limit),
-                )
-            )
+            next_link.update(dict(method="GET", href=get_next_url(offset + limit)))
 
         result.extra_fields["links"].append(next_link)
 
@@ -952,11 +934,7 @@ def search_stac_collections(
 
     collections = list(
         _model.STORE.search_collections(
-            time=time,
-            bbox=bbox,
-            q=q,
-            limit=limit + 1,
-            offset=offset,
+            time=time, bbox=bbox, q=q, limit=limit + 1, offset=offset
         )
     )
     returned = collections[:limit]
@@ -967,9 +945,7 @@ def search_stac_collections(
     )
 
     extra_properties: dict[str, int | list[dict]] = dict(
-        links=[],
-        numberReturned=len(returned),
-        numberMatched=count_matching,
+        links=[], numberReturned=len(returned), numberMatched=count_matching
     )
 
     result = [as_stac_collection(r) for r in returned]
@@ -997,10 +973,7 @@ def _stac_response(
     """Return a stac document as the flask response"""
     if isinstance(doc, STACObject):
         doc.set_root(root_catalog())
-    return _utils.as_json(
-        doc.to_dict(),
-        content_type=content_type,
-    )
+    return _utils.as_json(doc.to_dict(), content_type=content_type)
 
 
 def _geojson_stac_response(doc: STACObject | ItemCollection) -> flask.Response:
@@ -1027,9 +1000,7 @@ def stac_endpoint_information() -> dict:
 
 
 def root_catalog():
-    c = Catalog(
-        **stac_endpoint_information(),
-    )
+    c = Catalog(**stac_endpoint_information())
     c.set_self_href(url_for(".root"))
     return c
 
@@ -1162,10 +1133,7 @@ def collections():
     )
 
     return _utils.as_json(
-        dict(
-            **props,
-            collections=[collection.to_dict() for collection in results],
-        )
+        dict(**props, collections=[collection.to_dict() for collection in results])
     )
 
 
@@ -1295,9 +1263,7 @@ def item(collection: str, dataset_id: str):
         # We're not doing a redirect as we don't want people to rely on wrong urls
         # (and we're unkind)
         actual_url = url_for(
-            ".item",
-            collection=actual_product_name,
-            dataset_id=dataset_id,
+            ".item", collection=actual_product_name, dataset_id=dataset_id
         )
         abort(
             404,
@@ -1399,10 +1365,7 @@ def arrivals():
     c.links.extend(
         [
             Link(rel="self", target=request.url),
-            Link(
-                rel="items",
-                target=url_for(".arrivals_items"),
-            ),
+            Link(rel="items", target=url_for(".arrivals_items")),
         ]
     )
     return _stac_response(c)
@@ -1420,11 +1383,7 @@ def arrivals_items():
     check_page_limit(limit)
 
     def next_page_url(next_offset):
-        return url_for(
-            ".arrivals_items",
-            limit=limit,
-            _o=next_offset,
-        )
+        return url_for(".arrivals_items", limit=limit, _o=next_offset)
 
     return _geojson_stac_response(
         search_stac_items(
@@ -1443,11 +1402,7 @@ def handle_exception(e):
     """Return JSON instead of HTML for HTTP errors."""
     response = e.get_response()
     response.data = json.dumps(
-        {
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        }
+        {"code": e.code, "name": e.name, "description": e.description}
     )
     response.content_type = "application/json"
     return response

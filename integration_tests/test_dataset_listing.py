@@ -8,16 +8,12 @@ from werkzeug.datastructures import MultiDict
 
 from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
 
-METADATA_TYPES = [
-    "metadata/eo3_landsat_ard.odc-type.yaml",
-]
+METADATA_TYPES = ["metadata/eo3_landsat_ard.odc-type.yaml"]
 PRODUCTS = [
     "products/ard_ls5.odc-product.yaml",
     "products/ga_ls7e_ard_3.odc-product.yaml",
 ]
-DATASETS = [
-    "datasets/ga_ls7e_ard_3-sample.yaml",
-]
+DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
 pytestmark = pytest.mark.usefixtures("auto_odc_db")

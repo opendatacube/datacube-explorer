@@ -1,12 +1,7 @@
 from enum import Enum
 
 import structlog
-from sqlalchemy import (
-    MetaData,
-    func,
-    select,
-    text,
-)
+from sqlalchemy import MetaData, func, select, text
 from sqlalchemy.engine import Connection
 
 _LOG = structlog.stdlib.get_logger()
