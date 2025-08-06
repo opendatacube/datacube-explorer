@@ -23,9 +23,7 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy import (
-    Enum as SqlEnum,
-)
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError

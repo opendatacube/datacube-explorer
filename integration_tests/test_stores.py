@@ -139,12 +139,7 @@ def test_month_iteration() -> None:
     assert_month_iteration(
         datetime(2003, 11, 2),
         datetime(2004, 2, 2),
-        [
-            date(2003, 11, 1),
-            date(2003, 12, 1),
-            date(2004, 1, 1),
-            date(2004, 2, 1),
-        ],
+        [date(2003, 11, 1), date(2003, 12, 1), date(2004, 1, 1), date(2004, 2, 1)],
     )
     # Within same month
     assert_month_iteration(
@@ -210,11 +205,9 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     assert sum(loaded.region_dataset_counts.values()) == 4, (
         "Region dataset counts don't match total count"
     )
-    assert sorted(loaded.region_dataset_counts.keys()) == [
-        "1_2",
-        "3_4",
-        "4_5",
-    ], "Incorrect set of regions"
+    assert sorted(loaded.region_dataset_counts.keys()) == ["1_2", "3_4", "4_5"], (
+        "Incorrect set of regions"
+    )
     assert o.footprint_crs == loaded.footprint_crs
     assert loaded.footprint_crs == "EPSG:3577"
     assert loaded.footprint_srid == 3577

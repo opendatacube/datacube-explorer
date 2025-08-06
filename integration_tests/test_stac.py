@@ -323,10 +323,9 @@ def validate_item(item: dict) -> None:
             assert shape.is_valid, (
                 f"Item has invalid geometry: {explain_validity(shape)}"
             )
-            assert shape.geom_type in (
-                "Polygon",
-                "MultiPolygon",
-            ), "Unexpected type of shape"
+            assert shape.geom_type in ("Polygon", "MultiPolygon"), (
+                "Unexpected type of shape"
+            )
 
     assert_stac_extensions(item)
 
@@ -524,14 +523,8 @@ def test_returns_404s(stac_client: FlaskClient) -> None:
 @pytest.mark.parametrize(
     ("url", "redirect_to_url"),
     [
-        (
-            "/collections/ls7_nbar_scene",
-            "/stac/collections/ls7_nbar_scene",
-        ),
-        (
-            "/collections/ls7_nbar_scene/items",
-            "/stac/collections/ls7_nbar_scene/items",
-        ),
+        ("/collections/ls7_nbar_scene", "/stac/collections/ls7_nbar_scene"),
+        ("/collections/ls7_nbar_scene/items", "/stac/collections/ls7_nbar_scene/items"),
         (
             # Maintains extra query parameters in the redirect
             "/collections/ls7_nbar_scene/items"
@@ -580,11 +573,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
             "type": "application/json",
             "title": "Default ODC Explorer instance",
         },
-        {
-            "rel": "self",
-            "href": "http://localhost/stac",
-            "type": "application/json",
-        },
+        {"rel": "self", "href": "http://localhost/stac", "type": "application/json"},
         {
             "rel": "data",
             "href": "http://localhost/stac/collections",
@@ -700,14 +689,8 @@ def test_stac_collection(stac_client: FlaskClient):
                 "type": "application/json",
                 "title": "Default ODC Explorer instance",
             },
-            {
-                "rel": "self",
-                "href": stac_url("collections/high_tide_comp_20p"),
-            },
-            {
-                "rel": "items",
-                "href": stac_url("collections/high_tide_comp_20p/items"),
-            },
+            {"rel": "self", "href": stac_url("collections/high_tide_comp_20p")},
+            {"rel": "items", "href": stac_url("collections/high_tide_comp_20p/items")},
             {
                 "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
                 "href": stac_url("collections/high_tide_comp_20p/queryables"),
@@ -902,10 +885,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                     "dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml"
                 ),
             },
-            {
-                "rel": "collection",
-                "href": stac_url("collections/ls7_nbar_scene"),
-            },
+            {"rel": "collection", "href": stac_url("collections/ls7_nbar_scene")},
             {
                 "title": "ODC Product Overview",
                 "rel": "product_overview",
@@ -918,11 +898,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "type": "text/html",
                 "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
             },
-            {
-                "rel": "canonical",
-                "type": "text/yaml",
-                "href": dataset_uri,
-            },
+            {"rel": "canonical", "type": "text/yaml", "href": dataset_uri},
             {
                 "title": "Default ODC Explorer instance",
                 "rel": "root",
@@ -982,8 +958,7 @@ def test_stac_includes_total(stac_client: FlaskClient) -> None:
 def test_next_link(stac_client: FlaskClient) -> None:
     # next link should return next page of results
     geojson = get_items(
-        stac_client,
-        ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers"),
+        stac_client, ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers")
     )
     assert geojson.get("numberMatched", 0) > len(geojson.get("features", []))
 
@@ -1001,16 +976,12 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
         return sorted(d.get("id") for d in geojson.get("features", {}))
 
     # Can filter to an empty list. Nothing returned.
-    geojson = get_items(
-        stac_client,
-        "/stac/search?&collection=ls7_nbart_albers&ids=",
-    )
+    geojson = get_items(stac_client, "/stac/search?&collection=ls7_nbart_albers&ids=")
     assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Can request one dataset
     geojson = get_items(
-        stac_client,
-        "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376",
+        stac_client, "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -1042,16 +1013,14 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
 
     # Can filter using ids that don't exist.
     geojson = get_items(
-        stac_client,
-        "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca",
+        stac_client, "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca"
     )
     assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Old JSON-like syntax should be supported for now.
     # (Sat-api and the old code used this?)
     geojson = get_items(
-        stac_client,
-        '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]',
+        stac_client, '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]'
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -1137,7 +1106,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
                             [112.1484375, -43.32517767999294],
                         ]
                     ],
-                },
+                }
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},
@@ -1169,8 +1138,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # Get all in one collection
     geojson = get_items(
-        stac_client,
-        ("/stac/search?&collections=ls7_nbart_scene&limit=20"),
+        stac_client, ("/stac/search?&collections=ls7_nbart_scene&limit=20")
     )
     assert len(geojson.get("features", [])) == 4
 
@@ -1195,10 +1163,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # An empty URL parameter means it's unspecified.
     # (its doesn't mean match-the-empty-list!)
-    geojson = get_items(
-        stac_client,
-        ("/stac/search?&collections=&limit=20"),
-    )
+    geojson = get_items(stac_client, ("/stac/search?&collections=&limit=20"))
     assert len(geojson.get("features", [])) > 0
 
 
@@ -1501,14 +1466,8 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     filter_json = {
         "op": "and",
         "args": [
-            {
-                "op": "<>",
-                "args": [{"property": "dea:dataset_maturity"}, "final"],
-            },
-            {
-                "op": ">=",
-                "args": [{"property": "eo:cloud_cover"}, float(2)],
-            },
+            {"op": "<>", "args": [{"property": "dea:dataset_maturity"}, "final"]},
+            {"op": ">=", "args": [{"property": "eo:cloud_cover"}, float(2)]},
         ],
     }
     rv = stac_client.post(

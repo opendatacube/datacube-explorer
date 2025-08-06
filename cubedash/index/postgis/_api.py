@@ -119,9 +119,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return self.index.datasets.bulk_get(source_ids), remaining_records
 
     def find_months_needing_update(
-        self,
-        product_name: str,
-        only_those_newer_than: datetime,
+        self, product_name: str, only_those_newer_than: datetime
     ) -> Iterable[tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
@@ -187,9 +185,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 # Select years
                 select(years.start_day)
                 .where(years.period_type == "year")
-                .where(
-                    years.product_ref == product_id,
-                )
+                .where(years.product_ref == product_id)
                 # Where there exist months that are more newly created.
                 .where(
                     exists(
@@ -199,9 +195,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                             func.extract("year", updated_months.start_day)
                             == func.extract("year", years.start_day)
                         )
-                        .where(
-                            updated_months.product_ref == product_id,
-                        )
+                        .where(updated_months.product_ref == product_id)
                         .where(updated_months.generation_time > years.generation_time)
                     )
                 )
@@ -353,7 +347,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 where cubedash.dataset_spatial.product_ref = {product_id}
                 group by cubedash.dataset_spatial.region_code
             )
-                """),
+                """)
             )
 
     @override
@@ -490,9 +484,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     group by arrival_date, product_name
                     order by arrival_date desc, product_name;
                 """),
-                {
-                    "datasets_since": datasets_since_date,
-                },
+                {"datasets_since": datasets_since_date},
             )
 
     @override
@@ -692,11 +684,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def products_by_region(
-        self,
-        region_code: str,
-        time_range: Range | None,
-        limit: int,
-        offset: int = 0,
+        self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
     ) -> Generator[int, None, None]:
         query = (
             select(DatasetSpatial.product_ref)
@@ -725,13 +713,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if full:
                 return conn.execute(
                     delete(DatasetSpatial)
-                    .where(
-                        DatasetSpatial.product_ref == product_id,
-                    )
+                    .where(DatasetSpatial.product_ref == product_id)
                     .where(
                         ~DatasetSpatial.id.in_(
                             select(ODC_DATASET.id).where(
-                                ODC_DATASET.product_ref == product_id,
+                                ODC_DATASET.product_ref == product_id
                             )
                         )
                     )
@@ -783,10 +769,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 select(*column_values.values()).where(and_(*only_where)),
             )
             return conn.execute(
-                stmt.on_conflict_do_update(
-                    index_elements=["id"],
-                    set_=stmt.excluded,
-                )
+                stmt.on_conflict_do_update(index_elements=["id"], set_=stmt.excluded)
             ).rowcount
 
     @override
@@ -804,8 +787,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                                 [
                                     shapes[(int(sat_path.lower), row)]
                                     for row in range(
-                                        int(sat_row.lower),
-                                        int(sat_row.upper) + 1,
+                                        int(sat_row.lower), int(sat_row.upper) + 1
                                     )
                                 ]
                             ),
@@ -990,10 +972,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def region_counts(self, where_clause):
         with self.index._active_connection() as conn:
             return conn.execute(
-                select(
-                    DatasetSpatial.region_code.label("region_code"),
-                    func.count(),
-                )
+                select(DatasetSpatial.region_code.label("region_code"), func.count())
                 .where(where_clause)
                 .group_by("region_code")
             )
@@ -1084,11 +1063,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def sample_dataset(self, product_id: int, columns):
         with self.index._active_connection() as conn:
             res = conn.execute(
-                select(
-                    ODC_DATASET.id,
-                    ODC_DATASET.product_ref,
-                    *columns,
-                )
+                select(ODC_DATASET.id, ODC_DATASET.product_ref, *columns)
                 .where(
                     and_(
                         ODC_DATASET.product_ref
@@ -1106,10 +1081,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
             res = conn.execute(
-                select(
-                    literal(product.name).label("product"),
-                    srid_expression,
-                )
+                select(literal(product.name).label("product"), srid_expression)
                 .where(ODC_DATASET.product_ref == product.id)
                 .where(ODC_DATASET.archived.is_(None))
                 .limit(1)

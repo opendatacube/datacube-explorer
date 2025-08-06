@@ -98,10 +98,7 @@ class Summariser:
             {
                 d.date(): 0
                 for d in pd.date_range(
-                    begin_time,
-                    end_time,
-                    inclusive="left",
-                    nonexistent="shift_forward",
+                    begin_time, end_time, inclusive="left", nonexistent="shift_forward"
                 )
             }
         )

@@ -17,14 +17,7 @@ from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
-from sqlalchemy import (
-    BigInteger,
-    String,
-    case,
-    cast,
-    func,
-    null,
-)
+from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql.elements import ClauseElement, Label
 from sqlalchemy.types import TIMESTAMP
@@ -197,27 +190,17 @@ def refresh_spatial_extents(
         return 0
     log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
-    log.info(
-        "spatial_archival",
-    )
+    log.info("spatial_archival")
     # First, remove any archived datasets from our spatial table.
     changed = e_index.delete_datasets(product.id, assume_after_date)
 
-    log.info(
-        "spatial_archival.end",
-        change_count=changed,
-    )
+    log.info("spatial_archival.end", change_count=changed)
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
     if clean_up_deleted:
-        log.warning(
-            "spatial_deletion_full_scan",
-        )
+        log.warning("spatial_deletion_full_scan")
         changed += e_index.delete_datasets(product.id, full=True)
-        log.info(
-            "spatial_deletion_scan.end",
-            change_count=changed,
-        )
+        log.info("spatial_deletion_scan.end", change_count=changed)
 
     # We'll update first, then insert new records.
     # -> We do it in this order so that inserted records aren't immediately updated.
@@ -233,11 +216,7 @@ def refresh_spatial_extents(
         log.warning("spatial_update.recreating_everything")
 
     # Update any changed datasets
-    log.info(
-        "spatial_upsert",
-        product_name=product.name,
-        after_date=assume_after_date,
-    )
+    log.info("spatial_upsert", product_name=product.name, after_date=assume_after_date)
 
     changed += e_index.upsert_datasets(product.id, column_values, assume_after_date)
     log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
@@ -252,9 +231,7 @@ def refresh_spatial_extents(
             # And it has WRS path/rows...
             if "sat_path" in product.metadata_type.dataset_fields:
                 # We can synthesize the polygons!
-                log.info(
-                    "spatial_synthesizing",
-                )
+                log.info("spatial_synthesizing")
                 shapes = _get_path_row_shapes()
                 rows = [
                     row
@@ -265,9 +242,7 @@ def refresh_spatial_extents(
                 ]
                 if rows:
                     e_index.synthesize_dataset_footprint(rows, shapes)
-            log.info(
-                "spatial_synthesizing.end",
-            )
+            log.info("spatial_synthesizing.end")
 
     return changed
 

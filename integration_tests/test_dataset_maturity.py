@@ -31,8 +31,7 @@ def test_product_fixed_metadata_by_sample_percentage(
     # at 100% (all 20 datasets), the same dictionary will be returned
     # 100% of the time
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.get_product("ga_ls8c_ard_3"),
-        sample_datasets_size=20,
+        summary_store.get_product("ga_ls8c_ard_3"), sample_datasets_size=20
     )
 
     assert fixed_fields == {
@@ -47,8 +46,7 @@ def test_product_fixed_metadata_by_sample_percentage(
     # at 50% (10 datasets), there is a fair chance, maturity level
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.get_product("ga_ls8c_ard_3"),
-        sample_datasets_size=10,
+        summary_store.get_product("ga_ls8c_ard_3"), sample_datasets_size=10
     )
 
     assert len(fixed_fields) >= 5
@@ -57,8 +55,7 @@ def test_product_fixed_metadata_by_sample_percentage(
     # at 20% (4 datasets), there is a large chance, maturity level
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.get_product("ga_ls8c_ard_3"),
-        sample_datasets_size=4,
+        summary_store.get_product("ga_ls8c_ard_3"), sample_datasets_size=4
     )
 
     assert len(fixed_fields) >= 5
@@ -67,8 +64,7 @@ def test_product_fixed_metadata_by_sample_percentage(
     # at 5% (1 datasets), there is a large chance, maturity level
     # will be in the dictionary
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.get_product("ga_ls8c_ard_3"),
-        sample_datasets_size=1,
+        summary_store.get_product("ga_ls8c_ard_3"), sample_datasets_size=1
     )
 
     assert len(fixed_fields) >= 5

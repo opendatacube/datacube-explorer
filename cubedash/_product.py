@@ -90,16 +90,12 @@ def product_redirect():
 
 @bp.route("/products")
 def products_page():
-    return utils.render(
-        "products.html",
-    )
+    return utils.render("products.html")
 
 
 @bp.route("/metadata-types")
 def metadata_types_page():
-    return utils.render(
-        "metadata-types.html",
-    )
+    return utils.render("metadata-types.html")
 
 
 @bp.route("/product/<name>.odc-product.yaml")
@@ -177,11 +173,7 @@ def raw_all_products_doc():
         )
     )
     # Add Explorer ID to the download filename if they have one.
-    utils.suggest_download_filename(
-        resp,
-        prefix="products",
-        suffix=".odc-product.yaml",
-    )
+    utils.suggest_download_filename(resp, prefix="products", suffix=".odc-product.yaml")
 
     return resp
 
@@ -198,13 +190,11 @@ def raw_all_metadata_types_doc():
                 ),
             )
             for type_ in _model.STORE.all_metadata_types()
-        ),
+        )
     )
     # Add Explorer ID to the download filename if they have one.
     utils.suggest_download_filename(
-        resp,
-        prefix="metadata-types",
-        suffix=".odc-type.yaml",
+        resp, prefix="metadata-types", suffix=".odc-type.yaml"
     )
     return resp
 

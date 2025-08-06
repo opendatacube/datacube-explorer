@@ -80,11 +80,7 @@ def infer_crs(crs_str: str) -> str | None:
             ).get_matching_blocks()
         )
 
-    sorted_closest_wkt = sorted(
-        plausible_list,
-        key=chars_in_common,
-        reverse=False,
-    )
+    sorted_closest_wkt = sorted(plausible_list, key=chars_in_common, reverse=False)
 
     if len(sorted_closest_wkt) == 0:
         return None
@@ -628,10 +624,7 @@ def as_yaml(
 
     # TODO: once upstream is fixed, use the below line only
     # eodatasets3.serialise.dumps_yaml(stream, *o)
-    response = flask.Response(
-        stream.getvalue(),
-        content_type=content_type,
-    )
+    response = flask.Response(stream.getvalue(), content_type=content_type)
     if downloadable_filename_prefix:
         suggest_download_filename(response, downloadable_filename_prefix, ".yaml")
 
@@ -665,19 +658,13 @@ def as_csv(
     cw.writerow(headers)
     cw.writerows(rows)
     response = flask.make_response(out.getvalue())
-    suggest_download_filename(
-        response,
-        filename_prefix,
-        ".csv",
-    )
+    suggest_download_filename(response, filename_prefix, ".csv")
     response.headers["Content-type"] = "text/csv"
     return response
 
 
 def prepare_dataset_formatting(
-    dataset: Dataset,
-    include_source_url=False,
-    include_locations=False,
+    dataset: Dataset, include_source_url=False, include_locations=False
 ) -> CommentedMap:
     """
     Try to format a raw Dataset document for readability.
@@ -694,8 +681,7 @@ def prepare_dataset_formatting(
         doc = eodatasets3.serialise.prepare_formatting(doc)
         if include_source_url:
             doc.yaml_set_comment_before_after_key(
-                "$schema",
-                before=f"url: {flask.request.url}",
+                "$schema", before=f"url: {flask.request.url}"
             )
         # Strip EO-legacy fields.
         undo_eo3_compatibility(doc)
@@ -770,8 +756,7 @@ def prepare_document_formatting(
     if header_comments:
         # Add comments above the first key of the document.
         ordered_metadata.yaml_set_comment_before_after_key(
-            next(iter(metadata_doc.keys())),
-            before="\n".join(header_comments),
+            next(iter(metadata_doc.keys())), before="\n".join(header_comments)
         )
     return ordered_metadata
 
@@ -894,10 +879,9 @@ def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
         )
         # A zero distance may be used to “tidy” a polygon.
         clean = ds_geom.buffer(0.0)
-        assert clean.geom_type in (
-            "Polygon",
-            "MultiPolygon",
-        ), f"got {clean.geom_type} for cleaned {ds.id}"
+        assert clean.geom_type in ("Polygon", "MultiPolygon"), (
+            f"got {clean.geom_type} for cleaned {ds.id}"
+        )
         assert clean.is_valid
         return clean, False
 

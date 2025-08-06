@@ -255,16 +255,14 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient) -> None:
     """
     # Lightweight records...
     geojson = get_items(
-        client,
-        "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=false",
+        client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=false"
     )
     assert len(geojson.get("features")) == 1
     assert "gqa:abs_iterative_mean_xy" not in geojson["features"][0]["properties"]
 
     # .... And full records
     geojson = get_items(
-        client,
-        "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True",
+        client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True"
     )
     assert len(geojson.get("features")) == 1
     assert geojson["features"][0]["properties"][

@@ -706,9 +706,7 @@ def test_api_returns_timelines(client: FlaskClient) -> None:
     }
 
     doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3/2022/01/17")
-    assert doc == {
-        "2022-01-17T00:00:00": 1,
-    }
+    assert doc == {"2022-01-17T00:00:00": 1}
 
 
 pytest.mark.xfail(True, reason="telemetry data removed")
@@ -825,12 +823,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     )
     assert expected_metadata in res.output
     expected_period = "\n".join(
-        (
-            "Period: 2017 5 all-days",
-            "\tStorage size: 727.4MiB",
-            "\t3 datasets",
-            "",
-        )
+        ("Period: 2017 5 all-days", "\tStorage size: 727.4MiB", "\t3 datasets", "")
     )
     assert expected_period in res.output
 
@@ -927,8 +920,7 @@ def test_raw_documents(client: FlaskClient) -> None:
 
     # A legacy EO1 dataset
     check_doc_start_has_hint(
-        "EO1 Dataset",
-        "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml",
+        "EO1 Dataset", "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml"
     )
 
 

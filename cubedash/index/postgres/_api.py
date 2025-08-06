@@ -56,9 +56,7 @@ from ._schema import (
     TIME_OVERVIEW,
     init_elements,
 )
-from ._schema import (
-    get_srid_name as srid_name,
-)
+from ._schema import get_srid_name as srid_name
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
@@ -201,9 +199,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 # Select years
                 select(years.c.start_day)
                 .where(years.c.period_type == "year")
-                .where(
-                    years.c.product_ref == product_id,
-                )
+                .where(years.c.product_ref == product_id)
                 # Where there exist months that are more newly created.
                 .where(
                     exists(
@@ -213,9 +209,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                             func.extract("year", updated_months.c.start_day)
                             == func.extract("year", years.c.start_day)
                         )
-                        .where(
-                            updated_months.c.product_ref == product_id,
-                        )
+                        .where(updated_months.c.product_ref == product_id)
                         .where(
                             updated_months.c.generation_time > years.c.generation_time
                         )
@@ -368,7 +362,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 where cubedash.dataset_spatial.dataset_type_ref = {product_id}
                 group by cubedash.dataset_spatial.region_code
             )
-                """),
+                """)
             )
 
     @override
@@ -504,9 +498,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     group by arrival_date, product_name
                     order by arrival_date desc, product_name;
                 """),
-                {
-                    "datasets_since": datasets_since_date,
-                },
+                {"datasets_since": datasets_since_date},
             )
 
     @override
@@ -715,11 +707,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def products_by_region(
-        self,
-        region_code: str,
-        time_range: Range | None,
-        limit: int,
-        offset: int = 0,
+        self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
     ) -> Generator[int, None, None]:
         query = (
             select(DATASET_SPATIAL.c.dataset_type_ref)
@@ -752,13 +740,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if full:
                 return conn.execute(
                     DATASET_SPATIAL.delete()
-                    .where(
-                        DATASET_SPATIAL.c.dataset_type_ref == product_id,
-                    )
+                    .where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
                     .where(
                         ~DATASET_SPATIAL.c.id.in_(
                             select(ODC_DATASET.c.id).where(
-                                ODC_DATASET.c.dataset_type_ref == product_id,
+                                ODC_DATASET.c.dataset_type_ref == product_id
                             )
                         )
                     )
@@ -779,8 +765,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if after_date is not None:
                 archived_datasets = archived_datasets.where(
                     or_(
-                        ODC_DATASET.c.added > after_date,
-                        column("updated") > after_date,
+                        ODC_DATASET.c.added > after_date, column("updated") > after_date
                     )
                 )
 
@@ -806,10 +791,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         ]
         if after_date is not None:
             only_where.append(
-                or_(
-                    ODC_DATASET.c.added > after_date,
-                    column("updated") > after_date,
-                )
+                or_(ODC_DATASET.c.added > after_date, column("updated") > after_date)
             )
         with self.index._active_connection() as conn:
             stmt = insert(DATASET_SPATIAL).from_select(
@@ -818,10 +800,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 # original version includes an order_by... is it needed?
             )
             return conn.execute(
-                stmt.on_conflict_do_update(
-                    index_elements=["id"],
-                    set_=stmt.excluded,
-                )
+                stmt.on_conflict_do_update(index_elements=["id"], set_=stmt.excluded)
             ).rowcount
 
     @override
@@ -840,8 +819,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                                 [
                                     shapes[(int(sat_path.lower), row)]
                                     for row in range(
-                                        int(sat_row.lower),
-                                        int(sat_row.upper) + 1,
+                                        int(sat_row.lower), int(sat_row.upper) + 1
                                     )
                                 ]
                             ),
@@ -1023,10 +1001,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def region_counts(self, where_clause):
         with self.index._active_connection() as conn:
             return conn.execute(
-                select(
-                    DATASET_SPATIAL.c.region_code.label("region_code"),
-                    func.count(),
-                )
+                select(DATASET_SPATIAL.c.region_code.label("region_code"), func.count())
                 .where(where_clause)
                 .group_by("region_code")
             )
@@ -1138,10 +1113,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
             res = conn.execute(
-                select(
-                    literal(product.name).label("product"),
-                    srid_expression,
-                )
+                select(literal(product.name).label("product"), srid_expression)
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
                 .where(ODC_DATASET.c.archived.is_(None))
                 .limit(1)

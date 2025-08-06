@@ -8,10 +8,7 @@ from . import _model
 from . import _utils as utils
 
 _LOG = structlog.stdlib.get_logger()
-bp = Blueprint(
-    "dataset",
-    __name__,
-)
+bp = Blueprint("dataset", __name__)
 
 PROVENANCE_DISPLAY_LIMIT = 25
 

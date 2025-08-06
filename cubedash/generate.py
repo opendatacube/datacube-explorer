@@ -168,7 +168,7 @@ def run_generation(
 ) -> tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for "
-        f"{style(str(settings.env_name), bold=True)}",
+        f"{style(str(settings.env_name), bold=True)}"
     )
 
     counts: collections.Counter = collections.Counter()
@@ -473,13 +473,13 @@ def cli(
     elif not store.is_initialised():
         user_message(
             style("No cubedash schema exists. ", fg="red")
-            + "Please rerun with --init to create one",
+            + "Please rerun with --init to create one"
         )
         sys.exit(-1)
     elif not store.is_schema_compatible(for_writing_operations_too=True):
         user_message(
             style("Cubedash schema is out of date. ", fg="red")
-            + "Please rerun with --init to apply updates.",
+            + "Please rerun with --init to apply updates."
         )
         sys.exit(-2)
 
