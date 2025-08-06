@@ -641,6 +641,7 @@ def _handle_search_request(
         else:
             filter_lang = "cql2-json"
     if filter_cql:
+        assert filter_lang is not None
         _validate_filter(filter_lang, filter_cql)
 
     if time is not None:
