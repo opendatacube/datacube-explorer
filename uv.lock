@@ -700,6 +700,7 @@ test = [
     { name = "selectolax" },
     { name = "setproctitle" },
     { name = "types-cachetools" },
+    { name = "types-docker" },
     { name = "types-python-dateutil" },
 ]
 
@@ -768,6 +769,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=1.4" },
     { name = "structlog", specifier = ">=20.2.0" },
     { name = "types-cachetools", marker = "extra == 'test'" },
+    { name = "types-docker", marker = "extra == 'test'" },
     { name = "types-python-dateutil", marker = "extra == 'test'" },
 ]
 provides-extras = ["deployment", "test"]
@@ -3627,12 +3629,37 @@ wheels = [
 ]
 
 [[package]]
+name = "types-docker"
+version = "7.1.0.20250705"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "types-requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/79/54907dc50fe4e877ab96cb1bcc513178ad7801e4730ffec1e8dcb694b24d/types_docker-7.1.0.20250705.tar.gz", hash = "sha256:92972f7c49f0e40dd45f4f343c624505a4c176602439183b38a6f002110d1c6f", size = 31041, upload-time = "2025-07-05T03:07:58.106Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5a/f6/244fd4de58d31aec725fff20eb70e4123c9d8b75c8f20c9a8f3458d0673a/types_docker-7.1.0.20250705-py3-none-any.whl", hash = "sha256:f269103e1d21236bb64434a90ecaa5660250b115461463f8c2e991293b215ad2", size = 45838, upload-time = "2025-07-05T03:07:57.009Z" },
+]
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20250708"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c9/95/6bdde7607da2e1e99ec1c1672a759d42f26644bbacf939916e086db34870/types_python_dateutil-2.9.0.20250708.tar.gz", hash = "sha256:ccdbd75dab2d6c9696c350579f34cffe2c281e4c5f27a585b2a2438dd1d5c8ab", size = 15834, upload-time = "2025-07-08T03:14:03.382Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/72/52/43e70a8e57fefb172c22a21000b03ebcc15e47e97f5cb8495b9c2832efb4/types_python_dateutil-2.9.0.20250708-py3-none-any.whl", hash = "sha256:4d6d0cc1cc4d24a2dc3816024e502564094497b713f7befda4d5bc7a8e3fd21f", size = 17724, upload-time = "2025-07-08T03:14:02.593Z" },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.4.20250611"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6d/7f/73b3a04a53b0fd2a911d4ec517940ecd6600630b559e4505cc7b68beb5a0/types_requests-2.32.4.20250611.tar.gz", hash = "sha256:741c8777ed6425830bf51e54d6abe245f79b4dcb9019f1622b773463946bf826", size = 23118, upload-time = "2025-06-11T03:11:41.272Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/ea/0be9258c5a4fa1ba2300111aa5a0767ee6d18eb3fd20e91616c12082284d/types_requests-2.32.4.20250611-py3-none-any.whl", hash = "sha256:ad2fe5d3b0cb3c2c902c8815a70e7fb2302c4b8c1f77bdcd738192cdb3878072", size = 20643, upload-time = "2025-06-11T03:11:40.186Z" },
 ]
 
 [[package]]
