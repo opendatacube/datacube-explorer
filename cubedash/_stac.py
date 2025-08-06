@@ -9,7 +9,7 @@ from typing import Any, Union
 import flask
 import pystac
 import structlog
-from datacube.model import Dataset, Range
+from datacube.model import Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
 from eodatasets3 import serialise
@@ -178,7 +178,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     """
     Get a dict corresponding to a stac item
     """
-    ds: Dataset = dataset.odc_dataset
+    ds = dataset.odc_dataset
 
     if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
