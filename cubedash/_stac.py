@@ -1362,7 +1362,9 @@ def collection_month(collection: str, year: int, month: int):
             # Each item.
             *(
                 Link(
-                    title=_utils.dataset_label(item_summary.odc_dataset),
+                    title="Unknown"
+                    if item_summary.odc_dataset is None
+                    else _utils.dataset_label(item_summary.odc_dataset),
                     rel="item",
                     target=url_for(
                         ".item",
