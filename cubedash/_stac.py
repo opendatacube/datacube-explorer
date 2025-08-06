@@ -1262,8 +1262,10 @@ def collection(collection: str):
         _model.STORE.get_product(collection)
     except KeyError:
         abort(404, f"Collection {collection!r} not found")
-
-    return _stac_response(as_stac_collection(_model.STORE.get_collection(collection)))
+    # The preceding get_product ensures collection exists.
+    c = _model.STORE.get_collection(collection)
+    assert c is not None
+    return _stac_response(as_stac_collection(c))
 
 
 @bp.route("/collections/<collection>/items")
