@@ -667,7 +667,7 @@ def _handle_search_request(
 
     feature_collection = search_stac_items(
         product_names=product_names,
-        bbox=bbox,
+        bbox=None if bbox is None else tuple(bbox),
         time=time,
         dataset_ids=ids,
         limit=limit,
@@ -737,7 +737,7 @@ def _handle_collection_search(
         )
 
     return search_stac_collections(
-        bbox=bbox,
+        bbox=None if bbox is None else tuple(bbox),
         time=time,
         q=q,
         limit=limit,
