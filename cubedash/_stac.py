@@ -284,7 +284,8 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
         title=res.title,
         description=res.description,
         license=res.definition.get(
-            "license", flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
+            "license",
+            flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
         ),
         providers=[],
         extent=Extent(
