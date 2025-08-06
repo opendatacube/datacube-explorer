@@ -35,8 +35,6 @@ def dataset_page(id_):
 
 @bp.route("/products/<product_name>/datasets/<uuid:id_>")
 def dataset_full_page(product_name: str, id_: UUID):
-    derived_dataset_overflow = source_dataset_overflow = 0
-
     store = _model.STORE
     dataset = store.index.datasets.get(id_, include_sources=False)
 
