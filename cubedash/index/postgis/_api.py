@@ -107,7 +107,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         Returns a list of sources and how many more sources exist beyond the limit.
         """
-        source_ids = self.index.lineage.get_source_tree(
+        source_ids: set | list = self.index.lineage.get_source_tree(
             dataset_id, max_depth=1
         ).child_datasets()
         if limit and len(source_ids) > limit:
@@ -719,7 +719,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def delete_datasets(
         self, product_id: int, after_date: datetime | None = None, full: bool = False
-    ):
+    ) -> int:
         with self.index._active_connection() as conn:
             # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
             if full:
