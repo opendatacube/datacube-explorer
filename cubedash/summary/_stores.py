@@ -1596,12 +1596,12 @@ def _summary_from_row(
                 (
                     res["time_earliest"].astimezone(grouping_timezone)
                     if res["time_earliest"]
-                    else res["time_earliest"]
+                    else None
                 ),
                 (
                     res["time_latest"].astimezone(grouping_timezone)
                     if res["time_latest"]
-                    else res["time_latest"]
+                    else None
                 ),
             )
             if res["time_earliest"]
