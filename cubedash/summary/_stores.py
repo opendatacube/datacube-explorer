@@ -817,8 +817,8 @@ class SummaryStore:
 
     def get_quality_stats(self) -> Iterable[dict]:
         stats = self.e_index.select_spatial_stats()
-        for row in stats:
-            row = row._mapping
+        for s in stats:
+            row = s._mapping
             d = dict(row)
             d["product"] = self._product_by_id(row["product_ref"])
             d["avg_footprint_bytes"] = (
