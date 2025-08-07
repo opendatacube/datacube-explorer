@@ -1289,7 +1289,7 @@ class SummaryStore:
         """
         log = _LOG.bind(product_name=product_name)
 
-        old_product: ProductSummary = self.get_product_summary(product_name)
+        old_product = self.get_product_summary(product_name)
 
         # Which datasets to scan for updates?
         if (
