@@ -1347,7 +1347,7 @@ class SummaryStore:
             # Regenerate the old months too, in case any have been deleted.
             old_months = self._already_summarised_months(product_name)
 
-            months_to_update = sorted(
+            months_to_update: list[tuple[date, str]] | list[tuple[date, int]] = sorted(
                 (month, "all")
                 for month in old_months.union(
                     new_product.iter_months(self.grouping_timezone)
