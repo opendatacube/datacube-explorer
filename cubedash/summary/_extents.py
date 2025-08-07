@@ -455,7 +455,7 @@ class RegionInfo:
         return None
 
     def region(self, region_code: str) -> RegionSummary | None:
-        return self._known_regions.get(region_code)
+        return (self._known_regions or {}).get(region_code)
 
     def dataset_region_code(self, dataset: Dataset) -> str | None:
         """
