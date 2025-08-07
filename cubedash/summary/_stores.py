@@ -1764,7 +1764,7 @@ def _box2d_to_bbox(pg_box2d: str) -> tuple[float, float, float, float]:
 
     # We know there's exactly four groups, but type checker doesn't...
     # noinspection PyTypeChecker
-    return tuple(float(m) for m in m.groups())
+    return tuple(float(m) for m in m.groups())  # type: ignore[return-value]
 
 
 def _get_shape(geometry: WKBElement, crs) -> Geometry | None:
