@@ -239,7 +239,7 @@ class CollectionItem:
         return self.name
 
     @property
-    def description(self) -> str:
+    def description(self) -> str | None:
         return self.definition.get("description")
 
 
