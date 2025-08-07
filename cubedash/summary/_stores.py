@@ -833,7 +833,7 @@ class SummaryStore:
             return None
 
     @property
-    def grouping_timezone(self) -> tzinfo:
+    def grouping_timezone(self) -> tzinfo | None:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
@@ -1564,7 +1564,7 @@ def _safe_read_date(d):
 
 
 def _summary_from_row(
-    res, product_name: str, grouping_timezone: tzinfo = default_timezone
+    res, product_name: str, grouping_timezone: tzinfo | None = default_timezone
 ):
     timeline_dataset_counts = (
         Counter(
