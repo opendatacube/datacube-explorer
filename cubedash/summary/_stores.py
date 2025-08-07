@@ -1566,17 +1566,13 @@ def _safe_read_date(d):
 def _summary_from_row(
     res, product_name: str, grouping_timezone: tzinfo | None = default_timezone
 ):
-    timeline_dataset_counts = (
-        Counter(
-            dict(
-                zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"])
-            )
-        )
+    timeline_dataset_counts = Counter(
+        dict(zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"]))
         if res["timeline_dataset_start_days"]
         else None
     )
-    region_dataset_counts = (
-        Counter(dict(zip(res["regions"], res["region_dataset_counts"])))
+    region_dataset_counts = Counter(
+        dict(zip(res["regions"], res["region_dataset_counts"]))
         if res["regions"]
         else None
     )
@@ -1601,12 +1597,12 @@ def _summary_from_row(
                 (
                     res["time_earliest"].astimezone(grouping_timezone)
                     if res["time_earliest"]
-                    else res["time_earliest"]
+                    else None
                 ),
                 (
                     res["time_latest"].astimezone(grouping_timezone)
                     if res["time_latest"]
-                    else res["time_latest"]
+                    else None
                 ),
             )
             if res["time_earliest"]
