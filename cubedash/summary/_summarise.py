@@ -51,13 +51,14 @@ class Summariser:
     def calculate_summary(
         self,
         product_name: str,
-        year_month_day: tuple[int | None, int | None, int | None],
+        year_month_day: tuple[int, int | None, int | None],
         product_refresh_time: datetime,
     ) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
         """
         time = _utils.as_time_range(*year_month_day)
+        assert time is not None
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
