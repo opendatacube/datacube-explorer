@@ -1208,9 +1208,9 @@ class SummaryStore:
     def _recalculate_period(
         self,
         product: ProductSummary,
-        year: int | None = None,
-        month: int | None = None,
-        product_refresh_time: datetime | None = None,
+        year: int | None,
+        month: int | None,
+        product_refresh_time: datetime,
     ) -> TimePeriodOverview:
         """Recalculate the given period and store it in the DB"""
         if year and month:
@@ -1367,10 +1367,7 @@ class SummaryStore:
                 change_count=new_count,
             )
             self._recalculate_period(
-                new_product,
-                change_month.year,
-                change_month.month,
-                product_refresh_time=refresh_timestamp,
+                new_product, change_month.year, change_month.month, refresh_timestamp
             )
 
         # Find year records who are older than their month records
@@ -1378,16 +1375,11 @@ class SummaryStore:
         #    as from previous interrupted runs.)
         years_to_update = self.find_years_needing_update(product_name)
         for year in years_to_update:
-            self._recalculate_period(
-                new_product,
-                year,
-                product_refresh_time=refresh_timestamp,
-            )
+            self._recalculate_period(new_product, year, None, refresh_timestamp)
 
         # Now update the whole-product record
         updated_summary = self._recalculate_period(
-            new_product,
-            product_refresh_time=refresh_timestamp,
+            new_product, None, None, refresh_timestamp
         )
         _LOG.info(
             "product.complete!",
