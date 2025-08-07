@@ -192,7 +192,8 @@ def refresh_spatial_extents(
                               If None, all datasets will be regenerated.
     :param clean_up_deleted: Scan for any manually deleted rows too. Slow.
     """
-
+    if product.id is None:
+        return 0
     log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
     log.info(
