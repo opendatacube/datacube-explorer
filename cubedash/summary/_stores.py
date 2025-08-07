@@ -437,7 +437,7 @@ class SummaryStore:
             return True
 
         most_recent_change = self.index.products.most_recent_change(product_name)
-        has_new_changes = most_recent_change and (
+        has_new_changes = most_recent_change is not None and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
 
