@@ -321,15 +321,16 @@ def _default_crs(product: Product) -> str | None:
 def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
 
-    # Either there's a field called "created", or we fallback to the default "creation_dt' in metadata type.
-    created_field = md.dataset_fields.get("created")
-    if created_field is not None:
-        assert isinstance(created_field, PgDocField)
-        creation_expression = created_field.alchemy_expression
-    else:
-        creation_expression = md.dataset_fields.get("creation_time").alchemy_expression
+    # Either there's a field called "created", or we fall back to the default
+    # "creation_time' in metadata type.
+    created_field = md.dataset_fields.get("created") or md.dataset_fields.get(
+        "creation_time"
+    )
+    assert isinstance(created_field, PgDocField)
+    creation_expression = created_field.alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
+    # FIXME: cast should not be required.
     return func.coalesce(
         cast(creation_expression, TIMESTAMP(timezone=True)),
         md.dataset_fields.get("indexed_time").alchemy_expression,
