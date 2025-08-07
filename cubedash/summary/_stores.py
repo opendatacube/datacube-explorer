@@ -1214,9 +1214,9 @@ class SummaryStore:
     def _recalculate_period(
         self,
         product: ProductSummary,
-        year: int | None = None,
-        month: int | None = None,
-        product_refresh_time: datetime | None = None,
+        year: int | None,
+        month: int | None,
+        product_refresh_time: datetime,
     ) -> TimePeriodOverview:
         """Recalculate the given period and store it in the DB"""
         if year and month:
@@ -1389,12 +1389,15 @@ class SummaryStore:
             self._recalculate_period(
                 new_product,
                 year,
+                None,
                 product_refresh_time=refresh_timestamp,
             )
 
         # Now update the whole-product record
         updated_summary = self._recalculate_period(
             new_product,
+            None,
+            None,
             product_refresh_time=refresh_timestamp,
         )
         _LOG.info(

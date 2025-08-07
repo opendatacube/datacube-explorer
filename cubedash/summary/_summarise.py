@@ -124,12 +124,6 @@ class Summariser:
                 }
             )
 
-        if product_refresh_time is None:
-            raise RuntimeError(
-                "Internal error: Newly-made time summaries should "
-                "not have a null product refresh time."
-            )
-
         year, month, day = year_month_day
         summary = TimePeriodOverview(
             **row,
