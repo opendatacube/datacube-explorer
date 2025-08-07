@@ -1139,7 +1139,7 @@ class SummaryStore:
             field_exprs["collection"].label("product_name"),
         ]
 
-        query: Select = self.e_index.spatial_select_query(columns, full=full_dataset)
+        query = self.e_index.spatial_select_query(columns, full=full_dataset)
 
         # Add all the filters
         query = self._add_fields_to_query(
@@ -1289,7 +1289,7 @@ class SummaryStore:
         """
         log = _LOG.bind(product_name=product_name)
 
-        old_product: ProductSummary = self.get_product_summary(product_name)
+        old_product = self.get_product_summary(product_name)
 
         # Which datasets to scan for updates?
         if (
