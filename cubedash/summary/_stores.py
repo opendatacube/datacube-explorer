@@ -375,7 +375,7 @@ class SummaryStore:
         self,
         product_name: str,
         only_those_newer_than: datetime,
-    ) -> Iterable[tuple[date, int]]:
+    ) -> list[tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
