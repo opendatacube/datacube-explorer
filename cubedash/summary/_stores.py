@@ -409,10 +409,7 @@ class SummaryStore:
         # Empty product? No years
         if product.dataset_count == 0:
             # check if the timeoverview needs cleanse
-            if not summarised_years:
-                return []
-            else:
-                return summarised_years
+            return list(summarised_years)
 
         # All years we are expected to have
         expected_years = set(
