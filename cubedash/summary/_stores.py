@@ -1336,7 +1336,6 @@ class SummaryStore:
         log.info("extent.refresh.done", changed=extent_changes)
 
         refresh_timestamp = new_product.last_refresh_time
-        assert refresh_timestamp is not None
 
         # What month summaries do we need to generate?
 
