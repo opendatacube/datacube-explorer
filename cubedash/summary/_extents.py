@@ -13,7 +13,7 @@ from datacube.drivers.postgis._fields import PgDocField as PgisDocField
 from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
 from datacube.drivers.postgres._fields import PgDocField as PgresDocField
 from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
-from datacube.model import Dataset, Field, MetadataType, Product
+from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
@@ -437,9 +437,7 @@ class RegionInfo:
     def for_product(
         cls, product: Product, known_regions: dict[str, RegionSummary] | None = None
     ):
-        region_code_field: Field = product.metadata_type.dataset_fields.get(
-            "region_code"
-        )
+        region_code_field = product.metadata_type.dataset_fields.get("region_code")
 
         grid_spec = product.grid_spec
         # Ingested grids trump the "region_code" field because they've probably sliced it up smaller.
@@ -477,9 +475,7 @@ class RegionInfo:
         Classes that override this should also override dataset_region_code to match.
         """
         product = self.product
-        region_code_field: Field = product.metadata_type.dataset_fields.get(
-            "region_code"
-        )
+        region_code_field = product.metadata_type.dataset_fields.get("region_code")
         # `alchemy_expression` is part of the postgres driver (PgDocField),
         # not the base Field class.
         if not hasattr(region_code_field, "alchemy_expression"):
@@ -516,7 +512,7 @@ class GridRegionInfo(RegionInfo):
         This is usually the 'region_code' field, if one exists, but there are
         fallbacks for other native Satellites/Platforms.
 
-        Eg.
+        E.g.
 
         On Landsat scenes this is the path/row (separated by underscore)
         On tiles this is the tile numbers (separated by underscore: possibly with negative)
@@ -595,8 +591,8 @@ class SceneRegionInfo(RegionInfo):
         product = self.product
         # Generate region code for older sat_path/sat_row pairs.
         md_fields = product.metadata_type.dataset_fields
-        path_field: RangeDocField = md_fields["sat_path"]
-        row_field: RangeDocField = md_fields["sat_row"]
+        path_field = md_fields["sat_path"]
+        row_field = md_fields["sat_row"]
 
         return case(
             # Is this just one scene? Include it specifically
