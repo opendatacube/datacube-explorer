@@ -760,10 +760,11 @@ class SummaryStore:
 
         Returns one row for each uri scheme found (http, file etc).
         """
-        search_args = dict()
+        search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
-            search_args["time"] = _utils.as_time_range(year, month, day)
-        search_args["product"] = name
+            time = _utils.as_time_range(year, month, day)
+            assert time is not None
+            search_args["time"] = time
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
