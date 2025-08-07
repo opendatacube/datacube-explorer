@@ -1,6 +1,7 @@
 import functools
 import json
 import uuid
+from collections.abc import Generator
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -672,7 +673,7 @@ def _get_path_row_shapes():
 
 
 # see comment on get_sample_dataset
-def get_mapped_crses(products, e_index: ExplorerIndex) -> Iterable[dict]:
+def get_mapped_crses(products, e_index: ExplorerIndex) -> Generator[dict]:
     for product in products:
         res = e_index.mapped_crses(
             product,
