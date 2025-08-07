@@ -694,7 +694,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def products_by_region(
         self,
         region_code: str,
-        time_range: Range,
+        time_range: Range | None,
         limit: int,
         offset: int = 0,
     ) -> Generator[int, None, None]:
