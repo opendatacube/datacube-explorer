@@ -482,11 +482,11 @@ class RegionInfo:
         )
         # `alchemy_expression` is part of the postgres driver (PgDocField),
         # not the base Field class.
-        if not hasattr(region_code_field, "alchemy_expression"):
-            raise NotImplementedError(
-                "ODC index driver doesn't support alchemy expressions"
-            )
-        return region_code_field.alchemy_expression
+        if isinstance(region_code_field, PgDocField):
+            return region_code_field.alchemy_expression
+        raise NotImplementedError(
+            "ODC index driver does not support alchemy expressions"
+        )
 
     def region_label(self, region_code: str) -> str:
         """
