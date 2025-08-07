@@ -1,6 +1,7 @@
 import math
 import re
 from collections import Counter
+from collections.abc import Generator
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, tzinfo
@@ -8,7 +9,6 @@ from enum import Enum, auto
 from itertools import groupby
 from typing import (
     Any,
-    Generator,
     Iterable,
     Iterator,
     Literal,
@@ -815,7 +815,7 @@ class SummaryStore:
 
         return list(_common_paths_for_uris(uri_samples))
 
-    def get_quality_stats(self) -> Iterable[dict]:
+    def get_quality_stats(self) -> Generator[dict]:
         stats = self.e_index.select_spatial_stats()
         for s in stats:
             row = s._mapping
