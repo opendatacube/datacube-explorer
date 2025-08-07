@@ -1642,7 +1642,7 @@ def _summary_to_row(
 
     begin, end = summary.time_range if summary.time_range else (None, None)
 
-    if summary.footprint_geometry and summary.footprint_srid is None:
+    if summary.footprint_geometry is not None and summary.footprint_srid is None:
         raise ValueError("Geometry without srid", summary)
     if summary.product_refresh_time is None:
         raise ValueError("Product has no refresh time??", summary)
