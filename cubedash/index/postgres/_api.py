@@ -795,7 +795,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def upsert_datasets(
         self,
         product_id: int,
-        column_values: dict[str, list[Label]],
+        column_values: dict[str, Label],
         after_date: datetime | None,
     ) -> int:
         column_values["id"] = ODC_DATASET.c.id
