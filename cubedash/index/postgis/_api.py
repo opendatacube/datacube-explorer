@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -602,7 +602,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def find_fixed_columns(
         self,
         field_values: dict,
-        candidate_fields: list[tuple[str, Field]],
+        candidate_fields: Sequence[tuple[str, Field]],
         sample_ids: Iterable[tuple],
     ) -> Result:
         with self.index._active_connection() as conn:
