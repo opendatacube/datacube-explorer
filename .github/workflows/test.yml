@@ -13,6 +13,11 @@ on:
     paths:
       - '**'
 
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
 env:
   DOCKER_IMAGE: ghcr.io/opendatacube/explorer:tests
 
@@ -72,3 +77,16 @@ jobs:
           disable_search: true
           fail_ci_if_error: false
           use_oidc: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
+
+      - name: Build Packages
+        run: |
+          uv build
+          uv tool run twine check dist/*
+
+      # Uses to OIDC identification between GitHub and PyPI
+      - name: Upload package to PyPI on GitHub Release
+        if: "github.repository_owner == 'opendatacube' && github.event.action == 'published'"
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
