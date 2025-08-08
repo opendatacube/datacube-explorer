@@ -36,6 +36,7 @@ from shapely.geometry.base import BaseGeometry
 from sqlalchemy import (
     DDL,
     Row,
+    RowMapping,
     String,
     func,
     select,
@@ -1557,7 +1558,7 @@ def _safe_read_date(d):
 
 
 def _summary_from_row(
-    res, product_name: str, grouping_timezone: tzinfo = default_timezone
+    res: RowMapping, product_name: str, grouping_timezone: tzinfo = default_timezone
 ):
     timeline_dataset_counts = (
         Counter(
