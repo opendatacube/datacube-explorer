@@ -26,6 +26,7 @@ from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
+from odc.geo import MaybeCRS
 from pygeofilter.backends.sqlalchemy.evaluate import (
     SQLAlchemyFilterEvaluator as FilterEvaluator,
 )
@@ -1768,7 +1769,7 @@ def _box2d_to_bbox(pg_box2d: str) -> tuple[float, float, float, float]:
     return tuple(float(m) for m in m.groups())  # type: ignore[return-value]
 
 
-def _get_shape(geometry: WKBElement, crs) -> Geometry | None:
+def _get_shape(geometry: WKBElement | None, crs: MaybeCRS) -> Geometry | None:
     """
     Our shapes are valid in the db, but can become invalid on
     reprojection. We buffer if needed.
