@@ -142,24 +142,20 @@ class ProductSummary:
     id_: int | None = None
 
     def iter_months(
-        self, grouping_timezone=default_timezone
+        self, grouping_timezone: tzinfo = default_timezone
     ) -> Generator[date, None, None]:
         """
         Iterate through all months in its time range.
         """
-        if self.dataset_count == 0:
+        if (
+            self.dataset_count == 0
+            or self.time_earliest is None
+            or self.time_latest is None
+        ):
             return
 
-        start = (
-            self.time_earliest.astimezone(grouping_timezone)
-            if self.time_earliest
-            else self.time_earliest
-        )
-        end = (
-            self.time_latest.astimezone(grouping_timezone)
-            if self.time_latest
-            else self.time_latest
-        )
+        start = self.time_earliest.astimezone(grouping_timezone)
+        end = self.time_latest.astimezone(grouping_timezone)
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
