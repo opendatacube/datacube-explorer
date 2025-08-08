@@ -57,6 +57,7 @@ class Summariser:
         Create a summary of the given product/time range.
         """
         time = _utils.as_time_range(year, month, day)
+        assert time is not None  # Guaranteed by passing in a year to as_time_range.
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
