@@ -1069,10 +1069,8 @@ class SummaryStore:
         """
         Do the base select query to get the count of matching datasets.
         """
-        if filter_cql:  # to account the possibiity of 'collection' in the filter
-            query: Select = self.e_index.spatial_select_query([func.count()], full=True)
-        else:
-            query: Select = self.e_index.spatial_select_query([func.count()])
+        # to account the possibility of 'collection' in the filter
+        query = self.e_index.spatial_select_query([func.count()], full=bool(filter_cql))
 
         field_exprs = self._get_field_exprs(product_names)
         query = self._add_fields_to_query(
