@@ -9,7 +9,7 @@ from typing import Any, Union
 import flask
 import pystac
 import structlog
-from datacube.model import Dataset, Range
+from datacube.model import Range
 from datacube.utils import DocReader, parse_time
 from dateutil.tz import tz
 from eodatasets3 import serialise
@@ -22,7 +22,7 @@ from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
-from werkzeug.datastructures import TypeConversionDict
+from werkzeug.datastructures import ImmutableMultiDict, TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
 
 from cubedash.summary._stores import CollectionItem, DatasetItem
@@ -163,7 +163,7 @@ def url_for(*args, **kwargs):
 # Conversions
 
 
-def _band_to_measurement(band: dict, dataset_location: str) -> MeasurementDoc:
+def _band_to_measurement(band: dict, dataset_location: str | None) -> MeasurementDoc:
     """Create EO3 measurement from an EO1 band dict"""
     return MeasurementDoc(
         path=band.get("path"),
@@ -178,11 +178,11 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     """
     Get a dict corresponding to a stac item
     """
-    ds: Dataset = dataset.odc_dataset
+    ds = dataset.odc_dataset
 
     if ds is not None and is_doc_eo3(ds.metadata_doc):
         dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
-        dataset_doc.locations = [ds.uri]
+        dataset_doc.locations = None if ds.uri is None else [ds.uri]
 
         # Geometry is optional in eo3, and needs to be calculated from grids if missing.
         # We can use ODC's own calculation that happens on index.
@@ -214,7 +214,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             # Filled-in below.
             label=None,
             product=ProductDoc(dataset.product_name),
-            locations=[ds.uri] if ds is not None else None,
+            locations=None if ds is None or ds.uri is None else [ds.uri],
             crs=str(dataset.geometry.crs) if dataset.geometry is not None else None,
             geometry=dataset.geometry.geom if dataset.geometry is not None else None,
             grids=None,
@@ -230,7 +230,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
                 {
                     name: _band_to_measurement(
                         b,
-                        dataset_location=(ds.uri if ds is not None else None),
+                        dataset_location=ds.uri if ds is not None else None,
                     )
                     for name, b in ds.measurements.items()
                 }
@@ -284,7 +284,8 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
         title=res.title,
         description=res.description,
         license=res.definition.get(
-            "license", flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", None)
+            "license",
+            flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
         ),
         providers=[],
         extent=Extent(
@@ -640,6 +641,7 @@ def _handle_search_request(
         else:
             filter_lang = "cql2-json"
     if filter_cql:
+        assert filter_lang is not None
         _validate_filter(filter_lang, filter_cql)
 
     if time is not None:
@@ -665,7 +667,7 @@ def _handle_search_request(
 
     feature_collection = search_stac_items(
         product_names=product_names,
-        bbox=bbox,
+        bbox=None if bbox is None else tuple(bbox),
         time=time,
         dataset_ids=ids,
         limit=limit,
@@ -735,7 +737,7 @@ def _handle_collection_search(
         )
 
     return search_stac_collections(
-        bbox=bbox,
+        bbox=None if bbox is None else tuple(bbox),
         time=time,
         q=q,
         limit=limit,
@@ -902,7 +904,7 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
-        next_link = dict(
+        next_link: dict[str, str | bool | dict] = dict(
             rel="next",
             title="Next page of Items",
             type="application/geo+json",
@@ -964,7 +966,7 @@ def search_stac_collections(
         list(_model.STORE.search_collections(time=time, bbox=bbox, q=q))
     )
 
-    extra_properties = dict(
+    extra_properties: dict[str, int | list[dict]] = dict(
         links=[],
         numberReturned=len(returned),
         numberMatched=count_matching,
@@ -980,7 +982,7 @@ def search_stac_collections(
             method="GET",
             href=get_next_url(offset + limit),
         )
-
+        assert not isinstance(extra_properties["links"], int)
         extra_properties["links"].append(next_link)
 
     return result, extra_properties
@@ -1122,11 +1124,11 @@ def stac_search():
     Search api for stac items.
     """
     if request.method == "GET":
-        args = request.args
+        args: ImmutableMultiDict | TypeConversionDict = request.args
     else:
         args = TypeConversionDict(request.get_json())
 
-    products = args.get("collections", default=[], type=_array_arg)
+    products: list = args.get("collections", default=[], type=_array_arg)
 
     if "collection" in args:
         products.append(args.get("collection"))
@@ -1260,8 +1262,10 @@ def collection(collection: str):
         _model.STORE.get_product(collection)
     except KeyError:
         abort(404, f"Collection {collection!r} not found")
-
-    return _stac_response(as_stac_collection(_model.STORE.get_collection(collection)))
+    # The preceding get_product ensures collection exists.
+    c = _model.STORE.get_collection(collection)
+    assert c is not None
+    return _stac_response(as_stac_collection(c))
 
 
 @bp.route("/collections/<collection>/items")
@@ -1358,7 +1362,9 @@ def collection_month(collection: str, year: int, month: int):
             # Each item.
             *(
                 Link(
-                    title=_utils.dataset_label(item_summary.odc_dataset),
+                    title="Unknown"
+                    if item_summary.odc_dataset is None
+                    else _utils.dataset_label(item_summary.odc_dataset),
                     rel="item",
                     target=url_for(
                         ".item",
