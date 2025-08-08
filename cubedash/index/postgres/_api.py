@@ -147,7 +147,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         with self.index._active_connection() as conn:
             remaining_records = 0
-            total_count = 0
             datasets = conn.execute(query).fetchall()
 
             if limit and len(datasets) > limit:
