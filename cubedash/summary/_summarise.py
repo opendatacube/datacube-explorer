@@ -48,13 +48,15 @@ class Summariser:
     def calculate_summary(
         self,
         product_name: str,
-        year_month_day: tuple[int | None, int | None, int | None],
+        year: int,
+        month: int | None,
+        day: int | None,
         product_refresh_time: datetime,
     ) -> TimePeriodOverview:
         """
         Create a summary of the given product/time range.
         """
-        time = _utils.as_time_range(*year_month_day)
+        time = _utils.as_time_range(year, month, day)
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
@@ -127,7 +129,6 @@ class Summariser:
                 "not have a null product refresh time."
             )
 
-        year, month, day = year_month_day
         summary = TimePeriodOverview(
             **row,
             product_name=product_name,

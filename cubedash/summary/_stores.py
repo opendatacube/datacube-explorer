@@ -671,9 +671,7 @@ class SummaryStore:
         if year and month and day:
             # We don't store days, they're quick.
             return self._summariser.calculate_summary(
-                product_name,
-                year_month_day=(year, month, day),
-                product_refresh_time=datetime.now(),
+                product_name, year, month, day, datetime.now()
             )
 
         product = self.get_product_summary(product_name)
@@ -1217,9 +1215,7 @@ class SummaryStore:
         """Recalculate the given period and store it in the DB"""
         if year and month:
             summary = self._summariser.calculate_summary(
-                product.name,
-                year_month_day=(year, month, None),
-                product_refresh_time=product_refresh_time,
+                product.name, year, month, None, product_refresh_time
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
