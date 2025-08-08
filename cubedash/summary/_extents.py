@@ -336,24 +336,6 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     )
 
 
-# not used anywhere?
-def get_dataset_bounds_query(md_type):
-    if "lat" not in md_type.dataset_fields:
-        # Not a spatial product
-        return None
-
-    lat, lon = md_type.dataset_fields["lat"], md_type.dataset_fields["lon"]
-    assert isinstance(lat, RangeDocField)
-    assert isinstance(lon, RangeDocField)
-    return func.ST_MakeBox2D(
-        func.ST_MakePoint(lat.lower.alchemy_expression, lon.lower.alchemy_expression),
-        func.ST_MakePoint(
-            lat.greater.alchemy_expression, lon.greater.alchemy_expression
-        ),
-        type_=Geometry,
-    )
-
-
 def as_sql(expression, **params) -> str:
     """Convert sqlalchemy expression to SQL string.
 
