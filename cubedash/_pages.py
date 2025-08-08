@@ -173,10 +173,10 @@ def search_page(
     args = MultiDict(flask.request.args)
     try:
         query = utils.query_to_search(args, product=product)
-    except ValueError as e:  # invalid query val
-        abort(400, str(e))
     except ParserError:
         abort(400, "Invalid datetime format")
+    except ValueError as e:  # invalid query val
+        abort(400, str(e))
     except decimal.InvalidOperation:
         abort(400, "Could not convert value to decimal")
 
