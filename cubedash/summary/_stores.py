@@ -178,7 +178,7 @@ class DatasetItem:
     dataset_id: UUID
     bbox: object
     product_name: str
-    geometry: Geometry
+    geometry: Geometry | None
     region_code: str
     creation_time: datetime
     center_time: datetime
