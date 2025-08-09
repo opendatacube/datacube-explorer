@@ -21,11 +21,15 @@ from zoneinfo import ZoneInfo
 import dateutil.parser
 import structlog
 from cachetools.func import ttl_cache
+from datacube.drivers.postgres._fields import PgDocField
+from datacube.index import Index
+from datacube.model import Dataset, MetadataType, Product, Range
 from dateutil import tz
 from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
+from odc.geo.geom import Geometry
 from pygeofilter.backends.sqlalchemy.evaluate import (
     SQLAlchemyFilterEvaluator as FilterEvaluator,
 )
@@ -43,15 +47,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
-
-try:
-    from cubedash._version import version as explorer_version
-except ModuleNotFoundError:
-    explorer_version = "ci-test-pipeline"
-from datacube.drivers.postgres._fields import PgDocField
-from datacube.index import Index
-from datacube.model import Dataset, MetadataType, Product, Range
-from odc.geo.geom import Geometry
 
 from cubedash import _utils
 from cubedash.index import EmptyDbError, ExplorerIndex
@@ -308,14 +303,12 @@ class SummaryStore:
         """
         Have all schema updates been applied?
         """
+        from cubedash._version import __version__
+
         postgis_ver, is_compatible = self.e_index.schema_compatible_info(
             for_writing_operations_too
         )
-        _LOG.debug(
-            "software.version",
-            postgis=postgis_ver,
-            explorer=explorer_version,
-        )
+        _LOG.debug("software.version", postgis=postgis_ver, explorer=__version__)
         return is_compatible
 
     def init(self, grouping_epsg_code: int | None = None) -> None:
