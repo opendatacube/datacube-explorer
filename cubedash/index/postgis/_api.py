@@ -1104,8 +1104,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
-            # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
-            # pylint: disable=singleton-comparison
             res = conn.execute(
                 select(
                     literal(product.name).label("product"),
