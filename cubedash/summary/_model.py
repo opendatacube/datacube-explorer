@@ -34,8 +34,8 @@ class TimePeriodOverview:
 
     time_range: Range
 
-    footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon
-    footprint_crs: str
+    footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon | None
+    footprint_crs: str | None
 
     footprint_count: int
 

@@ -34,14 +34,7 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import (
-    DDL,
-    Row,
-    RowMapping,
-    String,
-    func,
-    select,
-)
+from sqlalchemy import DDL, Row, RowMapping, String, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
@@ -237,7 +230,7 @@ class CollectionItem:
         return self.name
 
     @property
-    def description(self) -> str:
+    def description(self) -> str | None:
         return self.definition.get("description")
 
 
@@ -373,7 +366,7 @@ class SummaryStore:
         self,
         product_name: str,
         only_those_newer_than: datetime,
-    ) -> Iterable[tuple[date, int]]:
+    ) -> list[tuple[date, int]]:
         """
         What months have had dataset changes since they were last generated?
         """
@@ -407,10 +400,7 @@ class SummaryStore:
         # Empty product? No years
         if product.dataset_count == 0:
             # check if the timeoverview needs cleanse
-            if not summarised_years:
-                return []
-            else:
-                return summarised_years
+            return list(summarised_years)
 
         # All years we are expected to have
         expected_years = set(
@@ -831,7 +821,7 @@ class SummaryStore:
             return None
 
     @property
-    def grouping_timezone(self) -> tzinfo:
+    def grouping_timezone(self) -> tzinfo | None:
         """Timezone used for day/month/year grouping."""
         return tz.gettz(self._summariser.grouping_time_zone)
 
@@ -1547,7 +1537,9 @@ def _safe_read_date(d):
 
 
 def _summary_from_row(
-    res: RowMapping, product_name: str, grouping_timezone: tzinfo = default_timezone
+    res: RowMapping,
+    product_name: str,
+    grouping_timezone: tzinfo | None = default_timezone,
 ):
     timeline_dataset_counts = (
         Counter(
