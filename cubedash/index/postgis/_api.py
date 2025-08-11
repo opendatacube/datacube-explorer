@@ -468,7 +468,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def latest_arrivals(self, period_length: timedelta) -> Result:
         with self.engine.begin() as conn:
-            latest_arrival_date: datetime = conn.execute(
+            latest_arrival_date = conn.execute(
                 text("select max(added) from odc.dataset;")
             ).scalar()
             if latest_arrival_date is None:
@@ -874,7 +874,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def schema_compatible_info(self, for_writing_operations_too=False):
         """
         Schema compatibility information
-        postgis version, if schema has latest changes (optional: and has updated column)
+        postgis version, if schema has the latest changes
+        (optional: and has updated column).
         """
         with self.engine.begin() as conn:
             return (
@@ -1104,8 +1105,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
-            # SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
-            # pylint: disable=singleton-comparison
             res = conn.execute(
                 select(
                     literal(product.name).label("product"),
