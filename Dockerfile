@@ -85,8 +85,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
             gosu \
-            # For .docker/create_db.sh.
-            postgresql-client \
+            libpq5 \
             tini \
     && mkdir /app \
     && chown ubuntu:ubuntu /app

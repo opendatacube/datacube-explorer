@@ -380,7 +380,7 @@ When you have some ODC data indexed, you can run ``make index`` to create the Ex
 
 Once Explorer indexes have been created, you can browse the running application at `http://localhost:5000 <http://localhost:5000>`__
 
-You can run tests by first creating a test database ``make create-test-db-docker`` and then running tests with ``make test-docker``.
+You can run tests with ``make test-docker``.
 
 And you can run a single test in Docker using a command like this: ``docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py``
 

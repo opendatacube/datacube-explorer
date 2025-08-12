@@ -67,7 +67,6 @@ jobs:
           export LOCAL_UID=$(id -u $USER)
           export LOCAL_GID=$(id -g $USER)
           make up-d
-          make create-test-db-docker
           make test-docker
 
       - name: Upload coverage to Codecov
