@@ -42,11 +42,11 @@ cubedash/static/overview.js: cubedash/static/overview.ts
 
 .PHONY: test
 test: ## Run tests using pytest
-	pytest --cov=cubedash --cov-report=xml -r sx --durations=5
+	pytest $(PYTEST_PARAMS) --cov=cubedash --cov-report=xml -r sx --durations=5
 
 .PHONY: testcov
 testcov:
-	pytest --cov=cubedash
+	pytest $(PYTEST_PARAMS) --cov=cubedash
 	@echo "building coverage html"
 	@coverage html
 
@@ -118,4 +118,5 @@ lint-docker: ## Run linting inside inside Docker
 
 test-docker: ## Run tests inside Docker
 	docker compose run --rm explorer \
-		bash --login -c "cd /code && pytest --cov=cubedash --cov-report=xml -r sx --durations=5"
+		bash --login -c \
+		  "cd /code && pytest $(PYTEST_PARAMS) --cov=cubedash --cov-report=xml -r sx --durations=5"
