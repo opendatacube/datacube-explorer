@@ -829,7 +829,7 @@ def search_stac_items(
     get_next_url: Callable[[int], str],
     limit: int = 0,
     offset: int = 0,
-    dataset_ids: str | None = None,
+    dataset_ids: Sequence[uuid.UUID] | None = None,
     product_names: list[str] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
     intersects: BaseGeometry | None = None,
