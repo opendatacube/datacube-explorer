@@ -1165,7 +1165,9 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                self.get(product.name, year, month_, None) for month_ in range(1, 13)
+                p
+                for month_ in range(1, 13)
+                if (p := self.get(product.name, year, month_, None)) and p is not None
             )
 
         # Product. Does it have data?
