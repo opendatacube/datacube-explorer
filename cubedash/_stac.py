@@ -474,16 +474,16 @@ def _bool_argument(s: str | bool):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: str | dict):
+def _dict_arg(arg: str | dict[str, Any]) -> dict[str, Any]:
     """
     Parse stac extension arguments as dicts
     """
     if isinstance(arg, str):
-        arg = json.loads(arg.replace("'", '"'))
+        return json.loads(arg.replace("'", '"'))
     return arg
 
 
-def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
+def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
     """
     Parse field argument into a dict
     """
@@ -505,7 +505,7 @@ def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
         return {"include": include, "exclude": exclude}
 
 
-def _sort_arg(arg: str | list) -> list[dict]:
+def _sort_arg(arg: str | list) -> list[dict[str, Any]]:
     """
     Parse sortby argument into a list of dicts
     """
