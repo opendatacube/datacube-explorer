@@ -18,7 +18,7 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, current_app, request
-from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
+from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
@@ -743,16 +743,12 @@ def _handle_collection_search(
 # Item search extensions
 
 
-def _get_property(prop: str, item: ItemLike, no_default=False):
+def _get_property(prop: str, item: Item, no_default: bool = False):
     """So that we don't have to keep using this bulky expression"""
-    if isinstance(item, pystac.Item):
-        item = item.to_dict()
-    return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
+    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
 
 
-def _handle_fields_extension(
-    items: Sequence[ItemLike], fields: dict
-) -> Sequence[ItemLike]:
+def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
     This implementation differs slightly from the documented semantics in that the default fields will always
