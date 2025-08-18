@@ -526,6 +526,7 @@ def _sort_arg(arg: str | list) -> list[dict[str, Any]]:
             return [_format(a) for a in arg]
         if isinstance(arg[0], dict):
             for a in arg:
+                assert isinstance(a, dict)
                 a["field"] = _remove_prefixes(a["field"])
 
     return arg
