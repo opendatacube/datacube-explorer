@@ -8,7 +8,7 @@ from pathlib import Path
 # The only thing tested under this directory is doctests, so only collect
 # files that need testing (=have lines starting with whitespace + ">>>").
 #
-# This isn't a performance consideration, but is to 
+# This isn't a performance consideration, but is to
 # avoid triggering spurious deprecation warnings
 def pytest_ignore_collect(collection_path: Path) -> bool:
     if collection_path.is_dir():
