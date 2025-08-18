@@ -853,8 +853,6 @@ def search_stac_items(
         limit = get_default_limit()
 
     offset = offset or 0
-    if sortby is not None:
-        order = sortby
     items = list(
         _model.STORE.search_items(
             product_names=product_names,
@@ -867,7 +865,7 @@ def search_stac_items(
             full_dataset=full_information,
             filter_lang=filter_lang,
             filter_cql=filter_cql,
-            order=order,
+            order=sortby if sortby is not None else order,
         )
     )
     returned = items[:limit]
