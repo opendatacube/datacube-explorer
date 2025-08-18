@@ -1405,12 +1405,12 @@ class SummaryStore:
         self,
         product: Product,
         region_code: str,
-        year: int,
-        month: int,
-        day: int,
+        year: int | None,
+        month: int | None,
+        day: int | None,
         limit: int,
         offset: int = 0,
-    ) -> Iterable[Dataset]:
+    ) -> Generator[Dataset]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )
