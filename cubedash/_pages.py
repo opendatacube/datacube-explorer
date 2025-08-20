@@ -430,9 +430,13 @@ def timeline_page(product_name: str):
 
 
 def _load_product(
-    product_name: str, year, month, day
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> tuple[
-    Product, ProductSummary, TimePeriodOverview, TimePeriodOverview, TimePeriodOverview
+    Product,
+    ProductSummary | None,
+    TimePeriodOverview | None,
+    TimePeriodOverview | None,
+    TimePeriodOverview | None,
 ]:
     try:
         product = _model.STORE.get_product(product_name)
