@@ -343,7 +343,7 @@ def region_page(
 
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
-        page_args = dict(flask.request.view_args)
+        page_args = dict(flask.request.view_args or {})
         page_args["_o"] = new_offset
         return url_for("pages.region_page", **page_args)
 
