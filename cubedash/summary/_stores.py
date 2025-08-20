@@ -404,7 +404,7 @@ class SummaryStore:
             return True
 
         most_recent_change = self.index.products.most_recent_change(product_name)
-        has_new_changes = most_recent_change and (
+        has_new_changes = most_recent_change is not None and (
             most_recent_change > existing_product_summary.last_refresh_time
         )
 
@@ -760,10 +760,11 @@ class SummaryStore:
 
         Returns one row for each uri scheme found (http, file etc).
         """
-        search_args = dict()
+        search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
-            search_args["time"] = _utils.as_time_range(year, month, day)
-        search_args["product"] = name
+            time = _utils.as_time_range(year, month, day)
+            assert time is not None
+            search_args["time"] = time
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
@@ -1164,7 +1165,9 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                self.get(product.name, year, month_, None) for month_ in range(1, 13)
+                p
+                for month_ in range(1, 13)
+                if (p := self.get(product.name, year, month_, None)) and p is not None
             )
 
         # Product. Does it have data?
@@ -1404,12 +1407,12 @@ class SummaryStore:
         self,
         product: Product,
         region_code: str,
-        year: int,
-        month: int,
-        day: int,
+        year: int | None,
+        month: int | None,
+        day: int | None,
         limit: int,
         offset: int = 0,
-    ) -> Iterable[Dataset]:
+    ) -> Generator[Dataset]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
         )

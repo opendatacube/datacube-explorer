@@ -186,7 +186,7 @@ class ExplorerAbstractIndex(ABC):
         self,
         product: Product,
         region_code: str,
-        time_range: Range,
+        time_range: Range | None,
         limit: int,
         offset: int = 0,
     ) -> Generator[Dataset, None, None]: ...

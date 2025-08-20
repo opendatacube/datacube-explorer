@@ -117,6 +117,8 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
     """
     time_period = time.split("/")
     if len(time_period) == 2:
+        start: str | datetime
+        end: str | datetime
         start, end = time_period
         if start == "..":
             start = datetime(1971, 1, 1, 0, 0)
