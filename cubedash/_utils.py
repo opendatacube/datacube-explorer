@@ -31,7 +31,7 @@ from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
-from odc.geo import geom
+from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
 from orjson import orjson
 from pyproj import CRS as PJCRS
@@ -892,8 +892,11 @@ def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
     return ds_geom, True
 
 
-def bbox_as_geom(dataset):
+def bbox_as_geom(dataset: Dataset) -> Geometry | None:
     """Get dataset bounds as to Geometry object projected to target CRS"""
     if dataset.crs is None:
         return None
-    return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
+    bounds = dataset.bounds
+    if bounds is None:
+        return None
+    return geom.box(*bounds.bbox, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
