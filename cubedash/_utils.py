@@ -17,7 +17,6 @@ from urllib.parse import urljoin, urlparse
 
 import eodatasets3.serialise
 import flask
-import numpy as np
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -605,25 +604,7 @@ def as_yaml(
     Multiple args will return a multi-doc yaml file.
     """
     stream = StringIO()
-
-    # TODO: remove the two functions once eo-datasets fix is released
-    def _represent_float(self, value):
-        text = np.format_float_scientific(value)
-        return self.represent_scalar("tag:yaml.org,2002:float", text)
-
-    def dumps_yaml(yml, stream, *docs) -> None:
-        """Dump yaml through a stream, using the default serialisation settings."""
-        return yml.dump_all(docs, stream=stream)
-
-    yml = eodatasets3.serialise._init_yaml()
-
-    # extend from eodatasets3 serialise
-    yml.representer.add_representer(float, _represent_float)
-    dumps_yaml(yml, stream, *o)
-    # ENDTODO
-
-    # TODO: once upstream is fixed, use the below line only
-    # eodatasets3.serialise.dumps_yaml(stream, *o)
+    eodatasets3.serialise.dumps_yaml(stream, *o)
     response = flask.Response(stream.getvalue(), content_type=content_type)
     if downloadable_filename_prefix:
         suggest_download_filename(response, downloadable_filename_prefix, ".yaml")
