@@ -1423,9 +1423,9 @@ class SummaryStore:
     def find_products_for_region(
         self,
         region_code: str,
-        year: int,
-        month: int,
-        day: int,
+        year: int | None,
+        month: int | None,
+        day: int | None,
         limit: int,
         offset: int = 0,
     ) -> Iterable[Product]:
