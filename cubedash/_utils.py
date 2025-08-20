@@ -179,8 +179,8 @@ def as_external_url(
     >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
     'https://some-data.s3.ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
     >>> # Other URLs are left as-is
-    >>> unconvertable_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
-    >>> unconvertable_url == as_external_url(unconvertable_url)
+    >>> unconvertible_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
+    >>> unconvertible_url == as_external_url(unconvertible_url)
     True
     >>> as_external_url('some/relative/path.txt')
     'some/relative/path.txt'
@@ -543,7 +543,7 @@ def as_geojson(o, downloadable_filename_prefix: str | None = None):
 def common_uri_prefix(uris: Sequence[str]):
     """
     This is like `os.path.commonpath()`, but always expects URL paths.
-    (ie. forward slashes in all environments, and wont strip double slashes '//')
+    (i.e. forward slashes in all environments, and will not strip double slashes '//')
 
     >>> common_uri_prefix(['file:///a/thing-1.txt'])
     'file:///a/thing-1.txt'
