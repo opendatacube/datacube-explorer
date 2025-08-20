@@ -118,7 +118,7 @@ def test_month_iteration() -> None:
         __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
         product = ProductSummary(
-            "test_product", 5, start, end, [], [], {}, datetime.now()
+            "test_product", 5, (start, end), [], [], {}, datetime.now()
         )
         got_months = list(product.iter_months())
         assert got_months == expected_months, "Incorrect set of iterated months"
@@ -179,8 +179,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
         ProductSummary(
             product_name,
             4321,
-            datetime(2017, 1, 1),
-            datetime(2017, 4, 1),
+            (datetime(2017, 1, 1), datetime(2017, 4, 1)),
             [],
             [],
             {},

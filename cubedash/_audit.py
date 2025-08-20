@@ -36,11 +36,12 @@ def product_timings() -> Iterable[ProductTiming]:
         if not p:
             _LOG.info("product_no_summarised", product_name=product_name)
             continue
-        if not p.dataset_count or not p.time_earliest or not p.time_latest:
+        if not p.dataset_count or p.full_time is None:
             yield ProductTiming(product_name, dataset_count=0)
             continue
         done += 1
-        middle_period = p.time_earliest + (p.time_latest - p.time_earliest) / 2
+        time_earliest, time_latest = p.full_time
+        middle_period = time_earliest + (time_latest - time_earliest) / 2
         day = middle_period.replace(hour=0, minute=0, second=0)
 
         start = time.time()

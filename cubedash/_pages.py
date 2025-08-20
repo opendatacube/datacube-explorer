@@ -197,10 +197,11 @@ def search_page(
         if not isinstance(search_time, Range):
             search_time = Range(search_time, search_time + timedelta(days=1))
         # If they left one end of the range open, fill it in with the product bounds.
-        if product_summary:
+        if product_summary and product_summary.full_time is not None:
+            time_earliest, time_latest = product_summary.full_time
             search_time = Range(
-                search_time.begin or product_summary.time_earliest,
-                search_time.end or product_summary.time_latest + timedelta(days=1),
+                search_time.begin or time_earliest,
+                search_time.end or time_latest + timedelta(days=1),
             )
         query["time"] = search_time
 
@@ -209,9 +210,9 @@ def search_page(
         creation_time = query["creation_time"]
         if not isinstance(creation_time, Range):
             creation_time = Range(creation_time, creation_time + timedelta(days=1))
-        if product_summary:
+        if product_summary and product_summary.full_time is not None:
             creation_time = Range(
-                creation_time.begin or product_summary.time_earliest,
+                creation_time.begin or product_summary.full_time[0],
                 # product time bounds don't necessarily include the creation time
                 # so use today's date instead as our end bound if needed
                 creation_time.end or datetime.now(timezone.utc),
@@ -244,10 +245,14 @@ def search_page(
         )
 
     # For display on the page (and future searches).
-    if "time" not in query and product_summary and product_summary.time_earliest:
+    if (
+        "time" not in query
+        and product_summary
+        and product_summary.full_time is not None
+    ):
         query["time"] = Range(
-            product_summary.time_earliest,
-            product_summary.time_latest + timedelta(days=1),
+            product_summary.full_time[0],
+            product_summary.full_time[1] + timedelta(days=1),
         )
 
     return utils.render(
