@@ -26,7 +26,7 @@ class ProductTiming:
 def product_timings() -> Iterable[ProductTiming]:
     """
     How long does it take to query a day?
-    Useful for finding missing time indexes..
+    Useful for finding missing time indexes.
     """
     done = 0
     store = _model.STORE
