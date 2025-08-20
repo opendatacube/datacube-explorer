@@ -18,7 +18,7 @@ from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductD
 from eodatasets3.properties import Eo3Dict
 from eodatasets3.utils import is_doc_eo3
 from flask import abort, current_app, request
-from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
+from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
@@ -281,7 +281,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
     stac_collection = Collection(
         id=res.name,
         title=res.title,
-        description=res.description,
+        description=res.description or "",
         license=res.definition.get(
             "license",
             flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
@@ -476,16 +476,16 @@ def _bool_argument(s: str | bool):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: str | dict):
+def _dict_arg(arg: str | dict[str, Any]) -> dict[str, Any]:
     """
     Parse stac extension arguments as dicts
     """
     if isinstance(arg, str):
-        arg = json.loads(arg.replace("'", '"'))
+        return json.loads(arg.replace("'", '"'))
     return arg
 
 
-def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
+def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
     """
     Parse field argument into a dict
     """
@@ -507,7 +507,7 @@ def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
         return {"include": include, "exclude": exclude}
 
 
-def _sort_arg(arg: str | list) -> list[dict]:
+def _sort_arg(arg: str | list) -> list[dict[str, Any]]:
     """
     Parse sortby argument into a list of dicts
     """
@@ -528,6 +528,7 @@ def _sort_arg(arg: str | list) -> list[dict]:
             return [_format(a) for a in arg]
         if isinstance(arg[0], dict):
             for a in arg:
+                assert isinstance(a, dict)
                 a["field"] = _remove_prefixes(a["field"])
 
     return arg
@@ -745,16 +746,12 @@ def _handle_collection_search(
 # Item search extensions
 
 
-def _get_property(prop: str, item: ItemLike, no_default=False):
+def _get_property(prop: str, item: Item, no_default: bool = False):
     """So that we don't have to keep using this bulky expression"""
-    if isinstance(item, pystac.Item):
-        item = item.to_dict()
-    return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
+    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
 
 
-def _handle_fields_extension(
-    items: Sequence[ItemLike], fields: dict
-) -> Sequence[ItemLike]:
+def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
     This implementation differs slightly from the documented semantics in that the default fields will always
@@ -835,7 +832,7 @@ def search_stac_items(
     get_next_url: Callable[[int], str],
     limit: int = 0,
     offset: int = 0,
-    dataset_ids: str | None = None,
+    dataset_ids: Sequence[uuid.UUID] | None = None,
     product_names: list[str] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
     intersects: BaseGeometry | None = None,
@@ -858,8 +855,6 @@ def search_stac_items(
         limit = get_default_limit()
 
     offset = offset or 0
-    if sortby is not None:
-        order = sortby
     items = list(
         _model.STORE.search_items(
             product_names=product_names,
@@ -872,7 +867,7 @@ def search_stac_items(
             full_dataset=full_information,
             filter_lang=filter_lang,
             filter_cql=filter_cql,
-            order=order,
+            order=sortby if sortby is not None else order,
         )
     )
     returned = items[:limit]
