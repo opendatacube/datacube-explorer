@@ -386,7 +386,7 @@ def as_time_range(
     return Range(start.replace(tzinfo=tzinfo), end.replace(tzinfo=tzinfo))
 
 
-def _parse_url_query_args(request: MultiDict, product: Product) -> dict:
+def _parse_url_query_args(request: MultiDict, product: Product) -> dict[str, Any]:
     """
     Convert search arguments from url query args into datacube index search parameters
     """
@@ -597,8 +597,8 @@ def suggest_download_filename(
 
 
 def as_yaml(
-    *o, content_type="text/yaml", downloadable_filename_prefix: str | None = None
-):
+    *o, content_type: str = "text/yaml", downloadable_filename_prefix: str | None = None
+) -> flask.Response:
     """
     Return a yaml response.
 
@@ -634,7 +634,7 @@ def as_yaml(
 _ALNUM_PATTERN = re.compile("[^0-9a-zA-Z]+")
 
 
-def only_alphanumeric(s: str):
+def only_alphanumeric(s: str) -> str:
     """
     Strip any chars that aren't simple alphanumeric.
 
