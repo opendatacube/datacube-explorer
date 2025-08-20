@@ -434,12 +434,10 @@ def _load_product(
 ) -> tuple[
     Product, ProductSummary, TimePeriodOverview, TimePeriodOverview, TimePeriodOverview
 ]:
-    product = None
-    if product_name:
-        try:
-            product = _model.STORE.get_product(product_name)
-        except KeyError:
-            abort(404, f"Unknown product {product_name!r}")
+    try:
+        product = _model.STORE.get_product(product_name)
+    except KeyError:
+        abort(404, f"Unknown product {product_name!r}")
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
