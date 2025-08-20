@@ -102,9 +102,8 @@ class GenerateResult(Enum):
 class ProductSummary:
     name: str
     dataset_count: int
-    # Null when dataset_count == 0
-    time_earliest: datetime | None
-    time_latest: datetime | None
+    # Tuple of (time_earliest, time_latest), None when dataset_count == 0.
+    full_time: tuple[datetime, datetime] | None
 
     source_products: list[str]
     derived_products: list[str]
@@ -130,15 +129,12 @@ class ProductSummary:
         """
         Iterate through all months in its time range.
         """
-        if (
-            self.dataset_count == 0
-            or self.time_earliest is None
-            or self.time_latest is None
-        ):
+        if self.dataset_count == 0 or self.full_time is None:
             return
 
-        start = self.time_earliest.astimezone(grouping_timezone)
-        end = self.time_latest.astimezone(grouping_timezone)
+        time_earliest, time_latest = self.full_time
+        start = time_earliest.astimezone(grouping_timezone)
+        end = time_latest.astimezone(grouping_timezone)
         if start > end:
             raise ValueError(f"Start date must precede end date ({start} < {end})")
 
@@ -366,6 +362,8 @@ class SummaryStore:
            3) They have month-records that are newer than our year-record.
         """
         product = self.get_product_summary(product_name)
+        if product is None:
+            return []
 
         # Years that have already been summarised
         summarised_years = {
@@ -374,15 +372,16 @@ class SummaryStore:
         }
 
         # Empty product? No years
-        if product.dataset_count == 0:
+        if product.dataset_count == 0 or product.full_time is None:
             # check if the timeoverview needs cleanse
             return list(summarised_years)
 
+        time_earliest, time_latest = product.full_time
         # All years we are expected to have
         expected_years = set(
             range(
-                product.time_earliest.astimezone(self.grouping_timezone).year,
-                product.time_latest.astimezone(self.grouping_timezone).year + 1,
+                time_earliest.astimezone(self.grouping_timezone).year,
+                time_latest.astimezone(self.grouping_timezone).year + 1,
             )
         )
 
@@ -476,8 +475,7 @@ class SummaryStore:
         new_summary = ProductSummary(
             product.name,
             total_count,
-            earliest,
-            latest,
+            (earliest, latest),
             source_products=source_products,
             derived_products=derived_products,
             fixed_metadata=fixed_metadata,
@@ -711,9 +709,14 @@ class SummaryStore:
         derived_products = [
             self._product_by_id(id_).name for id_ in row.pop("derived_product_refs")
         ]
+        time_earliest: datetime | None = row.pop("time_earliest")
+        time_latest: datetime | None = row.pop("time_latest")
 
         return ProductSummary(
             name=name,
+            full_time=None
+            if time_earliest is None or time_latest is None
+            else (time_earliest, time_latest),
             source_products=source_products,
             derived_products=derived_products,
             **row,
@@ -804,10 +807,12 @@ class SummaryStore:
         derived_product_ids = [
             self.get_product(name).id for name in product.derived_products
         ]
+        time_earliest = None if product.full_time is None else product.full_time[0]
+        time_latest = None if product.full_time is None else product.full_time[1]
         fields = dict(
             dataset_count=product.dataset_count,
-            time_earliest=product.time_earliest,
-            time_latest=product.time_latest,
+            time_earliest=time_earliest,
+            time_latest=time_latest,
             source_product_refs=source_product_ids,
             derived_product_refs=derived_product_ids,
             fixed_metadata=product.fixed_metadata,
@@ -1171,12 +1176,13 @@ class SummaryStore:
             )
 
         # Product. Does it have data?
-        elif product.dataset_count > 0:
+        elif product.dataset_count > 0 and product.full_time is not None:
+            time_earliest, time_latest = product.full_time
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year_, None, None)
                 for year_ in range(
-                    product.time_earliest.astimezone(self.grouping_timezone).year,
-                    product.time_latest.astimezone(self.grouping_timezone).year + 1,
+                    time_earliest.astimezone(self.grouping_timezone).year,
+                    time_latest.astimezone(self.grouping_timezone).year + 1,
                 )
             )
         else:

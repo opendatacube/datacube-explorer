@@ -99,10 +99,10 @@ def cli(
 
     if product.dataset_count:
         echo(
-            f"from {'Unknown' if product.time_earliest is None else product.time_earliest.isoformat()} "
+            f"from {'Unknown' if product.full_time is None else product.full_time[0].isoformat()} "
         )
         echo(
-            f"  to {'Unknown' if product.time_latest is None else product.time_latest.isoformat()} "
+            f"  to {'Unknown' if product.full_time is None else product.full_time[1].isoformat()} "
         )
 
     echo()
