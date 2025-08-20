@@ -162,8 +162,8 @@ def as_resolved_remote_url(location: str | None, offset: str) -> str:
     Convert a dataset location and file offset to a full remote URL.
     """
     return as_external_url(
-        urljoin(location, offset),
-        (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
+        urljoin(location or "", offset),
+        flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2"),
         location is None,
     )
 
