@@ -584,7 +584,8 @@ class SummaryStore:
             raise ValueError(
                 f"Sample percentage out of range 0>s>=100. Got {sample_percentage!r}"
             )
-
+        if product.id is None:
+            return []
         # Avoid tablesample (full table scan) when we're getting all of the product anyway.
         sample_sql = ""
         if sample_percentage < 100:
