@@ -36,9 +36,8 @@ try:
     from cubedash._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
-from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
-from datacube.model import Dataset, MetadataType, Product, Range
+from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
 from cubedash import _utils
@@ -528,7 +527,7 @@ class SummaryStore:
 
         simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
 
-        candidate_fields: list[tuple[str, PgDocField]] = [
+        candidate_fields: list[tuple[str, Field]] = [
             (name, field)
             for name, field in self.e_index.get_mutable_dataset_search_fields(
                 product.metadata_type
