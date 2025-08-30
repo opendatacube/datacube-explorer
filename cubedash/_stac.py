@@ -503,7 +503,7 @@ def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
         return {"include": include, "exclude": exclude}
 
 
-def _sort_arg(arg: str | list) -> list[dict[str, Any]]:
+def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Parse sortby argument into a list of dicts
     """
@@ -517,17 +517,16 @@ def _sort_arg(arg: str | list) -> list[dict[str, Any]]:
         # default is ascending
         return {"field": val.strip(), "direction": "asc"}
 
-    if isinstance(arg, str):
-        arg = arg.split(",")
-    if len(arg):
-        if isinstance(arg[0], str):
-            return [_format(a) for a in arg]
-        if isinstance(arg[0], dict):
-            for a in arg:
+    arg_work = arg.split(",") if isinstance(arg, str) else arg
+    if len(arg_work):
+        if isinstance(arg_work[0], str):
+            return [_format(a) for a in arg_work]  # type: ignore[arg-type]
+        if isinstance(arg_work[0], dict):
+            for a in arg_work:
                 assert isinstance(a, dict)
                 a["field"] = _remove_prefixes(a["field"])
 
-    return arg
+    return arg_work  # type: ignore[return-value]
 
 
 def _filter_arg(arg: str | dict) -> str:
