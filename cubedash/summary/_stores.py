@@ -423,7 +423,7 @@ class SummaryStore:
         scan_for_deleted: bool = False,
         only_those_newer_than: datetime | None = None,
         force: bool = False,
-    ) -> tuple[int, ProductSummary]:
+    ) -> tuple[int, ProductSummary] | None:
         """
         Update Explorer's computed extents for the given product, and record any new
         datasets into the spatial table.
@@ -454,6 +454,8 @@ class SummaryStore:
             self._persist_product_extent(new_summary)
             return 0, new_summary
 
+        if product.id is None:
+            return None
         # if change_count or force_dataset_extent_recompute:
         earliest, latest, total_count = self.e_index.product_time_overview(product.id)
 
@@ -1209,7 +1211,7 @@ class SummaryStore:
         recreate_dataset_extents: bool = False,
         reset_incremental_position: bool = False,
         minimum_change_scan_window: timedelta | None = None,
-    ) -> tuple[GenerateResult, TimePeriodOverview]:
+    ) -> tuple[GenerateResult, TimePeriodOverview | None]:
         """
         Update Explorer's information and summaries for a product.
 
@@ -1272,13 +1274,16 @@ class SummaryStore:
                 self._database_time_now() - minimum_change_scan_window,
             )
 
-        extent_changes, new_product = self.refresh_product_extent(
+        rv = self.refresh_product_extent(
             product_name,
             scan_for_deleted=recreate_dataset_extents or force,
             only_those_newer_than=(
                 None if recreate_dataset_extents else only_datasets_newer_than
             ),
         )
+        if rv is None:
+            return GenerateResult.ERROR, None
+        extent_changes, new_product = rv
         log.info("extent.refresh.done", changed=extent_changes)
 
         refresh_timestamp = new_product.last_refresh_time
