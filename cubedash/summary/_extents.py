@@ -9,8 +9,10 @@ from typing import Dict, Iterable, List, Optional, TypeAlias
 
 import fiona
 import structlog
+from datacube.drivers.postgis._fields import NativeField as PgisNativeField
 from datacube.drivers.postgis._fields import PgDocField as PgisDocField
 from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
+from datacube.drivers.postgres._fields import NativeField as PgresNativeField
 from datacube.drivers.postgres._fields import PgDocField as PgresDocField
 from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
 from datacube.model import Dataset, MetadataType, Product
@@ -305,10 +307,12 @@ def _dataset_creation_expression_creation_time(md: MetadataType) -> Label:
     creation_expression = created_field.alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
+    indexed_time = md.dataset_fields.get("indexed_time")
+    assert isinstance(indexed_time, PgresNativeField | PgisNativeField)
     # FIXME: cast should not be required.
     return func.coalesce(
         cast(creation_expression, TIMESTAMP(timezone=True)),
-        md.dataset_fields.get("indexed_time").alchemy_expression,
+        indexed_time.alchemy_expression,
     ).label("creation_time")
 
 
