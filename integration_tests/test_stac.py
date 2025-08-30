@@ -269,9 +269,7 @@ def _get_next_href(geojson: dict) -> str | None:
     return href
 
 
-def _iter_items_across_pages(
-    client: FlaskClient, url: str | None
-) -> Generator[dict, None, None]:
+def _iter_items_across_pages(client: FlaskClient, url: str | None) -> Generator[dict]:
     """
     Keep loading "next" pages and yield every Stac Item in order
     """
