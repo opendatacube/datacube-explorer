@@ -19,7 +19,7 @@ from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
 from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.sql.elements import ClauseElement, Label
+from sqlalchemy.sql.elements import Label
 from sqlalchemy.types import TIMESTAMP
 from typing_extensions import override
 
@@ -281,7 +281,7 @@ def _select_dataset_extent_columns(
         ),
         _region_code_field(product).label("region_code"),
         _size_bytes_field(product).label("size_bytes"),
-        _dataset_creation_expression(md_type).label("creation_time"),
+        _dataset_creation_expression_creation_time(md_type),
     ]
 
 
@@ -293,7 +293,7 @@ def _default_crs(product: Product) -> str | None:
     return storage.get("crs")
 
 
-def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
+def _dataset_creation_expression_creation_time(md: MetadataType) -> Label:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
 
     # Either there's a field called "created", or we fall back to the default
@@ -309,7 +309,7 @@ def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
     return func.coalesce(
         cast(creation_expression, TIMESTAMP(timezone=True)),
         md.dataset_fields.get("indexed_time").alchemy_expression,
-    )
+    ).label("creation_time")
 
 
 def as_sql(expression, **params) -> str:
