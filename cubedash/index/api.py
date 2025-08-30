@@ -189,12 +189,12 @@ class ExplorerAbstractIndex(ABC):
         time_range: Range | None,
         limit: int,
         offset: int = 0,
-    ) -> Generator[Dataset, None, None]: ...
+    ) -> Generator[Dataset]: ...
 
     @abstractmethod
     def products_by_region(
         self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
-    ) -> Generator[int, None, None]: ...
+    ) -> Generator[int]: ...
 
     @abstractmethod
     def spatial_select_query(

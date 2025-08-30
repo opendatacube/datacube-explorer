@@ -659,7 +659,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         time_range: Range | None,
         limit: int,
         offset: int = 0,
-    ) -> Generator[Dataset, None, None]:
+    ) -> Generator[Dataset]:
         query = (
             select(*_dataset_select_fields())
             .select_from(DatasetSpatial)
@@ -685,7 +685,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def products_by_region(
         self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
-    ) -> Generator[int, None, None]:
+    ) -> Generator[int]:
         query = (
             select(DatasetSpatial.product_ref)
             .distinct()

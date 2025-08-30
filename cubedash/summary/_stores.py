@@ -125,7 +125,7 @@ class ProductSummary:
 
     def iter_months(
         self, grouping_timezone: tzinfo = default_timezone
-    ) -> Generator[date, None, None]:
+    ) -> Generator[date]:
         """
         Iterate through all months in its time range.
         """
@@ -1060,7 +1060,7 @@ class SummaryStore:
         filter_lang: str | None = None,
         filter_cql: str | dict | None = None,
         order: ItemSort | list[dict[str, str]] = ItemSort.DEFAULT_SORT,
-    ) -> Generator[DatasetItem, None, None]:
+    ) -> Generator[DatasetItem]:
         """
         Search datasets using Explorer's spatial table
 
@@ -1143,7 +1143,7 @@ class SummaryStore:
         q: list[str] | None = None,
         limit: int = 500,
         offset: int = 0,
-    ) -> Generator[CollectionItem, None, None]:
+    ) -> Generator[CollectionItem]:
         for r in self.e_index.collections_search_query(
             name=name, bbox=bbox, time=time, q=q, limit=limit, offset=offset
         ):
@@ -1624,7 +1624,7 @@ def _row_to_collection(
 
 def _common_paths_for_uris(
     uri_samples: Iterable[str],
-) -> Generator[ProductLocationSample, None, None]:
+) -> Generator[ProductLocationSample]:
     """
     >>> list(_common_paths_for_uris(['file:///a/thing-1.txt', 'file:///a/thing-2.txt', 'file:///a/thing-3.txt']))
     [ProductLocationSample(uri_scheme='file', common_prefix='file:///a/', example_uris=['file:///a/thing-1.txt', \
