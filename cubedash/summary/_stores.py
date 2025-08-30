@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, tzinfo
 from enum import Enum, auto
 from itertools import groupby
-from typing import Any, Iterable, Iterator, Literal, Protocol, Sequence
+from typing import Any, Iterable, Literal, Protocol, Sequence
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -1623,7 +1623,7 @@ def _row_to_collection(
 
 
 def _common_paths_for_uris(
-    uri_samples: Iterator[str],
+    uri_samples: Iterable[str],
 ) -> Generator[ProductLocationSample, None, None]:
     """
     >>> list(_common_paths_for_uris(['file:///a/thing-1.txt', 'file:///a/thing-2.txt', 'file:///a/thing-3.txt']))
