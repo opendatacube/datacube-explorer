@@ -485,32 +485,23 @@ class SummaryStore:
         )
 
         # TODO: This is an expensive operation. We regenerate them all every time there are changes.
-        self._refresh_product_regions(product)
-
-        self._persist_product_extent(new_summary)
-        return change_count, new_summary
-
-    def _refresh_product_regions(self, product: Product) -> int:
         log = _LOG.bind(product_name=product.name)  # , engine=str(self._engine))
         log.info("refresh.regions.start")
-
         log.info("refresh.regions.update.count.and.insert.new")
-
         result = self.e_index.upsert_product_regions(product.id)
         log.info("refresh.regions.inserted", list(result))
-        changed_rows = result.rowcount
         log.info(
-            "refresh.regions.update.count.and.insert.new.end", changed_rows=changed_rows
+            "refresh.regions.update.count.and.insert.new.end",
+            changed_rows=result.rowcount,
         )
-
         # delete region rows with no related datasets in dataset_spatial table
         log.info("refresh.regions.delete.empty.regions")
         result = self.e_index.delete_product_empty_regions(product.id)
-        changed_rows = result.rowcount
         log.info("refresh.regions.delete.empty.regions.end")
+        log.info("refresh.regions.end", changed_regions=result.rowcount)
 
-        log.info("refresh.regions.end", changed_regions=changed_rows)
-        return changed_rows
+        self._persist_product_extent(new_summary)
+        return change_count, new_summary
 
     def refresh_stats(self, concurrently: bool = False) -> None:
         """
