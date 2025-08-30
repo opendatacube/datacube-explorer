@@ -122,7 +122,7 @@ def _bounds_polygon(doc, projection_offset):
 def _size_bytes_field(product: Product):
     md_fields = product.metadata_type.dataset_fields
     if "size_bytes" in md_fields:
-        return md_fields["size_bytes"].alchemy_expression
+        return md_fields["size_bytes"].alchemy_expression  # type: ignore[attr-defined]
 
     return jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
         BigInteger
@@ -363,7 +363,7 @@ class RegionSummary:
             return None
         return {
             "type": "Feature",
-            "geometry": extent.__geo_interface__,
+            "geometry": extent.__geo_interface__,  # type: ignore[attr-defined]
             "properties": {"region_code": self.region_code, "count": self.count},
         }
 
@@ -562,16 +562,16 @@ class SceneRegionInfo(RegionInfo):
         return case(
             # Is this just one scene? Include it specifically
             (
-                row_field.lower.alchemy_expression
-                == row_field.greater.alchemy_expression,
+                row_field.lower.alchemy_expression  # type: ignore[attr-defined]
+                == row_field.greater.alchemy_expression,  # type: ignore[attr-defined]
                 func.concat(
-                    path_field.lower.alchemy_expression.cast(String),
+                    path_field.lower.alchemy_expression.cast(String),  # type: ignore[attr-defined]
                     "_",
-                    row_field.greater.alchemy_expression.cast(String),
+                    row_field.greater.alchemy_expression.cast(String),  # type: ignore[attr-defined]
                 ),
             ),
             # Otherwise it's a range of rows, so our region-code is the whole path.
-            else_=path_field.lower.alchemy_expression.cast(String),
+            else_=path_field.lower.alchemy_expression.cast(String),  # type: ignore[attr-defined]
         )
 
     @override
