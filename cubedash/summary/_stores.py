@@ -662,11 +662,11 @@ class SummaryStore:
 
     # These are cached to avoid repeated unnecessary DB queries.
     @ttl_cache(ttl=DEFAULT_TTL)
-    def all_products(self) -> Iterable[Product]:
+    def all_products(self) -> Sequence[Product]:
         return tuple(self.index.products.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)
-    def all_metadata_types(self) -> Iterable[MetadataType]:
+    def all_metadata_types(self) -> Sequence[MetadataType]:
         return tuple(self.index.metadata_types.get_all())
 
     @ttl_cache(ttl=DEFAULT_TTL)

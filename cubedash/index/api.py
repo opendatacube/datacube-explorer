@@ -88,7 +88,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def synthesize_dataset_footprint(
-        self, rows: list[tuple], shapes: dict
+        self, rows: Sequence[tuple], shapes: dict
     ) -> Result: ...
 
     @abstractmethod
@@ -141,7 +141,7 @@ class ExplorerAbstractIndex(ABC):
         name: str | None = None,
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
-        q: list[str] | None = None,
+        q: Sequence[str] | None = None,
     ) -> Result: ...
 
     @abstractmethod
@@ -178,7 +178,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def all_products_location_samples(
-        self, products: list[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int = 50
     ) -> Result: ...
 
     @abstractmethod
@@ -198,7 +198,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def spatial_select_query(
-        self, clauses: list[Label | ClauseElement], full: bool = False
+        self, clauses: Sequence[Label | ClauseElement], full: bool = False
     ) -> Select: ...
 
     @abstractmethod
@@ -246,7 +246,7 @@ class ExplorerAbstractIndex(ABC):
     ) -> ClauseElement: ...
 
     @abstractmethod
-    def sample_dataset(self, product_id: int, columns: list[Label]) -> Result: ...
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result: ...
 
     @abstractmethod
     def mapped_crses(self, product: Product, srid_expression: Label) -> Result: ...

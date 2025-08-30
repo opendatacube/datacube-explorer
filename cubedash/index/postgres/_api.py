@@ -20,6 +20,7 @@ from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
+    ClauseElement,
     Integer,
     Label,
     Result,
@@ -419,7 +420,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         name: str | None = None,
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
-        q: list[str] | None = None,
+        q: Sequence[str] | None = None,
     ) -> Result:
         collection = self.collection_cols().alias("collection")
         query = select(collection).where(collection.c.period_type == "all")
@@ -634,7 +635,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     # does this really add much value? and if so, is there a better way to do it?
     @override
     def all_products_location_samples(
-        self, products: list[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int = 50
     ) -> Result:
         queries = []
         for product in products:
@@ -804,7 +805,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     @override
-    def synthesize_dataset_footprint(self, rows: list[tuple], shapes: dict) -> Result:
+    def synthesize_dataset_footprint(
+        self, rows: Sequence[tuple], shapes: dict
+    ) -> Result:
         # don't believe there's a way to pass parameter to _active_connection
         with self.engine.begin() as conn:
             return conn.execute(
@@ -850,7 +853,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return field_exprs
 
     @override
-    def spatial_select_query(self, clauses, full: bool = False):
+    def spatial_select_query(
+        self, clauses: Sequence[Label | ClauseElement], full: bool = False
+    ) -> Select:
         query = select(*clauses)
         if full:
             return query.select_from(
@@ -1088,7 +1093,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
 
     @override
-    def sample_dataset(self, product_id: int, columns):
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result:
         with self.index._active_connection() as conn:
             res = conn.execute(
                 select(

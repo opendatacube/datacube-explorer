@@ -405,7 +405,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         name: str | None = None,
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
-        q: list[str] | None = None,
+        q: Sequence[str] | None = None,
     ) -> Result:
         collection = self.collection_cols().subquery()
         query = select(collection).where(collection.c.period_type == "all")
@@ -623,7 +623,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     # does this really add much value? and if so, is there a better way to do it?
     @override
     def all_products_location_samples(
-        self, products: list[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int = 50
     ) -> Result:
         queries = []
         for product in products:
@@ -773,7 +773,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     @override
-    def synthesize_dataset_footprint(self, rows: list[tuple], shapes: dict) -> Result:
+    def synthesize_dataset_footprint(
+        self, rows: Sequence[tuple], shapes: dict
+    ) -> Result:
         with self.engine.begin() as conn:
             return conn.execute(
                 update(DatasetSpatial)
@@ -819,7 +821,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def spatial_select_query(
-        self, clauses: list[Label | ClauseElement], full: bool = False
+        self, clauses: Sequence[Label | ClauseElement], full: bool = False
     ) -> Select:
         query = select(*clauses)
         if full:
@@ -1060,7 +1062,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
 
     @override
-    def sample_dataset(self, product_id: int, columns):
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result:
         with self.index._active_connection() as conn:
             res = conn.execute(
                 select(ODC_DATASET.id, ODC_DATASET.product_ref, *columns)
