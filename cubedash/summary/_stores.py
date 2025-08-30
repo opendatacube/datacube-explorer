@@ -967,7 +967,10 @@ class SummaryStore:
     ) -> Select:
         order_clauses = []
         for s in sortby:
-            field = field_exprs.get(s.get("field"))
+            f = s.get("field")
+            if f is None:
+                continue
+            field = field_exprs.get(f)
             # is there any way to check if sortable?
             if field is not None:
                 asc = s.get("direction") == "asc"
