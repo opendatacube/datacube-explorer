@@ -590,10 +590,10 @@ class SummaryStore:
         if sample_percentage < 100:
             sample_sql = f"tablesample system ({sample_percentage})"
 
-        (linked_product_names,) = self.e_index.linked_products_search(
+        rv = self.e_index.linked_products_search(
             product.id, sample_sql, kind
         ).fetchone()
-
+        linked_product_names = [] if rv is None else rv[0]
         _LOG.info(
             "product.links.{kind}",
             extra=dict(kind=kind),
