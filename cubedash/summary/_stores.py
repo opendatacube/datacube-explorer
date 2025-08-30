@@ -361,7 +361,7 @@ class SummaryStore:
            3) They have month-records that are newer than our year-record.
         """
         product = self.get_product_summary(product_name)
-        if product is None:
+        if product is None or product.id_ is None:
             return []
 
         # Years that have already been summarised
