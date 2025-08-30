@@ -165,7 +165,7 @@ def url_for(*args, **kwargs):
 # Conversions
 
 
-def _band_to_measurement(band: dict, dataset_location: str | None) -> MeasurementDoc:
+def _band_to_measurement(band: dict) -> MeasurementDoc:
     """Create EO3 measurement from an EO1 band dict"""
     return MeasurementDoc(
         path=band.get("path"),
@@ -229,12 +229,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
                 }
             ),
             measurements=(
-                {
-                    name: _band_to_measurement(
-                        b, dataset_location=ds.uri if ds is not None else None
-                    )
-                    for name, b in ds.measurements.items()
-                }
+                {name: _band_to_measurement(b) for name, b in ds.measurements.items()}
                 if ds is not None
                 else {}
             ),
