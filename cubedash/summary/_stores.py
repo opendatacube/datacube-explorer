@@ -628,7 +628,7 @@ class SummaryStore:
             )
 
         product = self.get_product_summary(product_name)
-        if not product:
+        if product is None or product.id_ is None:
             return None
 
         res = self.e_index.product_time_summary(
