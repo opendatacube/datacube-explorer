@@ -827,9 +827,9 @@ class SummaryStore:
         period, start_day = summary.as_flat_period()
 
         row = _summary_to_row(summary, grouping_timezone=self.grouping_timezone)
-        ret = self.e_index.put_summary(product.id_, start_day, period, row)
-        [gen_time] = ret.fetchone()
-        summary.summary_gen_time = gen_time
+        ret = self.e_index.put_summary(product.id_, start_day, period, row).fetchone()
+        if ret is not None:
+            summary.summary_gen_time = ret[0]
 
     def has(
         self,
