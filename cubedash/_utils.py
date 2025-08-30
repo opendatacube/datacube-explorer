@@ -32,7 +32,7 @@ from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
-from orjson import orjson
+from orjson.orjson import OPT_INDENT_2, dumps
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
@@ -500,10 +500,8 @@ def as_json(
     prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
 
     response = flask.Response(
-        orjson.dumps(
-            o,
-            option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
-            default=_json_fallback,
+        dumps(
+            o, option=OPT_INDENT_2 if prefer_formatted else 0, default=_json_fallback
         ),
         content_type=content_type,
     )
