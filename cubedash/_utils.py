@@ -104,7 +104,7 @@ def expects_eo3_metadata_type(md: MetadataType) -> bool:
 
 
 def jsonb_doc_expression(md: MetadataType):
-    return md.dataset_fields["metadata_doc"].alchemy_expression
+    return md.dataset_fields["metadata_doc"].alchemy_expression  # type: ignore[attr-defined]
 
 
 def datetime_expression(md_type: MetadataType):
@@ -129,7 +129,7 @@ def datetime_expression(md_type: MetadataType):
 
     # On older EO datasets, there's only a time range, so we take the center time.
     # (This matches the logic in ODC's Dataset.center_time)
-    time = md_type.dataset_fields["time"].alchemy_expression
+    time = md_type.dataset_fields["time"].alchemy_expression  # type: ignore[attr-defined]
     center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
     )
@@ -415,10 +415,10 @@ def _parse_url_query_args(request: MultiDict, product: Product) -> dict[str, Any
 
 def _field_parser(field: Field):
     if field.type_name.endswith("-range"):
-        field = field.lower
+        field = field.lower  # type: ignore[attr-defined]
 
     try:
-        parser = field.parse_value
+        parser = field.parse_value  # type: ignore[attr-defined]
     except AttributeError:
         parser = _unchanged_value
     return parser
