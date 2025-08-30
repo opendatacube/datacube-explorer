@@ -1,6 +1,6 @@
 import json
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
@@ -165,14 +165,14 @@ def url_for(*args, **kwargs):
 # Conversions
 
 
-def _band_to_measurement(band: dict) -> MeasurementDoc:
+def _band_to_measurement(band: Mapping[str, Any]) -> MeasurementDoc:
     """Create EO3 measurement from an EO1 band dict"""
     return MeasurementDoc(
-        path=band.get("path"),
+        path=band.get("path", "Unknown"),
         band=band.get("band"),
         layer=band.get("layer"),
-        name=band.get("name"),
-        alias=band.get("label"),
+        name=band.get("name"),  # type: ignore[arg-type]
+        alias=band.get("label"),  # type: ignore[arg-type]
     )
 
 
