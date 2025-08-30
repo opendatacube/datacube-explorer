@@ -203,8 +203,9 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             dataset_doc.lineage
         ) == 1:
             # From old to new lineage type.
-            dataset_doc.lineage = {
-                classifier: [dataset["id"]]
+            # FIXME: remove type ignores and fix the issues.
+            dataset_doc.lineage = {  # type: ignore[misc]
+                classifier: [dataset["id"]]  # type: ignore[has-type]
                 for classifier, dataset in dataset_doc.lineage["source_datasets"]
             }
 
