@@ -103,7 +103,7 @@ class ProductSummary:
     name: str
     dataset_count: int
     # Tuple of (time_earliest, time_latest), None when dataset_count == 0.
-    full_time: tuple[datetime, datetime] | None
+    duration: tuple[datetime, datetime] | None
 
     source_products: list[str]
     derived_products: list[str]
@@ -129,10 +129,10 @@ class ProductSummary:
         """
         Iterate through all months in its time range.
         """
-        if self.dataset_count == 0 or self.full_time is None:
+        if self.dataset_count == 0 or self.duration is None:
             return
 
-        time_earliest, time_latest = self.full_time
+        time_earliest, time_latest = self.duration
         start = time_earliest.astimezone(grouping_timezone)
         end = time_latest.astimezone(grouping_timezone)
         if start > end:
@@ -372,11 +372,11 @@ class SummaryStore:
         }
 
         # Empty product? No years
-        if product.dataset_count == 0 or product.full_time is None:
+        if product.dataset_count == 0 or product.duration is None:
             # check if the timeoverview needs cleanse
             return list(summarised_years)
 
-        time_earliest, time_latest = product.full_time
+        time_earliest, time_latest = product.duration
         # All years we are expected to have
         expected_years = set(
             range(
@@ -714,7 +714,7 @@ class SummaryStore:
 
         return ProductSummary(
             name=name,
-            full_time=None
+            duration=None
             if time_earliest is None or time_latest is None
             else (time_earliest, time_latest),
             source_products=source_products,
@@ -807,8 +807,8 @@ class SummaryStore:
         derived_product_ids = [
             self.get_product(name).id for name in product.derived_products
         ]
-        time_earliest = None if product.full_time is None else product.full_time[0]
-        time_latest = None if product.full_time is None else product.full_time[1]
+        time_earliest = None if product.duration is None else product.duration[0]
+        time_latest = None if product.duration is None else product.duration[1]
         fields = dict(
             dataset_count=product.dataset_count,
             time_earliest=time_earliest,
@@ -1176,8 +1176,8 @@ class SummaryStore:
             )
 
         # Product. Does it have data?
-        elif product.dataset_count > 0 and product.full_time is not None:
-            time_earliest, time_latest = product.full_time
+        elif product.dataset_count > 0 and product.duration is not None:
+            time_earliest, time_latest = product.duration
             summary = TimePeriodOverview.add_periods(
                 self.get(product.name, year_, None, None)
                 for year_ in range(
