@@ -1383,9 +1383,7 @@ class SummaryStore:
         Of all the datasets that are present in Explorer's own tables, when
         was the most recent one indexed to ODC?
         """
-        return self.e_index.latest_dataset_added_time(
-            self.get_product(product_name).id
-        ).scalar()
+        return self.e_index.latest_dataset_added_time(self.get_product(product_name).id)
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
