@@ -836,7 +836,7 @@ class SummaryStore:
 
     def has(
         self,
-        product_name: str | None,
+        product_name: str,
         year: int | None = None,
         month: int | None = None,
         day: int | None = None,
