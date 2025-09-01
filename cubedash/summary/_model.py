@@ -117,13 +117,12 @@ class TimePeriodOverview:
 
     @classmethod
     def empty(cls, product_name: str) -> "TimePeriodOverview":
-        p = cls.add_periods([])
-        p.product_name = product_name
-        return p
+        return cls.add_periods(product_name, [])
 
     @classmethod
     def add_periods(
         cls,
+        product_name: str,
         periods: Iterable["TimePeriodOverview"],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
@@ -151,7 +150,9 @@ class TimePeriodOverview:
 
         # The period elements that are the same across all of them.
         # (it will be the period of the result)
-        common_time_period = list(periods[0].period_tuple) if periods else ([None] * 4)
+        common_time_period = (
+            list(periods[0].period_tuple[1:4]) if periods else [None] * 3
+        )
         region_counter: Counter = Counter()
 
         for time_period in periods:
@@ -172,7 +173,7 @@ class TimePeriodOverview:
 
             # We're looking for the time period common to them all.
             # Strike out any elements that differ between our periods.
-            this_period = time_period.period_tuple
+            this_period = time_period.period_tuple[1:4]
             for i, elem in enumerate(common_time_period):
                 if elem is not None and (elem != this_period[i]):
                     # All following should be blank too, since this is a hierarchy.
@@ -194,7 +195,7 @@ class TimePeriodOverview:
         total_datasets = sum(p.dataset_count for p in periods)
 
         # Non-null properties here are the ones that are the same across all inputs.
-        product_name, year, month, day = common_time_period
+        year, month, day = common_time_period
 
         return TimePeriodOverview(
             product_name=product_name,

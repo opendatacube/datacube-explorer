@@ -1167,24 +1167,31 @@ class SummaryStore:
             )
         elif year:
             summary = TimePeriodOverview.add_periods(
-                p
-                for month_ in range(1, 13)
-                if (p := self.get(product.name, year, month_, None)) and p is not None
+                product.name,
+                (
+                    p
+                    for month_ in range(1, 13)
+                    if (p := self.get(product.name, year, month_, None))
+                    and p is not None
+                ),
             )
 
         # Product. Does it have data?
         elif product.dataset_count > 0 and product.duration is not None:
             time_earliest, time_latest = product.duration
             summary = TimePeriodOverview.add_periods(
-                self.get(product.name, year_, None, None)
-                for year_ in range(
-                    time_earliest.astimezone(self.grouping_timezone).year,
-                    time_latest.astimezone(self.grouping_timezone).year + 1,
-                )
+                product.name,
+                (
+                    self.get(product.name, year_, None, None)
+                    for year_ in range(
+                        time_earliest.astimezone(self.grouping_timezone).year,
+                        time_latest.astimezone(self.grouping_timezone).year + 1,
+                    )
+                ),
             )
         else:
             summary = TimePeriodOverview.empty(product.name)
-
+        # FIXME: these should be set inside the methods.
         summary.product_refresh_time = product_refresh_time
         summary.period_tuple = (product.name, year, month, None)
 

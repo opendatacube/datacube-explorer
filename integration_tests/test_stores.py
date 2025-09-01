@@ -68,12 +68,14 @@ def _overview(
 
 
 def test_add_period_list() -> None:
-    total = TimePeriodOverview.add_periods([])
+    total = TimePeriodOverview.add_periods("test_product", [])
     assert total.dataset_count == 0
 
     # the application of footprint_tolerance 1000.0 in _create_unified_footprint causes the geometries
     # and therefore their areas to diverge. Not sure why this wasn't an issue before?
-    joined = TimePeriodOverview.add_periods([_overview(), _overview(), total], 0.0)
+    joined = TimePeriodOverview.add_periods(
+        "test_product", [_overview(), _overview(), total], 0.0
+    )
     assert joined.dataset_count == _overview().dataset_count * 2
     assert _overview().footprint_geometry.area == pytest.approx(
         joined.footprint_geometry.area
