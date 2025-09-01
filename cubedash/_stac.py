@@ -1245,7 +1245,7 @@ def collection_items(collection: str):
 
 
 @bp.route("/collections/<collection>/items/<uuid:dataset_id>")
-def item(collection: str, dataset_id: str):
+def item(collection: str, dataset_id: uuid.UUID):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
         abort(404, f"No dataset found with id {dataset_id!r}")
