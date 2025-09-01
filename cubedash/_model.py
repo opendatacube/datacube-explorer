@@ -260,8 +260,6 @@ def get_regions_geojson(
 
     start = time.time()
     region_counts = period.region_dataset_counts
-    if region_counts is None:
-        return None
 
     # If all datasets have no region name, don't bother showing regions.
     #

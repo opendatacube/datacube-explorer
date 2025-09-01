@@ -27,8 +27,8 @@ class TimePeriodOverview:
     day: int | None
 
     dataset_count: int
-    timeline_dataset_counts: Counter | None
-    region_dataset_counts: Counter | None
+    timeline_dataset_counts: Counter
+    region_dataset_counts: Counter
 
     timeline_period: str
 

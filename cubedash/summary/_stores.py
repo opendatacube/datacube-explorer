@@ -1494,17 +1494,13 @@ def _summary_from_row(
     product_name: str,
     grouping_timezone: tzinfo | None = default_timezone,
 ):
-    timeline_dataset_counts = (
-        Counter(
-            dict(
-                zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"])
-            )
-        )
+    timeline_dataset_counts = Counter(
+        dict(zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"]))
         if res["timeline_dataset_start_days"]
         else None
     )
-    region_dataset_counts = (
-        Counter(dict(zip(res["regions"], res["region_dataset_counts"])))
+    region_dataset_counts = Counter(
+        dict(zip(res["regions"], res["region_dataset_counts"]))
         if res["regions"]
         else None
     )
