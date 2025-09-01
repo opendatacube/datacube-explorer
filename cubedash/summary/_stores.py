@@ -950,7 +950,7 @@ class SummaryStore:
         self,
         query: Select,
         field_exprs: dict[str, Any],
-        filter_lang: str,
+        filter_lang: str | None,
         filter_cql: dict,
     ) -> Select:
         # use pygeofilter's SQLAlchemy integration to construct the filter query
