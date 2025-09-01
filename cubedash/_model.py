@@ -175,7 +175,7 @@ def get_time_summary(
 
 
 @cache.memoize(timeout=60)
-def get_time_summary_all_products() -> dict[tuple[str, int, int], int]:
+def get_time_summary_all_products() -> dict[tuple[str, int | None, int | None], int]:
     return STORE.get_all_dataset_counts()
 
 

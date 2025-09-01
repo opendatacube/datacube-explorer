@@ -645,7 +645,7 @@ class SummaryStore:
             grouping_timezone=self.grouping_timezone,
         )
 
-    def get_all_dataset_counts(self) -> dict[tuple[str, int, int], int]:
+    def get_all_dataset_counts(self) -> dict[tuple[str, int | None, int | None], int]:
         """
         Get dataset count for all (product, year, month) combinations.
         """
