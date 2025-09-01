@@ -824,11 +824,13 @@ class SummaryStore:
             period=summary.period_tuple, summary_count=summary.dataset_count
         )
         log.info("product.put")
-        product = self._product(summary.product_name)
+        product_id = self._product(summary.product_name).id_
+        if product_id is None:
+            return
         period, start_day = summary.as_flat_period()
 
         row = _summary_to_row(summary, grouping_timezone=self.grouping_timezone)
-        ret = self.e_index.put_summary(product.id_, start_day, period, row).fetchone()
+        ret = self.e_index.put_summary(product_id, start_day, period, row).fetchone()
         if ret is not None:
             summary.summary_gen_time = ret[0]
 
