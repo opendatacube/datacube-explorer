@@ -1448,6 +1448,8 @@ class SummaryStore:
     @ttl_cache(ttl=DEFAULT_TTL)
     def _region_summaries(self, product_name: str) -> dict[str, RegionSummary]:
         product = self.get_product(product_name)
+        if product.id is None:
+            return {}
         return {
             code: RegionSummary(
                 product_name=product_name,
