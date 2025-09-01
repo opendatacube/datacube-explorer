@@ -1564,7 +1564,7 @@ def _summary_from_row(
 
 
 def _summary_to_row(
-    summary: TimePeriodOverview, grouping_timezone: tzinfo = default_timezone
+    summary: TimePeriodOverview, grouping_timezone: tzinfo | None = default_timezone
 ) -> dict:
     day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
     region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
