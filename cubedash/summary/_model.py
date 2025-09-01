@@ -1,5 +1,6 @@
 import warnings
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Iterable
@@ -299,7 +300,7 @@ def _erase_elements_from(items: list, start_i: int) -> list:
 
 
 def _create_unified_footprint(
-    with_valid_geometries: list["TimePeriodOverview"], footprint_tolerance: float
+    with_valid_geometries: Sequence[TimePeriodOverview], footprint_tolerance: float
 ) -> BaseGeometry | None:
     """
     Union the given time period's footprints, trying to fix any invalid geometries.
@@ -319,7 +320,11 @@ def _create_unified_footprint(
         try:
             _LOG.warning("summary.footprint.invalid_union", exc_info=True)
             geometry_union = shapely.ops.unary_union(
-                [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+                [
+                    p.footprint_geometry.buffer(0.001)
+                    for p in with_valid_geometries
+                    if p.footprint_geometry is not None
+                ]
             )
         except ValueError:
             _LOG.warning("summary.footprint.invalid_buffered_union", exc_info=True)
