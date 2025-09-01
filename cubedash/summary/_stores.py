@@ -186,7 +186,7 @@ class DatasetItem:
 @dataclass
 class CollectionItem:
     name: str
-    definition: dict
+    definition: dict[str, Any]
     time_earliest: datetime | None
     time_latest: datetime | None
     footprint_geometry: Geometry | None
@@ -208,8 +208,9 @@ class CollectionItem:
 
     @property
     def title(self) -> str:
-        if "title" in self.definition.get("metadata"):
-            return self.definition.get("metadata")["title"]
+        metadata = self.definition.get("metadata")
+        if metadata is not None and "title" in metadata:
+            return metadata["title"]
         return self.name
 
     @property
