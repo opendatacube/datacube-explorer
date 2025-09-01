@@ -1359,7 +1359,7 @@ class SummaryStore:
         """Get all months that have a recorded summary already for this product"""
 
         existing_product = self.get_product_summary(product_name)
-        if not existing_product:
+        if not existing_product or existing_product.id_ is None:
             return set()
 
         return {
