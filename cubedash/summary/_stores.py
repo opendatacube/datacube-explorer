@@ -123,7 +123,7 @@ class ProductSummary:
     id_: int | None = None
 
     def iter_months(
-        self, grouping_timezone: tzinfo = default_timezone
+        self, grouping_timezone: tzinfo | None = default_timezone
     ) -> Generator[date]:
         """
         Iterate through all months in its time range.
