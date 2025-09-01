@@ -116,13 +116,16 @@ class TimePeriodOverview:
         return year, month, day
 
     @classmethod
-    def empty(cls, product_name: str) -> "TimePeriodOverview":
-        return cls.add_periods(product_name, [])
+    def empty(
+        cls, product_name: str, product_refresh_time: datetime
+    ) -> "TimePeriodOverview":
+        return cls.add_periods(product_name, product_refresh_time, [])
 
     @classmethod
     def add_periods(
         cls,
         product_name: str,
+        product_refresh_time: datetime,
         periods: Iterable["TimePeriodOverview"],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
@@ -225,12 +228,7 @@ class TimePeriodOverview:
             # Why choose the max version? Because we assume older ones didn't need to be replaced,
             # so the most recent refresh time is the version that we are current with.
             product_refresh_time=max(
-                (
-                    p.product_refresh_time
-                    for p in periods
-                    if p.product_refresh_time is not None
-                ),
-                default=None,
+                (p.product_refresh_time for p in periods), default=product_refresh_time
             ),
             summary_gen_time=min(
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),

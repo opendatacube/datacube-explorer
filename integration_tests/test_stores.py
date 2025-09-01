@@ -1,7 +1,7 @@
 import operator
 import time
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pytest
 from datacube.model import Range
@@ -68,13 +68,14 @@ def _overview(
 
 
 def test_add_period_list() -> None:
-    total = TimePeriodOverview.add_periods("test_product", [])
+    product_refresh_time = datetime(2024, 10, 17, tzinfo=timezone.utc)
+    total = TimePeriodOverview.add_periods("test_product", product_refresh_time, [])
     assert total.dataset_count == 0
 
     # the application of footprint_tolerance 1000.0 in _create_unified_footprint causes the geometries
     # and therefore their areas to diverge. Not sure why this wasn't an issue before?
     joined = TimePeriodOverview.add_periods(
-        "test_product", [_overview(), _overview(), total], 0.0
+        "test_product", product_refresh_time, [_overview(), _overview(), total], 0.0
     )
     assert joined.dataset_count == _overview().dataset_count * 2
     assert _overview().footprint_geometry.area == pytest.approx(

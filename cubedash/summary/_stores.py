@@ -1168,6 +1168,7 @@ class SummaryStore:
         elif year:
             summary = TimePeriodOverview.add_periods(
                 product.name,
+                product_refresh_time,
                 (
                     p
                     for month_ in range(1, 13)
@@ -1181,6 +1182,7 @@ class SummaryStore:
             time_earliest, time_latest = product.duration
             summary = TimePeriodOverview.add_periods(
                 product.name,
+                product_refresh_time,
                 (
                     self.get(product.name, year_, None, None)
                     for year_ in range(
@@ -1190,9 +1192,8 @@ class SummaryStore:
                 ),
             )
         else:
-            summary = TimePeriodOverview.empty(product.name)
+            summary = TimePeriodOverview.empty(product.name, product_refresh_time)
         # FIXME: these should be set inside the methods.
-        summary.product_refresh_time = product_refresh_time
         summary.period_tuple = (product.name, year, month, None)
 
         self._put(summary)
