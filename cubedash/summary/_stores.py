@@ -1591,7 +1591,7 @@ def _summary_to_row(
         product_refresh_time=summary.product_refresh_time,
         footprint_geometry=(
             None
-            if summary.footprint_geometry is None
+            if summary.footprint_geometry is None or summary.footprint_srid is None
             else geo_shape.from_shape(
                 summary.footprint_geometry, summary.footprint_srid
             )
