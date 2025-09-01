@@ -843,9 +843,7 @@ class SummaryStore:
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
-    def get_item(
-        self, id_: UUID | str, full_dataset: bool = True
-    ) -> DatasetItem | None:
+    def get_item(self, id_: UUID, full_dataset: bool = True) -> DatasetItem | None:
         """
         Get a DatasetItem record for the given dataset UUID if it exists.
         """
