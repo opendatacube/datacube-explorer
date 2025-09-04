@@ -11,6 +11,9 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
 
+# This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
+FROM ghcr.io/astral-sh/uv:0.8.15@sha256:a5727064a0de127bdb7c9d3c1383f3a9ac307d9f2d8a391edc7896c54289ced0 AS uv
+
 FROM base AS builder
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -39,7 +42,7 @@ ENV UV_COMPILE_BYTECODE=0 \
 
 WORKDIR /build
 
-COPY --from=ghcr.io/astral-sh/uv:0.8.14 /uv /uvx /bin/
+COPY --link --from=uv /uv /uvx /usr/local/bin/
 
 COPY --link pyproject.toml uv.lock /build/
 
@@ -85,6 +88,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
             tini \
     && mkdir /app \
     && chown ubuntu:ubuntu /app
+
 # In the "deployment" build, these `uv` binaries will be 0 bytes.
 # In the "test" build they're the actual `uv` tools.
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
