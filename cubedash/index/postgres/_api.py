@@ -393,26 +393,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def collection_cols(self) -> Select:
-        product_overview = (
-            select(
-                PRODUCT.c.name,
-                TIME_OVERVIEW.c.footprint_geometry,
-                PRODUCT.c.time_earliest,
-                PRODUCT.c.time_latest,
-                TIME_OVERVIEW.c.period_type,
-            )
-            .select_from(TIME_OVERVIEW.join(PRODUCT))
-            .cte("product_overview")
-        )
-
-        return select(ODC_PRODUCT.c.definition, product_overview).select_from(
-            product_overview.join(
-                ODC_PRODUCT, product_overview.c.name == ODC_PRODUCT.c.name
-            )
-        )
-
-    @override
     def collections_search_query(
         self,
         limit: int,
@@ -422,22 +402,38 @@ class ExplorerIndex(ExplorerAbstractIndex):
         time: tuple[datetime, datetime] | None = None,
         q: Sequence[str] | None = None,
     ) -> Result:
-        collection = self.collection_cols().alias("collection")
-        query = select(collection).where(collection.c.period_type == "all")
+        # Direct query without CTE (potentially faster)
+        query = (
+            select(
+                ODC_PRODUCT.c.definition,
+                PRODUCT.c.name,
+                func.Box2D(func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)).label('bbox'),
+                PRODUCT.c.time_earliest,
+                PRODUCT.c.time_latest,
+            )
+            .select_from(
+                TIME_OVERVIEW.join(
+                    PRODUCT, PRODUCT.c.id == TIME_OVERVIEW.c.product_ref
+                ).join(ODC_PRODUCT, PRODUCT.c.name == ODC_PRODUCT.c.name)
+            )
+            .where(TIME_OVERVIEW.c.period_type == "all")
+        )
 
         if name:
-            query = query.where(collection.c.name == name)
+            query = query.where(PRODUCT.c.name == name)
 
         if bbox:
             query = query.where(
-                collection.c.footprint_geometry.intersects(func.ST_MakeEnvelope(*bbox))
+                TIME_OVERVIEW.c.footprint_geometry.intersects(
+                    func.ST_MakeEnvelope(*bbox)
+                )
             )
 
         if time:
             query = query.where(
                 and_(
-                    default_utc(time[0]) <= default_utc(collection.c.time_latest),
-                    default_utc(collection.c.time_earliest) <= default_utc(time[1]),
+                    default_utc(time[0]) <= default_utc(PRODUCT.c.time_latest),
+                    default_utc(PRODUCT.c.time_earliest) <= default_utc(time[1]),
                 )
             )
 
@@ -445,7 +441,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             title = SimpleDocField(
                 name="title",
                 description="product title",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.c.definition,
                 indexed=False,
                 offset=("metadata", "title"),
             )
@@ -453,9 +449,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             description = SimpleDocField(
                 name="description",
                 description="product description",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.c.definition,
                 indexed=False,
-                offset=("description"),
+                offset=("description",),
             )
 
             expressions = []
@@ -464,7 +460,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     [
                         title.alchemy_expression.icontains(value),
                         description.alchemy_expression.icontains(value),
-                        collection.c.name.icontains(value),
+                        ODC_PRODUCT.c.name.icontains(value),
                     ]
                 )
             query = query.where(or_(*expressions))

@@ -141,10 +141,6 @@ class ExplorerAbstractIndex(ABC):
     def product_summary_cols(self, product_name: str) -> Row: ...
 
     @abstractmethod
-    def collection_cols(self) -> Select:
-        """Get all columns necessary for creating a Collection"""
-
-    @abstractmethod
     def collections_search_query(
         self,
         limit: int,
