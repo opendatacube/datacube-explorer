@@ -489,7 +489,7 @@ class SummaryStore:
         log.info("refresh.regions.start")
         log.info("refresh.regions.update.count.and.insert.new")
         result = self.e_index.upsert_product_regions(product.id)
-        log.info("refresh.regions.inserted", list(result))
+        log.info("refresh.regions.inserted", result=list(result))
         log.info(
             "refresh.regions.update.count.and.insert.new.end",
             changed_rows=result.rowcount,
