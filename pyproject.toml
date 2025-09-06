@@ -62,6 +62,10 @@ doc = [
     "sphinx-click",
     "sphinx-tabs",
 ]
+dev = [
+    "datacube-explorer[deployment,test]",
+    {include-group = "doc"}
+]
 
 [project.optional-dependencies]
 deployment = [
