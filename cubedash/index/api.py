@@ -29,9 +29,18 @@ class ExplorerAbstractIndex(ABC):
         self.engine = index._db._engine  # type: ignore[attr-defined]
 
     # need to add an odc_index accessor
-    def execute_query(self, query):
+    def execute_query(self, query) -> list[Row]:
+        with self.engine.connect() as conn:
+            return conn.execute(query).fetchall()
+
+    def execute_query_scalar(self, query) -> Any:
+        with self.engine.connect() as conn:
+            return conn.execute(query).scalar()
+
+    def execute_ddl(self, query) -> int:
         with self.engine.begin() as conn:
-            return conn.execute(query)
+            results = conn.execute(query)
+            return results.rowcount
 
     def make_dataset(self, row):
         # pylint: disable=protected-access
