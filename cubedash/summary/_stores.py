@@ -814,7 +814,7 @@ class SummaryStore:
         )
 
         row = self.e_index.upsert_product_record(product.name, fields)
-        self._product.cache_clear()
+        self._product.cache_clear()  # type: ignore[attr-defined]
         product_id, last_refresh_time = row
 
         product.id_ = product_id
@@ -930,7 +930,7 @@ class SummaryStore:
             for value in self.e_index.get_mutable_dataset_search_fields(
                 product.metadata_type
             ).values():
-                expr = value.alchemy_expression
+                expr = value.alchemy_expression  # type: ignore[attr-defined]
                 if hasattr(value, "offset"):
                     field_exprs[value.offset[-1]] = expr
                 field_exprs[value.name] = expr
@@ -1403,7 +1403,7 @@ class SummaryStore:
         """
         assert product.id_ is not None
         self.e_index.update_product_refresh_timestamp(product.id_, refresh_timestamp)
-        self._product.cache_clear()
+        self._product.cache_clear()  # type: ignore[attr-defined]
 
     def list_complete_products(self) -> list[str]:
         """
