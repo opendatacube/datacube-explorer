@@ -7,7 +7,7 @@ from uuid import UUID
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import Result, Row, Select
+from sqlalchemy import CursorResult, Result, Row, Select
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
@@ -150,10 +150,10 @@ class ExplorerAbstractIndex(ABC):
     ) -> tuple[int, datetime]: ...
 
     @abstractmethod
-    def upsert_product_regions(self, product_id: int) -> Result: ...
+    def upsert_product_regions(self, product_id: int) -> CursorResult: ...
 
     @abstractmethod
-    def delete_product_empty_regions(self, product_id: int) -> Result: ...
+    def delete_product_empty_regions(self, product_id: int) -> CursorResult: ...
 
     @abstractmethod
     def product_region_summary(self, product_id: int) -> Result: ...
