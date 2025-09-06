@@ -820,6 +820,10 @@ class SummaryStore:
         product.id_ = product_id
 
     def _put(self, summary: TimePeriodOverview) -> None:
+        if summary.footprint_geometry and summary.footprint_srid is None:
+            raise ValueError("Geometry without srid", summary)
+        if summary.product_refresh_time is None:
+            raise ValueError("Product has no refresh time??", summary)
         log = _LOG.bind(
             period=summary.period_tuple, summary_count=summary.dataset_count
         )
@@ -832,10 +836,6 @@ class SummaryStore:
         day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
         region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
         begin, end = summary.time_range if summary.time_range else (None, None)
-        if summary.footprint_geometry and summary.footprint_srid is None:
-            raise ValueError("Geometry without srid", summary)
-        if summary.product_refresh_time is None:
-            raise ValueError("Product has no refresh time??", summary)
         ret = self.e_index.put_summary(
             product_id,
             start_day,
