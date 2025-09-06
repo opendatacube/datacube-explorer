@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable, Sequence
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -7,11 +8,11 @@ from uuid import UUID
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import Result, Row, Select
+from sqlalchemy import DDL, Result, Row, Select
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash.summary._schema import PleaseRefresh
+from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
 
 
 class EmptyDbError(Exception):
@@ -29,9 +30,29 @@ class ExplorerAbstractIndex(ABC):
         self.engine = index._db._engine  # type: ignore[attr-defined]
 
     # need to add an odc_index accessor
-    def execute_query(self, query):
+    def execute_query(self, query) -> list[Row]:
+        """Execute query and return all rows"""
         with self.engine.begin() as conn:
-            return conn.execute(query)
+            return conn.execute(query).fetchall()
+
+    @contextmanager
+    def execute_query_lazy(self, query):
+        """
+        Execute potentially large query, keeping the connection alive
+
+        Example usage::
+
+            with explorer_index.execute_query_lazy(query) as result:
+                for row in result:
+        """
+        with self.engine.connect() as conn:
+            result = conn.execute(query)
+            yield result
+
+    def drop_all(self) -> None:
+        """Drop all explorer-specific tables/schema."""
+        with self.engine.begin() as conn:
+            conn.execute(DDL(f"drop schema if exists {CUBEDASH_SCHEMA} cascade"))
 
     def make_dataset(self, row):
         # pylint: disable=protected-access

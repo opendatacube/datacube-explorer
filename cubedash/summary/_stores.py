@@ -27,7 +27,7 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, Row, RowMapping, String, func, select
+from sqlalchemy import Row, RowMapping, String, func, select
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
@@ -44,7 +44,7 @@ from cubedash import _utils
 from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
-from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
 from cubedash.summary._extents import ProductArrival, RegionSummary
 from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
@@ -609,9 +609,7 @@ class SummaryStore:
         """
         Drop all cubedash-specific tables/schema.
         """
-        self.e_index.execute_query(
-            DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
-        )
+        self.e_index.drop_all()
 
     def get(
         self,
@@ -1043,7 +1041,7 @@ class SummaryStore:
             query = self._add_filter_to_query(
                 query, field_exprs, filter_lang, filter_cql
             )
-        result = self.e_index.execute_query(query).fetchall()
+        result = self.e_index.execute_query(query)
 
         if len(result) != 0:
             return result[0][0]
@@ -1123,21 +1121,26 @@ class SummaryStore:
             offset
         )
 
-        for r in self.e_index.execute_query(query):
-            yield DatasetItem(
-                dataset_id=r.id,
-                bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
-                product_name=r.product_name,
-                geometry=(
-                    _get_shape(r.geometry, self.e_index.get_srid_name(r.geometry.srid))
-                    if r.geometry is not None
-                    else None
-                ),
-                region_code=r.region_code,
-                creation_time=r.creation_time,
-                center_time=r.center_time,
-                odc_dataset=(self.index.datasets.get(r.id) if full_dataset else None),
-            )
+        with self.e_index.execute_query_lazy(query) as result:
+            for r in result:
+                yield DatasetItem(
+                    dataset_id=r.id,
+                    bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
+                    product_name=r.product_name,
+                    geometry=(
+                        _get_shape(
+                            r.geometry, self.e_index.get_srid_name(r.geometry.srid)
+                        )
+                        if r.geometry is not None
+                        else None
+                    ),
+                    region_code=r.region_code,
+                    creation_time=r.creation_time,
+                    center_time=r.center_time,
+                    odc_dataset=(
+                        self.index.datasets.get(r.id) if full_dataset else None
+                    ),
+                )
 
     def search_collections(
         self,
@@ -1384,7 +1387,7 @@ class SummaryStore:
         Any change timestamps stored in the database are using database-local
         time, which could be different to the time on this current machine!
         """
-        return self.e_index.execute_query(select(func.now())).scalar()
+        return self.e_index.execute_query(select(func.now()))[0]
 
     def _newest_known_dataset_addition_time(self, product_name: str) -> datetime:
         """
