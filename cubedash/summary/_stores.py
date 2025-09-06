@@ -848,8 +848,8 @@ class SummaryStore:
                 timeline_period=summary.timeline_period,
                 time_earliest=begin.astimezone(self.grouping_timezone)
                 if begin
-                else begin,
-                time_latest=end.astimezone(self.grouping_timezone) if end else end,
+                else None,
+                time_latest=end.astimezone(self.grouping_timezone) if end else None,
                 size_bytes=summary.size_bytes,
                 product_refresh_time=summary.product_refresh_time,
                 footprint_geometry=(
