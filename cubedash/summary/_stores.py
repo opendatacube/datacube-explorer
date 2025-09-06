@@ -829,8 +829,45 @@ class SummaryStore:
             return
         period, start_day = summary.as_flat_period()
 
-        row = _summary_to_row(summary, grouping_timezone=self.grouping_timezone)
-        ret = self.e_index.put_summary(product_id, start_day, period, row).fetchone()
+        day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
+        region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
+        begin, end = summary.time_range if summary.time_range else (None, None)
+        if summary.footprint_geometry and summary.footprint_srid is None:
+            raise ValueError("Geometry without srid", summary)
+        if summary.product_refresh_time is None:
+            raise ValueError("Product has no refresh time??", summary)
+        ret = self.e_index.put_summary(
+            product_id,
+            start_day,
+            period,
+            dict(
+                dataset_count=summary.dataset_count,
+                timeline_dataset_start_days=day_values,
+                timeline_dataset_counts=day_counts,
+                # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
+                regions=func.cast(region_values, type_=postgres.ARRAY(String)),
+                region_dataset_counts=region_counts,
+                timeline_period=summary.timeline_period,
+                time_earliest=begin.astimezone(self.grouping_timezone)
+                if begin
+                else begin,
+                time_latest=end.astimezone(self.grouping_timezone) if end else end,
+                size_bytes=summary.size_bytes,
+                product_refresh_time=summary.product_refresh_time,
+                footprint_geometry=(
+                    None
+                    if summary.footprint_geometry is None
+                    or summary.footprint_srid is None
+                    else geo_shape.from_shape(
+                        summary.footprint_geometry, summary.footprint_srid
+                    )
+                ),
+                footprint_count=summary.footprint_count,
+                generation_time=func.now(),
+                newest_dataset_creation_time=summary.newest_dataset_creation_time,
+                crses=summary.crses,
+            ),
+        ).fetchone()
         if ret is not None:
             summary.summary_gen_time = ret[0]
 
@@ -1559,44 +1596,6 @@ def _summary_from_row(
         # When this summary was last generated
         summary_gen_time=res["generation_time"],
         crses=set(crses) if (crses := res["crses"]) is not None else set(),
-    )
-
-
-def _summary_to_row(
-    summary: TimePeriodOverview, grouping_timezone: tzinfo | None = default_timezone
-) -> dict:
-    day_values, day_counts = _counter_key_vals(summary.timeline_dataset_counts)
-    region_values, region_counts = _counter_key_vals(summary.region_dataset_counts)
-
-    begin, end = summary.time_range if summary.time_range else (None, None)
-
-    if summary.footprint_geometry and summary.footprint_srid is None:
-        raise ValueError("Geometry without srid", summary)
-    if summary.product_refresh_time is None:
-        raise ValueError("Product has no refresh time??", summary)
-    return dict(
-        dataset_count=summary.dataset_count,
-        timeline_dataset_start_days=day_values,
-        timeline_dataset_counts=day_counts,
-        # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
-        regions=func.cast(region_values, type_=postgres.ARRAY(String)),
-        region_dataset_counts=region_counts,
-        timeline_period=summary.timeline_period,
-        time_earliest=begin.astimezone(grouping_timezone) if begin else begin,
-        time_latest=end.astimezone(grouping_timezone) if end else end,
-        size_bytes=summary.size_bytes,
-        product_refresh_time=summary.product_refresh_time,
-        footprint_geometry=(
-            None
-            if summary.footprint_geometry is None or summary.footprint_srid is None
-            else geo_shape.from_shape(
-                summary.footprint_geometry, summary.footprint_srid
-            )
-        ),
-        footprint_count=summary.footprint_count,
-        generation_time=func.now(),
-        newest_dataset_creation_time=summary.newest_dataset_creation_time,
-        crses=summary.crses,
     )
 
 
