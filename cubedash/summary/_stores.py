@@ -1519,6 +1519,8 @@ def _summary_from_row(
         period_type, res["start_day"]
     )
 
+    earliest = res["time_earliest"]
+    latest = res["time_latest"]
     return TimePeriodOverview(
         product_name=product_name,
         year=year,
@@ -1532,18 +1534,10 @@ def _summary_from_row(
         # : Range
         time_range=(
             Range(
-                (
-                    res["time_earliest"].astimezone(grouping_timezone)
-                    if res["time_earliest"]
-                    else None
-                ),
-                (
-                    res["time_latest"].astimezone(grouping_timezone)
-                    if res["time_latest"]
-                    else None
-                ),
+                earliest.astimezone(grouping_timezone),
+                latest.astimezone(grouping_timezone),
             )
-            if res["time_earliest"]
+            if earliest and latest
             else None
         ),
         # shapely.geometry.base.BaseGeometry
