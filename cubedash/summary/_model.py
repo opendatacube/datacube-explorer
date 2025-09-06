@@ -33,7 +33,7 @@ class TimePeriodOverview:
 
     timeline_period: str
 
-    time_range: Range
+    time_range: Range | None
 
     footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon | None
     footprint_crs: str | None
@@ -200,6 +200,12 @@ class TimePeriodOverview:
         # Non-null properties here are the ones that are the same across all inputs.
         year, month, day = common_time_period
 
+        start_range = min(
+            (r.time_range.begin for r in periods if r.time_range), default=None
+        )
+        end_range = max(
+            (r.time_range.end for r in periods if r.time_range), default=None
+        )
         return TimePeriodOverview(
             product_name=product_name,
             year=year,
@@ -209,10 +215,9 @@ class TimePeriodOverview:
             timeline_dataset_counts=timeline_counter,
             timeline_period=period,
             region_dataset_counts=region_counter,
-            time_range=Range(
-                min(r.time_range.begin for r in periods) if periods else None,
-                max(r.time_range.end for r in periods) if periods else None,
-            ),
+            time_range=Range(start_range, end_range)
+            if start_range and end_range
+            else None,
             footprint_geometry=geometry_union,
             footprint_crs=footprint_crs,
             footprint_count=sum(p.footprint_count for p in with_valid_geometries),
