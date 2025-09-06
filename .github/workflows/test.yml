@@ -36,6 +36,7 @@ jobs:
     permissions:
       id-token: write
     strategy:
+      fail-fast: false
       matrix:
         # Tests take a long time, so split them over multiple CI jobs.
         # Ignoring tests inverts the logic which makes it harder to understand,
