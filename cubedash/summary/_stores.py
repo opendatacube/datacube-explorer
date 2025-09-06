@@ -1563,7 +1563,7 @@ def _summary_from_row(
         product_refresh_time=res["product_refresh_time"],
         # When this summary was last generated
         summary_gen_time=res["generation_time"],
-        crses=set(res["crses"]) if res["crses"] is not None else None,
+        crses=set(crses) if (crses := res["crses"]) is not None else set(),
     )
 
 
