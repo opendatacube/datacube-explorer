@@ -21,6 +21,7 @@ from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
     ClauseElement,
+    CursorResult,
     Integer,
     Label,
     Result,
@@ -316,7 +317,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).fetchone()
 
     @override
-    def upsert_product_regions(self, product_id: int) -> Result:
+    def upsert_product_regions(self, product_id: int) -> CursorResult:
         # add new regions row and/or update existing regions based on dataset_spatial
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -352,7 +353,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def delete_product_empty_regions(self, product_id: int) -> Result:
+    def delete_product_empty_regions(self, product_id: int) -> CursorResult:
         with self.index._active_connection() as conn:
             return conn.execute(
                 text(f"""
