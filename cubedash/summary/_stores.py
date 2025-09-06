@@ -1386,12 +1386,13 @@ class SummaryStore:
         """
         return self.e_index.execute_query(select(func.now())).scalar()
 
-    def _newest_known_dataset_addition_time(self, product_name: str) -> datetime:
+    def _newest_known_dataset_addition_time(self, product_name: str) -> datetime | None:
         """
         Of all the datasets that are present in Explorer's own tables, when
         was the most recent one indexed to ODC?
         """
-        return self.e_index.latest_dataset_added_time(self.get_product(product_name).id)
+        id_ = self.get_product(product_name).id
+        return None if id_ is None else self.e_index.latest_dataset_added_time(id_)
 
     def _mark_product_refresh_completed(
         self, product: ProductSummary, refresh_timestamp: datetime
