@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from collections import Counter
 from collections.abc import Sequence
@@ -126,7 +128,7 @@ class TimePeriodOverview:
         cls,
         product_name: str,
         product_refresh_time: datetime,
-        periods: Iterable["TimePeriodOverview"],
+        periods: Iterable["TimePeriodOverview" | None],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
         footprint_tolerance: float = 1000.0,
