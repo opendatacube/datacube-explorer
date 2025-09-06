@@ -27,8 +27,7 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, Row, RowMapping, String, func, select
-from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy import DDL, Row, RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
 
@@ -844,8 +843,7 @@ class SummaryStore:
                 dataset_count=summary.dataset_count,
                 timeline_dataset_start_days=day_values,
                 timeline_dataset_counts=day_counts,
-                # TODO: SQLAlchemy needs a bit of type help for some reason. Possible PgGridCell bug?
-                regions=func.cast(region_values, type_=postgres.ARRAY(String)),
+                regions=region_values,
                 region_dataset_counts=region_counts,
                 timeline_period=summary.timeline_period,
                 time_earliest=begin.astimezone(self.grouping_timezone)
