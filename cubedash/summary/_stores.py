@@ -609,7 +609,7 @@ class SummaryStore:
         """
         Drop all cubedash-specific tables/schema.
         """
-        self.e_index.execute_query(
+        self.e_index.execute_ddl(
             DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
         )
 
@@ -1043,7 +1043,7 @@ class SummaryStore:
             query = self._add_filter_to_query(
                 query, field_exprs, filter_lang, filter_cql
             )
-        result = self.e_index.execute_query(query).fetchall()
+        result = self.e_index.execute_query(query)
 
         if len(result) != 0:
             return result[0][0]
@@ -1384,7 +1384,7 @@ class SummaryStore:
         Any change timestamps stored in the database are using database-local
         time, which could be different to the time on this current machine!
         """
-        return self.e_index.execute_query(select(func.now())).scalar()
+        return self.e_index.execute_query_scalar(select(func.now()))
 
     def _newest_known_dataset_addition_time(self, product_name: str) -> datetime | None:
         """
