@@ -466,6 +466,8 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
 
     # If they specified an epsg code, make sure the existing schema uses it.
     srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
+    if srid is None:
+        raise RuntimeError("No SRID found in database")
     crs_used_by_schema = get_srid_name(conn, srid)
     # hopefully default epsg wouldn't case an issue?
     if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":
