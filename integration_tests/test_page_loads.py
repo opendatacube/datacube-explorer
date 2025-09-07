@@ -369,7 +369,7 @@ def test_out_of_date_range(client: FlaskClient) -> None:
     html = get_html(client, "/wofs_albers/2010")
 
     # The common error here is to say "No data: not yet summarised" rather than "0 datasets"
-    assert check_dataset_count(html, 0)
+    check_dataset_count(html, 0)
     assert "Historic Flood Mapping Water Observations from Space" in html.text()
 
 
