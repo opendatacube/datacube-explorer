@@ -119,36 +119,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         return self.index.datasets.bulk_get(source_ids), remaining_records
 
-    def find_months_needing_update(
-        self, product_name: str, only_those_newer_than: datetime
-    ) -> Iterable[tuple[date, int]]:
-        """
-        What months have had dataset changes since they were last generated?
-        """
-        product = self.index.products.get_by_name_unsafe(product_name)
-
-        # Find the most-recently updated datasets and group them by month.
-        with self.index._active_connection() as conn:
-            return sorted(
-                (month.date(), count)  # count isn't even used outside of log.debug
-                for month, count in conn.execute(
-                    select(
-                        func.date_trunc(
-                            "month", datetime_expression(product.metadata_type)
-                        ).label("month"),
-                        func.count(),
-                    )
-                    .where(
-                        and_(
-                            ODC_DATASET.product_ref == product.id,
-                            ODC_DATASET.updated > only_those_newer_than,
-                        )
-                    )
-                    .group_by("month")
-                    .order_by("month")
-                )
-            )
-
     @override
     def outdated_months(
         self, product: Product, only_those_newer_than: datetime
