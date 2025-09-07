@@ -21,9 +21,9 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 def _overview(
     product_name: str = "test_product",
-    year: int = None,
-    month: int = None,
-    day: int = None,
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
 ):
     orig = TimePeriodOverview(
         product_name=product_name,

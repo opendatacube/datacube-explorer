@@ -941,7 +941,7 @@ def test_all_give_404s(client: FlaskClient) -> None:
     We should get 404 messages, not exceptions, for missing things.
     """
 
-    def expect_404(url: str, message_contains: str = None):
+    def expect_404(url: str, message_contains: str | None = None):
         __tracebackhide__ = True
         response = get_text_response(client, url, expect_status_code=404)
         if message_contains and message_contains not in response:
