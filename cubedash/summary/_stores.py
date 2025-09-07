@@ -27,9 +27,10 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import DDL, Row, RowMapping, func, select
+from sqlalchemy import Row, RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
+from sqlalchemy.sql.ddl import DropSchema
 
 try:
     from cubedash._version import version as explorer_version
@@ -609,7 +610,7 @@ class SummaryStore:
         Drop all cubedash-specific tables/schema.
         """
         self.e_index.execute_ddl(
-            DDL(f"drop schema if exists {_schema.CUBEDASH_SCHEMA} cascade")
+            DropSchema(_schema.CUBEDASH_SCHEMA, cascade=True, if_exists=True)
         )
 
     def get(
