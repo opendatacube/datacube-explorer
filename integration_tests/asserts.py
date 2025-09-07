@@ -193,7 +193,7 @@ def check_datesets_page_datestring(
 
 
 def expect_values(
-    s: TimePeriodOverview,
+    s: TimePeriodOverview | None,
     dataset_count: int,
     footprint_count: int,
     time_range: Range,
@@ -204,6 +204,7 @@ def expect_values(
     size_bytes: int | None,
     region_dataset_counts: dict | None = None,
 ):
+    assert s is not None, "No overview for dataset"
     __tracebackhide__ = True
 
     was_timeline_error = False
