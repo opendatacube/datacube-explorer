@@ -215,7 +215,8 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
 
 def test_undo_eo3_compatibility_del_handling() -> None:
     doc = {"extent": "a", "lineage": {}}
-    assert _utils.undo_eo3_compatibility(doc) is None
+    _utils.undo_eo3_compatibility(doc)
+    assert "extent" not in doc
 
 
 def with_parsed_datetimes(v: dict, name=""):
