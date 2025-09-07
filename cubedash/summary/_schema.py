@@ -70,34 +70,6 @@ def pg_create_index(
     )
 
 
-def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) -> bool:
-    """
-    Does a postgres index exist?
-
-    Unlike pg_exists(), we don't need heightened permissions on the table.
-
-    So, for example, Explorer's limited-permission user can check agdc/ODC tables
-    that it doesn't own.
-    """
-    return (
-        conn.execute(
-            text("""
-                select indexname
-                from pg_indexes
-                where schemaname=:schema_name and
-                    tablename=:table_name and
-                    indexname=:index_name
-              """),
-            {
-                "schema_name": schema_name,
-                "table_name": table_name,
-                "index_name": index_name,
-            },
-        ).scalar()
-        is not None
-    )
-
-
 def get_postgis_versions(conn) -> str:
     """What versions of Postgis, Postgres and libs do we have?"""
     return conn.execute(select(func.postgis_full_version())).scalar()
