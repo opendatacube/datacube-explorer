@@ -67,7 +67,9 @@ def dump_datasets(
 
 def _get_dumpable_doc(dc: Datacube, d: Dataset, include_sources=True):
     if include_sources:
-        return dc.index.datasets.get(d.id, include_sources=include_sources).metadata_doc
+        dataset = dc.index.datasets.get(d.id, include_sources=include_sources)
+        assert dataset is not None
+        return dataset.metadata_doc
     else:
         # Empty doc means "there are no sources", so we can load it easily.
         d.metadata.sources = {}

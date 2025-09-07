@@ -272,6 +272,7 @@ def expect_values(
             was_regions_error = False
     except AssertionError:
         assert s.newest_dataset_creation_time is not None
+        assert s.time_range is not None
         print(
             f"""Got:
         dataset_count {s.dataset_count}

@@ -113,6 +113,7 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore) -> N
 
     # All time
     summary = summary_store.get("ls8_nbar_scene", year=None, month=None, day=None)
+    assert summary is not None
     assert (
         summary_store.index.datasets.count(product="ls8_nbar_scene")
         == summary.dataset_count
@@ -151,6 +152,7 @@ def test_generate_incremental_archivals(
 
     # When we have a summarised product...
     original_summary = summary_store.get("ga_ls9c_ard_3")
+    assert original_summary is not None
     original_dataset_count = original_summary.dataset_count
 
     # ... and we archive one dataset ...
@@ -161,10 +163,11 @@ def test_generate_incremental_archivals(
 
         # ... the next generation should catch it and update with one less dataset....
         run_generate("ga_ls9c_ard_3")
-        assert (
-            summary_store.get("ga_ls9c_ard_3").dataset_count
-            == original_dataset_count - 1
-        ), "Expected dataset count to decrease after archival"
+        dataset = summary_store.get("ga_ls9c_ard_3")
+        assert dataset is not None
+        assert dataset.dataset_count == original_dataset_count - 1, (
+            "Expected dataset count to decrease after archival"
+        )
     finally:
         # Now let's restore the dataset!
         index.datasets.restore([dataset_id])
@@ -172,7 +175,9 @@ def test_generate_incremental_archivals(
     # It should be in the count again.
     # (this change should work because the new 'updated' column will be bumped on restore)
     run_generate("ga_ls9c_ard_3")
-    assert summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count, (
+    dataset = summary_store.get("ga_ls9c_ard_3")
+    assert dataset is not None
+    assert dataset.dataset_count == original_dataset_count, (
         "A dataset that was restored from archival was not refreshed by Explorer"
     )
 
@@ -203,12 +208,15 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore) -> 
 
     # When we have a summarised product...
     original_summary = summary_store.get("ga_ls9c_ard_3")
+    assert original_summary is not None
     original_dataset_count = original_summary.dataset_count
 
     try:
         # Move the dataset to another product
         _change_dataset_product(index, dataset_id, other_product)
-        assert index.datasets.get(dataset_id).product.name == "ga_ls8c_ard_3"
+        dataset = index.datasets.get(dataset_id)
+        assert dataset is not None
+        assert dataset.product.name == "ga_ls8c_ard_3"
 
         # Explorer should remove it too.
         print(f"Test dataset: {dataset_id}")
@@ -217,18 +225,20 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore) -> 
         #       but it's not in the product. And the incremental updater misses it.
         #       So we have to force the non-incremental updater.
         run_generate("ga_ls8c_ard_3", "ga_ls9c_ard_3", "--force-refresh")
-
-        assert (
-            summary_store.get("ga_ls9c_ard_3").dataset_count
-            == original_dataset_count - 1
-        ), "Expected dataset to be removed after product change"
+        dataset_summary = summary_store.get("ga_ls9c_ard_3")
+        assert dataset_summary is not None
+        assert dataset_summary.dataset_count == original_dataset_count - 1, (
+            "Expected dataset to be removed after product change"
+        )
 
     finally:
         # Now change it back
         _change_dataset_product(index, dataset_id, our_product)
 
     run_generate("ga_ls8c_ard_3", "ga_ls9c_ard_3", "--force-refresh")
-    assert summary_store.get("ga_ls9c_ard_3").dataset_count == original_dataset_count, (
+    dataset_summary = summary_store.get("ga_ls9c_ard_3")
+    assert dataset_summary is not None
+    assert dataset_summary.dataset_count == original_dataset_count, (
         "Expected dataset to be added again after the product changed back"
     )
 
@@ -272,8 +282,11 @@ def test_has_source_derived_product_links(
     run_generate()
 
     ls_fc_pc = summary_store.get_product_summary("ga_ls_fc_pc_cyear_3")
+    assert ls_fc_pc is not None
     ls_fc = summary_store.get_product_summary("ga_ls_fc_3")
+    assert ls_fc is not None
     ls8_ard = summary_store.get_product_summary("ga_ls8c_ard_3")
+    assert ls8_ard is not None
 
     print(repr([ls_fc_pc, ls_fc, ls8_ard]))
     assert ls_fc_pc.source_products == ["ga_ls_fc_3"]
@@ -291,8 +304,11 @@ def test_product_fixed_fields(run_generate, summary_store: SummaryStore) -> None
     run_generate()
 
     albers = summary_store.get_product_summary("ls8_nbar_albers")
+    assert albers is not None
     scene = summary_store.get_product_summary("ls8_nbar_scene")
+    assert scene is not None
     telem = summary_store.get_product_summary("ls8_satellite_telemetry_data")
+    assert telem is not None
 
     assert scene.fixed_metadata == {
         "platform": "LANDSAT_8",
@@ -329,9 +345,10 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore) -> None:
     # not big enough to trigger it in the `run_generate()` tests)
 
     # Tiled product, sampled
+    product = summary_store.index.products.get_by_name("ga_ls9c_ard_3")
+    assert product is not None
     fixed_fields = summary_store._find_product_fixed_metadata(
-        summary_store.index.products.get_by_name("ga_ls9c_ard_3"),
-        sample_datasets_size=5,
+        product, sample_datasets_size=5
     )
 
     assert fixed_fields == {
@@ -518,11 +535,12 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore) -> None:
     )
 
     original = summary_store.get("ls8_nbar_albers", 2017)
-
+    assert original is not None
     # It should now return the same copy, not rebuild it.
     summary_store.refresh("ls8_nbar_albers")
 
     cached_s = summary_store.get("ls8_nbar_albers", 2017)
+    assert cached_s is not None
     assert original is not cached_s
     assert cached_s.dataset_count == original.dataset_count
     assert cached_s.summary_gen_time is not None
