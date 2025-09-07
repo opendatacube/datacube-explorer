@@ -88,10 +88,9 @@ def test_eo3_extents(eo3_index: Index) -> None:
     assert dataset_extent_row["creation_time"] == datetime(
         2020, 6, 5, 7, 15, 26, 599544, tzinfo=tz.tzutc()
     )
-    assert (
-        dataset_extent_row["product_ref"]
-        == eo3_index.products.get_by_name("ga_ls5t_ard_3").id
-    )
+    product = eo3_index.products.get_by_name("ga_ls5t_ard_3")
+    assert product is not None
+    assert dataset_extent_row["product_ref"] == product.id
 
     # This should be the geometry field of eo3, not the max/min bounds
     # that eo1 compatibility adds within `grid_spatial`.
@@ -194,6 +193,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
     indexed_dataset = eo3_index.datasets.get(
         UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14"), include_sources=True
     )
+    assert indexed_dataset is not None
     indexed_doc = with_parsed_datetimes(indexed_dataset.metadata_doc)
 
     # Undo the changes.
@@ -258,14 +258,18 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient) -> None:
     geojson = get_items(
         client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=false"
     )
-    assert len(geojson.get("features")) == 1
+    features = geojson.get("features")
+    assert features is not None
+    assert len(features) == 1
     assert "gqa:abs_iterative_mean_xy" not in geojson["features"][0]["properties"]
 
     # .... And full records
     geojson = get_items(
         client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True"
     )
-    assert len(geojson.get("features")) == 1
+    features = geojson.get("features")
+    assert features is not None
+    assert len(features) == 1
     assert geojson["features"][0]["properties"][
         "gqa:abs_iterative_mean_xy"
     ] == pytest.approx(0.37)

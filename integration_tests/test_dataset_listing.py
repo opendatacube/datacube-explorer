@@ -26,6 +26,7 @@ def test_parse_query_args(odc_test_db: Datacube) -> None:
     """
 
     product = odc_test_db.index.products.get_by_name("ga_ls7e_ard_3")
+    assert product is not None
     res = query_to_search(
         MultiDict(
             (
@@ -58,6 +59,7 @@ def test_default_args(dea_index: Index) -> None:
     assert DEFAULT_PLATFORM_END_DATE["LANDSAT_5"] == datetime(2011, 11, 30)
 
     product = dea_index.products.get_by_name("ard_ls5")
+    assert product is not None
 
     res = query_to_search(MultiDict(()), product)
 

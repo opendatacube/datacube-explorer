@@ -135,15 +135,19 @@ def test_clirunner_generate_grouping_timezone(
 
     # simulate product pages
     result = store.get("ga_ls9c_ard_3", year=2021, month=12)
+    assert result is not None
     assert result.dataset_count == 6
 
     result = store.get("ga_ls9c_ard_3", year=2021, month=12, day=27)
+    assert result is not None
     assert result.dataset_count == 2
 
     result = store.get("ga_ls9c_ard_3", year=2021, month=12, day=28)
+    assert result is not None
     assert result.dataset_count == 0
 
     result = store.get("ga_ls9c_ard_3", year=2021, month=12, day=31)
+    assert result is not None
     assert result.dataset_count == 1
 
 

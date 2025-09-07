@@ -78,9 +78,11 @@ def test_add_period_list() -> None:
         "test_product", product_refresh_time, [_overview(), _overview(), total], 0.0
     )
     assert joined.dataset_count == _overview().dataset_count * 2
-    assert _overview().footprint_geometry.area == pytest.approx(
-        joined.footprint_geometry.area
-    )
+    geometry = _overview().footprint_geometry
+    assert geometry is not None
+    joined_geometry = joined.footprint_geometry
+    assert joined_geometry is not None
+    assert geometry.area == pytest.approx(joined_geometry.area)
 
     assert sum(joined.region_dataset_counts.values()) == joined.dataset_count
     assert sum(joined.timeline_dataset_counts.values()) == joined.dataset_count
@@ -103,14 +105,20 @@ def test_add_no_periods(summary_store: SummaryStore) -> None:
     """
     result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.CREATED
+    assert summary is not None
     assert summary.dataset_count == 0
-    assert summary_store.get("ga_ls8c_level1_3", 2015, 7, 4).dataset_count == 0
+    dataset = summary_store.get("ga_ls8c_level1_3", 2015, 7, 4)
+    assert dataset is not None
+    assert dataset.dataset_count == 0
 
     result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.NO_CHANGES
+    assert summary is not None
     assert summary.dataset_count == 0
 
-    assert summary_store.get("ga_ls8c_level1_3").dataset_count == 0
+    dataset = summary_store.get("ga_ls8c_level1_3")
+    assert dataset is not None
+    assert dataset.dataset_count == 0
     assert summary_store.get("ga_ls8c_level1_3", 2015, 7, None) is None
 
 
