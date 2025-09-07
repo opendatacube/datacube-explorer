@@ -978,6 +978,8 @@ def test_all_give_404s(client: FlaskClient) -> None:
     expect_404(f"/dataset/{dataset_id}")
     expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")
 
+    expect_404("/dataset-timeline/non_existent/2025")
+
 
 def test_invalid_query_gives_400(client: FlaskClient) -> None:
     """
