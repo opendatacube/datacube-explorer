@@ -219,7 +219,7 @@ def test_undo_eo3_compatibility_del_handling() -> None:
     assert "extent" not in doc
 
 
-def with_parsed_datetimes(v: dict, name=""):
+def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
     """
     All date fields in eo3 metadata have names ending in 'datetime'. Return a doc
     with all of these fields parsed as actual dates.
@@ -229,7 +229,7 @@ def with_parsed_datetimes(v: dict, name=""):
     if not v:
         return v
 
-    if name.endswith("datetime"):
+    if name.endswith("datetime") and isinstance(v, str | datetime):
         dt = parse_time(v)
         # Strip/normalise timezone to match default yaml.load()
         if dt.tzinfo:
