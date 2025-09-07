@@ -619,6 +619,9 @@ class SummaryStore:
         month: int | None = None,
         day: int | None = None,
     ) -> TimePeriodOverview | None:
+        product = self.get_product_summary(product_name)
+        if product is None:
+            return None
         period, start_day = TimePeriodOverview.flat_period_representation(
             year, month, day
         )
@@ -627,11 +630,8 @@ class SummaryStore:
             return self._summariser.calculate_summary(
                 product_name, year, month, day, datetime.now()
             )
-
-        product = self.get_product_summary(product_name)
-        if product is None or product.id_ is None:
+        if product.id_ is None:
             return None
-
         res = self.e_index.product_time_summary(
             product.id_, start_day, period
         ).fetchone()
