@@ -199,17 +199,19 @@ def run_generation(
         for p in products:
             on_complete(*generate_report((p.name, settings, grouping_time_zone)))
     else:
-        with multiprocessing.Pool(workers) as pool:
-            summary: TimePeriodOverview | None
+        # Shut down pool nicely to keep pytest-cov happy.
+        # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+        pool = multiprocessing.Pool(workers)
+        try:
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
                 ((p.name, settings, grouping_time_zone) for p in products),
                 chunksize=1,
             ):
                 on_complete(product_name, result, summary)
-
-        pool.close()
-        pool.join()
+        finally:
+            pool.close()
+            pool.join()
 
     status_messages = ", ".join(
         f"{count_} {status.name.lower()}" for status, count_ in counts.items()
