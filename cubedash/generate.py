@@ -153,11 +153,9 @@ def generate_report(
 
 def _get_index(config: ODCEnvironment, variant: str) -> Index:
     # Avoid long names as they will print warnings all the time.
-    short_name = variant.replace("_", "")[:20]
-    index: Index = index_connect(
-        config, application_name=f"gen.{short_name}", validate_connection=False
-    )
-    return index
+    prefix = "gen."
+    name = f"{prefix}{variant.replace('_', '')[: 64 - len(prefix)]}"
+    return index_connect(config, application_name=name, validate_connection=False)
 
 
 def run_generation(
