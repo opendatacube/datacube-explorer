@@ -11,7 +11,6 @@ from typing import Any, Iterable, Literal, Protocol, Sequence
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-import dateutil.parser
 import structlog
 from cachetools.func import ttl_cache
 from dateutil import tz
@@ -1526,13 +1525,6 @@ class SummaryStore:
 
         footprint = row.footprint
         return (to_shape(footprint) if footprint is not None else None, row.region_code)
-
-
-def _safe_read_date(d):
-    if d:
-        return _utils.default_utc(dateutil.parser.parse(d))
-
-    return None
 
 
 def _summary_from_row(
