@@ -709,9 +709,6 @@ def test_api_returns_timelines(client: FlaskClient) -> None:
     assert doc == {"2022-01-17T00:00:00": 1}
 
 
-pytest.mark.xfail(True, reason="telemetry data removed")
-
-
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_undisplayable_product(client: FlaskClient) -> None:
     """
