@@ -24,7 +24,7 @@ def _overview(
     year: int | None = None,
     month: int | None = None,
     day: int | None = None,
-):
+) -> TimePeriodOverview:
     orig = TimePeriodOverview(
         product_name=product_name,
         year=year,
