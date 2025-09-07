@@ -100,6 +100,7 @@ test = [
     "types-cachetools",
     "types-docker",
     "types-python-dateutil",
+    "types-pyyaml"
 ]
 
 [project.scripts]
