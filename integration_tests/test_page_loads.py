@@ -353,6 +353,14 @@ def test_storage_page(client: FlaskClient, odc_test_db) -> None:
     assert len(html.css(".data-table tbody tr")) == product_count
 
 
+def test_product_audit_redirects(client: FlaskClient) -> None:
+    assert_redirects_to(
+        client,
+        "/product-audit/day-times.txt",
+        "/audit/day-query-times.txt",
+    )
+
+
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(client: FlaskClient) -> None:
     """
