@@ -61,6 +61,7 @@ from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
+from os import sched_getaffinity
 from textwrap import dedent
 
 import click
@@ -301,10 +302,11 @@ class TimeDeltaParam(click.ParamType):
     "-j",
     "--jobs",
     type=int,
-    default=3,
+    default=min(len(sched_getaffinity(0)), 16),
     help=dedent(
         """\
-        Number of concurrent worker subprocesses to use (default: 3)
+        Number of concurrent worker subprocesses to use
+        (default: number of cores or 16, whichever is smaller)
 
         This should match how many io-and-cpu-heavy queries your DB would
         like to handle concurrently.
