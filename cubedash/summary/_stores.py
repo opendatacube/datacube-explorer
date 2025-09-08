@@ -64,10 +64,10 @@ default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 def explorer_index(index: Index) -> ExplorerIndex:
     if index.name == "pg_index":
         return ExplorerPgIndex(index)
-    elif index.name == "pgis_index":
+    if index.name == "pgis_index":
         return ExplorerPgisIndex(index)
-    else:  # should we permit memory? default to postgres? other handling?
-        raise ValueError(f"Cannot run explorer with index {index.name}")
+    # should we permit memory? default to postgres? other handling?
+    raise ValueError(f"Cannot run explorer with index {index.name}")
 
 
 class ItemSort(Enum):
@@ -1081,8 +1081,7 @@ class SummaryStore:
 
         if len(result) != 0:
             return result[0][0]
-        else:
-            return 0
+        return 0
 
     def search_items(
         self,

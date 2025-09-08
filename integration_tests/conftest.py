@@ -173,10 +173,9 @@ def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
         if table.name.startswith("mv_"):
             # Not supported for materialised views.
             continue
-        else:
-            with index._active_connection() as conn:
-                conn.execute(
-                    sqlalchemy.text(
-                        f"""alter table {table.selectable.fullname} set unlogged;"""
-                    )
+        with index._active_connection() as conn:
+            conn.execute(
+                sqlalchemy.text(
+                    f"""alter table {table.selectable.fullname} set unlogged;"""
                 )
+            )

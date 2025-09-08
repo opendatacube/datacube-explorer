@@ -228,9 +228,9 @@ def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
         if dt.tzinfo:
             dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
         return dt
-    elif isinstance(v, dict):
+    if isinstance(v, dict):
         return {k: with_parsed_datetimes(v, name=k) for k, v in v.items()}
-    elif isinstance(v, list):
+    if isinstance(v, list):
         return [with_parsed_datetimes(i) for i in v]
 
     return v

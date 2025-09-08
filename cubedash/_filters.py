@@ -208,8 +208,7 @@ def _format_ordinal(val) -> str:
 def _get_ordinal_suffix(day):
     if 4 <= day <= 20 or 24 <= day <= 30:
         return "th"
-    else:
-        return ["st", "nd", "rd"][day % 10 - 1]
+    return ["st", "nd", "rd"][day % 10 - 1]
 
 
 @bp.app_template_filter("days_in_month")

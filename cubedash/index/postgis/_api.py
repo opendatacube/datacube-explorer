@@ -217,14 +217,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     .where(ProductSpatial.id == row[0])
                     .values(**fields)
                 ).fetchone()
-            else:
-                # Product doesn't exist, so insert it
-                fields["name"] = product_name
-                return conn.execute(
-                    insert(ProductSpatial)
-                    .returning(ProductSpatial.id, ProductSpatial.last_refresh)
-                    .values(**fields)
-                ).fetchone()
+            # Product doesn't exist, so insert it
+            fields["name"] = product_name
+            return conn.execute(
+                insert(ProductSpatial)
+                .returning(ProductSpatial.id, ProductSpatial.last_refresh)
+                .values(**fields)
+            ).fetchone()
 
     @override
     def put_summary(

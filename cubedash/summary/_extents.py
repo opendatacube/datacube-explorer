@@ -82,21 +82,20 @@ def get_dataset_extent_alchemy_expression(
             ),
             get_dataset_srid_alchemy_expression(e_index, md, default_crs),
         )
-    else:
-        valid_data_offset = projection_offset + ["valid_data"]
-        return func.ST_SetSRID(
-            case(
-                # If we have valid_data offset, use it as the polygon.
-                (
-                    doc[valid_data_offset].is_not(None),
-                    func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
-                ),
-                # Otherwise construct a polygon from the four corner points.
-                else_=_bounds_polygon(doc, projection_offset),
+    valid_data_offset = projection_offset + ["valid_data"]
+    return func.ST_SetSRID(
+        case(
+            # If we have valid_data offset, use it as the polygon.
+            (
+                doc[valid_data_offset].is_not(None),
+                func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
             ),
-            get_dataset_srid_alchemy_expression(e_index, md, default_crs),
-            type_=Geometry,
-        )
+            # Otherwise construct a polygon from the four corner points.
+            else_=_bounds_polygon(doc, projection_offset),
+        ),
+        get_dataset_srid_alchemy_expression(e_index, md, default_crs),
+        type_=Geometry,
+    )
 
 
 def _projection_doc_offset(md):
@@ -409,9 +408,9 @@ class RegionInfo:
         if region_code_field is not None:
             # Generic region info
             return RegionInfo(product, known_regions)
-        elif grid_spec is not None and grid_spec.tile_size:
+        if grid_spec is not None and grid_spec.tile_size:
             return GridRegionInfo(product, known_regions)
-        elif "sat_path" in product.metadata_type.dataset_fields:
+        if "sat_path" in product.metadata_type.dataset_fields:
             return SceneRegionInfo(product, known_regions)
 
         return None
@@ -547,8 +546,7 @@ class SceneRegionInfo(RegionInfo):
         if "_" in region_code:
             x, y = _from_xy_region_code(region_code)
             return f"Path {x}, Row {y}"
-        else:
-            return f"Path {region_code}"
+        return f"Path {region_code}"
 
     @override
     def alchemy_expression(self):
@@ -584,8 +582,7 @@ class SceneRegionInfo(RegionInfo):
         if row_range[0] == row_range[1]:
             return f"{path_range[0]}_{row_range[1]}"
         # Otherwise it's a range of rows, so we say the whole path.
-        else:
-            return f"{path_range[0]}"
+        return f"{path_range[0]}"
 
 
 def _region_code_field(product: Product):
@@ -599,13 +596,12 @@ def _region_code_field(product: Product):
     )
     if region_info is not None:
         return region_info.alchemy_expression()
-    else:
-        _LOG.debug(
-            "no_region_code",
-            product_name=product.name,
-            metadata_type_name=product.metadata_type.name,
-        )
-        return null()
+    _LOG.debug(
+        "no_region_code",
+        product_name=product.name,
+        metadata_type_name=product.metadata_type.name,
+    )
+    return null()
 
 
 # would be able to replace with index.datasets.search_returning except that there's no way for us to specify the

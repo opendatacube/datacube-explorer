@@ -128,12 +128,11 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
             return None
 
         return parse_time(start), parse_time(end)
-    elif len(time_period) == 1:
+    if len(time_period) == 1:
         t: datetime = parse_time(time_period[0])
         if t.time() == dt_time():
             return t, t + timedelta(days=1)
-        else:
-            return t, t + timedelta(seconds=1)
+        return t, t + timedelta(seconds=1)
     return None
 
 
