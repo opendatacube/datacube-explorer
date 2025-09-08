@@ -1,4 +1,4 @@
-import logging
+import configparser
 import os
 import time
 from collections import Counter
@@ -9,8 +9,8 @@ from pathlib import Path
 # this repository uses a src layout.
 import docker  # isort: skip
 import psycopg2
-import psycopg2.extensions
 import pytest
+import structlog
 from datacube import Datacube
 from datacube.cfg import ODCConfig, ODCEnvironment
 from datacube.drivers.postgis import _core as pgis_core
@@ -20,12 +20,14 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import MetadataType
 from datacube.utils import read_documents
 from datacube.utils.documents import InvalidDocException, UnknownMetadataType
+from psycopg2 import sql
 from sqlalchemy import text
 
-logger = logging.getLogger(__name__)
+logger: structlog.BoundLogger = structlog.get_logger(__name__)
 
 
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
+POSTGIS_IMAGE = "postgis/postgis:16-3.5"
 
 
 @pytest.fixture(scope="session")
@@ -47,14 +49,16 @@ def postgresql_server():
         yield GET_DB_FROM_ENV
     else:
         client = docker.from_env()
+        logger.info("Starting PostGIS Docker Container", image=POSTGIS_IMAGE)
         container = client.containers.run(
-            "postgis/postgis:16-3.5",
+            POSTGIS_IMAGE,
             auto_remove=True,
             remove=True,
             detach=True,
             environment={
-                "POSTGRES_PASSWORD": "badpassword",
-                "POSTGRES_USER": "explorer_test",
+                "POSTGRES_PASSWORD": "explorer_test_password",
+                "POSTGRES_USER": "explorer_test_user",
+                "POSTGRES_DB": "explorer_test_db"
             },
             ports={"5432/tcp": None},
         )
@@ -67,70 +71,97 @@ def postgresql_server():
             ]
             # From the documentation for the postgres docker image. The value of POSTGRES_USER
             # is used for both the user and the default database.
-            logger.info("Docker container running: postgresql://explorer_test:badpassword@127.0.0.1:%s/explorer_test",
-                        host_port)
-            yield {
-                "db_hostname": "127.0.0.1",
-                "db_username": "explorer_test",
-                "db_port": host_port,
-                "db_database": "explorer_test",
-                "db_password": "badpassword",
-                "index_driver": "default",
-            }
+            db_url = f"postgresql://explorer_test_user:explorer_test_password@127.0.0.1:{host_port}/explorer_test_db"
+            logger.info(
+                "Docker container started",
+                db_url=db_url
+            )
+            yield db_url
         finally:
+            logger.info("Removing PostGIS container")
             container.remove(v=True, force=True)
 
 
 @pytest.fixture(scope="module")
-def odc_db(postgresql_server: dict[str, str] | str, env_name: str, request: pytest.FixtureRequest) -> Generator[ODCEnvironment]:
+def odc_db(
+    postgresql_server: str,
+    env_name: str,
+    tmp_path_factory: pytest.TempPathFactory,
+    request: pytest.FixtureRequest,
+    worker_id,
+    testrun_uid,
+) -> Generator[str]:
+    """Create an ODC Database per xdist worker and per pytest module
+
+    Write out an ODC Configuration File and set an Environment Variable specifying which ODC Env to Use.
+
+    We expose the current database by either writing out to a file (or, update a swath of environment variables)
+    rather than having a fixture which works at the Python level (SQLAlchemy engine or ODC Index/Database object)
+    because many of the integration tests work by launching the command line tools, which while not starting up
+    a whole new Python process, don't share much of the existing state and load their ODC Connection parameters
+    either from a file or environment variables.
+    """
     if postgresql_server == GET_DB_FROM_ENV:
         yield ODCConfig()[env_name]
     else:
-        postgres_url = "postgresql://{db_username}:{db_password}@{db_hostname}:{db_port}/{db_database}".format(
-            **postgresql_server
-        )
-
-        # breakpoint()
-        new_db_database = f"{request.path.stem}_{env_name}"
+        log = logger.bind(db_url=postgresql_server, worker_id=worker_id, testrun_uid=testrun_uid)
+        test_database_name = f"{request.path.stem}_{env_name}"
         # Wait for PostgreSQL Server to start up
         while True:
             try:
-                conn = psycopg2.connect(postgres_url)
-                conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+                conn = psycopg2.connect(postgresql_server)
+                # Prevent starting a transaction, since 'create database' cannot run inside a transaction
+                conn.set_session(autocommit=True)
 
-                with conn.cursor() as cur:
-                    cur.execute(f"CREATE DATABASE {new_db_database};")
+                # assert not test_database_name.endswith('postgis')
+                # if test_database_name.endswith('postgis'):
+                    # import web_pdb; web_pdb.set_trace()
+
+                try:
+                    with conn.cursor() as cur:
+                        log.info("Creating database", db_name=test_database_name)
+                        cur.execute(sql.SQL("CREATE DATABASE {db_name}").format(db_name=sql.Identifier(test_database_name)))
+                except psycopg2.errors.DuplicateDatabase:
+                    log.warning("Database already exists, continuing", db_name=test_database_name)
+                    import web_pdb; web_pdb.set_trace()
+                    # breakpoint()
+                finally:
+                    conn.close()
                 break
             except psycopg2.OperationalError:
-                print("Waiting for PostgreSQL to become available")
+                log.info("Waiting for PostgreSQL to become available")
                 time.sleep(1)
 
-        yield ODCConfig(raw_dict={
-                            'default': {
-                                'index_driver': env_name,
-                                'db_url': postgres_url
-                            }
-                        })[env_name]
+        new_postgresql_url = postgresql_server.replace("explorer_test_db", test_database_name)
 
-        # postgresql_server["db_database"] = new_db_database
-        # temp_datacube_config_file: Path = tmp_path_factory.mktemp("odc") / "test_datacube.conf"
+        log = log.bind(db_url=new_postgresql_url)
+        log.info('Creating postgis extension')
+        conn = psycopg2.connect(new_postgresql_url)
+        # Prevent starting a transaction, since 'create extension' cannot run inside a transaction
+        conn.set_session(autocommit=True)
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute('CREATE EXTENSION postgis')
+        conn.close()
 
-        # config = configparser.ConfigParser()
-        # config["default"] = postgresql_server
+        # Create a temporary configuration file with our database URL and index driver name
+        config = configparser.ConfigParser()
+        config[env_name] = {"index_driver": env_name, "db_url": new_postgresql_url}
 
-        # postgresql_server["index_driver"] = "postgis"
-        # config["postgis"] = postgresql_server
+        temp_datacube_config_file: Path = (
+            tmp_path_factory.mktemp("odc") / "test_datacube.conf"
+        )
+        with temp_datacube_config_file.open("w", encoding="utf8") as fout:
+            config.write(fout)
 
-        # with temp_datacube_config_file.open("w", encoding="utf8") as fout:
-        #     config.write(fout)
+        # Use pytest.MonkeyPatch instead of the monkeypatch fixture
+        # so that this fixture can be module scoped and not function scoped.
+        mp = pytest.MonkeyPatch()
 
-        # # Use pytest.MonkeyPatch instead of the monkeypatch fixture
-        # # to enable this fixture to not be function scoped
-        # mp = pytest.MonkeyPatch()
-
-        # mp.setenv("ODC_CONFIG_PATH", str(temp_datacube_config_file.absolute()))
-        # yield postgres_url
-        # mp.undo()
+        # Share the temporary configuration file with the tests
+        mp.setenv("ODC_CONFIG_PATH", str(temp_datacube_config_file.absolute()))
+        yield new_postgresql_url
+        mp.undo()
 
 
 @pytest.fixture(scope="module", params=["default", "postgis"])
@@ -139,24 +170,44 @@ def env_name(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture(scope="module")
-def cfg_env(odc_db: str, env_name: str) -> ODCEnvironment:
+def cfg_env(odc_db, env_name: str) -> ODCEnvironment:
     """Provide a :class:`ODCEnvironment` configured with suitable config file paths."""
-    return ODCConfig()[env_name]
+    # Need to request `odc_db` since it exports an environment variable specifying which
+    # configuration file to use. So this fixture *must* run after that fixture.
+    odc_env =  ODCConfig().get_environment(env_name)
+    assert odc_env.db_url is not None
+    logger.info("Prepping ODCConfig",
+                env_name=env_name,
+                odc_config_path_from_env=os.environ['ODC_CONFIG_PATH'],
+                odc_env_url=odc_env.db_url)
+    return odc_env
 
 
 @pytest.fixture(scope="module")
-def odc_test_db(odc_db: ODCEnvironment) -> Generator[Datacube]:
+def odc_test_db(odc_db: str, cfg_env: ODCEnvironment) -> Generator[Datacube]:
     """Provide a temporary PostgreSQL server initialised by ODC.
 
     Usable as the default ODC DB by setting environment variables.
 
     :return: Datacube instance
-    :yield: Boo
+
+    :yields: Boo
+
+    Yields:
+        Ready to go Datacube Object
+
     """
-    index = index_connect(odc_db, validate_connection=False)
+    logger.info("Initialising ODC Schema for testing", odc_db=odc_db, cfg_db_url=cfg_env.db_url)
+    index = index_connect(cfg_env, validate_connection=False)
+    # With permissions causes trouble when run multiple times on the same database
+    # Although, maybe not, since there should be a separate database every time.
+    # But something is getting screwed up and it's getting a database name of 'datacube'.
     index.init_db()
+    #  with_default_types=False, with_permissions=True
 
     dc = Datacube(index=index)
+
+    logger.info("Database initialised", odc_dc=dc)
 
     # Disable PostgreSQL Table logging. We don't care about storage reliability
     # during testing, and need any performance gains we can get.
@@ -195,6 +246,7 @@ def odc_test_db(odc_db: ODCEnvironment) -> Generator[Datacube]:
                 "odc.metadata_type",
             ]:
                 conn.execute(text(f"alter table {table} set unlogged"))
+
             yield dc
 
             dc.close()
@@ -217,15 +269,14 @@ def _remove_postgres_dynamic_indexes() -> None:
 def _remove_postgis_dynamic_indexes() -> None:
     """Clear any dynamically created postgis indexes from the schema."""
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    # for table in pgis_core.METADATA.tables.values():
-    #    table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
+    for table in pgis_core.METADATA.tables.values():
+       table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
     # Dynamic indexes disabled.
 
 
 @pytest.fixture(scope="module")
 def auto_odc_db(odc_test_db: Datacube, request: pytest.FixtureRequest):
-    """
-    Load sample data into an ODC PostgreSQL Database for tests within a module.
+    """Load sample data into an ODC PostgreSQL Database for tests within a module.
 
     This fixture will look for global variables within the test module named,
     `METADATA_TYPES`, `PRODUCTS`, and `DATASETS`, which should be a list of filenames
@@ -236,12 +287,16 @@ def auto_odc_db(odc_test_db: Datacube, request: pytest.FixtureRequest):
     The fixture makes available a dict, keyed by name, counting the number of datasets
     added, not including derivatives.
     """
+    log = logger.bind(current_db=odc_test_db.index.environment.db_url,
+                      current_dc=str(odc_test_db),
+                      module=request.module.__name__)
+    log.info("Preparing to load data into Test ODC Database")
     odc_test_db.index.metadata_types.check_field_indexes(
         allow_table_lock=True, rebuild_indexes=False, rebuild_views=True
     )
     data_path = request.path.parent.joinpath("data")
     if hasattr(request.module, "METADATA_TYPES"):
-        logger.info("Loading MetadataDocs for %s", request.module)
+        log.info("Loading MetadataDocs for %s", request.module)
         for filename in request.module.METADATA_TYPES:
             filename = data_path / filename
             for _, meta_doc in read_documents(filename):
@@ -260,7 +315,7 @@ def auto_odc_db(odc_test_db: Datacube, request: pytest.FixtureRequest):
                 except UnknownMetadataType:
                     continue
 
-    dataset_count: Counter = Counter()
+    dataset_count: Counter[str] = Counter()
     if hasattr(request.module, "DATASETS"):
         create_dataset = Doc2Dataset(odc_test_db.index)
         for filename in request.module.DATASETS:

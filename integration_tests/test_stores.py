@@ -134,10 +134,12 @@ def test_month_iteration() -> None:
         got_months = list(product.iter_months())
         assert got_months == expected_months, "Incorrect set of iterated months"
 
+    from cubedash.summary._stores import default_timezone
+
     # Within same year
     assert_month_iteration(
-        datetime(2003, 2, 2),
-        datetime(2003, 6, 2),
+        datetime(2003, 2, 2, tzinfo=default_timezone),
+        datetime(2003, 6, 2, tzinfo=default_timezone),
         [
             date(2003, 2, 1),
             date(2003, 3, 1),
@@ -148,17 +150,21 @@ def test_month_iteration() -> None:
     )
     # Across year bounds
     assert_month_iteration(
-        datetime(2003, 11, 2),
-        datetime(2004, 2, 2),
+        datetime(2003, 11, 2, tzinfo=default_timezone),
+        datetime(2004, 2, 2, tzinfo=default_timezone),
         [date(2003, 11, 1), date(2003, 12, 1), date(2004, 1, 1), date(2004, 2, 1)],
     )
     # Within same month
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 30), [date(2003, 11, 1)]
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        datetime(2003, 11, 30, tzinfo=default_timezone),
+        [date(2003, 11, 1)],
     )
     # Identical dates
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 1), [date(2003, 11, 1)]
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        [date(2003, 11, 1)],
     )
 
 
@@ -239,14 +245,14 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     )
 
 
-def test_generate_empty(run_generate) -> None:
+def test_generate_empty(odc_test_db, run_generate) -> None:
     """
     Run cubedash.generate on a cube with no datasets.
 
     Proper tests of 'generate' are in test_summarise_data.py, but take much longer to run.
     This catches many simple DB, product and config setup issues quickly.
     """
-    run_generate()
+    run_generate('--init')
 
 
 def test_generate_raises_error(run_generate, empty_client) -> None:

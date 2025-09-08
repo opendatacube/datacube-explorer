@@ -64,7 +64,9 @@ doc = [
 ]
 dev = [
     "datacube-explorer[deployment,test]",
-    {include-group = "doc"}
+    "pytest-xdist>=3.8.0",
+    "web-pdb>=1.6.3",
+    {include-group = "doc"},
 ]
 
 [project.optional-dependencies]
@@ -191,6 +193,9 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # The file deliberately doesn't put the import at the top, and we can't avoid global overrides
 "docs/conf.py" = ["E402", "A001", "EXE001"]
+
+# asserts are very much expected in pytest tests
+"integration_tests/*.py" = ["S101"]
 
 # Matching old behaviour: We auto-format with the smaller line default
 # ...  but only enforce line length to be under this larger 120 limit.

@@ -2,10 +2,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
 
+import click.testing
 import pytest
 import sqlalchemy
 import structlog
-from click.testing import CliRunner
 from datacube import Datacube
 from flask.testing import FlaskClient
 from structlog import DropEvent
@@ -46,18 +46,24 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _init_logs(pytestconfig) -> None:
-    logs.init_logging(
-        verbosity=pytestconfig.getoption("verbose"), cache_logger_on_first_use=False
-    )
+def _init_logs(pytestconfig: pytest.Config) -> None:
+    import structlog.stdlib
+    structlog.stdlib.recreate_defaults(log_level=pytestconfig.get_verbosity())
+    # logs.init_logging(
+    #     verbosity=pytestconfig.get_verbosity(), cache_logger_on_first_use=False
+    # )
 
 
 @pytest.fixture()
 def clirunner(env_name: str):
-    def _run_cli(cli_method, opts, catch_exceptions=False, expect_success=True):
-        runner = CliRunner()
+    def _run_cli(cli_method, opts, catch_exceptions: bool =False, expect_success: bool =True) -> click.testing.Result:
+        runner = click.testing.CliRunner()
         opts += ("--env", env_name)
-        result = runner.invoke(cli_method, opts, catch_exceptions=catch_exceptions)
+        result = runner.invoke(cli_method,
+                               opts,
+                               catch_exceptions=catch_exceptions,
+                               env={'TZ': 'UTC'}
+                           )
         if expect_success:
             assert 0 == result.exit_code, (
                 f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
@@ -118,7 +124,7 @@ def unpopulated_client(
 @contextmanager
 def disable_logging():
     """
-    Turn off logging within the if-block
+    Turn off logging within the with-block
 
     Used for repetitive environment setup that makes test errors too verbose.
     """
