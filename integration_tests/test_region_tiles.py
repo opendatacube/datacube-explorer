@@ -92,8 +92,7 @@ def test_archived_dataset_is_excluded(client, run_generate, odc_test_db) -> None
         odc_test_db.index.datasets.archive(["974e1e89-3757-4d94-be8d-7acaeb7adf24"])
 
         # ... the next generation should catch it and update with one less dataset....
-        result = run_generate("ga_ls_wo_fq_nov_mar_3")
-        print(result)
+        _ = run_generate("ga_ls_wo_fq_nov_mar_3")
 
         rv = client.get("product/ga_ls_wo_fq_nov_mar_3/regions/x25y41")
         assert rv.status_code == 404, rv.data

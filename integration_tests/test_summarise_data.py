@@ -219,7 +219,6 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore) -> 
         assert dataset.product.name == "ga_ls8c_ard_3"
 
         # Explorer should remove it too.
-        print(f"Test dataset: {dataset_id}")
         # TODO: Make this work without a force-refresh.
         #       It's hard because we're scanning for updated datasets in the product...
         #       but it's not in the product. And the incremental updater misses it.
@@ -288,7 +287,6 @@ def test_has_source_derived_product_links(
     ls8_ard = summary_store.get_product_summary("ga_ls8c_ard_3")
     assert ls8_ard is not None
 
-    print(repr([ls_fc_pc, ls_fc, ls8_ard]))
     assert ls_fc_pc.source_products == ["ga_ls_fc_3"]
     assert ls_fc_pc.derived_products == []
 

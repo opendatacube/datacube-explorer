@@ -61,8 +61,6 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     client = unpopulated_client
 
     res = get_html(client, "/product-audit/")
-    # print(res.html)
-
     assert (
         res.css_first(".unavailable-metadata .search-result .product-name").text(
             strip=True
