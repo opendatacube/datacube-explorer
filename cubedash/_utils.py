@@ -122,10 +122,9 @@ def datetime_expression(md_type: MetadataType):
     # On older EO datasets, there's only a time range, so we take the center time.
     # (This matches the logic in ODC's Dataset.center_time)
     time = md_type.dataset_fields["time"].alchemy_expression  # type: ignore[attr-defined]
-    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+    return (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
     )
-    return center_time
 
 
 def get_dataset_file_offsets(dataset: Dataset) -> dict[str, str]:

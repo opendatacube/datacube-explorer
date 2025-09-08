@@ -16,7 +16,7 @@ class FakeProduct:
 
 @pytest.fixture()
 def test_product_groupby_regex_list():
-    groupby_regex_list = (
+    return (
         (r"wofs|_wo_", "Water Observations"),
         (r"fc_", "Fractional Cover"),
         (r"geomedian", "Geomedians"),
@@ -28,12 +28,10 @@ def test_product_groupby_regex_list():
         ),
     )
 
-    return groupby_regex_list
-
 
 @pytest.fixture()
 def test_product_list():
-    product_summaries = [
+    return [
         (FakeProduct("fc_percentile_albers_seasonal"), ()),
         (FakeProduct("ls7_fc_albers"), ()),
         (FakeProduct("wofs_albers"), ()),
@@ -42,8 +40,6 @@ def test_product_list():
         (FakeProduct("wofs_annual_summary"), ()),
         (FakeProduct("wofs_nov_mar_summary"), ()),
     ]
-
-    return product_summaries
 
 
 def test_group_by_regex(test_product_groupby_regex_list, test_product_list) -> None:

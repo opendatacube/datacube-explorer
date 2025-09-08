@@ -79,8 +79,7 @@ def run_generate(clirunner):
         if not multi_processed:
             args = ("-j", "1") + tuple(args)
         args = ("-tz", grouping_time_zone) + tuple(args)
-        res = clirunner(generate.cli, args, expect_success=expect_success)
-        return res
+        return clirunner(generate.cli, args, expect_success=expect_success)
 
     return do
 

@@ -144,7 +144,7 @@ EXPECTED_CLEAN_POLY = shape(
 
 
 def _create_overview():
-    overview = TimePeriodOverview(
+    return TimePeriodOverview(
         product_name="test_model_product",
         year=None,
         month=None,
@@ -163,7 +163,6 @@ def _create_overview():
         size_bytes=256,
         product_refresh_time=datetime.now(),
     )
-    return overview
 
 
 def test_footprint_antimeridian(benchmark) -> None:

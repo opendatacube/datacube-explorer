@@ -153,8 +153,7 @@ def assert_text_contains(
 def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
     response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
-    html = LexborHTMLParser(response.data.decode("utf-8"))
-    return html
+    return LexborHTMLParser(response.data.decode("utf-8"))
 
 
 def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:

@@ -408,8 +408,7 @@ def _build_properties(d: DocReader):
 def _remove_prefixes(arg: str):
     # remove potential 'item.', 'properties.', or 'item.properties.' prefixes for ease of handling
     arg = arg.replace("item.", "")
-    arg = arg.replace("properties.", "")
-    return arg
+    return arg.replace("properties.", "")
 
 
 def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) -> list:
