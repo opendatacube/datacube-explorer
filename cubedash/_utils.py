@@ -656,13 +656,12 @@ def prepare_dataset_formatting(
         # Strip EO-legacy fields.
         undo_eo3_compatibility(doc)
         return doc
-    else:
-        return prepare_document_formatting(
-            doc,
-            # Label old-style datasets as old-style datasets.
-            doc_friendly_label="EO1 Dataset",
-            include_source_url=include_source_url,
-        )
+    return prepare_document_formatting(
+        doc,
+        # Label old-style datasets as old-style datasets.
+        doc_friendly_label="EO1 Dataset",
+        include_source_url=include_source_url,
+    )
 
 
 def prepare_document_formatting(

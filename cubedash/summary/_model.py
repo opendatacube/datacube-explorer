@@ -371,15 +371,14 @@ def _filter_geom(geomlist: list[BaseGeometry], start: int = 0) -> list[BaseGeome
     if start == len(geomlist):
         geomlist.pop()
         return geomlist
-    else:
-        for i in range(len(geomlist) - start):
-            try:
-                shapely.ops.unary_union(geomlist[0 : i + start])
-            except ValueError:
-                del geomlist[i + start]
-                start = start + i
-                break
-            if i == len(geomlist) - 1 - start:
-                return geomlist
-        _filter_geom(geomlist, start)
+    for i in range(len(geomlist) - start):
+        try:
+            shapely.ops.unary_union(geomlist[0 : i + start])
+        except ValueError:
+            del geomlist[i + start]
+            start = start + i
+            break
+        if i == len(geomlist) - 1 - start:
+            return geomlist
+    _filter_geom(geomlist, start)
     return geomlist
