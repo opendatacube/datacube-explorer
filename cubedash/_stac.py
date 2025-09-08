@@ -488,16 +488,16 @@ def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
         if arg.startswith("{"):
             return _dict_arg(arg)
         arg = arg.split(",")
+    include = []
+    exclude = []
     if isinstance(arg, list):
-        include = []
-        exclude = []
         for a in arg:
             if a.startswith("-"):
                 exclude.append(a[1:])
             else:
                 # account for '+' showing up as a space if not encoded
                 include.append(a[1:] if a.startswith("+") else a.strip())
-        return {"include": include, "exclude": exclude}
+    return {"include": include, "exclude": exclude}
 
 
 def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:
