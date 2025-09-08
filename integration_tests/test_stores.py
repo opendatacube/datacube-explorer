@@ -24,7 +24,7 @@ def _overview(
     month: int | None = None,
     day: int | None = None,
 ) -> TimePeriodOverview:
-    orig = TimePeriodOverview(
+    return TimePeriodOverview(
         product_name=product_name,
         year=year,
         month=month,
@@ -63,7 +63,6 @@ def _overview(
         size_bytes=123_400_000,
         product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=timezone.utc),
     )
-    return orig
 
 
 def test_add_period_list() -> None:

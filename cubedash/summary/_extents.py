@@ -100,8 +100,7 @@ def get_dataset_extent_alchemy_expression(
 
 
 def _projection_doc_offset(md):
-    projection_offset = md.definition["dataset"]["grid_spatial"]
-    return projection_offset
+    return md.definition["dataset"]["grid_spatial"]
 
 
 def _bounds_polygon(doc, projection_offset):
