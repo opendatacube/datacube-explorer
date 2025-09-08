@@ -65,8 +65,6 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     client = unpopulated_client
 
     res = get_html(client, "/product-audit/?timings")
-    # print(res.html)
-
     largest_footprint_size = res.css(".footprint-size .search-result")
     assert len(largest_footprint_size) == 2
 
@@ -82,5 +80,4 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
 
     res = client.get("/audit/day-query-times.txt")
     plain_timing_results = res.data.decode("utf-8")
-    print(plain_timing_results)
     assert '"s2a_ard_granule"\t8\t' in plain_timing_results

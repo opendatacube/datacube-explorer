@@ -1,7 +1,6 @@
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from pprint import pprint
 from textwrap import dedent
 from uuid import UUID
 
@@ -75,8 +74,6 @@ def test_eo3_extents(eo3_index: Index) -> None:
     [dataset_extent_row] = _extents.get_sample_dataset(
         [product], explorer_index(eo3_index)
     )
-    pprint(dataset_extent_row)
-
     assert dataset_extent_row["id"] == UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14")
 
     # On older products, the center time was calculated from the range.
@@ -140,8 +137,6 @@ def test_eo3_dateless_extents(eo3_index: Index) -> None:
     [dataset_extent_row] = _extents.get_sample_dataset(
         [product], explorer_index(eo3_index)
     )
-    pprint(dataset_extent_row)
-
     assert dataset_extent_row["id"] == UUID("856e45bf-cd50-5a5a-b1cd-12b85df99b24")
 
     # Since it has no datetime, the chosen one should default to the start

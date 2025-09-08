@@ -2,7 +2,6 @@
 Tests that load pages and check the contained text.
 """
 
-import json
 from datetime import datetime, timezone
 from io import StringIO
 
@@ -567,7 +566,6 @@ def test_api_returns_limited_tile_regions(client: FlaskClient) -> None:
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02")
     assert len(geojson["features"]) == 3, "Unexpected region month count"
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02/26")
-    print(json.dumps(geojson, indent=4))
     assert len(geojson["features"]) == 1, "Unexpected region day count"
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/04/6")
     assert len(geojson["features"]) == 0, "Unexpected region count"
@@ -799,7 +797,6 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     """
     # ls7_nbar_scene, 2017, May
     res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
-    print(res.output)
 
     # Expect it to show the dates in local timezone.
     expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())

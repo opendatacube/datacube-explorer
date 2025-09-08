@@ -604,8 +604,6 @@ def test_stac_links(stac_client: FlaskClient) -> None:
         href: str = child_link["href"]
         # ignore child links corresponding to catalogs
         if "catalogs" not in href:
-            print(f"Loading collection page for {product_name}: {href!r}")
-
             collection_data = get_collection(stac_client, href, validate=True)
             assert collection_data["id"] == product_name
             # TODO: assert items, properties, etc.
