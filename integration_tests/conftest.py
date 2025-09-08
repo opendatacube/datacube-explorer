@@ -142,9 +142,10 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
     return unpopulated_client
 
 
-def pytest_assertrepr_compare(op, left, right):
-    """
-    Custom pytest error messages for large documents.
+def pytest_assertrepr_compare(
+    config: pytest.Config, op: str, left: object, right: object
+) -> list[str] | None:
+    """Custom pytest error messages for large documents.
 
     The default pytest dict==dict error messages are unreadable for
     nested document-like dicts. (Such as our json and yaml docs!)
@@ -160,6 +161,7 @@ def pytest_assertrepr_compare(op, left, right):
 
     if (is_a_doc(left) or is_a_doc(right)) and op == "==":
         return format_doc_diffs(left, right)
+    return None
 
 
 def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
