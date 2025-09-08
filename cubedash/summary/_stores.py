@@ -29,7 +29,7 @@ from shapely.geometry.base import BaseGeometry
 from sqlalchemy import Row, RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
-from sqlalchemy.sql.ddl import DropSchema
+from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 try:
     from cubedash._version import version as explorer_version
@@ -300,6 +300,9 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
+        self.e_index.execute_ddl(
+            CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
+        )
         refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
         if refresh_also:
             # Refresh product information after a schema update, plus the given kind of data.
