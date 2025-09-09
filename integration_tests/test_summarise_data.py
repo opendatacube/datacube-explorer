@@ -251,7 +251,7 @@ def _change_dataset_product(
     else:
         table_name = "odc.dataset"
         ref_column = "product_ref"
-    with index._db._engine.begin() as conn:
+    with index._db._engine.begin() as conn:  # type: ignore[attr-defined]
         rows_changed = conn.execute(
             text(
                 f"update {table_name} set {ref_column}=:product_id where id=:dataset_id"
@@ -555,7 +555,7 @@ def test_cubedash_gen_refresh(
     """
 
     def _get_product_seq_value():
-        with odc_test_db.index._active_connection() as conn:
+        with odc_test_db.index._active_connection() as conn:  # type: ignore[attr-defined]
             [new_val] = conn.execute(
                 text(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")
             ).fetchone()

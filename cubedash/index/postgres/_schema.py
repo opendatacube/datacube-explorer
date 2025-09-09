@@ -285,7 +285,7 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         )
 
     # Our global SRID.
-    TIME_OVERVIEW.c.footprint_geometry.type.srid = srid
+    TIME_OVERVIEW.c.footprint_geometry.type.srid = srid  # type: ignore[attr-defined]
 
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.

@@ -87,7 +87,7 @@ def test_allows_null_product_fixed_fields(
     )
 
     # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
-    with odc_test_db.index._active_connection() as conn:
+    with odc_test_db.index._active_connection() as conn:  # type: ignore[attr-defined]
         update_count = conn.execute(
             text("update cubedash.product set fixed_metadata = null")
         ).rowcount

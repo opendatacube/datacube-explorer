@@ -107,8 +107,8 @@ class Product:
         comment="The `last_refresh` time that was current when summaries "
         "were last *fully* generated successfully.",
     )
-    source_product_refs = Column(postgres.ARRAY(SmallInteger))
-    derived_product_refs = Column(postgres.ARRAY(SmallInteger))
+    source_product_refs = Column(postgres.ARRAY(SmallInteger))  # type: ignore[var-annotated]
+    derived_product_refs = Column(postgres.ARRAY(SmallInteger))  # type: ignore[var-annotated]
     time_earliest = Column(DateTime(timezone=True))
     time_latest = Column(DateTime(timezone=True))
     # A flat key-value set of metadata fields that are the same ("fixed") on every dataset.
@@ -130,22 +130,22 @@ class TimeOverview:
         {"schema": CUBEDASH_SCHEMA},
     )
     # Uniquely identified by three values:
-    product_ref = Column(None, ForeignKey(Product.id))
-    period_type = Column(SqlEnum("all", "year", "month", "day", name="overviewperiod"))
+    product_ref = Column(None, ForeignKey(Product.id))  # type: ignore[var-annotated]
+    period_type = Column(SqlEnum("all", "year", "month", "day", name="overviewperiod"))  # type: ignore[var-annotated]
     start_day = Column(Date)
     dataset_count = Column(Integer, nullable=False)
     # Time range (if there's at least one dataset)
     time_earliest = Column(DateTime(timezone=True))
     time_latest = Column(DateTime(timezone=True))
-    timeline_period = Column(
+    timeline_period = Column(  # type: ignore[var-annotated]
         SqlEnum("year", "month", "week", "day", name="timelineperiod"), nullable=False
     )
-    timeline_dataset_start_days = Column(
+    timeline_dataset_start_days = Column(  # type: ignore[var-annotated]
         postgres.ARRAY(DateTime(timezone=True)), nullable=False
     )
-    timeline_dataset_counts = Column(postgres.ARRAY(Integer), nullable=False)
-    regions = Column(postgres.ARRAY(String), nullable=False)
-    region_dataset_counts = Column(postgres.ARRAY(Integer), nullable=False)
+    timeline_dataset_counts = Column(postgres.ARRAY(Integer), nullable=False)  # type: ignore[var-annotated]
+    regions = Column(postgres.ARRAY(String), nullable=False)  # type: ignore[var-annotated]
+    region_dataset_counts = Column(postgres.ARRAY(Integer), nullable=False)  # type: ignore[var-annotated]
     # The most newly created dataset
     newest_dataset_creation_time = Column(DateTime(timezone=True))
     # When this summary was generated
@@ -162,7 +162,7 @@ class TimeOverview:
     footprint_count = Column(Integer, nullable=False)
     # SRID is overridden via config.
     footprint_geometry = Column(Geometry(srid=-999, spatial_index=False))
-    crses = Column(postgres.ARRAY(String))
+    crses = Column(postgres.ARRAY(String))  # type: ignore[var-annotated]
     # Size of this dataset in bytes, if the product includes it.
     size_bytes = Column(BigInteger)
 
@@ -261,7 +261,7 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         )
 
     # Our global SRID.
-    TimeOverview.footprint_geometry.type.srid = srid
+    TimeOverview.footprint_geometry.type.srid = srid  # type: ignore[attr-defined]
 
     # We want an index on the spatial_ref_sys table to do authority name/code lookups.
     # But in RDS environments we cannot add indexes to it.
@@ -292,10 +292,10 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
 
     # is there a way to ensure orm_registry.metadata doesn't include the ref_table_metadata tables?
     non_ref_tables = [
-        DatasetSpatial.__table__,
-        Product.__table__,
-        TimeOverview.__table__,
-        Region.__table__,
+        DatasetSpatial.__table__,  # type: ignore[attr-defined]
+        Product.__table__,  # type: ignore[attr-defined]
+        TimeOverview.__table__,  # type: ignore[attr-defined]
+        Region.__table__,  # type: ignore[attr-defined]
     ]
     orm_registry.metadata.create_all(conn, tables=non_ref_tables, checkfirst=True)
 
