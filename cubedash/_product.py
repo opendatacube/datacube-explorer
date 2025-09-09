@@ -229,7 +229,7 @@ def _iso8601_duration(tdelta: timedelta):
     if any(h_m_s):
         parts.append("T")
     if all_secs:
-        for val, name in zip(h_m_s, ["H", "M", "S"]):
+        for val, name in zip(h_m_s, ["H", "M", "S"], strict=True):
             if val:
                 parts.append(f"{val}{name}")
     else:
