@@ -185,12 +185,15 @@ select = [
     "NPY",  # Numpy
     "RET", # flake8-ret
     # "RUF",  # Ruf-specific python rules?
-    # "S",  # Bandit (security) -- explore warnings and enable in future?
+    "S",  # flake8-bandit
 ]
 ignore = [
+    "S101", # Many asserts are used for type checking.
     # FIXME: re-enable these rules.
     "B023",
     "B905",
+    "S310",
+    "S608",
 ]
 
 [tool.ruff.lint.per-file-ignores]
