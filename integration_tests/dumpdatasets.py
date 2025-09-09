@@ -6,6 +6,7 @@ import gzip
 import random
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import click
 import yaml
@@ -65,7 +66,9 @@ def dump_datasets(
             )
 
 
-def _get_dumpable_doc(dc: Datacube, d: Dataset, include_sources=True):
+def _get_dumpable_doc(
+    dc: Datacube, d: Dataset, include_sources: bool = True
+) -> dict[str, Any]:
     if include_sources:
         dataset = dc.index.datasets.get(d.id, include_sources=include_sources)
         assert dataset is not None
