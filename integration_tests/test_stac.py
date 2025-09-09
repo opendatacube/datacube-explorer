@@ -600,8 +600,8 @@ def test_stac_links(stac_client: FlaskClient) -> None:
 
     found_collection_ids = set()
     for child_link in child_links:
-        product_name: str = child_link["title"]
-        href: str = child_link["href"]
+        product_name = child_link["title"]
+        href = child_link["href"]
         # ignore child links corresponding to catalogs
         if "catalogs" not in href:
             collection_data = get_collection(stac_client, href, validate=True)

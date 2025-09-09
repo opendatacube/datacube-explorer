@@ -7,7 +7,6 @@ from datetime import date, datetime
 
 from datacube.model import Range
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 
 from cubedash._model import TimePeriodOverview
 from integration_tests.asserts import assert_shapes_mostly_equal
@@ -216,7 +215,7 @@ def test_footprint_normal(benchmark) -> None:
 
     o = _create_overview()
     o.footprint_geometry = normal_poly
-    res: BaseGeometry = benchmark(lambda: o.footprint_wgs84)
+    res = benchmark(lambda: o.footprint_wgs84)
     assert_shapes_mostly_equal(res, expected_poly, 0.001)
 
 

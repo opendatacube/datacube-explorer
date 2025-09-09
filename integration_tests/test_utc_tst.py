@@ -7,7 +7,6 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
-from click.testing import Result
 from datacube.model import Range
 from dateutil import tz
 from flask.testing import FlaskClient
@@ -90,7 +89,7 @@ def test_dataset_search_page_localised_time(client: FlaskClient) -> None:
 def test_clirunner_generate_grouping_timezone(
     odc_test_db, run_generate, empty_client
 ) -> None:
-    res: Result = run_generate("ga_ls9c_ard_3", grouping_time_zone="America/Chicago")
+    res = run_generate("ga_ls9c_ard_3", grouping_time_zone="America/Chicago")
     assert "2021" in res.output
 
     store = SummaryStore.create(odc_test_db.index, grouping_time_zone="America/Chicago")
