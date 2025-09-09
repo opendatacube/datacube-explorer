@@ -7,7 +7,6 @@ from io import StringIO
 
 import flask
 import pytest
-from click.testing import Result
 from dateutil import tz
 from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
@@ -796,7 +795,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     You should be able to view a product with cubedash-view command-line program.
     """
     # ls7_nbar_scene, 2017, May
-    res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
+    res = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
 
     # Expect it to show the dates in local timezone.
     expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())
@@ -835,9 +834,7 @@ def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient) -> None:
     Can you view a date that doesn't exist?
     """
     # A period that's out of bounds.
-    res: Result = clirunner(
-        show.cli, ["ga_ls8c_ard_3", "2030", "5"], expect_success=False
-    )
+    res = clirunner(show.cli, ["ga_ls8c_ard_3", "2030", "5"], expect_success=False)
     assert "No summary for chosen period." in res.output
 
 
@@ -847,8 +844,8 @@ def test_show_summary_cli_missing_product(clirunner, client: FlaskClient) -> Non
 
     (and error return code)
     """
-    res: Result = clirunner(show.cli, ["does_not_exist"], expect_success=False)
-    output: str = res.output
+    res = clirunner(show.cli, ["does_not_exist"], expect_success=False)
+    output = res.output
     assert output.strip().startswith("Unknown product 'does_not_exist'")
     assert res.exit_code != 0
 
@@ -861,7 +858,7 @@ def test_show_summary_cli_unsummarised_product(
 
     (and error return code)
     """
-    res: Result = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
+    res = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
     out = res.output.strip()
     assert out.startswith("No info: product 'ga_ls8c_ard_3' has not been summarised")
     assert res.exit_code != 0
