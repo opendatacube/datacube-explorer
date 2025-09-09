@@ -177,6 +177,7 @@ select = [
     "E",  # pycodestyle
     "EXE",  # Shebangs+Executable permisssions should match
     "F",  # pyflakes
+    "FLY", # flynt
     "G",  # Use logging formatter, not manual string concat
     "I",  # Auto-sort imports
     "ICN",  # Use standard import names, like np for numpy

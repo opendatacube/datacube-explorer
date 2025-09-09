@@ -811,7 +811,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
         )
     )
     assert res.output.startswith(expected_header)
-    expected_metadata = "\n".join(
+    expected_metadata = "\n".join(  # noqa: FLY002
         (
             "Metadata",
             "\tgsi: ASA",
@@ -823,7 +823,7 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
         )
     )
     assert expected_metadata in res.output
-    expected_period = "\n".join(
+    expected_period = "\n".join(  # noqa: FLY002
         ("Period: 2017 5 all-days", "\tStorage size: 727.4MiB", "\t3 datasets", "")
     )
     assert expected_period in res.output
