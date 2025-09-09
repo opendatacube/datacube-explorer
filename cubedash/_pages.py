@@ -562,7 +562,7 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
         except re.error as e:
             raise RuntimeError(
                 f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
-            )
+            ) from None
 
     if group_by_regex:
         # group using regex

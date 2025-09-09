@@ -239,7 +239,7 @@ def _load_products(store: SummaryStore, product_names) -> Generator[Product]:
                 f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
                 param_hint="product_names",
-            )
+            ) from None
 
 
 class TimeDeltaParam(click.ParamType):
