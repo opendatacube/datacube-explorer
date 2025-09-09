@@ -279,7 +279,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.index._active_connection() as conn:
             return conn.execute(
                 insert(TIME_OVERVIEW)
-                .returning(TIME_OVERVIEW.c.generation_time)
                 .on_conflict_do_update(
                     index_elements=["product_ref", "start_day", "period_type"],
                     set_=summary_row,
@@ -289,6 +288,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                         TIME_OVERVIEW.c.period_type == period,
                     ),
                 )
+                .returning(TIME_OVERVIEW.c.generation_time)
                 .values(
                     product_ref=product_id,
                     start_day=start_day,
