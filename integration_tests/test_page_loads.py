@@ -5,13 +5,13 @@ Tests that load pages and check the contained text.
 from datetime import datetime, timezone
 from io import StringIO
 
+import flask
 import pytest
 from click.testing import Result
 from dateutil import tz
 from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
 
-import cubedash
 from cubedash import _model
 from cubedash.summary import SummaryStore, _extents, show
 from cubedash.summary._stores import explorer_index
@@ -85,7 +85,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 @pytest.fixture()
 def sentry_client(client: FlaskClient) -> FlaskClient:
-    cubedash.app.config["SENTRY_CONFIG"] = {
+    flask.current_app.config["SENTRY_CONFIG"] = {
         "dsn": "https://githash@number.sentry.opendatacube.org/123456",
         "include_paths": ["cubedash"],
     }
