@@ -51,8 +51,10 @@ class ExplorerAbstractIndex(ABC):
         fields: Iterable[str] | None = None,
         limit: int | None = None,
         order_by=None,
-        args={},
+        args=None,
     ):
+        if args is None:
+            args = {}
         # keeping since it's used in _extents without direct access to index but perhaps should remove
         return self.index.datasets.search_returning(
             field_names=fields, limit=limit, order_by=order_by, **args
