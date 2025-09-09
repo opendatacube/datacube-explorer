@@ -805,6 +805,10 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
         "properties": {
             "created": "2017-07-11T01:32:22Z",
             "datetime": "2017-05-02T00:29:01Z",
+            "odc:file_format": "GeoTIFF",
+            "odc:product_family": "nbar",
+            "start_datetime": "2017-05-02T00:28:48Z",
+            "end_datetime": "2017-05-02T00:29:14Z",
             "title": "LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502",
             "platform": "landsat-7",
             "instruments": ["etm"],
