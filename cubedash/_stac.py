@@ -433,7 +433,7 @@ def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) 
     except ValueError:
         raise BadRequest(
             f"Invalid argument syntax. Expected comma-separated list, got: {arg!r}"
-        )
+        ) from None
 
     if not isinstance(value, list):
         raise BadRequest(f"Invalid argument syntax. Expected json list, got: {value!r}")
@@ -455,7 +455,9 @@ def _geojson_arg(arg: dict) -> BaseGeometry:
     try:
         return shape(arg)
     except ValueError:
-        raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
+        raise BadRequest(
+            "The 'intersects' argument must be valid GeoJSON geometry."
+        ) from None
 
 
 def _bool_argument(s: str | bool):
