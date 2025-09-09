@@ -171,9 +171,9 @@ filterwarnings = [
 target-version = "py310"
 
 [tool.ruff.lint]
-# Which checkers to enable?
 select = [
     "A",  # Don't shadow built-ins
+    "B",  # flake8-bugbear
     "E",  # pycodestyle
     "EXE",  # Shebangs+Executable permisssions should match
     "F",  # pyflakes
@@ -186,6 +186,11 @@ select = [
     "RET", # flake8-ret
     # "RUF",  # Ruf-specific python rules?
     # "S",  # Bandit (security) -- explore warnings and enable in future?
+]
+ignore = [
+    # FIXME: re-enable these rules.
+    "B023",
+    "B905",
 ]
 
 [tool.ruff.lint.per-file-ignores]
