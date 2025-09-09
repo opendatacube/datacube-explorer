@@ -1536,12 +1536,18 @@ def _summary_from_row(
     grouping_timezone: tzinfo | None = default_timezone,
 ):
     timeline_dataset_counts = Counter(
-        dict(zip(res["timeline_dataset_start_days"], res["timeline_dataset_counts"]))
+        dict(
+            zip(
+                res["timeline_dataset_start_days"],
+                res["timeline_dataset_counts"],
+                strict=True,
+            )
+        )
         if res["timeline_dataset_start_days"]
         else None
     )
     region_dataset_counts = Counter(
-        dict(zip(res["regions"], res["region_dataset_counts"]))
+        dict(zip(res["regions"], res["region_dataset_counts"], strict=True))
         if res["regions"]
         else None
     )
