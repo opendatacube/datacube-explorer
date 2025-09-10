@@ -2,7 +2,6 @@
 Tests that load pages and check the contained text.
 """
 
-from collections.abc import Callable
 from datetime import datetime, timezone
 from io import StringIO
 

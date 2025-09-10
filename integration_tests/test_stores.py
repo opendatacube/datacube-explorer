@@ -252,7 +252,7 @@ def test_generate_empty(odc_test_db, run_generate) -> None:
     Proper tests of 'generate' are in test_summarise_data.py, but take much longer to run.
     This catches many simple DB, product and config setup issues quickly.
     """
-    run_generate('--init')
+    run_generate("--init")
 
 
 def test_generate_raises_error(run_generate, empty_client) -> None:

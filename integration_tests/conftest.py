@@ -10,7 +10,7 @@ from datacube import Datacube
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
-from cubedash import _model, create_app, generate, logs
+from cubedash import _model, create_app, generate
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
 from cubedash.warmup import find_examples_of_all_public_urls
@@ -48,6 +48,7 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig: pytest.Config) -> None:
     import structlog.stdlib
+
     structlog.stdlib.recreate_defaults(log_level=pytestconfig.get_verbosity())
     # logs.init_logging(
     #     verbosity=pytestconfig.get_verbosity(), cache_logger_on_first_use=False
@@ -56,14 +57,14 @@ def _init_logs(pytestconfig: pytest.Config) -> None:
 
 @pytest.fixture()
 def clirunner(env_name: str):
-    def _run_cli(cli_method, opts, catch_exceptions: bool =False, expect_success: bool =True) -> click.testing.Result:
+    def _run_cli(
+        cli_method, opts, catch_exceptions: bool = False, expect_success: bool = True
+    ) -> click.testing.Result:
         runner = click.testing.CliRunner()
         opts += ("--env", env_name)
-        result = runner.invoke(cli_method,
-                               opts,
-                               catch_exceptions=catch_exceptions,
-                               env={'TZ': 'UTC'}
-                           )
+        result = runner.invoke(
+            cli_method, opts, catch_exceptions=catch_exceptions, env={"TZ": "UTC"}
+        )
         if expect_success:
             assert 0 == result.exit_code, (
                 f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
