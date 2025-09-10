@@ -179,11 +179,6 @@ def test_get_null(summary_store: SummaryStore) -> None:
     assert loaded is None
 
 
-# this logic has been moved to the schema
-# def test_srid_lookup(summary_store: SummaryStore):
-#     assert summary_store.grouping_crs == "EPSG:3577"
-
-
 def test_put_get_summaries(summary_store: SummaryStore) -> None:
     """
     Test the serialisation/deserialisation from postgres
@@ -194,13 +189,13 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
 
     summary_store._persist_product_extent(
         ProductSummary(
-            product_name,
-            4321,
-            (datetime(2017, 1, 1), datetime(2017, 4, 1)),
-            [],
-            [],
-            {},
-            datetime.now(),
+            name=product_name,
+            dataset_count=4321,
+            duration=(datetime(2017, 1, 1), datetime(2017, 4, 1)),
+            source_products=[],
+            derived_products=[],
+            fixed_metadata={},
+            last_refresh_time=datetime.now(),
         )
     )
 
@@ -252,7 +247,7 @@ def test_generate_empty(odc_test_db, run_generate) -> None:
     Proper tests of 'generate' are in test_summarise_data.py, but take much longer to run.
     This catches many simple DB, product and config setup issues quickly.
     """
-    run_generate("--init")
+    run_generate()
 
 
 def test_generate_raises_error(run_generate, empty_client) -> None:

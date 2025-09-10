@@ -45,7 +45,7 @@ def postgresql_server(worker_id: str):
     if Path("/.dockerenv").exists() and (
         "ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ
     ):
-        logger.info("Running inside docker, not starting postgres container")
+        logger.warning("Running inside Docker, not starting PostGIS container")
         yield GET_DB_FROM_ENV
     else:
         client = docker.from_env()
@@ -88,7 +88,7 @@ def postgresql_server(worker_id: str):
                 "PGDATA": "/tmp/explorertest/data",
             },
             tmpfs={
-                "/tmp/explorertest": "rw,noexec,nosuid,noatime,nodiratime,size=512m"  # Use RAM drive for storage
+                "/tmp/explorertest": "rw,noexec,nosuid,noatime,nodiratime",  # ,size=512m"  # Use RAM drive for storage
                 # ,size=1g
             },
             ports={"5432/tcp": None},
@@ -118,7 +118,7 @@ def odc_db(
     request: pytest.FixtureRequest,
     worker_id,
     testrun_uid,
-) -> Generator[str]:
+) -> Generator[str | ODCEnvironment]:
     """Create an ODC Database per xdist worker and per pytest module
 
     Write out an ODC Configuration File and set an Environment Variable specifying which ODC Env to Use.
@@ -204,6 +204,23 @@ def odc_db(
         yield new_postgresql_url
         mp.undo()
 
+        # This was a good idea to save disk space on the tmpfs
+        # But something is holding connections open to the database
+        # E  psycopg2.errors.ObjectInUse: database "test_dataset_maturity_default" is being accessed
+        # by other users
+        # E  DETAIL:  There are 2 other sessions using the database.
+        # conn = psycopg2.connect(postgresql_server)
+        # # Prevent starting a transaction, since 'drop database' cannot run inside a transaction
+        # conn.set_session(autocommit=True)
+        # with conn.cursor() as cur:
+        #     log.info("Dropping database", db_name=test_database_name)
+        #     cur.execute(
+        #         sql.SQL("DROP DATABASE {db_name}").format(
+        #             db_name=sql.Identifier(test_database_name)
+        #         )
+        #     )
+        # conn.close()
+
 
 @pytest.fixture(scope="module", params=["default", "postgis"])
 def env_name(request: pytest.FixtureRequest) -> str:
@@ -220,7 +237,6 @@ def cfg_env(odc_db, env_name: str) -> ODCEnvironment:
     logger.info(
         "Prepping ODCConfig",
         env_name=env_name,
-        odc_config_path_from_env=os.environ["ODC_CONFIG_PATH"],
         odc_env_url=odc_env.db_url,
     )
     return odc_env
@@ -231,10 +247,6 @@ def odc_test_db(odc_db: str, cfg_env: ODCEnvironment) -> Generator[Datacube]:
     """Provide a temporary PostgreSQL server initialised by ODC.
 
     Usable as the default ODC DB by setting environment variables.
-
-    :return: Datacube instance
-
-    :yields: Boo
 
     Yields:
         Ready to go Datacube Object
@@ -316,7 +328,7 @@ def _remove_postgis_dynamic_indexes() -> None:
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
     for table in pgis_core.METADATA.tables.values():
         table.indexes.intersection_update(
-            [i for i in table.indexes if not i.name.startswith("dix_")]
+            [i for i in table.indexes if not i.name.startswith("dix_")]  # type: ignore
         )
     # Dynamic indexes disabled.
 

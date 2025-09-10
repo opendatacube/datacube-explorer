@@ -44,7 +44,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          uv run pytest -v -x integration_tests/ --numprocesses auto --dist load --durations 0 --junit-xml pytest_junit.xml --cov=--cov-report=xml -r sx
+          uv run pytest -v -x integration_tests/ --numprocesses auto --dist load --durations 20 --junit-xml pytest_junit.xml --cov=--cov-report=xml -r sx
 
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4

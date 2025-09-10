@@ -64,8 +64,8 @@ doc = [
 ]
 dev = [
     "datacube-explorer[deployment,test]",
+    "pdbpp>=0.11.7",
     "pytest-xdist>=3.8.0",
-    "web-pdb>=1.6.3",
     {include-group = "doc"},
 ]
 
