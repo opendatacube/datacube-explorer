@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo
 
 import structlog
 from cachetools.func import ttl_cache
-from dateutil import tz
 from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
@@ -794,7 +793,7 @@ class SummaryStore:
     @property
     def grouping_timezone(self) -> tzinfo | None:
         """Timezone used for day/month/year grouping."""
-        return tz.gettz(self._summariser.grouping_time_zone)
+        return ZoneInfo(self._summariser.grouping_time_zone)
 
     def _persist_product_extent(self, product: ProductSummary) -> None:
         source_product_ids = [

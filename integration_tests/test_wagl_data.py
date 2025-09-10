@@ -2,11 +2,10 @@
 Tests that load pages and check the contained text.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from datacube.model import Range
-from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
@@ -29,10 +28,12 @@ def test_s2_ard_summary(run_generate, summary_store: SummaryStore) -> None:
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
-            begin=datetime(2017, 9, 30, 14, 30, tzinfo=tzutc()),
-            end=datetime(2017, 10, 31, 14, 30, tzinfo=tzutc()),
+            begin=datetime(2017, 9, 30, 14, 30, tzinfo=timezone.utc),
+            end=datetime(2017, 10, 31, 14, 30, tzinfo=timezone.utc),
         ),
-        newest_creation_time=datetime(2018, 7, 26, 23, 49, 25, 684_327, tzinfo=tzutc()),
+        newest_creation_time=datetime(
+            2018, 7, 26, 23, 49, 25, 684_327, tzinfo=timezone.utc
+        ),
         timeline_period="day",
         timeline_count=31,
         crses={"EPSG:32753"},
@@ -48,10 +49,10 @@ def test_s2a_l1_summary(run_generate, summary_store: SummaryStore) -> None:
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
-            begin=datetime(2017, 9, 30, 14, 30, tzinfo=tzutc()),
-            end=datetime(2017, 10, 31, 14, 30, tzinfo=tzutc()),
+            begin=datetime(2017, 9, 30, 14, 30, tzinfo=timezone.utc),
+            end=datetime(2017, 10, 31, 14, 30, tzinfo=timezone.utc),
         ),
-        newest_creation_time=datetime(2017, 10, 23, 1, 13, 7, tzinfo=tzutc()),
+        newest_creation_time=datetime(2017, 10, 23, 1, 13, 7, tzinfo=timezone.utc),
         timeline_period="day",
         timeline_count=31,
         crses={"EPSG:32753"},

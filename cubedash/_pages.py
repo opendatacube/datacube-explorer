@@ -1,14 +1,13 @@
 import decimal
 import re
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import datacube
 import flask
 import structlog
 from datacube.model import Product, Range
 from datacube.scripts.dataset import build_dataset_info
-from dateutil import tz
-from dateutil.parser import ParserError
 from flask import (
     Blueprint,
     abort,
@@ -167,13 +166,13 @@ def search_page(
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
     time_range = utils.as_time_range(
-        year, month, day, tzinfo=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE)
+        year, month, day, tzinfo=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE)
     )
 
     args = MultiDict(flask.request.args)
     try:
         query = utils.query_to_search(args, product=product)
-    except ParserError:
+    except ZoneInfoNotFoundError:
         abort(400, "Invalid datetime format")
     except ValueError as e:  # invalid query val
         abort(400, str(e))
@@ -488,7 +487,7 @@ def inject_globals():
         current_time=datetime.now(timezone.utc),
         datacube_version=datacube.__version__,
         app_version=cubedash.__version__,
-        grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
+        grouping_timezone=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
         last_updated_time=last_updated,
         explorer_instance_title=current_app.config.get("CUBEDASH_INSTANCE_TITLE")
         or current_app.config.get("STAC_ENDPOINT_TITLE", ""),

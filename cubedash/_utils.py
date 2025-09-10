@@ -26,7 +26,6 @@ from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils import InvalidDocException, jsonify_document
-from dateutil import tz
 from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
@@ -430,7 +429,7 @@ def _unchanged_value(a):
 
 def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
     return d
 
 

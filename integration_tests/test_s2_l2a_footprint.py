@@ -2,12 +2,11 @@
 Tests that load pages and check the contained text.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 from datacube.model import Range
-from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 
 from cubedash.summary import SummaryStore
@@ -45,10 +44,10 @@ def test_s2_l2a_summary(run_generate, summary_store: SummaryStore) -> None:
         dataset_count=4,
         footprint_count=4,
         time_range=Range(
-            begin=datetime(2016, 10, 31, 14, 30, tzinfo=tzutc()),
-            end=datetime(2019, 6, 30, 14, 30, tzinfo=tzutc()),
+            begin=datetime(2016, 10, 31, 14, 30, tzinfo=timezone.utc),
+            end=datetime(2019, 6, 30, 14, 30, tzinfo=timezone.utc),
         ),
-        newest_creation_time=datetime(2019, 6, 20, 11, 57, 34, tzinfo=tzutc()),
+        newest_creation_time=datetime(2019, 6, 20, 11, 57, 34, tzinfo=timezone.utc),
         timeline_period="day",
         timeline_count=91,
         crses={"EPSG:32632", "EPSG:32630", "EPSG:32627"},

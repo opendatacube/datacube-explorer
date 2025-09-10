@@ -1,7 +1,7 @@
 import json
 import re
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
@@ -11,7 +11,6 @@ import jsonschema
 import pytest
 from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
-from dateutil.tz import tzutc
 from deepdiff import DeepDiff
 from flask.testing import FlaskClient
 from selectolax.lexbor import LexborHTMLParser, LexborNode
@@ -278,9 +277,9 @@ def expect_values(
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range:
-            - {s.time_range.begin.astimezone(tzutc())!r}
-            - {s.time_range.end.astimezone(tzutc())!r}
-        newest: {s.newest_dataset_creation_time.astimezone(tzutc())!r}
+            - {s.time_range.begin.astimezone(timezone.utc)!r}
+            - {s.time_range.end.astimezone(timezone.utc)!r}
+        newest: {s.newest_dataset_creation_time.astimezone(timezone.utc)!r}
         crses: {s.crses!r}
         size_bytes: {s.size_bytes}
         timeline
