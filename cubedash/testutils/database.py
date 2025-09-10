@@ -31,7 +31,7 @@ POSTGIS_IMAGE = "postgis/postgis:16-3.5"
 
 
 @pytest.fixture(scope="session")
-def postgresql_server():
+def postgresql_server(worker_id: str):
     """Provide a temporary PostgreSQL server for the test session using Docker.
 
     If already running inside Docker, and there's an ODC database configured with
@@ -75,6 +75,7 @@ def postgresql_server():
         ]
         container = client.containers.run(
             POSTGIS_IMAGE,
+            name=f"cubedash-testdb-{worker_id}",
             command=postgres_args,
             auto_remove=True,
             remove=True,
@@ -87,7 +88,7 @@ def postgresql_server():
                 "PGDATA": "/tmp/explorertest/data",
             },
             tmpfs={
-                "/tmp/explorertest": "rw,noexec,nosuid,noatime,nodiratime,size=128m"  # Use RAM drive for storage
+                "/tmp/explorertest": "rw,noexec,nosuid,noatime,nodiratime,size=512m"  # Use RAM drive for storage
                 # ,size=1g
             },
             ports={"5432/tcp": None},
