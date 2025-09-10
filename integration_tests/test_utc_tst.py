@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from datacube.model import Range
-from dateutil import tz
 from flask.testing import FlaskClient
 
 from cubedash._utils import datetime_from_metadata, default_utc
@@ -101,10 +100,10 @@ def test_clirunner_generate_grouping_timezone(
                 "product": "ga_ls9c_ard_3",
                 "time": Range(
                     begin=datetime(
-                        2021, 12, 27, 0, 0, tzinfo=tz.gettz("America/Chicago")
+                        2021, 12, 27, 0, 0, tzinfo=ZoneInfo("America/Chicago")
                     ),
                     end=datetime(
-                        2021, 12, 28, 0, 0, tzinfo=tz.gettz("America/Chicago")
+                        2021, 12, 28, 0, 0, tzinfo=ZoneInfo("America/Chicago")
                     ),
                 ),
             },
@@ -121,9 +120,9 @@ def test_clirunner_generate_grouping_timezone(
                 "product": "ga_ls9c_ard_3",
                 "time": Range(
                     begin=datetime(
-                        2021, 12, 31, 0, 0, tzinfo=tz.gettz("America/Chicago")
+                        2021, 12, 31, 0, 0, tzinfo=ZoneInfo("America/Chicago")
                     ),
-                    end=datetime(2022, 1, 1, 0, 0, tzinfo=tz.gettz("America/Chicago")),
+                    end=datetime(2022, 1, 1, 0, 0, tzinfo=ZoneInfo("America/Chicago")),
                 ),
             },
             limit=5,

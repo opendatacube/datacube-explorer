@@ -5,7 +5,6 @@ from datetime import date, datetime, timezone
 
 import pytest
 from datacube.model import Range
-from dateutil import tz
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
@@ -33,17 +32,17 @@ def _overview(
         dataset_count=4,
         timeline_dataset_counts=Counter(
             [
-                datetime(2017, 1, 2, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 1, tzinfo=tz.tzutc()),
+                datetime(2017, 1, 2, tzinfo=timezone.utc),
+                datetime(2017, 1, 3, tzinfo=timezone.utc),
+                datetime(2017, 1, 3, tzinfo=timezone.utc),
+                datetime(2017, 1, 1, tzinfo=timezone.utc),
             ]
         ),
         region_dataset_counts=Counter(["1_2", "1_2", "3_4", "4_5"]),
         timeline_period="day",
         time_range=Range(
-            datetime(2017, 1, 2, tzinfo=tz.tzutc()),
-            datetime(2017, 2, 3, tzinfo=tz.tzutc()),
+            datetime(2017, 1, 2, tzinfo=timezone.utc),
+            datetime(2017, 2, 3, tzinfo=timezone.utc),
         ),
         footprint_geometry=geo.Polygon(
             [
@@ -59,10 +58,10 @@ def _overview(
         ),
         footprint_crs="EPSG:3577",
         footprint_count=3,
-        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
+        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=timezone.utc),
         crses={"epsg:1234"},
         size_bytes=123_400_000,
-        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=tz.tzutc()),
+        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=timezone.utc),
     )
     return orig
 
@@ -224,7 +223,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     assert loaded.footprint_geometry.area == pytest.approx(o.footprint_geometry.area)
 
     o.dataset_count = 4321
-    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc)
     time.sleep(1)
     summary_store._put(o)
     assert o.summary_gen_time != original_gen_time
@@ -232,7 +231,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     loaded = summary_store.get(product_name, 2017, None, None)
     assert loaded.dataset_count == 4321
     assert loaded.newest_dataset_creation_time == datetime(
-        2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
+        2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc
     )
     assert loaded.summary_gen_time != original_gen_time, (
         "An update should update the generation time"

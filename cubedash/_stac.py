@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections.abc import Callable, Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
 from typing import Any, Union
@@ -11,7 +11,6 @@ import pystac
 import structlog
 from datacube.model import Range
 from datacube.utils import DocReader, parse_time
-from dateutil.tz import tz
 from eodatasets3 import serialise
 from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
@@ -89,8 +88,8 @@ def dissoc_in(d: dict, key: str):
 
 def utc(d: datetime):
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d.astimezone(tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
+    return d.astimezone(timezone.utc)
 
 
 def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:

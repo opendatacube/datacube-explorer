@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from textwrap import dedent
 from uuid import UUID
@@ -8,8 +8,6 @@ import pytest
 from datacube import Datacube
 from datacube.index import Index
 from datacube.utils import parse_time
-from dateutil import tz
-from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
@@ -79,11 +77,11 @@ def test_eo3_extents(eo3_index: Index) -> None:
     # On older products, the center time was calculated from the range.
     # But on EO3 we have a singular 'datetime' to use directly.
     assert dataset_extent_row["center_time"] == datetime(
-        1988, 3, 30, 1, 41, 16, 892044, tzinfo=tz.tzutc()
+        1988, 3, 30, 1, 41, 16, 892044, tzinfo=timezone.utc
     )
 
     assert dataset_extent_row["creation_time"] == datetime(
-        2020, 6, 5, 7, 15, 26, 599544, tzinfo=tz.tzutc()
+        2020, 6, 5, 7, 15, 26, 599544, tzinfo=timezone.utc
     )
     product = eo3_index.products.get_by_name("ga_ls5t_ard_3")
     assert product is not None
@@ -141,8 +139,8 @@ def test_eo3_dateless_extents(eo3_index: Index) -> None:
 
     # Since it has no datetime, the chosen one should default to the start
     time_record = dataset_extent_row["center_time"]
-    assert time_record.astimezone(tz.tzutc()) == datetime(
-        2017, 7, 1, 0, 0, tzinfo=tz.tzutc()
+    assert time_record.astimezone(timezone.utc) == datetime(
+        2017, 7, 1, 0, 0, tzinfo=timezone.utc
     )
 
     # Dataset has no creation time, but will fall back to index time.
@@ -228,7 +226,7 @@ def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
         dt = parse_time(v)
         # Strip/normalise timezone to match default yaml.load()
         if dt.tzinfo:
-            dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
         return dt
     elif isinstance(v, dict):
         return {k: with_parsed_datetimes(v, name=k) for k, v in v.items()}

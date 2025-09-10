@@ -12,12 +12,12 @@ from pathlib import Path
 from pprint import pformat
 from urllib.parse import urlsplit
 from urllib.request import urlopen
+from zoneinfo import ZoneInfo
 
 import jsonschema
 import pytest
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
-from dateutil import tz
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
 from referencing import Registry, Resource
@@ -37,7 +37,7 @@ from integration_tests.asserts import (
 
 ALLOW_INTERNET = True
 
-DEFAULT_TZ = tz.gettz("Australia/Darwin")
+DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
 # Smaller values to ease testing.
 OUR_DATASET_LIMIT = 20
