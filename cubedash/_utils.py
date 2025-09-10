@@ -26,7 +26,6 @@ from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils import InvalidDocException, jsonify_document
-from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
@@ -39,12 +38,6 @@ from sqlalchemy import TIMESTAMP, func
 from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
-
-DEFAULT_PLATFORM_END_DATE = {
-    "LANDSAT_8": datetime.now() - relativedelta(months=2),
-    "LANDSAT_7": datetime.now() - relativedelta(months=2),
-    "LANDSAT_5": datetime(2011, 11, 30),
-}
 
 NEAR_ANTIMERIDIAN = shape(
     {

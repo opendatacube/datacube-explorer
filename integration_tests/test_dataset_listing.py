@@ -6,7 +6,11 @@ from datacube.index import Index
 from datacube.model import Range
 from werkzeug.datastructures import MultiDict
 
-from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
+from cubedash._utils import query_to_search
+
+DEFAULT_PLATFORM_END_DATE = {
+    "LANDSAT_5": datetime(2011, 11, 30),
+}
 
 METADATA_TYPES = ["metadata/eo3_landsat_ard.odc-type.yaml"]
 PRODUCTS = [
