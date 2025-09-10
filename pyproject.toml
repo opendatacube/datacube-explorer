@@ -27,7 +27,6 @@ dependencies = [
     "pyorbital",
     "pyproj",
     "pystac",
-    "python-dateutil",
     "sentry-sdk[flask]",
     "shapely",
     "simplekml",
@@ -99,7 +98,6 @@ test = [
     "selectolax",
     "types-cachetools",
     "types-docker",
-    "types-python-dateutil",
     "types-pyyaml"
 ]
 
