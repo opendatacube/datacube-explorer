@@ -11,13 +11,6 @@ METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 
 
-def has_schema(conn: Connection) -> bool:
-    """
-    Does the cubedash schema already exist?
-    """
-    return conn.dialect.has_schema(conn, CUBEDASH_SCHEMA)
-
-
 def is_compatible_schema(
     conn: Connection, odc_table_name: str, generate: bool = False
 ) -> bool:
