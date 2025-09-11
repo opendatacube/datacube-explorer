@@ -7,11 +7,11 @@ from uuid import UUID
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import CursorResult, Result, Row, Select
+from sqlalchemy import CursorResult, Result, Row, Select, inspect
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash.summary._schema import PleaseRefresh
+from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
 
 
 class EmptyDbError(Exception):
@@ -215,8 +215,8 @@ class ExplorerAbstractIndex(ABC):
     @abstractmethod
     def select_spatial_stats(self) -> Result: ...
 
-    @abstractmethod
-    def schema_initialised(self) -> bool: ...
+    def schema_initialised(self) -> bool:
+        return inspect(self.engine).has_schema(CUBEDASH_SCHEMA)
 
     @abstractmethod
     def schema_compatible_info(

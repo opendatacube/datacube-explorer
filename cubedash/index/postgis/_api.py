@@ -816,14 +816,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def schema_initialised(self) -> bool:
-        """
-        Do our DB schemas exist?
-        """
-        with self.engine.begin() as conn:
-            return _schema.has_schema(conn)
-
-    @override
     def schema_compatible_info(self, for_writing_operations_too=False):
         """
         Schema compatibility information
