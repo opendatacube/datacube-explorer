@@ -328,7 +328,12 @@ class SummaryStore:
         )
 
     def close(self) -> None:  # do we still need this?
-        """Close any pooled/open connections. Necessary before forking."""
+        """Close any pooled/open connections. Necessary before forking.
+
+        Also useful during testing.
+        """
+        # This is going to do the same .dispose() twice, but, it's a noop the second time
+        # and will be safer until we can tidy up handling of the SQLAlchemy connections
         self.index.close()
         self.e_index.engine.dispose()
 
