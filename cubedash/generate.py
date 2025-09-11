@@ -235,6 +235,7 @@ def _load_products(store: SummaryStore, product_names) -> Generator[Product]:
             yield store.get_product(product_name)
         except KeyError:
             possible_product_names = "\n\t".join(p.name for p in store.all_products())
+            store.close()
             raise click.BadParameter(
                 f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
@@ -464,6 +465,7 @@ def cli(
     if drop_database:
         user_message("Dropping all Explorer additions to the database")
         store.drop_all()
+        store.close()
         user_message("Done. Goodbye.")
         sys.exit(0)
 
@@ -475,12 +477,14 @@ def cli(
             style("No cubedash schema exists. ", fg="red")
             + "Please rerun with --init to create one"
         )
+        store.close()
         sys.exit(-1)
     elif not store.is_schema_compatible(for_writing_operations_too=True):
         user_message(
             style("Cubedash schema is out of date. ", fg="red")
             + "Please rerun with --init to apply updates."
         )
+        store.close()
         sys.exit(-2)
 
     if generate_all_products:
@@ -505,6 +509,7 @@ def cli(
         store.refresh_stats(concurrently=force_concurrently)
         user_message("done", fg="green")
         _LOG.info("stats.refresh")
+    store.close()
     sys.exit(failures)
 
 
