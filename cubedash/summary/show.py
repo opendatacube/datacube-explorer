@@ -86,10 +86,12 @@ def cli(
         store.get_product(product_name)
     except KeyError:
         echo(f"Unknown product {product_name!r}", err=True)
+        store.close()
         sys.exit(-1)
     product = store.get_product_summary(product_name)
     if product is None:
         echo(f"No info: product {product_name!r} has not been summarised", err=True)
+        store.close()
         sys.exit(-1)
 
     secho(product_name, bold=True)
@@ -141,6 +143,7 @@ def cli(
 
     echo()
     echo(f"(fetched in {round(t_end - t, 2)} seconds)")
+    store.close()
 
 
 if __name__ == "__main__":
