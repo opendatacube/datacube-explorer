@@ -41,7 +41,7 @@ from sqlalchemy import (
     text,
     union_all,
 )
-from sqlalchemy.dialects.postgresql import TSTZRANGE, insert
+from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
 from sqlalchemy.sql import ColumnElement
 
 import cubedash.summary._schema as _schema
@@ -402,12 +402,27 @@ class ExplorerIndex(ExplorerAbstractIndex):
         time: tuple[datetime, datetime] | None = None,
         q: Sequence[str] | None = None,
     ) -> Result:
-        # Direct query without CTE (potentially faster)
+        # STAC Collections only hold a bounding box in EPSG:4326, no geometry
+        # Calculate the bounding box on the server, it's far more efficient
+        collection_bbox = func.Box2D(
+            func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
+        )
+        bbox_array = array(
+            [
+                func.ST_XMin(collection_bbox),
+                func.ST_YMin(collection_bbox),
+                func.ST_XMax(collection_bbox),
+                func.ST_YMax(collection_bbox),
+            ]
+        )
+        bbox_or_null = case(
+            (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
+        )
         query = (
             select(
                 ODC_PRODUCT.c.definition,
                 PRODUCT.c.name,
-                func.Box2D(func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)).label('bbox'),
+                bbox_or_null.label("bbox"),
                 PRODUCT.c.time_earliest,
                 PRODUCT.c.time_latest,
             )
@@ -418,6 +433,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
             .where(TIME_OVERVIEW.c.period_type == "all")
         )
+        logger.info('basic stac collections query', query=str(query))
+        #                func.Box2D(func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)).label('bbox'),
 
         if name:
             query = query.where(PRODUCT.c.name == name)
@@ -467,7 +484,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         query = query.limit(limit).offset(offset)
 
-        with self.index._active_connection() as conn:
+        with self.engine.begin() as conn:
             return conn.execute(query)
 
     @override

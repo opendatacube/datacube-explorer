@@ -283,11 +283,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
         providers=[],
         extent=Extent(
             pystac.SpatialExtent(
-                bboxes=[
-                    res.footprint_wgs84.bounds
-                    if res.footprint_wgs84
-                    else [-180.0, -90.0, 180.0, 90.0]
-                ]
+                bboxes=[res.bbox if res.bbox else [-180.0, -90.0, 180.0, 90.0]]
             ),
             temporal=pystac.TemporalExtent(
                 intervals=[
