@@ -42,7 +42,7 @@ from sqlalchemy import (
     union_all,
     update,
 )
-from sqlalchemy.dialects.postgresql import TSTZRANGE, insert
+from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.types import TIMESTAMP
@@ -347,27 +347,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def collection_cols(self) -> Select:
-        product_overview = (
-            select(
-                ProductSpatial.name,
-                TimeOverview.footprint_geometry,
-                ProductSpatial.time_earliest,
-                ProductSpatial.time_latest,
-                TimeOverview.period_type,
-            )
-            .select_from(TimeOverview)
-            .join(ProductSpatial)
-            .cte("product_overview")
-        )
-
-        return (
-            select(ODC_PRODUCT.definition, product_overview)
-            .select_from(product_overview)
-            .join(ODC_PRODUCT, product_overview.c.name == ODC_PRODUCT.name)
-        )
-
-    @override
     def collections_search_query(
         self,
         limit: int,
@@ -376,23 +355,49 @@ class ExplorerIndex(ExplorerAbstractIndex):
         bbox: tuple[float, float, float, float] | None = None,
         time: tuple[datetime, datetime] | None = None,
         q: Sequence[str] | None = None,
-    ) -> Result:
-        collection = self.collection_cols().subquery()
-        query = select(collection).where(collection.c.period_type == "all")
-
+    ) -> list[Row]:
+        # STAC Collections only hold a bounding box in EPSG:4326, no geometry
+        # Calculate the bounding box on the server, it's far more efficient
+        collection_bbox = func.Box2D(
+            func.ST_Transform(TimeOverview.footprint_geometry, 4326)
+        )
+        bbox_array = array(
+            [
+                func.ST_XMin(collection_bbox),
+                func.ST_YMin(collection_bbox),
+                func.ST_XMax(collection_bbox),
+                func.ST_YMax(collection_bbox),
+            ]
+        )
+        bbox_or_null = case(
+            (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
+        )
+        query = (
+            select(
+                ODC_PRODUCT.definition,
+                ProductSpatial.name,
+                bbox_or_null.label("bbox"),
+                ProductSpatial.time_earliest,
+                ProductSpatial.time_latest,
+            )
+            .select_from(TimeOverview)
+            .join(ProductSpatial, ProductSpatial.id == TimeOverview.product_ref)
+            .join(ODC_PRODUCT, ProductSpatial.name == ODC_PRODUCT.name)
+            .where(TimeOverview.period_type == "all")
+        )
         if name:
-            query = query.where(collection.c.name == name)
+            query = query.where(ProductSpatial.name == name)
 
         if bbox:
             query = query.where(
-                collection.c.footprint_geometry.intersects(func.ST_MakeEnvelope(*bbox))
+                TimeOverview.footprint_geometry.intersects(func.ST_MakeEnvelope(*bbox))
             )
 
         if time:
             query = query.where(
                 and_(
-                    default_utc(time[0]) <= default_utc(collection.c.time_latest),
-                    default_utc(collection.c.time_earliest) <= default_utc(time[1]),
+                    default_utc(time[0]) <= default_utc(ProductSpatial.time_latest),
+                    default_utc(ProductSpatial.time_earliest) <= default_utc(time[1]),
                 )
             )
 
@@ -400,7 +405,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             title = SimpleDocField(
                 name="title",
                 description="product title",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.definition,
                 indexed=False,
                 offset=("metadata", "title"),
             )
@@ -408,7 +413,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             description = SimpleDocField(
                 name="description",
                 description="product description",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.definition,
                 indexed=False,
                 offset=("description"),
             )
@@ -419,7 +424,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     [
                         title.alchemy_expression.icontains(value),
                         description.alchemy_expression.icontains(value),
-                        collection.c.name.icontains(value),
+                        ODC_PRODUCT.name.icontains(value),
                     ]
                 )
             query = query.where(or_(*expressions))

@@ -433,8 +433,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
             .where(TIME_OVERVIEW.c.period_type == "all")
         )
-        logger.info('basic stac collections query', query=str(query))
-        #                func.Box2D(func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)).label('bbox'),
 
         if name:
             query = query.where(PRODUCT.c.name == name)
@@ -449,8 +447,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         if time:
             query = query.where(
                 and_(
-                    default_utc(time[0]) <= default_utc(PRODUCT.c.time_latest),
-                    default_utc(PRODUCT.c.time_earliest) <= default_utc(time[1]),
+                    default_utc(time[0]) <= PRODUCT.c.time_latest,
+                    PRODUCT.c.time_earliest <= default_utc(time[1]),
                 )
             )
 
