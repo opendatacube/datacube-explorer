@@ -17,13 +17,12 @@ from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
-from odc.geo import MaybeCRS
+from odc.geo import BoundingBox, MaybeCRS
 from pygeofilter.backends.sqlalchemy.evaluate import (
     SQLAlchemyFilterEvaluator as FilterEvaluator,
 )
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
-from shapely.geometry import MultiPolygon
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import Row, RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
@@ -187,22 +186,7 @@ class CollectionItem:
     definition: dict[str, Any]
     time_earliest: datetime | None
     time_latest: datetime | None
-    footprint_geometry: Geometry | None
-    footprint_crs: str | None
-
-    @property
-    def footprint_wgs84(self) -> MultiPolygon | None:
-        if not self.footprint_geometry:
-            return None
-        if not self.footprint_crs:
-            _LOG.warning(f"Geometry without a crs for {self.name}", stacklevel=2)
-            return None
-
-        return (
-            Geometry(self.footprint_geometry, crs=self.footprint_crs)
-            .to_crs("EPSG:4326", wrapdateline=True)
-            .geom
-        )
+    bbox: BoundingBox | None
 
     @property
     def title(self) -> str:
@@ -1602,6 +1586,9 @@ def _summary_from_row(
 def _row_to_collection(
     res: Row, grouping_timezone: tzinfo = default_timezone
 ) -> CollectionItem:
+    # the 'res' at the moment has
+    # ('definition', 'name', 'bbox', 'time_earliest', 'time_latest')
+
     return CollectionItem(
         name=res.name,
         time_earliest=res.time_earliest.astimezone(grouping_timezone)
@@ -1610,16 +1597,7 @@ def _row_to_collection(
         time_latest=res.time_latest.astimezone(grouping_timezone)
         if res.time_latest
         else None,
-        footprint_geometry=(
-            None
-            if res.footprint_geometry is None
-            else geo_shape.to_shape(res.footprint_geometry)
-        ),
-        footprint_crs=(
-            None
-            if res.footprint_geometry is None or res.footprint_geometry.srid == -1
-            else "EPSG:{}".format(res.footprint_geometry.srid)
-        ),
+        bbox=res.bbox,
         definition=res.definition,
     )
 
