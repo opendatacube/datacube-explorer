@@ -38,8 +38,10 @@ def postgresql_server():
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     # I think this may be copypasta from odc-tools
-    if Path("/.dockerenv").exists() and (
-        "ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ
+    if (
+        "CUBEDASH_BYPASS_DOCKER" in os.environ
+        or Path("/.dockerenv").exists()
+        and ("ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ)
     ):
         yield GET_DB_FROM_ENV
     else:
@@ -136,7 +138,6 @@ def odc_test_db(cfg_env):
     the default ODC DB by setting environment variables.
     :return: Datacube instance
     """
-
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
 
