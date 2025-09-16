@@ -4,10 +4,10 @@ Tests that load pages and check the contained text.
 
 from datetime import datetime, timezone
 from io import StringIO
+from zoneinfo import ZoneInfo
 
 import flask
 import pytest
-from dateutil import tz
 from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
 
@@ -27,7 +27,7 @@ from integration_tests.asserts import (
     get_text_response,
 )
 
-DEFAULT_TZ = tz.gettz("Australia/Darwin")
+DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
 METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
@@ -798,8 +798,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     res = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
 
     # Expect it to show the dates in local timezone.
-    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())
-    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc())
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=timezone.utc)
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=timezone.utc)
 
     expected_header = "\n".join(
         (

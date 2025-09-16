@@ -13,7 +13,6 @@ import orjson
 import structlog
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
-from dateutil import tz
 from flask import Blueprint
 from markupsafe import Markup, escape
 from shapely.geometry import MultiPolygon
@@ -209,8 +208,7 @@ def _format_ordinal(val) -> str:
 def _get_ordinal_suffix(day):
     if 4 <= day <= 20 or 24 <= day <= 30:
         return "th"
-    else:
-        return ["st", "nd", "rd"][day % 10 - 1]
+    return ["st", "nd", "rd"][day % 10 - 1]
 
 
 @bp.app_template_filter("days_in_month")
@@ -296,7 +294,7 @@ def timesince(dt, default="just now"):
     if dt is None:
         return "an unrecorded time ago"
 
-    now = datetime.now(timezone.utc).replace(tzinfo=tz.tzutc())
+    now = datetime.now(timezone.utc)
     diff = now - utils.default_utc(dt)
 
     periods = (
@@ -317,7 +315,7 @@ def timesince(dt, default="just now"):
 
 
 def _time(label: str, actual_time: datetime) -> Markup:
-    as_utc = actual_time.astimezone(tz.tzutc())
+    as_utc = actual_time.astimezone(timezone.utc)
     return Markup(
         f"<time datetime={as_utc.isoformat()}"
         f' title="{actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z")}">'

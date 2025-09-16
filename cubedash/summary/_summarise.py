@@ -1,11 +1,11 @@
 import os
 from collections import Counter
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import structlog
 from datacube.model import Range
-from dateutil import tz
 from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
@@ -43,7 +43,7 @@ class Summariser:
         # Aus data comes from Alice Springs
         self.grouping_time_zone = grouping_time_zone
         # cache
-        self._grouping_time_zone_tz = tz.gettz(self.grouping_time_zone)
+        self._grouping_time_zone_tz = ZoneInfo(self.grouping_time_zone)
 
     def calculate_summary(
         self,

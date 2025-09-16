@@ -27,7 +27,6 @@ dependencies = [
     "pyorbital",
     "pyproj",
     "pystac",
-    "python-dateutil",
     "sentry-sdk[flask]",
     "shapely",
     "simplekml",
@@ -99,7 +98,6 @@ test = [
     "selectolax",
     "types-cachetools",
     "types-docker",
-    "types-python-dateutil",
     "types-pyyaml"
 ]
 
@@ -184,6 +182,7 @@ select = [
     "ICN",  # Use standard import names, like np for numpy
     "N",  # pep8-naming
     "NPY",  # Numpy
+    "RET", # flake8-ret
     # "RUF",  # Ruf-specific python rules?
     # "S",  # Bandit (security) -- explore warnings and enable in future?
 ]

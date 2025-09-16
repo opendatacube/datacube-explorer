@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections.abc import Callable, Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
 from typing import Any, Union
@@ -11,7 +11,6 @@ import pystac
 import structlog
 from datacube.model import Range
 from datacube.utils import DocReader, parse_time
-from dateutil.tz import tz
 from eodatasets3 import serialise
 from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
@@ -89,8 +88,8 @@ def dissoc_in(d: dict, key: str):
 
 def utc(d: datetime):
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d.astimezone(tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
+    return d.astimezone(timezone.utc)
 
 
 def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
@@ -129,12 +128,11 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
             return None
 
         return parse_time(start), parse_time(end)
-    elif len(time_period) == 1:
+    if len(time_period) == 1:
         t: datetime = parse_time(time_period[0])
         if t.time() == dt_time():
             return t, t + timedelta(days=1)
-        else:
-            return t, t + timedelta(seconds=1)
+        return t, t + timedelta(seconds=1)
     return None
 
 
@@ -409,8 +407,7 @@ def _build_properties(d: DocReader):
 def _remove_prefixes(arg: str):
     # remove potential 'item.', 'properties.', or 'item.properties.' prefixes for ease of handling
     arg = arg.replace("item.", "")
-    arg = arg.replace("properties.", "")
-    return arg
+    return arg.replace("properties.", "")
 
 
 def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) -> list:
@@ -491,16 +488,16 @@ def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
         if arg.startswith("{"):
             return _dict_arg(arg)
         arg = arg.split(",")
+    include = []
+    exclude = []
     if isinstance(arg, list):
-        include = []
-        exclude = []
         for a in arg:
             if a.startswith("-"):
                 exclude.append(a[1:])
             else:
                 # account for '+' showing up as a space if not encoded
                 include.append(a[1:] if a.startswith("+") else a.strip())
-        return {"include": include, "exclude": exclude}
+    return {"include": include, "exclude": exclude}
 
 
 def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:

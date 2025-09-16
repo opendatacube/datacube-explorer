@@ -4,15 +4,14 @@ Load a lot of real-world DEA datasets (very slow)
 And then check their statistics match expected.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from datacube import Datacube
 from datacube.index import Index
 from datacube.model import Product, Range
-from dateutil import tz
-from dateutil.tz import tzutc
 from sqlalchemy import text
 
 from cubedash.summary import SummaryStore
@@ -21,7 +20,7 @@ from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 from .asserts import expect_values as _expect_values
 
-DEFAULT_TZ = tz.gettz("Australia/Darwin")
+DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
 METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
@@ -61,7 +60,7 @@ def test_generate_month(run_generate, summary_store: SummaryStore) -> None:
             begin=datetime(2017, 4, 1, 0, 0, tzinfo=DEFAULT_TZ),
             end=datetime(2017, 5, 1, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2017, 7, 4, 11, 18, 20, tzinfo=tzutc()),
+        newest_creation_time=datetime(2017, 7, 4, 11, 18, 20, tzinfo=timezone.utc),
         timeline_period="day",
         timeline_count=30,
         crses={
@@ -90,7 +89,7 @@ def test_generate_scene_year(run_generate, summary_store: SummaryStore) -> None:
             begin=datetime(2017, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
             end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
+        newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=timezone.utc),
         timeline_period="day",
         timeline_count=365,
         crses={
@@ -126,7 +125,7 @@ def test_generate_scene_all_time(run_generate, summary_store: SummaryStore) -> N
             begin=datetime(2016, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
             end=datetime(2018, 1, 1, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=tzutc()),
+        newest_creation_time=datetime(2018, 1, 10, 3, 11, 56, tzinfo=timezone.utc),
         timeline_period="month",
         timeline_count=24,
         crses={
@@ -427,7 +426,7 @@ def test_generate_telemetry(run_generate, summary_store: SummaryStore) -> None:
             "115": 27,
             "88": 27,
         },
-        newest_creation_time=datetime(2017, 12, 31, 3, 38, 43, tzinfo=tzutc()),
+        newest_creation_time=datetime(2017, 12, 31, 3, 38, 43, tzinfo=timezone.utc),
         timeline_period="month",
         timeline_count=24,
         crses={"EPSG:4326"},
@@ -446,7 +445,9 @@ def test_generate_day(run_generate, summary_store: SummaryStore) -> None:
             begin=datetime(2022, 7, 19, 0, 0, tzinfo=DEFAULT_TZ),
             end=datetime(2022, 7, 20, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2022, 8, 23, 14, 56, 45, 940_847, tzinfo=tzutc()),
+        newest_creation_time=datetime(
+            2022, 8, 23, 14, 56, 45, 940_847, tzinfo=timezone.utc
+        ),
         timeline_period="day",
         timeline_count=1,
         crses={"EPSG:32656", "EPSG:32652"},
@@ -522,7 +523,9 @@ def test_calc_albers_summary_with_storage(summary_store: SummaryStore) -> None:
             begin=datetime(2017, 4, 1, 0, 0, tzinfo=DEFAULT_TZ),
             end=datetime(2017, 6, 1, 0, 0, tzinfo=DEFAULT_TZ),
         ),
-        newest_creation_time=datetime(2017, 10, 25, 23, 9, 2, 486_851, tzinfo=tzutc()),
+        newest_creation_time=datetime(
+            2017, 10, 25, 23, 9, 2, 486_851, tzinfo=timezone.utc
+        ),
         timeline_period="day",
         # Data spans 61 days in 2017
         timeline_count=61,

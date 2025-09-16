@@ -73,10 +73,9 @@ def _get_dumpable_doc(
         dataset = dc.index.datasets.get(d.id, include_sources=include_sources)
         assert dataset is not None
         return dataset.metadata_doc
-    else:
-        # Empty doc means "there are no sources", so we can load it easily.
-        d.metadata.sources = {}
-        return d.metadata_doc
+    # Empty doc means "there are no sources", so we can load it easily.
+    d.metadata.sources = {}
+    return d.metadata_doc
 
 
 TEST_DATA_DIR = Path(__file__).parent / "data"

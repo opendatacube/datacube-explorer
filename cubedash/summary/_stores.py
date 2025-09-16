@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo
 
 import structlog
 from cachetools.func import ttl_cache
-from dateutil import tz
 from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
@@ -65,10 +64,10 @@ default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 def explorer_index(index: Index) -> ExplorerIndex:
     if index.name == "pg_index":
         return ExplorerPgIndex(index)
-    elif index.name == "pgis_index":
+    if index.name == "pgis_index":
         return ExplorerPgisIndex(index)
-    else:  # should we permit memory? default to postgres? other handling?
-        raise ValueError(f"Cannot run explorer with index {index.name}")
+    # should we permit memory? default to postgres? other handling?
+    raise ValueError(f"Cannot run explorer with index {index.name}")
 
 
 class ItemSort(Enum):
@@ -794,7 +793,7 @@ class SummaryStore:
     @property
     def grouping_timezone(self) -> tzinfo | None:
         """Timezone used for day/month/year grouping."""
-        return tz.gettz(self._summariser.grouping_time_zone)
+        return ZoneInfo(self._summariser.grouping_time_zone)
 
     def _persist_product_extent(self, product: ProductSummary) -> None:
         source_product_ids = [
@@ -997,9 +996,7 @@ class SummaryStore:
             if filter_lang == "cql2-text"
             else parse_cql2_json(filter_cql)
         )
-        query = query.filter(FilterEvaluator(field_exprs, True).evaluate(filter_cql))
-
-        return query
+        return query.filter(FilterEvaluator(field_exprs, True).evaluate(filter_cql))
 
     def _add_order_to_query(
         self, query: Select, field_exprs: dict[str, Any], sortby: list[dict[str, str]]
@@ -1020,8 +1017,7 @@ class SummaryStore:
             # there is no field by that name, ignore
             # the spec does not specify a handling directive for unspecified fields,
             # so we've chosen to ignore them to be in line with the other extensions
-        query = query.order_by(*order_clauses)
-        return query
+        return query.order_by(*order_clauses)
 
     @ttl_cache(ttl=DEFAULT_TTL)
     def get_arrivals(
@@ -1085,8 +1081,7 @@ class SummaryStore:
 
         if len(result) != 0:
             return result[0][0]
-        else:
-            return 0
+        return 0
 
     def search_items(
         self,

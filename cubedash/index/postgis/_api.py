@@ -217,14 +217,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     .where(ProductSpatial.id == row[0])
                     .values(**fields)
                 ).fetchone()
-            else:
-                # Product doesn't exist, so insert it
-                fields["name"] = product_name
-                return conn.execute(
-                    insert(ProductSpatial)
-                    .returning(ProductSpatial.id, ProductSpatial.last_refresh)
-                    .values(**fields)
-                ).fetchone()
+            # Product doesn't exist, so insert it
+            fields["name"] = product_name
+            return conn.execute(
+                insert(ProductSpatial)
+                .returning(ProductSpatial.id, ProductSpatial.last_refresh)
+                .values(**fields)
+            ).fetchone()
 
     @override
     def put_summary(
@@ -775,7 +774,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
         geom = func.ST_Transform(DatasetSpatial.footprint, 4326)
-        field_exprs = dict(
+        return dict(
             collection=(
                 select(ODC_PRODUCT.name)
                 .where(ODC_PRODUCT.id == DatasetSpatial.product_ref)
@@ -788,7 +787,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             region_code=DatasetSpatial.region_code,
             id=DatasetSpatial.id,
         )
-        return field_exprs
 
     @override
     def spatial_select_query(
@@ -1034,8 +1032,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result:
-        with self.index._active_connection() as conn:  # type: ignore[attr-defined]
-            res = conn.execute(
+        with self.index._active_connection() as conn:
+            return conn.execute(
                 select(ODC_DATASET.id, ODC_DATASET.product_ref, *columns)
                 .where(
                     and_(
@@ -1048,15 +1046,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
             # at this point can we not select the values from DATASET_SPATIAL,
             # or is there a reason we need them to be calculated?
-            return res
 
     @override
     def mapped_crses(self, product, srid_expression):
-        with self.index._active_connection() as conn:  # type: ignore[attr-defined]
-            res = conn.execute(
+        with self.index._active_connection() as conn:
+            return conn.execute(
                 select(literal(product.name).label("product"), srid_expression)
                 .where(ODC_DATASET.product_ref == product.id)
                 .where(ODC_DATASET.archived.is_(None))
                 .limit(1)
             )
-            return res

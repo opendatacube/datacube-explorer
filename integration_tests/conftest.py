@@ -79,8 +79,7 @@ def run_generate(clirunner):
         if not multi_processed:
             args = ("-j", "1") + tuple(args)
         args = ("-tz", grouping_time_zone) + tuple(args)
-        res = clirunner(generate.cli, args, expect_success=expect_success)
-        return res
+        return clirunner(generate.cli, args, expect_success=expect_success)
 
     return do
 
@@ -143,9 +142,10 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
     return unpopulated_client
 
 
-def pytest_assertrepr_compare(op, left, right):
-    """
-    Custom pytest error messages for large documents.
+def pytest_assertrepr_compare(
+    config: pytest.Config, op: str, left: object, right: object
+) -> list[str] | None:
+    """Custom pytest error messages for large documents.
 
     The default pytest dict==dict error messages are unreadable for
     nested document-like dicts. (Such as our json and yaml docs!)
@@ -161,6 +161,7 @@ def pytest_assertrepr_compare(op, left, right):
 
     if (is_a_doc(left) or is_a_doc(right)) and op == "==":
         return format_doc_diffs(left, right)
+    return None
 
 
 def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
@@ -174,10 +175,9 @@ def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
         if table.name.startswith("mv_"):
             # Not supported for materialised views.
             continue
-        else:
-            with index._active_connection() as conn:
-                conn.execute(
-                    sqlalchemy.text(
-                        f"""alter table {table.selectable.fullname} set unlogged;"""
-                    )
+        with index._active_connection() as conn:
+            conn.execute(
+                sqlalchemy.text(
+                    f"""alter table {table.selectable.fullname} set unlogged;"""
                 )
+            )

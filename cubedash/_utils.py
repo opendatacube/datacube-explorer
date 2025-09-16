@@ -26,8 +26,6 @@ from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils import InvalidDocException, jsonify_document
-from dateutil import tz
-from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
@@ -40,12 +38,6 @@ from sqlalchemy import TIMESTAMP, func
 from werkzeug.datastructures import MultiDict
 
 _TARGET_CRS = "EPSG:4326"
-
-DEFAULT_PLATFORM_END_DATE = {
-    "LANDSAT_8": datetime.now() - relativedelta(months=2),
-    "LANDSAT_7": datetime.now() - relativedelta(months=2),
-    "LANDSAT_5": datetime(2011, 11, 30),
-}
 
 NEAR_ANTIMERIDIAN = shape(
     {
@@ -130,10 +122,9 @@ def datetime_expression(md_type: MetadataType):
     # On older EO datasets, there's only a time range, so we take the center time.
     # (This matches the logic in ODC's Dataset.center_time)
     time = md_type.dataset_fields["time"].alchemy_expression  # type: ignore[attr-defined]
-    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+    return (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
     )
-    return center_time
 
 
 def get_dataset_file_offsets(dataset: Dataset) -> dict[str, str]:
@@ -430,7 +421,7 @@ def _unchanged_value(a):
 
 def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
     return d
 
 
@@ -665,13 +656,12 @@ def prepare_dataset_formatting(
         # Strip EO-legacy fields.
         undo_eo3_compatibility(doc)
         return doc
-    else:
-        return prepare_document_formatting(
-            doc,
-            # Label old-style datasets as old-style datasets.
-            doc_friendly_label="EO1 Dataset",
-            include_source_url=include_source_url,
-        )
+    return prepare_document_formatting(
+        doc,
+        # Label old-style datasets as old-style datasets.
+        doc_friendly_label="EO1 Dataset",
+        include_source_url=include_source_url,
+    )
 
 
 def prepare_document_formatting(
