@@ -120,7 +120,7 @@ def test_add_no_periods(summary_store: SummaryStore) -> None:
     assert summary_store.get("ga_ls8c_level1_3", 2015, 7, None) is None
 
 
-def test_month_iteration() -> None:
+def test_month_iteration(fix_utc_timezone) -> None:
     def assert_month_iteration(
         start: datetime, end: datetime, expected_months: list[date]
     ) -> None:

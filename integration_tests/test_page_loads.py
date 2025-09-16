@@ -790,7 +790,7 @@ def test_invalid_product_returns_not_found(client: FlaskClient) -> None:
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
+def test_show_summary_cli(clirunner, client: FlaskClient, fix_utc_timezone) -> None:
     """
     You should be able to view a product with cubedash-view command-line program.
     """
