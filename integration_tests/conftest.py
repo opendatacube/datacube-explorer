@@ -1,3 +1,5 @@
+import os
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
@@ -140,6 +142,26 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
             _model.STORE.refresh(product.name)
 
     return unpopulated_client
+
+
+@pytest.fixture()
+def fix_utc_timezone():
+    """Set the timezone to UTC."""
+    original_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "UTC"
+
+    # tzset isn't available in Windows
+    if hasattr(time, "tzset"):
+        time.tzset()
+
+    yield
+
+    if original_tz is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = original_tz
+    if hasattr(time, "tzset"):
+        time.tzset()
 
 
 def pytest_assertrepr_compare(
