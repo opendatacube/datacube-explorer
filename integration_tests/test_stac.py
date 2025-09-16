@@ -632,10 +632,12 @@ def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_collection(stac_client: FlaskClient, fix_utc_timezone):
+def test_stac_collection(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
     all of our tests data.
+
+    This test expects the database timezone to be UTC
     """
 
     collections = get_json(stac_client, "/stac")

@@ -147,6 +147,12 @@ def odc_test_db(cfg_env):
     # during testing, and need any performance gains we can get.
 
     with index._db._engine.begin() as conn:  # type: ignore[attr-defined]
+        # Some tests are sensitive to the timezone of the database, and expect it to be UTC
+        quoted_db_name = conn.dialect.identifier_preparer.quote(
+            index._db._engine.url.database  # type: ignore[attr-defined]
+        )
+        conn.execute(text(f"ALTER DATABASE {quoted_db_name} SET timezone TO 'UTC'"))
+
         if index.name == "pg_index":
             for table in [
                 "agdc.dataset_location",

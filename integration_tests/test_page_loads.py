@@ -790,9 +790,11 @@ def test_invalid_product_returns_not_found(client: FlaskClient) -> None:
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_show_summary_cli(clirunner, client: FlaskClient, fix_utc_timezone) -> None:
+def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     """
     You should be able to view a product with cubedash-view command-line program.
+
+    This test expects the database timezone to be UTC
     """
     # ls7_nbar_scene, 2017, May
     res = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
@@ -810,7 +812,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient, fix_utc_timezone) -> N
             f"  to {expected_to.isoformat()} ",
         )
     )
-    assert res.output.startswith(expected_header)
+    result_header = "\n".join(res.output.splitlines()[:5])
+    assert expected_header == result_header
     expected_metadata = "\n".join(  # noqa: FLY002
         (
             "Metadata",
