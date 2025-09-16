@@ -1,0 +1,53 @@
+---
+name: Pytest XDist Tests
+
+on:
+  pull_request:
+    paths:
+      - '**'
+
+  push:
+    branches:
+      - develop
+      - integrate_1.9
+    paths:
+      - '**'
+
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions: {}
+
+# When a PR is updated, cancel the jobs from the previous version. Merges
+# do not define head_ref, so use run_id to never cancel those jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
+
+      - name: Install Dependencies
+        run: |
+          uv sync
+
+      - name: Run Tests
+        run: |
+          uv run pytest -v -x integration_tests/ --numprocesses 4 --dist load --durations 20 --junit-xml pytest_junit.xml --cov=--cov-report=xml -r sx
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: ./*.xml

@@ -132,10 +132,12 @@ def test_month_iteration() -> None:
         got_months = list(product.iter_months())
         assert got_months == expected_months, "Incorrect set of iterated months"
 
+    from cubedash.summary._stores import default_timezone
+
     # Within same year
     assert_month_iteration(
-        datetime(2003, 2, 2),
-        datetime(2003, 6, 2),
+        datetime(2003, 2, 2, tzinfo=default_timezone),
+        datetime(2003, 6, 2, tzinfo=default_timezone),
         [
             date(2003, 2, 1),
             date(2003, 3, 1),
@@ -146,17 +148,21 @@ def test_month_iteration() -> None:
     )
     # Across year bounds
     assert_month_iteration(
-        datetime(2003, 11, 2),
-        datetime(2004, 2, 2),
+        datetime(2003, 11, 2, tzinfo=default_timezone),
+        datetime(2004, 2, 2, tzinfo=default_timezone),
         [date(2003, 11, 1), date(2003, 12, 1), date(2004, 1, 1), date(2004, 2, 1)],
     )
     # Within same month
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 30), [date(2003, 11, 1)]
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        datetime(2003, 11, 30, tzinfo=default_timezone),
+        [date(2003, 11, 1)],
     )
     # Identical dates
     assert_month_iteration(
-        datetime(2003, 11, 1), datetime(2003, 11, 1), [date(2003, 11, 1)]
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        datetime(2003, 11, 1, tzinfo=default_timezone),
+        [date(2003, 11, 1)],
     )
 
 
@@ -171,11 +177,6 @@ def test_get_null(summary_store: SummaryStore) -> None:
     assert loaded is None
 
 
-# this logic has been moved to the schema
-# def test_srid_lookup(summary_store: SummaryStore):
-#     assert summary_store.grouping_crs == "EPSG:3577"
-
-
 def test_put_get_summaries(summary_store: SummaryStore) -> None:
     """
     Test the serialisation/deserialisation from postgres
@@ -186,13 +187,13 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
 
     summary_store._persist_product_extent(
         ProductSummary(
-            product_name,
-            4321,
-            (datetime(2017, 1, 1), datetime(2017, 4, 1)),
-            [],
-            [],
-            {},
-            datetime.now(),
+            name=product_name,
+            dataset_count=4321,
+            duration=(datetime(2017, 1, 1), datetime(2017, 4, 1)),
+            source_products=[],
+            derived_products=[],
+            fixed_metadata={},
+            last_refresh_time=datetime.now(),
         )
     )
 
@@ -237,7 +238,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     )
 
 
-def test_generate_empty(run_generate) -> None:
+def test_generate_empty(odc_test_db, run_generate) -> None:
     """
     Run cubedash.generate on a cube with no datasets.
 

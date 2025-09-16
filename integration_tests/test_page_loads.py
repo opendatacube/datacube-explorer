@@ -810,7 +810,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
             f"  to {expected_to.isoformat()} ",
         )
     )
-    assert res.output.startswith(expected_header)
+    result_header = "\n".join(res.output.splitlines()[:5])
+    assert result_header == expected_header
     expected_metadata = "\n".join(
         (
             "Metadata",
