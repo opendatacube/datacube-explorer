@@ -707,6 +707,38 @@ def test_stac_collection(stac_client: FlaskClient):
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
 
 
+# TODO
+# We probably should check the conformance classes being returned.
+# They're in the root /stac/ response under the `conformsTo` item.
+# They are also served up at /stac/conformance in recent releases
+
+#######
+# Tests for STAC API - Features/Collections
+# https://api.stacspec.org/v1.0.0/ogcapi-features/
+# https://github.com/radiantearth/stac-api-spec/tree/release/v1.0.0/ogcapi-features
+#
+# These cover the responses available at /stac/collections/*
+# The spec offers either a cut down version called 'Collections', but Explorer
+# supports the full 'Features' specification.
+
+
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
+@pytest.mark.benchmark
+def test_stac_collection_toplevel(stac_client: FlaskClient) -> None:
+    # Retrieve the top level response and check that it's JSON
+    res = get_json(stac_client, "/stac/collections")
+    # The response must include some links
+    assert "links" in res
+    # Must have a root and self link
+    link_rels = set(link["rel"] for link in res["links"])
+    assert "root" in link_rels
+    assert "self" in link_rels
+    # The response must include a set of collections
+    assert "collections" in res
+    for collection in res["collections"]:
+        assert_collection(collection)
+
+
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_collection_query(stac_client: FlaskClient) -> None:
     res = get_json(stac_client, "/stac/collections?q=ard")

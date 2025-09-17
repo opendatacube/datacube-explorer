@@ -101,7 +101,7 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
             f"Expected status {expect_status_code} not {rv.status_code}."
             f"\nGot:\n{indent(rv.data.decode('utf-8'), ' ' * 6)}"
         )
-        assert rv.is_json, "Expected json content type in response"
+        assert rv.is_json, "Expected JSON content type in response"
         data = rv.json
         assert data is not None, "Empty response from server"
     except AssertionError:
