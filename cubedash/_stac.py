@@ -283,7 +283,10 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
         providers=[],
         extent=Extent(
             pystac.SpatialExtent(
-                bboxes=[res.bbox if res.bbox else [-180.0, -90.0, 180.0, 90.0]]
+                # TODO: Find a nicer way to make the typechecker happier
+                # pystac is too specific in wanting a list[float | int]
+                # odc-geo BoundingBox class is a Sequence[float]
+                bboxes=[list(res.bbox) if res.bbox else [-180.0, -90.0, 180.0, 90.0]]
             ),
             temporal=pystac.TemporalExtent(
                 intervals=[
