@@ -40,10 +40,10 @@ jobs:
         # but ignoring tests ensures that any added test will be run by at least
         # one CI job, even if the test was added outside the current structure.
         ignored-tests:
-        # - "test_{[a-oq-z],pages}" # Tests test_page_loads
+        - "test_{[a-oq-z],pages}" # Tests test_page_loads
         - "test_{[a-rt-z],s2,stores,su}" # Tests test_stac
-        # - "test_{[a-rt-z],s2,stac,stores}" # Tests test_summarise_data
-        # - "test_{page_,stac,summarise}" # Tests remaining tests
+        - "test_{[a-rt-z],s2,stac,stores}" # Tests test_summarise_data
+        - "test_{page_,stac,summarise}" # Tests remaining tests
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -59,7 +59,7 @@ jobs:
       - name: Start PostgreSQL
         run: |
           docker compose up --wait postgres
-      
+
       - name: Install dependencies
         run: |
           uv sync --locked
@@ -76,8 +76,9 @@ jobs:
           uv run pytest ${ig} --cov=cubedash --cov-report=xml -r sx --durations=5
         env:
           ODC_DEFAULT_INDEX_DRIVER: postgres
+          ODC_POSTGIS_INDEX_DRIVER: postgis
           ODC_DEFAULT_DB_URL: postgresql://opendatacube:opendatacubepassword@localhost:35433/opendatacube
-          # ODC_POSTGIS_DB_URL: postgresql://opendatacube:opendatacube@localhost:5432/opendatacube
+          ODC_POSTGIS_DB_URL: postgresql://opendatacube:opendatacubepassword@localhost:35433/opendatacube
           CUBEDASH_BYPASS_DOCKER: "True"
 
       - name: Upload coverage to Codecov

@@ -36,18 +36,17 @@ services:
     hostname: postgres
     environment:
       - POSTGRES_DB=opendatacube
-      - PGPORT=35433
       - POSTGRES_PASSWORD=opendatacubepassword
       - POSTGRES_USER=opendatacube
     ports:
-      - "35433:35433"
+      - "35433:5432"
     restart: always
     volumes:
       - type: tmpfs
         target: /var/lib/postgresql/data
     command: -c fsync=off -c full_page_writes=off -c synchronous_commit=off
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "postgres", "-q", "--port", "35433", "-d", "opendatacube", "-U", "opendatacube"]
+      test: ["CMD", "pg_isready", "-h", "postgres", "-q", "-d", "opendatacube", "-U", "opendatacube"]
       timeout: 45s
       interval: 10s
       retries: 10

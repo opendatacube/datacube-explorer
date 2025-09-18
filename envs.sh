@@ -1,0 +1,7 @@
+
+
+export ODC_DEFAULT_INDEX_DRIVER=postgres
+export ODC_POSTGIS_INDEX_DRIVER=postgis
+export ODC_DEFAULT_DB_URL=postgresql://opendatacube:opendatacubepassword@localhost:35433/opendatacube
+export ODC_POSTGIS_DB_URL=postgresql://opendatacube:opendatacubepassword@localhost:35433/opendatacube
+export CUBEDASH_BYPASS_DOCKER=True
