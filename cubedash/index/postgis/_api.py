@@ -356,8 +356,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
         time: tuple[datetime, datetime] | None = None,
         q: Sequence[str] | None = None,
     ) -> list[Row]:
-        # STAC Collections only hold a bounding box in EPSG:4326, no geometry
+        # STAC Collections only hold a bounding box in EPSG:4326, no polygons
         # Calculate the bounding box on the server, it's far more efficient
+
+        # The Cubedash Product (which maps to a STAC Collection) doesn't have
+        # any bounding box or geometry attached, all the geometries are in the
+        # TimeOverview table, grouped by different `period_types`. In this case
+        # we use the `period_type=="all"` to get the one that covers all time.
         collection_bbox = func.Box2D(
             func.ST_Transform(TimeOverview.footprint_geometry, 4326)
         )
@@ -369,14 +374,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 func.ST_YMax(collection_bbox),
             ]
         )
-        bbox_or_null = case(
-            (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
-        )
         query = (
             select(
                 ODC_PRODUCT.definition,
                 ProductSpatial.name,
-                bbox_or_null.label("bbox"),
+                case(
+                    (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
+                ).label("bbox"),
                 ProductSpatial.time_earliest,
                 ProductSpatial.time_latest,
             )
@@ -395,10 +399,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         if time:
             query = query.where(
-                and_(
-                    default_utc(time[0]) <= default_utc(ProductSpatial.time_latest),
-                    default_utc(ProductSpatial.time_earliest) <= default_utc(time[1]),
-                )
+                default_utc(time[0]) <= ProductSpatial.time_latest,
+                ProductSpatial.time_earliest <= default_utc(time[1]),
             )
 
         if q:
@@ -415,7 +417,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 description="product description",
                 alchemy_column=ODC_PRODUCT.definition,
                 indexed=False,
-                offset=("description"),
+                offset=("description",),
             )
 
             expressions = []
