@@ -402,8 +402,14 @@ class ExplorerIndex(ExplorerAbstractIndex):
         time: tuple[datetime, datetime] | None = None,
         q: Sequence[str] | None = None,
     ) -> Result:
-        # STAC Collections only hold a bounding box in EPSG:4326, no geometry
-        # Calculate the bounding box on the server, it's far more efficient
+        # STAC Collections only hold a bounding box in EPSG:4326, no polygons
+        # Calculate the bounding box on the server, it's far more efficient.
+
+        # The Cubedash Product (which maps to a STAC Collection) doesn't have
+        # any bounding box or geometry attached, all the geometries are in the
+        # TimeOverview table, grouped by different `period_types`. In this case
+        # we use the `period_type=="all"` to get the one that covers all time.
+
         collection_bbox = func.Box2D(
             func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
         )
@@ -415,14 +421,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 func.ST_YMax(collection_bbox),
             ]
         )
-        bbox_or_null = case(
-            (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
-        )
         query = (
             select(
                 ODC_PRODUCT.c.definition,
                 PRODUCT.c.name,
-                bbox_or_null.label("bbox"),
+                case(
+                    (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
+                ).label("bbox"),
                 PRODUCT.c.time_earliest,
                 PRODUCT.c.time_latest,
             )
@@ -446,10 +451,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         if time:
             query = query.where(
-                and_(
-                    default_utc(time[0]) <= PRODUCT.c.time_latest,
-                    PRODUCT.c.time_earliest <= default_utc(time[1]),
-                )
+                default_utc(time[0]) <= PRODUCT.c.time_latest,
+                PRODUCT.c.time_earliest <= default_utc(time[1]),
             )
 
         if q:
@@ -482,7 +485,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         query = query.limit(limit).offset(offset)
 
-        with self.engine.begin() as conn:
+        with self.index._active_connection() as conn:
             return conn.execute(query)
 
     @override
