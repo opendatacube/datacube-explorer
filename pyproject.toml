@@ -63,7 +63,10 @@ doc = [
 ]
 dev = [
     "datacube-explorer[deployment,test]",
-    {include-group = "doc"}
+    "fastjsonschema>=2.21.2",
+    "pdbpp>=0.11.7",
+    "pytest-profiling>=1.8.1",
+    {include-group = "doc"},
 ]
 
 [project.optional-dependencies]
@@ -86,7 +89,6 @@ test = [
     "deepdiff",
     "docker",
     "docutils",
-    "jsonschema >= 4.18",
     "lxml_html_clean",
     "mypy",
     "pre-commit",
@@ -98,7 +100,7 @@ test = [
     "selectolax",
     "types-cachetools",
     "types-docker",
-    "types-pyyaml"
+    "types-pyyaml",
 ]
 
 [project.scripts]

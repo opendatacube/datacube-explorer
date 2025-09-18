@@ -7,7 +7,7 @@ from pprint import pformat, pprint
 from textwrap import indent
 from types import TracebackType
 
-import jsonschema
+import fastjsonschema
 import pytest
 from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
@@ -341,7 +341,7 @@ def _add_context(e: AssertionError, context_message: str) -> None:
     separator = "\n\n==== Context ===="
 
     full_error = args[0]
-    if isinstance(full_error, jsonschema.ValidationError):
+    if isinstance(full_error, fastjsonschema.JsonSchemaException):
         full_error = str(full_error)
     if isinstance(full_error, bytes):
         full_error = full_error.decode("utf-8")

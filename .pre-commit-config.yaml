@@ -42,6 +42,7 @@ repos:
         exclude: '^integration_tests/schemas/'
       - id: fix-byte-order-marker # No UTF-8 byte order marks
       - id: mixed-line-ending # Don't allow mixed line endings
+        args: ['--fix=lf']
       - id: pretty-format-json
         args: ['--no-sort-keys', '--indent=4', '--autofix']
         # (Exclude Typescript config: it uses json5 extensions)

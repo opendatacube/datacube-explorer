@@ -6,10 +6,11 @@ import json
 import urllib.parse
 import warnings
 from collections import Counter, defaultdict
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
 from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
+from typing import Any
 from urllib.parse import urlsplit
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
@@ -90,7 +91,6 @@ DATASETS = [
     "datasets/wofs-albers-sample.yaml.gz",
     "datasets/ga_ls8c_ard_3-sample.yaml",
 ]
-
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
@@ -205,16 +205,26 @@ def load_schema_doc(schema: dict, location: str | Path) -> jsonschema.Draft7Vali
     )
 
 
+from cubedash.testutils.validate_schema import load_schema, make_handler
+
+schema_loader = make_handler(base_path=_SCHEMA_BASE)
+
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-_CATALOG_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json"
+_CATALOG_SCHEMA = load_schema(
+    _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json",
+    base_path=_SCHEMA_BASE,
 )
-_COLLECTION_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json"
+_COLLECTION_SCHEMA = load_schema(
+    _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json",
+    base_path=_SCHEMA_BASE,
 )
-_ITEM_SCHEMA = load_validator(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json")
-_ITEM_COLLECTION_SCHEMA = load_validator(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json"
+_ITEM_SCHEMA = load_schema(
+    _STAC_SCHEMA_BASE / "item-spec/json-schema/item.json",
+    base_path=_SCHEMA_BASE,
+)
+_ITEM_COLLECTION_SCHEMA = load_schema(
+    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json",
+    base_path=_SCHEMA_BASE,
 )
 
 
@@ -222,12 +232,12 @@ _ITEM_COLLECTION_SCHEMA = load_validator(
 
 
 @lru_cache
-def get_extension(url: str) -> jsonschema.Draft7Validator:
+def get_extension_validator(url: str) -> Callable[[dict[str, Any]], None]:
     if not is_url(url):
         raise ValueError(
             f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
         )
-    return load_schema_doc(_web_reference(url), location=url)
+    return load_schema(url, base_path=_SCHEMA_BASE)
 
 
 def get_collection(client: FlaskClient, url: str, validate=True) -> dict:
@@ -286,18 +296,18 @@ def _iter_items_across_pages(client: FlaskClient, url: str | None) -> Generator[
 def assert_stac_extensions(doc: dict) -> None:
     stac_extensions = doc.get("stac_extensions", ())
     for extension_name in stac_extensions:
-        get_extension(extension_name).validate(doc)
+        get_extension_validator(extension_name)(doc)
 
 
 def assert_item_collection(collection: dict) -> None:
     assert "features" in collection, "No features in collection"
-    _ITEM_COLLECTION_SCHEMA.validate(collection)
+    _ITEM_COLLECTION_SCHEMA(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
 
 def assert_collection(collection: dict) -> None:
-    _COLLECTION_SCHEMA.validate(collection)
+    _COLLECTION_SCHEMA(collection)
     assert "features" not in collection
     assert_stac_extensions(collection)
 
@@ -310,7 +320,7 @@ def assert_collection(collection: dict) -> None:
 
 
 def validate_item(item: dict) -> None:
-    _ITEM_SCHEMA.validate(item)
+    _ITEM_SCHEMA(item)
 
     # Should be a valid polygon
     assert "geometry" in item, "Item has no geometry field"
@@ -554,7 +564,7 @@ def test_legacy_redirects(
 def test_stac_links(stac_client: FlaskClient) -> None:
     """Check that root contains all expected links"""
     response = get_json(stac_client, "/stac")
-    _CATALOG_SCHEMA.validate(response)
+    _CATALOG_SCHEMA(response)
 
     assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
     assert response["title"] == "Default ODC Explorer instance", (
@@ -618,7 +628,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
 def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
     # Do the virtual 'arrivals' catalog and items validate?
     response = get_json(stac_client, "/stac/catalogs/arrivals")
-    _CATALOG_SCHEMA.validate(response)
+    _CATALOG_SCHEMA(response)
 
     assert response["id"] == "arrivals"
     assert response["title"] == "Dataset Arrivals"
