@@ -32,7 +32,7 @@ services:
       - postgres
 
   postgres:
-    image: postgis/postgis:16-3.4
+    image: postgis/postgis:16-3.5
     hostname: postgres
     environment:
       - POSTGRES_DB=opendatacube
