@@ -132,18 +132,20 @@ def retrieve(filename_or_url: str) -> Any:
 
 def populate_schema_registry():
     schemas = {}
-    for dir_entry in os.scandir(_SCHEMA_BASE):
-        if not dir_entry.is_file():
-            continue
+    for root, _dirs, files in os.walk(_SCHEMA_BASE):
+        for filename in files:
+            dir_entry = Path(os.path.join(root, filename))
+            if not dir_entry.is_file():
+                continue
 
-        try:
-            with open(dir_entry) as fin:
-                schema = json.load(fin)
-            if schema["$id"].startswith("http"):
-                print(f"Adding {schema['$id']} from {dir_entry} to registry")
-                schemas[schema["$id"].rstrip("#")] = schema
-        except json.decoder.JSONDecodeError:
-            print(f"Skipping {dir_entry} Schema Registry, not JSON")
+            try:
+                with open(dir_entry) as fin:
+                    schema = json.load(fin)
+                if schema["$id"].startswith("http"):
+                    print(f"Adding {schema['$id']} from {dir_entry} to registry")
+                    schemas[schema["$id"].rstrip("#")] = schema
+            except json.decoder.JSONDecodeError:
+                print(f"Skipping {dir_entry} Schema Registry, not JSON")
     return schemas
 
 
