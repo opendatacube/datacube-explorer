@@ -9,6 +9,11 @@ on:
   push:
     branches:
       - test-gha
+      - develop
+      - integrate_1.9
+      - speeding-up-tests
+    paths:
+      - '**'
 
   release:
     types:

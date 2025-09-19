@@ -3,6 +3,7 @@ Tests that hit the stac api
 """
 
 import json
+import os.path
 import urllib.parse
 import warnings
 from collections import Counter, defaultdict
@@ -11,19 +12,14 @@ from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
 from typing import Any
-from urllib.parse import urlparse, urlsplit
-from urllib.request import urlopen
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
-import jsonschema
+import jsonschema_rs
 import pytest
 from datacube.migration import ODC2DeprecationWarning
-from datacube.utils import is_url, read_documents
+from datacube.utils import is_url
 from flask.testing import FlaskClient
-from jsonschema import SchemaError
-from referencing import Registry, Resource
-from referencing.exceptions import NoSuchResource
-from referencing.typing import URI
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -35,8 +31,6 @@ from integration_tests.asserts import (
     get_json,
     get_text_response,
 )
-
-ALLOW_INTERNET = True
 
 DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
@@ -113,142 +107,75 @@ def stac_url(offset: str):
     return urllib.parse.urljoin("http://localhost/stac/", offset)
 
 
-def read_document(path: Path) -> dict:
-    """
-    Read and parse exactly one document.
-    """
-    ds = list(read_documents(path))
-    if len(ds) != 1:
-        raise NoSuchResource(f"Expected only one document to be in path {path}")
-
-    _, doc = ds[0]
-    return doc
-
-
-def _web_reference(ref: str):
-    """
-    A reference to a schema via a URL
-
-    e.g https://geojson.org/schema/Feature.json
-    """
-    if not is_url(ref):
-        raise NoSuchResource(f"Expected URL? Got {ref!r}")
-    (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
-    # We used `wget -r` to download the remote schemas locally.
-    # It puts into hostname/path folders by default. E.g 'geojson.org/schema/Feature.json'
-    path = _SCHEMA_BASE / f"{netloc}{offset}"
-    if not path.exists():
-        if ALLOW_INTERNET:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(urlopen(ref).read())
-        else:
-            raise NoSuchResource(
-                f"No local copy exists of schema {ref!r}.\n"
-                "\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
-                f"\t(looked in {path})"
-            )
-    return read_document(path)
-
-
-# Allow schemas to reference other schemas in the same folder.
-def _local_reference(schema_location: Path, ref):
-    relative_path = schema_location.parent.joinpath(ref)
-    if relative_path.exists():
-        return read_document(relative_path)
-
-    # This is a sloppy workaround.
-    # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
-    # paths in stac work. We fallback to matching based on filename.
-    similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
-    if similar_schemas:
-        if len(similar_schemas) > 1:
-            raise NotImplementedError(
-                f"cannot distinguish schema {ref!r} (within {schema_location}"
-            )
-        [presumed_schema] = similar_schemas
-        return read_document(presumed_schema)
-    raise NoSuchResource(
-        f"Schema reference not found: {ref!r} (within {schema_location})"
-    )
-
-
-
-import jsonschema_rs
-
 # @lru_cache
 def retrieve(filename_or_url: str) -> Any:
-        print(f"loading schema from {filename_or_url}")
-        o = urlparse(filename_or_url)
+    print(f"loading schema from {filename_or_url}")
+    o = urlparse(filename_or_url)
 
-        if o.scheme == 'file':
-            absolute_path = Path(o.path)
+    if o.scheme == "file":
+        absolute_path = Path(o.path)
+    else:
+        path = o.path.lstrip("/")
+        if o.netloc:
+            absolute_path = _SCHEMA_BASE / o.netloc / path
         else:
-            path = o.path.lstrip("/")
-            if o.netloc:
-                absolute_path = _SCHEMA_BASE / o.netloc / path
-            else:
-                absolute_path = _SCHEMA_BASE / path
+            absolute_path = _SCHEMA_BASE / path
 
-        if not absolute_path.exists():
-            raise FileNotFoundError(
-                f"Loading schema {filename_or_url} failed. Schema file not found: {absolute_path}"
-            )
-        with open(absolute_path) as fin:
-            return json.load(fin)
-        # return absolute_path.read_text()
+    if not absolute_path.exists():
+        raise FileNotFoundError(
+            f"Loading schema {filename_or_url} failed. Schema file not found: {absolute_path}"
+        )
+    with open(absolute_path) as fin:
+        return json.load(fin)
+    # return absolute_path.read_text()
 
-def load_schemas():
+
+def populate_schema_registry():
     schemas = {}
-    for root, dirs, files in _SCHEMA_BASE.walk():
-        for file in files:
-            if not (root / file).is_file():
-                continue
-            try:
-                with open(root / file) as fin:
-                    schema = json.load(fin)
-                if schema['$id'].startswith('http'):
-                    print(f'Adding {schema["$id"]} from {root / file} to registry')
-                    schemas[schema["$id"].rstrip('#')] = schema
-            except json.decoder.JSONDecodeError:
-                print(f"Skipping {file} from Schema Registry, not JSON")
+    for dir_entry in os.scandir(_SCHEMA_BASE):
+        if not dir_entry.is_file():
+            continue
+
+        try:
+            with open(dir_entry) as fin:
+                schema = json.load(fin)
+            if schema["$id"].startswith("http"):
+                print(f"Adding {schema['$id']} from {dir_entry} to registry")
+                schemas[schema["$id"].rstrip("#")] = schema
+        except json.decoder.JSONDecodeError:
+            print(f"Skipping {dir_entry} Schema Registry, not JSON")
     return schemas
 
-_SCHEMAS_BY_URL = load_schemas()
-registry = jsonschema_rs.Registry([(url, schema) for url, schema in _SCHEMAS_BY_URL.items()])
+
+_SCHEMAS_BY_URL = populate_schema_registry()
+registry = jsonschema_rs.Registry(
+    [(url, schema) for url, schema in _SCHEMAS_BY_URL.items()]
+)
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
 _CATALOG_SCHEMA = jsonschema_rs.validator_for(
     (_STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json").read_text(),
-    base_uri='https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json',
+    base_uri="https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json",
     registry=registry,
-    # base_uri=(_STAC_SCHEMA_BASE / "catalog-spec/json-schema/").as_uri(),
-    # retriever=retrieve,
 )
 
 
 _COLLECTION_SCHEMA = jsonschema_rs.validator_for(
     (_STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json").read_text(),
-    base_uri='https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json',
+    base_uri="https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json",
     registry=registry,
-    # base_uri=(_STAC_SCHEMA_BASE / "collection-spec/json-schema/").as_uri(),
-    # retriever=retrieve,
 )
 _ITEM_SCHEMA = jsonschema_rs.validator_for(
     (_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json").read_text(),
-    base_uri='https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json',
+    base_uri="https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json",
     registry=registry,
-    # base_uri=(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json").as_uri(),
-    # retriever=retrieve,
 )
 
 _ITEM_COLLECTION_SCHEMA = jsonschema_rs.validator_for(
     (_STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json").read_text(),
-    base_uri='https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/itemcollection.json',
+    base_uri="https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/itemcollection.json",
     registry=registry,
-    # base_uri=(_STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json").as_uri(),
-    # retriever=retrieve,
 )
-
 
 
 # Getters
@@ -260,9 +187,9 @@ def get_extension_validator(url: str) -> Callable[[dict[str, Any]], None]:
         raise ValueError(
             f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
         )
-    return jsonschema_rs.validator_for(_SCHEMAS_BY_URL[url],
-                                       base_uri=url,
-                                       registry=registry).validate
+    return jsonschema_rs.validator_for(
+        _SCHEMAS_BY_URL[url], base_uri=url, registry=registry
+    ).validate
 
 
 def get_collection(client: FlaskClient, url: str, validate=True) -> dict:
@@ -1023,7 +950,7 @@ def test_stac_includes_total(stac_client: FlaskClient) -> None:
 def test_next_link(stac_client: FlaskClient) -> None:
     # next link should return next page of results
     geojson = get_items(
-        stac_client, ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers")
+        stac_client, "/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers"
     )
     assert geojson.get("numberMatched", 0) > len(geojson.get("features", []))
 
@@ -1037,8 +964,8 @@ def test_next_link(stac_client: FlaskClient) -> None:
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
-    def geojson_feature_ids(d: dict) -> list[str]:
-        return sorted(d.get("id") for d in geojson.get("features", {}))
+    def geojson_feature_ids(gj: dict) -> list[str]:
+        return sorted(d.get("id") for d in gj.get("features", {}))
 
     # Can filter to an empty list. Nothing returned.
     geojson = get_items(stac_client, "/stac/search?&collection=ls7_nbart_albers&ids=")
@@ -1094,7 +1021,7 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
     #       least better than the old Postgres error
     error_message_json = get_json(
         stac_client,
-        ("/stac/search?&collection=ls7_nbart_albers&ids=7a[-fd04ad[-"),
+        "/stac/search?&collection=ls7_nbart_albers&ids=7a[-fd04ad[-",
         expect_status_code=400,
     )
     assert error_message_json["name"] == "Bad Request"
@@ -1105,7 +1032,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     """
     We have the polygon for region 16,-33.
 
-    Lets do an 'intersects' GeoJSON polygon search.
+    Let's do an 'intersects' GeoJSON polygon search.
 
     ... and we should only get the one dataset in that region.
     """
@@ -1203,14 +1130,14 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # Get all in one collection
     geojson = get_items(
-        stac_client, ("/stac/search?&collections=ls7_nbart_scene&limit=20")
+        stac_client, "/stac/search?&collections=ls7_nbart_scene&limit=20"
     )
     assert len(geojson.get("features", [])) == 4
 
     # Get all the datasets for two collections
     geojson = get_items(
         stac_client,
-        ("/stac/search?&collections=ls7_nbart_scene,ls7_nbar_scene&limit=20"),
+        "/stac/search?&collections=ls7_nbart_scene,ls7_nbar_scene&limit=20",
     )
     # Four datasets each.
     assert len(geojson.get("features", ["bad_element"])) == 8
@@ -1228,7 +1155,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # An empty URL parameter means it's unspecified.
     # (its doesn't mean match-the-empty-list!)
-    geojson = get_items(stac_client, ("/stac/search?&collections=&limit=20"))
+    geojson = get_items(stac_client, "/stac/search?&collections=&limit=20")
     assert len(geojson.get("features", [])) > 0
 
 
