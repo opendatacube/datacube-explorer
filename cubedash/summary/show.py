@@ -67,7 +67,7 @@ def cli(
     month: int,
     day: int,
     event_log_file: str,
-    verbose: bool,
+    verbose: int,
 ) -> None:
     """
     Print the recorded summary information for the given product

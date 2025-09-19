@@ -74,7 +74,7 @@ def cli(
     debug_mode: bool,
     workers: int,
     event_log_file: str,
-    verbose: bool,
+    verbose: int,
 ) -> None:
     from cubedash import create_app
     from cubedash.logs import init_logging
