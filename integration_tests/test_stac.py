@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urlparse, urlsplit
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
 
@@ -172,60 +172,83 @@ def _local_reference(schema_location: Path, ref):
     )
 
 
-def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
-    if not schema_location.exists():
-        raise NoSuchResource(f"No jsonschema file found at {schema_location}")
 
-    with schema_location.open("r") as s:
-        try:
-            schema = json.load(s)
-        except json.JSONDecodeError as e:
-            # Some in the repo have not been valid before...
-            raise RuntimeError(
-                f"Invalid json, cannot load schema {schema_location}"
-            ) from e
-    return load_schema_doc(schema, location=schema_location)
+import jsonschema_rs
 
+# @lru_cache
+def retrieve(filename_or_url: str) -> Any:
+        print(f"loading schema from {filename_or_url}")
+        o = urlparse(filename_or_url)
 
-def load_schema_doc(schema: dict, location: str | Path) -> jsonschema.Draft7Validator:
-    try:
-        jsonschema.Draft7Validator.check_schema(schema)
-    except SchemaError as e:
-        raise RuntimeError(f"Invalid schema {location}") from e
+        if o.scheme == 'file':
+            absolute_path = Path(o.path)
+        else:
+            path = o.path.lstrip("/")
+            if o.netloc:
+                absolute_path = _SCHEMA_BASE / o.netloc / path
+            else:
+                absolute_path = _SCHEMA_BASE / path
 
-    def retrieve(uri: URI) -> Resource:
-        parsed = urlsplit(uri)
-        if parsed.scheme == "https" or parsed.scheme == "http":
-            return Resource.from_contents(_web_reference(uri))
-        return Resource.from_contents(_local_reference(Path(location), uri))
+        if not absolute_path.exists():
+            raise FileNotFoundError(
+                f"Loading schema {filename_or_url} failed. Schema file not found: {absolute_path}"
+            )
+        with open(absolute_path) as fin:
+            return json.load(fin)
+        # return absolute_path.read_text()
 
-    return jsonschema.Draft7Validator(
-        schema,
-        registry=Registry(retrieve=retrieve),  # type: ignore[call-arg]
-    )
+def load_schemas():
+    schemas = {}
+    for root, dirs, files in _SCHEMA_BASE.walk():
+        for file in files:
+            if not (root / file).is_file():
+                continue
+            try:
+                with open(root / file) as fin:
+                    schema = json.load(fin)
+                if schema['$id'].startswith('http'):
+                    print(f'Adding {schema["$id"]} from {root / file} to registry')
+                    schemas[schema["$id"].rstrip('#')] = schema
+            except json.decoder.JSONDecodeError:
+                print(f"Skipping {file} from Schema Registry, not JSON")
+    return schemas
 
-
-from cubedash.testutils.validate_schema import load_schema, make_handler
-
-schema_loader = make_handler(base_path=_SCHEMA_BASE)
+_SCHEMAS_BY_URL = load_schemas()
+registry = jsonschema_rs.Registry([(url, schema) for url, schema in _SCHEMAS_BY_URL.items()])
 
 # Run `./update.sh` in the schema dir to check for newer versions of these.
-_CATALOG_SCHEMA = load_schema(
-    _STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json",
-    base_path=_SCHEMA_BASE,
+_CATALOG_SCHEMA = jsonschema_rs.validator_for(
+    (_STAC_SCHEMA_BASE / "catalog-spec/json-schema/catalog.json").read_text(),
+    base_uri='https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json',
+    registry=registry,
+    # base_uri=(_STAC_SCHEMA_BASE / "catalog-spec/json-schema/").as_uri(),
+    # retriever=retrieve,
 )
-_COLLECTION_SCHEMA = load_schema(
-    _STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json",
-    base_path=_SCHEMA_BASE,
+
+
+_COLLECTION_SCHEMA = jsonschema_rs.validator_for(
+    (_STAC_SCHEMA_BASE / "collection-spec/json-schema/collection.json").read_text(),
+    base_uri='https://schemas.stacspec.org/v1.1.0/catalog-spec/json-schema/catalog.json',
+    registry=registry,
+    # base_uri=(_STAC_SCHEMA_BASE / "collection-spec/json-schema/").as_uri(),
+    # retriever=retrieve,
 )
-_ITEM_SCHEMA = load_schema(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/item.json",
-    base_path=_SCHEMA_BASE,
+_ITEM_SCHEMA = jsonschema_rs.validator_for(
+    (_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json").read_text(),
+    base_uri='https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json',
+    registry=registry,
+    # base_uri=(_STAC_SCHEMA_BASE / "item-spec/json-schema/item.json").as_uri(),
+    # retriever=retrieve,
 )
-_ITEM_COLLECTION_SCHEMA = load_schema(
-    _STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json",
-    base_path=_SCHEMA_BASE,
+
+_ITEM_COLLECTION_SCHEMA = jsonschema_rs.validator_for(
+    (_STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json").read_text(),
+    base_uri='https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/itemcollection.json',
+    registry=registry,
+    # base_uri=(_STAC_SCHEMA_BASE / "item-spec/json-schema/itemcollection.json").as_uri(),
+    # retriever=retrieve,
 )
+
 
 
 # Getters
@@ -237,7 +260,9 @@ def get_extension_validator(url: str) -> Callable[[dict[str, Any]], None]:
         raise ValueError(
             f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
         )
-    return load_schema(url, base_path=_SCHEMA_BASE)
+    return jsonschema_rs.validator_for(_SCHEMAS_BY_URL[url],
+                                       base_uri=url,
+                                       registry=registry).validate
 
 
 def get_collection(client: FlaskClient, url: str, validate=True) -> dict:
@@ -301,13 +326,13 @@ def assert_stac_extensions(doc: dict) -> None:
 
 def assert_item_collection(collection: dict) -> None:
     assert "features" in collection, "No features in collection"
-    _ITEM_COLLECTION_SCHEMA(collection)
+    _ITEM_COLLECTION_SCHEMA.validate(collection)
     assert_stac_extensions(collection)
     validate_items(collection["features"])
 
 
 def assert_collection(collection: dict) -> None:
-    _COLLECTION_SCHEMA(collection)
+    _COLLECTION_SCHEMA.validate(collection)
     assert "features" not in collection
     assert_stac_extensions(collection)
 
@@ -320,7 +345,7 @@ def assert_collection(collection: dict) -> None:
 
 
 def validate_item(item: dict) -> None:
-    _ITEM_SCHEMA(item)
+    _ITEM_SCHEMA.validate(item)
 
     # Should be a valid polygon
     assert "geometry" in item, "Item has no geometry field"
@@ -564,7 +589,7 @@ def test_legacy_redirects(
 def test_stac_links(stac_client: FlaskClient) -> None:
     """Check that root contains all expected links"""
     response = get_json(stac_client, "/stac")
-    _CATALOG_SCHEMA(response)
+    _CATALOG_SCHEMA.validate(response)
 
     assert response["id"] == "odc-explorer", "Expected default unconfigured endpoint id"
     assert response["title"] == "Default ODC Explorer instance", (
@@ -628,7 +653,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
 def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
     # Do the virtual 'arrivals' catalog and items validate?
     response = get_json(stac_client, "/stac/catalogs/arrivals")
-    _CATALOG_SCHEMA(response)
+    _CATALOG_SCHEMA.validate(response)
 
     assert response["id"] == "arrivals"
     assert response["title"] == "Dataset Arrivals"

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import urlparse
 
-import fastjsonschema
+import jsonschema_rs
 from typing_extensions import Any
 
 SCHEMAS = Path("/Users/aye011/dev/odc/datacube-explorer/integration_tests/schemas/")
@@ -35,8 +35,6 @@ def load_schema(
 ) -> Callable[[dict[str, Any]], None]:
     """
     Create a JSON Schema validator from File or URL, but using only locally available schemas
-
-
 
     :param schema_path:
     :param base_path:
