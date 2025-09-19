@@ -64,5 +64,9 @@ COLLECTION_JSON=schemas.stacspec.org/v1.1.0/collection-spec/json-schema/collecti
 jq '.definitions.summaries.additionalProperties.anyOf |= map(if .title == "Set of values" then del(.items) else . end)' "${COLLECTION_JSON}" > modified_collection.json
 mv modified_collection.json "${COLLECTION_JSON}"
 
+# The $id in schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json is missing a dot, it should be
+# fixed upstream too.
+perl -pi -e 's/commonjson/common.json/g' schemas.stacspec.org/v1.1.0/item-spec/json-schema/common.json
+
 echo "Success"
 echo "If git status shows any changes, rerun tests, and commit them"
