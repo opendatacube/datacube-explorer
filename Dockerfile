@@ -77,12 +77,16 @@ FROM base
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
 
+ARG ENVIRONMENT=deployment
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive \
+    && EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "") || \
+                 echo "git") \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
+            $EXTRAS \
             gosu \
             libpq5 \
             tini \
