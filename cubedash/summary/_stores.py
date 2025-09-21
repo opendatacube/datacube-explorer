@@ -119,9 +119,7 @@ class ProductSummary:
     # The 'name' is typically used as an identifier, and with ODC itself.
     id_: int | None = None
 
-    def iter_months(
-        self, grouping_timezone: tzinfo | None = default_timezone
-    ) -> Generator[date]:
+    def iter_months(self, grouping_timezone: tzinfo) -> Generator[date]:
         """
         Iterate through all months in its time range.
         """
@@ -780,7 +778,7 @@ class SummaryStore:
             return None
 
     @property
-    def grouping_timezone(self) -> tzinfo | None:
+    def grouping_timezone(self) -> tzinfo:
         """Timezone used for day/month/year grouping."""
         return ZoneInfo(self._summariser.grouping_time_zone)
 
@@ -1520,11 +1518,7 @@ class SummaryStore:
         return (to_shape(footprint) if footprint is not None else None, row.region_code)
 
 
-def _summary_from_row(
-    res: RowMapping,
-    product_name: str,
-    grouping_timezone: tzinfo | None = default_timezone,
-):
+def _summary_from_row(res: RowMapping, product_name: str, grouping_timezone: tzinfo):
     timeline_dataset_counts = Counter(
         dict(
             zip(
