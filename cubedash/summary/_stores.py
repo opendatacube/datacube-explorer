@@ -24,7 +24,7 @@ from pygeofilter.backends.sqlalchemy.evaluate import (
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
-from sqlalchemy import Row, RowMapping, func, select
+from sqlalchemy import RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.ddl import CreateSchema, DropSchema
@@ -1173,7 +1173,19 @@ class SummaryStore:
         for r in self.e_index.collections_search_query(
             name=name, bbox=bbox, time=time, q=q, limit=limit, offset=offset
         ):
-            yield _row_to_collection(r)
+            # the 'r' at the moment has
+            # ('definition', 'name', 'bbox', 'time_earliest', 'time_latest')
+            yield CollectionItem(
+                name=r.name,
+                time_earliest=r.time_earliest.astimezone(default_timezone)
+                if r.time_earliest
+                else None,
+                time_latest=r.time_latest.astimezone(default_timezone)
+                if r.time_latest
+                else None,
+                bbox=r.bbox,
+                definition=r.definition,
+            )
 
     def _recalculate_period(
         self,
@@ -1580,25 +1592,6 @@ def _summary_from_row(
         # When this summary was last generated
         summary_gen_time=res["generation_time"],
         crses=set(crses) if (crses := res["crses"]) is not None else set(),
-    )
-
-
-def _row_to_collection(
-    res: Row, grouping_timezone: tzinfo = default_timezone
-) -> CollectionItem:
-    # the 'res' at the moment has
-    # ('definition', 'name', 'bbox', 'time_earliest', 'time_latest')
-
-    return CollectionItem(
-        name=res.name,
-        time_earliest=res.time_earliest.astimezone(grouping_timezone)
-        if res.time_earliest
-        else None,
-        time_latest=res.time_latest.astimezone(grouping_timezone)
-        if res.time_latest
-        else None,
-        bbox=res.bbox,
-        definition=res.definition,
     )
 
 
