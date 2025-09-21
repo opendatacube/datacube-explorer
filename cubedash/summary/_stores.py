@@ -1313,6 +1313,7 @@ class SummaryStore:
         if rv is None:
             return GenerateResult.ERROR, None
         extent_changes, new_product = rv
+        assert new_product.id_ is not None
         log.info("extent.refresh.done", changed=extent_changes)
 
         refresh_timestamp = new_product.last_refresh_time
@@ -1375,7 +1376,7 @@ class SummaryStore:
             previous_refresh_time=new_product.last_successful_summary_time,
             new_refresh_time=refresh_timestamp,
         )
-        self._mark_product_refresh_completed(new_product, refresh_timestamp)
+        self._mark_product_refresh_completed(new_product.id_, refresh_timestamp)
 
         # If nothing changed?
         if (
@@ -1421,15 +1422,14 @@ class SummaryStore:
         return None if id_ is None else self.e_index.latest_dataset_added_time(id_)
 
     def _mark_product_refresh_completed(
-        self, product: ProductSummary, refresh_timestamp: datetime
+        self, product_id: int, refresh_timestamp: datetime
     ) -> None:
         """
         Mark the product as successfully refreshed at the given product-table timestamp
 
         (so future runs will be incremental from this point onwards)
         """
-        assert product.id_ is not None
-        self.e_index.update_product_refresh_timestamp(product.id_, refresh_timestamp)
+        self.e_index.update_product_refresh_timestamp(product_id, refresh_timestamp)
         self._product.cache_clear()  # type: ignore[attr-defined]
 
     def list_complete_products(self) -> list[str]:
