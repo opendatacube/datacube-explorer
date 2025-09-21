@@ -675,7 +675,7 @@ def about_page():
         "about.html",
         total_dataset_count=(
             sum(
-                summary.dataset_count
+                0 if summary is None else summary.dataset_count
                 for product, summary in _model.get_products_with_summaries()
             )
         ),
