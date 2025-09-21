@@ -34,14 +34,14 @@ def storage_csv():
         rows=(
             (
                 product.name,
-                summary.dataset_count,
+                0 if summary is None else summary.dataset_count,
                 [
                     location.common_prefix
                     for location in (product_locations.get(product.name) or [])
                 ],
                 _utils.product_license(product),
                 url_for("product.raw_product_doc", name=product.name, _external=True),
-                summary.last_refresh_time,
+                "Never" if summary is None else summary.last_refresh_time,
                 product.metadata_type.name,
             )
             for product, summary in _model.get_products_with_summaries()
