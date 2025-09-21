@@ -128,8 +128,8 @@ def create_app(test_config=None) -> flask.Flask:
             GunicornInternalPrometheusMetrics,
         )
 
-        metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
+        GunicornInternalPrometheusMetrics(app, group_by="endpoint")
+        _LOG.info("Prometheus metrics enabled")
 
     # Add server timings to http headers.
     if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
