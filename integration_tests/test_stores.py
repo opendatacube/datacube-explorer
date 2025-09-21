@@ -8,7 +8,7 @@ from datacube.model import Range
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import GenerateResult, ProductSummary
+from cubedash.summary._stores import GenerateResult, ProductSummary, default_timezone
 
 METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
 PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]
@@ -129,7 +129,7 @@ def test_month_iteration(fix_utc_timezone) -> None:
         product = ProductSummary(
             "test_product", 5, (start, end), [], [], {}, datetime.now()
         )
-        got_months = list(product.iter_months())
+        got_months = list(product.iter_months(default_timezone))
         assert got_months == expected_months, "Incorrect set of iterated months"
 
     # Within same year
