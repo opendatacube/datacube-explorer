@@ -96,7 +96,7 @@ class GenerateSettings:
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
-    minimum_change_scan_window: timedelta | None = None
+    minimum_change_scan_window: timedelta | None
 
 
 # pylint: disable=broad-except
@@ -111,9 +111,9 @@ def generate_report(
     def print_status(
         product_name: str,
         year: int | None,
-        month: int | None = None,
-        day: int | None = None,
-        summary: TimePeriodOverview | None = None,
+        month: int | None,
+        day: int | None,
+        summary: TimePeriodOverview | None,
     ) -> None:
         """Print status each time we start a year."""
         if year:
@@ -161,8 +161,8 @@ def _get_index(config: ODCEnvironment, variant: str) -> Index:
 def run_generation(
     settings: GenerateSettings,
     products: Sequence[Product],
-    grouping_time_zone=DEFAULT_TIMEZONE,
-    workers=3,
+    grouping_time_zone: str,
+    workers: int,
 ) -> tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for "

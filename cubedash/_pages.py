@@ -588,7 +588,7 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
 
 def _partition_default(
     grouped_product_summarise: list[tuple[str, list[ProductWithSummary]]],
-    remainder_group_size=5,
+    remainder_group_size: int,
 ) -> list[tuple[str, list[ProductWithSummary]]]:
     """
     For default items and place them at the end in batches.

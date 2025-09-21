@@ -11,9 +11,7 @@ METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 
 
-def is_compatible_schema(
-    conn: Connection, odc_table_name: str, generate: bool = False
-) -> bool:
+def is_compatible_schema(conn: Connection, odc_table_name: str, generate: bool) -> bool:
     """
     Do we have the latest schema changes?
     If generate: Is the schema complete enough to run generate/refresh commands?
@@ -50,11 +48,7 @@ class PleaseRefresh(Enum):
 
 
 def pg_create_index(
-    conn,
-    idx_name: str,
-    table_name: str,
-    col_expr: str | None = None,
-    unique: bool = False,
+    conn, idx_name: str, table_name: str, col_expr: str | None, unique: bool = False
 ) -> None:
     conn.execute(
         text(
@@ -116,7 +110,7 @@ def epsg_to_srid(conn: Connection, code: int) -> int | None:
     ).scalar()
 
 
-def refresh_supporting_views(conn, concurrently=False) -> None:
+def refresh_supporting_views(conn, concurrently: bool) -> None:
     args = "concurrently" if concurrently else ""
     conn.execute(
         text(f"""

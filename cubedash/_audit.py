@@ -1,5 +1,5 @@
 import time
-from collections.abc import Iterable
+from collections.abc import Generator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -19,11 +19,11 @@ bp = Blueprint("audit", __name__)
 class ProductTiming:
     name: str
     dataset_count: int
-    time_seconds: float | None = None
+    time_seconds: float | None
     selection_date: datetime | None = None
 
 
-def product_timings() -> Iterable[ProductTiming]:
+def product_timings() -> Generator[ProductTiming]:
     """
     How long does it take to query a day?
     Useful for finding missing time indexes.
@@ -37,7 +37,7 @@ def product_timings() -> Iterable[ProductTiming]:
             _LOG.info("product_no_summarised", product_name=product_name)
             continue
         if not p.dataset_count or p.duration is None:
-            yield ProductTiming(product_name, dataset_count=0)
+            yield ProductTiming(product_name, dataset_count=0, time_seconds=None)
             continue
         done += 1
         time_earliest, time_latest = p.duration

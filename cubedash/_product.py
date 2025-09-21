@@ -199,7 +199,7 @@ def raw_all_metadata_types_doc():
     return resp
 
 
-def _iso8601_duration(tdelta: timedelta):
+def _iso8601_duration(tdelta: timedelta) -> str:
     """
     Format a timedelta as an iso8601 duration
 

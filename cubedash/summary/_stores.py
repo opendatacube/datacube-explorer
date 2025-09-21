@@ -221,9 +221,9 @@ class ChangeListener(Protocol):
         self,
         product_name: str,
         year: int | None,
-        month: int | None = None,
-        day: int | None = None,
-        summary: TimePeriodOverview | None = None,
+        month: int | None,
+        day: int | None,
+        summary: TimePeriodOverview | None,
     ) -> None: ...
 
 
@@ -265,7 +265,7 @@ class SummaryStore:
         """
         return self.e_index.schema_initialised()
 
-    def is_schema_compatible(self, for_writing_operations_too: bool = False) -> bool:
+    def is_schema_compatible(self, for_writing_operations_too: bool) -> bool:
         """
         Have all schema updates been applied?
         """
@@ -275,7 +275,7 @@ class SummaryStore:
         _LOG.debug("software.version", postgis=postgis_ver, explorer=explorer_version)
         return is_compatible
 
-    def init(self, grouping_epsg_code: int | None = None) -> None:
+    def init(self, grouping_epsg_code: int | None) -> None:
         """
         Initialise any schema elements that don't exist.
 
@@ -502,7 +502,7 @@ class SummaryStore:
         self.e_index.refresh_stats(concurrently)
 
     def _find_product_fixed_metadata(
-        self, product: Product, sample_datasets_size: int = 1000
+        self, product: Product, sample_datasets_size: int
     ) -> dict[str, Any]:
         """
         Find metadata fields that have an identical value in every dataset of the product.
@@ -560,8 +560,8 @@ class SummaryStore:
     def _get_linked_products(
         self,
         product: Product,
-        kind: Literal["source", "derived"] = "source",
-        sample_percentage: float = 0.05,
+        kind: Literal["source", "derived"],
+        sample_percentage: float,
     ) -> list[str]:
         """
         Find products with upstream or downstream datasets from this product.
@@ -861,11 +861,7 @@ class SummaryStore:
             summary.summary_gen_time = ret[0]
 
     def has(
-        self,
-        product_name: str,
-        year: int | None = None,
-        month: int | None = None,
-        day: int | None = None,
+        self, product_name: str, year: int | None, month: int | None, day: int | None
     ) -> bool:
         return self.get(product_name, year, month, day) is not None
 
@@ -904,11 +900,11 @@ class SummaryStore:
         self,
         query: Select,
         field_exprs,
-        product_names: list[str] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        intersects: BaseGeometry | None = None,
-        dataset_ids: Sequence[UUID] | None = None,
+        product_names: list[str] | None,
+        time: tuple[datetime, datetime] | None,
+        bbox: tuple[float, float, float, float] | None,
+        intersects: BaseGeometry | None,
+        dataset_ids: Sequence[UUID] | None,
     ) -> Select:
         if dataset_ids is not None:
             query = query.where(field_exprs["id"].in_(dataset_ids))
@@ -936,9 +932,7 @@ class SummaryStore:
 
         return query
 
-    def _get_field_exprs(
-        self, product_names: list[str] | None = None
-    ) -> dict[str, Any]:
+    def _get_field_exprs(self, product_names: list[str] | None) -> dict[str, Any]:
         """
         Map properties to their sqlalchemy expressions.
         Allow for properties to be provided as their STAC property name (ex: created),
@@ -1037,13 +1031,13 @@ class SummaryStore:
 
     def get_count(
         self,
-        product_names: list[str] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        intersects: BaseGeometry | None = None,
-        dataset_ids: Sequence[UUID] | None = None,
-        filter_lang: str | None = None,
-        filter_cql: str | dict | None = None,
+        product_names: list[str] | None,
+        time: tuple[datetime, datetime] | None,
+        bbox: tuple[float, float, float, float] | None,
+        intersects: BaseGeometry | None,
+        dataset_ids: Sequence[UUID] | None,
+        filter_lang: str | None,
+        filter_cql: str | dict | None,
     ) -> int:
         """
         Do the base select query to get the count of matching datasets.
@@ -1446,7 +1440,7 @@ class SummaryStore:
         month: int | None,
         day: int | None,
         limit: int,
-        offset: int = 0,
+        offset: int,
     ) -> Generator[Dataset]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone
@@ -1462,7 +1456,7 @@ class SummaryStore:
         month: int | None,
         day: int | None,
         limit: int,
-        offset: int = 0,
+        offset: int,
     ) -> Iterable[Product]:
         time_range = _utils.as_time_range(
             year, month, day, tzinfo=self.grouping_timezone

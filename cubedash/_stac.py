@@ -555,7 +555,7 @@ def _handle_search_request(
     method: str,
     request_args: TypeConversionDict,
     product_names: list[str],
-    include_total_count: bool = True,
+    include_total_count: bool,
 ) -> ItemCollection:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
@@ -823,8 +823,8 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
 
 def search_stac_items(
     get_next_url: Callable[[int], str],
-    limit: int = 0,
-    offset: int = 0,
+    limit: int,
+    offset: int,
     dataset_ids: Sequence[uuid.UUID] | None = None,
     product_names: list[str] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
@@ -913,11 +913,11 @@ def search_stac_items(
 
 def search_stac_collections(
     get_next_url: Callable[[int], str],
-    limit: int = 0,
-    offset: int = 0,
-    bbox: tuple[float, float, float, float] | None = None,
-    time: tuple[datetime, datetime] | None = None,
-    q: list[str] | None = None,
+    limit: int,
+    offset: int,
+    bbox: tuple[float, float, float, float] | None,
+    time: tuple[datetime, datetime] | None,
+    q: list[str] | None,
 ) -> tuple[list[Collection], dict[str, Any]]:
     if limit < 1:
         limit = get_default_limit()
@@ -1095,7 +1095,7 @@ def stac_search():
         products.append(args.get("collection"))
 
     return _geojson_stac_response(
-        _handle_search_request(request.method, args, products)
+        _handle_search_request(request.method, args, products, True)
     )
 
 

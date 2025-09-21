@@ -12,8 +12,8 @@ from typing_extensions import override
 
 
 def init_logging(
-    output_file: BinaryIO | None = None,
-    verbosity: int = 0,
+    output_file: BinaryIO | None,
+    verbosity: int,
     cache_logger_on_first_use: bool = True,
     write_as_json: bool | None = None,
 ) -> None:
