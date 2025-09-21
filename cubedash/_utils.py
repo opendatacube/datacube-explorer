@@ -2,6 +2,8 @@
 Common global filters and util methods.
 """
 
+from __future__ import annotations
+
 import csv
 import difflib
 import functools
@@ -12,7 +14,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
 
 import eodatasets3.serialise
@@ -36,6 +38,9 @@ from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
 from sqlalchemy import TIMESTAMP, func
 from werkzeug.datastructures import MultiDict
+
+if TYPE_CHECKING:
+    from cubedash._model import ProductWithSummary
 
 _TARGET_CRS = "EPSG:4326"
 
@@ -226,7 +231,7 @@ def group_field_names(request: dict) -> dict:
 
 
 def get_sorted_product_summaries(
-    product_summaries: dict, key: Callable[[Any], Any]
+    product_summaries: Sequence[ProductWithSummary], key: Callable[[Any], Any]
 ) -> list[tuple[str, list]]:
     return sorted(
         (
