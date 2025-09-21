@@ -145,10 +145,10 @@ class ExplorerAbstractIndex(ABC):
         self,
         limit: int,
         offset: int,
-        name: str | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        q: Sequence[str] | None = None,
+        name: str | None,
+        bbox: tuple[float, float, float, float] | None,
+        time: tuple[datetime, datetime] | None,
+        q: Sequence[str] | None,
     ) -> Result: ...
 
     @abstractmethod
@@ -185,7 +185,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def all_products_location_samples(
-        self, products: Sequence[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int
     ) -> Result: ...
 
     @abstractmethod
@@ -223,7 +223,7 @@ class ExplorerAbstractIndex(ABC):
     def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...
 
     @abstractmethod
-    def refresh_stats(self, concurrently: bool = False) -> None: ...
+    def refresh_stats(self, concurrently: bool) -> None: ...
 
     @abstractmethod
     def get_srid_name(self, srid: int) -> str | None: ...

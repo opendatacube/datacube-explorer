@@ -11,6 +11,7 @@ import re
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
+from datetime import tzinfo as e_tzinfo
 from io import StringIO
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -346,10 +347,10 @@ def _next_month(date: datetime) -> datetime:
 
 
 def as_time_range(
-    year: int | None = None,
+    year: int | None,
     month: int | None = None,
     day: int | None = None,
-    tzinfo=None,
+    tzinfo: e_tzinfo | None = None,
 ) -> Range | None:
     """
     >>> as_time_range(2018)
@@ -358,8 +359,6 @@ def as_time_range(
     Range(begin=datetime.datetime(2018, 2, 1, 0, 0), end=datetime.datetime(2018, 3, 1, 0, 0))
     >>> as_time_range(2018, 8, 3)
     Range(begin=datetime.datetime(2018, 8, 3, 0, 0), end=datetime.datetime(2018, 8, 4, 0, 0))
-    >>> # Unbounded:
-    >>> as_time_range()
     """
     if year and month and day:
         start = datetime(year, month, day)
@@ -514,7 +513,7 @@ def _json_fallback(o, *args, **kwargs):
     )
 
 
-def as_geojson(o, downloadable_filename_prefix: str | None = None):
+def as_geojson(o, downloadable_filename_prefix: str | None):
     """
     Serialise the given object into a GeoJSON flask response.
 

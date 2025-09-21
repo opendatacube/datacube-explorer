@@ -176,8 +176,8 @@ def _gis_point(doc, doc_offset):
 def refresh_spatial_extents(
     e_index: ExplorerIndex,
     product: Product,
-    clean_up_deleted: bool = False,
-    assume_after_date: datetime | None = None,
+    clean_up_deleted: bool,
+    assume_after_date: datetime | None,
 ) -> int:
     """
     Update the spatial extents to match any changes upstream in ODC.

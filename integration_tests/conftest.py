@@ -50,7 +50,9 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig) -> None:
     logs.init_logging(
-        verbosity=pytestconfig.getoption("verbose"), cache_logger_on_first_use=False
+        None,
+        verbosity=pytestconfig.getoption("verbose"),
+        cache_logger_on_first_use=False,
     )
 
 

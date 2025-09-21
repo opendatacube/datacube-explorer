@@ -166,10 +166,7 @@ _LOG = structlog.stdlib.get_logger()
 
 @cache.memoize(timeout=60)
 def get_time_summary(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None = None
 ) -> TimePeriodOverview | None:
     return STORE.get(product_name, year, month, day)
 
@@ -212,10 +209,7 @@ def get_products_with_summaries() -> list[ProductWithSummary]:
 
 @cache.memoize(timeout=60)
 def get_footprint_geojson(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> dict | None:
     period = get_time_summary(product_name, year, month, day)
     if period is None:
@@ -238,10 +232,7 @@ def get_footprint_geojson(
 
 @cache.memoize(timeout=60)
 def get_regions_geojson(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> dict | None:
     product = STORE.get_product(product_name)
 

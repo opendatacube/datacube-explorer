@@ -198,7 +198,7 @@ def cli(
     sys.exit(len(failures))
 
 
-def _format_time(t: float):
+def _format_time(t: float) -> str:
     """
     >>> _format_time(0.31)
     '310ms'

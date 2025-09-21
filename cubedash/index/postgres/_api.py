@@ -397,10 +397,10 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self,
         limit: int,
         offset: int,
-        name: str | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        q: Sequence[str] | None = None,
+        name: str | None,
+        bbox: tuple[float, float, float, float] | None,
+        time: tuple[datetime, datetime] | None,
+        q: Sequence[str] | None,
     ) -> Result:
         # STAC Collections only hold a bounding box in EPSG:4326, no polygons
         # Calculate the bounding box on the server, it's far more efficient.
@@ -649,7 +649,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     # does this really add much value? and if so, is there a better way to do it?
     @override
     def all_products_location_samples(
-        self, products: Sequence[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int
     ) -> Result:
         queries = []
         for product in products:
@@ -915,7 +915,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             return init_elements(conn, grouping_epsg_code)
 
     @override
-    def refresh_stats(self, concurrently=False) -> None:
+    def refresh_stats(self, concurrently: bool) -> None:
         """
         Refresh general statistics tables that cover all products.
 
