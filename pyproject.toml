@@ -186,6 +186,7 @@ select = [
     "RET", # flake8-ret
     "RUF", # Ruff-specific rules
     "S",  # flake8-bandit
+    "UP",  # pyupgrade
 ]
 ignore = [
     "S101", # Many asserts are used for type checking.
