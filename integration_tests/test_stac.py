@@ -770,7 +770,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
 
     def dataset_url(s: str) -> str:
         return (
-            f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+            "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
             f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
         )
 

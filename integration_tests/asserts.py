@@ -241,7 +241,7 @@ def expect_values(
         if s.timeline_dataset_counts is None:
             if timeline_count is not None:
                 raise AssertionError(
-                    f"null timeline_dataset_counts. "
+                    "null timeline_dataset_counts. "
                     f"Expected entry with {timeline_count} records."
                 )
         else:
@@ -262,7 +262,7 @@ def expect_values(
             if s.region_dataset_counts is None:
                 if region_dataset_counts is not None:
                     raise AssertionError(
-                        f"No region counts found. "
+                        "No region counts found. "
                         f"Expected entry with {len(region_dataset_counts)} records."
                     )
             else:

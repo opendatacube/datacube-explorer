@@ -64,7 +64,7 @@ def check_page_limit(limit: int) -> None:
         abort(
             400,
             f"Max page size is {page_size_limit}. "
-            f"Use the next links instead of a large limit.",
+            "Use the next links instead of a large limit.",
         )
 
 
@@ -1252,7 +1252,7 @@ def item(collection: str, dataset_id: uuid.UUID):
         )
         abort(
             404,
-            f"No such dataset in collection.\n"
+            "No such dataset in collection.\n"
             f"Perhaps you meant collection {actual_product_name}: {actual_url})",
         )
 

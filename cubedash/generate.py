@@ -278,7 +278,7 @@ class TimeDeltaParam(click.ParamType):
     type=int,
     # We default to None as we want to know later if they explicitly specified one or not.
     default=None,
-    help=f"The equal-area epsg code to use internally for grouping spatial data. "
+    help="The equal-area epsg code to use internally for grouping spatial data. "
     f"(default: {DEFAULT_EPSG})",
 )
 @click.option(

@@ -500,9 +500,9 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) ->
     response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
     assert response.location.endswith(redirects_to_url), (
-        f"Expected redirect to end with:\n"
+        "Expected redirect to end with:\n"
         f"    {redirects_to_url!r}\n"
-        f"but was redirected to:\n"
+        "but was redirected to:\n"
         f"    {response.location!r}"
     )
 
@@ -904,7 +904,7 @@ def test_raw_documents(client: FlaskClient) -> None:
         doc_opening = doc[:128]
         expect_pattern = f"# {hint}\n# url: http://localhost{url}\n"
         assert expect_pattern in doc_opening, (
-            f"No hint or source-url in yaml response.\n"
+            "No hint or source-url in yaml response.\n"
             f"Expected {expect_pattern!r}\n"
             f"Got      {doc_opening!r}"
         )
