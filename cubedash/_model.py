@@ -87,7 +87,7 @@ def create_app(test_config=None) -> flask.Flask:
 
     # Global defaults
     app.config.from_mapping(
-        dict(CUBEDASH_DEFAULT_API_LIMIT=500, CUBEDASH_HARD_API_LIMIT=4000)
+        {"CUBEDASH_DEFAULT_API_LIMIT": 500, "CUBEDASH_HARD_API_LIMIT": 4000}
     )
 
     cache.init_app(app=app, config=app.config)
@@ -220,15 +220,15 @@ def get_footprint_geojson(
     if not footprint:
         return None
 
-    return dict(
-        type="Feature",
-        geometry=footprint.__geo_interface__,
-        properties=dict(
-            dataset_count=period.footprint_count,
-            product_name=product_name,
-            time_spec=[year, month, day],
-        ),
-    )
+    return {
+        "type": "Feature",
+        "geometry": footprint.__geo_interface__,
+        "properties": {
+            "dataset_count": period.footprint_count,
+            "product_name": product_name,
+            "time_spec": [year, month, day],
+        },
+    }
 
 
 @cache.memoize(timeout=60)

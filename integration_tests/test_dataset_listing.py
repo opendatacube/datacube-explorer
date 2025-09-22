@@ -45,9 +45,10 @@ def test_parse_query_args(odc_test_db: Datacube) -> None:
         product,
     )
 
-    assert res == dict(
-        time=Range(datetime(2017, 8, 8), datetime(2017, 8, 9)), gqa=Range(-3, 3)
-    )
+    assert res == {
+        "time": Range(datetime(2017, 8, 8), datetime(2017, 8, 9)),
+        "gqa": Range(-3, 3),
+    }
 
 
 @pytest.mark.skip(
@@ -70,8 +71,8 @@ def test_default_args(dea_index: Index) -> None:
     # The last month of LANDSAT_5 for this product
     assert (
         res
-        == dict(
+        == {
             # time=Range(datetime(2011, 10, 30), datetime(2011, 11, 30)),
             # product=product.name
-        )
+        }
     )

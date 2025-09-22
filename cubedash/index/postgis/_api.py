@@ -759,9 +759,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(DatasetSpatial.id == bindparam("dataset_id"))
                 .values(footprint=bindparam("footprint")),
                 [
-                    dict(
-                        dataset_id=id_,
-                        footprint=from_shape(
+                    {
+                        "dataset_id": id_,
+                        "footprint": from_shape(
                             shapely.ops.unary_union(
                                 [
                                     shapes[(int(sat_path.lower), row)]
@@ -773,7 +773,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                             srid=4326,
                             extended=True,
                         ),
-                    )
+                    }
                     for id_, sat_path, sat_row in rows
                 ],
             )
@@ -781,19 +781,19 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
         geom = func.ST_Transform(DatasetSpatial.footprint, 4326)
-        return dict(
-            collection=(
+        return {
+            "collection": (
                 select(ODC_PRODUCT.name)
                 .where(ODC_PRODUCT.id == DatasetSpatial.product_ref)
                 .scalar_subquery()
             ),
-            datetime=DatasetSpatial.center_time,
-            creation_time=DatasetSpatial.creation_time,
-            geometry=geom,
-            bbox=func.Box2D(geom).cast(String),
-            region_code=DatasetSpatial.region_code,
-            id=DatasetSpatial.id,
-        )
+            "datetime": DatasetSpatial.center_time,
+            "creation_time": DatasetSpatial.creation_time,
+            "geometry": geom,
+            "bbox": func.Box2D(geom).cast(String),
+            "region_code": DatasetSpatial.region_code,
+            "id": DatasetSpatial.id,
+        }
 
     @override
     def spatial_select_query(
