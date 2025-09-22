@@ -222,7 +222,7 @@ def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
     if not v:
         return v
 
-    if name.endswith("datetime") and isinstance(v, str | datetime):
+    if name.endswith("datetime") and isinstance(v, (str, datetime)):
         dt = parse_time(v)
         # Strip/normalise timezone to match default yaml.load()
         if dt.tzinfo:

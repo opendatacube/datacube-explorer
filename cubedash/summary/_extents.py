@@ -306,7 +306,7 @@ def _dataset_creation_expression_creation_time(md: MetadataType) -> Label:
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
     indexed_time = md.dataset_fields.get("indexed_time")
-    assert isinstance(indexed_time, PgresNativeField | PgisNativeField)
+    assert isinstance(indexed_time, (PgresNativeField, PgisNativeField))
     # FIXME: cast should not be required.
     return func.coalesce(
         cast(creation_expression, TIMESTAMP(timezone=True)),
