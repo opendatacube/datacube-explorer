@@ -4,6 +4,7 @@ import time
 from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TypeAlias
 
 import flask
 import sentry_sdk
@@ -180,7 +181,7 @@ def get_product_summary(product_name: str) -> ProductSummary | None:
     return STORE.get_product_summary(product_name)
 
 
-ProductWithSummary = tuple[Product, ProductSummary | None]
+ProductWithSummary: TypeAlias = tuple[Product, ProductSummary | None]
 
 
 @cache.memoize(timeout=120)
