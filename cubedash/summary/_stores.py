@@ -1,13 +1,13 @@
 import math
 import re
 from collections import Counter
-from collections.abc import Generator
+from collections.abc import Generator, Iterable, Sequence
 from copy import copy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, tzinfo
 from enum import Enum, auto
 from itertools import groupby
-from typing import Any, Iterable, Literal, Protocol, Sequence
+from typing import Any, Literal, Protocol
 from uuid import UUID
 from zoneinfo import ZoneInfo
 

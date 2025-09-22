@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import warnings
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Iterable
 
 import shapely
 import shapely.ops
