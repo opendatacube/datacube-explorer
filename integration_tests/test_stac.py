@@ -133,7 +133,7 @@ def _web_reference(ref: str):
     """
     if not is_url(ref):
         raise NoSuchResource(f"Expected URL? Got {ref!r}")
-    (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
+    _, netloc, offset, _, _, _ = urllib.parse.urlparse(ref)
     # We used `wget -r` to download the remote schemas locally.
     # It puts into hostname/path folders by default. E.g 'geojson.org/schema/Feature.json'
     path = _SCHEMA_BASE / f"{netloc}{offset}"

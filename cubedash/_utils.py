@@ -680,7 +680,7 @@ def prepare_document_formatting(
     """
 
     def get_property_priority(ordered_properties: list, keyval):
-        key, val = keyval
+        key, _ = keyval
         if key not in ordered_properties:
             return 999
         return ordered_properties.index(key)
@@ -749,7 +749,7 @@ def api_path_as_filename_prefix():
     (the suffix is added by the response)
     """
     stem = flask.request.path.split(".")[0]
-    api, kind, *period = stem.strip("/").split("/")
+    _, kind, *period = stem.strip("/").split("/")
     return "-".join([*period, kind])
 
 

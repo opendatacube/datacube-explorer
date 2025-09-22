@@ -887,7 +887,7 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
 
 
 def test_plain_product_list(client: FlaskClient) -> None:
-    text, rv = get_text_response(client, "/products.txt")
+    text, _ = get_text_response(client, "/products.txt")
     assert "ga_ls8c_ard_3\n" in text
 
 
@@ -900,7 +900,7 @@ def test_raw_documents(client: FlaskClient) -> None:
 
     def check_doc_start_has_hint(hint: str, url: str):
         __tracebackhide__ = True
-        doc, rv = get_text_response(client, url)
+        doc, _ = get_text_response(client, url)
         doc_opening = doc[:128]
         expect_pattern = f"# {hint}\n# url: http://localhost{url}\n"
         assert expect_pattern in doc_opening, (
