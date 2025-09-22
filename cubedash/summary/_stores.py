@@ -803,7 +803,7 @@ class SummaryStore:
 
         row = self.e_index.upsert_product_record(product.name, fields)
         self._product.cache_clear()  # type: ignore[attr-defined]
-        product_id, last_refresh_time = row
+        product_id, _ = row
 
         product.id_ = product_id
 

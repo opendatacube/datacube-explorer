@@ -590,7 +590,7 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore) ->
     for product in summary_store.index.products.get_all():
         region_info = GridRegionInfo.for_product(product, None)
         for dataset in summary_store.index.datasets.search(product=product.name):
-            (footprint, alchemy_calculated_region_code) = (
+            _, alchemy_calculated_region_code = (
                 summary_store.get_dataset_footprint_region(dataset.id)
             )
 

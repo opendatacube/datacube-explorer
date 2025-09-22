@@ -72,7 +72,7 @@ def dataset_full_page(product_name: str, id_: UUID):
     #
     # Fall back to a regular footprint for other datasets.
     if not footprint:
-        footprint, is_valid = utils.dataset_shape(dataset)
+        footprint, _ = utils.dataset_shape(dataset)
 
     return utils.render(
         "dataset.html",
