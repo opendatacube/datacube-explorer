@@ -119,7 +119,7 @@ class TimePeriodOverview:
     @classmethod
     def empty(
         cls, product_name: str, product_refresh_time: datetime
-    ) -> "TimePeriodOverview":
+    ) -> TimePeriodOverview:
         return cls.add_periods(product_name, product_refresh_time, [])
 
     @classmethod
@@ -127,11 +127,11 @@ class TimePeriodOverview:
         cls,
         product_name: str,
         product_refresh_time: datetime,
-        periods: Iterable["TimePeriodOverview" | None],
+        periods: Iterable[TimePeriodOverview | None],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
         footprint_tolerance: float = 1000.0,
-    ) -> "TimePeriodOverview":
+    ) -> TimePeriodOverview:
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
         crses = {p.footprint_crs for p in periods}
