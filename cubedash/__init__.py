@@ -5,4 +5,4 @@ except ImportError:
 
 from ._model import create_app
 
-__all__ = ("create_app", "__version__")
+__all__ = ("__version__", "create_app")
