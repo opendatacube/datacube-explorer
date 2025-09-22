@@ -187,6 +187,7 @@ select = [
     "RET", # flake8-ret
     "RUF", # Ruff-specific rules
     "S",  # flake8-bandit
+    "T10", # flake8-debugger
     "UP",  # pyupgrade
 ]
 ignore = [
