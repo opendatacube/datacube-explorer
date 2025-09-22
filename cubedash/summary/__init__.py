@@ -9,7 +9,7 @@ from ._stores import (
     SummaryStore,
 )
 
-__all__ = (
+__all__ = [
     "DatasetItem",
     "GenerateResult",
     "ItemSort",
@@ -19,4 +19,4 @@ __all__ = (
     "SummaryStore",
     "TimePeriodOverview",
     "UnsupportedWKTProductCRSError",
-)
+]
