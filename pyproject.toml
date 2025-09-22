@@ -187,6 +187,7 @@ select = [
     "RET", # flake8-ret
     "RUF", # Ruff-specific rules
     "S",  # flake8-bandit
+    "SIM", # flake8-simplify
     "T10", # flake8-debugger
     "UP",  # pyupgrade
     "W",  # pycodestyle warnings
@@ -197,6 +198,7 @@ ignore = [
     "B905",
     "S310",
     "S608",
+    "SIM115",
 ]
 
 [tool.ruff.lint.per-file-ignores]
