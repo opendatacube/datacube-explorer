@@ -253,7 +253,7 @@ def test_generate_raises_error(run_generate, empty_client) -> None:
     """
     result = run_generate("fake_product", expect_success=False)
     assert result.exit_code != 0, (
-        f"Command should return an error when unknown products are specified. "
+        "Command should return an error when unknown products are specified. "
         f"Output: {result.output}"
     )
     assert "fake_product" in result.output

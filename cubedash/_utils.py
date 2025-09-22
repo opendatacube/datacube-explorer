@@ -516,7 +516,7 @@ def _json_fallback(o, *args, **kwargs):
 
     # I think orjson swallows our nicer error message?
     raise TypeError(
-        f"Cannot (yet) serialise object type to json: "
+        "Cannot (yet) serialise object type to json: "
         f"{o.__module__}.{type(o).__qualname__}"
     )
 

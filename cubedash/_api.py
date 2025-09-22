@@ -117,7 +117,7 @@ def dataset_timeline(
     if summary is None:
         abort(
             404,
-            f"No known information for product "
+            "No known information for product "
             f"{product_name!r} {year or 'all'} {month or 'all'} {day or 'all'}",
         )
 

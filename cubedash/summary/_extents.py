@@ -154,9 +154,9 @@ def get_dataset_srid_alchemy_expression(
         inferred_crs = infer_crs(default_crs)
         if inferred_crs is None:
             raise UnsupportedWKTProductCRSError(
-                f"WKT Product CRSes are not currently well supported, and "
-                f"we can't infer this product's one. "
-                f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
+                "WKT Product CRSes are not currently well supported, and "
+                "we can't infer this product's one. "
+                "(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
                 f"Got: {default_crs!r}"
             )
         default_crs = inferred_crs
