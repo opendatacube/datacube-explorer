@@ -144,22 +144,22 @@ def get_dataset_srid_alchemy_expression(
     )
 
     # When datasets have no CRS, optionally use this as default.
-    # default_crs_expression = None
-    if default_crs:
-        # can this be replaced with odc-geo logic?
-        if not default_crs.lower().startswith(
-            "epsg:"
-        ) and not default_crs.lower().startswith("esri:"):
-            # HACK: Change default CRS with inference
-            inferred_crs = infer_crs(default_crs)
-            if inferred_crs is None:
-                raise UnsupportedWKTProductCRSError(
-                    f"WKT Product CRSes are not currently well supported, and "
-                    f"we can't infer this product's one. "
-                    f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
-                    f"Got: {default_crs!r}"
-                )
-            default_crs = inferred_crs
+    # Can this be replaced with odc-geo logic?
+    if (
+        default_crs
+        and not default_crs.lower().startswith("epsg:")
+        and not default_crs.lower().startswith("esri:")
+    ):
+        # HACK: Change default CRS with inference
+        inferred_crs = infer_crs(default_crs)
+        if inferred_crs is None:
+            raise UnsupportedWKTProductCRSError(
+                f"WKT Product CRSes are not currently well supported, and "
+                f"we can't infer this product's one. "
+                f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
+                f"Got: {default_crs!r}"
+            )
+        default_crs = inferred_crs
 
     return e_index.ds_srid_expression(spatial_ref, doc_projection, default_crs)
 
@@ -219,28 +219,27 @@ def refresh_spatial_extents(
     changed += e_index.upsert_datasets(product.id, column_values, assume_after_date)
     log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
 
-    # If we changed data...
-    if changed:
-        # And it's a non-spatial product...
-        if (
-            get_dataset_extent_alchemy_expression(e_index, product.metadata_type)
-            is None
-        ):
-            # And it has WRS path/rows...
-            if "sat_path" in product.metadata_type.dataset_fields:
-                # We can synthesize the polygons!
-                log.info("spatial_synthesizing")
-                shapes = _get_path_row_shapes()
-                rows = [
-                    row
-                    for row in e_index.ds_search_returning(
-                        ("id", "sat_path", "sat_row"), args={"product": product.name}
-                    )
-                    if row.sat_path.lower is not None
-                ]
-                if rows:
-                    e_index.synthesize_dataset_footprint(rows, shapes)
-            log.info("spatial_synthesizing.end")
+    # If we changed data, and it's a non-spatial product.
+    if (
+        changed
+        and get_dataset_extent_alchemy_expression(e_index, product.metadata_type)
+        is None
+    ):
+        # And it has WRS path/rows...
+        if "sat_path" in product.metadata_type.dataset_fields:
+            # We can synthesize the polygons!
+            log.info("spatial_synthesizing")
+            shapes = _get_path_row_shapes()
+            rows = [
+                row
+                for row in e_index.ds_search_returning(
+                    ("id", "sat_path", "sat_row"), args={"product": product.name}
+                )
+                if row.sat_path.lower is not None
+            ]
+            if rows:
+                e_index.synthesize_dataset_footprint(rows, shapes)
+        log.info("spatial_synthesizing.end")
 
     return changed
 

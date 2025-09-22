@@ -116,10 +116,9 @@ def generate_report(
         summary: TimePeriodOverview | None,
     ) -> None:
         """Print status each time we start a year."""
-        if year:
-            if (product_name, year) not in started_years:
-                user_message(f"\t  {product_name} {year}")
-                started_years.add((product_name, year))
+        if year and (product_name, year) not in started_years:
+            user_message(f"\t  {product_name} {year}")
+            started_years.add((product_name, year))
 
     store = SummaryStore.create(
         _get_index(ODCConfig.get_environment(settings.env_name), product_name),

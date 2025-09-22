@@ -72,12 +72,12 @@ def dissoc_in(d: dict, key: str):
     # like dicttoolz.dissoc but with support for nested keys
     split = key.split(".")
 
-    if len(split) > 1:  # if nested
-        if dicttoolz.get_in(split, d) is not None:
-            outer = dicttoolz.get_in(split[:-1], d)
-            return dicttoolz.update_in(
-                d=d, keys=split[:-1], func=lambda _: dicttoolz.dissoc(outer, split[-1])
-            )
+    # if nested
+    if len(split) > 1 and dicttoolz.get_in(split, d) is not None:
+        outer = dicttoolz.get_in(split[:-1], d)
+        return dicttoolz.update_in(
+            d=d, keys=split[:-1], func=lambda _: dicttoolz.dissoc(outer, split[-1])
+        )
     return dicttoolz.dissoc(d, key)
 
 

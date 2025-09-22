@@ -254,10 +254,13 @@ def query_to_search(request: MultiDict, product: Product) -> dict:
     # (the intention is "between these two numbers")
     for key in args:
         value = args[key]
-        if isinstance(value, Range):
-            if value.begin is not None and value.end is not None:
-                if value.end < value.begin:
-                    args[key] = Range(value.end, value.begin)
+        if (
+            isinstance(value, Range)
+            and value.begin is not None
+            and value.end is not None
+            and value.end < value.begin
+        ):
+            args[key] = Range(value.end, value.begin)
 
     return args
 
