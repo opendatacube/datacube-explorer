@@ -624,10 +624,7 @@ def _handle_search_request(
         )
     if filter_lang is None and filter_cql is not None:
         # If undefined, defaults to cql2-text for a GET request and cql2-json for a POST request.
-        if method == "GET":
-            filter_lang = "cql2-text"
-        else:
-            filter_lang = "cql2-json"
+        filter_lang = "cql2-text" if method == "GET" else "cql2-json"
     if filter_cql:
         assert filter_lang is not None
         _validate_filter(filter_lang, filter_cql)
