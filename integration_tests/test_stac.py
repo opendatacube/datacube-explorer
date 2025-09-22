@@ -730,7 +730,7 @@ def test_stac_collection_toplevel(stac_client: FlaskClient) -> None:
     # The response must include some links
     assert "links" in res
     # Must have a root and self link
-    link_rels = set(link["rel"] for link in res["links"])
+    link_rels = {link["rel"] for link in res["links"]}
     assert "root" in link_rels
     assert "self" in link_rels
     # The response must include a set of collections
