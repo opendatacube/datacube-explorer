@@ -184,7 +184,7 @@ select = [
     "N",  # pep8-naming
     "NPY",  # Numpy
     "RET", # flake8-ret
-    # "RUF",  # Ruf-specific python rules?
+    "RUF", # Ruff-specific rules
     "S",  # flake8-bandit
 ]
 ignore = [
@@ -201,6 +201,7 @@ ignore = [
 # FIXME: remove these ignores
 "cubedash/_stac.py" = ["B023"]
 "cubedash/warmup.py" = ["B023"]
+"cubedash/generate.py" = ["RUF002"]
 
 # Matching old behaviour: We auto-format with the smaller line default
 # ...  but only enforce line length to be under this larger 120 limit.
