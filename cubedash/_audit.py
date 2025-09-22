@@ -54,9 +54,7 @@ def product_timings() -> Generator[ProductTiming]:
 
 @_model.cache.memoize()
 def cached_product_timings():
-    return sorted(
-        list(product_timings()), key=lambda a: a.time_seconds or 0, reverse=True
-    )
+    return sorted(product_timings(), key=lambda a: a.time_seconds or 0, reverse=True)
 
 
 @bp.route("/product-audit/")

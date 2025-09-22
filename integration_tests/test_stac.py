@@ -611,7 +611,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
             found_collection_ids.add(product_name)
 
     # We should have seen all products in the index
-    assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
+    assert sorted(found_collection_ids) == sorted(expected_product_counts.keys())
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
