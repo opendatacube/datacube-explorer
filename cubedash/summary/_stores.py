@@ -937,10 +937,11 @@ class SummaryStore:
         their eo3 property name (ex: odc:processing_datetime),
         or their searchable field name as defined by the metadata type (ex: creation_time).
         """
-        if product_names:
-            products = {self.get_product(name) for name in product_names}
-        else:
-            products = set(self.all_products())
+        products = (
+            {self.get_product(name) for name in product_names}
+            if product_names
+            else set(self.all_products())
+        )
         field_exprs = {}
         for product in products:
             # aren't these tied to the ODC_DATASET schema?

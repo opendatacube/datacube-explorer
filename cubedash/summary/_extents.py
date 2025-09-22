@@ -137,13 +137,11 @@ def get_dataset_srid_alchemy_expression(
         return None
 
     doc_projection = doc[_projection_doc_offset(md)]
-
-    if expects_eo3_metadata_type(md):
-        spatial_ref = doc[["crs"]].astext
-    else:
-        # Most have a spatial_reference field we can use directly.
-        # spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
-        spatial_ref = doc_projection["spatial_reference"].astext
+    spatial_ref = (
+        doc[["crs"]].astext
+        if expects_eo3_metadata_type(md)
+        else doc_projection["spatial_reference"].astext
+    )
 
     # When datasets have no CRS, optionally use this as default.
     # default_crs_expression = None
