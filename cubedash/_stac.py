@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
-from typing import Any, Union
+from typing import Any, TypeAlias
 
 import flask
 import pystac
@@ -45,7 +45,7 @@ DEFAULT_RETURN_FULL_ITEMS = True
 
 STAC_VERSION = "1.1.0"
 
-ItemLike = Union[pystac.Item, dict]
+ItemLike: TypeAlias = pystac.Item | dict
 
 ############################
 #  Helpers
