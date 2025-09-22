@@ -1,11 +1,11 @@
 import functools
 import json
 import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, TypeAlias
+from typing import Optional, TypeAlias
 
 import fiona
 import structlog
@@ -376,12 +376,12 @@ class ProductArrival:
     dataset_count: int
 
     # A few dataset ids among the arrivals
-    sample_dataset_ids: List[uuid.UUID]
+    sample_dataset_ids: list[uuid.UUID]
 
 
 class RegionInfo:
     def __init__(
-        self, product: Product, known_regions: Optional[Dict[str, RegionSummary]]
+        self, product: Product, known_regions: Optional[dict[str, RegionSummary]]
     ) -> None:
         self.product = product
         self._known_regions = known_regions
