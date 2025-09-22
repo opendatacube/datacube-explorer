@@ -674,20 +674,20 @@ def _handle_search_request(
 
     feature_collection.extra_fields["links"].extend(
         (
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="GET",
-            ),
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="POST",
-            ),
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "GET",
+            },
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "POST",
+            },
         )
     )
     return feature_collection
@@ -860,7 +860,7 @@ def search_stac_items(
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    extra_properties = dict(links=[], numberReturned=len(returned))
+    extra_properties = {"links": [], "numberReturned": len(returned)}
     if include_total_count:
         count_matching = _model.STORE.get_count(
             product_names=product_names,
@@ -879,26 +879,28 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
-        next_link: dict[str, str | bool | dict] = dict(
-            rel="next", title="Next page of Items", type="application/geo+json"
-        )
+        next_link: dict[str, str | bool | dict] = {
+            "rel": "next",
+            "title": "Next page of Items",
+            "type": "application/geo+json",
+        }
         if use_post_request:
             next_link.update(
-                dict(
-                    method="POST",
-                    merge=True,
+                {
+                    "method": "POST",
+                    "merge": True,
                     # Unlike GET requests, we can tell them to repeat their same request args
                     # themselves.
                     #
                     # Same URL:
-                    href=flask.request.url,
+                    "href": flask.request.url,
                     # ... with a new offset.
-                    body=dict(_o=offset + limit),
-                )
+                    "body": {"_o": offset + limit},
+                }
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link.update(dict(method="GET", href=get_next_url(offset + limit)))
+            next_link.update({"method": "GET", "href": get_next_url(offset + limit)})
 
         result.extra_fields["links"].append(next_link)
 
@@ -928,20 +930,22 @@ def search_stac_collections(
         list(_model.STORE.search_collections(time=time, bbox=bbox, q=q))
     )
 
-    extra_properties: dict[str, int | list[dict]] = dict(
-        links=[], numberReturned=len(returned), numberMatched=count_matching
-    )
+    extra_properties: dict[str, int | list[dict]] = {
+        "links": [],
+        "numberReturned": len(returned),
+        "numberMatched": count_matching,
+    }
 
     result = [as_stac_collection(r) for r in returned]
 
     if there_are_more:
-        next_link = dict(
-            rel="next",
-            title="Next page of Collections",
-            type="application/json",
-            method="GET",
-            href=get_next_url(offset + limit),
-        )
+        next_link = {
+            "rel": "next",
+            "title": "Next page of Collections",
+            "type": "application/json",
+            "method": "GET",
+            "href": get_next_url(offset + limit),
+        }
         assert not isinstance(extra_properties["links"], int)
         extra_properties["links"].append(next_link)
 
@@ -970,10 +974,10 @@ def _geojson_stac_response(doc: STACObject | ItemCollection) -> flask.Response:
 
 def stac_endpoint_information() -> dict:
     config = current_app.config
-    o = dict(
-        id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
-    )
+    o = {
+        "id": config.get("STAC_ENDPOINT_ID", "odc-explorer"),
+        "title": config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
+    }
     description = config.get(
         "STAC_ENDPOINT_DESCRIPTION",
         "Configure stac endpoint information in your Explorer `settings.env.py` file",
@@ -1063,14 +1067,14 @@ def root():
             ),
         ]
     )
-    c.extra_fields = dict(conformsTo=CONFORMANCE_CLASSES)
+    c.extra_fields = {"conformsTo": CONFORMANCE_CLASSES}
 
     return _stac_response(c)
 
 
 @bp.route("/conformance")
 def conformance():
-    return _utils.as_json(dict(conformsTo=CONFORMANCE_CLASSES))
+    return _utils.as_json({"conformsTo": CONFORMANCE_CLASSES})
 
 
 @bp.route("/search", methods=["GET", "POST"])
@@ -1105,14 +1109,14 @@ def collections():
     if request.args:
         results, props = _handle_collection_search(request.args)
     else:
-        props = dict(links=[])
+        props = {"links": []}
         results = [as_stac_collection(r) for r in _model.STORE.search_collections()]
 
     props["links"].extend(
         [
-            dict(rel="self", type="application/json", href=request.url),
-            dict(rel="root", type="application/json", href=url_for(".root")),
-            dict(rel="parent", type="application/json", href=url_for(".root")),
+            {"rel": "self", "type": "application/json", "href": request.url},
+            {"rel": "root", "type": "application/json", "href": url_for(".root")},
+            {"rel": "parent", "type": "application/json", "href": url_for(".root")},
         ]
     )
 

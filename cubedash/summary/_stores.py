@@ -164,18 +164,18 @@ class DatasetItem:
         return self.geometry.__geo_interface__
 
     def as_geojson(self) -> dict:
-        return dict(
-            id=self.dataset_id,
-            type="Feature",
-            bbox=self.bbox,
-            geometry=self.geom_geojson,
-            properties={
+        return {
+            "id": self.dataset_id,
+            "type": "Feature",
+            "bbox": self.bbox,
+            "geometry": self.geom_geojson,
+            "properties": {
                 "datetime": self.center_time,
                 "odc:product": self.product_name,
                 "odc:processing_datetime": self.creation_time,
                 "cubedash:region_code": self.region_code,
             },
-        )
+        }
 
 
 @dataclass
@@ -586,7 +586,7 @@ class SummaryStore:
         linked_product_names = [] if rv is None else rv[0]
         _LOG.info(
             "product.links.{kind}",
-            extra=dict(kind=kind),
+            extra={"kind": kind},
             product=product.name,
             linked=linked_product_names,
             sample_percentage=round(sample_percentage, 2),
@@ -791,15 +791,15 @@ class SummaryStore:
         ]
         time_earliest = None if product.duration is None else product.duration[0]
         time_latest = None if product.duration is None else product.duration[1]
-        fields = dict(
-            dataset_count=product.dataset_count,
-            time_earliest=time_earliest,
-            time_latest=time_latest,
-            source_product_refs=source_product_ids,
-            derived_product_refs=derived_product_ids,
-            fixed_metadata=product.fixed_metadata,
-            last_refresh=product.last_refresh_time,
-        )
+        fields = {
+            "dataset_count": product.dataset_count,
+            "time_earliest": time_earliest,
+            "time_latest": time_latest,
+            "source_product_refs": source_product_ids,
+            "derived_product_refs": derived_product_ids,
+            "fixed_metadata": product.fixed_metadata,
+            "last_refresh": product.last_refresh_time,
+        }
 
         row = self.e_index.upsert_product_record(product.name, fields)
         self._product.cache_clear()  # type: ignore[attr-defined]
@@ -828,20 +828,20 @@ class SummaryStore:
             product_id,
             start_day,
             period,
-            dict(
-                dataset_count=summary.dataset_count,
-                timeline_dataset_start_days=day_values,
-                timeline_dataset_counts=day_counts,
-                regions=region_values,
-                region_dataset_counts=region_counts,
-                timeline_period=summary.timeline_period,
-                time_earliest=begin.astimezone(self.grouping_timezone)
+            {
+                "dataset_count": summary.dataset_count,
+                "timeline_dataset_start_days": day_values,
+                "timeline_dataset_counts": day_counts,
+                "regions": region_values,
+                "region_dataset_counts": region_counts,
+                "timeline_period": summary.timeline_period,
+                "time_earliest": begin.astimezone(self.grouping_timezone)
                 if begin
                 else None,
-                time_latest=end.astimezone(self.grouping_timezone) if end else None,
-                size_bytes=summary.size_bytes,
-                product_refresh_time=summary.product_refresh_time,
-                footprint_geometry=(
+                "time_latest": end.astimezone(self.grouping_timezone) if end else None,
+                "size_bytes": summary.size_bytes,
+                "product_refresh_time": summary.product_refresh_time,
+                "footprint_geometry": (
                     None
                     if summary.footprint_geometry is None
                     or summary.footprint_srid is None
@@ -849,11 +849,11 @@ class SummaryStore:
                         summary.footprint_geometry, summary.footprint_srid
                     )
                 ),
-                footprint_count=summary.footprint_count,
-                generation_time=func.now(),
-                newest_dataset_creation_time=summary.newest_dataset_creation_time,
-                crses=summary.crses,
-            ),
+                "footprint_count": summary.footprint_count,
+                "generation_time": func.now(),
+                "newest_dataset_creation_time": summary.newest_dataset_creation_time,
+                "crses": summary.crses,
+            },
         ).fetchone()
         if ret is not None:
             summary.summary_gen_time = ret[0]

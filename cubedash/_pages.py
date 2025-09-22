@@ -240,7 +240,7 @@ def search_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(index, d) for d in datasets])
+            {"datasets": [build_dataset_info(index, d) for d in datasets]}
         )
 
     # For display on the page (and future searches).
@@ -360,7 +360,7 @@ def region_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            {"datasets": [build_dataset_info(_model.STORE.index, d) for d in datasets]}
         )
 
     return utils.render(
@@ -409,7 +409,7 @@ def region_geojson(
 
     geojson = region_summary.footprint_geojson
     geojson["properties"].update(
-        dict(product_name=product_name, year_month_day_filter=[year, month, day])
+        {"product_name": product_name, "year_month_day_filter": [year, month, day]}
     )
     return utils.as_geojson(
         geojson, downloadable_filename_prefix=utils.api_path_as_filename_prefix()
@@ -475,25 +475,27 @@ def inject_globals():
         if product_summary:
             last_updated = product_summary.last_successful_summary_time
 
-    return dict(
+    return {
         # Only the known, summarised products in groups.
-        grouped_products=_get_grouped_products(),
+        "grouped_products": _get_grouped_products(),
         # All products in the datacube, summarised or not.
-        datacube_products=list(_model.STORE.all_products()),
-        hidden_product_list=current_app.config.get(
+        "datacube_products": list(_model.STORE.all_products()),
+        "hidden_product_list": current_app.config.get(
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
-        datacube_metadata_types=list(_model.STORE.all_metadata_types()),
-        current_time=datetime.now(timezone.utc),
-        datacube_version=datacube.__version__,
-        app_version=cubedash.__version__,
-        grouping_timezone=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
-        last_updated_time=last_updated,
-        explorer_instance_title=current_app.config.get("CUBEDASH_INSTANCE_TITLE")
+        "datacube_metadata_types": list(_model.STORE.all_metadata_types()),
+        "current_time": datetime.now(timezone.utc),
+        "datacube_version": datacube.__version__,
+        "app_version": cubedash.__version__,
+        "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
+        "last_updated_time": last_updated,
+        "explorer_instance_title": current_app.config.get("CUBEDASH_INSTANCE_TITLE")
         or current_app.config.get("STAC_ENDPOINT_TITLE", ""),
-        explorer_sister_instances=current_app.config.get("CUBEDASH_SISTER_SITES", None),
-        breadcrumb=_get_breadcrumbs(request.path, request.script_root),
-    )
+        "explorer_sister_instances": current_app.config.get(
+            "CUBEDASH_SISTER_SITES", None
+        ),
+        "breadcrumb": _get_breadcrumbs(request.path, request.script_root),
+    }
 
 
 HREF = str
