@@ -51,19 +51,21 @@ def dump_datasets(
         dataset_sample_count = int(total_count * dataset_sample_fraction)
     msg = f"Dumping {dataset_sample_count} of {total_count} {product_name} (with their sources)"
 
-    with click.progressbar(
-        _sample(dc.index.datasets.search(**query), dataset_sample_count),
-        length=dataset_sample_count,
-        label=msg,
-    ) as progress:
-        with gzip.open(path, "w") as f:
-            yaml.safe_dump_all(
-                (_get_dumpable_doc(dc, d, include_sources) for d in progress),
-                stream=f,
-                encoding="utf-8",
-                indent=4,
-                Dumper=yaml.CDumper,
-            )
+    with (
+        click.progressbar(
+            _sample(dc.index.datasets.search(**query), dataset_sample_count),
+            length=dataset_sample_count,
+            label=msg,
+        ) as progress,
+        gzip.open(path, "w") as f,
+    ):
+        yaml.safe_dump_all(
+            (_get_dumpable_doc(dc, d, include_sources) for d in progress),
+            stream=f,
+            encoding="utf-8",
+            indent=4,
+            Dumper=yaml.CDumper,
+        )
 
 
 def _get_dumpable_doc(
