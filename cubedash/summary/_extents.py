@@ -82,7 +82,7 @@ def get_dataset_extent_alchemy_expression(
             ),
             get_dataset_srid_alchemy_expression(e_index, md, default_crs),
         )
-    valid_data_offset = projection_offset + ["valid_data"]
+    valid_data_offset = [*projection_offset, "valid_data"]
     return func.ST_SetSRID(
         case(
             # If we have valid_data offset, use it as the polygon.
@@ -103,12 +103,12 @@ def _projection_doc_offset(md):
 
 
 def _bounds_polygon(doc, projection_offset):
-    geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+    geo_ref_points_offset = [*projection_offset, "geo_ref_points"]
     return func.ST_MakePolygon(
         func.ST_MakeLine(
             postgres.array(
                 tuple(
-                    _gis_point(doc, geo_ref_points_offset + [key])
+                    _gis_point(doc, [*geo_ref_points_offset, key])
                     for key in ("ll", "ul", "ur", "lr", "ll")
                 )
             )
@@ -168,8 +168,8 @@ def get_dataset_srid_alchemy_expression(
 
 def _gis_point(doc, doc_offset):
     return func.ST_MakePoint(
-        doc[doc_offset + ["x"]].astext.cast(postgres.DOUBLE_PRECISION),
-        doc[doc_offset + ["y"]].astext.cast(postgres.DOUBLE_PRECISION),
+        doc[[*doc_offset, "x"]].astext.cast(postgres.DOUBLE_PRECISION),
+        doc[[*doc_offset, "y"]].astext.cast(postgres.DOUBLE_PRECISION),
     )
 
 
@@ -488,11 +488,11 @@ class GridRegionInfo(RegionInfo):
         doc = jsonb_doc_expression(product.metadata_type)
         projection_offset = _projection_doc_offset(product.metadata_type)
         # Calculate tile refs
-        geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+        geo_ref_points_offset = [*projection_offset, "geo_ref_points"]
         center_point = func.ST_Centroid(
             func.ST_Collect(
-                _gis_point(doc, geo_ref_points_offset + ["ll"]),
-                _gis_point(doc, geo_ref_points_offset + ["ur"]),
+                _gis_point(doc, [*geo_ref_points_offset, "ll"]),
+                _gis_point(doc, [*geo_ref_points_offset, "ur"]),
             )
         )
 

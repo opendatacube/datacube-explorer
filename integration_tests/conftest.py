@@ -81,8 +81,8 @@ def run_generate(clirunner):
     ):
         args = args or ("--all",)
         if not multi_processed:
-            args = ("-j", "1") + tuple(args)
-        args = ("-tz", grouping_time_zone) + tuple(args)
+            args = ("-j", "1", *tuple(args))
+        args = ("-tz", grouping_time_zone, *tuple(args))
         return clirunner(generate.cli, args, expect_success=expect_success)
 
     return do
