@@ -333,12 +333,12 @@ def region_page(
         )
     )
 
-    same_region_products = list(
+    same_region_products = [
         product.name
         for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
-    )
+    ]
 
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
