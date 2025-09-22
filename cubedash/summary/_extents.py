@@ -5,7 +5,7 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Optional, TypeAlias
+from typing import TypeAlias
 
 import fiona
 import structlog
@@ -381,7 +381,7 @@ class ProductArrival:
 
 class RegionInfo:
     def __init__(
-        self, product: Product, known_regions: Optional[dict[str, RegionSummary]]
+        self, product: Product, known_regions: dict[str, RegionSummary] | None
     ) -> None:
         self.product = product
         self._known_regions = known_regions
