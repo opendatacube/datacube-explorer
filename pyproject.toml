@@ -189,6 +189,7 @@ select = [
     "S",  # flake8-bandit
     "T10", # flake8-debugger
     "UP",  # pyupgrade
+    "W",  # pycodestyle warnings
 ]
 ignore = [
     "S101", # Many asserts are used for type checking.
