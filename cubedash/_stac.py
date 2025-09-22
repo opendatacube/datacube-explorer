@@ -76,9 +76,7 @@ def dissoc_in(d: dict, key: str):
         if dicttoolz.get_in(split, d) is not None:
             outer = dicttoolz.get_in(split[:-1], d)
             return dicttoolz.update_in(
-                d=d,
-                keys=split[:-1],
-                func=lambda _: dicttoolz.dissoc(outer, split[-1]),  # noqa: B023
+                d=d, keys=split[:-1], func=lambda _: dicttoolz.dissoc(outer, split[-1])
             )
     return dicttoolz.dissoc(d, key)
 
@@ -807,11 +805,7 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
                 filtered_item = dicttoolz.update_in(
                     d=filtered_item,
                     keys=inc.split("."),
-                    func=lambda _: _get_property(
-                        inc,
-                        item,
-                        no_default=True,  # noqa: B023
-                    ),
+                    func=lambda _: _get_property(inc, item, no_default=True),
                 )
             except KeyError:
                 continue
