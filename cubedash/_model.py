@@ -92,11 +92,8 @@ def create_app(test_config=None) -> flask.Flask:
 
     cache.init_app(app=app, config=app.config)
 
-    cors = (  # noqa: F841
+    if app.config.get("CUBEDASH_CORS", True):
         CORS(app, resources=[r"/stac/*", r"/api/*"])
-        if app.config.get("CUBEDASH_CORS", True)
-        else None
-    )
 
     app.config.setdefault("CUBEDASH_THEME", "odc")
     themer = Themer(app)
