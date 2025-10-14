@@ -635,7 +635,7 @@ def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
 def test_stac_collection(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
-    all of our tests data.
+    all of our test data.
 
     This test expects the database timezone to be UTC
     """
@@ -649,16 +649,7 @@ def test_stac_collection(stac_client: FlaskClient):
         raise AssertionError("high_tide_comp_20p not found in collection list")
 
     scene_collection = get_collection(stac_client, collection_href, validate=False)
-    # HACK: Heavy handed bypass for pytest approximate
-    import copy
-
-    proxy_scene_collection = copy.deepcopy(scene_collection)
-    proxy_scene_collection["extent"]["spatial"]["bbox"][0] = [
-        pytest.approx(p, abs=0.001)
-        for p in scene_collection["extent"]["spatial"]["bbox"][0]
-    ]
-
-    assert proxy_scene_collection == {
+    assert scene_collection == {
         "stac_version": "1.1.0",
         "type": "Collection",
         "id": "high_tide_comp_20p",
@@ -669,10 +660,10 @@ def test_stac_collection(stac_client: FlaskClient):
             "spatial": {
                 "bbox": [
                     [
-                        pytest.approx(112.223_058_990_767_51, abs=0.001),
-                        pytest.approx(-43.829_196_553_065_4, abs=0.001),
-                        pytest.approx(153.985_054_424_922_77, abs=0.001),
-                        pytest.approx(-10.237_104_814_250_783, abs=0.001),
+                        112.223_058_990_767_51,
+                        -43.829_196_553_065_4,
+                        153.985_054_424_922_77,
+                        -10.237_104_814_250_783,
                     ]
                 ]
             },
@@ -697,7 +688,6 @@ def test_stac_collection(stac_client: FlaskClient):
         # "providers": [], // FIXME: These disappeared somewhere along the way ?
         # "stac_extensions": [],
     }
-    # HACK: Make things float again
     assert_collection(scene_collection)
     item_links = None
     for link in scene_collection["links"]:
