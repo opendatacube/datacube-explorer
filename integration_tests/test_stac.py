@@ -280,8 +280,7 @@ def _iter_items_across_pages(client: FlaskClient, url: str | None) -> Generator[
 
 
 def assert_stac_extensions(doc: dict) -> None:
-    stac_extensions = doc.get("stac_extensions", ())
-    for extension_name in stac_extensions:
+    for extension_name in doc.get("stac_extensions", ()):
         get_extension(extension_name).validate(doc)
 
 
