@@ -10,7 +10,6 @@ from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
 from urllib.parse import urlsplit
-from urllib.request import urlopen
 from zoneinfo import ZoneInfo
 
 import jsonschema
@@ -34,8 +33,6 @@ from integration_tests.asserts import (
     get_json,
     get_text_response,
 )
-
-ALLOW_INTERNET = True
 
 DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
@@ -132,18 +129,7 @@ def _web_reference(ref: str):
     _, netloc, offset, _, _, _ = urllib.parse.urlparse(ref)
     # We used `wget -r` to download the remote schemas locally.
     # It puts into hostname/path folders by default. E.g 'geojson.org/schema/Feature.json'
-    path = _SCHEMA_BASE / f"{netloc}{offset}"
-    if not path.exists():
-        if ALLOW_INTERNET:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(urlopen(ref).read())
-        else:
-            raise NoSuchResource(
-                f"No local copy exists of schema {ref!r}.\n"
-                "\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
-                f"\t(looked in {path})"
-            )
-    return read_document(path)
+    return read_document(_SCHEMA_BASE / f"{netloc}{offset}")
 
 
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
