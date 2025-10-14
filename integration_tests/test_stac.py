@@ -4,7 +4,7 @@ Tests that hit the stac api
 
 import urllib.parse
 import warnings
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Generator, Iterable
 from functools import lru_cache
 from pathlib import Path
@@ -46,10 +46,6 @@ OUR_PAGE_SIZE = 4
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
 # Can't import STAC_VERSION from cubedash._stac since that needs app context
 _STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{_stac.STAC_VERSION}"
-
-_SCHEMAS_BY_NAME = defaultdict(list)
-for schema_path in _SCHEMA_BASE.rglob("*.json"):
-    _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
 METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
@@ -155,18 +151,6 @@ def _local_reference(schema_location: Path, ref):
     relative_path = schema_location.parent.joinpath(ref)
     if relative_path.exists():
         return read_document(relative_path)
-
-    # This is a sloppy workaround.
-    # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
-    # paths in stac work. We fallback to matching based on filename.
-    similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
-    if similar_schemas:
-        if len(similar_schemas) > 1:
-            raise NotImplementedError(
-                f"cannot distinguish schema {ref!r} (within {schema_location}"
-            )
-        [presumed_schema] = similar_schemas
-        return read_document(presumed_schema)
     raise NoSuchResource(
         f"Schema reference not found: {ref!r} (within {schema_location})"
     )
