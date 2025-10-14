@@ -146,16 +146,6 @@ def _web_reference(ref: str):
     return read_document(path)
 
 
-# Allow schemas to reference other schemas in the same folder.
-def _local_reference(schema_location: Path, ref):
-    relative_path = schema_location.parent.joinpath(ref)
-    if relative_path.exists():
-        return read_document(relative_path)
-    raise NoSuchResource(
-        f"Schema reference not found: {ref!r} (within {schema_location})"
-    )
-
-
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
     if not schema_location.exists():
         raise NoSuchResource(f"No jsonschema file found at {schema_location}")
@@ -181,7 +171,9 @@ def load_schema_doc(schema: dict, location: str | Path) -> jsonschema.Draft7Vali
         parsed = urlsplit(uri)
         if parsed.scheme == "https" or parsed.scheme == "http":
             return Resource.from_contents(_web_reference(uri))
-        return Resource.from_contents(_local_reference(Path(location), uri))
+        return Resource.from_contents(
+            read_document(Path(location).parent.joinpath(uri))
+        )
 
     return jsonschema.Draft7Validator(
         schema,
