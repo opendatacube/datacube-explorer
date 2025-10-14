@@ -147,9 +147,6 @@ def _web_reference(ref: str):
 
 
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
-    if not schema_location.exists():
-        raise NoSuchResource(f"No jsonschema file found at {schema_location}")
-
     with schema_location.open("r") as s:
         try:
             schema = loads(s.read())
