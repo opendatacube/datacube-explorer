@@ -369,10 +369,10 @@ def validate_items(
     # ("already seen this dataset id")
     # So we perform this length check in the same method and afterwards.
     if expect_count is not None:
-        printable_product_counts = "\n\t".join(
-            f"{k}: {v}" for k, v in product_counts.items()
-        )
         if isinstance(expect_count, int):
+            printable_product_counts = "\n\t".join(
+                f"{k}: {v}" for k, v in product_counts.items()
+            )
             assert i == expect_count, (
                 f"Expected {expect_count} items.\nGot:\n\t{printable_product_counts}"
             )
