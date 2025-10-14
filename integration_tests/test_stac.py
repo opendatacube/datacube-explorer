@@ -2,7 +2,6 @@
 Tests that hit the stac api
 """
 
-import json
 import urllib.parse
 import warnings
 from collections import Counter, defaultdict
@@ -20,6 +19,7 @@ from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
+from orjson import JSONDecodeError, dumps, loads
 from referencing import Registry, Resource
 from referencing.exceptions import NoSuchResource
 from referencing.typing import URI
@@ -178,8 +178,8 @@ def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
 
     with schema_location.open("r") as s:
         try:
-            schema = json.load(s)
-        except json.JSONDecodeError as e:
+            schema = loads(s.read())
+        except JSONDecodeError as e:
             # Some in the repo have not been valid before...
             raise RuntimeError(
                 f"Invalid json, cannot load schema {schema_location}"
@@ -1062,7 +1062,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     """
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["wofs_albers"],
                 # Does it intersect the region 16_-33 geojson?
@@ -1108,7 +1108,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
     """
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 # Roughly the whole region of Australia.
                 "intersects": {
@@ -1227,7 +1227,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test POST, product, and assets
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["wofs_albers"],
                 "bbox": [114, -33, 153, -10],
@@ -1249,7 +1249,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test high_tide_comp_20p with POST and assets
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["high_tide_comp_20p"],
                 "bbox": [114, -40, 147, -32],
@@ -1295,7 +1295,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"include": ["properties.dea:dataset_maturity"]}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1330,7 +1330,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"exclude": ["properties.title"]}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1398,7 +1398,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "asc"}]
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1422,7 +1422,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "desc"}]
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1488,7 +1488,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     }
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1534,7 +1534,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     # test lang mismatch
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1551,7 +1551,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     # filter-crs invalid value
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1572,7 +1572,7 @@ def test_stac_query_extension_errors(stac_client: FlaskClient) -> None:
     query = {"cloud_cover": {"lt": 1}}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
