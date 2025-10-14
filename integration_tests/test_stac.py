@@ -223,10 +223,6 @@ _ITEM_COLLECTION_SCHEMA = load_validator(
 
 @lru_cache
 def get_extension(url: str) -> jsonschema.Draft7Validator:
-    if not is_url(url):
-        raise ValueError(
-            f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
-        )
     return load_schema_doc(_web_reference(url), location=url)
 
 
