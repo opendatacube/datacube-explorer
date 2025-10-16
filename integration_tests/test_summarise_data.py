@@ -345,7 +345,7 @@ def test_sampled_product_fixed_fields(summary_store: SummaryStore) -> None:
     product = summary_store.index.products.get_by_name("ga_ls9c_ard_3")
     assert product is not None
     fixed_fields = summary_store._find_product_fixed_metadata(
-        product, sample_datasets_size=5
+        product, sample_datasets_size=6
     )
 
     assert fixed_fields == {
