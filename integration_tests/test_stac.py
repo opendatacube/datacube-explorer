@@ -804,7 +804,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
         },
         "properties": {
             "created": "2017-07-11T01:32:22Z",
-            "datetime": "2017-05-02T00:29:01Z",
+            "datetime": "2017-05-02T00:29:01.538441Z",
             "odc:file_format": "GeoTIFF",
             "odc:product_family": "nbar",
             "start_datetime": "2017-05-02T00:28:48Z",
@@ -816,6 +816,8 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
             "landsat:wrs_row": 82,
             "cubedash:region_code": "96_82",
             "proj:code": "EPSG:4326",
+            "proj:shape": [8508, 9846],
+            "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
         },
         "assets": {
             "1": {
@@ -826,6 +828,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B1.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "2": {
                 "title": "2",
@@ -835,6 +840,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B2.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "3": {
                 "title": "3",
@@ -844,6 +852,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B3.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "4": {
                 "title": "4",
@@ -853,6 +864,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B4.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "5": {
                 "title": "5",
@@ -862,6 +876,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B5.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "7": {
                 "title": "7",
@@ -871,6 +888,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "href": dataset_url(
                     "product/LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502_B7.tif"
                 ),
+                "proj:code": "EPSG:4326",
+                "proj:shape": [8508, 9846],
+                "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
             },
             "thumbnail:full": {
                 "title": "Thumbnail image",
