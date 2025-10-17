@@ -513,7 +513,12 @@ def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any
         # default is ascending
         return {"field": val.strip(), "direction": "asc"}
 
-    arg_work = arg.split(",") if isinstance(arg, str) else arg
+    if isinstance(arg, str):
+        arg_work = (
+            json.loads(arg.replace("'", '"')) if arg.startswith("[") else arg.split(",")
+        )
+    else:
+        arg_work = arg
     if len(arg_work):
         if isinstance(arg_work[0], str):
             return [_format(a) for a in arg_work]  # type: ignore[arg-type]
@@ -643,8 +648,8 @@ def _handle_search_request(
             _o=next_offset,
             _full=full_information,
             intersects=intersects,
-            fields=fields,
-            sortby=sortby,
+            fields=str(fields) if fields else None,
+            sortby=str(sortby) if sortby else None,
             # so that it doesn't get named 'filter_lang'
             **{"filter-lang": filter_lang},
             filter=filter_cql,
