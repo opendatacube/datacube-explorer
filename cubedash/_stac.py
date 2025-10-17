@@ -648,7 +648,7 @@ def _handle_search_request(
             _o=next_offset,
             _full=full_information,
             intersects=intersects,
-            fields=str(fields) if fields else None,
+            fields=fields,
             sortby=str(sortby) if sortby else None,
             # so that it doesn't get named 'filter_lang'
             **{"filter-lang": filter_lang},
