@@ -106,7 +106,7 @@ def test_update_type(type_yaml_from_raw) -> None:
     )
 
     assert 'Updated "eo_plus"\n' in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -119,7 +119,7 @@ def test_update_product(product_yaml_from_raw) -> None:
     assert 'Updated "dsm1sv10"\n' in result.output
     assert 'Updated "ga_s2a_ard_nbar_granule"\n' in result.output
     assert 'Updated "s2a_ard_granule"\n' in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -132,4 +132,4 @@ def test_update_dataset(dataset_yaml_from_raw) -> None:
         "Updated 290eca22-defc-43b4-998f-eaf56e1fd211\n1 successful, 0 failed\n"
         in result.output
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
