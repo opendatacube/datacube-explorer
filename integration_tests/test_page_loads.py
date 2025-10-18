@@ -850,7 +850,7 @@ def test_show_summary_cli_missing_product(clirunner, client: FlaskClient) -> Non
     res = clirunner(show.cli, ["does_not_exist"], expect_success=False)
     output = res.output
     assert output.strip().startswith("Unknown product 'does_not_exist'")
-    assert res.exit_code != 0
+    assert res.exit_code != 0, f"Output: {res.output}"
 
 
 def test_show_summary_cli_unsummarised_product(
@@ -864,7 +864,7 @@ def test_show_summary_cli_unsummarised_product(
     res = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
     out = res.output.strip()
     assert out.startswith("No info: product 'ga_ls8c_ard_3' has not been summarised")
-    assert res.exit_code != 0
+    assert res.exit_code != 0, f"Output: {res.output}"
 
 
 def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
