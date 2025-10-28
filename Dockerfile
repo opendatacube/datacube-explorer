@@ -61,6 +61,7 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 COPY --link . /build/
 
 ARG ENVIRONMENT=deployment
+ARG EXPLORER_VERSION=""
 # The deployment image should not have binaries that aid an attacker to get their
 # rootkit in place, and uv downloads over the network. There is no conditional
 # copy in Docker, so truncate the uv binaries to 0 bytes to render them harmless
@@ -68,6 +69,7 @@ ARG ENVIRONMENT=deployment
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
+    && export SETUPTOOLS_SCM_PRETEND_VERSION="${EXPLORER_VERSION}" \
     && uv sync --frozen $EXTRAS --no-editable \
     && ([ "$ENVIRONMENT" != "deployment" ] || \
         (chmod 644 /usr/local/bin/uv* && \
@@ -75,6 +77,9 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
          echo "" > /usr/local/bin/uvx))
 
 FROM base
+
+ARG EXPLORER_VERSION=""
+LABEL org.opencontainers.image.version=${EXPLORER_VERSION}
 
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
