@@ -34,6 +34,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get and log unstable git tag
+        run: |
+          set -ex
+          UNSTABLE_TAG=$(git describe --tags | sed 's#\-g#+g#')
+          echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
@@ -42,6 +48,8 @@ jobs:
         with:
           file: Dockerfile
           context: .
+          build-args: |
+            EXPLORER_VERSION=${{ env.UNSTABLE_TAG }}
           tags: ${{ env.DOCKER_IMAGE }}
           load: true
           cache-from: type=gha

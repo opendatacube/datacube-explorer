@@ -5,6 +5,7 @@ services:
       context: .
       args:
         ENVIRONMENT: deployment
+        EXPLORER_VERSION: ${EXPLORER_VERSION}
     image: ghcr.io/opendatacube/explorer:tests
     ports:
       - "80:8080"
