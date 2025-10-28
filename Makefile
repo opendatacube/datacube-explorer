@@ -70,25 +70,30 @@ clean:  ## Clean all working/temporary files
 
 # DOCKER STUFF
 up: ## Start server using Docker
-	docker compose up --quiet-pull
+	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	  docker compose up --quiet-pull
 
 up-d: ## Start server using Docker in background
-	docker compose up -d --wait --quiet-pull
+	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	  docker compose up -d --wait --quiet-pull
 
 build: ## Build the dev Docker image
-	docker compose build
+	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	  docker compose build
 
 docker-clean: ## Get rid of the local docker env and DB
 	docker compose down
 
 # These rules pass --file to avoid loading docker-compose.override.yml.
 build-prod: ## Build the prod Docker image
-	docker compose \
+	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	  docker compose \
 		--file docker-compose.yml \
 		build
 
 up-prod: ## Start using the prod Docker image
-	docker compose \
+	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	  docker compose \
 		--file docker-compose.yml \
 		up -d --wait --quiet-pull
 
