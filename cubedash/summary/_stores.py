@@ -22,7 +22,6 @@ import dateutil.parser
 import structlog
 from cachetools.func import ttl_cache
 from dateutil import tz
-from eodatasets3.stac import MAPPING_EO3_TO_STAC
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
@@ -45,6 +44,7 @@ except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube.drivers.postgres._fields import PgDocField
 from datacube.index import Index
+from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from datacube.model import Dataset, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
@@ -977,7 +977,7 @@ class SummaryStore:
                 field_exprs[value.name] = expr
 
         # add stac property names as well
-        for k, v in MAPPING_EO3_TO_STAC.items():
+        for k, v in EO3_TO_STAC_RENAMES.items():
             try:
                 # map to same alchemy expression as the eo3 counterparts
                 field_exprs[v] = field_exprs[k]
