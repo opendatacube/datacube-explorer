@@ -2,6 +2,8 @@
 Common global filters and util methods.
 """
 
+from __future__ import annotations
+
 import csv
 import difflib
 import functools
@@ -11,13 +13,13 @@ import re
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
+from datetime import tzinfo as e_tzinfo
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin, urlparse
 
 import eodatasets3.serialise
 import flask
-import numpy as np
 import shapely.geometry
 import shapely.validation
 import structlog
@@ -27,26 +29,21 @@ from datacube.index.eo3 import is_doc_eo3
 from datacube.index.fields import Field
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.utils import InvalidDocException, jsonify_document
-from dateutil import tz
-from dateutil.relativedelta import relativedelta
 from eodatasets3 import serialise
 from flask_themer import render_template
-from odc.geo import geom
+from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
-from orjson import orjson
+from orjson.orjson import OPT_INDENT_2, dumps
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
 from sqlalchemy import TIMESTAMP, func
 from werkzeug.datastructures import MultiDict
 
-_TARGET_CRS = "EPSG:4326"
+if TYPE_CHECKING:
+    from cubedash._model import ProductWithSummary
 
-DEFAULT_PLATFORM_END_DATE = {
-    "LANDSAT_8": datetime.now() - relativedelta(months=2),
-    "LANDSAT_7": datetime.now() - relativedelta(months=2),
-    "LANDSAT_5": datetime(2011, 11, 30),
-}
+_TARGET_CRS = "EPSG:4326"
 
 NEAR_ANTIMERIDIAN = shape(
     {
@@ -80,11 +77,7 @@ def infer_crs(crs_str: str) -> str | None:
             ).get_matching_blocks()
         )
 
-    sorted_closest_wkt = sorted(
-        plausible_list,
-        key=chars_in_common,
-        reverse=False,
-    )
+    sorted_closest_wkt = sorted(plausible_list, key=chars_in_common, reverse=False)
 
     if len(sorted_closest_wkt) == 0:
         return None
@@ -109,7 +102,7 @@ def expects_eo3_metadata_type(md: MetadataType) -> bool:
 
 
 def jsonb_doc_expression(md: MetadataType):
-    return md.dataset_fields["metadata_doc"].alchemy_expression
+    return md.dataset_fields["metadata_doc"].alchemy_expression  # type: ignore[attr-defined]
 
 
 def datetime_expression(md_type: MetadataType):
@@ -134,11 +127,10 @@ def datetime_expression(md_type: MetadataType):
 
     # On older EO datasets, there's only a time range, so we take the center time.
     # (This matches the logic in ODC's Dataset.center_time)
-    time = md_type.dataset_fields["time"].alchemy_expression
-    center_time = (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
+    time = md_type.dataset_fields["time"].alchemy_expression  # type: ignore[attr-defined]
+    return (func.lower(time) + (func.upper(time) - func.lower(time)) / 2).label(
         "center_time"
     )
-    return center_time
 
 
 def get_dataset_file_offsets(dataset: Dataset) -> dict[str, str]:
@@ -166,8 +158,8 @@ def as_resolved_remote_url(location: str | None, offset: str) -> str:
     Convert a dataset location and file offset to a full remote URL.
     """
     return as_external_url(
-        urljoin(location, offset),
-        (flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2")),
+        urljoin(location or "", offset),
+        flask.current_app.config.get("CUBEDASH_DATA_S3_REGION", "ap-southeast-2"),
         location is None,
     )
 
@@ -183,8 +175,8 @@ def as_external_url(
     >>> as_external_url('s3://some-data/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml', "ap-southeast-2")
     'https://some-data.s3.ap-southeast-2.amazonaws.com/L2/S2A_OPER_MSI_ARD__A030100_T56LNQ_N02.09/ARD-METADATA.yaml'
     >>> # Other URLs are left as-is
-    >>> unconvertable_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
-    >>> unconvertable_url == as_external_url(unconvertable_url)
+    >>> unconvertible_url = 'file:///g/data/xu18/ga_ls8c_ard_3-1-0_095073_2019-03-22_final.odc-metadata.yaml'
+    >>> unconvertible_url == as_external_url(unconvertible_url)
     True
     >>> as_external_url('some/relative/path.txt')
     'some/relative/path.txt'
@@ -240,7 +232,7 @@ def group_field_names(request: dict) -> dict:
 
 
 def get_sorted_product_summaries(
-    product_summaries: dict, key: Callable[[Any], Any]
+    product_summaries: Sequence[ProductWithSummary], key: Callable[[Any], Any]
 ) -> list[tuple[str, list]]:
     return sorted(
         (
@@ -262,10 +254,13 @@ def query_to_search(request: MultiDict, product: Product) -> dict:
     # (the intention is "between these two numbers")
     for key in args:
         value = args[key]
-        if isinstance(value, Range):
-            if value.begin is not None and value.end is not None:
-                if value.end < value.begin:
-                    args[key] = Range(value.end, value.begin)
+        if (
+            isinstance(value, Range)
+            and value.begin is not None
+            and value.end is not None
+            and value.end < value.begin
+        ):
+            args[key] = Range(value.end, value.begin)
 
     return args
 
@@ -360,10 +355,10 @@ def _next_month(date: datetime) -> datetime:
 
 
 def as_time_range(
-    year: int | None = None,
+    year: int | None,
     month: int | None = None,
     day: int | None = None,
-    tzinfo=None,
+    tzinfo: e_tzinfo | None = None,
 ) -> Range | None:
     """
     >>> as_time_range(2018)
@@ -372,8 +367,6 @@ def as_time_range(
     Range(begin=datetime.datetime(2018, 2, 1, 0, 0), end=datetime.datetime(2018, 3, 1, 0, 0))
     >>> as_time_range(2018, 8, 3)
     Range(begin=datetime.datetime(2018, 8, 3, 0, 0), end=datetime.datetime(2018, 8, 4, 0, 0))
-    >>> # Unbounded:
-    >>> as_time_range()
     """
     if year and month and day:
         start = datetime(year, month, day)
@@ -390,7 +383,7 @@ def as_time_range(
     return Range(start.replace(tzinfo=tzinfo), end.replace(tzinfo=tzinfo))
 
 
-def _parse_url_query_args(request: MultiDict, product: Product) -> dict:
+def _parse_url_query_args(request: MultiDict, product: Product) -> dict[str, Any]:
     """
     Convert search arguments from url query args into datacube index search parameters
     """
@@ -420,10 +413,10 @@ def _parse_url_query_args(request: MultiDict, product: Product) -> dict:
 
 def _field_parser(field: Field):
     if field.type_name.endswith("-range"):
-        field = field.lower
+        field = field.lower  # type: ignore[attr-defined]
 
     try:
-        parser = field.parse_value
+        parser = field.parse_value  # type: ignore[attr-defined]
     except AttributeError:
         parser = _unchanged_value
     return parser
@@ -435,7 +428,7 @@ def _unchanged_value(a):
 
 def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
     return d
 
 
@@ -505,10 +498,8 @@ def as_json(
     prefer_formatted = "text/html" in flask.request.headers.get("Accept", ())
 
     response = flask.Response(
-        orjson.dumps(
-            o,
-            option=orjson.OPT_INDENT_2 if prefer_formatted else 0,
-            default=_json_fallback,
+        dumps(
+            o, option=OPT_INDENT_2 if prefer_formatted else 0, default=_json_fallback
         ),
         content_type=content_type,
     )
@@ -525,12 +516,12 @@ def _json_fallback(o, *args, **kwargs):
 
     # I think orjson swallows our nicer error message?
     raise TypeError(
-        f"Cannot (yet) serialise object type to json: "
+        "Cannot (yet) serialise object type to json: "
         f"{o.__module__}.{type(o).__qualname__}"
     )
 
 
-def as_geojson(o, downloadable_filename_prefix: str | None = None):
+def as_geojson(o, downloadable_filename_prefix: str | None):
     """
     Serialise the given object into a GeoJSON flask response.
 
@@ -547,7 +538,7 @@ def as_geojson(o, downloadable_filename_prefix: str | None = None):
 def common_uri_prefix(uris: Sequence[str]):
     """
     This is like `os.path.commonpath()`, but always expects URL paths.
-    (ie. forward slashes in all environments, and wont strip double slashes '//')
+    (i.e. forward slashes in all environments, and will not strip double slashes '//')
 
     >>> common_uri_prefix(['file:///a/thing-1.txt'])
     'file:///a/thing-1.txt'
@@ -601,37 +592,16 @@ def suggest_download_filename(
 
 
 def as_yaml(
-    *o, content_type="text/yaml", downloadable_filename_prefix: str | None = None
-):
+    *o, content_type: str = "text/yaml", downloadable_filename_prefix: str | None = None
+) -> flask.Response:
     """
     Return a yaml response.
 
     Multiple args will return a multi-doc yaml file.
     """
     stream = StringIO()
-
-    # TODO: remove the two functions once eo-datasets fix is released
-    def _represent_float(self, value):
-        text = np.format_float_scientific(value)
-        return self.represent_scalar("tag:yaml.org,2002:float", text)
-
-    def dumps_yaml(yml, stream, *docs) -> None:
-        """Dump yaml through a stream, using the default serialisation settings."""
-        return yml.dump_all(docs, stream=stream)
-
-    yml = eodatasets3.serialise._init_yaml()
-
-    # extend from eodatasets3 serialise
-    yml.representer.add_representer(float, _represent_float)
-    dumps_yaml(yml, stream, *o)
-    # ENDTODO
-
-    # TODO: once upstream is fixed, use the below line only
-    # eodatasets3.serialise.dumps_yaml(stream, *o)
-    response = flask.Response(
-        stream.getvalue(),
-        content_type=content_type,
-    )
+    eodatasets3.serialise.dumps_yaml(stream, *o)
+    response = flask.Response(stream.getvalue(), content_type=content_type)
     if downloadable_filename_prefix:
         suggest_download_filename(response, downloadable_filename_prefix, ".yaml")
 
@@ -641,7 +611,7 @@ def as_yaml(
 _ALNUM_PATTERN = re.compile("[^0-9a-zA-Z]+")
 
 
-def only_alphanumeric(s: str):
+def only_alphanumeric(s: str) -> str:
     """
     Strip any chars that aren't simple alphanumeric.
 
@@ -665,19 +635,13 @@ def as_csv(
     cw.writerow(headers)
     cw.writerows(rows)
     response = flask.make_response(out.getvalue())
-    suggest_download_filename(
-        response,
-        filename_prefix,
-        ".csv",
-    )
+    suggest_download_filename(response, filename_prefix, ".csv")
     response.headers["Content-type"] = "text/csv"
     return response
 
 
 def prepare_dataset_formatting(
-    dataset: Dataset,
-    include_source_url=False,
-    include_locations=False,
+    dataset: Dataset, include_source_url=False, include_locations=False
 ) -> CommentedMap:
     """
     Try to format a raw Dataset document for readability.
@@ -694,19 +658,17 @@ def prepare_dataset_formatting(
         doc = eodatasets3.serialise.prepare_formatting(doc)
         if include_source_url:
             doc.yaml_set_comment_before_after_key(
-                "$schema",
-                before=f"url: {flask.request.url}",
+                "$schema", before=f"url: {flask.request.url}"
             )
         # Strip EO-legacy fields.
         undo_eo3_compatibility(doc)
         return doc
-    else:
-        return prepare_document_formatting(
-            doc,
-            # Label old-style datasets as old-style datasets.
-            doc_friendly_label="EO1 Dataset",
-            include_source_url=include_source_url,
-        )
+    return prepare_document_formatting(
+        doc,
+        # Label old-style datasets as old-style datasets.
+        doc_friendly_label="EO1 Dataset",
+        include_source_url=include_source_url,
+    )
 
 
 def prepare_document_formatting(
@@ -721,7 +683,7 @@ def prepare_document_formatting(
     """
 
     def get_property_priority(ordered_properties: list, keyval):
-        key, val = keyval
+        key, _ = keyval
         if key not in ordered_properties:
             return 999
         return ordered_properties.index(key)
@@ -770,8 +732,7 @@ def prepare_document_formatting(
     if header_comments:
         # Add comments above the first key of the document.
         ordered_metadata.yaml_set_comment_before_after_key(
-            next(iter(metadata_doc.keys())),
-            before="\n".join(header_comments),
+            next(iter(metadata_doc.keys())), before="\n".join(header_comments)
         )
     return ordered_metadata
 
@@ -791,7 +752,7 @@ def api_path_as_filename_prefix():
     (the suffix is added by the response)
     """
     stem = flask.request.path.split(".")[0]
-    api, kind, *period = stem.strip("/").split("/")
+    _, kind, *period = stem.strip("/").split("/")
     return "-".join([*period, kind])
 
 
@@ -894,10 +855,9 @@ def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
         )
         # A zero distance may be used to “tidy” a polygon.
         clean = ds_geom.buffer(0.0)
-        assert clean.geom_type in (
-            "Polygon",
-            "MultiPolygon",
-        ), f"got {clean.geom_type} for cleaned {ds.id}"
+        assert clean.geom_type in ("Polygon", "MultiPolygon"), (
+            f"got {clean.geom_type} for cleaned {ds.id}"
+        )
         assert clean.is_valid
         return clean, False
 
@@ -908,8 +868,11 @@ def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
     return ds_geom, True
 
 
-def bbox_as_geom(dataset):
+def bbox_as_geom(dataset: Dataset) -> Geometry | None:
     """Get dataset bounds as to Geometry object projected to target CRS"""
     if dataset.crs is None:
         return None
-    return geom.box(*dataset.bounds, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))
+    bounds = dataset.bounds
+    if bounds is None:
+        return None
+    return geom.box(*bounds.bbox, crs=dataset.crs).to_crs(CRS(_TARGET_CRS))

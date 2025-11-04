@@ -6,6 +6,7 @@ import gzip
 import random
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import click
 import yaml
@@ -50,28 +51,33 @@ def dump_datasets(
         dataset_sample_count = int(total_count * dataset_sample_fraction)
     msg = f"Dumping {dataset_sample_count} of {total_count} {product_name} (with their sources)"
 
-    with click.progressbar(
-        _sample(dc.index.datasets.search(**query), dataset_sample_count),
-        length=dataset_sample_count,
-        label=msg,
-    ) as progress:
-        with gzip.open(path, "w") as f:
-            yaml.safe_dump_all(
-                (_get_dumpable_doc(dc, d, include_sources) for d in progress),
-                stream=f,
-                encoding="utf-8",
-                indent=4,
-                Dumper=yaml.CDumper,
-            )
+    with (
+        click.progressbar(
+            _sample(dc.index.datasets.search(**query), dataset_sample_count),
+            length=dataset_sample_count,
+            label=msg,
+        ) as progress,
+        gzip.open(path, "w") as f,
+    ):
+        yaml.safe_dump_all(
+            (_get_dumpable_doc(dc, d, include_sources) for d in progress),
+            stream=f,
+            encoding="utf-8",
+            indent=4,
+            Dumper=yaml.CDumper,
+        )
 
 
-def _get_dumpable_doc(dc: Datacube, d: Dataset, include_sources=True):
+def _get_dumpable_doc(
+    dc: Datacube, d: Dataset, include_sources: bool = True
+) -> dict[str, Any]:
     if include_sources:
-        return dc.index.datasets.get(d.id, include_sources=include_sources).metadata_doc
-    else:
-        # Empty doc means "there are no sources", so we can load it easily.
-        d.metadata.sources = {}
-        return d.metadata_doc
+        dataset = dc.index.datasets.get(d.id, include_sources=include_sources)
+        assert dataset is not None
+        return dataset.metadata_doc
+    # Empty doc means "there are no sources", so we can load it easily.
+    d.metadata.sources = {}
+    return d.metadata_doc
 
 
 TEST_DATA_DIR = Path(__file__).parent / "data"

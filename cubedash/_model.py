@@ -4,6 +4,7 @@ import time
 from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TypeAlias
 
 import flask
 import sentry_sdk
@@ -40,9 +41,7 @@ if os.getenv("SENTRY_DSN"):
             if os.getenv("SENTRY_ENV_TAG")
             else "dev-explorer"
         ),
-        integrations=[
-            FlaskIntegration(),
-        ],
+        integrations=[FlaskIntegration()],
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         # We recommend adjusting this value in production.
@@ -88,19 +87,13 @@ def create_app(test_config=None) -> flask.Flask:
 
     # Global defaults
     app.config.from_mapping(
-        dict(
-            CUBEDASH_DEFAULT_API_LIMIT=500,
-            CUBEDASH_HARD_API_LIMIT=4000,
-        )
+        {"CUBEDASH_DEFAULT_API_LIMIT": 500, "CUBEDASH_HARD_API_LIMIT": 4000}
     )
 
     cache.init_app(app=app, config=app.config)
 
-    cors = (  # noqa: F841
+    if app.config.get("CUBEDASH_CORS", True):
         CORS(app, resources=[r"/stac/*", r"/api/*"])
-        if app.config.get("CUBEDASH_CORS", True)
-        else None
-    )
 
     app.config.setdefault("CUBEDASH_THEME", "odc")
     themer = Themer(app)
@@ -123,12 +116,7 @@ def create_app(test_config=None) -> flask.Flask:
     @app.errorhandler(HTTPException)
     def handle_exception(e: HTTPException):
         return (
-            utils.render(
-                "message.html",
-                title=e.code,
-                message=e.description,
-                e=e,
-            ),
+            utils.render("message.html", title=e.code, message=e.description, e=e),
             e.code,
         )
 
@@ -138,8 +126,8 @@ def create_app(test_config=None) -> flask.Flask:
             GunicornInternalPrometheusMetrics,
         )
 
-        metrics = GunicornInternalPrometheusMetrics(app, group_by="endpoint")
-        _LOG.info("Prometheus metrics enabled : {metrics}", extra=dict(metrics=metrics))
+        GunicornInternalPrometheusMetrics(app, group_by="endpoint")
+        _LOG.info("Prometheus metrics enabled")
 
     # Add server timings to http headers.
     if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
@@ -176,16 +164,13 @@ _LOG = structlog.stdlib.get_logger()
 
 @cache.memoize(timeout=60)
 def get_time_summary(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None = None
 ) -> TimePeriodOverview | None:
     return STORE.get(product_name, year, month, day)
 
 
 @cache.memoize(timeout=60)
-def get_time_summary_all_products() -> dict[tuple[str, int, int], int]:
+def get_time_summary_all_products() -> dict[tuple[str, int | None, int | None], int]:
     return STORE.get_all_dataset_counts()
 
 
@@ -193,7 +178,7 @@ def get_product_summary(product_name: str) -> ProductSummary | None:
     return STORE.get_product_summary(product_name)
 
 
-ProductWithSummary = tuple[Product, ProductSummary | None]
+ProductWithSummary: TypeAlias = tuple[Product, ProductSummary | None]
 
 
 @cache.memoize(timeout=120)
@@ -222,10 +207,7 @@ def get_products_with_summaries() -> list[ProductWithSummary]:
 
 @cache.memoize(timeout=60)
 def get_footprint_geojson(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> dict | None:
     period = get_time_summary(product_name, year, month, day)
     if period is None:
@@ -235,23 +217,20 @@ def get_footprint_geojson(
     if not footprint:
         return None
 
-    return dict(
-        type="Feature",
-        geometry=footprint.__geo_interface__,
-        properties=dict(
-            dataset_count=period.footprint_count,
-            product_name=product_name,
-            time_spec=[year, month, day],
-        ),
-    )
+    return {
+        "type": "Feature",
+        "geometry": footprint.__geo_interface__,
+        "properties": {
+            "dataset_count": period.footprint_count,
+            "product_name": product_name,
+            "time_spec": [year, month, day],
+        },
+    }
 
 
 @cache.memoize(timeout=60)
 def get_regions_geojson(
-    product_name: str,
-    year: int | None = None,
-    month: int | None = None,
-    day: int | None = None,
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> dict | None:
     product = STORE.get_product(product_name)
 
@@ -270,8 +249,6 @@ def get_regions_geojson(
 
     start = time.time()
     region_counts = period.region_dataset_counts
-    if region_counts is None:
-        return None
 
     # If all datasets have no region name, don't bother showing regions.
     #

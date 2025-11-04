@@ -1,15 +1,14 @@
 import operator
 import time
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pytest
 from datacube.model import Range
-from dateutil import tz
 from shapely import geometry as geo
 
 from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._stores import GenerateResult, ProductSummary
+from cubedash.summary._stores import GenerateResult, ProductSummary, default_timezone
 
 METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
 PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]
@@ -21,11 +20,11 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 def _overview(
     product_name: str = "test_product",
-    year: int = None,
-    month: int = None,
-    day: int = None,
-):
-    orig = TimePeriodOverview(
+    year: int | None = None,
+    month: int | None = None,
+    day: int | None = None,
+) -> TimePeriodOverview:
+    return TimePeriodOverview(
         product_name=product_name,
         year=year,
         month=month,
@@ -33,17 +32,17 @@ def _overview(
         dataset_count=4,
         timeline_dataset_counts=Counter(
             [
-                datetime(2017, 1, 2, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 3, tzinfo=tz.tzutc()),
-                datetime(2017, 1, 1, tzinfo=tz.tzutc()),
+                datetime(2017, 1, 2, tzinfo=timezone.utc),
+                datetime(2017, 1, 3, tzinfo=timezone.utc),
+                datetime(2017, 1, 3, tzinfo=timezone.utc),
+                datetime(2017, 1, 1, tzinfo=timezone.utc),
             ]
         ),
         region_dataset_counts=Counter(["1_2", "1_2", "3_4", "4_5"]),
         timeline_period="day",
         time_range=Range(
-            datetime(2017, 1, 2, tzinfo=tz.tzutc()),
-            datetime(2017, 2, 3, tzinfo=tz.tzutc()),
+            datetime(2017, 1, 2, tzinfo=timezone.utc),
+            datetime(2017, 2, 3, tzinfo=timezone.utc),
         ),
         footprint_geometry=geo.Polygon(
             [
@@ -59,25 +58,29 @@ def _overview(
         ),
         footprint_crs="EPSG:3577",
         footprint_count=3,
-        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=tz.tzutc()),
+        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=timezone.utc),
         crses={"epsg:1234"},
         size_bytes=123_400_000,
-        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=tz.tzutc()),
+        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=timezone.utc),
     )
-    return orig
 
 
 def test_add_period_list() -> None:
-    total = TimePeriodOverview.add_periods([])
+    product_refresh_time = datetime(2024, 10, 17, tzinfo=timezone.utc)
+    total = TimePeriodOverview.add_periods("test_product", product_refresh_time, [])
     assert total.dataset_count == 0
 
     # the application of footprint_tolerance 1000.0 in _create_unified_footprint causes the geometries
     # and therefore their areas to diverge. Not sure why this wasn't an issue before?
-    joined = TimePeriodOverview.add_periods([_overview(), _overview(), total], 0.0)
-    assert joined.dataset_count == _overview().dataset_count * 2
-    assert _overview().footprint_geometry.area == pytest.approx(
-        joined.footprint_geometry.area
+    joined = TimePeriodOverview.add_periods(
+        "test_product", product_refresh_time, [_overview(), _overview(), total], 0.0
     )
+    assert joined.dataset_count == _overview().dataset_count * 2
+    geometry = _overview().footprint_geometry
+    assert geometry is not None
+    joined_geometry = joined.footprint_geometry
+    assert joined_geometry is not None
+    assert geometry.area == pytest.approx(joined_geometry.area)
 
     assert sum(joined.region_dataset_counts.values()) == joined.dataset_count
     assert sum(joined.timeline_dataset_counts.values()) == joined.dataset_count
@@ -100,27 +103,33 @@ def test_add_no_periods(summary_store: SummaryStore) -> None:
     """
     result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.CREATED
+    assert summary is not None
     assert summary.dataset_count == 0
-    assert summary_store.get("ga_ls8c_level1_3", 2015, 7, 4).dataset_count == 0
+    dataset = summary_store.get("ga_ls8c_level1_3", 2015, 7, 4)
+    assert dataset is not None
+    assert dataset.dataset_count == 0
 
     result, summary = summary_store.refresh("ga_ls8c_level1_3")
     assert result == GenerateResult.NO_CHANGES
+    assert summary is not None
     assert summary.dataset_count == 0
 
-    assert summary_store.get("ga_ls8c_level1_3").dataset_count == 0
+    dataset = summary_store.get("ga_ls8c_level1_3")
+    assert dataset is not None
+    assert dataset.dataset_count == 0
     assert summary_store.get("ga_ls8c_level1_3", 2015, 7, None) is None
 
 
-def test_month_iteration() -> None:
+def test_month_iteration(fix_utc_timezone) -> None:
     def assert_month_iteration(
         start: datetime, end: datetime, expected_months: list[date]
     ) -> None:
         __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
 
         product = ProductSummary(
-            "test_product", 5, start, end, [], [], {}, datetime.now()
+            "test_product", 5, (start, end), [], [], {}, datetime.now()
         )
-        got_months = list(product.iter_months())
+        got_months = list(product.iter_months(default_timezone))
         assert got_months == expected_months, "Incorrect set of iterated months"
 
     # Within same year
@@ -139,12 +148,7 @@ def test_month_iteration() -> None:
     assert_month_iteration(
         datetime(2003, 11, 2),
         datetime(2004, 2, 2),
-        [
-            date(2003, 11, 1),
-            date(2003, 12, 1),
-            date(2004, 1, 1),
-            date(2004, 2, 1),
-        ],
+        [date(2003, 11, 1), date(2003, 12, 1), date(2004, 1, 1), date(2004, 2, 1)],
     )
     # Within same month
     assert_month_iteration(
@@ -184,8 +188,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
         ProductSummary(
             product_name,
             4321,
-            datetime(2017, 1, 1),
-            datetime(2017, 4, 1),
+            (datetime(2017, 1, 1), datetime(2017, 4, 1)),
             [],
             [],
             {},
@@ -210,18 +213,16 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     assert sum(loaded.region_dataset_counts.values()) == 4, (
         "Region dataset counts don't match total count"
     )
-    assert sorted(loaded.region_dataset_counts.keys()) == [
-        "1_2",
-        "3_4",
-        "4_5",
-    ], "Incorrect set of regions"
+    assert sorted(loaded.region_dataset_counts.keys()) == ["1_2", "3_4", "4_5"], (
+        "Incorrect set of regions"
+    )
     assert o.footprint_crs == loaded.footprint_crs
     assert loaded.footprint_crs == "EPSG:3577"
     assert loaded.footprint_srid == 3577
     assert loaded.footprint_geometry.area == pytest.approx(o.footprint_geometry.area)
 
     o.dataset_count = 4321
-    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc())
+    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc)
     time.sleep(1)
     summary_store._put(o)
     assert o.summary_gen_time != original_gen_time
@@ -229,7 +230,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     loaded = summary_store.get(product_name, 2017, None, None)
     assert loaded.dataset_count == 4321
     assert loaded.newest_dataset_creation_time == datetime(
-        2018, 2, 2, 2, 2, 2, tzinfo=tz.tzutc()
+        2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc
     )
     assert loaded.summary_gen_time != original_gen_time, (
         "An update should update the generation time"
@@ -252,7 +253,7 @@ def test_generate_raises_error(run_generate, empty_client) -> None:
     """
     result = run_generate("fake_product", expect_success=False)
     assert result.exit_code != 0, (
-        f"Command should return an error when unknown products are specified. "
+        "Command should return an error when unknown products are specified. "
         f"Output: {result.output}"
     )
     assert "fake_product" in result.output

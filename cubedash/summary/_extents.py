@@ -1,32 +1,27 @@
 import functools
 import json
 import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, TypeAlias
+from typing import TypeAlias
 
 import fiona
 import structlog
+from datacube.drivers.postgis._fields import NativeField as PgisNativeField
 from datacube.drivers.postgis._fields import PgDocField as PgisDocField
 from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
+from datacube.drivers.postgres._fields import NativeField as PgresNativeField
 from datacube.drivers.postgres._fields import PgDocField as PgresDocField
 from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
 from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
-from sqlalchemy import (
-    BigInteger,
-    String,
-    case,
-    cast,
-    func,
-    null,
-)
+from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.sql.elements import ClauseElement, Label
+from sqlalchemy.sql.elements import Label
 from sqlalchemy.types import TIMESTAMP
 from typing_extensions import override
 
@@ -87,35 +82,33 @@ def get_dataset_extent_alchemy_expression(
             ),
             get_dataset_srid_alchemy_expression(e_index, md, default_crs),
         )
-    else:
-        valid_data_offset = projection_offset + ["valid_data"]
-        return func.ST_SetSRID(
-            case(
-                # If we have valid_data offset, use it as the polygon.
-                (
-                    doc[valid_data_offset].is_not(None),
-                    func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
-                ),
-                # Otherwise construct a polygon from the four corner points.
-                else_=_bounds_polygon(doc, projection_offset),
+    valid_data_offset = [*projection_offset, "valid_data"]
+    return func.ST_SetSRID(
+        case(
+            # If we have valid_data offset, use it as the polygon.
+            (
+                doc[valid_data_offset].is_not(None),
+                func.ST_GeomFromGeoJSON(doc[valid_data_offset], type_=Geometry),
             ),
-            get_dataset_srid_alchemy_expression(e_index, md, default_crs),
-            type_=Geometry,
-        )
+            # Otherwise construct a polygon from the four corner points.
+            else_=_bounds_polygon(doc, projection_offset),
+        ),
+        get_dataset_srid_alchemy_expression(e_index, md, default_crs),
+        type_=Geometry,
+    )
 
 
 def _projection_doc_offset(md):
-    projection_offset = md.definition["dataset"]["grid_spatial"]
-    return projection_offset
+    return md.definition["dataset"]["grid_spatial"]
 
 
 def _bounds_polygon(doc, projection_offset):
-    geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+    geo_ref_points_offset = [*projection_offset, "geo_ref_points"]
     return func.ST_MakePolygon(
         func.ST_MakeLine(
             postgres.array(
                 tuple(
-                    _gis_point(doc, geo_ref_points_offset + [key])
+                    _gis_point(doc, [*geo_ref_points_offset, key])
                     for key in ("ll", "ul", "ur", "lr", "ll")
                 )
             )
@@ -127,7 +120,7 @@ def _bounds_polygon(doc, projection_offset):
 def _size_bytes_field(product: Product):
     md_fields = product.metadata_type.dataset_fields
     if "size_bytes" in md_fields:
-        return md_fields["size_bytes"].alchemy_expression
+        return md_fields["size_bytes"].alchemy_expression  # type: ignore[attr-defined]
 
     return jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
         BigInteger
@@ -144,47 +137,45 @@ def get_dataset_srid_alchemy_expression(
         return None
 
     doc_projection = doc[_projection_doc_offset(md)]
-
-    if expects_eo3_metadata_type(md):
-        spatial_ref = doc[["crs"]].astext
-    else:
-        # Most have a spatial_reference field we can use directly.
-        # spatial_ref = doc[projection_offset + ["spatial_reference"]].astext
-        spatial_ref = doc_projection["spatial_reference"].astext
+    spatial_ref = (
+        doc[["crs"]].astext
+        if expects_eo3_metadata_type(md)
+        else doc_projection["spatial_reference"].astext
+    )
 
     # When datasets have no CRS, optionally use this as default.
-    # default_crs_expression = None
-    if default_crs:
-        # can this be replaced with odc-geo logic?
-        if not default_crs.lower().startswith(
-            "epsg:"
-        ) and not default_crs.lower().startswith("esri:"):
-            # HACK: Change default CRS with inference
-            inferred_crs = infer_crs(default_crs)
-            if inferred_crs is None:
-                raise UnsupportedWKTProductCRSError(
-                    f"WKT Product CRSes are not currently well supported, and "
-                    f"we can't infer this product's one. "
-                    f"(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
-                    f"Got: {default_crs!r}"
-                )
-            default_crs = inferred_crs
+    # Can this be replaced with odc-geo logic?
+    if (
+        default_crs
+        and not default_crs.lower().startswith("epsg:")
+        and not default_crs.lower().startswith("esri:")
+    ):
+        # HACK: Change default CRS with inference
+        inferred_crs = infer_crs(default_crs)
+        if inferred_crs is None:
+            raise UnsupportedWKTProductCRSError(
+                "WKT Product CRSes are not currently well supported, and "
+                "we can't infer this product's one. "
+                "(Ideally use an auth-name format for CRS, such as 'EPSG:1234') "
+                f"Got: {default_crs!r}"
+            )
+        default_crs = inferred_crs
 
     return e_index.ds_srid_expression(spatial_ref, doc_projection, default_crs)
 
 
 def _gis_point(doc, doc_offset):
     return func.ST_MakePoint(
-        doc[doc_offset + ["x"]].astext.cast(postgres.DOUBLE_PRECISION),
-        doc[doc_offset + ["y"]].astext.cast(postgres.DOUBLE_PRECISION),
+        doc[[*doc_offset, "x"]].astext.cast(postgres.DOUBLE_PRECISION),
+        doc[[*doc_offset, "y"]].astext.cast(postgres.DOUBLE_PRECISION),
     )
 
 
 def refresh_spatial_extents(
     e_index: ExplorerIndex,
     product: Product,
-    clean_up_deleted: bool = False,
-    assume_after_date: datetime | None = None,
+    clean_up_deleted: bool,
+    assume_after_date: datetime | None,
 ) -> int:
     """
     Update the spatial extents to match any changes upstream in ODC.
@@ -197,27 +188,17 @@ def refresh_spatial_extents(
         return 0
     log = _LOG.bind(product_name=product.name, after_date=assume_after_date)
 
-    log.info(
-        "spatial_archival",
-    )
+    log.info("spatial_archival")
     # First, remove any archived datasets from our spatial table.
     changed = e_index.delete_datasets(product.id, assume_after_date)
 
-    log.info(
-        "spatial_archival.end",
-        change_count=changed,
-    )
+    log.info("spatial_archival.end", change_count=changed)
 
     # Forcing? Check every other dataset for removal, so we catch manually-deleted rows from the table.
     if clean_up_deleted:
-        log.warning(
-            "spatial_deletion_full_scan",
-        )
+        log.warning("spatial_deletion_full_scan")
         changed += e_index.delete_datasets(product.id, full=True)
-        log.info(
-            "spatial_deletion_scan.end",
-            change_count=changed,
-        )
+        log.info("spatial_deletion_scan.end", change_count=changed)
 
     # We'll update first, then insert new records.
     # -> We do it in this order so that inserted records aren't immediately updated.
@@ -233,41 +214,32 @@ def refresh_spatial_extents(
         log.warning("spatial_update.recreating_everything")
 
     # Update any changed datasets
-    log.info(
-        "spatial_upsert",
-        product_name=product.name,
-        after_date=assume_after_date,
-    )
+    log.info("spatial_upsert", product_name=product.name, after_date=assume_after_date)
 
     changed += e_index.upsert_datasets(product.id, column_values, assume_after_date)
     log.info("spatial_upsert.end", product_name=product.name, change_count=changed)
 
-    # If we changed data...
-    if changed:
-        # And it's a non-spatial product...
-        if (
-            get_dataset_extent_alchemy_expression(e_index, product.metadata_type)
-            is None
-        ):
-            # And it has WRS path/rows...
-            if "sat_path" in product.metadata_type.dataset_fields:
-                # We can synthesize the polygons!
-                log.info(
-                    "spatial_synthesizing",
+    # If we changed data, and it's a non-spatial product.
+    if (
+        changed
+        and get_dataset_extent_alchemy_expression(e_index, product.metadata_type)
+        is None
+    ):
+        # And it has WRS path/rows...
+        if "sat_path" in product.metadata_type.dataset_fields:
+            # We can synthesize the polygons!
+            log.info("spatial_synthesizing")
+            shapes = _get_path_row_shapes()
+            rows = [
+                row
+                for row in e_index.ds_search_returning(
+                    ("id", "sat_path", "sat_row"), args={"product": product.name}
                 )
-                shapes = _get_path_row_shapes()
-                rows = [
-                    row
-                    for row in e_index.ds_search_returning(
-                        ("id", "sat_path", "sat_row"), args={"product": product.name}
-                    )
-                    if row.sat_path.lower is not None
-                ]
-                if rows:
-                    e_index.synthesize_dataset_footprint(rows, shapes)
-            log.info(
-                "spatial_synthesizing.end",
-            )
+                if row.sat_path.lower is not None
+            ]
+            if rows:
+                e_index.synthesize_dataset_footprint(rows, shapes)
+        log.info("spatial_synthesizing.end")
 
     return changed
 
@@ -306,7 +278,7 @@ def _select_dataset_extent_columns(
         ),
         _region_code_field(product).label("region_code"),
         _size_bytes_field(product).label("size_bytes"),
-        _dataset_creation_expression(md_type).label("creation_time"),
+        _dataset_creation_expression_creation_time(md_type),
     ]
 
 
@@ -318,22 +290,25 @@ def _default_crs(product: Product) -> str | None:
     return storage.get("crs")
 
 
-def _dataset_creation_expression(md: MetadataType) -> ClauseElement:
+def _dataset_creation_expression_creation_time(md: MetadataType) -> Label:
     """SQLAlchemy expression for the creation (processing) time of a dataset"""
 
-    # Either there's a field called "created", or we fallback to the default "creation_dt' in metadata type.
-    created_field = md.dataset_fields.get("created")
-    if created_field is not None:
-        assert isinstance(created_field, PgDocField)
-        creation_expression = created_field.alchemy_expression
-    else:
-        creation_expression = md.dataset_fields.get("creation_time").alchemy_expression
+    # Either there's a field called "created", or we fall back to the default
+    # "creation_time' in metadata type.
+    created_field = md.dataset_fields.get("created") or md.dataset_fields.get(
+        "creation_time"
+    )
+    assert isinstance(created_field, PgDocField)
+    creation_expression = created_field.alchemy_expression
 
     # If they're missing a dataset-creation time, fall back to the time it was indexed.
+    indexed_time = md.dataset_fields.get("indexed_time")
+    assert isinstance(indexed_time, (PgresNativeField, PgisNativeField))
+    # FIXME: cast should not be required.
     return func.coalesce(
         cast(creation_expression, TIMESTAMP(timezone=True)),
-        md.dataset_fields.get("indexed_time").alchemy_expression,
-    )
+        indexed_time.alchemy_expression,
+    ).label("creation_time")
 
 
 def as_sql(expression, **params) -> str:
@@ -383,7 +358,7 @@ class RegionSummary:
             return None
         return {
             "type": "Feature",
-            "geometry": extent.__geo_interface__,
+            "geometry": extent.__geo_interface__,  # type: ignore[attr-defined]
             "properties": {"region_code": self.region_code, "count": self.count},
         }
 
@@ -398,12 +373,12 @@ class ProductArrival:
     dataset_count: int
 
     # A few dataset ids among the arrivals
-    sample_dataset_ids: List[uuid.UUID]
+    sample_dataset_ids: list[uuid.UUID]
 
 
 class RegionInfo:
     def __init__(
-        self, product: Product, known_regions: Optional[Dict[str, RegionSummary]]
+        self, product: Product, known_regions: dict[str, RegionSummary] | None
     ) -> None:
         self.product = product
         self._known_regions = known_regions
@@ -430,9 +405,9 @@ class RegionInfo:
         if region_code_field is not None:
             # Generic region info
             return RegionInfo(product, known_regions)
-        elif grid_spec is not None and grid_spec.tile_size:
+        if grid_spec is not None and grid_spec.tile_size:
             return GridRegionInfo(product, known_regions)
-        elif "sat_path" in product.metadata_type.dataset_fields:
+        if "sat_path" in product.metadata_type.dataset_fields:
             return SceneRegionInfo(product, known_regions)
 
         return None
@@ -510,11 +485,11 @@ class GridRegionInfo(RegionInfo):
         doc = jsonb_doc_expression(product.metadata_type)
         projection_offset = _projection_doc_offset(product.metadata_type)
         # Calculate tile refs
-        geo_ref_points_offset = projection_offset + ["geo_ref_points"]
+        geo_ref_points_offset = [*projection_offset, "geo_ref_points"]
         center_point = func.ST_Centroid(
             func.ST_Collect(
-                _gis_point(doc, geo_ref_points_offset + ["ll"]),
-                _gis_point(doc, geo_ref_points_offset + ["ur"]),
+                _gis_point(doc, [*geo_ref_points_offset, "ll"]),
+                _gis_point(doc, [*geo_ref_points_offset, "ur"]),
             )
         )
 
@@ -568,8 +543,7 @@ class SceneRegionInfo(RegionInfo):
         if "_" in region_code:
             x, y = _from_xy_region_code(region_code)
             return f"Path {x}, Row {y}"
-        else:
-            return f"Path {region_code}"
+        return f"Path {region_code}"
 
     @override
     def alchemy_expression(self):
@@ -582,16 +556,16 @@ class SceneRegionInfo(RegionInfo):
         return case(
             # Is this just one scene? Include it specifically
             (
-                row_field.lower.alchemy_expression
-                == row_field.greater.alchemy_expression,
+                row_field.lower.alchemy_expression  # type: ignore[attr-defined]
+                == row_field.greater.alchemy_expression,  # type: ignore[attr-defined]
                 func.concat(
-                    path_field.lower.alchemy_expression.cast(String),
+                    path_field.lower.alchemy_expression.cast(String),  # type: ignore[attr-defined]
                     "_",
-                    row_field.greater.alchemy_expression.cast(String),
+                    row_field.greater.alchemy_expression.cast(String),  # type: ignore[attr-defined]
                 ),
             ),
             # Otherwise it's a range of rows, so our region-code is the whole path.
-            else_=path_field.lower.alchemy_expression.cast(String),
+            else_=path_field.lower.alchemy_expression.cast(String),  # type: ignore[attr-defined]
         )
 
     @override
@@ -605,8 +579,7 @@ class SceneRegionInfo(RegionInfo):
         if row_range[0] == row_range[1]:
             return f"{path_range[0]}_{row_range[1]}"
         # Otherwise it's a range of rows, so we say the whole path.
-        else:
-            return f"{path_range[0]}"
+        return f"{path_range[0]}"
 
 
 def _region_code_field(product: Product):
@@ -620,13 +593,12 @@ def _region_code_field(product: Product):
     )
     if region_info is not None:
         return region_info.alchemy_expression()
-    else:
-        _LOG.debug(
-            "no_region_code",
-            product_name=product.name,
-            metadata_type_name=product.metadata_type.name,
-        )
-        return null()
+    _LOG.debug(
+        "no_region_code",
+        product_name=product.name,
+        metadata_type_name=product.metadata_type.name,
+    )
+    return null()
 
 
 # would be able to replace with index.datasets.search_returning except that there's no way for us to specify the

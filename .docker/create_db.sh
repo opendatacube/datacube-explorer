@@ -1,3 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-PGPASSWORD=${POSTGRES_PASSWORD} psql -h ${POSTGRES_HOSTNAME} -U ${POSTGRES_USER} -c 'create database opendatacube_test'
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOF
+  CREATE DATABASE opendatacube_test;
+EOF

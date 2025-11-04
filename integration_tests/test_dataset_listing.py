@@ -6,18 +6,18 @@ from datacube.index import Index
 from datacube.model import Range
 from werkzeug.datastructures import MultiDict
 
-from cubedash._utils import DEFAULT_PLATFORM_END_DATE, query_to_search
+from cubedash._utils import query_to_search
 
-METADATA_TYPES = [
-    "metadata/eo3_landsat_ard.odc-type.yaml",
-]
+DEFAULT_PLATFORM_END_DATE = {
+    "LANDSAT_5": datetime(2011, 11, 30),
+}
+
+METADATA_TYPES = ["metadata/eo3_landsat_ard.odc-type.yaml"]
 PRODUCTS = [
     "products/ard_ls5.odc-product.yaml",
     "products/ga_ls7e_ard_3.odc-product.yaml",
 ]
-DATASETS = [
-    "datasets/ga_ls7e_ard_3-sample.yaml",
-]
+DATASETS = ["datasets/ga_ls7e_ard_3-sample.yaml"]
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
@@ -30,6 +30,7 @@ def test_parse_query_args(odc_test_db: Datacube) -> None:
     """
 
     product = odc_test_db.index.products.get_by_name("ga_ls7e_ard_3")
+    assert product is not None
     res = query_to_search(
         MultiDict(
             (
@@ -44,9 +45,10 @@ def test_parse_query_args(odc_test_db: Datacube) -> None:
         product,
     )
 
-    assert res == dict(
-        time=Range(datetime(2017, 8, 8), datetime(2017, 8, 9)), gqa=Range(-3, 3)
-    )
+    assert res == {
+        "time": Range(datetime(2017, 8, 8), datetime(2017, 8, 9)),
+        "gqa": Range(-3, 3),
+    }
 
 
 @pytest.mark.skip(
@@ -62,14 +64,15 @@ def test_default_args(dea_index: Index) -> None:
     assert DEFAULT_PLATFORM_END_DATE["LANDSAT_5"] == datetime(2011, 11, 30)
 
     product = dea_index.products.get_by_name("ard_ls5")
+    assert product is not None
 
     res = query_to_search(MultiDict(()), product)
 
     # The last month of LANDSAT_5 for this product
     assert (
         res
-        == dict(
+        == {
             # time=Range(datetime(2011, 10, 30), datetime(2011, 11, 30)),
             # product=product.name
-        )
+        }
     )

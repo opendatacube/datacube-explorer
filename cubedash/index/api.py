@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -7,11 +7,11 @@ from uuid import UUID
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import Result, Row, Select
+from sqlalchemy import CursorResult, Result, Row, Select, inspect
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash.summary._schema import PleaseRefresh
+from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
 
 
 class EmptyDbError(Exception):
@@ -29,9 +29,18 @@ class ExplorerAbstractIndex(ABC):
         self.engine = index._db._engine  # type: ignore[attr-defined]
 
     # need to add an odc_index accessor
-    def execute_query(self, query):
+    def execute_query(self, query) -> list[Row]:
+        with self.engine.connect() as conn:
+            return conn.execute(query).fetchall()
+
+    def execute_query_scalar(self, query) -> Any:
+        with self.engine.connect() as conn:
+            return conn.execute(query).scalar()
+
+    def execute_ddl(self, query) -> int:
         with self.engine.begin() as conn:
-            return conn.execute(query)
+            results = conn.execute(query)
+            return results.rowcount
 
     def make_dataset(self, row):
         # pylint: disable=protected-access
@@ -42,8 +51,10 @@ class ExplorerAbstractIndex(ABC):
         fields: Iterable[str] | None = None,
         limit: int | None = None,
         order_by=None,
-        args={},
+        args=None,
     ):
+        if args is None:
+            args = {}
         # keeping since it's used in _extents without direct access to index but perhaps should remove
         return self.index.datasets.search_returning(
             field_names=fields, limit=limit, order_by=order_by, **args
@@ -88,7 +99,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def synthesize_dataset_footprint(
-        self, rows: list[tuple], shapes: dict
+        self, rows: Sequence[tuple], shapes: dict
     ) -> Result: ...
 
     @abstractmethod
@@ -130,18 +141,14 @@ class ExplorerAbstractIndex(ABC):
     def product_summary_cols(self, product_name: str) -> Row: ...
 
     @abstractmethod
-    def collection_cols(self) -> Select:
-        """Get all columns necessary for creating a Collection"""
-
-    @abstractmethod
     def collections_search_query(
         self,
         limit: int,
         offset: int,
-        name: str | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        q: list[str] | None = None,
+        name: str | None,
+        bbox: tuple[float, float, float, float] | None,
+        time: tuple[datetime, datetime] | None,
+        q: Sequence[str] | None,
     ) -> Result: ...
 
     @abstractmethod
@@ -150,10 +157,10 @@ class ExplorerAbstractIndex(ABC):
     ) -> tuple[int, datetime]: ...
 
     @abstractmethod
-    def upsert_product_regions(self, product_id: int) -> Result: ...
+    def upsert_product_regions(self, product_id: int) -> CursorResult: ...
 
     @abstractmethod
-    def delete_product_empty_regions(self, product_id: int) -> Result: ...
+    def delete_product_empty_regions(self, product_id: int) -> CursorResult: ...
 
     @abstractmethod
     def product_region_summary(self, product_id: int) -> Result: ...
@@ -167,7 +174,7 @@ class ExplorerAbstractIndex(ABC):
     def find_fixed_columns(
         self,
         field_values: dict,
-        candidate_fields: list[tuple[str, Field]],
+        candidate_fields: Sequence[tuple[str, Field]],
         sample_ids: Iterable[tuple],
     ) -> Result: ...
 
@@ -178,7 +185,7 @@ class ExplorerAbstractIndex(ABC):
 
     @abstractmethod
     def all_products_location_samples(
-        self, products: list[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int
     ) -> Result: ...
 
     @abstractmethod
@@ -186,26 +193,26 @@ class ExplorerAbstractIndex(ABC):
         self,
         product: Product,
         region_code: str,
-        time_range: Range,
+        time_range: Range | None,
         limit: int,
         offset: int = 0,
-    ) -> Generator[Dataset, None, None]: ...
+    ) -> Generator[Dataset]: ...
 
     @abstractmethod
     def products_by_region(
         self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
-    ) -> Generator[int, None, None]: ...
+    ) -> Generator[int]: ...
 
     @abstractmethod
     def spatial_select_query(
-        self, clauses: list[Label | ClauseElement], full: bool = False
+        self, clauses: Sequence[Label | ClauseElement], full: bool = False
     ) -> Select: ...
 
     @abstractmethod
     def select_spatial_stats(self) -> Result: ...
 
-    @abstractmethod
-    def schema_initialised(self) -> bool: ...
+    def schema_initialised(self) -> bool:
+        return inspect(self.engine).has_schema(CUBEDASH_SCHEMA)
 
     @abstractmethod
     def schema_compatible_info(
@@ -216,7 +223,7 @@ class ExplorerAbstractIndex(ABC):
     def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...
 
     @abstractmethod
-    def refresh_stats(self, concurrently: bool = False) -> None: ...
+    def refresh_stats(self, concurrently: bool) -> None: ...
 
     @abstractmethod
     def get_srid_name(self, srid: int) -> str | None: ...
@@ -246,7 +253,7 @@ class ExplorerAbstractIndex(ABC):
     ) -> ClauseElement: ...
 
     @abstractmethod
-    def sample_dataset(self, product_id: int, columns: list[Label]) -> Result: ...
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result: ...
 
     @abstractmethod
     def mapped_crses(self, product: Product, srid_expression: Label) -> Result: ...

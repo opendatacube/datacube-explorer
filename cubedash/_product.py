@@ -34,14 +34,14 @@ def storage_csv():
         rows=(
             (
                 product.name,
-                summary.dataset_count,
+                0 if summary is None else summary.dataset_count,
                 [
                     location.common_prefix
                     for location in (product_locations.get(product.name) or [])
                 ],
                 _utils.product_license(product),
                 url_for("product.raw_product_doc", name=product.name, _external=True),
-                summary.last_refresh_time,
+                "Never" if summary is None else summary.last_refresh_time,
                 product.metadata_type.name,
             )
             for product, summary in _model.get_products_with_summaries()
@@ -90,16 +90,12 @@ def product_redirect():
 
 @bp.route("/products")
 def products_page():
-    return utils.render(
-        "products.html",
-    )
+    return utils.render("products.html")
 
 
 @bp.route("/metadata-types")
 def metadata_types_page():
-    return utils.render(
-        "metadata-types.html",
-    )
+    return utils.render("metadata-types.html")
 
 
 @bp.route("/product/<name>.odc-product.yaml")
@@ -177,11 +173,7 @@ def raw_all_products_doc():
         )
     )
     # Add Explorer ID to the download filename if they have one.
-    utils.suggest_download_filename(
-        resp,
-        prefix="products",
-        suffix=".odc-product.yaml",
-    )
+    utils.suggest_download_filename(resp, prefix="products", suffix=".odc-product.yaml")
 
     return resp
 
@@ -198,18 +190,16 @@ def raw_all_metadata_types_doc():
                 ),
             )
             for type_ in _model.STORE.all_metadata_types()
-        ),
+        )
     )
     # Add Explorer ID to the download filename if they have one.
     utils.suggest_download_filename(
-        resp,
-        prefix="metadata-types",
-        suffix=".odc-type.yaml",
+        resp, prefix="metadata-types", suffix=".odc-type.yaml"
     )
     return resp
 
 
-def _iso8601_duration(tdelta: timedelta):
+def _iso8601_duration(tdelta: timedelta) -> str:
     """
     Format a timedelta as an iso8601 duration
 
@@ -239,7 +229,7 @@ def _iso8601_duration(tdelta: timedelta):
     if any(h_m_s):
         parts.append("T")
     if all_secs:
-        for val, name in zip(h_m_s, ["H", "M", "S"]):
+        for val, name in zip(h_m_s, ["H", "M", "S"], strict=True):
             if val:
                 parts.append(f"{val}{name}")
     else:

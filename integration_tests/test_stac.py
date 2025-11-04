@@ -2,24 +2,23 @@
 Tests that hit the stac api
 """
 
-import json
 import urllib.parse
 import warnings
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Generator, Iterable
 from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
 from urllib.parse import urlsplit
-from urllib.request import urlopen
+from zoneinfo import ZoneInfo
 
 import jsonschema
 import pytest
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
-from dateutil import tz
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
+from orjson import JSONDecodeError, dumps, loads
 from referencing import Registry, Resource
 from referencing.exceptions import NoSuchResource
 from referencing.typing import URI
@@ -35,9 +34,7 @@ from integration_tests.asserts import (
     get_text_response,
 )
 
-ALLOW_INTERNET = True
-
-DEFAULT_TZ = tz.gettz("Australia/Darwin")
+DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
 # Smaller values to ease testing.
 OUR_DATASET_LIMIT = 20
@@ -46,10 +43,6 @@ OUR_PAGE_SIZE = 4
 _SCHEMA_BASE = Path(__file__).parent / "schemas"
 # Can't import STAC_VERSION from cubedash._stac since that needs app context
 _STAC_SCHEMA_BASE = _SCHEMA_BASE / f"stac/{_stac.STAC_VERSION}"
-
-_SCHEMAS_BY_NAME = defaultdict(list)
-for schema_path in _SCHEMA_BASE.rglob("*.json"):
-    _SCHEMAS_BY_NAME[schema_path.name].append(schema_path)
 
 METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
@@ -133,53 +126,17 @@ def _web_reference(ref: str):
     """
     if not is_url(ref):
         raise NoSuchResource(f"Expected URL? Got {ref!r}")
-    (scheme, netloc, offset, params, query, fragment) = urllib.parse.urlparse(ref)
+    _, netloc, offset, _, _, _ = urllib.parse.urlparse(ref)
     # We used `wget -r` to download the remote schemas locally.
     # It puts into hostname/path folders by default. E.g 'geojson.org/schema/Feature.json'
-    path = _SCHEMA_BASE / f"{netloc}{offset}"
-    if not path.exists():
-        if ALLOW_INTERNET:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(urlopen(ref).read())
-        else:
-            raise NoSuchResource(
-                f"No local copy exists of schema {ref!r}.\n"
-                "\tPerhaps we need to add it to ./update.sh in the tests folder?\n"
-                f"\t(looked in {path})"
-            )
-    return read_document(path)
-
-
-# Allow schemas to reference other schemas in the same folder.
-def _local_reference(schema_location: Path, ref):
-    relative_path = schema_location.parent.joinpath(ref)
-    if relative_path.exists():
-        return read_document(relative_path)
-
-    # This is a sloppy workaround.
-    # Python jsonschema strips all parent-folder references ("../../"), so none of the relative
-    # paths in stac work. We fallback to matching based on filename.
-    similar_schemas = _SCHEMAS_BY_NAME.get(Path(ref).name)
-    if similar_schemas:
-        if len(similar_schemas) > 1:
-            raise NotImplementedError(
-                f"cannot distinguish schema {ref!r} (within {schema_location}"
-            )
-        [presumed_schema] = similar_schemas
-        return read_document(presumed_schema)
-    raise NoSuchResource(
-        f"Schema reference not found: {ref!r} (within {schema_location})"
-    )
+    return read_document(_SCHEMA_BASE / f"{netloc}{offset}")
 
 
 def load_validator(schema_location: Path) -> jsonschema.Draft7Validator:
-    if not schema_location.exists():
-        raise NoSuchResource(f"No jsonschema file found at {schema_location}")
-
     with schema_location.open("r") as s:
         try:
-            schema = json.load(s)
-        except json.JSONDecodeError as e:
+            schema = loads(s.read())
+        except JSONDecodeError as e:
             # Some in the repo have not been valid before...
             raise RuntimeError(
                 f"Invalid json, cannot load schema {schema_location}"
@@ -197,7 +154,9 @@ def load_schema_doc(schema: dict, location: str | Path) -> jsonschema.Draft7Vali
         parsed = urlsplit(uri)
         if parsed.scheme == "https" or parsed.scheme == "http":
             return Resource.from_contents(_web_reference(uri))
-        return Resource.from_contents(_local_reference(Path(location), uri))
+        return Resource.from_contents(
+            read_document(Path(location).parent.joinpath(uri))
+        )
 
     return jsonschema.Draft7Validator(
         schema,
@@ -223,10 +182,6 @@ _ITEM_COLLECTION_SCHEMA = load_validator(
 
 @lru_cache
 def get_extension(url: str) -> jsonschema.Draft7Validator:
-    if not is_url(url):
-        raise ValueError(
-            f"stac extensions are now expected to be URLs in 1.0.0. Got {url!r}"
-        )
     return load_schema_doc(_web_reference(url), location=url)
 
 
@@ -269,9 +224,7 @@ def _get_next_href(geojson: dict) -> str | None:
     return href
 
 
-def _iter_items_across_pages(
-    client: FlaskClient, url: str | None
-) -> Generator[dict, None, None]:
+def _iter_items_across_pages(client: FlaskClient, url: str | None) -> Generator[dict]:
     """
     Keep loading "next" pages and yield every Stac Item in order
     """
@@ -286,8 +239,7 @@ def _iter_items_across_pages(
 
 
 def assert_stac_extensions(doc: dict) -> None:
-    stac_extensions = doc.get("stac_extensions", ())
-    for extension_name in stac_extensions:
+    for extension_name in doc.get("stac_extensions", ()):
         get_extension(extension_name).validate(doc)
 
 
@@ -323,10 +275,9 @@ def validate_item(item: dict) -> None:
             assert shape.is_valid, (
                 f"Item has invalid geometry: {explain_validity(shape)}"
             )
-            assert shape.geom_type in (
-                "Polygon",
-                "MultiPolygon",
-            ), "Unexpected type of shape"
+            assert shape.geom_type in ("Polygon", "MultiPolygon"), (
+                "Unexpected type of shape"
+            )
 
     assert_stac_extensions(item)
 
@@ -372,10 +323,10 @@ def validate_items(
     # ("already seen this dataset id")
     # So we perform this length check in the same method and afterwards.
     if expect_count is not None:
-        printable_product_counts = "\n\t".join(
-            f"{k}: {v}" for k, v in product_counts.items()
-        )
         if isinstance(expect_count, int):
+            printable_product_counts = "\n\t".join(
+                f"{k}: {v}" for k, v in product_counts.items()
+            )
             assert i == expect_count, (
                 f"Expected {expect_count} items.\nGot:\n\t{printable_product_counts}"
             )
@@ -446,20 +397,20 @@ def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
     )
     validate_items(
         all_items,
-        expect_count=dict(
-            wofs_albers=11,
-            ls8_nbar_scene=7,
-            ls8_level1_scene=7,
-            ls8_nbart_scene=7,
-            ls8_pq_legacy_scene=7,
-            ls8_nbart_albers=7,
-            ls8_satellite_telemetry_data=6,
-            ls7_nbart_albers=4,
-            ls7_nbart_scene=4,
-            ls7_nbar_scene=4,
-            ls7_pq_legacy_scene=4,
-            ls7_level1_scene=4,
-        ),
+        expect_count={
+            "wofs_albers": 11,
+            "ls8_nbar_scene": 7,
+            "ls8_level1_scene": 7,
+            "ls8_nbart_scene": 7,
+            "ls8_pq_legacy_scene": 7,
+            "ls8_nbart_albers": 7,
+            "ls8_satellite_telemetry_data": 6,
+            "ls7_nbart_albers": 4,
+            "ls7_nbart_scene": 4,
+            "ls7_nbar_scene": 4,
+            "ls7_pq_legacy_scene": 4,
+            "ls7_level1_scene": 4,
+        },
     )
 
 
@@ -524,14 +475,8 @@ def test_returns_404s(stac_client: FlaskClient) -> None:
 @pytest.mark.parametrize(
     ("url", "redirect_to_url"),
     [
-        (
-            "/collections/ls7_nbar_scene",
-            "/stac/collections/ls7_nbar_scene",
-        ),
-        (
-            "/collections/ls7_nbar_scene/items",
-            "/stac/collections/ls7_nbar_scene/items",
-        ),
+        ("/collections/ls7_nbar_scene", "/stac/collections/ls7_nbar_scene"),
+        ("/collections/ls7_nbar_scene/items", "/stac/collections/ls7_nbar_scene/items"),
         (
             # Maintains extra query parameters in the redirect
             "/collections/ls7_nbar_scene/items"
@@ -580,11 +525,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
             "type": "application/json",
             "title": "Default ODC Explorer instance",
         },
-        {
-            "rel": "self",
-            "href": "http://localhost/stac",
-            "type": "application/json",
-        },
+        {"rel": "self", "href": "http://localhost/stac", "type": "application/json"},
         {
             "rel": "data",
             "href": "http://localhost/stac/collections",
@@ -613,12 +554,10 @@ def test_stac_links(stac_client: FlaskClient) -> None:
 
     found_collection_ids = set()
     for child_link in child_links:
-        product_name: str = child_link["title"]
-        href: str = child_link["href"]
+        product_name = child_link["title"]
+        href = child_link["href"]
         # ignore child links corresponding to catalogs
         if "catalogs" not in href:
-            print(f"Loading collection page for {product_name}: {href!r}")
-
             collection_data = get_collection(stac_client, href, validate=True)
             assert collection_data["id"] == product_name
             # TODO: assert items, properties, etc.
@@ -626,7 +565,7 @@ def test_stac_links(stac_client: FlaskClient) -> None:
             found_collection_ids.add(product_name)
 
     # We should have seen all products in the index
-    assert sorted(found_collection_ids) == sorted(tuple(expected_product_counts.keys()))
+    assert sorted(found_collection_ids) == sorted(expected_product_counts.keys())
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -650,7 +589,9 @@ def test_arrivals_page_validation(stac_client: FlaskClient) -> None:
 def test_stac_collection(stac_client: FlaskClient):
     """
     Follow the links to the "high_tide_comp_20p" collection and ensure it includes
-    all of our tests data.
+    all of our test data.
+
+    This test expects the database timezone to be UTC
     """
 
     collections = get_json(stac_client, "/stac")
@@ -662,16 +603,7 @@ def test_stac_collection(stac_client: FlaskClient):
         raise AssertionError("high_tide_comp_20p not found in collection list")
 
     scene_collection = get_collection(stac_client, collection_href, validate=False)
-    # HACK: Heavy handed bypass for pytest approximate
-    import copy
-
-    proxy_scene_collection = copy.deepcopy(scene_collection)
-    proxy_scene_collection["extent"]["spatial"]["bbox"][0] = [
-        pytest.approx(p, abs=0.001)
-        for p in scene_collection["extent"]["spatial"]["bbox"][0]
-    ]
-
-    assert proxy_scene_collection == {
+    assert scene_collection == {
         "stac_version": "1.1.0",
         "type": "Collection",
         "id": "high_tide_comp_20p",
@@ -682,10 +614,10 @@ def test_stac_collection(stac_client: FlaskClient):
             "spatial": {
                 "bbox": [
                     [
-                        pytest.approx(112.223_058_990_767_51, abs=0.001),
-                        pytest.approx(-43.829_196_553_065_4, abs=0.001),
-                        pytest.approx(153.985_054_424_922_77, abs=0.001),
-                        pytest.approx(-10.237_104_814_250_783, abs=0.001),
+                        112.223_058_990_767_51,
+                        -43.829_196_553_065_4,
+                        153.985_054_424_922_77,
+                        -10.237_104_814_250_783,
                     ]
                 ]
             },
@@ -700,14 +632,8 @@ def test_stac_collection(stac_client: FlaskClient):
                 "type": "application/json",
                 "title": "Default ODC Explorer instance",
             },
-            {
-                "rel": "self",
-                "href": stac_url("collections/high_tide_comp_20p"),
-            },
-            {
-                "rel": "items",
-                "href": stac_url("collections/high_tide_comp_20p/items"),
-            },
+            {"rel": "self", "href": stac_url("collections/high_tide_comp_20p")},
+            {"rel": "items", "href": stac_url("collections/high_tide_comp_20p/items")},
             {
                 "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
                 "href": stac_url("collections/high_tide_comp_20p/queryables"),
@@ -716,7 +642,6 @@ def test_stac_collection(stac_client: FlaskClient):
         # "providers": [], // FIXME: These disappeared somewhere along the way ?
         # "stac_extensions": [],
     }
-    # HACK: Make things float again
     assert_collection(scene_collection)
     item_links = None
     for link in scene_collection["links"]:
@@ -724,6 +649,38 @@ def test_stac_collection(stac_client: FlaskClient):
             item_links = link["href"]
             break
     validate_items(_iter_items_across_pages(stac_client, item_links), expect_count=306)
+
+
+# TODO
+# We probably should check the conformance classes being returned.
+# They're in the root /stac/ response under the `conformsTo` item.
+# They are also served up at /stac/conformance in recent releases
+
+#######
+# Tests for STAC API - Features/Collections
+# https://api.stacspec.org/v1.0.0/ogcapi-features/
+# https://github.com/radiantearth/stac-api-spec/tree/release/v1.0.0/ogcapi-features
+#
+# These cover the responses available at /stac/collections/*
+# The spec offers either a cut down version called 'Collections', but Explorer
+# supports the full 'Features' specification.
+
+
+@pytest.mark.parametrize("env_name", ("default",), indirect=True)
+@pytest.mark.benchmark
+def test_stac_collection_toplevel(stac_client: FlaskClient) -> None:
+    # Retrieve the top level response and check that it's JSON
+    res = get_json(stac_client, "/stac/collections")
+    # The response must include some links
+    assert "links" in res
+    # Must have a root and self link
+    link_rels = {link["rel"] for link in res["links"]}
+    assert "root" in link_rels
+    assert "self" in link_rels
+    # The response must include a set of collections
+    assert "collections" in res
+    for collection in res["collections"]:
+        assert_collection(collection)
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -757,7 +714,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
 
     def dataset_url(s: str) -> str:
         return (
-            f"file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
+            "file:///g/data/rs0/scenes/ls7/2017/05/output/nbar/"
             f"LS7_ETM_NBAR_P54_GANBAR01-002_096_082_20170502/{s}"
         )
 
@@ -926,10 +883,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                     "dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c.odc-metadata.yaml"
                 ),
             },
-            {
-                "rel": "collection",
-                "href": stac_url("collections/ls7_nbar_scene"),
-            },
+            {"rel": "collection", "href": stac_url("collections/ls7_nbar_scene")},
             {
                 "title": "ODC Product Overview",
                 "rel": "product_overview",
@@ -942,11 +896,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "type": "text/html",
                 "href": explorer_url("dataset/0c5b625e-5432-4911-9f7d-f6b894e27f3c"),
             },
-            {
-                "rel": "canonical",
-                "type": "text/yaml",
-                "href": dataset_uri,
-            },
+            {"rel": "canonical", "type": "text/yaml", "href": dataset_uri},
             {
                 "title": "Default ODC Explorer instance",
                 "rel": "root",
@@ -1006,8 +956,7 @@ def test_stac_includes_total(stac_client: FlaskClient) -> None:
 def test_next_link(stac_client: FlaskClient) -> None:
     # next link should return next page of results
     geojson = get_items(
-        stac_client,
-        ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers"),
+        stac_client, ("/stac/search?collections=ga_ls8c_ard_3,ls7_nbart_albers")
     )
     assert geojson.get("numberMatched", 0) > len(geojson.get("features", []))
 
@@ -1025,16 +974,12 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
         return sorted(d.get("id") for d in geojson.get("features", {}))
 
     # Can filter to an empty list. Nothing returned.
-    geojson = get_items(
-        stac_client,
-        "/stac/search?&collection=ls7_nbart_albers&ids=",
-    )
+    geojson = get_items(stac_client, "/stac/search?&collection=ls7_nbart_albers&ids=")
     assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Can request one dataset
     geojson = get_items(
-        stac_client,
-        "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376",
+        stac_client, "/stac/search?ids=cab65f3f-bb38-4605-9d6a-eff5ea786376"
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -1066,16 +1011,14 @@ def test_stac_search_by_ids(stac_client: FlaskClient) -> None:
 
     # Can filter using ids that don't exist.
     geojson = get_items(
-        stac_client,
-        "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca",
+        stac_client, "/stac/search?&ids=7afd04ad-6080-4ee8-a280-f64853b399ca"
     )
     assert len(geojson.get("features", ["bad_element"])) == 0
 
     # Old JSON-like syntax should be supported for now.
     # (Sat-api and the old code used this?)
     geojson = get_items(
-        stac_client,
-        '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]',
+        stac_client, '/stac/search?ids=["cab65f3f-bb38-4605-9d6a-eff5ea786376"]'
     )
     assert geojson_feature_ids(geojson) == ["cab65f3f-bb38-4605-9d6a-eff5ea786376"]
 
@@ -1101,7 +1044,7 @@ def test_stac_search_by_intersects(stac_client: FlaskClient) -> None:
     """
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["wofs_albers"],
                 # Does it intersect the region 16_-33 geojson?
@@ -1147,7 +1090,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
     """
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 # Roughly the whole region of Australia.
                 "intersects": {
@@ -1161,7 +1104,7 @@ def test_stac_search_by_intersects_paging(stac_client: FlaskClient) -> None:
                             [112.1484375, -43.32517767999294],
                         ]
                     ],
-                },
+                }
             }
         ),
         headers={"Content-Type": "application/json", "Accept": "application/json"},
@@ -1193,8 +1136,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # Get all in one collection
     geojson = get_items(
-        stac_client,
-        ("/stac/search?&collections=ls7_nbart_scene&limit=20"),
+        stac_client, ("/stac/search?&collections=ls7_nbart_scene&limit=20")
     )
     assert len(geojson.get("features", [])) == 4
 
@@ -1219,10 +1161,7 @@ def test_stac_search_collections(stac_client: FlaskClient) -> None:
 
     # An empty URL parameter means it's unspecified.
     # (its doesn't mean match-the-empty-list!)
-    geojson = get_items(
-        stac_client,
-        ("/stac/search?&collections=&limit=20"),
-    )
+    geojson = get_items(stac_client, ("/stac/search?&collections=&limit=20"))
     assert len(geojson.get("features", [])) > 0
 
 
@@ -1270,7 +1209,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test POST, product, and assets
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["wofs_albers"],
                 "bbox": [114, -33, 153, -10],
@@ -1292,7 +1231,7 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
     # Test high_tide_comp_20p with POST and assets
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["high_tide_comp_20p"],
                 "bbox": [114, -40, 147, -32],
@@ -1338,7 +1277,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"include": ["properties.dea:dataset_maturity"]}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1373,7 +1312,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     fields = {"exclude": ["properties.title"]}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1441,7 +1380,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "asc"}]
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1465,7 +1404,7 @@ def test_stac_sortby_extension(stac_client: FlaskClient) -> None:
     sortby = [{"field": "properties.datetime", "direction": "desc"}]
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1525,19 +1464,13 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     filter_json = {
         "op": "and",
         "args": [
-            {
-                "op": "<>",
-                "args": [{"property": "dea:dataset_maturity"}, "final"],
-            },
-            {
-                "op": ">=",
-                "args": [{"property": "eo:cloud_cover"}, float(2)],
-            },
+            {"op": "<>", "args": [{"property": "dea:dataset_maturity"}, "final"]},
+            {"op": ">=", "args": [{"property": "eo:cloud_cover"}, float(2)]},
         ],
     }
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1583,7 +1516,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     # test lang mismatch
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1600,7 +1533,7 @@ def test_stac_filter_extension(stac_client: FlaskClient) -> None:
     # filter-crs invalid value
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
@@ -1621,7 +1554,7 @@ def test_stac_query_extension_errors(stac_client: FlaskClient) -> None:
     query = {"cloud_cover": {"lt": 1}}
     rv = stac_client.post(
         "/stac/search",
-        data=json.dumps(
+        data=dumps(
             {
                 "collections": ["ga_ls8c_ard_3"],
                 "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",

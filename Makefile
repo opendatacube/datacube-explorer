@@ -42,11 +42,11 @@ cubedash/static/overview.js: cubedash/static/overview.ts
 
 .PHONY: test
 test: ## Run tests using pytest
-	pytest --cov=cubedash --cov-report=xml -r sx --durations=5
+	pytest $(PYTEST_PARAMS) --cov=cubedash --cov-report=xml -r sx --durations=5
 
 .PHONY: testcov
 testcov:
-	pytest --cov=cubedash
+	pytest $(PYTEST_PARAMS) --cov=cubedash
 	@echo "building coverage html"
 	@coverage html
 
@@ -112,14 +112,11 @@ force-refresh: ## Entirely refresh the Explorer tables in Docker
 	docker compose exec -T explorer \
 		cubedash-gen --force-refresh --refresh-stats --all
 
-create-test-db-docker: ## Create a test database inside Docker
-	docker compose run --rm -T explorer \
-		bash /code/.docker/create_db.sh
-
 lint-docker: ## Run linting inside inside Docker
 	docker compose run --rm explorer \
 		make lint
 
 test-docker: ## Run tests inside Docker
 	docker compose run --rm explorer \
-		bash --login -c "cd /code && pytest --cov=cubedash --cov-report=xml -r sx --durations=5"
+		bash --login -c \
+		  "cd /code && pytest $(PYTEST_PARAMS) --cov=cubedash --cov-report=xml -r sx --durations=5"

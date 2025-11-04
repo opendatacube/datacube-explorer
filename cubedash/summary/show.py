@@ -26,9 +26,7 @@ _LOG = structlog.stdlib.get_logger()
 
 def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index = index_connect(
-        cfg_env,
-        application_name=f"cubedash.show.{variant}",
-        validate_connection=False,
+        cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
     return SummaryStore.create(index, log=log)
 
@@ -69,7 +67,7 @@ def cli(
     month: int,
     day: int,
     event_log_file: str,
-    verbose: bool,
+    verbose: int,
 ) -> None:
     """
     Print the recorded summary information for the given product
@@ -88,10 +86,12 @@ def cli(
         store.get_product(product_name)
     except KeyError:
         echo(f"Unknown product {product_name!r}", err=True)
+        store.close()
         sys.exit(-1)
     product = store.get_product_summary(product_name)
     if product is None:
         echo(f"No info: product {product_name!r} has not been summarised", err=True)
+        store.close()
         sys.exit(-1)
 
     secho(product_name, bold=True)
@@ -101,10 +101,10 @@ def cli(
 
     if product.dataset_count:
         echo(
-            f"from {'Unknown' if product.time_earliest is None else product.time_earliest.isoformat()} "
+            f"from {'Unknown' if product.duration is None else product.duration[0].isoformat()} "
         )
         echo(
-            f"  to {'Unknown' if product.time_latest is None else product.time_latest.isoformat()} "
+            f"  to {'Unknown' if product.duration is None else product.duration[1].isoformat()} "
         )
 
     echo()
@@ -143,6 +143,7 @@ def cli(
 
     echo()
     echo(f"(fetched in {round(t_end - t, 2)} seconds)")
+    store.close()
 
 
 if __name__ == "__main__":

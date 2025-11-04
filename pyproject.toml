@@ -27,7 +27,6 @@ dependencies = [
     "pyorbital",
     "pyproj",
     "pystac",
-    "python-dateutil",
     "sentry-sdk[flask]",
     "shapely",
     "simplekml",
@@ -62,6 +61,10 @@ doc = [
     "sphinx-click",
     "sphinx-tabs",
 ]
+dev = [
+    "datacube-explorer[deployment,test]",
+    {include-group = "doc"}
+]
 
 [project.optional-dependencies]
 deployment = [
@@ -95,7 +98,7 @@ test = [
     "selectolax",
     "types-cachetools",
     "types-docker",
-    "types-python-dateutil",
+    "types-pyyaml"
 ]
 
 [project.scripts]
@@ -168,24 +171,44 @@ filterwarnings = [
 target-version = "py310"
 
 [tool.ruff.lint]
-# Which checkers to enable?
 select = [
     "A",  # Don't shadow built-ins
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
     "E",  # pycodestyle
     "EXE",  # Shebangs+Executable permisssions should match
     "F",  # pyflakes
+    "FLY", # flynt
     "G",  # Use logging formatter, not manual string concat
     "I",  # Auto-sort imports
     "ICN",  # Use standard import names, like np for numpy
     "N",  # pep8-naming
     "NPY",  # Numpy
-    # "RUF",  # Ruf-specific python rules?
-    # "S",  # Bandit (security) -- explore warnings and enable in future?
+    "RET", # flake8-ret
+    "RUF", # Ruff-specific rules
+    "S",  # flake8-bandit
+    "SIM", # flake8-simplify
+    "T10", # flake8-debugger
+    "UP",  # pyupgrade
+    "W",  # pycodestyle warnings
+]
+ignore = [
+    "S101", # Many asserts are used for type checking.
+    # FIXME: re-enable these rules.
+    "B905",
+    "S310",
+    "S608",
+    "SIM115",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # The file deliberately doesn't put the import at the top, and we can't avoid global overrides
 "docs/conf.py" = ["E402", "A001", "EXE001"]
+# FIXME: remove these ignores
+"cubedash/_stac.py" = ["B023"]
+"cubedash/warmup.py" = ["B023"]
+"cubedash/generate.py" = ["RUF002"]
+"cubedash/summary/_summarise.py" = ["C416"]
 
 # Matching old behaviour: We auto-format with the smaller line default
 # ...  but only enforce line length to be under this larger 120 limit.

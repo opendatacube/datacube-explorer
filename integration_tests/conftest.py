@@ -1,3 +1,5 @@
+import os
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import indent
@@ -48,7 +50,9 @@ def summary_store(odc_test_db: Datacube) -> SummaryStore:
 @pytest.fixture(autouse=True, scope="session")
 def _init_logs(pytestconfig) -> None:
     logs.init_logging(
-        verbosity=pytestconfig.getoption("verbose"), cache_logger_on_first_use=False
+        None,
+        verbosity=pytestconfig.getoption("verbose"),
+        cache_logger_on_first_use=False,
     )
 
 
@@ -59,7 +63,7 @@ def clirunner(env_name: str):
         opts += ("--env", env_name)
         result = runner.invoke(cli_method, opts, catch_exceptions=catch_exceptions)
         if expect_success:
-            assert 0 == result.exit_code, (
+            assert result.exit_code == 0, (
                 f"Error for {opts}. Out:\n{indent(result.output, ' ' * 4)}"
             )
         return result
@@ -77,10 +81,9 @@ def run_generate(clirunner):
     ):
         args = args or ("--all",)
         if not multi_processed:
-            args = ("-j", "1") + tuple(args)
-        args = ("-tz", grouping_time_zone) + tuple(args)
-        res = clirunner(generate.cli, args, expect_success=expect_success)
-        return res
+            args = ("-j", "1", *tuple(args))
+        args = ("-tz", grouping_time_zone, *tuple(args))
+        return clirunner(generate.cli, args, expect_success=expect_success)
 
     return do
 
@@ -143,9 +146,30 @@ def client(unpopulated_client: FlaskClient) -> FlaskClient:
     return unpopulated_client
 
 
-def pytest_assertrepr_compare(op, left, right):
-    """
-    Custom pytest error messages for large documents.
+@pytest.fixture()
+def fix_utc_timezone():
+    """Set the timezone to UTC."""
+    original_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "UTC"
+
+    # tzset isn't available in Windows
+    if hasattr(time, "tzset"):
+        time.tzset()
+
+    yield
+
+    if original_tz is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = original_tz
+    if hasattr(time, "tzset"):
+        time.tzset()
+
+
+def pytest_assertrepr_compare(
+    config: pytest.Config, op: str, left: object, right: object
+) -> list[str] | None:
+    """Custom pytest error messages for large documents.
 
     The default pytest dict==dict error messages are unreadable for
     nested document-like dicts. (Such as our json and yaml docs!)
@@ -161,6 +185,7 @@ def pytest_assertrepr_compare(op, left, right):
 
     if (is_a_doc(left) or is_a_doc(right)) and op == "==":
         return format_doc_diffs(left, right)
+    return None
 
 
 def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
@@ -174,10 +199,9 @@ def _make_all_tables_unlogged(index, metadata: sqlalchemy.MetaData) -> None:
         if table.name.startswith("mv_"):
             # Not supported for materialised views.
             continue
-        else:
-            with index._active_connection() as conn:
-                conn.execute(
-                    sqlalchemy.text(
-                        f"""alter table {table.selectable.fullname} set unlogged;"""
-                    )
+        with index._active_connection() as conn:
+            conn.execute(
+                sqlalchemy.text(
+                    f"""alter table {table.selectable.fullname} set unlogged;"""
                 )
+            )

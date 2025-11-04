@@ -11,9 +11,10 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
 
-FROM base AS builder
+# This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
+FROM ghcr.io/astral-sh/uv:0.9.7@sha256:ba4857bf2a068e9bc0e64eed8563b065908a4cd6bfb66b531a9c424c8e25e142 AS uv
 
-ARG UV=https://github.com/astral-sh/uv/releases/download/0.8.6/uv-x86_64-unknown-linux-gnu.tar.gz
+FROM base AS builder
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -41,9 +42,7 @@ ENV UV_COMPILE_BYTECODE=0 \
 
 WORKDIR /build
 
-ADD --checksum=sha256:5429c9b96cab65198c2e5bfe83e933329aa16303a0369d5beedc71785a4a2f36 --chown=root:root --chmod=644 --link $UV uv.tar.gz
-
-RUN tar xf uv.tar.gz -C /usr/local/bin --strip-components=1 --no-same-owner
+COPY --link --from=uv /uv /uvx /usr/local/bin/
 
 COPY --link pyproject.toml uv.lock /build/
 
@@ -78,18 +77,22 @@ FROM base
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
 
+ARG ENVIRONMENT=deployment
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     export DEBIAN_FRONTEND=noninteractive \
+    && EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "") || \
+                 echo "git") \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
+            $EXTRAS \
             gosu \
-            # For .docker/create_db.sh.
-            postgresql-client \
+            libpq5 \
             tini \
     && mkdir /app \
     && chown ubuntu:ubuntu /app
+
 # In the "deployment" build, these `uv` binaries will be 0 bytes.
 # In the "test" build they're the actual `uv` tools.
 COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/

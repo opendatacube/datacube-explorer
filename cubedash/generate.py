@@ -96,7 +96,7 @@ class GenerateSettings:
     force_refresh: bool
     recreate_dataset_extents: bool
     reset_incremental_position: bool
-    minimum_change_scan_window: timedelta | None = None
+    minimum_change_scan_window: timedelta | None
 
 
 # pylint: disable=broad-except
@@ -111,15 +111,14 @@ def generate_report(
     def print_status(
         product_name: str,
         year: int | None,
-        month: int | None = None,
-        day: int | None = None,
-        summary: TimePeriodOverview | None = None,
+        month: int | None,
+        day: int | None,
+        summary: TimePeriodOverview | None,
     ) -> None:
         """Print status each time we start a year."""
-        if year:
-            if (product_name, year) not in started_years:
-                user_message(f"\t  {product_name} {year}")
-                started_years.add((product_name, year))
+        if year and (product_name, year) not in started_years:
+            user_message(f"\t  {product_name} {year}")
+            started_years.add((product_name, year))
 
     store = SummaryStore.create(
         _get_index(ODCConfig.get_environment(settings.env_name), product_name),
@@ -153,22 +152,20 @@ def generate_report(
 
 def _get_index(config: ODCEnvironment, variant: str) -> Index:
     # Avoid long names as they will print warnings all the time.
-    short_name = variant.replace("_", "")[:20]
-    index: Index = index_connect(
-        config, application_name=f"gen.{short_name}", validate_connection=False
-    )
-    return index
+    prefix = "gen."
+    name = f"{prefix}{variant.replace('_', '')[: 64 - len(prefix)]}"
+    return index_connect(config, application_name=name, validate_connection=False)
 
 
 def run_generation(
     settings: GenerateSettings,
     products: Sequence[Product],
-    grouping_time_zone=DEFAULT_TIMEZONE,
-    workers=3,
+    grouping_time_zone: str,
+    workers: int,
 ) -> tuple[int, int]:
     user_message(
         f"Updating {len(products)} products for "
-        f"{style(str(settings.env_name), bold=True)}",
+        f"{style(str(settings.env_name), bold=True)}"
     )
 
     counts: collections.Counter = collections.Counter()
@@ -199,17 +196,19 @@ def run_generation(
         for p in products:
             on_complete(*generate_report((p.name, settings, grouping_time_zone)))
     else:
-        with multiprocessing.Pool(workers) as pool:
-            summary: TimePeriodOverview | None
+        # Shut down pool nicely to keep pytest-cov happy.
+        # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+        pool = multiprocessing.Pool(workers)
+        try:
             for product_name, result, summary in pool.imap_unordered(
                 generate_report,
                 ((p.name, settings, grouping_time_zone) for p in products),
                 chunksize=1,
             ):
                 on_complete(product_name, result, summary)
-
-        pool.close()
-        pool.join()
+        finally:
+            pool.close()
+            pool.join()
 
     status_messages = ", ".join(
         f"{count_} {status.name.lower()}" for status, count_ in counts.items()
@@ -235,11 +234,12 @@ def _load_products(store: SummaryStore, product_names) -> Generator[Product]:
             yield store.get_product(product_name)
         except KeyError:
             possible_product_names = "\n\t".join(p.name for p in store.all_products())
+            store.close()
             raise click.BadParameter(
                 f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
                 param_hint="product_names",
-            )
+            ) from None
 
 
 class TimeDeltaParam(click.ParamType):
@@ -278,7 +278,7 @@ class TimeDeltaParam(click.ParamType):
     type=int,
     # We default to None as we want to know later if they explicitly specified one or not.
     default=None,
-    help=f"The equal-area epsg code to use internally for grouping spatial data. "
+    help="The equal-area epsg code to use internally for grouping spatial data. "
     f"(default: {DEFAULT_EPSG})",
 )
 @click.option(
@@ -464,6 +464,7 @@ def cli(
     if drop_database:
         user_message("Dropping all Explorer additions to the database")
         store.drop_all()
+        store.close()
         user_message("Done. Goodbye.")
         sys.exit(0)
 
@@ -473,14 +474,16 @@ def cli(
     elif not store.is_initialised():
         user_message(
             style("No cubedash schema exists. ", fg="red")
-            + "Please rerun with --init to create one",
+            + "Please rerun with --init to create one"
         )
+        store.close()
         sys.exit(-1)
     elif not store.is_schema_compatible(for_writing_operations_too=True):
         user_message(
             style("Cubedash schema is out of date. ", fg="red")
-            + "Please rerun with --init to apply updates.",
+            + "Please rerun with --init to apply updates."
         )
+        store.close()
         sys.exit(-2)
 
     if generate_all_products:
@@ -505,6 +508,7 @@ def cli(
         store.refresh_stats(concurrently=force_concurrently)
         user_message("done", fg="green")
         _LOG.info("stats.refresh")
+    store.close()
     sys.exit(failures)
 
 

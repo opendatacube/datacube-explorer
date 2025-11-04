@@ -1,7 +1,6 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from pprint import pprint
 from textwrap import dedent
 from uuid import UUID
 
@@ -9,8 +8,6 @@ import pytest
 from datacube import Datacube
 from datacube.index import Index
 from datacube.utils import parse_time
-from dateutil import tz
-from dateutil.tz import tzutc
 from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
@@ -75,23 +72,20 @@ def test_eo3_extents(eo3_index: Index) -> None:
     [dataset_extent_row] = _extents.get_sample_dataset(
         [product], explorer_index(eo3_index)
     )
-    pprint(dataset_extent_row)
-
     assert dataset_extent_row["id"] == UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14")
 
     # On older products, the center time was calculated from the range.
     # But on EO3 we have a singular 'datetime' to use directly.
     assert dataset_extent_row["center_time"] == datetime(
-        1988, 3, 30, 1, 41, 16, 892044, tzinfo=tz.tzutc()
+        1988, 3, 30, 1, 41, 16, 892044, tzinfo=timezone.utc
     )
 
     assert dataset_extent_row["creation_time"] == datetime(
-        2020, 6, 5, 7, 15, 26, 599544, tzinfo=tz.tzutc()
+        2020, 6, 5, 7, 15, 26, 599544, tzinfo=timezone.utc
     )
-    assert (
-        dataset_extent_row["product_ref"]
-        == eo3_index.products.get_by_name("ga_ls5t_ard_3").id
-    )
+    product = eo3_index.products.get_by_name("ga_ls5t_ard_3")
+    assert product is not None
+    assert dataset_extent_row["product_ref"] == product.id
 
     # This should be the geometry field of eo3, not the max/min bounds
     # that eo1 compatibility adds within `grid_spatial`.
@@ -141,14 +135,12 @@ def test_eo3_dateless_extents(eo3_index: Index) -> None:
     [dataset_extent_row] = _extents.get_sample_dataset(
         [product], explorer_index(eo3_index)
     )
-    pprint(dataset_extent_row)
-
     assert dataset_extent_row["id"] == UUID("856e45bf-cd50-5a5a-b1cd-12b85df99b24")
 
     # Since it has no datetime, the chosen one should default to the start
-    time_record: datetime = dataset_extent_row["center_time"]
-    assert time_record.astimezone(tz.tzutc()) == datetime(
-        2017, 7, 1, 0, 0, tzinfo=tz.tzutc()
+    time_record = dataset_extent_row["center_time"]
+    assert time_record.astimezone(timezone.utc) == datetime(
+        2017, 7, 1, 0, 0, tzinfo=timezone.utc
     )
 
     # Dataset has no creation time, but will fall back to index time.
@@ -194,6 +186,7 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
     indexed_dataset = eo3_index.datasets.get(
         UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14"), include_sources=True
     )
+    assert indexed_dataset is not None
     indexed_doc = with_parsed_datetimes(indexed_dataset.metadata_doc)
 
     # Undo the changes.
@@ -215,10 +208,11 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
 
 def test_undo_eo3_compatibility_del_handling() -> None:
     doc = {"extent": "a", "lineage": {}}
-    assert _utils.undo_eo3_compatibility(doc) is None
+    _utils.undo_eo3_compatibility(doc)
+    assert "extent" not in doc
 
 
-def with_parsed_datetimes(v: dict, name=""):
+def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
     """
     All date fields in eo3 metadata have names ending in 'datetime'. Return a doc
     with all of these fields parsed as actual dates.
@@ -228,15 +222,15 @@ def with_parsed_datetimes(v: dict, name=""):
     if not v:
         return v
 
-    if name.endswith("datetime"):
+    if name.endswith("datetime") and isinstance(v, (str, datetime)):
         dt = parse_time(v)
         # Strip/normalise timezone to match default yaml.load()
         if dt.tzinfo:
-            dt = dt.astimezone(tzutc()).replace(tzinfo=None)
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
         return dt
-    elif isinstance(v, dict):
+    if isinstance(v, dict):
         return {k: with_parsed_datetimes(v, name=k) for k, v in v.items()}
-    elif isinstance(v, list):
+    if isinstance(v, list):
         return [with_parsed_datetimes(i) for i in v]
 
     return v
@@ -255,18 +249,20 @@ def test_can_search_eo3_items(eo3_index, client: FlaskClient) -> None:
     """
     # Lightweight records...
     geojson = get_items(
-        client,
-        "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=false",
+        client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=false"
     )
-    assert len(geojson.get("features")) == 1
+    features = geojson.get("features")
+    assert features is not None
+    assert len(features) == 1
     assert "gqa:abs_iterative_mean_xy" not in geojson["features"][0]["properties"]
 
     # .... And full records
     geojson = get_items(
-        client,
-        "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True",
+        client, "http://localhost/stac/collections/ga_ls5t_ard_3/items?_full=True"
     )
-    assert len(geojson.get("features")) == 1
+    features = geojson.get("features")
+    assert features is not None
+    assert len(features) == 1
     assert geojson["features"][0]["properties"][
         "gqa:abs_iterative_mean_xy"
     ] == pytest.approx(0.37)

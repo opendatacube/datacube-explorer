@@ -151,7 +151,7 @@ refer to [deployment instructions](https://datacube-explorer.readthedocs.io/en/l
 
 ### How do I modify the CSS/Javascript?
 
-The CSS is compiled from [Sass](https://sass-lang.com/), and the Javascript is compiled from
+The CSS is compiled from [Sass](https://sass-lang.com/), and the JavaScript is compiled from
 [Typescript](https://www.typescriptlang.org/).
 
 Install [npm](https://www.npmjs.com/get-npm), and then install them both:
@@ -178,6 +178,35 @@ be available, but no further database setup is required.
 Install the test dependencies: `pip install -e .[test]`
 
 The run the tests with: `pytest integration_tests`
+
+**Docker Compose alternative:**
+See below for running the tests using `docker compose`.
+
+**Without Docker alternative:**
+
+Assuming you have a PostgreSQL server running locally, that you're setup to log into.
+
+```
+# Create a test database to use
+$ createdb odc-explorer-testing
+
+# Add the PostGIS extensions to it
+$ psql odc-explorer-testing
+odc-explorer-testing=# create extension if not exists postgis;
+CREATE EXTENSION
+
+# Export environment variables so that the tests know which Database to use
+$ export ODC_DEFAULT_INDEX_DRIVER=postgres
+$ export ODC_POSTGIS_INDEX_DRIVER=postgis
+$ export ODC_DEFAULT_DB_URL=postgresql://localhost/odc-explorer-testing
+$ export ODC_POSTGIS_DB_URL=postgresql://localhost/odc-explorer-testing
+$ export CUBEDASH_BYPASS_DOCKER=True
+
+# Finally, run the tests
+$ uv run pytest integration_tests/
+
+```
+
 
 ### How do I add test data for the automated tests?
 
@@ -233,7 +262,7 @@ When you have some ODC data indexed, you can run `make index` to create the Expl
 
 Once Explorer indexes have been created, you can browse the running application at [http://localhost:5000](http://localhost:5000).
 
-You can run tests by first creating a test database `make create-test-db-docker` and then running tests with `make test-docker`.
+You can run tests with `make test-docker`.
 
 And you can run a single test in Docker using a command like this: `docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`
 

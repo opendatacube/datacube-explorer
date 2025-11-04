@@ -1,5 +1,5 @@
 import time
-from collections.abc import Iterable
+from collections.abc import Generator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -12,24 +12,21 @@ from . import _model
 from . import _utils as utils
 
 _LOG = structlog.stdlib.get_logger()
-bp = Blueprint(
-    "audit",
-    __name__,
-)
+bp = Blueprint("audit", __name__)
 
 
 @dataclass
 class ProductTiming:
     name: str
     dataset_count: int
-    time_seconds: float | None = None
+    time_seconds: float | None
     selection_date: datetime | None = None
 
 
-def product_timings() -> Iterable[ProductTiming]:
+def product_timings() -> Generator[ProductTiming]:
     """
     How long does it take to query a day?
-    Useful for finding missing time indexes..
+    Useful for finding missing time indexes.
     """
     done = 0
     store = _model.STORE
@@ -39,11 +36,12 @@ def product_timings() -> Iterable[ProductTiming]:
         if not p:
             _LOG.info("product_no_summarised", product_name=product_name)
             continue
-        if not p.dataset_count or not p.time_earliest or not p.time_latest:
-            yield ProductTiming(product_name, dataset_count=0)
+        if not p.dataset_count or p.duration is None:
+            yield ProductTiming(product_name, dataset_count=0, time_seconds=None)
             continue
         done += 1
-        middle_period = p.time_earliest + (p.time_latest - p.time_earliest) / 2
+        time_earliest, time_latest = p.duration
+        middle_period = time_earliest + (time_latest - time_earliest) / 2
         day = middle_period.replace(hour=0, minute=0, second=0)
 
         start = time.time()
@@ -56,9 +54,7 @@ def product_timings() -> Iterable[ProductTiming]:
 
 @_model.cache.memoize()
 def cached_product_timings():
-    return sorted(
-        list(product_timings()), key=lambda a: a.time_seconds or 0, reverse=True
-    )
+    return sorted(product_timings(), key=lambda a: a.time_seconds or 0, reverse=True)
 
 
 @bp.route("/product-audit/")
@@ -89,9 +85,7 @@ def datasets_metadata_page():
 
 @bp.route("/audit/product-overview")
 def products_overview_page():
-    return utils.render(
-        "product-overview.html",
-    )
+    return utils.render("product-overview.html")
 
 
 @bp.route("/audit/dataset-counts")

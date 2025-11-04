@@ -23,9 +23,7 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy import (
-    Enum as SqlEnum,
-)
+from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
@@ -38,7 +36,6 @@ from cubedash.summary._schema import (
     PleaseRefresh,
     SchemaNotRefreshableError,
     epsg_to_srid,
-    has_schema,
     pg_add_column,
     pg_column_exists,
     pg_create_index,
@@ -265,20 +262,10 @@ def get_srid_name(conn: Connection, srid: int):
     ).scalar()
 
 
-def create_schema(conn: Connection, epsg_code: int):
+def create_after_schema(conn: Connection, epsg_code: int) -> None:
     """
-    Create any missing parts of the cubedash schema
+    Create any missing parts once there is a cubedash schema
     """
-    # Create schema if needed.
-    #
-    # Note that we don't use the built-in "if not exists" because running it *always* requires
-    # `create` permission.
-    #
-    # Doing it separately allows users to run this tool without `create` permission.
-    #
-    if not has_schema(conn):
-        conn.execute(DDL(f"create schema {CUBEDASH_SCHEMA}"))
-
     # Add Postgis if needed
     #
     # Note that, as above, we deliberately don't use the built-in "if not exists"
@@ -464,10 +451,12 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
     (Requires `create` permissions in the db)
     """
     # Add any missing schema items or patches.
-    create_schema(conn, epsg_code=grouping_epsg_code)
+    create_after_schema(conn, epsg_code=grouping_epsg_code)
 
     # If they specified an epsg code, make sure the existing schema uses it.
     srid = conn.execute(select(FOOTPRINT_SRID_EXPRESSION)).scalar()
+    if srid is None:
+        raise RuntimeError("No SRID found in database")
     crs_used_by_schema = get_srid_name(conn, srid)
     # hopefully default epsg wouldn't case an issue?
     if crs_used_by_schema != f"EPSG:{grouping_epsg_code}":

@@ -23,9 +23,7 @@ PRODUCTS = [
     "products/ls5_fc_albers.odc-product.yaml",
     "products/dsm1sv10.odc-product.yaml",
 ]
-DATASETS = [
-    "datasets/s2a_ard_granule.yaml.gz",
-]
+DATASETS = ["datasets/s2a_ard_granule.yaml.gz"]
 
 
 # Use the 'auto_odc_db' fixture to populate the database with sample data.
@@ -104,49 +102,34 @@ def dataset_yaml_from_raw(client: FlaskClient):
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_type(type_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "metadata",
-            "update",
-            type_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["metadata", "update", type_yaml_from_raw]
     )
 
     assert 'Updated "eo_plus"\n' in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_product(product_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "product",
-            "update",
-            product_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["product", "update", product_yaml_from_raw]
     )
 
     assert 'Updated "ls5_fc_albers"\n' in result.output
     assert 'Updated "dsm1sv10"\n' in result.output
     assert 'Updated "ga_s2a_ard_nbar_granule"\n' in result.output
     assert 'Updated "s2a_ard_granule"\n' in result.output
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_dataset(dataset_yaml_from_raw) -> None:
     result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        [
-            "dataset",
-            "update",
-            dataset_yaml_from_raw,
-        ],
+        datacube.scripts.cli_app.cli, ["dataset", "update", dataset_yaml_from_raw]
     )
 
     assert (
         "Updated 290eca22-defc-43b4-998f-eaf56e1fd211\n1 successful, 0 failed\n"
         in result.output
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output: {result.output}"

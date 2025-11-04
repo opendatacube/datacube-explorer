@@ -38,8 +38,9 @@ def postgresql_server():
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     # I think this may be copypasta from odc-tools
-    if Path("/.dockerenv").exists() and (
-        "ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ
+    if "CUBEDASH_BYPASS_DOCKER" in os.environ or (
+        Path("/.dockerenv").exists()
+        and ("ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ)
     ):
         yield GET_DB_FROM_ENV
     else:
@@ -113,10 +114,7 @@ def odc_db(postgresql_server, tmp_path_factory, request):
         # to enable this fixture to not be function scoped
         mp = pytest.MonkeyPatch()
 
-        mp.setenv(
-            "ODC_CONFIG_PATH",
-            str(temp_datacube_config_file.absolute()),
-        )
+        mp.setenv("ODC_CONFIG_PATH", str(temp_datacube_config_file.absolute()))
         yield postgres_url
         mp.undo()
 
@@ -139,7 +137,6 @@ def odc_test_db(cfg_env):
     the default ODC DB by setting environment variables.
     :return: Datacube instance
     """
-
     index = index_connect(cfg_env, validate_connection=False)
     index.init_db()
 
@@ -149,6 +146,12 @@ def odc_test_db(cfg_env):
     # during testing, and need any performance gains we can get.
 
     with index._db._engine.begin() as conn:  # type: ignore[attr-defined]
+        # Some tests are sensitive to the timezone of the database, and expect it to be UTC
+        quoted_db_name = conn.dialect.identifier_preparer.quote(
+            index._db._engine.url.database  # type: ignore[attr-defined]
+        )
+        conn.execute(text(f"ALTER DATABASE {quoted_db_name} SET timezone TO 'UTC'"))
+
         if index.name == "pg_index":
             for table in [
                 "agdc.dataset_location",
@@ -227,9 +230,7 @@ def auto_odc_db(odc_test_db, request):
     added, not including derivatives.
     """
     odc_test_db.index.metadata_types.check_field_indexes(
-        allow_table_lock=True,
-        rebuild_indexes=False,
-        rebuild_views=True,
+        allow_table_lock=True, rebuild_indexes=False, rebuild_views=True
     )
     data_path = request.path.parent.joinpath("data")
     if hasattr(request.module, "METADATA_TYPES"):

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import warnings
 from collections import Counter
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Iterable
 
 import shapely
 import shapely.ops
@@ -27,12 +29,12 @@ class TimePeriodOverview:
     day: int | None
 
     dataset_count: int
-    timeline_dataset_counts: Counter | None
-    region_dataset_counts: Counter | None
+    timeline_dataset_counts: Counter
+    region_dataset_counts: Counter
 
     timeline_period: str
 
-    time_range: Range
+    time_range: Range | None
 
     footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon | None
     footprint_crs: str | None
@@ -115,19 +117,21 @@ class TimePeriodOverview:
         return year, month, day
 
     @classmethod
-    def empty(cls, product_name: str) -> "TimePeriodOverview":
-        p = cls.add_periods([])
-        p.product_name = product_name
-        return p
+    def empty(
+        cls, product_name: str, product_refresh_time: datetime
+    ) -> TimePeriodOverview:
+        return cls.add_periods(product_name, product_refresh_time, [])
 
     @classmethod
     def add_periods(
         cls,
-        periods: Iterable["TimePeriodOverview"],
+        product_name: str,
+        product_refresh_time: datetime,
+        periods: Iterable[TimePeriodOverview | None],
         # This is in CRS units. Albers, so 1KM.
         # Lower value will have a more accurate footprint and much larger page load times.
         footprint_tolerance: float = 1000.0,
-    ) -> "TimePeriodOverview":
+    ) -> TimePeriodOverview:
         periods = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
         crses = {p.footprint_crs for p in periods}
@@ -150,7 +154,9 @@ class TimePeriodOverview:
 
         # The period elements that are the same across all of them.
         # (it will be the period of the result)
-        common_time_period = list(periods[0].period_tuple) if periods else ([None] * 4)
+        common_time_period = (
+            list(periods[0].period_tuple[1:4]) if periods else [None] * 3
+        )
         region_counter: Counter = Counter()
 
         for time_period in periods:
@@ -171,7 +177,7 @@ class TimePeriodOverview:
 
             # We're looking for the time period common to them all.
             # Strike out any elements that differ between our periods.
-            this_period = time_period.period_tuple
+            this_period = time_period.period_tuple[1:4]
             for i, elem in enumerate(common_time_period):
                 if elem is not None and (elem != this_period[i]):
                     # All following should be blank too, since this is a hierarchy.
@@ -193,8 +199,14 @@ class TimePeriodOverview:
         total_datasets = sum(p.dataset_count for p in periods)
 
         # Non-null properties here are the ones that are the same across all inputs.
-        product_name, year, month, day = common_time_period
+        year, month, day = common_time_period
 
+        start_range = min(
+            (r.time_range.begin for r in periods if r.time_range), default=None
+        )
+        end_range = max(
+            (r.time_range.end for r in periods if r.time_range), default=None
+        )
         return TimePeriodOverview(
             product_name=product_name,
             year=year,
@@ -204,10 +216,9 @@ class TimePeriodOverview:
             timeline_dataset_counts=timeline_counter,
             timeline_period=period,
             region_dataset_counts=region_counter,
-            time_range=Range(
-                min(r.time_range.begin for r in periods) if periods else None,
-                max(r.time_range.end for r in periods) if periods else None,
-            ),
+            time_range=Range(start_range, end_range)
+            if start_range and end_range
+            else None,
             footprint_geometry=geometry_union,
             footprint_crs=footprint_crs,
             footprint_count=sum(p.footprint_count for p in with_valid_geometries),
@@ -223,12 +234,7 @@ class TimePeriodOverview:
             # Why choose the max version? Because we assume older ones didn't need to be replaced,
             # so the most recent refresh time is the version that we are current with.
             product_refresh_time=max(
-                (
-                    p.product_refresh_time
-                    for p in periods
-                    if p.product_refresh_time is not None
-                ),
-                default=None,
+                (p.product_refresh_time for p in periods), default=product_refresh_time
             ),
             summary_gen_time=min(
                 (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
@@ -299,7 +305,7 @@ def _erase_elements_from(items: list, start_i: int) -> list:
 
 
 def _create_unified_footprint(
-    with_valid_geometries: list["TimePeriodOverview"], footprint_tolerance: float
+    with_valid_geometries: Sequence[TimePeriodOverview], footprint_tolerance: float
 ) -> BaseGeometry | None:
     """
     Union the given time period's footprints, trying to fix any invalid geometries.
@@ -319,7 +325,11 @@ def _create_unified_footprint(
         try:
             _LOG.warning("summary.footprint.invalid_union", exc_info=True)
             geometry_union = shapely.ops.unary_union(
-                [p.footprint_geometry.buffer(0.001) for p in with_valid_geometries]
+                [
+                    p.footprint_geometry.buffer(0.001)
+                    for p in with_valid_geometries
+                    if p.footprint_geometry is not None
+                ]
             )
         except ValueError:
             _LOG.warning("summary.footprint.invalid_buffered_union", exc_info=True)
@@ -360,15 +370,14 @@ def _filter_geom(geomlist: list[BaseGeometry], start: int = 0) -> list[BaseGeome
     if start == len(geomlist):
         geomlist.pop()
         return geomlist
-    else:
-        for i in range(len(geomlist) - start):
-            try:
-                shapely.ops.unary_union(geomlist[0 : i + start])
-            except ValueError:
-                del geomlist[i + start]
-                start = start + i
-                break
-            if i == len(geomlist) - 1 - start:
-                return geomlist
-        _filter_geom(geomlist, start)
+    for i in range(len(geomlist) - start):
+        try:
+            shapely.ops.unary_union(geomlist[0 : i + start])
+        except ValueError:
+            del geomlist[i + start]
+            start = start + i
+            break
+        if i == len(geomlist) - 1 - start:
+            return geomlist
+    _filter_geom(geomlist, start)
     return geomlist

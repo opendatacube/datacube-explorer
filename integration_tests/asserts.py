@@ -1,7 +1,7 @@
 import json
 import re
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
@@ -11,7 +11,6 @@ import jsonschema
 import pytest
 from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
-from dateutil.tz import tzutc
 from deepdiff import DeepDiff
 from flask.testing import FlaskClient
 from selectolax.lexbor import LexborHTMLParser, LexborNode
@@ -102,7 +101,7 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
             f"Expected status {expect_status_code} not {rv.status_code}."
             f"\nGot:\n{indent(rv.data.decode('utf-8'), ' ' * 6)}"
         )
-        assert rv.is_json, "Expected json content type in response"
+        assert rv.is_json, "Expected JSON content type in response"
         data = rv.json
         assert data is not None, "Empty response from server"
     except AssertionError:
@@ -154,14 +153,12 @@ def assert_text_contains(
 def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
     response = client.get(url, follow_redirects=True)
     assert response.status_code == 200, response.data.decode("utf-8")
-    html = LexborHTMLParser(response.data.decode("utf-8"))
-    return html
+    return LexborHTMLParser(response.data.decode("utf-8"))
 
 
 def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:
     assert re.match(
-        area_pattern + r" \(approx",
-        html.css_first(".coverage-footprint-area").text(),
+        area_pattern + r" \(approx", html.css_first(".coverage-footprint-area").text()
     )
 
 
@@ -194,7 +191,7 @@ def check_datesets_page_datestring(
 
 
 def expect_values(
-    s: TimePeriodOverview,
+    s: TimePeriodOverview | None,
     dataset_count: int,
     footprint_count: int,
     time_range: Range,
@@ -205,6 +202,7 @@ def expect_values(
     size_bytes: int | None,
     region_dataset_counts: dict | None = None,
 ):
+    assert s is not None, "No overview for dataset"
     __tracebackhide__ = True
 
     was_timeline_error = False
@@ -243,7 +241,7 @@ def expect_values(
         if s.timeline_dataset_counts is None:
             if timeline_count is not None:
                 raise AssertionError(
-                    f"null timeline_dataset_counts. "
+                    "null timeline_dataset_counts. "
                     f"Expected entry with {timeline_count} records."
                 )
         else:
@@ -264,7 +262,7 @@ def expect_values(
             if s.region_dataset_counts is None:
                 if region_dataset_counts is not None:
                     raise AssertionError(
-                        f"No region counts found. "
+                        "No region counts found. "
                         f"Expected entry with {len(region_dataset_counts)} records."
                     )
             else:
@@ -272,14 +270,15 @@ def expect_values(
             was_regions_error = False
     except AssertionError:
         assert s.newest_dataset_creation_time is not None
+        assert s.time_range is not None
         print(
             f"""Got:
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range:
-            - {s.time_range.begin.astimezone(tzutc())!r}
-            - {s.time_range.end.astimezone(tzutc())!r}
-        newest: {s.newest_dataset_creation_time.astimezone(tzutc())!r}
+            - {s.time_range.begin.astimezone(timezone.utc)!r}
+            - {s.time_range.end.astimezone(timezone.utc)!r}
+        newest: {s.newest_dataset_creation_time.astimezone(timezone.utc)!r}
         crses: {s.crses!r}
         size_bytes: {s.size_bytes}
         timeline

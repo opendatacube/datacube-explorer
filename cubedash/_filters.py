@@ -5,7 +5,6 @@ Common global filters for templates.
 import calendar
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
-from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import flask
@@ -13,9 +12,8 @@ import orjson
 import structlog
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
-from dateutil import tz
 from flask import Blueprint
-from markupsafe import Markup, escape
+from markupsafe import Markup
 from shapely.geometry import MultiPolygon
 
 from . import _model, _utils
@@ -57,14 +55,14 @@ def _dataset_label(dataset):
     label = utils.dataset_label(dataset)
     # If archived, strike out the label.
     if dataset.archived_time:
-        return Markup(f"<del>{escape(label)}</del>")
-
+        return Markup("<del>{}</del>").format(label)
     return label
 
 
 @bp.app_template_filter("torapidjson")
 def _fast_tojson(obj):
-    return Markup(orjson.dumps(obj).decode("utf-8"))
+    # FIXME: looks prone to XSS.
+    return Markup(orjson.dumps(obj).decode("utf-8"))  # noqa: S704
 
 
 @bp.app_template_filter("printable_data_size")
@@ -109,7 +107,7 @@ def _dataset_geojson(dataset):
 @bp.app_template_filter("product_link")
 def _product_link(product_name):
     url = flask.url_for("pages.product_page", product_name=product_name)
-    return Markup(f"<a href='{url}' class='product-name'>{product_name}</a>")
+    return Markup("<a href='{}' class='product-name'>{}</a>").format(url, product_name)
 
 
 @bp.app_template_filter("dataset_created")
@@ -153,18 +151,15 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
         month=t.month,
         day=t.day,
     )
-    return Markup(
-        f"<a href='{url}' class='overview-day-link'>"
-        f"{t.day}{_get_ordinal_suffix(t.day)} "
-        f"{t.strftime('%B %Y')}"
-        f"</a>"
+    return Markup("<a href='{}' class='overview-day-link'>{}{} {}</a>").format(
+        url, t.day, _get_ordinal_suffix(t.day), t.strftime("%B %Y")
     )
 
 
 @bp.app_template_filter("albers_area")
 def _format_albers_area(shape: MultiPolygon):
-    return Markup(
-        "{}km<sup>2</sup>".format(format(round(shape.area / 1_000_000), ",d"))
+    return Markup("{}km<sup>2</sup>").format(
+        format(round(shape.area / 1_000_000), ",d")
     )
 
 
@@ -209,8 +204,7 @@ def _format_ordinal(val) -> str:
 def _get_ordinal_suffix(day):
     if 4 <= day <= 20 or 24 <= day <= 30:
         return "th"
-    else:
-        return ["st", "nd", "rd"][day % 10 - 1]
+    return ["st", "nd", "rd"][day % 10 - 1]
 
 
 @bp.app_template_filter("days_in_month")
@@ -236,11 +230,8 @@ def _product_license(product: Product):
         return license_
 
     return Markup(
-        f"<a href='https://spdx.org/licenses/"
-        f"{quote_plus(license_)}.html' "
-        f"class='spdx-license badge'>{license_}"
-        f"</a>"
-    )
+        "<a href='https://spdx.org/licenses/{}.html' class='spdx-license badge'>{}</a>"
+    ).format(license_, license_)
 
 
 @bp.app_template_filter("searchable_fields")
@@ -296,7 +287,7 @@ def timesince(dt, default="just now"):
     if dt is None:
         return "an unrecorded time ago"
 
-    now = datetime.now(timezone.utc).replace(tzinfo=tz.tzutc())
+    now = datetime.now(timezone.utc)
     diff = now - utils.default_utc(dt)
 
     periods = (
@@ -317,10 +308,7 @@ def timesince(dt, default="just now"):
 
 
 def _time(label: str, actual_time: datetime) -> Markup:
-    as_utc = actual_time.astimezone(tz.tzutc())
-    return Markup(
-        f"<time datetime={as_utc.isoformat()}"
-        f' title="{actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z")}">'
-        f"{escape(label)}"
-        f"</time>"
+    as_utc = actual_time.astimezone(timezone.utc)
+    return Markup('<time datetime={} title="{}">{}</time>').format(
+        as_utc.isoformat(), actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z"), label
     )

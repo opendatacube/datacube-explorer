@@ -1,8 +1,8 @@
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import flask
 import structlog
-from dateutil import tz
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
@@ -35,13 +35,13 @@ def datasets_geojson(
         limit = hard_limit
 
     time = _utils.as_time_range(
-        year, month, day, tzinfo=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE)
+        year, month, day, tzinfo=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE)
     )
 
     return as_geojson(
-        dict(
-            type="FeatureCollection",
-            features=[
+        {
+            "type": "FeatureCollection",
+            "features": [
                 s.as_geojson()
                 for s in _model.STORE.search_items(
                     product_names=[product_name],
@@ -51,7 +51,7 @@ def datasets_geojson(
                 )
                 if s.geom_geojson is not None
             ],
-        ),
+        },
         downloadable_filename_prefix=_utils.api_path_as_filename_prefix(),
     )
 
@@ -117,7 +117,7 @@ def dataset_timeline(
     if summary is None:
         abort(
             404,
-            f"No known information for product "
+            "No known information for product "
             f"{product_name!r} {year or 'all'} {month or 'all'} {day or 'all'}",
         )
 

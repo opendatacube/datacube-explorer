@@ -7,7 +7,6 @@ from datetime import date, datetime
 
 from datacube.model import Range
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 
 from cubedash._model import TimePeriodOverview
 from integration_tests.asserts import assert_shapes_mostly_equal
@@ -145,7 +144,7 @@ EXPECTED_CLEAN_POLY = shape(
 
 
 def _create_overview():
-    overview = TimePeriodOverview(
+    return TimePeriodOverview(
         product_name="test_model_product",
         year=None,
         month=None,
@@ -164,7 +163,6 @@ def _create_overview():
         size_bytes=256,
         product_refresh_time=datetime.now(),
     )
-    return overview
 
 
 def test_footprint_antimeridian(benchmark) -> None:
@@ -216,7 +214,7 @@ def test_footprint_normal(benchmark) -> None:
 
     o = _create_overview()
     o.footprint_geometry = normal_poly
-    res: BaseGeometry = benchmark(lambda: o.footprint_wgs84)
+    res = benchmark(lambda: o.footprint_wgs84)
     assert_shapes_mostly_equal(res, expected_poly, 0.001)
 
 

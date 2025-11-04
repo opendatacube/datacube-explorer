@@ -1,12 +1,7 @@
 from enum import Enum
 
 import structlog
-from sqlalchemy import (
-    MetaData,
-    func,
-    select,
-    text,
-)
+from sqlalchemy import MetaData, func, select, text
 from sqlalchemy.engine import Connection
 
 _LOG = structlog.stdlib.get_logger()
@@ -16,16 +11,7 @@ METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 REF_TABLE_METADATA = MetaData(schema=CUBEDASH_SCHEMA)
 
 
-def has_schema(conn: Connection) -> bool:
-    """
-    Does the cubedash schema already exist?
-    """
-    return conn.dialect.has_schema(conn, CUBEDASH_SCHEMA)
-
-
-def is_compatible_schema(
-    conn: Connection, odc_table_name: str, generate: bool = False
-) -> bool:
+def is_compatible_schema(conn: Connection, odc_table_name: str, generate: bool) -> bool:
     """
     Do we have the latest schema changes?
     If generate: Is the schema complete enough to run generate/refresh commands?
@@ -62,44 +48,12 @@ class PleaseRefresh(Enum):
 
 
 def pg_create_index(
-    conn,
-    idx_name: str,
-    table_name: str,
-    col_expr: str | None = None,
-    unique: bool = False,
+    conn, idx_name: str, table_name: str, col_expr: str | None, unique: bool = False
 ) -> None:
     conn.execute(
         text(
             f"create {'unique' if unique else ''} index if not exists {idx_name} on {table_name}({col_expr})"
         )
-    )
-
-
-def pg_index_exists(conn, schema_name: str, table_name: str, index_name: str) -> bool:
-    """
-    Does a postgres index exist?
-
-    Unlike pg_exists(), we don't need heightened permissions on the table.
-
-    So, for example, Explorer's limited-permission user can check agdc/ODC tables
-    that it doesn't own.
-    """
-    return (
-        conn.execute(
-            text("""
-                select indexname
-                from pg_indexes
-                where schemaname=:schema_name and
-                    tablename=:table_name and
-                    indexname=:index_name
-              """),
-            {
-                "schema_name": schema_name,
-                "table_name": table_name,
-                "index_name": index_name,
-            },
-        ).scalar()
-        is not None
     )
 
 
@@ -156,7 +110,7 @@ def epsg_to_srid(conn: Connection, code: int) -> int | None:
     ).scalar()
 
 
-def refresh_supporting_views(conn, concurrently=False) -> None:
+def refresh_supporting_views(conn, concurrently: bool) -> None:
     args = "concurrently" if concurrently else ""
     conn.execute(
         text(f"""

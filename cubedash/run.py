@@ -25,7 +25,7 @@ def _print_version(ctx, param, value) -> None:
     import cubedash
 
     click.echo(
-        f"Open Data Cube:\n"
+        "Open Data Cube:\n"
         f"    {style('Explorer', bold=True)} version: {cubedash.__version__}\n"
         f"    {style('Core', bold=True)} version: {datacube.__version__}"
     )
@@ -74,7 +74,7 @@ def cli(
     debug_mode: bool,
     workers: int,
     event_log_file: str,
-    verbose: bool,
+    verbose: int,
 ) -> None:
     from cubedash import create_app
     from cubedash.logs import init_logging

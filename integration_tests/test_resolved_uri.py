@@ -10,8 +10,7 @@ from cubedash._utils import as_external_url, as_resolved_remote_url
 
 @pytest.fixture()
 def app_s3_region_unset():
-    app = Flask(__name__)
-    return app
+    return Flask(__name__)
 
 
 @pytest.fixture()

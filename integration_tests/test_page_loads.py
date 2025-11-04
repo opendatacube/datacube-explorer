@@ -2,17 +2,15 @@
 Tests that load pages and check the contained text.
 """
 
-import json
 from datetime import datetime, timezone
 from io import StringIO
+from zoneinfo import ZoneInfo
 
+import flask
 import pytest
-from click.testing import Result
-from dateutil import tz
 from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
 
-import cubedash
 from cubedash import _model
 from cubedash.summary import SummaryStore, _extents, show
 from cubedash.summary._stores import explorer_index
@@ -29,7 +27,7 @@ from integration_tests.asserts import (
     get_text_response,
 )
 
-DEFAULT_TZ = tz.gettz("Australia/Darwin")
+DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 
 METADATA_TYPES = [
     "metadata/eo3_landsat_ard.odc-type.yaml",
@@ -86,7 +84,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 @pytest.fixture()
 def sentry_client(client: FlaskClient) -> FlaskClient:
-    cubedash.app.config["SENTRY_CONFIG"] = {
+    flask.current_app.config["SENTRY_CONFIG"] = {
         "dsn": "https://githash@number.sentry.opendatacube.org/123456",
         "include_paths": ["cubedash"],
     }
@@ -353,6 +351,14 @@ def test_storage_page(client: FlaskClient, odc_test_db) -> None:
     assert len(html.css(".data-table tbody tr")) == product_count
 
 
+def test_product_audit_redirects(client: FlaskClient) -> None:
+    assert_redirects_to(
+        client,
+        "/product-audit/day-times.txt",
+        "/audit/day-query-times.txt",
+    )
+
+
 @pytest.mark.skip(reason="TODO: fix out-of-date range return value")
 def test_out_of_date_range(client: FlaskClient) -> None:
     """
@@ -361,7 +367,7 @@ def test_out_of_date_range(client: FlaskClient) -> None:
     html = get_html(client, "/wofs_albers/2010")
 
     # The common error here is to say "No data: not yet summarised" rather than "0 datasets"
-    assert check_dataset_count(html, 0)
+    check_dataset_count(html, 0)
     assert "Historic Flood Mapping Water Observations from Space" in html.text()
 
 
@@ -494,9 +500,9 @@ def assert_redirects_to(client: FlaskClient, url: str, redirects_to_url: str) ->
     response = client.get(url, follow_redirects=False)
     assert response.status_code == 302
     assert response.location.endswith(redirects_to_url), (
-        f"Expected redirect to end with:\n"
+        "Expected redirect to end with:\n"
         f"    {redirects_to_url!r}\n"
-        f"but was redirected to:\n"
+        "but was redirected to:\n"
         f"    {response.location!r}"
     )
 
@@ -559,7 +565,6 @@ def test_api_returns_limited_tile_regions(client: FlaskClient) -> None:
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02")
     assert len(geojson["features"]) == 3, "Unexpected region month count"
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/02/26")
-    print(json.dumps(geojson, indent=4))
     assert len(geojson["features"]) == 1, "Unexpected region day count"
     geojson = get_geojson(client, "/api/regions/ga_ls8c_ard_3/2022/04/6")
     assert len(geojson["features"]) == 0, "Unexpected region count"
@@ -706,12 +711,7 @@ def test_api_returns_timelines(client: FlaskClient) -> None:
     }
 
     doc = get_json(client, "/api/dataset-timeline/ga_ls9c_ard_3/2022/01/17")
-    assert doc == {
-        "2022-01-17T00:00:00": 1,
-    }
-
-
-pytest.mark.xfail(True, reason="telemetry data removed")
+    assert doc == {"2022-01-17T00:00:00": 1}
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -793,14 +793,15 @@ def test_invalid_product_returns_not_found(client: FlaskClient) -> None:
 def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     """
     You should be able to view a product with cubedash-view command-line program.
+
+    This test expects the database timezone to be UTC
     """
     # ls7_nbar_scene, 2017, May
-    res: Result = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
-    print(res.output)
+    res = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
 
     # Expect it to show the dates in local timezone.
-    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=tz.tzutc())
-    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=tz.tzutc())
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=timezone.utc)
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=timezone.utc)
 
     expected_header = "\n".join(
         (
@@ -811,8 +812,9 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
             f"  to {expected_to.isoformat()} ",
         )
     )
-    assert res.output.startswith(expected_header)
-    expected_metadata = "\n".join(
+    result_header = "\n".join(res.output.splitlines()[:5])
+    assert expected_header == result_header
+    expected_metadata = "\n".join(  # noqa: FLY002
         (
             "Metadata",
             "\tgsi: ASA",
@@ -824,13 +826,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
         )
     )
     assert expected_metadata in res.output
-    expected_period = "\n".join(
-        (
-            "Period: 2017 5 all-days",
-            "\tStorage size: 727.4MiB",
-            "\t3 datasets",
-            "",
-        )
+    expected_period = "\n".join(  # noqa: FLY002
+        ("Period: 2017 5 all-days", "\tStorage size: 727.4MiB", "\t3 datasets", "")
     )
     assert expected_period in res.output
 
@@ -840,9 +837,7 @@ def test_show_summary_cli_out_of_bounds(clirunner, client: FlaskClient) -> None:
     Can you view a date that doesn't exist?
     """
     # A period that's out of bounds.
-    res: Result = clirunner(
-        show.cli, ["ga_ls8c_ard_3", "2030", "5"], expect_success=False
-    )
+    res = clirunner(show.cli, ["ga_ls8c_ard_3", "2030", "5"], expect_success=False)
     assert "No summary for chosen period." in res.output
 
 
@@ -852,10 +847,10 @@ def test_show_summary_cli_missing_product(clirunner, client: FlaskClient) -> Non
 
     (and error return code)
     """
-    res: Result = clirunner(show.cli, ["does_not_exist"], expect_success=False)
-    output: str = res.output
+    res = clirunner(show.cli, ["does_not_exist"], expect_success=False)
+    output = res.output
     assert output.strip().startswith("Unknown product 'does_not_exist'")
-    assert res.exit_code != 0
+    assert res.exit_code != 0, f"Output: {res.output}"
 
 
 def test_show_summary_cli_unsummarised_product(
@@ -866,10 +861,10 @@ def test_show_summary_cli_unsummarised_product(
 
     (and error return code)
     """
-    res: Result = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
+    res = clirunner(show.cli, ["ga_ls8c_ard_3"], expect_success=False)
     out = res.output.strip()
     assert out.startswith("No info: product 'ga_ls8c_ard_3' has not been summarised")
-    assert res.exit_code != 0
+    assert res.exit_code != 0, f"Output: {res.output}"
 
 
 def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
@@ -892,7 +887,7 @@ def test_extent_debugging_method(odc_test_db, client: FlaskClient) -> None:
 
 
 def test_plain_product_list(client: FlaskClient) -> None:
-    text, rv = get_text_response(client, "/products.txt")
+    text, _ = get_text_response(client, "/products.txt")
     assert "ga_ls8c_ard_3\n" in text
 
 
@@ -905,11 +900,11 @@ def test_raw_documents(client: FlaskClient) -> None:
 
     def check_doc_start_has_hint(hint: str, url: str):
         __tracebackhide__ = True
-        doc, rv = get_text_response(client, url)
+        doc, _ = get_text_response(client, url)
         doc_opening = doc[:128]
         expect_pattern = f"# {hint}\n# url: http://localhost{url}\n"
         assert expect_pattern in doc_opening, (
-            f"No hint or source-url in yaml response.\n"
+            "No hint or source-url in yaml response.\n"
             f"Expected {expect_pattern!r}\n"
             f"Got      {doc_opening!r}"
         )
@@ -927,8 +922,7 @@ def test_raw_documents(client: FlaskClient) -> None:
 
     # A legacy EO1 dataset
     check_doc_start_has_hint(
-        "EO1 Dataset",
-        "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml",
+        "EO1 Dataset", "/dataset/57848615-2421-4d25-bfef-73f57de0574d.odc-metadata.yaml"
     )
 
 
@@ -952,7 +946,7 @@ def test_all_give_404s(client: FlaskClient) -> None:
     We should get 404 messages, not exceptions, for missing things.
     """
 
-    def expect_404(url: str, message_contains: str = None):
+    def expect_404(url: str, message_contains: str | None = None):
         __tracebackhide__ = True
         response = get_text_response(client, url, expect_status_code=404)
         if message_contains and message_contains not in response:
@@ -985,6 +979,8 @@ def test_all_give_404s(client: FlaskClient) -> None:
 
     expect_404(f"/dataset/{dataset_id}")
     expect_404(f"/dataset/{dataset_id}.odc-metadata.yaml")
+
+    expect_404("/api/dataset-timeline/non_existent/2025")
 
 
 def test_invalid_query_gives_400(client: FlaskClient) -> None:

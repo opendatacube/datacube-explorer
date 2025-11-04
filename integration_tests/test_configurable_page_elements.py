@@ -126,7 +126,9 @@ def test_sister_sites(app_configured_client: FlaskClient) -> None:
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
-        assert "/about" in sister_instance.css_first("a.sister-link").attributes["href"]
+        href = sister_instance.css_first("a.sister-link").attributes["href"]
+        assert href is not None
+        assert "/about" in href
 
 
 def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
@@ -136,10 +138,9 @@ def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
-        assert (
-            "/products/ga_ls5t_ard_3"
-            in sister_instance.css_first("a.sister-link").attributes["href"]
-        )
+        href = sister_instance.css_first("a.sister-link").attributes["href"]
+        assert href is not None
+        assert "/products/ga_ls5t_ard_3" in href
 
     html = get_html(app_configured_client, "/products/ga_ls5t_ard_3/datasets")
 
@@ -147,7 +148,6 @@ def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
     assert len(sister_instances) == 2
 
     for sister_instance in sister_instances:
-        assert (
-            "/products/ga_ls5t_ard_3/datasets"
-            in sister_instance.css_first("a.sister-link").attributes["href"]
-        )
+        href = sister_instance.css_first("a.sister-link").attributes["href"]
+        assert href is not None
+        assert "/products/ga_ls5t_ard_3/datasets" in href

@@ -198,7 +198,7 @@ def cli(
     sys.exit(len(failures))
 
 
-def _format_time(t: float):
+def _format_time(t: float) -> str:
     """
     >>> _format_time(0.31)
     '310ms'
@@ -216,8 +216,7 @@ def _format_time(t: float):
         return style(f"{t:.1f}s", fg="yellow")
     if t > 1:
         return f"{t:.1f}s"
-    else:
-        return f"{int(t * 1000)}ms"
+    return f"{int(t * 1000)}ms"
 
 
 if __name__ == "__main__":

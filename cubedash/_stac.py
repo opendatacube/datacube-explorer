@@ -1,19 +1,18 @@
 import json
 import uuid
 from collections.abc import Callable, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
-from typing import Any, Union
+from typing import Any, TypeAlias
 
 import flask
 import pystac
 import structlog
 from datacube.metadata import ds2stac
 from datacube.utils import parse_time
-from dateutil.tz import tz
 from flask import abort, current_app, request
-from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
+from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
@@ -41,7 +40,7 @@ DEFAULT_RETURN_FULL_ITEMS = True
 
 STAC_VERSION = "1.1.0"
 
-ItemLike = Union[pystac.Item, dict]
+ItemLike: TypeAlias = pystac.Item | dict
 
 ############################
 #  Helpers
@@ -60,7 +59,7 @@ def check_page_limit(limit: int) -> None:
         abort(
             400,
             f"Max page size is {page_size_limit}. "
-            f"Use the next links instead of a large limit.",
+            "Use the next links instead of a large limit.",
         )
 
 
@@ -68,14 +67,12 @@ def dissoc_in(d: dict, key: str):
     # like dicttoolz.dissoc but with support for nested keys
     split = key.split(".")
 
-    if len(split) > 1:  # if nested
-        if dicttoolz.get_in(split, d) is not None:
-            outer = dicttoolz.get_in(split[:-1], d)
-            return dicttoolz.update_in(
-                d=d,
-                keys=split[:-1],
-                func=lambda _: dicttoolz.dissoc(outer, split[-1]),  # noqa: B023
-            )
+    # if nested
+    if len(split) > 1 and dicttoolz.get_in(split, d) is not None:
+        outer = dicttoolz.get_in(split[:-1], d)
+        return dicttoolz.update_in(
+            d=d, keys=split[:-1], func=lambda _: dicttoolz.dissoc(outer, split[-1])
+        )
     return dicttoolz.dissoc(d, key)
 
 
@@ -84,8 +81,8 @@ def dissoc_in(d: dict, key: str):
 
 def utc(d: datetime):
     if d.tzinfo is None:
-        return d.replace(tzinfo=tz.tzutc())
-    return d.astimezone(tz.tzutc())
+        return d.replace(tzinfo=timezone.utc)
+    return d.astimezone(timezone.utc)
 
 
 def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
@@ -112,6 +109,8 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
     """
     time_period = time.split("/")
     if len(time_period) == 2:
+        start: str | datetime
+        end: str | datetime
         start, end = time_period
         if start == "..":
             start = datetime(1971, 1, 1, 0, 0)
@@ -122,12 +121,11 @@ def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
             return None
 
         return parse_time(start), parse_time(end)
-    elif len(time_period) == 1:
+    if len(time_period) == 1:
         t: datetime = parse_time(time_period[0])
         if t.time() == dt_time():
             return t, t + timedelta(days=1)
-        else:
-            return t, t + timedelta(seconds=1)
+        return t, t + timedelta(seconds=1)
     return None
 
 
@@ -231,7 +229,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
     stac_collection = Collection(
         id=res.name,
         title=res.title,
-        description=res.description,
+        description=res.description or "",
         license=res.definition.get(
             "license",
             flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
@@ -239,11 +237,10 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
         providers=[],
         extent=Extent(
             pystac.SpatialExtent(
-                bboxes=[
-                    res.footprint_wgs84.bounds
-                    if res.footprint_wgs84
-                    else [-180.0, -90.0, 180.0, 90.0]
-                ]
+                # TODO: Find a nicer way to make the typechecker happier
+                # pystac is too specific in wanting a list[float | int]
+                # odc-geo BoundingBox class is a Sequence[float]
+                bboxes=[list(res.bbox) if res.bbox else [-180.0, -90.0, 180.0, 90.0]]
             ),
             temporal=pystac.TemporalExtent(
                 intervals=[
@@ -261,10 +258,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
     stac_collection.links.extend(
         [
             Link(rel="self", target=request.url),
-            Link(
-                rel="items",
-                target=url_for(".collection_items", collection=res.name),
-            ),
+            Link(rel="items", target=url_for(".collection_items", collection=res.name)),
             Link(
                 rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
                 target=url_for(".collection_queryables", collection=res.name),
@@ -281,8 +275,7 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
 def _remove_prefixes(arg: str):
     # remove potential 'item.', 'properties.', or 'item.properties.' prefixes for ease of handling
     arg = arg.replace("item.", "")
-    arg = arg.replace("properties.", "")
-    return arg
+    return arg.replace("properties.", "")
 
 
 def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) -> list:
@@ -308,7 +301,7 @@ def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) 
     except ValueError:
         raise BadRequest(
             f"Invalid argument syntax. Expected comma-separated list, got: {arg!r}"
-        )
+        ) from None
 
     if not isinstance(value, list):
         raise BadRequest(f"Invalid argument syntax. Expected json list, got: {value!r}")
@@ -330,7 +323,9 @@ def _geojson_arg(arg: dict) -> BaseGeometry:
     try:
         return shape(arg)
     except ValueError:
-        raise BadRequest("The 'intersects' argument must be valid GeoJSON geometry.")
+        raise BadRequest(
+            "The 'intersects' argument must be valid GeoJSON geometry."
+        ) from None
 
 
 def _bool_argument(s: str | bool):
@@ -344,16 +339,16 @@ def _bool_argument(s: str | bool):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: str | dict):
+def _dict_arg(arg: str | dict[str, Any]) -> dict[str, Any]:
     """
     Parse stac extension arguments as dicts
     """
     if isinstance(arg, str):
-        arg = json.loads(arg.replace("'", '"'))
+        return json.loads(arg.replace("'", '"'))
     return arg
 
 
-def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
+def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
     """
     Parse field argument into a dict
     """
@@ -363,19 +358,19 @@ def _field_arg(arg: str | list | dict) -> dict[str, list[str]]:
         if arg.startswith("{"):
             return _dict_arg(arg)
         arg = arg.split(",")
+    include = []
+    exclude = []
     if isinstance(arg, list):
-        include = []
-        exclude = []
         for a in arg:
             if a.startswith("-"):
                 exclude.append(a[1:])
             else:
                 # account for '+' showing up as a space if not encoded
                 include.append(a[1:] if a.startswith("+") else a.strip())
-        return {"include": include, "exclude": exclude}
+    return {"include": include, "exclude": exclude}
 
 
-def _sort_arg(arg: str | list) -> list[dict]:
+def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Parse sortby argument into a list of dicts
     """
@@ -390,15 +385,20 @@ def _sort_arg(arg: str | list) -> list[dict]:
         return {"field": val.strip(), "direction": "asc"}
 
     if isinstance(arg, str):
-        arg = arg.split(",")
-    if len(arg):
-        if isinstance(arg[0], str):
-            return [_format(a) for a in arg]
-        if isinstance(arg[0], dict):
-            for a in arg:
+        arg_work = (
+            json.loads(arg.replace("'", '"')) if arg.startswith("[") else arg.split(",")
+        )
+    else:
+        arg_work = arg
+    if len(arg_work):
+        if isinstance(arg_work[0], str):
+            return [_format(a) for a in arg_work]
+        if isinstance(arg_work[0], dict):
+            for a in arg_work:
+                assert isinstance(a, dict)
                 a["field"] = _remove_prefixes(a["field"])
 
-    return arg
+    return arg_work  # type: ignore[return-value]
 
 
 def _filter_arg(arg: str | dict) -> str:
@@ -429,7 +429,7 @@ def _handle_search_request(
     method: str,
     request_args: TypeConversionDict,
     product_names: list[str],
-    include_total_count: bool = True,
+    include_total_count: bool,
 ) -> ItemCollection:
     bbox = request_args.get(
         "bbox", type=partial(_array_arg, expect_size=4, expect_type=float)
@@ -500,10 +500,7 @@ def _handle_search_request(
         )
     if filter_lang is None and filter_cql is not None:
         # If undefined, defaults to cql2-text for a GET request and cql2-json for a POST request.
-        if method == "GET":
-            filter_lang = "cql2-text"
-        else:
-            filter_lang = "cql2-json"
+        filter_lang = "cql2-text" if method == "GET" else "cql2-json"
     if filter_cql:
         assert filter_lang is not None
         _validate_filter(filter_lang, filter_cql)
@@ -523,7 +520,7 @@ def _handle_search_request(
             _full=full_information,
             intersects=intersects,
             fields=fields,
-            sortby=sortby,
+            sortby=str(sortby) if sortby else None,
             # so that it doesn't get named 'filter_lang'
             **{"filter-lang": filter_lang},
             filter=filter_cql,
@@ -550,20 +547,20 @@ def _handle_search_request(
 
     feature_collection.extra_fields["links"].extend(
         (
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="GET",
-            ),
-            dict(
-                href=url_for(".stac_search"),
-                rel="search",
-                title="Search",
-                type="application/geo+json",
-                method="POST",
-            ),
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "GET",
+            },
+            {
+                "href": url_for(".stac_search"),
+                "rel": "search",
+                "title": "Search",
+                "type": "application/geo+json",
+                "method": "POST",
+            },
         )
     )
     return feature_collection
@@ -613,16 +610,12 @@ def _handle_collection_search(
 # Item search extensions
 
 
-def _get_property(prop: str, item: ItemLike, no_default=False):
+def _get_property(prop: str, item: Item, no_default: bool = False):
     """So that we don't have to keep using this bulky expression"""
-    if isinstance(item, pystac.Item):
-        item = item.to_dict()
-    return dicttoolz.get_in(prop.split("."), item, no_default=no_default)
+    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
 
 
-def _handle_fields_extension(
-    items: Sequence[ItemLike], fields: dict
-) -> Sequence[ItemLike]:
+def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
     This implementation differs slightly from the documented semantics in that the default fields will always
@@ -685,11 +678,7 @@ def _handle_fields_extension(
                 filtered_item = dicttoolz.update_in(
                     d=filtered_item,
                     keys=inc.split("."),
-                    func=lambda _: _get_property(
-                        inc,
-                        item,
-                        no_default=True,  # noqa: B023
-                    ),
+                    func=lambda _: _get_property(inc, item, no_default=True),
                 )
             except KeyError:
                 continue
@@ -701,9 +690,9 @@ def _handle_fields_extension(
 
 def search_stac_items(
     get_next_url: Callable[[int], str],
-    limit: int = 0,
-    offset: int = 0,
-    dataset_ids: str | None = None,
+    limit: int,
+    offset: int,
+    dataset_ids: Sequence[uuid.UUID] | None = None,
     product_names: list[str] | None = None,
     bbox: tuple[float, float, float, float] | None = None,
     intersects: BaseGeometry | None = None,
@@ -726,8 +715,6 @@ def search_stac_items(
         limit = get_default_limit()
 
     offset = offset or 0
-    if sortby is not None:
-        order = sortby
     items = list(
         _model.STORE.search_items(
             product_names=product_names,
@@ -740,16 +727,13 @@ def search_stac_items(
             full_dataset=full_information,
             filter_lang=filter_lang,
             filter_cql=filter_cql,
-            order=order,
+            order=sortby if sortby is not None else order,
         )
     )
     returned = items[:limit]
     there_are_more = len(items) == limit + 1
 
-    extra_properties = dict(
-        links=[],
-        numberReturned=len(returned),
-    )
+    extra_properties = {"links": [], "numberReturned": len(returned)}
     if include_total_count:
         count_matching = _model.STORE.get_count(
             product_names=product_names,
@@ -768,35 +752,28 @@ def search_stac_items(
     result = ItemCollection(items, extra_fields=extra_properties)
 
     if there_are_more:
-        next_link: dict[str, str | bool | dict] = dict(
-            rel="next",
-            title="Next page of Items",
-            type="application/geo+json",
-        )
+        next_link: dict[str, str | bool | dict] = {
+            "rel": "next",
+            "title": "Next page of Items",
+            "type": "application/geo+json",
+        }
         if use_post_request:
             next_link.update(
-                dict(
-                    method="POST",
-                    merge=True,
+                {
+                    "method": "POST",
+                    "merge": True,
                     # Unlike GET requests, we can tell them to repeat their same request args
                     # themselves.
                     #
                     # Same URL:
-                    href=flask.request.url,
+                    "href": flask.request.url,
                     # ... with a new offset.
-                    body=dict(
-                        _o=offset + limit,
-                    ),
-                )
+                    "body": {"_o": offset + limit},
+                }
             )
         else:
             # Otherwise, let the route create the next url.
-            next_link.update(
-                dict(
-                    method="GET",
-                    href=get_next_url(offset + limit),
-                )
-            )
+            next_link.update({"method": "GET", "href": get_next_url(offset + limit)})
 
         result.extra_fields["links"].append(next_link)
 
@@ -805,22 +782,18 @@ def search_stac_items(
 
 def search_stac_collections(
     get_next_url: Callable[[int], str],
-    limit: int = 0,
-    offset: int = 0,
-    bbox: tuple[float, float, float, float] | None = None,
-    time: tuple[datetime, datetime] | None = None,
-    q: list[str] | None = None,
+    limit: int,
+    offset: int,
+    bbox: tuple[float, float, float, float] | None,
+    time: tuple[datetime, datetime] | None,
+    q: list[str] | None,
 ) -> tuple[list[Collection], dict[str, Any]]:
     if limit < 1:
         limit = get_default_limit()
 
     collections = list(
         _model.STORE.search_collections(
-            time=time,
-            bbox=bbox,
-            q=q,
-            limit=limit + 1,
-            offset=offset,
+            time=time, bbox=bbox, q=q, limit=limit + 1, offset=offset
         )
     )
     returned = collections[:limit]
@@ -830,22 +803,22 @@ def search_stac_collections(
         list(_model.STORE.search_collections(time=time, bbox=bbox, q=q))
     )
 
-    extra_properties: dict[str, int | list[dict]] = dict(
-        links=[],
-        numberReturned=len(returned),
-        numberMatched=count_matching,
-    )
+    extra_properties: dict[str, int | list[dict]] = {
+        "links": [],
+        "numberReturned": len(returned),
+        "numberMatched": count_matching,
+    }
 
     result = [as_stac_collection(r) for r in returned]
 
     if there_are_more:
-        next_link = dict(
-            rel="next",
-            title="Next page of Collections",
-            type="application/json",
-            method="GET",
-            href=get_next_url(offset + limit),
-        )
+        next_link = {
+            "rel": "next",
+            "title": "Next page of Collections",
+            "type": "application/json",
+            "method": "GET",
+            "href": get_next_url(offset + limit),
+        }
         assert not isinstance(extra_properties["links"], int)
         extra_properties["links"].append(next_link)
 
@@ -861,10 +834,7 @@ def _stac_response(
     """Return a stac document as the flask response"""
     if isinstance(doc, STACObject):
         doc.set_root(root_catalog())
-    return _utils.as_json(
-        doc.to_dict(),
-        content_type=content_type,
-    )
+    return _utils.as_json(doc.to_dict(), content_type=content_type)
 
 
 def _geojson_stac_response(doc: STACObject | ItemCollection) -> flask.Response:
@@ -877,10 +847,10 @@ def _geojson_stac_response(doc: STACObject | ItemCollection) -> flask.Response:
 
 def stac_endpoint_information() -> dict:
     config = current_app.config
-    o = dict(
-        id=config.get("STAC_ENDPOINT_ID", "odc-explorer"),
-        title=config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
-    )
+    o = {
+        "id": config.get("STAC_ENDPOINT_ID", "odc-explorer"),
+        "title": config.get("STAC_ENDPOINT_TITLE", "Default ODC Explorer instance"),
+    }
     description = config.get(
         "STAC_ENDPOINT_DESCRIPTION",
         "Configure stac endpoint information in your Explorer `settings.env.py` file",
@@ -891,9 +861,7 @@ def stac_endpoint_information() -> dict:
 
 
 def root_catalog():
-    c = Catalog(
-        **stac_endpoint_information(),
-    )
+    c = Catalog(**stac_endpoint_information())
     c.set_self_href(url_for(".root"))
     return c
 
@@ -972,14 +940,14 @@ def root():
             ),
         ]
     )
-    c.extra_fields = dict(conformsTo=CONFORMANCE_CLASSES)
+    c.extra_fields = {"conformsTo": CONFORMANCE_CLASSES}
 
     return _stac_response(c)
 
 
 @bp.route("/conformance")
 def conformance():
-    return _utils.as_json(dict(conformsTo=CONFORMANCE_CLASSES))
+    return _utils.as_json({"conformsTo": CONFORMANCE_CLASSES})
 
 
 @bp.route("/search", methods=["GET", "POST"])
@@ -998,7 +966,7 @@ def stac_search():
         products.append(args.get("collection"))
 
     return _geojson_stac_response(
-        _handle_search_request(request.method, args, products)
+        _handle_search_request(request.method, args, products, True)
     )
 
 
@@ -1014,22 +982,19 @@ def collections():
     if request.args:
         results, props = _handle_collection_search(request.args)
     else:
-        props = dict(links=[])
+        props = {"links": []}
         results = [as_stac_collection(r) for r in _model.STORE.search_collections()]
 
     props["links"].extend(
         [
-            dict(rel="self", type="application/json", href=request.url),
-            dict(rel="root", type="application/json", href=url_for(".root")),
-            dict(rel="parent", type="application/json", href=url_for(".root")),
+            {"rel": "self", "type": "application/json", "href": request.url},
+            {"rel": "root", "type": "application/json", "href": url_for(".root")},
+            {"rel": "parent", "type": "application/json", "href": url_for(".root")},
         ]
     )
 
     return _utils.as_json(
-        dict(
-            **props,
-            collections=[collection.to_dict() for collection in results],
-        )
+        dict(**props, collections=[collection.to_dict() for collection in results])
     )
 
 
@@ -1149,7 +1114,7 @@ def collection_items(collection: str):
 
 
 @bp.route("/collections/<collection>/items/<uuid:dataset_id>")
-def item(collection: str, dataset_id: str):
+def item(collection: str, dataset_id: uuid.UUID):
     dataset = _model.STORE.get_item(dataset_id)
     if not dataset:
         abort(404, f"No dataset found with id {dataset_id!r}")
@@ -1159,13 +1124,11 @@ def item(collection: str, dataset_id: str):
         # We're not doing a redirect as we don't want people to rely on wrong urls
         # (and we're unkind)
         actual_url = url_for(
-            ".item",
-            collection=actual_product_name,
-            dataset_id=dataset_id,
+            ".item", collection=actual_product_name, dataset_id=dataset_id
         )
         abort(
             404,
-            f"No such dataset in collection.\n"
+            "No such dataset in collection.\n"
             f"Perhaps you meant collection {actual_product_name}: {actual_url})",
         )
 
@@ -1263,10 +1226,7 @@ def arrivals():
     c.links.extend(
         [
             Link(rel="self", target=request.url),
-            Link(
-                rel="items",
-                target=url_for(".arrivals_items"),
-            ),
+            Link(rel="items", target=url_for(".arrivals_items")),
         ]
     )
     return _stac_response(c)
@@ -1284,11 +1244,7 @@ def arrivals_items():
     check_page_limit(limit)
 
     def next_page_url(next_offset):
-        return url_for(
-            ".arrivals_items",
-            limit=limit,
-            _o=next_offset,
-        )
+        return url_for(".arrivals_items", limit=limit, _o=next_offset)
 
     return _geojson_stac_response(
         search_stac_items(
@@ -1307,11 +1263,7 @@ def handle_exception(e):
     """Return JSON instead of HTML for HTTP errors."""
     response = e.get_response()
     response.data = json.dumps(
-        {
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        }
+        {"code": e.code, "name": e.name, "description": e.description}
     )
     response.content_type = "application/json"
     return response

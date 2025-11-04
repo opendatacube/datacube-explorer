@@ -1,14 +1,13 @@
 import decimal
 import re
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import datacube
 import flask
 import structlog
 from datacube.model import Product, Range
 from datacube.scripts.dataset import build_dataset_info
-from dateutil import tz
-from dateutil.parser import ParserError
 from flask import (
     Blueprint,
     abort,
@@ -167,13 +166,13 @@ def search_page(
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
     time_range = utils.as_time_range(
-        year, month, day, tzinfo=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE)
+        year, month, day, tzinfo=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE)
     )
 
     args = MultiDict(flask.request.args)
     try:
         query = utils.query_to_search(args, product=product)
-    except ParserError:
+    except ZoneInfoNotFoundError:
         abort(400, "Invalid datetime format")
     except ValueError as e:  # invalid query val
         abort(400, str(e))
@@ -197,10 +196,11 @@ def search_page(
         if not isinstance(search_time, Range):
             search_time = Range(search_time, search_time + timedelta(days=1))
         # If they left one end of the range open, fill it in with the product bounds.
-        if product_summary:
+        if product_summary and product_summary.duration is not None:
+            time_earliest, time_latest = product_summary.duration
             search_time = Range(
-                search_time.begin or product_summary.time_earliest,
-                search_time.end or product_summary.time_latest + timedelta(days=1),
+                search_time.begin or time_earliest,
+                search_time.end or time_latest + timedelta(days=1),
             )
         query["time"] = search_time
 
@@ -209,9 +209,9 @@ def search_page(
         creation_time = query["creation_time"]
         if not isinstance(creation_time, Range):
             creation_time = Range(creation_time, creation_time + timedelta(days=1))
-        if product_summary:
+        if product_summary and product_summary.duration is not None:
             creation_time = Range(
-                creation_time.begin or product_summary.time_earliest,
+                creation_time.begin or product_summary.duration[0],
                 # product time bounds don't necessarily include the creation time
                 # so use today's date instead as our end bound if needed
                 creation_time.end or datetime.now(timezone.utc),
@@ -240,14 +240,13 @@ def search_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(index, d) for d in datasets])
+            {"datasets": [build_dataset_info(index, d) for d in datasets]}
         )
 
     # For display on the page (and future searches).
-    if "time" not in query and product_summary and product_summary.time_earliest:
+    if "time" not in query and product_summary and product_summary.duration is not None:
         query["time"] = Range(
-            product_summary.time_earliest,
-            product_summary.time_latest + timedelta(days=1),
+            product_summary.duration[0], product_summary.duration[1] + timedelta(days=1)
         )
 
     return utils.render(
@@ -295,12 +294,7 @@ def legacy_region_page(
 @bp.route("/product/<product_name>/regions")
 def regions_page(product_name: str):
     # A map of regions is shown on the overview page.
-    return redirect(
-        url_for(
-            "pages.product_page",
-            product_name=product_name,
-        )
-    )
+    return redirect(url_for("pages.product_page", product_name=product_name))
 
 
 @bp.route("/product/<product_name>/regions/<region_code>")
@@ -339,16 +333,16 @@ def region_page(
         )
     )
 
-    same_region_products = list(
+    same_region_products = [
         product.name
         for product in _model.STORE.find_products_for_region(
             region_code, year, month, day, limit=limit + 1, offset=offset
         )
-    )
+    ]
 
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
-        page_args = dict(flask.request.view_args)
+        page_args = dict(flask.request.view_args or {})
         page_args["_o"] = new_offset
         return url_for("pages.region_page", **page_args)
 
@@ -366,7 +360,7 @@ def region_page(
 
     if request_wants_json():
         return utils.as_rich_json(
-            dict(datasets=[build_dataset_info(_model.STORE.index, d) for d in datasets])
+            {"datasets": [build_dataset_info(_model.STORE.index, d) for d in datasets]}
         )
 
     return utils.render(
@@ -409,19 +403,16 @@ def region_geojson(
     if not region_info:
         abort(404, f"Product {product_name!r} has no region specification.")
 
-    if region_info.region(region_code) is None:
+    region_summary = region_info.region(region_code)
+    if region_summary is None:
         abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
-    geojson = region_info.region(region_code).footprint_geojson
+    geojson = region_summary.footprint_geojson
     geojson["properties"].update(
-        dict(
-            product_name=product_name,
-            year_month_day_filter=[year, month, day],
-        )
+        {"product_name": product_name, "year_month_day_filter": [year, month, day]}
     )
     return utils.as_geojson(
-        geojson,
-        downloadable_filename_prefix=utils.api_path_as_filename_prefix(),
+        geojson, downloadable_filename_prefix=utils.api_path_as_filename_prefix()
     )
 
 
@@ -438,20 +429,18 @@ def timeline_page(product_name: str):
 
 
 def _load_product(
-    product_name: str, year, month, day
+    product_name: str, year: int | None, month: int | None, day: int | None
 ) -> tuple[
     Product,
-    ProductSummary,
-    TimePeriodOverview,
-    TimePeriodOverview,
-    TimePeriodOverview,
+    ProductSummary | None,
+    TimePeriodOverview | None,
+    TimePeriodOverview | None,
+    TimePeriodOverview | None,
 ]:
-    product = None
-    if product_name:
-        try:
-            product = _model.STORE.get_product(product_name)
-        except KeyError:
-            abort(404, f"Unknown product {product_name!r}")
+    try:
+        product = _model.STORE.get_product(product_name)
+    except KeyError:
+        abort(404, f"Unknown product {product_name!r}")
 
     product_summary = _model.get_product_summary(product_name)
     time_summary = _model.get_time_summary(product_name, year, month, day)
@@ -486,27 +475,27 @@ def inject_globals():
         if product_summary:
             last_updated = product_summary.last_successful_summary_time
 
-    return dict(
+    return {
         # Only the known, summarised products in groups.
-        grouped_products=_get_grouped_products(),
+        "grouped_products": _get_grouped_products(),
         # All products in the datacube, summarised or not.
-        datacube_products=list(_model.STORE.all_products()),
-        hidden_product_list=current_app.config.get(
+        "datacube_products": list(_model.STORE.all_products()),
+        "hidden_product_list": current_app.config.get(
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
-        datacube_metadata_types=list(_model.STORE.all_metadata_types()),
-        current_time=datetime.now(timezone.utc),
-        datacube_version=datacube.__version__,
-        app_version=cubedash.__version__,
-        grouping_timezone=tz.gettz(_model.DEFAULT_GROUPING_TIMEZONE),
-        last_updated_time=last_updated,
-        explorer_instance_title=current_app.config.get(
-            "CUBEDASH_INSTANCE_TITLE",
-        )
+        "datacube_metadata_types": list(_model.STORE.all_metadata_types()),
+        "current_time": datetime.now(timezone.utc),
+        "datacube_version": datacube.__version__,
+        "app_version": cubedash.__version__,
+        "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
+        "last_updated_time": last_updated,
+        "explorer_instance_title": current_app.config.get("CUBEDASH_INSTANCE_TITLE")
         or current_app.config.get("STAC_ENDPOINT_TITLE", ""),
-        explorer_sister_instances=current_app.config.get("CUBEDASH_SISTER_SITES", None),
-        breadcrumb=_get_breadcrumbs(request.path, request.script_root),
-    )
+        "explorer_sister_instances": current_app.config.get(
+            "CUBEDASH_SISTER_SITES", None
+        ),
+        "breadcrumb": _get_breadcrumbs(request.path, request.script_root),
+    }
 
 
 HREF = str
@@ -575,7 +564,7 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
         except re.error as e:
             raise RuntimeError(
                 f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
-            )
+            ) from None
 
     if group_by_regex:
         # group using regex
@@ -601,7 +590,7 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
 
 def _partition_default(
     grouped_product_summarise: list[tuple[str, list[ProductWithSummary]]],
-    remainder_group_size=5,
+    remainder_group_size: int,
 ) -> list[tuple[str, list[ProductWithSummary]]]:
     """
     For default items and place them at the end in batches.
@@ -654,9 +643,7 @@ def arrivals_page():
     period_length = timedelta(days=default_days)
     arrivals = list(_model.STORE.get_arrivals(period_length=period_length))
     return utils.render(
-        "arrivals.html",
-        arrival_days=arrivals,
-        period_length=period_length,
+        "arrivals.html", arrival_days=arrivals, period_length=period_length
     )
 
 
@@ -690,7 +677,7 @@ def about_page():
         "about.html",
         total_dataset_count=(
             sum(
-                summary.dataset_count
+                0 if summary is None else summary.dataset_count
                 for product, summary in _model.get_products_with_summaries()
             )
         ),

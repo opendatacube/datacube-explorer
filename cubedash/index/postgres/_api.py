@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -20,6 +20,8 @@ from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
+    ClauseElement,
+    CursorResult,
     Integer,
     Label,
     Result,
@@ -39,7 +41,7 @@ from sqlalchemy import (
     text,
     union_all,
 )
-from sqlalchemy.dialects.postgresql import TSTZRANGE, insert
+from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
 from sqlalchemy.sql import ColumnElement
 
 import cubedash.summary._schema as _schema
@@ -56,9 +58,7 @@ from ._schema import (
     TIME_OVERVIEW,
     init_elements,
 )
-from ._schema import (
-    get_srid_name as srid_name,
-)
+from ._schema import get_srid_name as srid_name
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
@@ -201,9 +201,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 # Select years
                 select(years.c.start_day)
                 .where(years.c.period_type == "year")
-                .where(
-                    years.c.product_ref == product_id,
-                )
+                .where(years.c.product_ref == product_id)
                 # Where there exist months that are more newly created.
                 .where(
                     exists(
@@ -213,9 +211,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                             func.extract("year", updated_months.c.start_day)
                             == func.extract("year", years.c.start_day)
                         )
-                        .where(
-                            updated_months.c.product_ref == product_id,
-                        )
+                        .where(updated_months.c.product_ref == product_id)
                         .where(
                             updated_months.c.generation_time > years.c.generation_time
                         )
@@ -267,14 +263,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     .where(PRODUCT.c.id == row[0])
                     .values(**fields)
                 ).fetchone()
-            else:
-                # Product doesn't exist, so insert it
-                fields["name"] = product_name
-                return conn.execute(
-                    insert(PRODUCT)
-                    .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
-                    .values(**fields)
-                ).fetchone()
+            # Product doesn't exist, so insert it
+            fields["name"] = product_name
+            return conn.execute(
+                insert(PRODUCT)
+                .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
+                .values(**fields)
+            ).fetchone()
 
     @override
     def put_summary(
@@ -283,7 +278,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.index._active_connection() as conn:
             return conn.execute(
                 insert(TIME_OVERVIEW)
-                .returning(TIME_OVERVIEW.c.generation_time)
                 .on_conflict_do_update(
                     index_elements=["product_ref", "start_day", "period_type"],
                     set_=summary_row,
@@ -293,6 +287,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                         TIME_OVERVIEW.c.period_type == period,
                     ),
                 )
+                .returning(TIME_OVERVIEW.c.generation_time)
                 .values(
                     product_ref=product_id,
                     start_day=start_day,
@@ -321,7 +316,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).fetchone()
 
     @override
-    def upsert_product_regions(self, product_id: int) -> Result:
+    def upsert_product_regions(self, product_id: int) -> CursorResult:
         # add new regions row and/or update existing regions based on dataset_spatial
         with self.index._active_connection() as conn:
             return conn.execute(
@@ -357,7 +352,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def delete_product_empty_regions(self, product_id: int) -> Result:
+    def delete_product_empty_regions(self, product_id: int) -> CursorResult:
         with self.index._active_connection() as conn:
             return conn.execute(
                 text(f"""
@@ -368,7 +363,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 where cubedash.dataset_spatial.dataset_type_ref = {product_id}
                 group by cubedash.dataset_spatial.region_code
             )
-                """),
+                """)
             )
 
     @override
@@ -398,59 +393,73 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def collection_cols(self) -> Select:
-        product_overview = (
-            select(
-                PRODUCT.c.name,
-                TIME_OVERVIEW.c.footprint_geometry,
-                PRODUCT.c.time_earliest,
-                PRODUCT.c.time_latest,
-                TIME_OVERVIEW.c.period_type,
-            )
-            .select_from(TIME_OVERVIEW.join(PRODUCT))
-            .cte("product_overview")
-        )
-
-        return select(ODC_PRODUCT.c.definition, product_overview).select_from(
-            product_overview.join(
-                ODC_PRODUCT, product_overview.c.name == ODC_PRODUCT.c.name
-            )
-        )
-
-    @override
     def collections_search_query(
         self,
         limit: int,
         offset: int,
-        name: str | None = None,
-        bbox: tuple[float, float, float, float] | None = None,
-        time: tuple[datetime, datetime] | None = None,
-        q: list[str] | None = None,
+        name: str | None,
+        bbox: tuple[float, float, float, float] | None,
+        time: tuple[datetime, datetime] | None,
+        q: Sequence[str] | None,
     ) -> Result:
-        collection = self.collection_cols().alias("collection")
-        query = select(collection).where(collection.c.period_type == "all")
+        # STAC Collections only hold a bounding box in EPSG:4326, no polygons
+        # Calculate the bounding box on the server, it's far more efficient.
+
+        # The Cubedash Product (which maps to a STAC Collection) doesn't have
+        # any bounding box or geometry attached, all the geometries are in the
+        # TimeOverview table, grouped by different `period_types`. In this case
+        # we use the `period_type=="all"` to get the one that covers all time.
+
+        collection_bbox = func.Box2D(
+            func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
+        )
+        bbox_array = array(
+            [
+                func.ST_XMin(collection_bbox),
+                func.ST_YMin(collection_bbox),
+                func.ST_XMax(collection_bbox),
+                func.ST_YMax(collection_bbox),
+            ]
+        )
+        query = (
+            select(
+                ODC_PRODUCT.c.definition,
+                PRODUCT.c.name,
+                case(
+                    (func.ST_XMin(collection_bbox).is_(None), None), else_=bbox_array
+                ).label("bbox"),
+                PRODUCT.c.time_earliest,
+                PRODUCT.c.time_latest,
+            )
+            .select_from(
+                TIME_OVERVIEW.join(
+                    PRODUCT, PRODUCT.c.id == TIME_OVERVIEW.c.product_ref
+                ).join(ODC_PRODUCT, PRODUCT.c.name == ODC_PRODUCT.c.name)
+            )
+            .where(TIME_OVERVIEW.c.period_type == "all")
+        )
 
         if name:
-            query = query.where(collection.c.name == name)
+            query = query.where(PRODUCT.c.name == name)
 
         if bbox:
             query = query.where(
-                collection.c.footprint_geometry.intersects(func.ST_MakeEnvelope(*bbox))
+                TIME_OVERVIEW.c.footprint_geometry.intersects(
+                    func.ST_MakeEnvelope(*bbox)
+                )
             )
 
         if time:
             query = query.where(
-                and_(
-                    default_utc(time[0]) <= default_utc(collection.c.time_latest),
-                    default_utc(collection.c.time_earliest) <= default_utc(time[1]),
-                )
+                default_utc(time[0]) <= PRODUCT.c.time_latest,
+                PRODUCT.c.time_earliest <= default_utc(time[1]),
             )
 
         if q:
             title = SimpleDocField(
                 name="title",
                 description="product title",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.c.definition,
                 indexed=False,
                 offset=("metadata", "title"),
             )
@@ -458,9 +467,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             description = SimpleDocField(
                 name="description",
                 description="product description",
-                alchemy_column=collection.c.definition,
+                alchemy_column=ODC_PRODUCT.c.definition,
                 indexed=False,
-                offset=("description"),
+                offset=("description",),
             )
 
             expressions = []
@@ -469,7 +478,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     [
                         title.alchemy_expression.icontains(value),
                         description.alchemy_expression.icontains(value),
-                        collection.c.name.icontains(value),
+                        ODC_PRODUCT.c.name.icontains(value),
                     ]
                 )
             query = query.where(or_(*expressions))
@@ -504,9 +513,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     group by arrival_date, product_name
                     order by arrival_date desc, product_name;
                 """),
-                {
-                    "datasets_since": datasets_since_date,
-                },
+                {"datasets_since": datasets_since_date},
             )
 
     @override
@@ -620,7 +627,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def find_fixed_columns(
         self,
         field_values: dict,
-        candidate_fields: list[tuple[str, Field]],
+        candidate_fields: Sequence[tuple[str, Field]],
         sample_ids: Iterable[tuple],
     ) -> Result:
         with self.index._active_connection() as conn:
@@ -642,7 +649,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     # does this really add much value? and if so, is there a better way to do it?
     @override
     def all_products_location_samples(
-        self, products: list[Product], sample_size: int = 50
+        self, products: Sequence[Product], sample_size: int
     ) -> Result:
         queries = []
         for product in products:
@@ -677,10 +684,10 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self,
         product: Product,
         region_code: str,
-        time_range: Range,
+        time_range: Range | None,
         limit: int,
         offset: int = 0,
-    ) -> Generator[Dataset, None, None]:
+    ) -> Generator[Dataset]:
         query = (
             select(*_DATASET_SELECT_FIELDS)
             .select_from(
@@ -715,12 +722,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @override
     def products_by_region(
-        self,
-        region_code: str,
-        time_range: Range | None,
-        limit: int,
-        offset: int = 0,
-    ) -> Generator[int, None, None]:
+        self, region_code: str, time_range: Range | None, limit: int, offset: int = 0
+    ) -> Generator[int]:
         query = (
             select(DATASET_SPATIAL.c.dataset_type_ref)
             .distinct()
@@ -752,13 +755,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if full:
                 return conn.execute(
                     DATASET_SPATIAL.delete()
-                    .where(
-                        DATASET_SPATIAL.c.dataset_type_ref == product_id,
-                    )
+                    .where(DATASET_SPATIAL.c.dataset_type_ref == product_id)
                     .where(
                         ~DATASET_SPATIAL.c.id.in_(
                             select(ODC_DATASET.c.id).where(
-                                ODC_DATASET.c.dataset_type_ref == product_id,
+                                ODC_DATASET.c.dataset_type_ref == product_id
                             )
                         )
                     )
@@ -779,8 +780,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             if after_date is not None:
                 archived_datasets = archived_datasets.where(
                     or_(
-                        ODC_DATASET.c.added > after_date,
-                        column("updated") > after_date,
+                        ODC_DATASET.c.added > after_date, column("updated") > after_date
                     )
                 )
 
@@ -806,10 +806,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         ]
         if after_date is not None:
             only_where.append(
-                or_(
-                    ODC_DATASET.c.added > after_date,
-                    column("updated") > after_date,
-                )
+                or_(ODC_DATASET.c.added > after_date, column("updated") > after_date)
             )
         with self.index._active_connection() as conn:
             stmt = insert(DATASET_SPATIAL).from_select(
@@ -818,14 +815,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 # original version includes an order_by... is it needed?
             )
             return conn.execute(
-                stmt.on_conflict_do_update(
-                    index_elements=["id"],
-                    set_=stmt.excluded,
-                )
+                stmt.on_conflict_do_update(index_elements=["id"], set_=stmt.excluded)
             ).rowcount
 
     @override
-    def synthesize_dataset_footprint(self, rows: list[tuple], shapes: dict) -> Result:
+    def synthesize_dataset_footprint(
+        self, rows: Sequence[tuple], shapes: dict
+    ) -> Result:
         # don't believe there's a way to pass parameter to _active_connection
         with self.engine.begin() as conn:
             return conn.execute(
@@ -833,22 +829,21 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(DATASET_SPATIAL.c.id == bindparam("dataset_id"))
                 .values(footprint=bindparam("footprint")),
                 [
-                    dict(
-                        dataset_id=id_,
-                        footprint=from_shape(
+                    {
+                        "dataset_id": id_,
+                        "footprint": from_shape(
                             shapely.ops.unary_union(
                                 [
                                     shapes[(int(sat_path.lower), row)]
                                     for row in range(
-                                        int(sat_row.lower),
-                                        int(sat_row.upper) + 1,
+                                        int(sat_row.lower), int(sat_row.upper) + 1
                                     )
                                 ]
                             ),
                             srid=4326,
                             extended=True,
                         ),
-                    )
+                    }
                     for id_, sat_path, sat_row in rows
                 ],
             )
@@ -856,23 +851,24 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
-        field_exprs = dict(
-            collection=(
+        return {
+            "collection": (
                 select(ODC_PRODUCT.c.name)
                 .where(ODC_PRODUCT.c.id == DATASET_SPATIAL.c.dataset_type_ref)
                 .scalar_subquery()
             ),
-            datetime=DATASET_SPATIAL.c.center_time,
-            creation_time=DATASET_SPATIAL.c.creation_time,
-            geometry=geom,
-            bbox=func.Box2D(geom).cast(String),
-            region_code=DATASET_SPATIAL.c.region_code,
-            id=DATASET_SPATIAL.c.id,
-        )
-        return field_exprs
+            "datetime": DATASET_SPATIAL.c.center_time,
+            "creation_time": DATASET_SPATIAL.c.creation_time,
+            "geometry": geom,
+            "bbox": func.Box2D(geom).cast(String),
+            "region_code": DATASET_SPATIAL.c.region_code,
+            "id": DATASET_SPATIAL.c.id,
+        }
 
     @override
-    def spatial_select_query(self, clauses, full: bool = False):
+    def spatial_select_query(
+        self, clauses: Sequence[Label | ClauseElement], full: bool = False
+    ) -> Select:
         query = select(*clauses)
         if full:
             return query.select_from(
@@ -900,14 +896,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def schema_initialised(self) -> bool:
-        """
-        Do our DB schemas exist?
-        """
-        with self.engine.begin() as conn:
-            return _schema.has_schema(conn)
-
-    @override
     def schema_compatible_info(
         self, for_writing_operations_too=False
     ) -> tuple[str, bool]:
@@ -927,7 +915,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             return init_elements(conn, grouping_epsg_code)
 
     @override
-    def refresh_stats(self, concurrently=False) -> None:
+    def refresh_stats(self, concurrently: bool) -> None:
         """
         Refresh general statistics tables that cover all products.
 
@@ -1023,10 +1011,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def region_counts(self, where_clause):
         with self.index._active_connection() as conn:
             return conn.execute(
-                select(
-                    DATASET_SPATIAL.c.region_code.label("region_code"),
-                    func.count(),
-                )
+                select(DATASET_SPATIAL.c.region_code.label("region_code"), func.count())
                 .where(where_clause)
                 .group_by("region_code")
             )
@@ -1113,9 +1098,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
 
     @override
-    def sample_dataset(self, product_id: int, columns):
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result:
         with self.index._active_connection() as conn:
-            res = conn.execute(
+            return conn.execute(
                 select(
                     ODC_DATASET.c.id,
                     ODC_DATASET.c.dataset_type_ref.label("product_ref"),
@@ -1132,18 +1117,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
             # at this point can we not select the values from DATASET_SPATIAL,
             # or is there a reason we need them to be calculated?
-            return res
 
     @override
     def mapped_crses(self, product, srid_expression):
         with self.index._active_connection() as conn:
-            res = conn.execute(
-                select(
-                    literal(product.name).label("product"),
-                    srid_expression,
-                )
+            return conn.execute(
+                select(literal(product.name).label("product"), srid_expression)
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
                 .where(ODC_DATASET.c.archived.is_(None))
                 .limit(1)
             )
-            return res
