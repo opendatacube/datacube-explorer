@@ -62,9 +62,7 @@ def check_page_limit(limit: int) -> int:
     page_size_limit = current_app.config.get(
         "STAC_PAGE_SIZE_LIMIT", DEFAULT_PAGE_SIZE_LIMIT
     )
-    if limit > page_size_limit:
-        return page_size_limit
-    return limit
+    return min(limit, page_size_limit)
 
 
 def dissoc_in(d: dict, key: str):
@@ -567,8 +565,9 @@ def _handle_search_request(
 
     time = request_args.get("datetime")
 
-    limit = request_args.get("limit", default=get_default_limit(), type=int)
-    limit = check_page_limit(limit)
+    limit = check_page_limit(
+        request_args.get("limit", default=get_default_limit(), type=int)
+    )
 
     ids = request_args.get(
         "ids", default=None, type=partial(_array_arg, expect_type=uuid.UUID)
@@ -707,8 +706,9 @@ def _handle_collection_search(
 
     q = request_args.get("q", default=None, type=partial(_array_arg, expect_type=str))
 
-    limit = request_args.get("limit", default=get_default_limit(), type=int)
-    limit = check_page_limit(limit)
+    limit = check_page_limit(
+        request_args.get("limit", default=get_default_limit(), type=int)
+    )
 
     offset = request_args.get("_o", default=0, type=int)
 
@@ -1361,9 +1361,10 @@ def arrivals_items():
 
     This returns a Stac FeatureCollection of complete Stac Items, with paging links.
     """
-    limit = request.args.get("limit", default=get_default_limit(), type=int)
+    limit = check_page_limit(
+        request.args.get("limit", default=get_default_limit(), type=int)
+    )
     offset = request.args.get("_o", default=0, type=int)
-    limit = check_page_limit(limit)
 
     def next_page_url(next_offset):
         return url_for(".arrivals_items", limit=limit, _o=next_offset)
