@@ -19,4 +19,4 @@ build:
     create_environment:
        - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
-       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group doc
+       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" UV_LINK_MODE=copy uv sync --frozen --group doc
