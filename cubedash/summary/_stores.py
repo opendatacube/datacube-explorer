@@ -185,6 +185,9 @@ class CollectionItem:
     time_earliest: datetime | None
     time_latest: datetime | None
     bbox: BoundingBox | None
+    providers: list[dict[str, Any]] | None
+    summaries: dict[str, Any] | None
+    keywords: list[str] | None
 
     @property
     def title(self) -> str:
@@ -1168,6 +1171,15 @@ class SummaryStore:
         ):
             # the 'r' at the moment has
             # ('definition', 'name', 'bbox', 'time_earliest', 'time_latest')
+
+            # Add Providers, Summaries and Keywords
+            # TODO: Nominally extract these from self._find_product_fixed_metadata() or similar
+            # _stac.as_stac_collection() will translate these into a pystac.Collection
+            # None values will validate with pystac.Collection but may not be rendered in the /stac/collection view
+            providers = None # list[dict[str, Any]] | None
+            summaries = None # dict[str, Any] | None
+            keywords = None # list[str] | None
+
             yield CollectionItem(
                 name=r.name,
                 time_earliest=r.time_earliest.astimezone(default_timezone)
@@ -1178,6 +1190,9 @@ class SummaryStore:
                 else None,
                 bbox=r.bbox,
                 definition=r.definition,
+                providers=providers,
+                summaries=summaries,
+                keywords=keywords,
             )
 
     def _recalculate_period(

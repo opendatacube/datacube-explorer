@@ -269,7 +269,40 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     return item
 
 
+def _provider_from_dict(d: dict) -> pystac.Provider:
+    """A custom parser that extends pystac.Provider.from_dict()"""
+    # pystac.Provider.from_dict() does not validate roles against ProviderRole nor create a list
+    p = pystac.Provider.from_dict(d)
+    roles = p.roles  # unvalidated
+    if roles is not None:
+        p.roles = []  # reset
+        if isinstance(roles, str):
+            roles = [roles]
+        for r in roles:
+            if r is None:
+                continue
+            try:
+                p.roles.append(pystac.ProviderRole(r))
+            except ValueError as e:
+                _LOG.warning(f"Could not parse Provider role: {e}")
+        if len(p.roles) == 0:
+            p.roles = None
+    return p
+
+
 def as_stac_collection(res: CollectionItem) -> pystac.Collection:
+    """Return a pystac.Collection view of an internal CollectionItem"""
+    # Add Providers, Summaries and Keywords
+    # providers: list[dict[str, Any]] | None -> list[pystac.Provider]
+    # summaries: dict[str, Any] | None -> pystac.Summaries
+    # keywords: list[str] | None
+    providers = None
+    if res.providers is not None:
+        providers = [_provider_from_dict(xx) for xx in res.providers]
+    summaries = None  # or pystac.Summaries.empty()
+    if res.summaries is not None:
+        summaries = pystac.Summaries(res.summaries)
+
     stac_collection = Collection(
         id=res.name,
         title=res.title,
@@ -278,7 +311,9 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
             "license",
             flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
         ),
-        providers=[],
+        providers=providers,
+        summaries=summaries,
+        keywords=res.keywords,
         extent=Extent(
             pystac.SpatialExtent(
                 # TODO: Find a nicer way to make the typechecker happier
