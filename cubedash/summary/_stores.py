@@ -1176,9 +1176,9 @@ class SummaryStore:
             # TODO: Nominally extract these from self._find_product_fixed_metadata() or similar
             # _stac.as_stac_collection() will translate these into a pystac.Collection
             # None values will validate with pystac.Collection but may not be rendered in the /stac/collection view
-            providers = None # list[dict[str, Any]] | None
-            summaries = None # dict[str, Any] | None
-            keywords = None # list[str] | None
+            providers = None  # list[dict[str, Any]] | None
+            summaries = None  # dict[str, Any] | None
+            keywords = None  # list[str] | None
 
             yield CollectionItem(
                 name=r.name,

@@ -641,20 +641,46 @@ def test_stac_collection(stac_client: FlaskClient):
     ("input_dict", "stac_provider"),
     [
         ({"name": "my_org"}, {"name": "my_org"}),
-        ({"name": "my_org", "description": "My org name", "roles": "host", "url": "my.org.au", "extra": "More info"},
-         {"name": "my_org", "description": "My org name", "roles": ["host"], "url": "my.org.au", "extra": "More info"}),
-        ({"name": "my_org", "roles": ["host", "producer"]}, {"name": "my_org", "roles": ["host", "producer"]}),
-        ({"name": "my_org", "roles": ["host", "dummy"]}, {"name": "my_org", "roles": ["host"]}),
-        ({"name": "my_org", "roles": [None, "host"]}, {"name": "my_org", "roles": ["host"]}),
+        (
+            {
+                "name": "my_org",
+                "description": "My org name",
+                "roles": "host",
+                "url": "my.org.au",
+                "extra": "More info",
+            },
+            {
+                "name": "my_org",
+                "description": "My org name",
+                "roles": ["host"],
+                "url": "my.org.au",
+                "extra": "More info",
+            },
+        ),
+        (
+            {"name": "my_org", "roles": ["host", "producer"]},
+            {"name": "my_org", "roles": ["host", "producer"]},
+        ),
+        (
+            {"name": "my_org", "roles": ["host", "dummy"]},
+            {"name": "my_org", "roles": ["host"]},
+        ),
+        (
+            {"name": "my_org", "roles": [None, "host"]},
+            {"name": "my_org", "roles": ["host"]},
+        ),
         ({"name": "my_org", "roles": "dummy"}, {"name": "my_org"}),
         ({"name": "my_org", "roles": None}, {"name": "my_org"}),
-    ]
+    ],
 )
 def test_stac_collection_provider_dict(input_dict: dict, stac_provider: dict):
     """Test mapping from a CollectionItem dict to stac Provider dict,
     particularly validating roles and making them a list"""
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Could not parse Provider role: 'dummy' is not a valid ProviderRole")
+        warnings.filterwarnings(
+            "ignore",
+            "Could not parse Provider role: 'dummy' is not a valid ProviderRole",
+        )
         p = _stac._provider_from_dict(input_dict)
         assert p.to_dict() == stac_provider
 
