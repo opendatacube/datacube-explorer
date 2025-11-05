@@ -166,8 +166,7 @@ def odc_test_db(cfg_env):
 
             dc.close()
 
-            # This actually drops the schema, not the DB
-            pgres_core.drop_db(conn)  # pylint:disable=protected-access
+            pgres_core.drop_schema(conn)  # pylint:disable=protected-access
 
             # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
             # and attempts to recreate them.
@@ -189,7 +188,7 @@ def odc_test_db(cfg_env):
 
             dc.close()
 
-            pgis_core.drop_db(conn)  # pylint:disable=protected-access
+            pgis_core.drop_schema(conn)  # pylint:disable=protected-access
 
             _remove_postgis_dynamic_indexes()
 
