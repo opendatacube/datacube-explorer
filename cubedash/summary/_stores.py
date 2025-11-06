@@ -802,7 +802,7 @@ class SummaryStore:
         }
 
         row = self.e_index.upsert_product_record(product.name, fields)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
         product_id, _ = row
 
         product.id_ = product_id
@@ -1431,7 +1431,7 @@ class SummaryStore:
         (so future runs will be incremental from this point onwards)
         """
         self.e_index.update_product_refresh_timestamp(product_id, refresh_timestamp)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
 
     def list_complete_products(self) -> list[str]:
         """
