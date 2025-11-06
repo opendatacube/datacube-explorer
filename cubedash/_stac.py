@@ -299,7 +299,9 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
             "license",
             flask.current_app.config.get("CUBEDASH_DEFAULT_LICENSE", "Unknown"),
         ),
-        providers=[_provider_from_dict(xx) for xx in res.providers] if res.providers else None,
+        providers=[_provider_from_dict(xx) for xx in res.providers]
+        if res.providers
+        else None,
         summaries=pystac.Summaries(res.summaries) if res.summaries else None,
         keywords=res.keywords,
         extent=Extent(
