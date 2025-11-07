@@ -13,7 +13,6 @@ docker-compose.*.yml
 # CI / distribution / packaging
 **/*.egg-info
 .github
-.gitignore
 .mergify.yml
 .pre-commit-config.yaml
 .readthedocs.yaml

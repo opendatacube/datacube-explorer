@@ -66,6 +66,7 @@ ARG ENVIRONMENT=deployment
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
+    && git config --global --add safe.directory /build \
     && uv sync --frozen $EXTRAS --no-editable \
     && ([ "$ENVIRONMENT" != "deployment" ] || \
         (chmod 644 /usr/local/bin/uv* && \

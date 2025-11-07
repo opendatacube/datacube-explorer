@@ -117,7 +117,12 @@ exclude = ["integration_tests"]
 include = ["cubedash*"]
 
 [tool.setuptools_scm]
+local_scheme = "no-local-version"
+version_scheme = "no-guess-dev"
 write_to = "cubedash/_version.py"
+
+[tool.setuptools_scm.scm.git]
+describe_command = "git describe --tags"
 
 [tool.coverage.run]
 branch = true
