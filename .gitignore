@@ -66,12 +66,16 @@ target/
 .DS_Store
 
 # Environment-specific templates
+.envrc
+.env
 *.env.html
 settings.env.py
 
 node_modules
-
 certs
+
+# Uv venvs
+.venv
 
 # Let setuptools_scm manage the _version.py file
 cubedash/_version.py

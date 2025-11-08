@@ -1,33 +1,45 @@
-# Files that are only used by docker/docker compose.
-docker-compose.yaml
-docker-compose.*.yaml
-docker-compose.yml
-docker-compose.*.yml
-.docker
-.dockerignore
-
 # Byte-compiled / optimized / DLL files
-**/__pycache__
+**/__pycache__/
+**/.pytest_cache/
 **/*.py[cod]
 
-# CI / distribution / packaging
-**/*.egg-info
-.github
-.gitignore
-.mergify.yml
-.pre-commit-config.yaml
-.readthedocs.yaml
-.stylelintrc
-.venv
-.yamllint
-build
-dist
-Makefile
-pylintrc
+**/.mypy_cache/
+**/.DS_Store
 
-# Test and coverage reports
-**/htmlcov
-**/.tox
+# C extensions
+**/*.so
+
+# Distribution / packaging
+**/.Python
+**/env/
+**/build/
+**/develop-eggs/
+**/dist/
+**/downloads/
+**/eggs/
+**/.eggs/
+**/lib/
+**/lib64/
+**/parts/
+**/sdist/
+**/var/
+**/*.egg-info/
+**/.installed.cfg
+**/*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+**/*.manifest
+**/*.spec
+
+# Installer logs
+**/pip-log.txt
+**/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+**/htmlcov/
+**/.tox/
 **/.coverage
 **/.coverage.*
 **/.cache
@@ -35,25 +47,20 @@ pylintrc
 **/coverage.xml
 **/*.cover
 **/.hypothesis
-.mypy_cache
-.pytest_cache
-.ruff_cache
-conftest.py
-integration_tests
-tests
+
+# Translations
+**/*.mo
+**/*.pot
 
 # Django stuff:
 **/*.log
 
-# Documentation
-*.md
-*.png
-*.rst
-docs
-LICENSE
+# Sphinx documentation
+**/docs/_build/
 
 # PyBuilder
-**/target
+**/target/
+**/.idea/
 
 # iPython Notebook
 **/.ipynb_checkpoints
@@ -62,9 +69,19 @@ LICENSE
 **/.DS_Store
 
 # Environment-specific templates
+**/.env
+**/.envrc
 **/*.env.html
 **/settings.env.py
 
-# IDE settings
-.idea
-.vscode
+**/node_modules
+**/certs
+
+# Let setuptools_scm manage the _version.py file
+**/cubedash/_version.py
+
+# Ignore vscode
+**/.vscode
+
+# Any uv (or otherwise) generated virtual environments
+**/.venv
