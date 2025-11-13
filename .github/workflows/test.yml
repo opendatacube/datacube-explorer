@@ -59,7 +59,7 @@ jobs:
         run: |
           TIMESTAMP=$(git log -1 --pretty=%ct pyproject.toml uv.lock cubedash)
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
-          UNSTABLE_TAG=$(git describe --tags | sed 's#\-g#+g#')
+          UNSTABLE_TAG=$(uvx setuptools-scm)
           echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
 
       - name: Build Docker

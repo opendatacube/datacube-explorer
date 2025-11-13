@@ -70,15 +70,15 @@ clean:  ## Clean all working/temporary files
 
 # DOCKER STUFF
 up: ## Start server using Docker
-	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	export EXPLORER_VERSION=$$(uvx setuptools-scm) && \
 	  docker compose up --quiet-pull
 
 up-d: ## Start server using Docker in background
-	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	export EXPLORER_VERSION=$$(uvx setuptools-scm) && \
 	  docker compose up -d --wait --quiet-pull
 
 build: ## Build the dev Docker image
-	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	export EXPLORER_VERSION=$$(uvx setuptools-scm) && \
 	  docker compose build
 
 docker-clean: ## Get rid of the local docker env and DB
@@ -86,13 +86,13 @@ docker-clean: ## Get rid of the local docker env and DB
 
 # These rules pass --file to avoid loading docker-compose.override.yml.
 build-prod: ## Build the prod Docker image
-	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	export EXPLORER_VERSION=$$(uvx setuptools-scm) && \
 	  docker compose \
 		--file docker-compose.yml \
 		build
 
 up-prod: ## Start using the prod Docker image
-	export EXPLORER_VERSION=$$(git describe --tag | sed 's#\-g#+g#') && \
+	export EXPLORER_VERSION=$$(uvx setuptools-scm) && \
 	  docker compose \
 		--file docker-compose.yml \
 		up -d --wait --quiet-pull
