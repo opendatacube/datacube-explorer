@@ -3,15 +3,14 @@ name: Tests
 
 on:
   pull_request:
-    paths:
+    paths: &paths
       - '**'
 
   push:
     branches:
       - develop
       - integrate_1.9
-    paths:
-      - '**'
+    paths: *paths
 
   release:
     types:

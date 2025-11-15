@@ -3,15 +3,14 @@ name: Docker Image
 
 on: # yamllint disable-line rule:truthy
   pull_request:
-    paths:
+    paths: &paths
       - '**'
 
   push:
     branches:
       - develop
       - integrate_1.9
-    paths:
-      - '**'
+    paths: *paths
 
 env:
   DOCKER_IMAGE: ghcr.io/opendatacube/explorer:tests
