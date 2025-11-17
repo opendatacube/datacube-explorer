@@ -5,6 +5,11 @@ on:
   pull_request:
     paths: &paths
       - '**'
+      - '!docs/**'
+      - '!*.rst'
+      - '!*.md'
+      - '!.github/**'
+      - '.github/workflows/test.yml'
 
   push:
     branches:
