@@ -4,6 +4,10 @@ updates:
   directory: "/"
   schedule:
     interval: "weekly"
+  groups:
+    actions-deps:
+      patterns:
+        - "*"
 - package-ecosystem: docker
   directory: "/"
   schedule:
