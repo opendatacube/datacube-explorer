@@ -24,7 +24,7 @@ To choose which datacube to point to, it takes identical datacube
 config (-C) and environment (-E) options as the `datacube` command,
 and reads identical datacube config files and environment variables.
 
-ie. It will use the datacube that is shown by running the command
+i.e. It will use the datacube that is shown by running the command
 `datacube system check`
 
 See datacube’s own docs for this configuration handling.
