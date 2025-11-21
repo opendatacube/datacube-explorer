@@ -470,7 +470,9 @@ def cli(
 
     if init_database:
         user_message(f"Initialising schema (EPSG:{epsg_code or DEFAULT_EPSG})")
-        store.init(grouping_epsg_code=epsg_code)
+        if not store.init(grouping_epsg_code=epsg_code):
+            user_message("Failed to initialise schema, aborting.")
+            sys.exit(1)
     elif not store.is_initialised():
         user_message(
             style("No cubedash schema exists. ", fg="red")
