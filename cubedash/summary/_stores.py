@@ -756,6 +756,7 @@ class SummaryStore:
             for [uri] in self.e_index.ds_search_returning(
                 fields=("uri",), limit=sample_size, args=search_args
             )
+            if uri is not None
         )
 
         return list(_common_paths_for_uris(uri_samples))
