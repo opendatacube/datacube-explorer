@@ -26,6 +26,7 @@ from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
@@ -276,7 +277,7 @@ class SummaryStore:
         _LOG.debug("software.version", postgis=postgis_ver, explorer=explorer_version)
         return is_compatible
 
-    def init(self, grouping_epsg_code: int | None) -> None:
+    def init(self, grouping_epsg_code: int | None) -> bool:
         """
         Initialise any schema elements that don't exist.
 
@@ -284,10 +285,14 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        self.e_index.execute_ddl(
-            CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
-        )
-        refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        try:
+            self.e_index.execute_ddl(
+                CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
+            )
+            refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        except ProgrammingError as e:
+            _LOG.error(str(e))
+            return False
         if refresh_also:
             # Refresh product information after a schema update, plus the given kind of data.
             for product in self.all_products():
@@ -302,6 +307,7 @@ class SummaryStore:
                     in refresh_also,  # I believe this is always True
                 )
             _LOG.info("data.refreshing_extents.complete")
+        return True
 
     @classmethod
     def create(
@@ -805,7 +811,7 @@ class SummaryStore:
         }
 
         row = self.e_index.upsert_product_record(product.name, fields)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
         product_id, _ = row
 
         product.id_ = product_id
@@ -1446,7 +1452,7 @@ class SummaryStore:
         (so future runs will be incremental from this point onwards)
         """
         self.e_index.update_product_refresh_timestamp(product_id, refresh_timestamp)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
 
     def list_complete_products(self) -> list[str]:
         """
