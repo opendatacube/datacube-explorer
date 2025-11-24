@@ -749,7 +749,7 @@ class SummaryStore:
         Sample some dataset locations for the given product, and return
         the common location.
 
-        Returns one row for each uri scheme found (http, file etc).
+        Returns one row for each uri scheme found (http, file etc.).
         """
         search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
@@ -762,6 +762,7 @@ class SummaryStore:
             for [uri] in self.e_index.ds_search_returning(
                 fields=("uri",), limit=sample_size, args=search_args
             )
+            if uri is not None
         )
 
         return list(_common_paths_for_uris(uri_samples))
