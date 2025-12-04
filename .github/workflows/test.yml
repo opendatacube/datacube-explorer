@@ -3,15 +3,19 @@ name: Tests
 
 on:
   pull_request:
-    paths:
+    paths: &paths
       - '**'
+      - '!docs/**'
+      - '!*.rst'
+      - '!*.md'
+      - '!.github/**'
+      - '.github/workflows/test.yml'
 
   push:
     branches:
       - develop
       - integrate_1.9
-    paths:
-      - '**'
+    paths: *paths
 
   release:
     types:
