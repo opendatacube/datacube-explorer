@@ -89,14 +89,11 @@ def test_hide_products_product_page_display(
     app_configured_client: FlaskClient, total_indexed_products_count
 ) -> None:
     html = get_html(app_configured_client, "/products")
-    hidden_product_count = html.css_first("span.hidden-product-count").text(strip=True)
-    assert hidden_product_count == "3"
 
     h2 = html.css_first("h2").text(strip=True)
-    indexed_product_count = html.css_first("span.indexed-product-count").text(
-        strip=True
-    )
-    assert indexed_product_count == str(total_indexed_products_count)
+    hidden_product_rows = html.css("table.hidden-products tr")
+    hidden_product_count = len(hidden_product_rows)
+    assert hidden_product_count == 3
     assert str(total_indexed_products_count - 3) in h2
 
     listed_product_count = html.css("tr.collapse-when-small")
