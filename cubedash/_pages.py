@@ -17,7 +17,7 @@ from flask import (
     request,
     url_for,
 )
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DataError, ProgrammingError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
@@ -230,7 +230,7 @@ def search_page(
             index.datasets.search(**query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
-    except DataError:
+    except (DataError, ProgrammingError):
         abort(400, "Invalid field value provided in query")
 
     more_datasets_exist = False

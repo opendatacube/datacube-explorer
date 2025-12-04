@@ -559,8 +559,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(
                     or_(
                         ProductSpatial.last_successful_summary.is_(None),
-                        ProductSpatial.last_successful_summary
-                        < refresh_timestamp.isoformat(),
+                        ProductSpatial.last_successful_summary < refresh_timestamp,
                     )
                 )
                 .values(last_successful_summary=refresh_timestamp)

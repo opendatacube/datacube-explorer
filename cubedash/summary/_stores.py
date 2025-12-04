@@ -26,6 +26,7 @@ from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
@@ -273,7 +274,7 @@ class SummaryStore:
         _LOG.debug("software.version", postgis=postgis_ver, explorer=explorer_version)
         return is_compatible
 
-    def init(self, grouping_epsg_code: int | None) -> None:
+    def init(self, grouping_epsg_code: int | None) -> bool:
         """
         Initialise any schema elements that don't exist.
 
@@ -281,10 +282,14 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        self.e_index.execute_ddl(
-            CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
-        )
-        refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        try:
+            self.e_index.execute_ddl(
+                CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
+            )
+            refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        except ProgrammingError as e:
+            _LOG.error(str(e))
+            return False
         if refresh_also:
             # Refresh product information after a schema update, plus the given kind of data.
             for product in self.all_products():
@@ -299,6 +304,7 @@ class SummaryStore:
                     in refresh_also,  # I believe this is always True
                 )
             _LOG.info("data.refreshing_extents.complete")
+        return True
 
     @classmethod
     def create(
@@ -743,7 +749,7 @@ class SummaryStore:
         Sample some dataset locations for the given product, and return
         the common location.
 
-        Returns one row for each uri scheme found (http, file etc).
+        Returns one row for each uri scheme found (http, file etc.).
         """
         search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
@@ -756,6 +762,7 @@ class SummaryStore:
             for [uri] in self.e_index.ds_search_returning(
                 fields=("uri",), limit=sample_size, args=search_args
             )
+            if uri is not None
         )
 
         return list(_common_paths_for_uris(uri_samples))

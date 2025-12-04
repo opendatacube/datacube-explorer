@@ -1,5 +1,5 @@
 # Data Cube Explorer
-[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
+[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Code%20Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
 [![Tests](https://github.com/opendatacube/datacube-explorer/workflows/Tests/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ATests)
 [![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![Scan](https://github.com/opendatacube/datacube-explorer/workflows/Scan/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3AScan)
@@ -31,7 +31,7 @@ It will now be viewable on [http://localhost:8090](https://localhost:8090)
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server.
 
-Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/installation/setup/common_install.html)
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://opendatacube.readthedocs.io/en/latest/installation/setup/common_install.html)
 is recommended. You may need to also `conda install -c conda-forge postgis`
 
 Test that you can run `datacube system check`, and that it's connecting
@@ -256,7 +256,7 @@ You need to have Docker and Docker Compose installed on your system.
 
 To create your environment, run `make up` or `docker-compose up`.
 
-You need an ODC database, so you'll need to refer to the [ODC docs](https://datacube-core.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
+You need an ODC database, so you'll need to refer to the [ODC docs](https://opendatacube.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
 
 When you have some ODC data indexed, you can run `make index` to create the Explorer indexes.
 
