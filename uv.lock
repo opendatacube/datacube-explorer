@@ -798,9 +798,6 @@ wheels = [
 postgres = [
     { name = "psycopg2" },
 ]
-psycopg3 = [
-    { name = "psycopg" },
-]
 
 [[package]]
 name = "datacube-explorer"
@@ -808,7 +805,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cachetools" },
     { name = "click" },
-    { name = "datacube", extra = ["postgres", "psycopg3"] },
+    { name = "datacube", extra = ["postgres"] },
     { name = "eodatasets3" },
     { name = "fiona" },
     { name = "flask" },
@@ -821,6 +818,7 @@ dependencies = [
     { name = "markupsafe" },
     { name = "odc-geo" },
     { name = "orjson" },
+    { name = "psycopg", extra = ["c"] },
     { name = "pygeofilter" },
     { name = "pyorbital" },
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -905,7 +903,7 @@ requires-dist = [
     { name = "cachetools" },
     { name = "ciso8601", marker = "extra == 'deployment'" },
     { name = "click", specifier = "<8.2.0" },
-    { name = "datacube", extras = ["postgres", "psycopg3"], specifier = ">=1.9.10,<1.10.0" },
+    { name = "datacube", extras = ["postgres"], specifier = ">=1.9.10,<1.10.0" },
     { name = "datacube-explorer", extras = ["deployment"], marker = "extra == 'test'" },
     { name = "deepdiff", marker = "extra == 'test'" },
     { name = "docker", marker = "extra == 'test'" },
@@ -930,6 +928,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'test'" },
     { name = "prometheus-flask-exporter", marker = "extra == 'deployment'" },
     { name = "prometheus-flask-exporter", marker = "extra == 'test'" },
+    { name = "psycopg", extras = ["c"] },
     { name = "pygeofilter", specifier = ">=0.2.2" },
     { name = "pyorbital" },
     { name = "pyproj" },
@@ -2627,6 +2626,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/44/05/d4a05988f15fcf90e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/14/f2724bd1986158a348316e86fdd0837a838b14a711df3f00e47fba597447/psycopg-3.2.13-py3-none-any.whl", hash = "sha256:a481374514f2da627157f767a9336705ebefe93ea7a0522a6cbacba165da179a", size = 206797, upload-time = "2025-11-21T22:29:39.733Z" },
 ]
+
+[package.optional-dependencies]
+c = [
+    { name = "psycopg-c", marker = "implementation_name != 'pypy'" },
+]
+
+[[package]]
+name = "psycopg-c"
+version = "3.2.13"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/d4/f471e7f87c0a75de96a3f17a532412b8866a888383289d54ddb6adb5b54e/psycopg_c-3.2.13.tar.gz", hash = "sha256:3f8d69a563f198198aaf3333e3830c68368a4e45cd60faeabca9949f958f6480", size = 624372, upload-time = "2025-11-21T22:34:34.084Z" }
 
 [[package]]
 name = "psycopg2"
