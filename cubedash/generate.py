@@ -478,13 +478,13 @@ def cli(
                 style("No cubedash schema exists. ", fg="red")
                 + "Please rerun with --init to create one"
             )
-            sys.exit(-1)
+            sys.exit(1)
         elif not store.is_schema_compatible(for_writing_operations_too=True):
             user_message(
                 style("Cubedash schema is out of date. ", fg="red")
                 + "Please rerun with --init to apply updates."
             )
-            sys.exit(-2)
+            sys.exit(1)
 
         if generate_all_products:
             products = sorted(store.all_products(), key=lambda p: p.name)
@@ -510,7 +510,7 @@ def cli(
             _LOG.info("stats.refresh")
     finally:
         store.close()
-    sys.exit(failures)
+    sys.exit(1 if failures else 0)
 
 
 _TIME_PERIOD_FORMAT = re.compile(

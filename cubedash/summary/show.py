@@ -87,12 +87,12 @@ def cli(
     except KeyError:
         echo(f"Unknown product {product_name!r}", err=True)
         store.close()
-        sys.exit(-1)
+        sys.exit(1)
     product = store.get_product_summary(product_name)
     if product is None:
         echo(f"No info: product {product_name!r} has not been summarised", err=True)
         store.close()
-        sys.exit(-1)
+        sys.exit(1)
 
     secho(product_name, bold=True)
     echo()
