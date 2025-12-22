@@ -234,7 +234,6 @@ def _load_products(store: SummaryStore, product_names) -> Generator[Product]:
             yield store.get_product(product_name)
         except KeyError:
             possible_product_names = "\n\t".join(p.name for p in store.all_products())
-            store.close()
             raise click.BadParameter(
                 f"Unknown product {product_name!r}.\n\n"
                 f"Possibilities:\n\t{possible_product_names}",
@@ -461,57 +460,57 @@ def cli(
     store = SummaryStore.create(
         _get_index(cfg_env, "setup"), grouping_time_zone=timezone
     )
-    if drop_database:
-        user_message("Dropping all Explorer additions to the database")
-        store.drop_all()
-        store.close()
-        user_message("Done. Goodbye.")
-        sys.exit(0)
 
-    if init_database:
-        user_message(f"Initialising schema (EPSG:{epsg_code or DEFAULT_EPSG})")
-        if not store.init(grouping_epsg_code=epsg_code):
-            user_message("Failed to initialise schema, aborting.")
+    try:
+        if drop_database:
+            user_message("Dropping all Explorer additions to the database")
+            store.drop_all()
+            user_message("Done. Goodbye.")
+            sys.exit(0)
+
+        if init_database:
+            user_message(f"Initialising schema (EPSG:{epsg_code or DEFAULT_EPSG})")
+            if not store.init(grouping_epsg_code=epsg_code):
+                user_message("Failed to initialise schema, aborting.")
+                sys.exit(1)
+        elif not store.is_initialised():
+            user_message(
+                style("No cubedash schema exists. ", fg="red")
+                + "Please rerun with --init to create one"
+            )
             sys.exit(1)
-    elif not store.is_initialised():
-        user_message(
-            style("No cubedash schema exists. ", fg="red")
-            + "Please rerun with --init to create one"
-        )
-        store.close()
-        sys.exit(-1)
-    elif not store.is_schema_compatible(for_writing_operations_too=True):
-        user_message(
-            style("Cubedash schema is out of date. ", fg="red")
-            + "Please rerun with --init to apply updates."
-        )
-        store.close()
-        sys.exit(-2)
+        elif not store.is_schema_compatible(for_writing_operations_too=True):
+            user_message(
+                style("Cubedash schema is out of date. ", fg="red")
+                + "Please rerun with --init to apply updates."
+            )
+            sys.exit(1)
 
-    if generate_all_products:
-        products = sorted(store.all_products(), key=lambda p: p.name)
-    else:
-        products = list(_load_products(store, product_names))
+        if generate_all_products:
+            products = sorted(store.all_products(), key=lambda p: p.name)
+        else:
+            products = list(_load_products(store, product_names))
 
-    updated, failures = run_generation(
-        GenerateSettings(
-            cfg_env._name,
-            force_refresh,
-            recreate_dataset_extents,
-            reset_incremental_position,
-            minimum_change_scan_window=minimum_scan_window,
-        ),
-        products,
-        workers=jobs,
-        grouping_time_zone=timezone,
-    )
-    if updated > 0 and refresh_stats:
-        user_message("Refreshing statistics...", nl=False)
-        store.refresh_stats(concurrently=force_concurrently)
-        user_message("done", fg="green")
-        _LOG.info("stats.refresh")
-    store.close()
-    sys.exit(failures)
+        updated, failures = run_generation(
+            GenerateSettings(
+                cfg_env._name,
+                force_refresh,
+                recreate_dataset_extents,
+                reset_incremental_position,
+                minimum_change_scan_window=minimum_scan_window,
+            ),
+            products,
+            workers=jobs,
+            grouping_time_zone=timezone,
+        )
+        if updated > 0 and refresh_stats:
+            user_message("Refreshing statistics...", nl=False)
+            store.refresh_stats(concurrently=force_concurrently)
+            user_message("done", fg="green")
+            _LOG.info("stats.refresh")
+    finally:
+        store.close()
+    sys.exit(1 if failures else 0)
 
 
 _TIME_PERIOD_FORMAT = re.compile(

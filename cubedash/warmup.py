@@ -191,11 +191,12 @@ def cli(
                 break
             secho(f"\t{_format_time(response_secs)}\t{url}")
 
-    if len(failures):
+    num_failures = len(failures)
+    if num_failures:
         secho()
-        secho(f"{len(failures)} failures", fg="red")
+        secho(f"{num_failures} failures", fg="red")
 
-    sys.exit(len(failures))
+    sys.exit(1 if num_failures else 0)
 
 
 def _format_time(t: float) -> str:
