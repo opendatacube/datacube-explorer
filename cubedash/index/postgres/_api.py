@@ -186,7 +186,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
                 .select_from(ODC_DATASET)
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                .where(column("updated") > only_those_newer_than)
+                .where(
+                    or_(
+                        ODC_DATASET.c.added > only_those_newer_than,
+                        column("updated") > only_those_newer_than,
+                    )
+                )
                 .group_by("month")
                 .order_by("month")
             )
