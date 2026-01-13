@@ -181,6 +181,39 @@ def test_generate_incremental_archivals(
     )
 
 
+def test_generate_incremental_adds(run_generate, summary_store: SummaryStore) -> None:
+    # If we add a dataset for a month that has already been summarised,
+    # the summary should be updated
+    run_generate("ga_ls9c_ard_3")
+    index = summary_store.index
+
+    original_summary = summary_store.get("ga_ls9c_ard_3")
+    assert original_summary is not None
+    original_dataset_count = original_summary.dataset_count
+
+    dataset_id = _one_dataset(index, "ga_ls9c_ard_3")
+    dataset = index.datasets.get(dataset_id)
+    try:
+        # Remove the dataset from the summary
+        index.datasets.archive([dataset_id])
+        run_generate("ga_ls9c_ard_3")
+        overview = summary_store.get("ga_ls9c_ard_3")
+        assert overview is not None
+        assert overview.dataset_count == original_dataset_count - 1
+    # Purge and re-add to simulate an entirely new dataset
+    # (ensure 'updated' column doesn't need to be bumped for the dataset to be picked up)
+    finally:
+        index.datasets.purge([dataset_id])
+        index.datasets.add(dataset)
+    run_generate("ga_ls9c_ard_3")
+
+    overview = summary_store.get("ga_ls9c_ard_3")
+    assert overview is not None
+    assert overview.dataset_count == original_dataset_count, (
+        "A dataset that was added was not refreshed by Explorer"
+    )
+
+
 def _one_dataset(index: Index, product_name: str):
     [[dataset_id]] = index.datasets.search_returning(
         ("id",), product=product_name, limit=1
