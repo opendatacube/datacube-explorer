@@ -24,11 +24,15 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import registry
 
 from cubedash.summary._schema import (
+    _LOG,
     CUBEDASH_SCHEMA,
     METADATA,
     REF_TABLE_METADATA,
     epsg_to_srid,
     pg_create_index,
+    roles_exist,
+    transfer,
+    transfers_required,
 )
 
 orm_registry = registry()
@@ -241,18 +245,14 @@ def get_srid_name(conn: Connection, srid: int):
 def create_after_schema(conn: Connection, epsg_code: int) -> None:
     """
     Create any missing parts once there is a cubedash schema
+
+    Run as current user.  ensure_owner will be called later to transfer ownership to odc_admin.
+    Running as odc_admin is problematic as some actions on initial (schema creation) run potentially require a
+    db superuser - e.g. creating the postgis extension and creating public SQL enums.
+    Subsequent (schema update) runs should be able to run as odc_admin.
     """
     # Add Postgis if needed
-    #
-    # Note that, as above, we deliberately don't use the built-in "if not exists"
-    #
-    if (
-        conn.execute(
-            text("select count(*) from pg_extension where extname='postgis';")
-        ).scalar()
-        == 0
-    ):
-        conn.execute(DDL("create extension postgis"))
+    conn.execute(DDL("create extension if not exists postgis"))
 
     srid = epsg_to_srid(conn, epsg_code)
     if srid is None:
@@ -327,6 +327,65 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
     )
 
 
+def ensure_permissions(conn: Connection) -> None:
+    _LOG.error("Ensuring permissions...")
+    # read only permissions to odc_user
+    conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to odc_user"))
+    conn.execute(
+        text(f"grant select on all tables in schema {CUBEDASH_SCHEMA} to odc_user")
+    )
+
+    # write permissions (generating/updating summaries) to odc_manage
+    conn.execute(
+        text(
+            f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to odc_manage"
+        )
+    )
+    conn.execute(text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to odc_manage"))
+
+    # Grant any remaining cubedash permissions to odc_admin
+    conn.execute(
+        text(
+            f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to odc_admin"
+        )
+    )
+
+    # Check for legacy explorer roles, and grant ODC roles for cross-compatibility
+    if roles_exist(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
+        conn.execute(text("grant odc_manage to explorer_generator"))
+        conn.execute(text("grant odc_admin to explorer_owner"))
+
+
+def ensure_owners(conn: Connection) -> None:
+    transfers = transfers_required(
+        conn,
+        "odc_admin",
+        [
+            "dataset_spatial",
+            "product",
+            "time_overview",
+            "region",
+        ],
+        "tables",
+    )
+    for table, current_owner in transfers:
+        transfer(conn, table, current_owner, "odc_admin", "tables")
+
+    transfers = transfers_required(
+        conn,
+        "odc_manage",
+        [
+            "mv_dataset_spatial_quality",
+            "mv_spatial_ref_sys",
+        ],
+        "matviews",
+    )
+    for mv, current_owner in transfers:
+        transfer(conn, mv, current_owner, "odc_manage", "matviews")
+
+    conn.commit()
+
+
 def init_elements(conn: Connection, grouping_epsg_code: int):
     """
     Initialise any schema elements that don't exist.
@@ -335,6 +394,7 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
 
     (Requires `create` permissions in the db)
     """
+    _LOG.error("Initialising schema elements...")
     # Add any missing schema items or patches.
     create_after_schema(conn, epsg_code=grouping_epsg_code)
 
@@ -363,7 +423,8 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
             (Warning: Resummarising all of your products may take a long time!)
             """
         )
+    ensure_owners(conn)
+    ensure_permissions(conn)
 
     # no need to add potentially missing columns because we know postgis will have them
-
     return set()

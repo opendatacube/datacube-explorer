@@ -52,6 +52,7 @@ from cubedash._utils import datetime_expression, default_utc
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
 
 from ._schema import (  # isort: skip
+    CUBEDASH_SCHEMA,
     FOOTPRINT_SRID_EXPRESSION,
     DatasetSpatial,
     Product as ProductSpatial,
@@ -839,8 +840,34 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
+    def create_schema(self) -> bool:
+        # Ensure ODC roles exist (roles were formerly optional but not using them is now deprecated)
+        with self.engine.connect() as conn:
+            if not _schema.roles_exist(conn, ["odc_user", "odc_manage", "odc_admin"]):
+                raise RuntimeError(
+                    "Default datacube users do not exist.  Please run 'datacube system init'"
+                )
+
+        # Create schema if necessary and ensure it is owned by odc_admin
+        if not self.schema_initialised():
+            self.execute_ddl(
+                text(f"create schema {CUBEDASH_SCHEMA} authorization odc_admin")
+            )
+        else:
+            with self.engine.connect() as conn:
+                owner = conn.execute(
+                    "select pg.catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
+                    f"where schema_name={CUBEDASH_SCHEMA}"
+                ).scalar()
+            if owner != "odc_admin":
+                self.execute_ddl(
+                    text(f"alter schema {CUBEDASH_SCHEMA} owner to odc_admin")
+                )
+        return True
+
+    @override
     def init_schema(self, grouping_epsg_code: int):
-        with self.engine.begin() as conn:
+        with self.engine.connect() as conn:
             return init_elements(conn, grouping_epsg_code)
 
     @override
@@ -850,8 +877,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         This is ideally done once after all needed products have been refreshed.
         """
-        with self.engine.begin() as conn:
-            _schema.refresh_supporting_views(conn, concurrently=concurrently)
+        with (
+            self.engine.begin() as conn,
+            _schema.as_role(conn, "odc_manage") as rw_conn,
+        ):
+            _schema.refresh_supporting_views(rw_conn, concurrently=concurrently)
 
     @lru_cache()
     @override

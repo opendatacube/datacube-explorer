@@ -1,8 +1,12 @@
+import contextlib
+from collections.abc import Iterator
 from enum import Enum
+from typing import Literal
 
 import structlog
 from sqlalchemy import MetaData, func, select, text
 from sqlalchemy.engine import Connection
+from sqlalchemy.exc import ProgrammingError
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -122,3 +126,68 @@ def refresh_supporting_views(conn, concurrently: bool) -> None:
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
     """)
     )
+
+
+def transfers_required(
+    conn: Connection,
+    new_owner: str,
+    objects: list[str],
+    object_type: Literal["tables", "matviews"],
+) -> list[tuple[str, str]]:
+    """
+    Returns a list of (name, old_owner) tuples for objects that need to be transferred to the new owner.
+    """
+    transfers: list[tuple[str, str]] = []
+    defs = {
+        "tables": ("tablename", "tableowner", "pg_tables"),
+        "matviews": ("matviewname", "matviewowner", "pg_matviews"),
+    }
+    n, o, t = defs[object_type]
+    sql = f"select {n}, {o} from {t} where schemaname = '{CUBEDASH_SCHEMA}' and {n} in {tuple(objects)}"
+    for row in conn.execute(text(sql)):
+        if row[1] != new_owner:
+            transfers.append((row[0], row[1]))
+    return transfers
+
+
+def transfer(
+    conn: Connection,
+    obj_name: str,
+    current_owner: str,
+    new_owner: str,
+    object_type: Literal["tables", "matviews"],
+) -> None:
+    objs = {
+        "tables": "table",
+        "matviews": "materialized view",
+    }
+    try:
+        with as_role(conn, current_owner) as owner_conn:
+            owner_conn.execute(
+                text(
+                    f"alter {objs[object_type]} {CUBEDASH_SCHEMA}.{obj_name} owner to {new_owner}"
+                )
+            )
+    except ProgrammingError:
+        _LOG.warning(
+            f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
+            f"active user is not a superuser or current owner"
+        )
+
+
+def roles_exist(conn: Connection, roles: list[str]) -> bool:
+    return all(
+        conn.execute(text(f"select 1 from pg_roles where rolname = '{role}'")).scalar()
+        for role in roles
+    )
+
+
+@contextlib.contextmanager
+def as_role(conn: Connection, role: str | None) -> Iterator[Connection]:
+    if role is None:
+        yield conn
+    else:
+        db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
+        conn.execute(text(f"set role {role}"))
+        yield conn
+        conn.execute(text(f"set role {db_user}"))

@@ -9,6 +9,7 @@ from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
 from sqlalchemy import CursorResult, Result, Row, Select, inspect
 from sqlalchemy.sql import ColumnElement
+from sqlalchemy.sql.ddl import DropSchema
 from sqlalchemy.sql.elements import ClauseElement, Label
 
 from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
@@ -38,7 +39,7 @@ class ExplorerAbstractIndex(ABC):
             return conn.execute(query).scalar()
 
     def execute_ddl(self, query) -> int:
-        with self.engine.begin() as conn:
+        with self.engine.connect() as conn:
             results = conn.execute(query)
             return results.rowcount
 
@@ -218,6 +219,15 @@ class ExplorerAbstractIndex(ABC):
     def schema_compatible_info(
         self, for_writing_operations_too: bool = False
     ) -> tuple[str, bool]: ...
+
+    @abstractmethod
+    def create_schema(self) -> bool: ...
+
+    def drop_all(self) -> None:
+        """
+        Drop all explorer-specific tables/schema
+        """
+        self.execute_ddl(DropSchema(CUBEDASH_SCHEMA, cascade=True, if_exists=True))
 
     @abstractmethod
     def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...
