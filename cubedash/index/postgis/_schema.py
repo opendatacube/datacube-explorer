@@ -1,6 +1,5 @@
 from geoalchemy2 import Geometry
 from sqlalchemy import (
-    DDL,
     BigInteger,
     CheckConstraint,
     Column,
@@ -248,11 +247,13 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
 
     Run as current user.  ensure_owner will be called later to transfer ownership to odc_admin.
     Running as odc_admin is problematic as some actions on initial (schema creation) run potentially require a
-    db superuser - e.g. creating the postgis extension and creating public SQL enums.
+    db superuser - e.g. creating public SQL enums.
+
     Subsequent (schema update) runs should be able to run as odc_admin.
+
+    Assumes existence of cubedash schema and postgis extension (which should have been created by core
+    for the postgix index driver).
     """
-    # Add Postgis if needed
-    conn.execute(DDL("create extension if not exists postgis"))
 
     srid = epsg_to_srid(conn, epsg_code)
     if srid is None:
