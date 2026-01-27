@@ -857,7 +857,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             with self.engine.connect() as conn:
                 owner = conn.execute(
                     text(
-                        "select pg.catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
+                        "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
                         f"where schema_name={CUBEDASH_SCHEMA}"
                     )
                 ).scalar()
