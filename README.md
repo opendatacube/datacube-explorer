@@ -235,20 +235,25 @@ that file instead.
 
 ## Roles for production deployments
 
-The [roles](cubedash/summary/roles) directory contains sql files for creating
-Postgres roles for Explorer. These are suitable for running each Explorer
-task with minimum needed security permissions.
+Explorer uses the default roles created by datacube-core. If you created your datacube without permissions,
+you should re-run `datacube system init` as a database superuser or as the user that originally created the
+datacube, to create the required roles and grant them the required permissions.
 
-Three roles are created:
+Running `cubedash-gen --init` grants permissions to Explorer-specific tables and views to these roles:
 
-- **explorer-viewer**: A read-only user of datacube and Explorer. Suitable for the web interface and cli (`cubedash-view`) commands.
-- **explorer-generator**: Suitable for generating and updating summaries (ie. Running `cubedash-gen`)
-- **explorer-owner**: For creating and updating the schema. (ie. Running `cubedash-gen --init`)
+- `agdc_user` (postgres driver) or `odc_user` (postgis driver):
+  Read-only access to the explorer summary tables and views.  This role should be used by the web interface.
+- `agdc_manage` (postgres driver) or `odc_manage` (postgis driver):
+  Read-write access to the explorer summary tables and views.  This role should be used by the `cubedash-gen` command.
+- `agdc_admin` (postgres driver) or `odc_admin` (postgis driver):
+  Owner of explorer summary tables and views. The initial call of the `cubedash-gen --init` command to create the
+  Explorer schema and table should be run as a database superuser. The first schema update after upgrading from
+  Explorer 3.1.2 to later versions will also need to be run as a database superuser.  Subsequent calls to
+  `cubedash-gen --init` to update the schema will be safe to run as the `agdc_admin` role.
 
-Note that these roles extend the built-in datacube role `agdc_user` (using postgres) or `odc_user` (using postgis).
-If you created your datacube without permissions, a stand-alone creator of the appropriate
-role is available as a prerequisite in the same [roles](cubedash/summary/roles)
-directory.
+Previously, Explorer used its own roles, `explorer_viewer` and `explorer_generator`, and `explorer_owner`.  These
+roles are granted the above roles by `cubeddash-gen --init` if they already exist, ensuring cross-compatibility with
+older versions of Explorer.
 
 ## Docker for Development and running tests
 
