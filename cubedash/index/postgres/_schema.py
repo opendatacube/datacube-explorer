@@ -466,6 +466,7 @@ def grant_permissions(conn: Connection) -> None:
     conn.execute(
         text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to agdc_manage")
     )
+    conn.execute(text(f"grant create on schema {CUBEDASH_SCHEMA} to agdc_manage"))
 
     # Grant any remaining cubedash permissions to agdc_admin
     conn.execute(

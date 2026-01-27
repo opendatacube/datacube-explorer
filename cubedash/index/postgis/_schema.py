@@ -23,7 +23,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.orm import registry
 
 from cubedash.summary._schema import (
-    _LOG,
     CUBEDASH_SCHEMA,
     METADATA,
     REF_TABLE_METADATA,
@@ -329,7 +328,6 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
 
 
 def grant_permissions(conn: Connection) -> None:
-    _LOG.error("Ensuring permissions...")
     # read only permissions to odc_user
     conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to odc_user"))
     conn.execute(
@@ -343,6 +341,7 @@ def grant_permissions(conn: Connection) -> None:
         )
     )
     conn.execute(text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to odc_manage"))
+    conn.execute(text(f"grant create on schema {CUBEDASH_SCHEMA} to odc_manage"))
 
     # Grant any remaining cubedash permissions to odc_admin
     conn.execute(
@@ -395,7 +394,6 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
 
     (Requires `create` permissions in the db)
     """
-    _LOG.error("Initialising schema elements...")
     # Add any missing schema items or patches.
     create_after_schema(conn, epsg_code=grouping_epsg_code)
 

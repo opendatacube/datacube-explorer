@@ -161,18 +161,46 @@ def transfer_owner(
         "tables": "table",
         "matviews": "materialized view",
     }
+    sql = f"alter {objs[object_type]} {CUBEDASH_SCHEMA}.{obj_name} owner to {new_owner}"
     try:
-        with as_role(conn, current_owner) as owner_conn:
-            owner_conn.execute(
-                text(
-                    f"alter {objs[object_type]} {CUBEDASH_SCHEMA}.{obj_name} owner to {new_owner}"
-                )
-            )
+        # Attempt as session user (hopefully we're a superuser)
+        conn.execute(text(sql))
+        return  # Success
     except ProgrammingError:
         _LOG.warning(
-            f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
-            f"active user is not a superuser or current owner"
+            "Cannot transfer ownership as session user.  Try appropriate set role."
         )
+        # Insufficient permission to change object owner.
+        pass
+
+    if object_type == "table":
+        # Changing table ownership requires superuser OR:
+        #   current owner, who has create permission on cubedash schema.
+        try:
+            with as_role(conn, current_owner) as attempt_conn:
+                attempt_conn.execute(text(sql))
+            return  # Success
+        except ProgrammingError:
+            _LOG.warning(
+                f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
+                f"session user is not a superuser or session user cannot become {current_owner} or "
+                f"{current_owner} does not have CREATE permission on cubedash schema."
+            )
+            return  # Failed on table
+    else:
+        # Changing materialized view ownership requires superuser OR:
+        #   new owner, who has create permission on cubedash schema.
+        try:
+            with as_role(conn, new_owner) as attempt_conn:
+                attempt_conn.execute(text(sql))
+            return  # Success
+        except ProgrammingError:
+            _LOG.warning(
+                f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
+                f"session user is not a superuser or session user cannot become {new_owner} or "
+                f"{new_owner} does not have CREATE permission on cubedash schema."
+            )
+            return  # Failed on matview
 
 
 def roles_exist(conn: Connection, roles: list[str]) -> bool:
@@ -187,7 +215,9 @@ def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
     if role is None:
         yield conn
     else:
-        db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
-        conn.execute(text(f"set role {role}"))
-        yield conn
-        conn.execute(text(f"set role {db_user}"))
+        try:
+            db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
+            conn.execute(text(f"set role {role}"))
+            yield conn
+        finally:
+            conn.execute(text(f"set role {db_user}"))

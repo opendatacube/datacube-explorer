@@ -932,10 +932,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
         else:
             with self.engine.connect() as conn:
-                owner = conn.execute(text(
-                    "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
-                    f"where nspname='{CUBEDASH_SCHEMA}'"
-                )).scalar()
+                owner = conn.execute(
+                    text(
+                        "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
+                        f"where nspname='{CUBEDASH_SCHEMA}'"
+                    )
+                ).scalar()
             if owner != "agdc_admin":
                 self.execute_ddl(
                     text(f"alter schema {CUBEDASH_SCHEMA} owner to agdc_admin")
