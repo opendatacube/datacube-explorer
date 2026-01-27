@@ -922,7 +922,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 conn, ["agdc_user", "agdc_manage", "agdc_admin"]
             ):
                 raise RuntimeError(
-                    "Default datacube users do not exist.  Please run 'datacube system init'"
+                    "Default datacube users do not exist. Please run 'datacube system init'"
                 )
 
         # Create schema if necessary and ensure it is owned by agdc_admin

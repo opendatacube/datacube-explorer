@@ -31,7 +31,7 @@ from cubedash.summary._schema import (
     epsg_to_srid,
     pg_create_index,
     roles_exist,
-    transfer,
+    transfer_owner,
     transfers_required,
 )
 
@@ -327,7 +327,7 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
     )
 
 
-def ensure_permissions(conn: Connection) -> None:
+def grant_permissions(conn: Connection) -> None:
     _LOG.error("Ensuring permissions...")
     # read only permissions to odc_user
     conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to odc_user"))
@@ -369,7 +369,7 @@ def ensure_owners(conn: Connection) -> None:
         "tables",
     )
     for table, current_owner in transfers:
-        transfer(conn, table, current_owner, "odc_admin", "tables")
+        transfer_owner(conn, table, current_owner, "odc_admin", "tables")
 
     transfers = transfers_required(
         conn,
@@ -381,7 +381,7 @@ def ensure_owners(conn: Connection) -> None:
         "matviews",
     )
     for mv, current_owner in transfers:
-        transfer(conn, mv, current_owner, "odc_manage", "matviews")
+        transfer_owner(conn, mv, current_owner, "odc_manage", "matviews")
 
     conn.commit()
 
@@ -424,7 +424,7 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
             """
         )
     ensure_owners(conn)
-    ensure_permissions(conn)
+    grant_permissions(conn)
 
     # no need to add potentially missing columns because we know postgis will have them
     return set()

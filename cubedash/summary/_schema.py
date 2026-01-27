@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import Iterator
+from collections.abc import Generator
 from enum import Enum
 from typing import Literal
 
@@ -150,7 +150,7 @@ def transfers_required(
     return transfers
 
 
-def transfer(
+def transfer_owner(
     conn: Connection,
     obj_name: str,
     current_owner: str,
@@ -183,7 +183,7 @@ def roles_exist(conn: Connection, roles: list[str]) -> bool:
 
 
 @contextlib.contextmanager
-def as_role(conn: Connection, role: str | None) -> Iterator[Connection]:
+def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
     if role is None:
         yield conn
     else:

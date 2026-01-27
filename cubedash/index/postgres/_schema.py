@@ -41,7 +41,7 @@ from cubedash.summary._schema import (
     pg_column_exists,
     pg_create_index,
     roles_exist,
-    transfer,
+    transfer_owner,
     transfers_required,
 )
 
@@ -450,7 +450,7 @@ def check_or_update_odc_schema(conn: Connection):
             raise
 
 
-def ensure_permissions(conn: Connection) -> None:
+def grant_permissions(conn: Connection) -> None:
     # read only permissions to agdc_user
     conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to agdc_user"))
     conn.execute(
@@ -493,7 +493,7 @@ def ensure_owners(conn: Connection) -> None:
         "tables",
     )
     for table, current_owner in transfers:
-        transfer(conn, table, current_owner, "agdc_admin", "tables")
+        transfer_owner(conn, table, current_owner, "agdc_admin", "tables")
 
     transfers = transfers_required(
         conn,
@@ -505,7 +505,7 @@ def ensure_owners(conn: Connection) -> None:
         "matviews",
     )
     for mv, current_owner in transfers:
-        transfer(conn, mv, current_owner, "agdc_manage", "matviews")
+        transfer_owner(conn, mv, current_owner, "agdc_manage", "matviews")
 
     conn.commit()
 
@@ -547,5 +547,5 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
             """
         )
     ensure_owners(conn)
-    ensure_permissions(conn)
+    grant_permissions(conn)
     return update_schema(conn)

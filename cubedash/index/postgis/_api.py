@@ -845,7 +845,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         with self.engine.connect() as conn:
             if not _schema.roles_exist(conn, ["odc_user", "odc_manage", "odc_admin"]):
                 raise RuntimeError(
-                    "Default datacube users do not exist.  Please run 'datacube system init'"
+                    "Default datacube users do not exist. Please run 'datacube system init'"
                 )
 
         # Create schema if necessary and ensure it is owned by odc_admin
@@ -856,8 +856,10 @@ class ExplorerIndex(ExplorerAbstractIndex):
         else:
             with self.engine.connect() as conn:
                 owner = conn.execute(
-                    "select pg.catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
-                    f"where schema_name={CUBEDASH_SCHEMA}"
+                    text(
+                        "select pg.catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
+                        f"where schema_name={CUBEDASH_SCHEMA}"
+                    )
                 ).scalar()
             if owner != "odc_admin":
                 self.execute_ddl(
