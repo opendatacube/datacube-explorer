@@ -858,7 +858,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 owner = conn.execute(
                     text(
                         "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
-                        f"where schema_name={CUBEDASH_SCHEMA}"
+                        f"where nspname='{CUBEDASH_SCHEMA}'"
                     )
                 ).scalar()
             if owner != "odc_admin":
