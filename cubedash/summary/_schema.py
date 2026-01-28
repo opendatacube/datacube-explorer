@@ -167,8 +167,8 @@ def transfer_owner(
         conn.execute(text(sql))
         return  # Success
     except ProgrammingError:
-        _LOG.warning(
-            "Cannot transfer ownership as session user.  Try appropriate set role."
+        _LOG.info(
+            "Cannot transfer ownership as session user.  Trying with appropriate role..."
         )
         # Insufficient permission to change object owner.
         pass
@@ -196,7 +196,7 @@ def transfer_owner(
             return  # Success
         except ProgrammingError:
             _LOG.warning(
-                f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
+                f"Cannot transfer ownership of materialized view {obj_name} from {current_owner} to {new_owner}: "
                 f"session user is not a superuser or session user cannot become {new_owner} or "
                 f"{new_owner} does not have CREATE permission on cubedash schema."
             )

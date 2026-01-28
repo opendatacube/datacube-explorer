@@ -389,7 +389,7 @@ def update_schema(conn: Connection) -> set[PleaseRefresh]:
     return refresh
 
 
-def check_or_update_odc_schema(conn: Connection):
+def check_or_update_odc_schema(admin_conn: Connection):
     """
     Check that the ODC schema is updated enough to run Explorer,
 
@@ -398,56 +398,55 @@ def check_or_update_odc_schema(conn: Connection):
     # We need the `update` column on ODC's dataset table in order to run incremental product refreshes.
     # do we still need to account for super old versions by this point?
     # TODO: Explorer has no business updating the ODC schema itself - should at least delegate to core code.
-    with as_role(conn, "agdc_admin") as admin_conn:
-        try:
-            # We can try to install it ourselves if we have permission, using ODC's code.
-            if not pg_column_exists(admin_conn, ODC_DATASET.fullname, "updated"):
-                _LOG.warning("schema.applying_update.add_odc_change_triggers")
-                from datacube.drivers.postgres._core import install_timestamp_trigger
+    try:
+        # We can try to install it ourselves if we have permission, using ODC's code.
+        if not pg_column_exists(admin_conn, ODC_DATASET.fullname, "updated"):
+            _LOG.warning("schema.applying_update.add_odc_change_triggers")
+            from datacube.drivers.postgres._core import install_timestamp_trigger
 
-                # shouldn't be a need to account for ImportError anymore
-                install_timestamp_trigger(admin_conn)
-        except ProgrammingError as e:
-            # We don't have permission.
-            raise SchemaNotRefreshableError(
-                dedent(
-                    """
-                Missing update triggers.
+            # shouldn't be a need to account for ImportError anymore
+            install_timestamp_trigger(admin_conn)
+    except ProgrammingError as e:
+        # We don't have permission.
+        raise SchemaNotRefreshableError(
+            dedent(
+                """
+            Missing update triggers.
 
-                No dataset-update triggers are installed on the ODC instance, and Explorer does
-                not have enough permissions to add them itself.
+            No dataset-update triggers are installed on the ODC instance, and Explorer does
+            not have enough permissions to add them itself.
 
-                It's recommended to run `datacube system init` on your ODC instance to install them.
+            It's recommended to run `datacube system init` on your ODC instance to install them.
 
-                Then try this again.
-            """
-                )
-            ) from e
-
-        # Add optional indexes to AGDC if we have permission.
-        # (otherwise we warn the user that it may be slow, and how to add it themselves)
-        try:  # should both already be handled in core
-            pg_create_index(
-                admin_conn, "ix_dataset_added", ODC_DATASET.fullname, "added desc"
+            Then try this again.
+        """
             )
-            pg_create_index(
-                admin_conn,
-                "ix_dataset_type_changed",
-                ODC_DATASET.fullname,
-                "dataset_type_ref, greatest(added, updated, archived) desc",
-            )
-        except ProgrammingError:
-            warnings.warn(
-                dedent(
-                    """
-                    No recently-added index.
-                    Explorer recommends adding an index for recently-added datasets to your ODC,
-                    but does not have permission to add it to the current ODC database.
-                    """
-                ),
-                stacklevel=2,
-            )
-            raise
+        ) from e
+
+    # Add optional indexes to AGDC if we have permission.
+    # (otherwise we warn the user and tell them how to add it themselves)
+    try:  # should both already be handled in core
+        pg_create_index(
+            admin_conn, "ix_dataset_added", ODC_DATASET.fullname, "added desc"
+        )
+        pg_create_index(
+            admin_conn,
+            "ix_dataset_type_changed",
+            ODC_DATASET.fullname,
+            "dataset_type_ref, greatest(added, updated, archived) desc",
+        )
+    except ProgrammingError:
+        warnings.warn(
+            dedent(
+                """
+                No recently-added index.
+                Explorer recommends adding an index for recently-added datasets to your ODC,
+                but does not have permission to add it to the current ODC database.
+                """
+            ),
+            stacklevel=2,
+        )
+        raise
 
 
 def grant_permissions(conn: Connection) -> None:
