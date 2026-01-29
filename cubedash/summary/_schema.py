@@ -173,7 +173,7 @@ def transfer_owner(
         # Insufficient permission to change object owner.
         pass
 
-    if object_type == "table":
+    if object_type == "tables":
         # Changing table ownership requires superuser OR:
         #   current owner, who has create permission on cubedash schema.
         try:
