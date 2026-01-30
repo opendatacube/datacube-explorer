@@ -35,10 +35,14 @@ from cubedash.summary._schema import (
     REF_TABLE_METADATA,
     PleaseRefresh,
     SchemaNotRefreshableError,
+    as_role,
     epsg_to_srid,
     pg_add_column,
     pg_column_exists,
     pg_create_index,
+    roles_exist,
+    transfer_owner,
+    transfers_required,
 )
 
 DATASET_SPATIAL = Table(
@@ -265,18 +269,14 @@ def get_srid_name(conn: Connection, srid: int):
 def create_after_schema(conn: Connection, epsg_code: int) -> None:
     """
     Create any missing parts once there is a cubedash schema
+
+    Run as current user.  ensure_owner will be called later to transfer ownership to agdc_admin.
+    Running as odc_admin is problematic as some actions on initial (schema creation) run potentially require a
+    db superuser - e.g. creating the postgis extension and creating public SQL enums.
+    Subsequent (schema update) runs should be able to run as agdc_admin.
     """
     # Add Postgis if needed
-    #
-    # Note that, as above, we deliberately don't use the built-in "if not exists"
-    #
-    if (
-        conn.execute(
-            text("select count(*) from pg_extension where extname='postgis';")
-        ).scalar()
-        == 0
-    ):
-        conn.execute(DDL("create extension postgis"))
+    conn.execute(DDL("create extension if not exists postgis"))
 
     srid = epsg_to_srid(conn, epsg_code)
     if srid is None:
@@ -354,38 +354,42 @@ def update_schema(conn: Connection) -> set[PleaseRefresh]:
 
     refresh = set()
 
-    if not pg_column_exists(conn, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"):
-        _LOG.warning("schema.applying_update.add_fixed_metadata")
-        refresh.add(PleaseRefresh.DATASET_EXTENTS)
+    with as_role(conn, "agdc_admin") as admin_conn:
+        if not pg_column_exists(
+            admin_conn, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"
+        ):
+            _LOG.warning("schema.applying_update.add_fixed_metadata")
+            pg_add_column(
+                admin_conn, CUBEDASH_SCHEMA, "product", "fixed_metadata", "jsonb"
+            )
+            refresh.add(PleaseRefresh.DATASET_EXTENTS)
 
-    pg_add_column(conn, CUBEDASH_SCHEMA, "product", "fixed_metadata", "jsonb")
+        _COLLECTION_ITEMS_INDEX.create(admin_conn, checkfirst=True)
 
-    _COLLECTION_ITEMS_INDEX.create(conn, checkfirst=True)
+        _ALL_COLLECTIONS_ORDER_INDEX.create(admin_conn, checkfirst=True)
 
-    _ALL_COLLECTIONS_ORDER_INDEX.create(conn, checkfirst=True)
+        pg_add_column(
+            admin_conn,
+            CUBEDASH_SCHEMA,
+            "time_overview",
+            "product_refresh_time",
+            "timestamp with time zone null",
+        )
 
-    pg_add_column(
-        conn,
-        CUBEDASH_SCHEMA,
-        "time_overview",
-        "product_refresh_time",
-        "timestamp with time zone null",
-    )
+        pg_add_column(
+            admin_conn,
+            CUBEDASH_SCHEMA,
+            "product",
+            "last_successful_summary",
+            "timestamp with time zone null",
+        )
 
-    pg_add_column(
-        conn,
-        CUBEDASH_SCHEMA,
-        "product",
-        "last_successful_summary",
-        "timestamp with time zone null",
-    )
-
-    check_or_update_odc_schema(conn)
+        check_or_update_odc_schema(admin_conn)
 
     return refresh
 
 
-def check_or_update_odc_schema(conn: Connection):
+def check_or_update_odc_schema(admin_conn: Connection):
     """
     Check that the ODC schema is updated enough to run Explorer,
 
@@ -393,14 +397,15 @@ def check_or_update_odc_schema(conn: Connection):
     """
     # We need the `update` column on ODC's dataset table in order to run incremental product refreshes.
     # do we still need to account for super old versions by this point?
+    # TODO: Explorer has no business updating the ODC schema itself - should at least delegate to core code.
     try:
         # We can try to install it ourselves if we have permission, using ODC's code.
-        if not pg_column_exists(conn, ODC_DATASET.fullname, "updated"):
+        if not pg_column_exists(admin_conn, ODC_DATASET.fullname, "updated"):
             _LOG.warning("schema.applying_update.add_odc_change_triggers")
             from datacube.drivers.postgres._core import install_timestamp_trigger
 
             # shouldn't be a need to account for ImportError anymore
-            install_timestamp_trigger(conn)
+            install_timestamp_trigger(admin_conn)
     except ProgrammingError as e:
         # We don't have permission.
         raise SchemaNotRefreshableError(
@@ -419,11 +424,13 @@ def check_or_update_odc_schema(conn: Connection):
         ) from e
 
     # Add optional indexes to AGDC if we have permission.
-    # (otherwise we warn the user that it may be slow, and how to add it themselves)
+    # (otherwise we warn the user and tell them how to add it themselves)
     try:  # should both already be handled in core
-        pg_create_index(conn, "ix_dataset_added", ODC_DATASET.fullname, "added desc")
         pg_create_index(
-            conn,
+            admin_conn, "ix_dataset_added", ODC_DATASET.fullname, "added desc"
+        )
+        pg_create_index(
+            admin_conn,
             "ix_dataset_type_changed",
             ODC_DATASET.fullname,
             "dataset_type_ref, greatest(added, updated, archived) desc",
@@ -440,6 +447,67 @@ def check_or_update_odc_schema(conn: Connection):
             stacklevel=2,
         )
         raise
+
+
+def grant_permissions(conn: Connection) -> None:
+    # read only permissions to agdc_user
+    conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to agdc_user"))
+    conn.execute(
+        text(f"grant select on all tables in schema {CUBEDASH_SCHEMA} to agdc_user")
+    )
+
+    # write permissions (generating/updating summaries) to agdc_manage
+    conn.execute(
+        text(
+            f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to agdc_manage"
+        )
+    )
+    conn.execute(
+        text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to agdc_manage")
+    )
+    conn.execute(text(f"grant create on schema {CUBEDASH_SCHEMA} to agdc_manage"))
+
+    # Grant any remaining cubedash permissions to agdc_admin
+    conn.execute(
+        text(
+            f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to agdc_admin"
+        )
+    )
+
+    # Check for legacy explorer roles, and grant ODC roles for cross-compatibility
+    if roles_exist(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
+        conn.execute(text("grant agdc_manage to explorer_generator"))
+        conn.execute(text("grant agdc_admin to explorer_owner"))
+
+
+def ensure_owners(conn: Connection) -> None:
+    transfers = transfers_required(
+        conn,
+        "agdc_admin",
+        [
+            "dataset_spatial",
+            "product",
+            "time_overview",
+            "region",
+        ],
+        "tables",
+    )
+    for table, current_owner in transfers:
+        transfer_owner(conn, table, current_owner, "agdc_admin", "tables")
+
+    transfers = transfers_required(
+        conn,
+        "agdc_manage",
+        [
+            "mv_dataset_spatial_quality",
+            "mv_spatial_ref_sys",
+        ],
+        "matviews",
+    )
+    for mv, current_owner in transfers:
+        transfer_owner(conn, mv, current_owner, "agdc_manage", "matviews")
+
+    conn.commit()
 
 
 def init_elements(conn: Connection, grouping_epsg_code: int):
@@ -478,4 +546,6 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
             (Warning: Resummarising all of your products may take a long time!)
             """
         )
+    ensure_owners(conn)
+    grant_permissions(conn)
     return update_schema(conn)

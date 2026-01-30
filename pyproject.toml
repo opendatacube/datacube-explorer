@@ -94,7 +94,7 @@ test = [
     "pre-commit",
     "prometheus-flask-exporter",
     "pytest",
-    "pytest-benchmark",
+    "pytest-benchmark[histogram]",
     "pytest-cov",
     "ruff",
     "selectolax",

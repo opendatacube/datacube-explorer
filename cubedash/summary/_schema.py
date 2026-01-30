@@ -1,8 +1,12 @@
+import contextlib
+from collections.abc import Generator
 from enum import Enum
+from typing import Literal
 
 import structlog
 from sqlalchemy import MetaData, func, select, text
 from sqlalchemy.engine import Connection
+from sqlalchemy.exc import ProgrammingError
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -122,3 +126,98 @@ def refresh_supporting_views(conn, concurrently: bool) -> None:
     refresh materialized view {args} {CUBEDASH_SCHEMA}.mv_dataset_spatial_quality;
     """)
     )
+
+
+def transfers_required(
+    conn: Connection,
+    new_owner: str,
+    objects: list[str],
+    object_type: Literal["tables", "matviews"],
+) -> list[tuple[str, str]]:
+    """
+    Returns a list of (name, old_owner) tuples for objects that need to be transferred to the new owner.
+    """
+    transfers: list[tuple[str, str]] = []
+    defs = {
+        "tables": ("tablename", "tableowner", "pg_tables"),
+        "matviews": ("matviewname", "matviewowner", "pg_matviews"),
+    }
+    n, o, t = defs[object_type]
+    sql = f"select {n}, {o} from {t} where schemaname = '{CUBEDASH_SCHEMA}' and {n} in {tuple(objects)}"
+    for row in conn.execute(text(sql)):
+        if row[1] != new_owner:
+            transfers.append((row[0], row[1]))
+    return transfers
+
+
+def transfer_owner(
+    conn: Connection,
+    obj_name: str,
+    current_owner: str,
+    new_owner: str,
+    object_type: Literal["tables", "matviews"],
+) -> None:
+    objs = {
+        "tables": "table",
+        "matviews": "materialized view",
+    }
+    sql = f"alter {objs[object_type]} {CUBEDASH_SCHEMA}.{obj_name} owner to {new_owner}"
+    try:
+        # Attempt as session user (hopefully we're a superuser)
+        conn.execute(text(sql))
+        return  # Success
+    except ProgrammingError:
+        _LOG.info(
+            "Cannot transfer ownership as session user.  Trying with appropriate role..."
+        )
+        # Insufficient permission to change object owner.
+        pass
+
+    if object_type == "tables":
+        # Changing table ownership requires superuser OR:
+        #   current owner, who has create permission on cubedash schema.
+        try:
+            with as_role(conn, current_owner) as attempt_conn:
+                attempt_conn.execute(text(sql))
+            return  # Success
+        except ProgrammingError:
+            _LOG.warning(
+                f"Cannot transfer ownership of table {obj_name} from {current_owner} to {new_owner}: "
+                f"session user is not a superuser or session user cannot become {current_owner} or "
+                f"{current_owner} does not have CREATE permission on cubedash schema."
+            )
+            return  # Failed on table
+    else:
+        # Changing materialized view ownership requires superuser OR:
+        #   new owner, who has create permission on cubedash schema.
+        try:
+            with as_role(conn, new_owner) as attempt_conn:
+                attempt_conn.execute(text(sql))
+            return  # Success
+        except ProgrammingError:
+            _LOG.warning(
+                f"Cannot transfer ownership of materialized view {obj_name} from {current_owner} to {new_owner}: "
+                f"session user is not a superuser or session user cannot become {new_owner} or "
+                f"{new_owner} does not have CREATE permission on cubedash schema."
+            )
+            return  # Failed on matview
+
+
+def roles_exist(conn: Connection, roles: list[str]) -> bool:
+    return all(
+        conn.execute(text(f"select 1 from pg_roles where rolname = '{role}'")).scalar()
+        for role in roles
+    )
+
+
+@contextlib.contextmanager
+def as_role(conn: Connection, role: str | None) -> Generator[Connection]:
+    if role is None:
+        yield conn
+    else:
+        try:
+            db_user = conn.execute(text("select quote_ident(current_user)")).scalar()
+            conn.execute(text(f"set role {role}"))
+            yield conn
+        finally:
+            conn.execute(text(f"set role {db_user}"))

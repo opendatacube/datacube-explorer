@@ -28,7 +28,6 @@ from sqlalchemy import RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql import Select
-from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 try:
     from cubedash._version import version as explorer_version
@@ -42,7 +41,7 @@ from cubedash import _utils
 from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
-from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
 from cubedash.summary._extents import ProductArrival, RegionSummary
 from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
@@ -283,9 +282,8 @@ class SummaryStore:
         (Requires `create` permissions in the db)
         """
         try:
-            self.e_index.execute_ddl(
-                CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
-            )
+            if not self.e_index.create_schema():
+                return False
             refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
         except ProgrammingError as e:
             _LOG.error(str(e))
@@ -603,9 +601,7 @@ class SummaryStore:
         """
         Drop all cubedash-specific tables/schema.
         """
-        self.e_index.execute_ddl(
-            DropSchema(_schema.CUBEDASH_SCHEMA, cascade=True, if_exists=True)
-        )
+        self.e_index.drop_all()
 
     def get(
         self,
