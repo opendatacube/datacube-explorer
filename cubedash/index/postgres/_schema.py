@@ -1,6 +1,14 @@
 import warnings
 from textwrap import dedent
 
+from datacube.drivers.common_psql import (
+    as_role,
+    grant_role,
+    has_roles,
+    transfer_ownership,
+    transfers_required,
+)
+from datacube.drivers.postgres._core import UserRole
 from datacube.drivers.postgres._schema import DATASET as ODC_DATASET
 from geoalchemy2 import Geometry
 from sqlalchemy import (
@@ -35,14 +43,10 @@ from cubedash.summary._schema import (
     REF_TABLE_METADATA,
     PleaseRefresh,
     SchemaNotRefreshableError,
-    as_role,
     epsg_to_srid,
     pg_add_column,
     pg_column_exists,
     pg_create_index,
-    roles_exist,
-    transfer_owner,
-    transfers_required,
 )
 
 DATASET_SPATIAL = Table(
@@ -450,62 +454,57 @@ def check_or_update_odc_schema(admin_conn: Connection):
 
 
 def grant_permissions(conn: Connection) -> None:
-    # read only permissions to agdc_user
-    conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to agdc_user"))
-    conn.execute(
-        text(f"grant select on all tables in schema {CUBEDASH_SCHEMA} to agdc_user")
-    )
-
-    # write permissions (generating/updating summaries) to agdc_manage
-    conn.execute(
-        text(
-            f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to agdc_manage"
-        )
-    )
-    conn.execute(
-        text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to agdc_manage")
-    )
-    conn.execute(text(f"grant create on schema {CUBEDASH_SCHEMA} to agdc_manage"))
-
-    # Grant any remaining cubedash permissions to agdc_admin
-    conn.execute(
-        text(
-            f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to agdc_admin"
-        )
-    )
+    for sql in (
+        # read only permissions to agdc_user
+        f"grant usage on schema {CUBEDASH_SCHEMA} to agdc_user",
+        f"grant select on all tables in schema {CUBEDASH_SCHEMA} to agdc_user",
+        # write permissions (generating/updating summaries) to agdc_manage
+        f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to agdc_manage",
+        f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to agdc_manage",
+        f"grant create on schema {CUBEDASH_SCHEMA} to agdc_manage",
+        # Grant any remaining cubedash permissions to agdc_admin
+        f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to agdc_admin",
+    ):
+        conn.execute(text(sql))
 
     # Check for legacy explorer roles, and grant ODC roles for cross-compatibility
-    if roles_exist(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
-        conn.execute(text("grant agdc_manage to explorer_generator"))
-        conn.execute(text("grant agdc_admin to explorer_owner"))
+    if has_roles(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
+        grant_role(conn, UserRole.MANAGE, ["explorer_generator"])
+        grant_role(conn, UserRole.ADMIN, ["explorer_owner"])
 
 
 def ensure_owners(conn: Connection) -> None:
     transfers = transfers_required(
         conn,
         "agdc_admin",
-        [
+        CUBEDASH_SCHEMA,
+        "tables",
+        objects=[
             "dataset_spatial",
             "product",
             "time_overview",
             "region",
         ],
-        "tables",
     )
     for table, current_owner in transfers:
-        transfer_owner(conn, table, current_owner, "agdc_admin", "tables")
+        transfer_ownership(
+            conn, CUBEDASH_SCHEMA, table, current_owner, "agdc_admin", "tables"
+        )
 
     transfers = transfers_required(
         conn,
         "agdc_manage",
-        [
+        CUBEDASH_SCHEMA,
+        "matviews",
+        objects=[
             "mv_dataset_spatial_quality",
             "mv_spatial_ref_sys",
         ],
-        "matviews",
     )
     for mv, current_owner in transfers:
-        transfer_owner(conn, mv, current_owner, "agdc_manage", "matviews")
+        transfer_ownership(
+            conn, CUBEDASH_SCHEMA, mv, current_owner, "agdc_manage", "matviews"
+        )
 
     conn.commit()
 

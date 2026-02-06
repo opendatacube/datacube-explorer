@@ -916,7 +916,7 @@ requires-dist = [
     { name = "cachetools" },
     { name = "ciso8601", marker = "extra == 'deployment'" },
     { name = "click", git = "https://github.com/pjonsson/click.git?rev=one-close-only" },
-    { name = "datacube", extras = ["postgres"], specifier = ">=1.9.13,<1.10.0" },
+    { name = "datacube", extras = ["postgres"], specifier = ">=1.9.14,<1.10.0" },
     { name = "datacube-explorer", extras = ["deployment"], marker = "extra == 'test'" },
     { name = "deepdiff", marker = "extra == 'test'" },
     { name = "docker", marker = "extra == 'test'" },

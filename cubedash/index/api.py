@@ -4,12 +4,12 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from datacube.drivers.common_psql import drop_schema, has_schema
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import CursorResult, Result, Row, Select, inspect
+from sqlalchemy import CursorResult, Result, Row, Select
 from sqlalchemy.sql import ColumnElement
-from sqlalchemy.sql.ddl import DropSchema
 from sqlalchemy.sql.elements import ClauseElement, Label
 
 from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
@@ -213,7 +213,7 @@ class ExplorerAbstractIndex(ABC):
     def select_spatial_stats(self) -> Result: ...
 
     def schema_initialised(self) -> bool:
-        return inspect(self.engine).has_schema(CUBEDASH_SCHEMA)
+        return has_schema(self.engine, CUBEDASH_SCHEMA)
 
     @abstractmethod
     def schema_compatible_info(
@@ -227,7 +227,8 @@ class ExplorerAbstractIndex(ABC):
         """
         Drop all explorer-specific tables/schema
         """
-        self.execute_ddl(DropSchema(CUBEDASH_SCHEMA, cascade=True, if_exists=True))
+        with self.engine.connect() as conn:
+            drop_schema(conn, CUBEDASH_SCHEMA)
 
     @abstractmethod
     def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...
