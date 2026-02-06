@@ -11,7 +11,7 @@ dependencies = [
     # Tests fail with "ValueError: I/O operation on closed file" with Click
     # 8.2.0 and later.
     "click @ git+https://github.com/pjonsson/click.git@one-close-only",
-    "datacube[postgres]>=1.9.13,<1.10.0",
+    "datacube[postgres]>=1.9.14,<1.10.0",
     "eodatasets3>=1.9",
     "fiona>=1.10.0",
     "flask",
