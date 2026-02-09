@@ -52,6 +52,7 @@ METADATA_TYPES = [
     "metadata/eo_plus.yaml",
     "metadata/landsat_l1_scene.yaml",
     "metadata/qga_eo.yaml",
+    "metadata/eo3_s1_nrb.odc-type.yaml",
 ]
 PRODUCTS = [
     "products/dsm1sv10.odc-product.yaml",
@@ -73,6 +74,7 @@ PRODUCTS = [
     "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/wofs_albers.yaml",
     "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/ga_s1_nrb_iw_hh_hv_0.odc-product.yaml",
 ]
 DATASETS = [
     "datasets/high_tide_comp_20p.yaml.gz",
@@ -82,6 +84,7 @@ DATASETS = [
     "datasets/pq_count_summary.yaml.gz",
     "datasets/wofs-albers-sample.yaml.gz",
     "datasets/ga_ls8c_ard_3-sample.yaml",
+    "datasets/ga_s1_nrb_iw_hh_hv_0-sample.yaml",
 ]
 
 
@@ -382,6 +385,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
             "ls7_level1_scene": 4,
             "dsm1sv10": 1,
             "ga_ls8c_ard_3": 21,
+            "ga_s1_nrb_iw_hh_hv_0": 6,
         },
     )
 

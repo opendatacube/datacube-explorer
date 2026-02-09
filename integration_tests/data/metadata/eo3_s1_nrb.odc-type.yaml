@@ -1,0 +1,274 @@
+---
+# Metadata Type
+# url: https://explorer.dev.dea.ga.gov.au/metadata-types/eo3_s1_nrb.odc-type.yaml
+name: eo3_s1_nrb
+description: EO3 for DEA Sentinel-1 Normalised Radar backscatter
+dataset:
+  id:
+  - id
+  label:
+  - label
+  format:
+  - properties
+  - odc:file_format
+  sources:
+  - lineage
+  - source_datasets
+  creation_dt:
+  - properties
+  - odc:processing_datetime
+  grid_spatial:
+  - grid_spatial
+  - projection
+  measurements:
+  - measurements
+  search_fields:
+    lat:
+      type: double-range
+      max_offset:
+      - - extent
+        - lat
+        - end
+      min_offset:
+      - - extent
+        - lat
+        - begin
+      description: Latitude range.
+    lon:
+      type: double-range
+      max_offset:
+      - - extent
+        - lon
+        - end
+      min_offset:
+      - - extent
+        - lon
+        - begin
+      description: Longitude range.
+    time:
+      type: datetime-range
+      max_offset:
+      - - properties
+        - dtr:end_datetime
+      - - properties
+        - datetime
+      min_offset:
+      - - properties
+        - dtr:start_datetime
+      - - properties
+        - datetime
+      description: Acquisition time range.
+    beam_id:
+      type: string
+      offset:
+      - properties
+      - sarard:beam_id
+      indexed: false
+      description: The beam id (also known as subswath id) that contains the
+        burst.
+    crs_raw:
+      type: string
+      offset:
+      - crs
+      indexed: false
+      description: The raw CRS string as it appears in the metadata.
+    burst_id:
+      type: string
+      offset:
+      - properties
+      - sarard:burst_id
+      indexed: true
+      description: The OPERA-ISCE3 Burst ID, formatted as
+        "t{track_number}_{esa_burst_id}_{swath_id}".
+    platform:
+      type: string
+      offset:
+      - properties
+      - eo:platform
+      indexed: false
+      description: The platform code.
+    scene_id:
+      type: string
+      offset:
+      - properties
+      - sarard:scene_id
+      indexed: false
+      description: The ESA scene ID (e.g.
+        S1A_EW_GRDM_1SDH_20211219T152835_20211219T152939_041079_04E161_47D4).
+    source_id:
+      type: string
+      offset:
+      - properties
+      - sarard:source_id
+      indexed: false
+      description: The source file for the dataset.
+    instrument:
+      type: string
+      offset:
+      - properties
+      - eo:instrument
+      indexed: false
+      description: The instrument name.
+    orbit_file:
+      type: string
+      offset:
+      - properties
+      - sarard:orbit_file
+      indexed: false
+      description: The source file for the orbit.
+    orbit_cycle:
+      type: integer
+      offset:
+      - properties
+      - sat:orbit_cycle
+      indexed: false
+      description: The number of days for the satellite to repeat its orbit
+        track.
+    orbit_state:
+      type: string
+      offset:
+      - properties
+      - sat:orbit_state
+      indexed: false
+      description: The orbit state (one of ascending or descending).
+    region_code:
+      type: string
+      offset:
+      - properties
+      - odc:region_code
+      indexed: true
+      description: "The spatial reference code from the provider. For Sentinel-1 normalised
+        radar backscatter  processed with the OPERA-ISCE3 pipeline  the region code
+        is comprised of three pieces of  ESA metadata, formatted as: \"t{track_number}_{esa_burst_id}_{swath_id}\"\
+        . In general it is a unique string identifier that datasets covering roughly
+        the same spatial region share.        \n"
+    orbit_source:
+      type: string
+      offset:
+      - properties
+      - s1:orbit_source
+      indexed: false
+      description: The orbit file type.
+    conversion_eq:
+      type: string
+      offset:
+      - properties
+      - sarard:conversion_eq
+      indexed: false
+      description: The equation to convert product to decibels.
+    absolute_orbit:
+      type: integer
+      offset:
+      - properties
+      - sat:absolute_orbit
+      indexed: false
+      description: The absolute orbit number of the satellite.
+    product_family:
+      type: string
+      offset:
+      - properties
+      - odc:product_family
+      indexed: false
+      description: The product family code.
+    relative_orbit:
+      type: integer
+      offset:
+      - properties
+      - sat:relative_orbit
+      indexed: false
+      description: The orbit number in the satellite's repeat cycle.
+    dataset_version:
+      type: string
+      offset:
+      - properties
+      - odc:dataset_version
+      indexed: false
+      description: Version number for the dataset, with the leading number
+        indicating the collection.
+    instrument_mode:
+      type: string
+      offset:
+      - properties
+      - sar:instrument_mode
+      indexed: false
+      description: The acquisition mode (one of SM, IW, EW, WV).
+    measurement_type:
+      type: string
+      offset:
+      - properties
+      - sarard:measurement_type
+      indexed: false
+      description: The backscatter measurement type (one of gamma_0, sigma_0,
+        beta_0).
+    noise_removal_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:noise_removal_applied
+      indexed: false
+      description: Whether noise removal has been applied.
+    observation_direction:
+      type: string
+      offset:
+      - properties
+      - sar:observation_direction
+      indexed: false
+      description: The observation direction of the satellite relative to the
+        flight path.
+    measurement_convention:
+      type: string
+      offset:
+      - properties
+      - sarard:measurement_convention
+      indexed: false
+      description: The convention used to measure backscatter.
+    speckle_filter_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:speckle_filter_applied
+      indexed: false
+      description: Whether a speckle filter has been applied.
+    far_range_incidence_angle:
+      type: double
+      offset:
+      - properties
+      - sarard:far_range_incidence_angle
+      indexed: false
+      description: The far range incidence angle.
+    near_range_incidence_angle:
+      type: double
+      offset:
+      - properties
+      - sarard:near_range_incidence_angle
+      indexed: false
+      description: The near range incidence angle.
+    bistatic_correction_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:bistatic_correction_applied
+      indexed: false
+      description: Whether bistatic correction has been applied.
+    ionospheric_correction_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:ionospheric_correction_applied
+      indexed: false
+      description: Whether ionospheric correction has been applied.
+    wet_tropospheric_correction_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:wet_tropospheric_correction_applied
+      indexed: false
+      description: Whether wet tropospheric correction has been applied.
+    static_tropospheric_correction_applied:
+      type: string
+      offset:
+      - properties
+      - sarard:static_tropospheric_correction_applied
+      indexed: false
+      description: Whether static tropospheric correction has been applied.
+...
