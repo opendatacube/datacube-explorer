@@ -5,6 +5,7 @@ from uuid import UUID
 
 import shapely.ops
 from cachetools.func import lru_cache
+from datacube.drivers.common_psql import as_role, create_schema, has_roles
 from datacube.drivers.postgis._api import PostgisDbAPI, _dataset_select_fields
 from datacube.drivers.postgis._fields import SimpleDocField
 from typing_extensions import override
@@ -846,16 +847,15 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def create_schema(self) -> bool:
         # Ensure ODC roles exist (roles were formerly optional but not using them is now deprecated)
         with self.engine.connect() as conn:
-            if not _schema.roles_exist(conn, ["odc_user", "odc_manage", "odc_admin"]):
+            if not has_roles(conn, ["odc_user", "odc_manage", "odc_admin"]):
                 raise RuntimeError(
                     "Default datacube users do not exist. Please run 'datacube system init'"
                 )
 
         # Create schema if necessary and ensure it is owned by odc_admin
         if not self.schema_initialised():
-            self.execute_ddl(
-                text(f"create schema {CUBEDASH_SCHEMA} authorization odc_admin")
-            )
+            with self.engine.connect() as conn:
+                create_schema(conn, CUBEDASH_SCHEMA, if_exists=False, owner="odc_admin")
         else:
             owner = self.execute_query_scalar(
                 text(
@@ -883,7 +883,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         """
         with (
             self.engine.connect() as conn,
-            _schema.as_role(conn, "odc_manage") as rw_conn,
+            as_role(conn, "odc_manage") as rw_conn,
         ):
             _schema.refresh_supporting_views(rw_conn, concurrently=concurrently)
 

@@ -1,3 +1,10 @@
+from datacube.drivers.common_psql import (
+    grant_role,
+    has_roles,
+    transfer_ownership,
+    transfers_required,
+)
+from datacube.drivers.postgis._core import UserRole
 from geoalchemy2 import Geometry
 from sqlalchemy import (
     BigInteger,
@@ -28,9 +35,6 @@ from cubedash.summary._schema import (
     REF_TABLE_METADATA,
     epsg_to_srid,
     pg_create_index,
-    roles_exist,
-    transfer_owner,
-    transfers_required,
 )
 
 orm_registry = registry()
@@ -328,60 +332,57 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
 
 
 def grant_permissions(conn: Connection) -> None:
-    # read only permissions to odc_user
-    conn.execute(text(f"grant usage on schema {CUBEDASH_SCHEMA} to odc_user"))
-    conn.execute(
-        text(f"grant select on all tables in schema {CUBEDASH_SCHEMA} to odc_user")
-    )
-
-    # write permissions (generating/updating summaries) to odc_manage
-    conn.execute(
-        text(
-            f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to odc_manage"
-        )
-    )
-    conn.execute(text(f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to odc_manage"))
-    conn.execute(text(f"grant create on schema {CUBEDASH_SCHEMA} to odc_manage"))
-
-    # Grant any remaining cubedash permissions to odc_admin
-    conn.execute(
-        text(
-            f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to odc_admin"
-        )
-    )
+    for sql in (
+        # read only permissions to odc_user
+        f"grant usage on schema {CUBEDASH_SCHEMA} to odc_user",
+        f"grant select on all tables in schema {CUBEDASH_SCHEMA} to odc_user",
+        # write permissions (generating/updating summaries) to odc_manage
+        f"grant insert, update, delete on all tables in schema {CUBEDASH_SCHEMA} to odc_manage",
+        f"grant usage on {CUBEDASH_SCHEMA}.product_id_seq to odc_manage",
+        f"grant create on schema {CUBEDASH_SCHEMA} to odc_manage",
+        # Grant any remaining cubedash permissions to odc_admin
+        f"grant all privileges on all tables in schema {CUBEDASH_SCHEMA} to odc_admin",
+    ):
+        conn.execute(text(sql))
 
     # Check for legacy explorer roles, and grant ODC roles for cross-compatibility
-    if roles_exist(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
-        conn.execute(text("grant odc_manage to explorer_generator"))
-        conn.execute(text("grant odc_admin to explorer_owner"))
+    if has_roles(conn, ["explorer_viewer", "explorer_generator", "explorer_owner"]):
+        grant_role(conn, UserRole.MANAGE, ["explorer_generator"])
+        grant_role(conn, UserRole.ADMIN, ["explorer_owner"])
 
 
 def ensure_owners(conn: Connection) -> None:
     transfers = transfers_required(
         conn,
         "odc_admin",
-        [
+        CUBEDASH_SCHEMA,
+        "tables",
+        objects=[
             "dataset_spatial",
             "product",
             "time_overview",
             "region",
         ],
-        "tables",
     )
     for table, current_owner in transfers:
-        transfer_owner(conn, table, current_owner, "odc_admin", "tables")
+        transfer_ownership(
+            conn, CUBEDASH_SCHEMA, table, current_owner, "odc_admin", "tables"
+        )
 
     transfers = transfers_required(
         conn,
         "odc_manage",
-        [
+        CUBEDASH_SCHEMA,
+        "matviews",
+        objects=[
             "mv_dataset_spatial_quality",
             "mv_spatial_ref_sys",
         ],
-        "matviews",
     )
     for mv, current_owner in transfers:
-        transfer_owner(conn, mv, current_owner, "odc_manage", "matviews")
+        transfer_ownership(
+            conn, CUBEDASH_SCHEMA, mv, current_owner, "odc_manage", "matviews"
+        )
 
     conn.commit()
 
