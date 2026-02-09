@@ -1,0 +1,914 @@
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/f8813312-37cb-53cd-ba8c-c83efd9c1175.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: f8813312-37cb-53cd-ba8c-c83efd9c1175
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t096_205505_iw3/2024/12/06/ga_s1a_nrb_0-1-0_T096-205505-IW3_20241206T072807Z_stac-item.json
+
+crs: EPSG:3031
+geometry:
+  type: Polygon
+  coordinates: [[[-2.3767950776811214e+06, 2.229244370468855e+06], [
+          -2.4167220060509075e+06, 2.2156123038343857e+06], [
+          -2.455061858559131e+06, 2.2024709372394495e+06], [
+          -2.446987916365673e+06, 2.1796577669809526e+06], [
+          -2.408850679170602e+06, 2.193285278576042e+06], [
+          -2.3691254137880914e+06, 2.2074034811920966e+06], [
+          -2.3767950776811214e+06, 2.229244370468855e+06]]]
+grids:
+  default:
+    shape: [2982, 4800]
+    transform: [2.e+01, 0.e+00, -2.4601e+06, 0.e+00, -2.e+01, 2.23426e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T07:28:07.727403+00:00'
+  dtr:end_datetime: '2024-12-06T07:28:10.823071+00:00'
+  dtr:start_datetime: '2024-12-06T07:28:07.727403+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:52:15.756054+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t096_205505_iw3
+  processing:datetime: '2025-10-12T22:52:15.756054+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW3
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -6.0819558e+01
+  sarard:LR_longitude: -4.6834796e+01
+  sarard:UL_latitude: -6.0300854e+01
+  sarard:UL_longitude: -4.8306905e+01
+  sarard:beam_id: IW3
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t096_205505_iw3
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 4.458466e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 4.013983e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 2982
+  sarard:number_of_pixels_per_line: 4800
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T072755_20241206T072810_056868_06FBBD_07C9
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T072755_20241206T072810_056868_06FBBD_07C9.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56868
+  sat:orbit_cycle: 12
+  sat:orbit_state: descending
+  sat:relative_orbit: 96
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t096_205505_iw3/2024/12/06/ga_s1a_nrb_0-1-0_T096-205505-IW3_20241206T072807Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t096_205505_iw3/2024/12/06/ga_s1a_nrb_0-1-0_T096-205505-IW3_20241206T072807Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t096_205505_iw3/2024/12/06/ga_s1a_nrb_0-1-0_T096-205505-IW3_20241206T072807Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t096_205505_iw3/ga_s1a_nrb-static_0-1-0_T096-205505-IW3_20140403_thumbnail.png
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/f6ede601-71f9-54bf-8547-79ec1bde3a02.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: f6ede601-71f9-54bf-8547-79ec1bde3a02
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225173_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225173-IW1_20241206T223215Z_stac-item.json
+
+crs: EPSG:32723
+geometry:
+  type: Polygon
+  coordinates: [[[3.3141742770350666e+05, 3.534769174179663e+06], [
+          3.7234660384966293e+05, 3.55405229888934e+06], [4.101368632500982e+05,
+          3.5718321693732804e+06], [4.002069452746553e+05, 3.592857283513139e+06],
+      [3.626285951329825e+05, 3.574649561502873e+06], [3.2191336698177684e+05,
+          3.5549403462538244e+06], [3.3141742770350666e+05,
+          3.534769174179663e+06]]]
+grids:
+  default:
+    shape: [3408, 4914]
+    transform: [2.e+01, 0.e+00, 3.1688e+05, 0.e+00, -2.e+01, 3.59788e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T22:32:15.264540+00:00'
+  dtr:end_datetime: '2024-12-06T22:32:18.347874+00:00'
+  dtr:start_datetime: '2024-12-06T22:32:15.264540+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:27:30.524739+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t105_225173_iw1
+  processing:datetime: '2025-10-12T22:27:30.524739+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW1
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -5.8295677e+01
+  sarard:LR_longitude: -4.6519777e+01
+  sarard:UL_latitude: -5.7795164e+01
+  sarard:UL_longitude: -4.8022819e+01
+  sarard:beam_id: IW1
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t105_225173_iw1
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 3.538869e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 2.913283e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 3408
+  sarard:number_of_pixels_per_line: 4914
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56877
+  sat:orbit_cycle: 12
+  sat:orbit_state: ascending
+  sat:relative_orbit: 105
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225173_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225173-IW1_20241206T223215Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225173_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225173-IW1_20241206T223215Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225173_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225173-IW1_20241206T223215Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225173_iw1/ga_s1a_nrb-static_0-1-0_T105-225173-IW1_20140403_thumbnail.png
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/ee4c3f25-4b84-5dd6-81f6-3ca820c575b7.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: ee4c3f25-4b84-5dd6-81f6-3ca820c575b7
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225174_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225174-IW1_20241206T223218Z_stac-item.json
+
+crs: EPSG:32723
+geometry:
+  type: Polygon
+  coordinates: [[[3.2338049447403476e+05, 3.5518268853958733e+06], [
+          3.6429883363207674e+05, 3.5711100055125095e+06], [
+          4.020805848325703e+05, 3.588890550819421e+06], [3.9214873993834795e+05,
+        3.609915294680237e+06], [3.5457878055460774e+05, 3.5917070999542912e+06],
+      [3.138744297367508e+05, 3.5719980272205006e+06], [3.2338049447403476e+05,
+          3.5518268853958733e+06]]]
+grids:
+  default:
+    shape: [3407, 4914]
+    transform: [2.e+01, 0.e+00, 3.0884e+05, 0.e+00, -2.e+01, 3.61494e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T22:32:18.023097+00:00'
+  dtr:end_datetime: '2024-12-06T22:32:21.106431+00:00'
+  dtr:start_datetime: '2024-12-06T22:32:18.023097+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:27:30.747577+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t105_225174_iw1
+  processing:datetime: '2025-10-12T22:27:30.747577+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW1
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -5.8139525e+01
+  sarard:LR_longitude: -4.6648931e+01
+  sarard:UL_latitude: -5.7640151e+01
+  sarard:UL_longitude: -4.8145564e+01
+  sarard:beam_id: IW1
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t105_225174_iw1
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 3.539595e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 2.9142e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 3407
+  sarard:number_of_pixels_per_line: 4914
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56877
+  sat:orbit_cycle: 12
+  sat:orbit_state: ascending
+  sat:relative_orbit: 105
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225174_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225174-IW1_20241206T223218Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225174_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225174-IW1_20241206T223218Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225174_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225174-IW1_20241206T223218Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225174_iw1/ga_s1a_nrb-static_0-1-0_T105-225174-IW1_20140403_thumbnail.png
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/a627fbf3-b165-57ce-9c3e-4a4a86392335.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: a627fbf3-b165-57ce-9c3e-4a4a86392335
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225175_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225175-IW1_20241206T223220Z_stac-item.json
+
+crs: EPSG:32723
+geometry:
+  type: Polygon
+  coordinates: [[[3.1534181732555974e+05, 3.5688846237417785e+06], [
+          3.56249266768517e+05, 3.588167646505437e+06], [3.9402274957516545e+05,
+          3.6059486300943783e+06], [3.840890339729724e+05,
+          3.6269730886892444e+06], [3.4652732275600696e+05,
+          3.6087645335737932e+06], [3.058336945129968e+05,
+          3.5890557825919874e+06], [3.1534181732555974e+05,
+          3.5688846237417785e+06]]]
+grids:
+  default:
+    shape: [3405, 4912]
+    transform: [2.e+01, 0.e+00, 3.008e+05, 0.e+00, -2.e+01, 3.63198e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T22:32:20.777542+00:00'
+  dtr:end_datetime: '2024-12-06T22:32:23.860876+00:00'
+  dtr:start_datetime: '2024-12-06T22:32:20.777542+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:27:30.499368+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t105_225175_iw1
+  processing:datetime: '2025-10-12T22:27:30.499368+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW1
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -5.7983259e+01
+  sarard:LR_longitude: -4.6777017e+01
+  sarard:UL_latitude: -5.7485014e+01
+  sarard:UL_longitude: -4.8267294e+01
+  sarard:beam_id: IW1
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t105_225175_iw1
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 3.540323e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 2.915118e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 3405
+  sarard:number_of_pixels_per_line: 4912
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T223202_20241206T223229_056877_06FC18_AC18.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56877
+  sat:orbit_cycle: 12
+  sat:orbit_state: ascending
+  sat:relative_orbit: 105
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225175_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225175-IW1_20241206T223220Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225175_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225175-IW1_20241206T223220Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225175_iw1/2024/12/06/ga_s1a_nrb_0-1-0_T105-225175-IW1_20241206T223220Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225175_iw1/ga_s1a_nrb-static_0-1-0_T105-225175-IW1_20140403_thumbnail.png
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/05a76e91-341e-5b8e-91e0-af1794bd1ade.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: 05a76e91-341e-5b8e-91e0-af1794bd1ade
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225185_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225185-IW2_20241206T223249Z_stac-item.json
+
+crs: EPSG:32722
+geometry:
+  type: Polygon
+  coordinates: [[[6.803959264443426e+05, 3.7824872441042485e+06], [
+          7.24107391142441e+05, 3.7986780992006697e+06], [7.65249820546176e+05,
+          3.81390604268537e+06], [7.574474055383648e+05, 3.834374841140641e+06], [
+        7.163005921469503e+05, 3.818662692629827e+06], [6.725602275623863e+05,
+          3.8019787517368393e+06], [6.803959264443426e+05,
+          3.7824872441042485e+06]]]
+grids:
+  default:
+    shape: [3096, 5135]
+    transform: [2.e+01, 0.e+00, 6.6756e+05, 0.e+00, -2.e+01, 3.8394e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T22:32:49.306608+00:00'
+  dtr:end_datetime: '2024-12-06T22:32:52.402276+00:00'
+  dtr:start_datetime: '2024-12-06T22:32:49.306608+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:28:37.890139+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t105_225185_iw2
+  processing:datetime: '2025-10-12T22:28:37.890139+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW2
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -5.6068703e+01
+  sarard:LR_longitude: -4.6773088e+01
+  sarard:UL_latitude: -5.5568464e+01
+  sarard:UL_longitude: -4.8240147e+01
+  sarard:beam_id: IW2
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t105_225185_iw2
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 4.068362e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 3.494505e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 3096
+  sarard:number_of_pixels_per_line: 5135
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T223227_20241206T223254_056877_06FC18_4965
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T223227_20241206T223254_056877_06FC18_4965.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56877
+  sat:orbit_cycle: 12
+  sat:orbit_state: ascending
+  sat:relative_orbit: 105
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225185_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225185-IW2_20241206T223249Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225185_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225185-IW2_20241206T223249Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225185_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225185-IW2_20241206T223249Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225185_iw2/ga_s1a_nrb-static_0-1-0_T105-225185-IW2_20140403_thumbnail.png
+
+lineage: {}
+...
+---
+# Dataset
+# url: https://explorer.dev.dea.ga.gov.au/dataset/e3572169-7bc7-5c63-9318-62b2d5f8421a.odc-metadata.yaml
+$schema: https://schemas.opendatacube.org/dataset
+
+id: e3572169-7bc7-5c63-9318-62b2d5f8421a
+product:
+  name: ga_s1_nrb_iw_hh_hv_0
+
+location:
+  https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225186_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225186-IW2_20241206T223252Z_stac-item.json
+
+crs: EPSG:32722
+geometry:
+  type: Polygon
+  coordinates: [[[6.733006399297762e+05, 3.7999827981699454e+06], [
+          7.171961007383667e+05, 3.816252331117139e+06], [7.584986218236615e+05,
+          3.831549081803033e+06], [7.508597566298658e+05, 3.8520774277071245e+06],
+      [7.097235224899708e+05, 3.8363597784845512e+06], [6.659955092165072e+05,
+          3.8196703957187114e+06], [6.733006399297762e+05,
+          3.7999827981699454e+06]]]
+grids:
+  default:
+    shape: [3107, 5127]
+    transform: [2.e+01, 0.e+00, 6.6098e+05, 0.e+00, -2.e+01, 3.8571e+06]
+
+properties:
+  ceosard:specification: NRB
+  ceosard:specification_version: '5.5'
+  ceosard:type: radar
+  datetime: '2024-12-06T22:32:52.065165+00:00'
+  dtr:end_datetime: '2024-12-06T22:32:55.160833+00:00'
+  dtr:start_datetime: '2024-12-06T22:32:52.065165+00:00'
+  eo:constellation: Sentinel-1
+  eo:gsd: 2.e+01  # Ground sample distance (m)
+  eo:instrument: SENTINEL-1A CSAR
+  eo:platform: Sentinel-1A
+  odc:dataset_version: 0.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: '2025-10-12T22:28:50.309513+00:00'
+  odc:producer: ga.gov.au
+  odc:product: ga_s1_nrb_iw_hh_hv_0
+  odc:product_family: sar_ard
+  odc:region_code: t105_225186_iw2
+  processing:datetime: '2025-10-12T22:28:50.309513+00:00'
+  processing:facility: Geoscience Australia
+  processing:level: L2
+  processing:software:
+    isce3: 0.24.4
+    s1Reader: 0.2.5
+    dem-handler: 0.2.3
+    sar-pipeline: 0.3.2.dev8+gc997ab475.d20251009
+    GeoscienceAustralia/RTC: 1.0.4
+  processing:version: 0.1.0
+  product:type: RTC_S1
+  s1:orbit_source: POE precise orbit
+  sar:beam_ids:
+  - IW2
+  sar:center_frequency: 5.40500045433435e+00
+  sar:frequency_band: C
+  sar:instrument_mode: IW
+  sar:observation_direction: right
+  sar:polarizations:
+  - HH
+  - HV
+  sarard:LR_latitude: -5.5914313e+01
+  sarard:LR_longitude: -4.6896965e+01
+  sarard:UL_latitude: -5.5413209e+01
+  sarard:UL_longitude: -4.8355809e+01
+  sarard:beam_id: IW2
+  sarard:bistatic_correction_applied: 'true'
+  sarard:burst_id: t105_225186_iw2
+  sarard:center_frequency_unit: GHz
+  sarard:conversion_eq: 10*log10(backscatter_linear)
+  sarard:far_range_incidence_angle: 4.068997e+01
+  sarard:geometric_accuracy_absolute: 2.93e+00
+  sarard:geometric_accuracy_east_bias: 1.14e+00
+  sarard:geometric_accuracy_east_std: 1.19e+00
+  sarard:geometric_accuracy_north_bias: 2.25e+00
+  sarard:geometric_accuracy_north_std: 1.3e+00
+  sarard:geometric_accuracy_rmse: 3.08e+00
+  sarard:geometric_accuracy_unit: metre
+  sarard:ionospheric_correction_applied: 'false'
+  sarard:measurement_convention: linear backscatter intensity
+  sarard:measurement_type: Gamma-0
+  sarard:near_range_incidence_angle: 3.495276e+01
+  sarard:noise_removal_applied: 'true'
+  sarard:number_of_lines: 3107
+  sarard:number_of_pixels_per_line: 5127
+  sarard:orbit_file:
+    S1A_OPER_AUX_POEORB_OPOD_20241226T070616_V20241205T225942_20241207T005942.EOF
+  sarard:pixel_coordinate_convention: pixel ULC
+  sarard:pixel_spacing_unit: metre
+  sarard:pixel_spacing_x: 2.e+01
+  sarard:pixel_spacing_y: 2.e+01
+  sarard:resolution_unit: metre
+  sarard:resolution_x: 2.e+01
+  sarard:resolution_y: 2.e+01
+  sarard:scene_id:
+    S1A_IW_SLC__1SDH_20241206T223252_20241206T223319_056877_06FC18_0031
+  sarard:source_geometry: slant range
+  sarard:source_id:
+    S1A_IW_SLC__1SDH_20241206T223252_20241206T223319_056877_06FC18_0031.SAFE
+  sarard:speckle_filter_applied: 'false'
+  sarard:speckle_filter_type: ''
+  sarard:speckle_filter_window: []
+  sarard:static_tropospheric_correction_applied: 'true'
+  sarard:wet_tropospheric_correction_applied: 'false'
+  sat:absolute_orbit: 56877
+  sat:orbit_cycle: 12
+  sat:orbit_state: ascending
+  sat:relative_orbit: 105
+  storage:schemes:
+    aws:
+      type: aws-s3
+      bucket: deant-data-public-dev
+      region: ap-southeast-2
+      platform: https://{bucket}.s3.{region}.amazonaws.com
+
+measurements:
+  mask:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225186_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225186-IW2_20241206T223252Z_mask.tif
+  HH_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225186_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225186-IW2_20241206T223252Z_HH-gamma0.tif
+  HV_gamma0:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_hh_hv_0/t105_225186_iw2/2024/12/06/ga_s1a_nrb_0-1-0_T105-225186-IW2_20241206T223252Z_HV-gamma0.tif
+  incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_incidence-angle.tif
+  number_of_looks:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_number-of-looks.tif
+  gamma0_to_beta0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_gamma0-to-beta0-ratio.tif
+  local_incidence_angle:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_local-incidence-angle.tif
+  gamma0_to_sigma0_ratio:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_gamma0-to-sigma0-ratio.tif
+
+accessories:
+  thumbnail:
+    path:
+      https://deant-data-public-dev.s3.ap-southeast-2.amazonaws.com/experimental/baseline/antarctica/ga_s1_nrb_iw_static_0/t105_225186_iw2/ga_s1a_nrb-static_0-1-0_T105-225186-IW2_20140403_thumbnail.png
+
+lineage: {}
+...
