@@ -62,8 +62,10 @@ jobs:
         if: github.event_name != 'release'
         run: |
           set -ex
-          UNSTABLE_TAG=$(git describe --tags | sed 's#\-g#+g#')
+          UNSTABLE_TAG=$(git describe --tags)
           echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
+          EXPLORER_VERSION=$(git describe --tags | sed 's#\-g#+g#')
+          echo "EXPLORER_VERSION=$EXPLORER_VERSION" >> $GITHUB_ENV
 
       - name: Build and Push unstable + latest Docker image tag
         if: github.event_name != 'release'
@@ -75,7 +77,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             ENVIRONMENT=deployment
-            EXPLORER_VERSION=${{ env.UNSTABLE_TAG }}
+            EXPLORER_VERSION=${{ env.EXPLORER_VERSION }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
@@ -103,7 +105,7 @@ jobs:
             ENVIRONMENT=deployment
             EXPLORER_VERSION=${{ env.RELEASE_VERSION }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
         env:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
