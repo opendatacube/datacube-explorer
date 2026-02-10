@@ -43,6 +43,7 @@ from cubedash.summary._schema import (
     REF_TABLE_METADATA,
     PleaseRefresh,
     SchemaNotRefreshableError,
+    create_safe_transform_func,
     epsg_to_srid,
     pg_add_column,
     pg_column_exists,
@@ -346,6 +347,8 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         "dataset_type_ref",
         unique=True,
     )
+
+    create_safe_transform_func(conn)
 
 
 def update_schema(conn: Connection) -> set[PleaseRefresh]:
