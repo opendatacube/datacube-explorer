@@ -33,6 +33,7 @@ from cubedash.summary._schema import (
     CUBEDASH_SCHEMA,
     METADATA,
     REF_TABLE_METADATA,
+    create_safe_transform_func,
     epsg_to_srid,
     pg_create_index,
 )
@@ -329,6 +330,8 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         "product_ref",
         unique=True,
     )
+
+    create_safe_transform_func(conn)
 
 
 def grant_permissions(conn: Connection) -> None:

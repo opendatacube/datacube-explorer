@@ -48,7 +48,6 @@ from sqlalchemy.sql import ColumnElement
 import cubedash.summary._schema as _schema
 from cubedash._utils import datetime_expression, default_utc
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
-from cubedash.index.sql import TRANSFORM_SAFE_SQL
 
 from ._schema import (
     CUBEDASH_SCHEMA,
@@ -420,7 +419,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         collection_bbox = func.Box2D(
             # TODO: reinstate ST_Transform once possible
-            func.cubedash.transform_safe(TIME_OVERVIEW.c.footprint_geometry, 4326)
+            func.cubedash.safe_transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
         )
         bbox_array = array(
             [
@@ -495,7 +494,6 @@ class ExplorerIndex(ExplorerAbstractIndex):
         query = query.limit(limit).offset(offset)
 
         with self.index._active_connection() as conn:
-            conn.execute(text(TRANSFORM_SAFE_SQL))
             return conn.execute(query)
 
     @override
