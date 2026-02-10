@@ -282,9 +282,10 @@ class SummaryStore:
         (Requires `create` permissions in the db)
         """
         try:
-            self.e_index.create_schema()
+            if not self.e_index.create_schema():
+                return False
             refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
-        except (ProgrammingError, RuntimeError) as e:
+        except ProgrammingError as e:
             _LOG.error(str(e))
             return False
         if refresh_also:

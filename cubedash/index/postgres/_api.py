@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 import shapely.ops
+import structlog
 from cachetools.func import lru_cache
 from datacube.drivers.common_psql import as_role, create_schema, has_roles
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
@@ -61,6 +62,8 @@ from ._schema import (
     init_elements,
 )
 from ._schema import get_srid_name as srid_name
+
+_LOG = structlog.stdlib.get_logger()
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
@@ -921,10 +924,10 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # Ensure ODC roles exist (roles were formerly optional but not using them is now deprecated)
         with self.engine.connect() as conn:
             if not has_roles(conn, ["agdc_user", "agdc_manage", "agdc_admin"]):
-                raise RuntimeError(
+                _LOG.error(
                     "Default datacube users do not exist. Please run 'datacube system init'"
                 )
-
+                return False
         # Create schema if necessary and ensure it is owned by agdc_admin
         if not self.schema_initialised():
             with self.engine.connect() as conn:
