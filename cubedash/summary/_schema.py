@@ -127,6 +127,12 @@ def refresh_supporting_views(conn, concurrently: bool) -> None:
 
 
 class SafeTransform(GenericFunction):
+    """
+    Function to filter out geometries that can't be transformed to 4326.
+    This is intended as a temporary workaround to avoid having a handful of products
+    crash the entire stac/collections endpoint until a more permanent solution is implemented.
+    """
+
     type = Geometry()
     package = CUBEDASH_SCHEMA
     identifier = "safe_transform"
