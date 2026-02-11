@@ -348,7 +348,8 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         unique=True,
     )
 
-    create_safe_transform_func(conn)
+    with as_role(conn, "agdc_admin") as conn:
+        create_safe_transform_func(conn)
 
 
 def update_schema(conn: Connection) -> set[PleaseRefresh]:

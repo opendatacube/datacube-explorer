@@ -1,4 +1,5 @@
 from datacube.drivers.common_psql import (
+    as_role,
     grant_role,
     has_roles,
     transfer_ownership,
@@ -331,7 +332,8 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         unique=True,
     )
 
-    create_safe_transform_func(conn)
+    with as_role(conn, "odc_admin") as conn:
+        create_safe_transform_func(conn)
 
 
 def grant_permissions(conn: Connection) -> None:
