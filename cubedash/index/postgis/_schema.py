@@ -331,7 +331,7 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         unique=True,
     )
 
-    create_safe_transform_func(conn)
+    create_safe_transform_func(conn, "odc_admin")
 
 
 def grant_permissions(conn: Connection) -> None:
