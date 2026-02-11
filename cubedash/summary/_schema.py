@@ -144,7 +144,7 @@ class SafeTransform(GenericFunction):
         self.packagenames = (CUBEDASH_SCHEMA,)
 
 
-def create_safe_transform_func(conn: Connection) -> None:
+def create_safe_transform_func(conn: Connection, owner: str) -> None:
     conn.execute(
         text(f"""
     create or replace function {CUBEDASH_SCHEMA}.safe_transform(geom geometry, srid int)
@@ -157,4 +157,7 @@ def create_safe_transform_func(conn: Connection) -> None:
     $$
     language plpgsql;
     """)
+    )
+    conn.execute(
+        text(f"alter function {CUBEDASH_SCHEMA}.safe_transform owner to {owner};")
     )
