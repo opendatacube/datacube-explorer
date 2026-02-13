@@ -288,3 +288,30 @@ The implementation of `fields` differs somewhat from the suggested include/exclu
 The `sort` and `filter` implementations will recognise any syntactically valid version of a property name, which is the say, the STAC, eo3, and search field (as defined by the metadata type) variants of the name, with or without the `item.` or `properties.` prefixes. If a property does not exist for an item, `sort` will ignore it while `filter` will treat it as `NULL`.
 
 The `filter` extension supports both `cql2-text` and `cql2-json` for both GET and POST requesets, and uses [pygeofilter](https://github.com/geopython/pygeofilter) to parse the cql and convert it to a sqlalchemy filter expression. `filter-crs` only accepts http://www.opengis.net/def/crs/OGC/1.3/CRS84 as a valid value.
+
+
+## Release process
+
+Normally simply use the Github release interface.
+
+Currently the automated release process fails to push to PyPI because of the direct
+dependency on a unoffical patched version of Click.  This patch is only required
+for running the integration tests, therefore it is safe to remove for the version that
+goes to PyPI.
+
+The process for a manual release to PyPI is:
+
+1. Create a release through the Github release interface.  This will trigger
+   a github workflow job that will handle the push of the docker image to GHCR,
+   but the push to PyPI will fail.
+2. Checkout the release tag (`git checkout x.y.z`)
+3. Manually remove the direct dependency on the patched click version from `pyproject.toml`.
+   (Simply depend on an unpinned click.)
+4. Override SCM versioning (`export SETUPTOOLS_SCM_PRETEND_VERSION=x.y.z`)
+5. Cleanup any previous builds and rebuild (`rm -rf dist; python -m build`)
+6. Manually push to PyPI (`python -m twine upload --repository datacube-explorer dist/*`)
+   (Note that this requires an appropropriately authorised PyPI access token to be stored
+   in `~/.pypirc` - refer to the PyPI documentation for details.)
+
+Once the issue affecting tests is fixed in a Click release, we can revert to using
+the Github release interface and workflow automation.
