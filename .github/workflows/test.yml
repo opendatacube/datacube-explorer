@@ -123,6 +123,7 @@ jobs:
       # be uploaded to PyPI.
       #
       # Therefore we removed the direct click dependency, and simply depend on click.
+      # (and use $SETUPTOOLS_SCM_PRETEND_VERSION to force a clean version number.)
       #
       # Version dependency can be inherited from datacube-core.
       #
@@ -133,6 +134,7 @@ jobs:
 
       - name: Build Packages
         run: |
+          export SETUPTOOLS_SCM_PRETEND_VERSION=`git describe --abbrev=0 --tags`
           uv build
           uv tool run twine check --strict dist/*
 
