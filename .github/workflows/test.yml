@@ -127,7 +127,8 @@ jobs:
       #
       # Version dependency can be inherited from datacube-core.
       #
-      # This step should be removed once a click release fixes the CliRunner issue that breaks tests.
+      # This step (and the export of SETUPTOOLS_SCM_PRETEND_VERSION below) should be
+      # removed once a click release fixes the CliRunner issue that breaks tests.
       - name: Remove patched click dependency
         run: |
           perl -pi -e 's# \@ git\+https://github\.com/pjonsson/click\.git\@one-close-only##' pyproject.toml
