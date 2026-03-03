@@ -43,6 +43,7 @@ Disallow: /products/
 Disallow: /product/
 Disallow: /stac/
 Disallow: /dataset/
+Disallow: /api/
 """
 
 
