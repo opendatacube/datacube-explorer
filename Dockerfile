@@ -12,7 +12,7 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONUNBUFFERED=1
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.10.7@sha256:edd1fd89f3e5b005814cc8f777610445d7b7e3ed05361f9ddfae67bebfe8456a AS uv
+FROM ghcr.io/astral-sh/uv:0.10.8@sha256:88234bc9e09c2b2f6d176a3daf411419eb0370d450a08129257410de9cfafd2a AS uv
 
 FROM base AS builder
 
