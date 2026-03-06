@@ -65,6 +65,7 @@ doc = [
 ]
 dev = [
     "datacube-explorer[deployment,test]",
+    "ty",
     {include-group = "doc"}
 ]
 
