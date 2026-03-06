@@ -33,7 +33,7 @@ from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
-from orjson.orjson import OPT_INDENT_2, dumps
+from orjson import OPT_INDENT_2, dumps
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import Polygon, shape
