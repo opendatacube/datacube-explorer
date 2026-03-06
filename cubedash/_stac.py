@@ -404,7 +404,9 @@ def _remove_prefixes(arg: str):
     return arg.replace("properties.", "")
 
 
-def _array_arg(arg: str | list[str | float], expect_type=str, expect_size=None) -> list:
+def _array_arg(
+    arg: str | list[str | float], expect_type: type = str, expect_size=None
+) -> list:
     """
     Parse an argument that should be a simple list.
     """
