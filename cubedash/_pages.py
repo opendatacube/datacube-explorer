@@ -409,6 +409,8 @@ def region_geojson(
         abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
     geojson = region_summary.footprint_geojson
+    if geojson is None:
+        abort(404, f"Product {product_name!r} has no footprint.")
     geojson["properties"].update(
         {"product_name": product_name, "year_month_day_filter": [year, month, day]}
     )
