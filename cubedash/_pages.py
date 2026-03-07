@@ -559,6 +559,7 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
 
     if group_by_regex:
         regex_group = {}
+        group = "Internal Error"
         try:
             for regex, group in group_by_regex:
                 regex_group[re.compile(regex)] = group.strip()
