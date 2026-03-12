@@ -11,6 +11,7 @@ import sentry_sdk
 import structlog
 from datacube.index import index_connect
 from datacube.model import Product
+from flask.typing import ResponseValue
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
@@ -114,10 +115,10 @@ def create_app(test_config=None) -> flask.Flask:
         return flask.render_template("500.html")
 
     @app.errorhandler(HTTPException)
-    def handle_exception(e: HTTPException):
+    def handle_exception(e: HTTPException) -> tuple[ResponseValue, int]:
         return (
             utils.render("message.html", title=e.code, message=e.description, e=e),
-            e.code,
+            e.code or 500,
         )
 
     # Enable deployment specific code for Prometheus metrics
