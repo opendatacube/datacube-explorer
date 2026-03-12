@@ -5,7 +5,7 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import fiona
 import structlog
@@ -352,7 +352,7 @@ class RegionSummary:
     footprint_wgs84: Geometry
 
     @property
-    def footprint_geojson(self):
+    def footprint_geojson(self) -> dict[str, Any] | None:
         extent = self.footprint_wgs84
         if not extent:
             return None
