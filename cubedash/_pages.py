@@ -560,8 +560,9 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
     )
 
     if group_by_regex:
+        regex_group = {}
+        group = "Internal Error"
         try:
-            regex_group = {}
             for regex, group in group_by_regex:
                 regex_group[re.compile(regex)] = group.strip()
         except re.error as e:
@@ -569,8 +570,6 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
                 f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
             ) from None
 
-    if group_by_regex:
-        # group using regex
         def regex_key(t):
             for regex, group in regex_group.items():
                 if regex.search(t[0].name):

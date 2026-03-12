@@ -33,10 +33,11 @@ from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
-from orjson.orjson import OPT_INDENT_2, dumps
+from orjson import OPT_INDENT_2, dumps
 from pyproj import CRS as PJCRS
 from ruamel.yaml.comments import CommentedMap
-from shapely.geometry import Polygon, shape
+from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import TIMESTAMP, func
 from werkzeug.datastructures import MultiDict
 
@@ -830,7 +831,7 @@ EODATASETS_LINEAGE_PROPERTY_ORDER = [
 ]
 
 
-def dataset_shape(ds: Dataset) -> tuple[Polygon | None, bool]:
+def dataset_shape(ds: Dataset) -> tuple[BaseGeometry | None, bool]:
     """
     Get a usable extent from the dataset (if possible), and return
     whether the original was valid.
