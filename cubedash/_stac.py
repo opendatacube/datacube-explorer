@@ -164,8 +164,8 @@ def _band_to_measurement(band: Mapping[str, Any]) -> MeasurementDoc:
         path=band.get("path", "Unknown"),
         band=band.get("band"),
         layer=band.get("layer"),
-        name=band.get("name"),  # type: ignore[arg-type]
-        alias=band.get("label"),  # type: ignore[arg-type]
+        name=band.get("name"),
+        alias=band.get("label"),
     )
 
 
