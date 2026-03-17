@@ -15,7 +15,7 @@ from datacube.drivers.postgis._schema import (  # isort: skip
     Dataset as ODC_DATASET,  # noqa: N814
     Product as ODC_PRODUCT,  # noqa: N814
 )
-from datacube.index import Index
+from datacube.index.postgis.index import Index
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
@@ -70,6 +70,8 @@ _LOG = structlog.stdlib.get_logger()
 
 
 class ExplorerIndex(ExplorerAbstractIndex):
+    index: Index
+
     def __init__(self, index: Index) -> None:
         super().__init__("pgis_index", index)
         self.db_api = PostgisDbAPI
