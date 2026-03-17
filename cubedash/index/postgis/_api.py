@@ -7,7 +7,7 @@ import shapely.ops
 import structlog
 from cachetools.func import lru_cache
 from datacube.drivers.common_psql import as_role, create_schema, has_roles
-from datacube.drivers.postgis._api import PostgisDbAPI, _dataset_select_fields
+from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.drivers.postgis._fields import SimpleDocField
 from typing_extensions import override
 
@@ -45,7 +45,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.types import TIMESTAMP
 
@@ -643,7 +643,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         offset: int = 0,
     ) -> Generator[Dataset]:
         query = (
-            select(*_dataset_select_fields())
+            select(ODC_DATASET)
             .select_from(DatasetSpatial)
             .join(ODC_DATASET, DatasetSpatial.id == ODC_DATASET.id)
             .where(DatasetSpatial.region_code == bindparam("region_code", region_code))
@@ -658,10 +658,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
             .limit(bindparam("limit", limit))
             .offset(bindparam("offset", offset))
         )
-        with self.index._active_connection() as conn:
+        with (
+            self.index._active_connection() as dbapi,
+            Session(dbapi._connection) as sess,
+        ):
             return (
-                self.index.datasets._make(res, full_info=True)
-                for res in conn.execute(query).fetchall()
+                self.index.datasets._sqldataset_to_dataset(res)
+                for res in sess.execute(query).scalars().all()
             )
 
     @override
