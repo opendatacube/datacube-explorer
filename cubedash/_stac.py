@@ -9,9 +9,9 @@ from typing import Any, TypeAlias
 import flask
 import pystac
 import structlog
+from datacube.metadata import ds2stac
 from datacube.model import Range
 from datacube.utils import DocReader, parse_time
-from eodatasets3 import serialise
 from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
@@ -174,34 +174,15 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     Get a dict corresponding to a stac item
     """
     ds = dataset.odc_dataset
-
+    base_url = url_for("pages.default_redirect")
+    self_url = url_for(
+        ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
+    )
+    ds_yaml_url = url_for("dataset.raw_doc", id_=dataset.dataset_id)
     if ds is not None and is_doc_eo3(ds.metadata_doc):
-        dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
-        dataset_doc.locations = None if ds.uri is None else [ds.uri]
-
-        # Geometry is optional in eo3, and needs to be calculated from grids if missing.
-        # We can use ODC's own calculation that happens on index.
-        if dataset_doc.geometry is None:
-            fallback_extent = ds.extent
-            if fallback_extent is not None:
-                dataset_doc.geometry = fallback_extent.geom
-                dataset_doc.crs = str(ds.crs)
-
-        if ds.sources:
-            dataset_doc.lineage = {
-                classifier: [d.id] for classifier, d in ds.sources.items()
-            }
-        # Does ODC still put legacy lineage into indexed documents?
-        elif ("source_datasets" in dataset_doc.lineage) and len(
-            dataset_doc.lineage
-        ) == 1:
-            # From old to new lineage type.
-            # FIXME: remove type ignores and fix the issues.
-            dataset_doc.lineage = {  # type: ignore[misc]
-                classifier: [dataset["id"]]  # type: ignore[has-type]
-                for classifier, dataset in dataset_doc.lineage["source_datasets"]
-            }
-
+        item = ds2stac(
+            ds, base_url=base_url, self_url=self_url, ds_yaml_url=ds_yaml_url
+        )
     else:
         # eo1 to eo3
 
@@ -235,17 +216,15 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             lineage={},
         )
 
-    if dataset_doc.label is None and ds is not None:
-        dataset_doc.label = _utils.dataset_label(ds)
+        if dataset_doc.label is None and ds is not None:
+            dataset_doc.label = _utils.dataset_label(ds)
 
-    item = eo3stac.to_pystac_item(
-        dataset=dataset_doc,
-        stac_item_destination_url=url_for(
-            ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
-        ),
-        odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
-        explorer_base_url=url_for("pages.default_redirect"),
-    )
+        item = eo3stac.to_pystac_item(
+            dataset=dataset_doc,
+            stac_item_destination_url=self_url,
+            odc_dataset_metadata_url=ds_yaml_url,
+            explorer_base_url=base_url,
+        )
 
     # Add the region code that Explorer inferred.
     # (Explorer's region codes predate ODC's and support
