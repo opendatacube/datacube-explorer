@@ -9,13 +9,13 @@ from typing import Any, TypeAlias
 import flask
 import pystac
 import structlog
+from datacube.index.eo3 import is_doc_eo3
 from datacube.model import Range
 from datacube.utils import DocReader, parse_time
 from eodatasets3 import serialise
 from eodatasets3 import stac as eo3stac
 from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
 from eodatasets3.properties import Eo3Dict
-from eodatasets3.utils import is_doc_eo3
 from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
 from shapely.geometry import shape
