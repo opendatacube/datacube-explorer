@@ -34,6 +34,8 @@ try:
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube.index import Index
+from datacube.index.postgis.index import Index as PostgisIndex
+from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
@@ -60,10 +62,10 @@ DEFAULT_EPSG = 6933
 default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 
 
-def explorer_index(index: Index) -> ExplorerIndex:
-    if index.name == "pg_index":
+def explorer_index(index: PostgisIndex | PostgresIndex) -> ExplorerIndex:
+    if isinstance(index, PostgresIndex):
         return ExplorerPgIndex(index)
-    if index.name == "pgis_index":
+    if isinstance(index, PostgisIndex):
         return ExplorerPgisIndex(index)
     # should we permit memory? default to postgres? other handling?
     raise ValueError(f"Cannot run explorer with index {index.name}")
@@ -308,6 +310,8 @@ class SummaryStore:
     def create(
         cls, index: Index, log=_LOG, grouping_time_zone: str = DEFAULT_TIMEZONE
     ) -> "SummaryStore":
+        if not isinstance(index, (PostgisIndex, PostgresIndex)):
+            raise ValueError(f"Cannot run explorer with index {index.name}")
         e_index = explorer_index(index)
         return cls(
             e_index, Summariser(e_index, grouping_time_zone=grouping_time_zone), log=log

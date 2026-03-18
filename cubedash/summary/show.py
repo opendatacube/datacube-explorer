@@ -15,6 +15,8 @@ import structlog
 from click import echo, secho
 from datacube.cfg import ODCEnvironment
 from datacube.index import index_connect
+from datacube.index.postgis.index import Index as PostgisIndex
+from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
@@ -28,7 +30,9 @@ def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index = index_connect(
         cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
-    return SummaryStore.create(index, log=log)
+    if isinstance(index, (PostgisIndex, PostgresIndex)):
+        return SummaryStore.create(index, log=log)
+    raise ValueError(f"Cannot run explorer with index {index.name}")
 
 
 @click.command(help=__doc__)

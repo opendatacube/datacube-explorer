@@ -68,7 +68,9 @@ import structlog
 from click import secho as click_secho
 from click import style
 from datacube.cfg import ODCConfig, ODCEnvironment
-from datacube.index import Index, index_connect
+from datacube.index import index_connect
+from datacube.index.postgis.index import Index as PostgisIndex
+from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.model import Product
 from datacube.ui.click import environment_option, pass_config
 from typing_extensions import override
@@ -150,11 +152,14 @@ def generate_report(
         store.close()
 
 
-def _get_index(config: ODCEnvironment, variant: str) -> Index:
+def _get_index(config: ODCEnvironment, variant: str) -> PostgisIndex | PostgresIndex:
     # Avoid long names as they will print warnings all the time.
     prefix = "gen."
     name = f"{prefix}{variant.replace('_', '')[: 64 - len(prefix)]}"
-    return index_connect(config, application_name=name, validate_connection=False)
+    ix = index_connect(config, application_name=name, validate_connection=False)
+    if isinstance(ix, (PostgisIndex, PostgresIndex)):
+        return ix
+    raise ValueError(f"Cannot run explorer with index {ix.name}")
 
 
 def run_generation(
