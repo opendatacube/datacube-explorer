@@ -6,6 +6,18 @@ set -eu
 stac_tag='v1.1.0'
 stac_api_tag='v1.0.0'
 
+exts=( \
+  "eo" \
+  "projection" \
+  "raster" \
+  "view" \
+)
+
+declare -A ext_versions=(["eo"]="v1.1.0" \
+  ["projection"]="v2.0.0" \
+  ["raster"]="v1.1.0" \
+  ["view"]="v1.0.0" \
+)
 
 function get() {
     echo "$1"
@@ -21,8 +33,6 @@ get 'https://geojson.org/schema/Feature.json'
 stac_version="${stac_tag#v}"
 stac_api_version="${stac_api_tag#v}"
 subfolder="stac-spec-${stac_version}"
-
-set -x
 
 # Clean before updating.
 rm -rf schemas.stacspec.org
@@ -48,6 +58,19 @@ ln -s "../schemas.stacspec.org/${stac_api_version}" "stac-api/"
 cd "stac/${stac_version}/item-spec/json-schema"
 wget https://raw.githubusercontent.com/radiantearth/stac-spec/568a04821935cc92de7b4b05ea6fa9f6bf8a0592/item-spec/json-schema/itemcollection.json
 perl -pi -e 's#"const": "0.9.0"#"const": "1.1.0"#g' itemcollection.json
+cd -
+
+# Download STAC extensions.
+rm -rf stac-extensions.github.io
+for ext in "${exts[@]}"; do
+  ext_version=${ext_versions[$ext]}
+  ext_tgz=$ext-$ext_version.tar.gz
+  wget https://github.com/stac-extensions/$ext/archive/$ext_version.tar.gz -O $ext_tgz
+  ext_dst=stac-extensions.github.io/$ext/$ext_version
+  mkdir -p $ext_dst
+  tar xf $ext_tgz --strip-components=2 -C $ext_dst $ext-${ext_version//v/}/json-schema/schema.json
+  rm $ext_tgz
+done
 
 echo "Success"
 echo "If git status shows any changes, rerun tests, and commit them"
