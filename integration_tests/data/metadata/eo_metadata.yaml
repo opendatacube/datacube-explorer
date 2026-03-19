@@ -3,7 +3,7 @@
 # url: https://explorer-aws.dea.ga.gov.au/metadata-types/eo.odc-type.yaml
 name: eo
 description: "Earth Observation datasets.\n\nExpected metadata structure produced\
-  \ by the eodatasets library, as used internally at GA.\n\nhttps://github.com/GeoscienceAustralia/eo-datasets\n"
+  \ by the eodatasets library, as used internally at GA.\n\nhttps://github.com/opendatacube/eo-datasets\n"
 dataset:
   id:
   - id

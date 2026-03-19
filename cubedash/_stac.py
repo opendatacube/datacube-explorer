@@ -162,7 +162,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     """
     ds = dataset.odc_dataset
 
-    if ds is None:
+    if ds is None or ds._gs is None:
         # Since we'd have to cobble together a metadata_doc anyway,
         # creating a pystac.Item directly is probably easier
         item = pystac.Item(
