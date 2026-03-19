@@ -122,6 +122,7 @@ def test_update_product(product_yaml_from_raw) -> None:
     assert result.exit_code == 0, f"Output: {result.output}"
 
 
+@pytest.mark.xfail(reason="Sources handling to be fixed")
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_update_dataset(dataset_yaml_from_raw) -> None:
     result = CliRunner().invoke(

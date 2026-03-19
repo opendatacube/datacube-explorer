@@ -12,6 +12,7 @@ import psycopg2.extensions
 import pytest
 from datacube import Datacube
 from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.drivers.common_psql import drop_schema
 from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import _core as pgres_core
 from datacube.index import index_connect
@@ -166,8 +167,7 @@ def odc_test_db(cfg_env):
 
             dc.close()
 
-            # This actually drops the schema, not the DB
-            pgres_core.drop_db(conn)  # pylint:disable=protected-access
+            drop_schema(conn, pgres_core.SCHEMA_NAME)  # pylint:disable=protected-access
 
             # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
             # and attempts to recreate them.
@@ -189,7 +189,7 @@ def odc_test_db(cfg_env):
 
             dc.close()
 
-            pgis_core.drop_db(conn)  # pylint:disable=protected-access
+            drop_schema(conn, pgis_core.SCHEMA_NAME)  # pylint:disable=protected-access
 
             _remove_postgis_dynamic_indexes()
 

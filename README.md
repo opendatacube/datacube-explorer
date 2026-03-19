@@ -1,5 +1,5 @@
 # Data Cube Explorer
-[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
+[![Linting](https://github.com/opendatacube/datacube-explorer/workflows/Code%20Linting/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ALinting)
 [![Tests](https://github.com/opendatacube/datacube-explorer/workflows/Tests/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ATests)
 [![Docker](https://github.com/opendatacube/datacube-explorer/workflows/Docker/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3ADocker)
 [![Scan](https://github.com/opendatacube/datacube-explorer/workflows/Scan/badge.svg)](https://github.com/opendatacube/datacube-explorer/actions?query=workflow%3AScan)
@@ -31,7 +31,7 @@ It will now be viewable on [http://localhost:8090](https://localhost:8090)
 
 These directions are for running from a local folder in development. But it will run from any typical Python WSGI server.
 
-Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://datacube-core.readthedocs.io/en/latest/installation/setup/common_install.html)
+Firstly, install the Open Data Cube. Use of a [Data Cube conda environment](https://opendatacube.readthedocs.io/en/latest/installation/setup/common_install.html)
 is recommended. You may need to also `conda install -c conda-forge postgis`
 
 Test that you can run `datacube system check`, and that it's connecting
@@ -235,20 +235,25 @@ that file instead.
 
 ## Roles for production deployments
 
-The [roles](cubedash/summary/roles) directory contains sql files for creating
-Postgres roles for Explorer. These are suitable for running each Explorer
-task with minimum needed security permissions.
+Explorer uses the default roles created by datacube-core. If you created your datacube without permissions,
+you should re-run `datacube system init` as a database superuser or as the user that originally created the
+datacube, to create the required roles and grant them the required permissions.
 
-Three roles are created:
+Running `cubedash-gen --init` grants permissions to Explorer-specific tables and views to these roles:
 
-- **explorer-viewer**: A read-only user of datacube and Explorer. Suitable for the web interface and cli (`cubedash-view`) commands.
-- **explorer-generator**: Suitable for generating and updating summaries (ie. Running `cubedash-gen`)
-- **explorer-owner**: For creating and updating the schema. (ie. Running `cubedash-gen --init`)
+- `agdc_user` (postgres driver) or `odc_user` (postgis driver):
+  Read-only access to the explorer summary tables and views.  This role should be used by the web interface.
+- `agdc_manage` (postgres driver) or `odc_manage` (postgis driver):
+  Read-write access to the explorer summary tables and views.  This role should be used by the `cubedash-gen` command.
+- `agdc_admin` (postgres driver) or `odc_admin` (postgis driver):
+  Owner of explorer summary tables and views. The initial call of the `cubedash-gen --init` command to create the
+  Explorer schema and table should be run as a database superuser. The first schema update after upgrading from
+  Explorer 3.1.2 to later versions will also need to be run as a database superuser.  Subsequent calls to
+  `cubedash-gen --init` to update the schema will be safe to run as the `agdc_admin` role.
 
-Note that these roles extend the built-in datacube role `agdc_user` (using postgres) or `odc_user` (using postgis).
-If you created your datacube without permissions, a stand-alone creator of the appropriate
-role is available as a prerequisite in the same [roles](cubedash/summary/roles)
-directory.
+Prior to version 3.1.2, Explorer used its own roles, `explorer_viewer` and `explorer_generator`, and `explorer_owner`.  These
+roles are granted the above roles by `cubeddash-gen --init` if they already exist, ensuring cross-compatibility with
+older versions of Explorer.
 
 ## Docker for Development and running tests
 
@@ -256,7 +261,7 @@ You need to have Docker and Docker Compose installed on your system.
 
 To create your environment, run `make up` or `docker-compose up`.
 
-You need an ODC database, so you'll need to refer to the [ODC docs](https://datacube-core.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
+You need an ODC database, so you'll need to refer to the [ODC docs](https://opendatacube.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
 
 When you have some ODC data indexed, you can run `make index` to create the Explorer indexes.
 
@@ -283,3 +288,8 @@ The implementation of `fields` differs somewhat from the suggested include/exclu
 The `sort` and `filter` implementations will recognise any syntactically valid version of a property name, which is the say, the STAC, eo3, and search field (as defined by the metadata type) variants of the name, with or without the `item.` or `properties.` prefixes. If a property does not exist for an item, `sort` will ignore it while `filter` will treat it as `NULL`.
 
 The `filter` extension supports both `cql2-text` and `cql2-json` for both GET and POST requesets, and uses [pygeofilter](https://github.com/geopython/pygeofilter) to parse the cql and convert it to a sqlalchemy filter expression. `filter-crs` only accepts http://www.opengis.net/def/crs/OGC/1.3/CRS84 as a valid value.
+
+
+## Release process
+
+Create a release using the Github release interface.

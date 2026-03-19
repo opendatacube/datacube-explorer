@@ -25,8 +25,8 @@ from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
 from sqlalchemy import RowMapping, func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.sql import Select
-from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 try:
     from cubedash._version import version as explorer_version
@@ -34,6 +34,8 @@ except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube.index import Index
 from datacube.metadata._utils import EO3_TO_STAC_RENAMES
+from datacube.index.postgis.index import Index as PostgisIndex
+from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
@@ -41,7 +43,7 @@ from cubedash import _utils
 from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
-from cubedash.summary import RegionInfo, TimePeriodOverview, _extents, _schema
+from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
 from cubedash.summary._extents import ProductArrival, RegionSummary
 from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
@@ -60,10 +62,10 @@ DEFAULT_EPSG = 6933
 default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 
 
-def explorer_index(index: Index) -> ExplorerIndex:
-    if index.name == "pg_index":
+def explorer_index(index: PostgisIndex | PostgresIndex) -> ExplorerIndex:
+    if isinstance(index, PostgresIndex):
         return ExplorerPgIndex(index)
-    if index.name == "pgis_index":
+    if isinstance(index, PostgisIndex):
         return ExplorerPgisIndex(index)
     # should we permit memory? default to postgres? other handling?
     raise ValueError(f"Cannot run explorer with index {index.name}")
@@ -273,7 +275,7 @@ class SummaryStore:
         _LOG.debug("software.version", postgis=postgis_ver, explorer=explorer_version)
         return is_compatible
 
-    def init(self, grouping_epsg_code: int | None) -> None:
+    def init(self, grouping_epsg_code: int | None) -> bool:
         """
         Initialise any schema elements that don't exist.
 
@@ -281,10 +283,13 @@ class SummaryStore:
 
         (Requires `create` permissions in the db)
         """
-        self.e_index.execute_ddl(
-            CreateSchema(_schema.CUBEDASH_SCHEMA, if_not_exists=True)
-        )
-        refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        try:
+            if not self.e_index.create_schema():
+                return False
+            refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+        except ProgrammingError as e:
+            _LOG.error(str(e))
+            return False
         if refresh_also:
             # Refresh product information after a schema update, plus the given kind of data.
             for product in self.all_products():
@@ -299,11 +304,14 @@ class SummaryStore:
                     in refresh_also,  # I believe this is always True
                 )
             _LOG.info("data.refreshing_extents.complete")
+        return True
 
     @classmethod
     def create(
         cls, index: Index, log=_LOG, grouping_time_zone: str = DEFAULT_TIMEZONE
     ) -> "SummaryStore":
+        if not isinstance(index, (PostgisIndex, PostgresIndex)):
+            raise ValueError(f"Cannot run explorer with index {index.name}")
         e_index = explorer_index(index)
         return cls(
             e_index, Summariser(e_index, grouping_time_zone=grouping_time_zone), log=log
@@ -604,9 +612,7 @@ class SummaryStore:
         """
         Drop all cubedash-specific tables/schema.
         """
-        self.e_index.execute_ddl(
-            DropSchema(_schema.CUBEDASH_SCHEMA, cascade=True, if_exists=True)
-        )
+        self.e_index.drop_all()
 
     def get(
         self,
@@ -750,7 +756,7 @@ class SummaryStore:
         Sample some dataset locations for the given product, and return
         the common location.
 
-        Returns one row for each uri scheme found (http, file etc).
+        Returns one row for each uri scheme found (http, file etc.).
         """
         search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
@@ -763,6 +769,7 @@ class SummaryStore:
             for [uri] in self.e_index.ds_search_returning(
                 fields=("uri",), limit=sample_size, args=search_args
             )
+            if uri is not None
         )
 
         return list(_common_paths_for_uris(uri_samples))
@@ -809,7 +816,7 @@ class SummaryStore:
         }
 
         row = self.e_index.upsert_product_record(product.name, fields)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
         product_id, _ = row
 
         product.id_ = product_id
@@ -1438,7 +1445,7 @@ class SummaryStore:
         (so future runs will be incremental from this point onwards)
         """
         self.e_index.update_product_refresh_timestamp(product_id, refresh_timestamp)
-        self._product.cache_clear()  # type: ignore[attr-defined]
+        self._product.cache_clear()
 
     def list_complete_products(self) -> list[str]:
         """

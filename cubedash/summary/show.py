@@ -15,6 +15,8 @@ import structlog
 from click import echo, secho
 from datacube.cfg import ODCEnvironment
 from datacube.index import index_connect
+from datacube.index.postgis.index import Index as PostgisIndex
+from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
@@ -28,7 +30,9 @@ def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index = index_connect(
         cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
-    return SummaryStore.create(index, log=log)
+    if isinstance(index, (PostgisIndex, PostgresIndex)):
+        return SummaryStore.create(index, log=log)
+    raise ValueError(f"Cannot run explorer with index {index.name}")
 
 
 @click.command(help=__doc__)
@@ -78,72 +82,72 @@ def cli(
 
     store = _get_store(cfg_env, "setup")
 
-    t = time.time()
-    summary = store.get(product_name, year, month, day)
-    t_end = time.time()
-
     try:
-        store.get_product(product_name)
-    except KeyError:
-        echo(f"Unknown product {product_name!r}", err=True)
-        store.close()
-        sys.exit(-1)
-    product = store.get_product_summary(product_name)
-    if product is None:
-        echo(f"No info: product {product_name!r} has not been summarised", err=True)
-        store.close()
-        sys.exit(-1)
+        t = time.time()
+        summary = store.get(product_name, year, month, day)
+        t_end = time.time()
 
-    secho(product_name, bold=True)
-    echo()
-    dataset_count = summary.dataset_count if summary else product.dataset_count
-    echo(f"{dataset_count}  datasets")
+        try:
+            store.get_product(product_name)
+        except KeyError:
+            echo(f"Unknown product {product_name!r}", err=True)
+            sys.exit(1)
+        product = store.get_product_summary(product_name)
+        if product is None:
+            echo(f"No info: product {product_name!r} has not been summarised", err=True)
+            sys.exit(1)
 
-    if product.dataset_count:
-        echo(
-            f"from {'Unknown' if product.duration is None else product.duration[0].isoformat()} "
-        )
-        echo(
-            f"  to {'Unknown' if product.duration is None else product.duration[1].isoformat()} "
-        )
-
-    echo()
-    if store.needs_extent_refresh(product_name):
-        secho("Has changes", bold=True)
-
-    echo(f"Last extent refresh:     {product.last_refresh_time}")
-    echo(f"Last summary completion: {product.last_successful_summary_time}")
-
-    if product.fixed_metadata:
+        secho(product_name, bold=True)
         echo()
-        secho("Metadata", fg="blue")
-        for k, v in product.fixed_metadata.items():
-            echo(f"\t{k}: {v}")
+        dataset_count = summary.dataset_count if summary else product.dataset_count
+        echo(f"{dataset_count}  datasets")
 
-    echo()
-    secho(
-        f"Period: {year or 'all-years'} {month or 'all-months'} {day or 'all-days'}",
-        fg="blue",
-    )
-    if summary:
-        if summary.size_bytes:
-            echo(f"\tStorage size: {sizeof_fmt(summary.size_bytes)}")
+        if product.dataset_count:
+            echo(
+                f"from {'Unknown' if product.duration is None else product.duration[0].isoformat()} "
+            )
+            echo(
+                f"  to {'Unknown' if product.duration is None else product.duration[1].isoformat()} "
+            )
 
-        echo(f"\t{summary.dataset_count} datasets")
-        echo(f"\tSummarised: {summary.summary_gen_time}")
+        echo()
+        if store.needs_extent_refresh(product_name):
+            secho("Has changes", bold=True)
 
-        if summary.footprint_geometry:
-            secho(f"\tFootprint area: {summary.footprint_geometry.area}")
-            if not summary.footprint_geometry.is_valid:
-                secho("\tInvalid Geometry", fg="red")
-        else:
-            secho("\tNo footprint")
-    elif year or month or day:
-        echo("\tNo summary for chosen period.")
+        echo(f"Last extent refresh:     {product.last_refresh_time}")
+        echo(f"Last summary completion: {product.last_successful_summary_time}")
 
-    echo()
-    echo(f"(fetched in {round(t_end - t, 2)} seconds)")
-    store.close()
+        if product.fixed_metadata:
+            echo()
+            secho("Metadata", fg="blue")
+            for k, v in product.fixed_metadata.items():
+                echo(f"\t{k}: {v}")
+
+        echo()
+        secho(
+            f"Period: {year or 'all-years'} {month or 'all-months'} {day or 'all-days'}",
+            fg="blue",
+        )
+        if summary:
+            if summary.size_bytes:
+                echo(f"\tStorage size: {sizeof_fmt(summary.size_bytes)}")
+
+            echo(f"\t{summary.dataset_count} datasets")
+            echo(f"\tSummarised: {summary.summary_gen_time}")
+
+            if summary.footprint_geometry:
+                secho(f"\tFootprint area: {summary.footprint_geometry.area}")
+                if not summary.footprint_geometry.is_valid:
+                    secho("\tInvalid Geometry", fg="red")
+            else:
+                secho("\tNo footprint")
+        elif year or month or day:
+            echo("\tNo summary for chosen period.")
+
+        echo()
+        echo(f"(fetched in {round(t_end - t, 2)} seconds)")
+    finally:
+        store.close()
 
 
 if __name__ == "__main__":

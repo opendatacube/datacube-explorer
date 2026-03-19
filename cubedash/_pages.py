@@ -17,7 +17,7 @@ from flask import (
     request,
     url_for,
 )
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DataError, ProgrammingError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
@@ -43,6 +43,7 @@ Disallow: /products/
 Disallow: /product/
 Disallow: /stac/
 Disallow: /dataset/
+Disallow: /api/
 """
 
 
@@ -230,7 +231,7 @@ def search_page(
             index.datasets.search(**query, limit=hard_search_limit + 1),
             key=lambda d: default_utc(d.center_time),
         )
-    except DataError:
+    except (DataError, ProgrammingError):
         abort(400, "Invalid field value provided in query")
 
     more_datasets_exist = False
@@ -408,6 +409,8 @@ def region_geojson(
         abort(404, f"Product {product_name!r} has no {region_code!r} region.")
 
     geojson = region_summary.footprint_geojson
+    if geojson is None:
+        abort(404, f"Product {product_name!r} has no footprint.")
     geojson["properties"].update(
         {"product_name": product_name, "year_month_day_filter": [year, month, day]}
     )
@@ -557,8 +560,9 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
     )
 
     if group_by_regex:
+        regex_group = {}
+        group = "Internal Error"
         try:
-            regex_group = {}
             for regex, group in group_by_regex:
                 regex_group[re.compile(regex)] = group.strip()
         except re.error as e:
@@ -566,8 +570,6 @@ def _get_grouped_products() -> list[tuple[str, list[ProductWithSummary]]]:
                 f"Invalid regexp in CUBEDASH_PRODUCT_GROUP_BY_REGEX for group {group!r}: {e!r}"
             ) from None
 
-    if group_by_regex:
-        # group using regex
         def regex_key(t):
             for regex, group in regex_group.items():
                 if regex.search(t[0].name):

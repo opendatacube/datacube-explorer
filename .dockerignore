@@ -10,6 +10,10 @@ docker-compose.*.yml
 **/__pycache__
 **/*.py[cod]
 
+#Git/VCS
+.git
+.jj
+
 # CI / distribution / packaging
 **/*.egg-info
 .github

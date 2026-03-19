@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.10.3@sha256:dab45abca3ca83695d442018692f4f8a0f41955871c57e6101d7f89a92375caa AS base
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.12.2@sha256:885caba325a405ab08793feba1510170ef19d9758c41849f8554ac97e7221dd3 AS base
 
 LABEL org.opencontainers.image.source=https://github.com/opendatacube/datacube-explorer
 LABEL org.opencontainers.image.description="Datacube Explorer"
@@ -12,7 +12,7 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONUNBUFFERED=1
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.9.7@sha256:ba4857bf2a068e9bc0e64eed8563b065908a4cd6bfb66b531a9c424c8e25e142 AS uv
+FROM ghcr.io/astral-sh/uv:0.10.11@sha256:3472e43b4e738cf911c99d41bb34331280efad54c73b1def654a6227bb59b2b4 AS uv
 
 FROM base AS builder
 
@@ -35,6 +35,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         python3-dev
 
 ENV UV_COMPILE_BYTECODE=0 \
+    UV_HTTP_RETRIES=10 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
@@ -52,6 +53,8 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     uv sync --frozen --extra=deployment --no-install-project \
       --no-binary-package fiona \
       --no-binary-package netcdf4 \
+      --no-binary-package psycopg \
+      --no-binary-package psycopg-c \
       --no-binary-package psycopg2 \
       --no-binary-package rasterio \
       --no-binary-package shapely
@@ -59,6 +62,7 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 COPY --link . /build/
 
 ARG ENVIRONMENT=deployment
+ARG EXPLORER_VERSION=""
 # The deployment image should not have binaries that aid an attacker to get their
 # rootkit in place, and uv downloads over the network. There is no conditional
 # copy in Docker, so truncate the uv binaries to 0 bytes to render them harmless
@@ -66,6 +70,7 @@ ARG ENVIRONMENT=deployment
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
+    && export SETUPTOOLS_SCM_PRETEND_VERSION="${EXPLORER_VERSION}" \
     && uv sync --frozen $EXTRAS --no-editable \
     && ([ "$ENVIRONMENT" != "deployment" ] || \
         (chmod 644 /usr/local/bin/uv* && \
@@ -73,6 +78,9 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
          echo "" > /usr/local/bin/uvx))
 
 FROM base
+
+ARG EXPLORER_VERSION=""
+LABEL org.opencontainers.image.version=${EXPLORER_VERSION}
 
 # Add login-script for UID/GID-remapping.
 COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh

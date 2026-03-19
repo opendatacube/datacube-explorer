@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - develop
-      - integrate_1.9
     paths:
       - "**"
 
@@ -16,6 +15,7 @@ on:
 
 env:
   IMAGE_NAME: opendatacube/explorer
+  REGISTRY: ghcr.io
 
 permissions: {}
 
@@ -31,51 +31,88 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' || github.event_name == 'release'
 
+    permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
+      packages: write  # This is required for pushing to ghcr
+      attestations: write # This is required for pushing the attestation
+
     steps:
       - name: Checkout git
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
+      - name: Log in to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Get Git commit timestamps
+        run: |
+          TIMESTAMP=$(git log -1 --pretty=%ct pyproject.toml uv.lock cubedash)
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
       - name: Get and log unstable git tag
+        if: github.event_name != 'release'
         run: |
           set -ex
           UNSTABLE_TAG=$(git describe --tags)
           echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
+          EXPLORER_VERSION=$(git describe --tags | sed 's#\-g#+g#')
+          echo "EXPLORER_VERSION=$EXPLORER_VERSION" >> $GITHUB_ENV
 
       - name: Build and Push unstable + latest Docker image tag
         if: github.event_name != 'release'
-        uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
-          image_name: ${{ env.IMAGE_NAME }}
-          username: gadockersvc
-          image_tag: ${{ env.UNSTABLE_TAG }},latest
-          password: "${{ secrets.DockerPassword }}"
-          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            ENVIRONMENT=deployment
+            EXPLORER_VERSION=${{ env.EXPLORER_VERSION }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        env:
+          SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
       # This section is for releases
       - name: Get and log tag for this build if it exists
         if: github.event_name == 'release'
         run: |
           set -ex
-          RELEASE=$(git describe --abbrev=0 --tags)
-          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+          RELEASE_VERSION=$(git describe --abbrev=0 --tags)
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
 
       - name: Build and Push release if we have a tag
-        uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
         if: github.event_name == 'release'
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        id: push
         with:
-          image_name: ${{ env.IMAGE_NAME }}
-          image_tag: ${{ env.RELEASE }}
-          username: gadockersvc
-          password: "${{ secrets.DockerPassword }}"
-          build_extra_args: "--build-arg=ENVIRONMENT=deployment"
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            ENVIRONMENT=deployment
+            EXPLORER_VERSION=${{ env.RELEASE_VERSION }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
+        env:
+          SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
-      - name: Update Docker Hub Description
-        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
+      - name: Attest Docker image
+        if: github.event_name == 'release'
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
-          username: gadockersvc
-          password: ${{ secrets.DockerPassword }}
-          repository: ${{ env.IMAGE_NAME }}
-          readme-filepath: README.md
-          short-description: Open Data Cube Explorer Image
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

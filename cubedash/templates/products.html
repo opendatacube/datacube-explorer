@@ -15,10 +15,6 @@
 {% block content %}
     <div class="panel highlight">
         <h2 class="followed lonesome">{{ (datacube_products | count ) - (hidden_product_list | length) }} Products</h2>
-        <span class="header-follow">
-            Total products: <span class="indexed-product-count">{{ datacube_products | count }}</span>,
-            Hidden products: <span class="hidden-product-count">{{ hidden_product_list | length }}</span>
-        </span>
         <div class="header-follow">
             <a href="{{ url_for('product.product_list_text') }}"
                class="badge header-badge">
@@ -67,5 +63,17 @@
             {% endfor %}
         {% endif %}
     </table>
+    {% if hidden_product_list %}
+        <details>
+            <summary class="muted">Hidden Products</summary>
+            <table class="hidden-products">
+                {% for product_name in hidden_product_list %}
+                    <tr>
+                        <td><a href="{{ url_for('pages.product_page', product_name=product_name) }}">{{ product_name }}</a></td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </details>
+    {% endif %}
     </div>
 {% endblock %}

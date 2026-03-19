@@ -4,7 +4,9 @@ from typing import Any
 from uuid import UUID
 
 import shapely.ops
+import structlog
 from cachetools.func import lru_cache
+from datacube.drivers.common_psql import as_role, create_schema, has_roles
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import SimpleDocField
 from typing_extensions import override
@@ -15,7 +17,7 @@ from datacube.drivers.postgres._schema import (  # isort: skip
     DATASET_SOURCE,
     PRODUCT as ODC_PRODUCT,
 )
-from datacube.index import Index
+from datacube.index.postgres.index import Index
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
@@ -49,6 +51,7 @@ from cubedash._utils import datetime_expression, default_utc
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
 
 from ._schema import (
+    CUBEDASH_SCHEMA,
     DATASET_SPATIAL,
     FOOTPRINT_SRID_EXPRESSION,
     PRODUCT,
@@ -60,8 +63,12 @@ from ._schema import (
 )
 from ._schema import get_srid_name as srid_name
 
+_LOG = structlog.stdlib.get_logger()
+
 
 class ExplorerIndex(ExplorerAbstractIndex):
+    index: Index
+
     def __init__(self, index: Index) -> None:
         super().__init__("postgres", index)
         self.db_api = PostgresDbAPI
@@ -186,7 +193,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
                 .select_from(ODC_DATASET)
                 .where(ODC_DATASET.c.dataset_type_ref == product.id)
-                .where(column("updated") > only_those_newer_than)
+                .where(
+                    or_(
+                        ODC_DATASET.c.added > only_those_newer_than,
+                        column("updated") > only_those_newer_than,
+                    )
+                )
                 .group_by("month")
                 .order_by("month")
             )
@@ -411,7 +423,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # we use the `period_type=="all"` to get the one that covers all time.
 
         collection_bbox = func.Box2D(
-            func.ST_Transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
+            # TODO: reinstate ST_Transform once possible
+            func.cubedash.safe_transform(TIME_OVERVIEW.c.footprint_geometry, 4326)
         )
         bbox_array = array(
             [
@@ -615,8 +628,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 .where(
                     or_(
                         PRODUCT.c.last_successful_summary.is_(None),
-                        PRODUCT.c.last_successful_summary
-                        < refresh_timestamp.isoformat(),
+                        PRODUCT.c.last_successful_summary < refresh_timestamp,
                     )
                 )
                 .values(last_successful_summary=refresh_timestamp)
@@ -910,8 +922,36 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
+    def create_schema(self) -> bool:
+        # Ensure ODC roles exist (roles were formerly optional but not using them is now deprecated)
+        with self.engine.connect() as conn:
+            if not has_roles(conn, ["agdc_user", "agdc_manage", "agdc_admin"]):
+                _LOG.error(
+                    "Default datacube users do not exist. Please run 'datacube system init'"
+                )
+                return False
+        # Create schema if necessary and ensure it is owned by agdc_admin
+        if not self.schema_initialised():
+            with self.engine.connect() as conn:
+                create_schema(
+                    conn, CUBEDASH_SCHEMA, if_exists=False, owner="agdc_admin"
+                )
+        else:
+            owner = self.execute_query_scalar(
+                text(
+                    "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
+                    f"where nspname='{CUBEDASH_SCHEMA}'"
+                )
+            )
+            if owner != "agdc_admin":
+                self.execute_ddl(
+                    text(f"alter schema {CUBEDASH_SCHEMA} owner to agdc_admin")
+                )
+        return True
+
+    @override
     def init_schema(self, grouping_epsg_code: int):
-        with self.engine.begin() as conn:
+        with self.engine.connect() as conn:
             return init_elements(conn, grouping_epsg_code)
 
     @override
@@ -921,8 +961,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         This is ideally done once after all needed products have been refreshed.
         """
-        with self.engine.begin() as conn:
-            _schema.refresh_supporting_views(conn, concurrently=concurrently)
+        with (
+            self.engine.begin() as conn,
+            as_role(conn, "agdc_manage") as rw_conn,
+        ):
+            _schema.refresh_supporting_views(rw_conn, concurrently=concurrently)
 
     @lru_cache()
     @override

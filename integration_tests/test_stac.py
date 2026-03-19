@@ -52,6 +52,7 @@ METADATA_TYPES = [
     "metadata/eo_plus.yaml",
     "metadata/landsat_l1_scene.yaml",
     "metadata/qga_eo.yaml",
+    "metadata/eo3_s1_nrb.odc-type.yaml",
 ]
 PRODUCTS = [
     "products/dsm1sv10.odc-product.yaml",
@@ -73,6 +74,7 @@ PRODUCTS = [
     "products/usgs_ls7e_level1_1.odc-product.yaml",
     "products/wofs_albers.yaml",
     "products/ga_ls8c_ard_3.odc-product.yaml",
+    "products/ga_s1_nrb_iw_hh_hv_0.odc-product.yaml",
 ]
 DATASETS = [
     "datasets/high_tide_comp_20p.yaml.gz",
@@ -82,6 +84,7 @@ DATASETS = [
     "datasets/pq_count_summary.yaml.gz",
     "datasets/wofs-albers-sample.yaml.gz",
     "datasets/ga_ls8c_ard_3-sample.yaml",
+    "datasets/ga_s1_nrb_iw_hh_hv_0-sample.yaml",
 ]
 
 
@@ -382,6 +385,7 @@ def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
             "ls7_level1_scene": 4,
             "dsm1sv10": 1,
             "ga_ls8c_ard_3": 21,
+            "ga_s1_nrb_iw_hh_hv_0": 6,
         },
     )
 
@@ -412,21 +416,6 @@ def test_stac_loading_all_pages(stac_client: FlaskClient) -> None:
             "ls7_level1_scene": 4,
         },
     )
-
-
-@pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_huge_page_request(stac_client: FlaskClient) -> None:
-    """Return an error if they try to request beyond max-page-size limit"""
-    error_message_json = get_json(
-        stac_client,
-        f"/stac/search?&limit={OUR_DATASET_LIMIT + 1}",
-        expect_status_code=400,
-    )
-    assert error_message_json == {
-        "code": 400,
-        "name": "Bad Request",
-        "description": f"Max page size is {OUR_DATASET_LIMIT}. Use the next links instead of a large limit.",
-    }
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
@@ -913,11 +902,9 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_search_limits(stac_client: FlaskClient) -> None:
-    # Tell user with error if they request too much.
-    large_limit = OUR_DATASET_LIMIT + 1
-    rv = stac_client.get(f"/stac/search?&limit={large_limit}")
-    assert rv.status_code == 400
-    assert b"Max page size" in rv.data
+    # Return max items if user requests limit beyond max page size
+    geojson = get_items(stac_client, f"/stac/search?&limit={OUR_DATASET_LIMIT + 1}")
+    assert len(geojson.get("features", [])) == OUR_DATASET_LIMIT
 
     # Without limit, it should use the default page size
     geojson = get_items(
@@ -930,13 +917,9 @@ def test_stac_search_limits(stac_client: FlaskClient) -> None:
     )
     assert len(geojson.get("features", [])) == OUR_PAGE_SIZE
 
-
-@pytest.mark.parametrize("env_name", ("default",), indirect=True)
-def test_stac_search_zero(stac_client: FlaskClient) -> None:
-    # Zero limit is a valid query
-    zero_limit = 0
-    rv = stac_client.get(f"/stac/search?&limit={zero_limit}")
-    assert rv.status_code == 200
+    # Zero limit is a valid query, and should return default page size
+    geojson = get_items(stac_client, "/stac/search?&limit=0")
+    assert len(geojson.get("features", [])) == OUR_PAGE_SIZE
 
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)

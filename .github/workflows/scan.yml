@@ -7,6 +7,8 @@ on:
 env:
   IMAGE_NAME: ghcr.io/opendatacube/explorer
 
+permissions: {}
+
 # When a PR is updated, cancel the jobs from the previous version. Merges
 # do not define head_ref, so use run_id to never cancel those jobs.
 concurrency:
@@ -22,7 +24,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout git
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -31,9 +33,11 @@ jobs:
           set -ex
           UNSTABLE_TAG=$(git describe --tags)
           echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
+          EXPLORER_VERSION=$(git describe --tags | sed 's#\-g#+g#')
+          echo "EXPLORER_VERSION=$EXPLORER_VERSION" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Get Git commit timestamps
         run: |
@@ -41,10 +45,12 @@ jobs:
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
 
       - name: Build Docker
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           file: Dockerfile
           context: .
+          build-args: |
+            EXPLORER_VERSION=${{ env.EXPLORER_VERSION }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}
           load: true
           cache-from: type=gha
@@ -53,7 +59,7 @@ jobs:
           SOURCE_DATE_EPOCH: ${{ env.TIMESTAMP }}
 
       - name: Run vulnerability scanner
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           image-ref: "${{ env.IMAGE_NAME }}:${{ env.UNSTABLE_TAG }}"
           format: 'sarif'
@@ -63,6 +69,6 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@4e94bd11f71e507f7f87df81788dff88d1dacbfb # v4.31.0
+        uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
         with:
           sarif_file: 'trivy-results.sarif'

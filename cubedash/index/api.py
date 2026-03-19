@@ -4,10 +4,11 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from datacube.drivers.common_psql import drop_schema, has_schema
 from datacube.index import Index
 from datacube.model import Dataset, MetadataType, Product, Range
 from datacube.model.fields import Field
-from sqlalchemy import CursorResult, Result, Row, Select, inspect
+from sqlalchemy import CursorResult, Result, Row, Select
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
@@ -38,7 +39,7 @@ class ExplorerAbstractIndex(ABC):
             return conn.execute(query).scalar()
 
     def execute_ddl(self, query) -> int:
-        with self.engine.begin() as conn:
+        with self.engine.connect() as conn:
             results = conn.execute(query)
             return results.rowcount
 
@@ -212,12 +213,22 @@ class ExplorerAbstractIndex(ABC):
     def select_spatial_stats(self) -> Result: ...
 
     def schema_initialised(self) -> bool:
-        return inspect(self.engine).has_schema(CUBEDASH_SCHEMA)
+        return has_schema(self.engine, CUBEDASH_SCHEMA)
 
     @abstractmethod
     def schema_compatible_info(
         self, for_writing_operations_too: bool = False
     ) -> tuple[str, bool]: ...
+
+    @abstractmethod
+    def create_schema(self) -> bool: ...
+
+    def drop_all(self) -> None:
+        """
+        Drop all explorer-specific tables/schema
+        """
+        with self.engine.connect() as conn:
+            drop_schema(conn, CUBEDASH_SCHEMA)
 
     @abstractmethod
     def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...

@@ -3,15 +3,19 @@ name: Tests
 
 on:
   pull_request:
-    paths:
+    paths: &paths
       - '**'
+      - '!docs/**'
+      - '!*.rst'
+      - '!*.md'
+      - '!.github/**'
+      - '.github/workflows/test.yml'
 
   push:
     branches:
       - develop
       - integrate_1.9
-    paths:
-      - '**'
+    paths: *paths
 
   release:
     types:
@@ -48,25 +52,30 @@ jobs:
         - "test_{[a-rt-z],s2,stac,stores}" # Tests test_summarise_data
         - "test_{page_,stac,summarise}" # Tests remaining tests
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Get Git commit timestamps
         run: |
           TIMESTAMP=$(git log -1 --pretty=%ct pyproject.toml uv.lock cubedash)
           echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+          UNSTABLE_TAG=$(git describe --tags)
+          echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
+          EXPLORER_VERSION=$(git describe --tags | sed 's#\-g#+g#')
+          echo "EXPLORER_VERSION=$EXPLORER_VERSION" >> $GITHUB_ENV
 
       - name: Build Docker
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           file: Dockerfile
           context: .
           build-args: |
             ENVIRONMENT=test
+            EXPLORER_VERSION=${{ env.EXPLORER_VERSION }}
           tags: ${{ env.DOCKER_IMAGE }}
           load: true
           cache-from: type=gha
@@ -88,7 +97,7 @@ jobs:
           make PYTEST_PARAMS="$ig" test-docker
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           files: ./coverage.xml
           disable_search: true
@@ -102,16 +111,31 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+
+      # We need a patched version of click to run tests, but direct dependencies can't
+      # be uploaded to PyPI.
+      #
+      # Therefore we removed the direct click dependency, and simply depend on click.
+      # (and use $SETUPTOOLS_SCM_PRETEND_VERSION to force a clean version number.)
+      #
+      # Version dependency can be inherited from datacube-core.
+      #
+      # This step (and the export of SETUPTOOLS_SCM_PRETEND_VERSION below) should be
+      # removed once a click release fixes the CliRunner issue that breaks tests.
+      - name: Remove patched click dependency
+        run: |
+          perl -pi -e 's# \@ git\+https://github\.com/pjonsson/click\.git\@one-close-only##' pyproject.toml
 
       - name: Build Packages
         run: |
+          export SETUPTOOLS_SCM_PRETEND_VERSION=`git describe --abbrev=0 --tags`
           uv build
           uv tool run twine check --strict dist/*
 

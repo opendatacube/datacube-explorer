@@ -6,7 +6,7 @@ from functools import partial
 from typing import BinaryIO
 
 import structlog
-from orjson.orjson import OPT_SORT_KEYS, dumps
+from orjson import OPT_SORT_KEYS, dumps
 from structlog.types import EventDict, WrappedLogger
 from typing_extensions import override
 
