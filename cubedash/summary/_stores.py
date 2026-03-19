@@ -151,7 +151,7 @@ class ProductSummary:
 @dataclass
 class DatasetItem:
     dataset_id: UUID
-    bbox: object
+    bbox: tuple[float, float, float, float] | None
     product_name: str
     geometry: Geometry | None
     region_code: str
