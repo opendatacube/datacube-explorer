@@ -33,9 +33,9 @@ try:
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
 from datacube.index import Index
-from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
+from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
