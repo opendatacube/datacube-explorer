@@ -36,7 +36,7 @@ class TimePeriodOverview:
 
     time_range: Range | None
 
-    footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon | None
+    footprint_geometry: BaseGeometry | None
     footprint_crs: str | None
 
     footprint_count: int
