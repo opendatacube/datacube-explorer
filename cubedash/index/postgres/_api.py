@@ -1,4 +1,4 @@
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -74,12 +74,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         self.db_api = PostgresDbAPI
 
     @override
-    def get_mutable_dataset_search_fields(self, md: MetadataType) -> dict[str, Field]:
-        """
-        Get a copy of a metadata type's fields that we can mutate.
-
-        (the ones returned by the Index are cached and so may be shared among callers)
-        """
+    def get_mutable_dataset_search_fields(
+        self, md: MetadataType
+    ) -> Mapping[str, Field]:
         # why not do md.dataset_fields?
         return self.index._db.get_dataset_fields(md.definition)
 
