@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from datetime import date, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -67,7 +67,13 @@ class ExplorerAbstractIndex(ABC):
     @abstractmethod
     def get_mutable_dataset_search_fields(
         self, md: MetadataType
-    ) -> dict[str, Field]: ...
+    ) -> Mapping[str, Field]: ...
+
+    """
+        Get a copy of a metadata type's fields that we can mutate.
+
+        (the ones returned by the Index are cached and so may be shared among callers)
+    """
 
     @abstractmethod
     def get_datasets_derived(
