@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import json
 import uuid
@@ -394,7 +396,7 @@ class RegionInfo:
     @classmethod
     def for_product(
         cls, product: Product, known_regions: dict[str, RegionSummary] | None = None
-    ):
+    ) -> RegionInfo | GridRegionInfo | SceneRegionInfo | None:
         region_code_field = product.metadata_type.dataset_fields.get("region_code")
 
         grid_spec = product.grid_spec

@@ -18,7 +18,7 @@ from flask_themer import Themer
 
 # pylint: disable=import-error
 from sentry_sdk.integrations.flask import FlaskIntegration
-from shapely.geometry import MultiPolygon
+from shapely.geometry.base import BaseGeometry
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -262,7 +262,7 @@ def get_regions_geojson(
     return regions
 
 
-def _get_footprint(period: TimePeriodOverview) -> MultiPolygon | None:
+def _get_footprint(period: TimePeriodOverview) -> BaseGeometry | None:
     if not period or not period.dataset_count:
         return None
 

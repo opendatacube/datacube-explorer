@@ -44,7 +44,12 @@ from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
-from cubedash.summary._extents import ProductArrival, RegionSummary
+from cubedash.summary._extents import (
+    GridRegionInfo,
+    ProductArrival,
+    RegionSummary,
+    SceneRegionInfo,
+)
 from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
@@ -977,7 +982,7 @@ class SummaryStore:
         query: Select,
         field_exprs: dict[str, Any],
         filter_lang: str | None,
-        filter_cql: str | dict | None,
+        filter_cql: str | dict,
     ) -> Select:
         # use pygeofilter's SQLAlchemy integration to construct the filter query
         filter_cql = (
@@ -1505,7 +1510,9 @@ class SummaryStore:
             if geom is not None
         }
 
-    def get_product_region_info(self, product_name: str) -> RegionInfo:
+    def get_product_region_info(
+        self, product_name: str
+    ) -> RegionInfo | GridRegionInfo | SceneRegionInfo | None:
         return RegionInfo.for_product(
             product=self.get_product(product_name),
             known_regions=self._region_summaries(product_name),
