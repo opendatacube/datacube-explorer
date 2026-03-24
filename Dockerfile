@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.12.2@sha256:885caba325a405ab08793feba1510170ef19d9758c41849f8554ac97e7221dd3 AS base
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.12.3@sha256:a82193802ff7a3510bd6214d47898cd194267ec608d23ef532ace07c3d07352d AS base
 
 LABEL org.opencontainers.image.source=https://github.com/opendatacube/datacube-explorer
 LABEL org.opencontainers.image.description="Datacube Explorer"
@@ -12,7 +12,7 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONUNBUFFERED=1
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.10.11@sha256:3472e43b4e738cf911c99d41bb34331280efad54c73b1def654a6227bb59b2b4 AS uv
+FROM ghcr.io/astral-sh/uv:0.10.12@sha256:72ab0aeb448090480ccabb99fb5f52b0dc3c71923bffb5e2e26517a1c27b7fec AS uv
 
 FROM base AS builder
 

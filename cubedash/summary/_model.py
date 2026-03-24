@@ -36,7 +36,7 @@ class TimePeriodOverview:
 
     time_range: Range | None
 
-    footprint_geometry: shapely.geometry.MultiPolygon | shapely.geometry.Polygon | None
+    footprint_geometry: BaseGeometry | None
     footprint_crs: str | None
 
     footprint_count: int
@@ -244,7 +244,7 @@ class TimePeriodOverview:
         )
 
     @property
-    def footprint_wgs84(self) -> MultiPolygon | None:
+    def footprint_wgs84(self) -> BaseGeometry | None:
         if not self.footprint_geometry:
             return None
         if not self.footprint_crs:
@@ -350,7 +350,7 @@ def _polygon_chain(valid_geometries: Iterable[TimePeriodOverview]) -> list:
     polygonlist = []
     for poly in valid_geometries:
         if type(poly.footprint_geometry) is MultiPolygon:
-            for p in list(poly.footprint_geometry):
+            for p in list(poly.footprint_geometry.geoms):
                 polygonlist.append(p)
         else:
             polygonlist.append(poly.footprint_geometry)
