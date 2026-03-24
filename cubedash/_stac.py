@@ -165,10 +165,9 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
         item = pystac.Item(
             id=str(dataset.dataset_id),
             geometry=dataset.geom_geojson,
-            bbox=dataset.bbox,
+            bbox=list(dataset.bbox) if dataset.bbox is not None else None,
             properties={
                 "created": utc(dataset.creation_time),
-                "cubedash:region_code": dataset.region_code,
                 "proj:code": str(dataset.geometry.crs)
                 if dataset.geometry is not None
                 else None,
@@ -186,7 +185,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             )
         )
     else:
-        if not ds.is_eo3:
+        if not ds.is_eo3 and dataset.geometry is not None:
             # TODO: needs a rethink/deeper dive - can we do this without projecting to 4326
             ds.metadata_doc["grid_spatial"]["projection"]["spatial_reference"] = str(
                 dataset.geometry.crs
