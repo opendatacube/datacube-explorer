@@ -522,14 +522,7 @@ class SummaryStore:
             iter(self.index.datasets.search(product=product.name, limit=1))
         ).metadata.fields
 
-        simple_field_types = {
-            "string",
-            "numeric",
-            "double",
-            "integer",
-            "datetime",
-            "boolean",
-        }
+        simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
 
         candidate_fields: list[tuple[str, Field]] = [
             (name, field)
