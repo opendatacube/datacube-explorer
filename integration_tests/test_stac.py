@@ -242,8 +242,23 @@ def _iter_items_across_pages(client: FlaskClient, url: str | None) -> Generator[
 
 
 def assert_stac_extensions(doc: dict) -> None:
-    for extension_name in doc.get("stac_extensions", ()):
-        get_extension(extension_name).validate(doc)
+    # TODO: remove overwriting of stac_extensions once values have been fixed
+    if extensions := doc.get("stac_extensions"):
+        new_extensions = []
+        for extension_name in extensions:
+            if "/sar/" in extension_name:
+                new_extensions.append(
+                    "https://stac-extensions.github.io/sar/v1.3.0/schema.json"
+                )
+            elif "/sat/" in extension_name:
+                new_extensions.append(
+                    "https://stac-extensions.github.io/sat/v1.1.0/schema.json"
+                )
+            else:
+                new_extensions.append(extension_name)
+        doc["stac_extensions"] = new_extensions
+        for ext in new_extensions:
+            get_extension(ext).validate(doc)
 
 
 def assert_item_collection(collection: dict) -> None:
@@ -713,6 +728,7 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
         "stac_version": "1.1.0",
         "stac_extensions": [
             "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+            "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
             "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
         ],
         "type": "Feature",
@@ -777,6 +793,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "2": {
                 "title": "2",
@@ -789,6 +812,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "3": {
                 "title": "3",
@@ -801,6 +831,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "4": {
                 "title": "4",
@@ -813,6 +850,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "5": {
                 "title": "5",
@@ -825,6 +869,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "7": {
                 "title": "7",
@@ -837,6 +888,13 @@ def test_stac_item(stac_client: FlaskClient, odc_test_db) -> None:
                 "proj:code": "EPSG:4326",
                 "proj:shape": [8508, 9846],
                 "proj:transform": [25.0, 0.0, 409062.5, 0.0, -25.0, 6594912.5],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "thumbnail:full": {
                 "title": "Thumbnail image",

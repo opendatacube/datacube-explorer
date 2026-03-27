@@ -23,6 +23,67 @@ metadata:
     format:
         name: GeoTIFF
 
+measurements:
+    - name: '1'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_1, coastal_aerosol]
+    - name: '2'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_2, blue]
+    - name: '3'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_3, green]
+    - name: '4'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_4, red]
+    - name: '5'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_5, nir]
+    - name: '6'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_6, swir1]
+    - name: '7'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [band_7, swir2]
+    - name: '8'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [pan, panchromatic]
+    - name: '9'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [cirrus]
+    - name: '10'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [tir1]
+    - name: '11'
+      dtype: int16
+      units: '1'
+      nodata: -999
+      aliases: [tir2]
+    - name: qa
+      dtype: int16
+      units: '1'
+      nodata: -999
+
 ---
 
 name: ls8_nbar_scene

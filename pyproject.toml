@@ -28,6 +28,7 @@ dependencies = [
     "pyorbital",
     "pyproj",
     "pystac",
+    "python-rapidjson",
     "sentry-sdk[flask]",
     "shapely",
     "simplekml",
