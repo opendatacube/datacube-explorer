@@ -303,7 +303,7 @@ def _get_regions_geojson(
         "features": [
             {
                 "type": "Feature",
-                "geometry": region.footprint_wgs84.__geo_interface__,  # type: ignore[attr-defined]
+                "geometry": region.footprint_wgs84.__geo_interface__,
                 "properties": {
                     "region_code": region_code,
                     "label": region_info.region_label(region_code),
