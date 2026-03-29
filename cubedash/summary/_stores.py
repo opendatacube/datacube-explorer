@@ -18,9 +18,7 @@ from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
 from odc.geo import BoundingBox, MaybeCRS
-from pygeofilter.backends.sqlalchemy.evaluate import (
-    SQLAlchemyFilterEvaluator as FilterEvaluator,
-)
+from pygeofilter.backends.sqlalchemy import to_filter
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
@@ -992,12 +990,15 @@ class SummaryStore:
         filter_cql: str | dict,
     ) -> Select:
         # use pygeofilter's SQLAlchemy integration to construct the filter query
-        filter_cql = (
-            parse_cql2_text(filter_cql)
-            if filter_lang == "cql2-text"
-            else parse_cql2_json(filter_cql)
+        return query.filter(
+            to_filter(
+                parse_cql2_text(filter_cql)
+                if filter_lang == "cql2-text"
+                else parse_cql2_json(filter_cql),
+                field_exprs,
+                True,
+            )
         )
-        return query.filter(FilterEvaluator(field_exprs, True).evaluate(filter_cql))
 
     def _add_order_to_query(
         self, query: Select, field_exprs: dict[str, Any], sortby: list[dict[str, str]]
