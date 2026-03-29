@@ -114,7 +114,8 @@ def unpopulated_client(
     empty_client: FlaskClient, summary_store: SummaryStore
 ) -> FlaskClient:
     with disable_logging():
-        _model.STORE.refresh_all_product_extents()
+        success = _model.STORE.refresh_all_product_extents()
+    assert success is True
     return empty_client
 
 

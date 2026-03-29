@@ -406,8 +406,8 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore) -> None:
 
 
 def test_calc_empty(summary_store: SummaryStore) -> None:
-    summary_store.refresh_all_product_extents()
-
+    result = summary_store.refresh_all_product_extents()
+    assert result is True
     # Should not exist.
     summary = summary_store.get("ls8_fake_product", year=2006, month=None, day=None)
     assert summary is None
@@ -616,8 +616,8 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore) ->
     The region code for all datasets should be computed identically when
     done in both SQL and Python.
     """
-    summary_store.refresh_all_product_extents()
-
+    result = summary_store.refresh_all_product_extents()
+    assert result is True
     # Loop through all datasets in the test data to check that the the DB and Python
     # functions give identical region codes.
     for product in summary_store.index.products.get_all():
