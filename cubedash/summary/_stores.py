@@ -332,10 +332,10 @@ class SummaryStore:
         self.index.close()
         self.e_index.engine.dispose()
 
-    def refresh_all_product_extents(self) -> None:
+    def refresh_all_product_extents(self) -> bool:
         for product in self.all_products():
             self.refresh_product_extent(product.name)
-        self.refresh_stats()
+        return self.refresh_stats()
 
     def find_months_needing_update(
         self, product_name: str, only_those_newer_than: datetime
@@ -504,13 +504,18 @@ class SummaryStore:
         self._persist_product_extent(new_summary)
         return change_count, new_summary
 
-    def refresh_stats(self, concurrently: bool = False) -> None:
+    def refresh_stats(self, concurrently: bool = False) -> bool:
         """
         Refresh general statistics tables that cover all products.
 
         This is ideally done once after all needed products have been refreshed.
         """
-        self.e_index.refresh_stats(concurrently)
+        try:
+            self.e_index.refresh_stats(concurrently)
+        except ProgrammingError as e:
+            _LOG.error(str(e))
+            return False
+        return True
 
     def _find_product_fixed_metadata(
         self, product: Product, sample_datasets_size: int
