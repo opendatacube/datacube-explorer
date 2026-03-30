@@ -156,7 +156,7 @@ class ExplorerAbstractIndex(ABC):
         bbox: tuple[float, float, float, float] | None,
         time: tuple[datetime, datetime] | None,
         q: Sequence[str] | None,
-    ) -> Result: ...
+    ) -> list[Row]: ...
 
     @abstractmethod
     def upsert_product_record(
