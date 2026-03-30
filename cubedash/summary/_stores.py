@@ -50,7 +50,6 @@ from cubedash.summary._extents import (
     RegionSummary,
     SceneRegionInfo,
 )
-from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 90
@@ -291,11 +290,11 @@ class SummaryStore:
         try:
             if not self.e_index.create_schema():
                 return False
-            refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+            rv = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
         except ProgrammingError as e:
             _LOG.error(str(e))
             return False
-        if refresh_also:
+        if rv:
             # Refresh product information after a schema update, plus the given kind of data.
             for product in self.all_products():
                 name = product.name
@@ -303,11 +302,7 @@ class SummaryStore:
                 if self.get_product_summary(name) is None:
                     continue
                 _LOG.info("data.refreshing_extents", product=name)
-                self.refresh_product_extent(
-                    name,
-                    scan_for_deleted=PleaseRefresh.DATASET_EXTENTS
-                    in refresh_also,  # I believe this is always True
-                )
+                self.refresh_product_extent(name, scan_for_deleted=True)
             _LOG.info("data.refreshing_extents.complete")
         return True
 

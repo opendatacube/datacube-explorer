@@ -390,7 +390,7 @@ def ensure_owners(conn: Connection) -> None:
     conn.commit()
 
 
-def init_elements(conn: Connection, grouping_epsg_code: int):
+def init_elements(conn: Connection, grouping_epsg_code: int) -> bool:
     """
     Initialise any schema elements that don't exist.
 
@@ -430,4 +430,4 @@ def init_elements(conn: Connection, grouping_epsg_code: int):
     grant_permissions(conn)
 
     # no need to add potentially missing columns because we know postgis will have them
-    return set()
+    return False
