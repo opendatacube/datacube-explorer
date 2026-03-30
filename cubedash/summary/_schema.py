@@ -1,5 +1,3 @@
-from enum import Enum
-
 import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, func, select, text
@@ -36,17 +34,6 @@ class SchemaNotRefreshableError(Exception):
     """The schema is not set-up for running product refreshes"""
 
     ...
-
-
-class PleaseRefresh(Enum):
-    """
-    What data should be refreshed/recomputed?
-    """
-
-    # Refresh the product extents.
-    PRODUCTS = 2
-    # Recreate all dataset extents in the spatial table
-    DATASET_EXTENTS = 1
 
 
 def pg_create_index(

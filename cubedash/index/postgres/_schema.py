@@ -41,7 +41,6 @@ from cubedash.summary._schema import (
     CUBEDASH_SCHEMA,
     METADATA,
     REF_TABLE_METADATA,
-    PleaseRefresh,
     SchemaNotRefreshableError,
     create_safe_transform_func,
     epsg_to_srid,
@@ -351,16 +350,13 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
     create_safe_transform_func(conn, "agdc_admin")
 
 
-def update_schema(conn: Connection) -> set[PleaseRefresh]:
+def update_schema(conn: Connection) -> bool:
     """
     Update the schema if needed.
 
-    Returns what data should be resummarised.
+    Returns true if data should be re-summarised.
     """
-    # Will never return PleaseRefresh.PRODUCTS...
-
-    refresh = set()
-
+    refresh = False
     with as_role(conn, "agdc_admin") as admin_conn:
         if not pg_column_exists(
             admin_conn, f"{CUBEDASH_SCHEMA}.product", "fixed_metadata"
@@ -369,7 +365,7 @@ def update_schema(conn: Connection) -> set[PleaseRefresh]:
             pg_add_column(
                 admin_conn, CUBEDASH_SCHEMA, "product", "fixed_metadata", "jsonb"
             )
-            refresh.add(PleaseRefresh.DATASET_EXTENTS)
+            refresh = True
 
         _COLLECTION_ITEMS_INDEX.create(admin_conn, checkfirst=True)
 
@@ -512,7 +508,7 @@ def ensure_owners(conn: Connection) -> None:
     conn.commit()
 
 
-def init_elements(conn: Connection, grouping_epsg_code: int):
+def init_elements(conn: Connection, grouping_epsg_code: int) -> bool:
     """
     Initialise any schema elements that don't exist.
 
