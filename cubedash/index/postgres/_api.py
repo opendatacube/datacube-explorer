@@ -410,7 +410,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         bbox: tuple[float, float, float, float] | None,
         time: tuple[datetime, datetime] | None,
         q: Sequence[str] | None,
-    ) -> Result:
+    ) -> list[Row]:
         # STAC Collections only hold a bounding box in EPSG:4326, no polygons
         # Calculate the bounding box on the server, it's far more efficient.
 
