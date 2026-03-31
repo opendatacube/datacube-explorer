@@ -237,8 +237,8 @@ class ExplorerAbstractIndex(ABC):
             drop_schema(conn, CUBEDASH_SCHEMA)
 
     @abstractmethod
-    def init_schema(self, grouping_epsg_code: int) -> bool:
-        """Returns true if product information needs to be refreshed."""
+    def init_schema(self, grouping_epsg_code: int) -> bool | None:
+        """Returns None on failure, true if product information needs to be refreshed."""
 
     @abstractmethod
     def refresh_stats(self, concurrently: bool) -> None: ...
