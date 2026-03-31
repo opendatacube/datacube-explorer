@@ -873,7 +873,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return True
 
     @override
-    def init_schema(self, grouping_epsg_code: int) -> bool:
+    def init_schema(self, grouping_epsg_code: int) -> bool | None:
         with self.engine.connect() as conn:
             return init_elements(conn, grouping_epsg_code)
 

@@ -308,7 +308,7 @@ def create_after_schema(conn: Connection, epsg_code: int) -> None:
         "srid",
         unique=True,
     )
-    # For case insensitive auth name/code lookups.
+    # For case-insensitive auth name/code lookups.
     # (Postgis doesn't add one by default, but we're going to do a lot of lookups)
     pg_create_index(
         conn,
@@ -472,7 +472,7 @@ def grant_permissions(conn: Connection) -> None:
         grant_role(conn, UserRole.ADMIN, ["explorer_owner"])
 
 
-def ensure_owners(conn: Connection) -> None:
+def ensure_owners(conn: Connection) -> bool:
     transfers = transfers_required(
         conn,
         "agdc_admin",
@@ -485,9 +485,13 @@ def ensure_owners(conn: Connection) -> None:
             "region",
         ],
     )
+    rv = True
     for table, current_owner in transfers:
-        transfer_ownership(
-            conn, CUBEDASH_SCHEMA, table, current_owner, "agdc_admin", "tables"
+        rv = (
+            transfer_ownership(
+                conn, CUBEDASH_SCHEMA, table, current_owner, "agdc_admin", "tables"
+            )
+            and rv
         )
 
     transfers = transfers_required(
@@ -501,14 +505,18 @@ def ensure_owners(conn: Connection) -> None:
         ],
     )
     for mv, current_owner in transfers:
-        transfer_ownership(
-            conn, CUBEDASH_SCHEMA, mv, current_owner, "agdc_manage", "matviews"
+        rv = (
+            transfer_ownership(
+                conn, CUBEDASH_SCHEMA, mv, current_owner, "agdc_manage", "matviews"
+            )
+            and rv
         )
 
     conn.commit()
+    return rv
 
 
-def init_elements(conn: Connection, grouping_epsg_code: int) -> bool:
+def init_elements(conn: Connection, grouping_epsg_code: int) -> bool | None:
     """
     Initialise any schema elements that don't exist.
 
@@ -544,6 +552,11 @@ def init_elements(conn: Connection, grouping_epsg_code: int) -> bool:
             (Warning: Resummarising all of your products may take a long time!)
             """
         )
-    ensure_owners(conn)
+    if not ensure_owners(conn):
+        _LOG.error(
+            "Failed to transfer ownerships in database. Please re-run the "
+            "command as the database administrator user."
+        )
+        return None
     grant_permissions(conn)
     return update_schema(conn)

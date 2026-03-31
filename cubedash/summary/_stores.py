@@ -302,7 +302,7 @@ class SummaryStore:
                 _LOG.info("data.refreshing_extents", product=name)
                 self.refresh_product_extent(name, scan_for_deleted=True)
             _LOG.info("data.refreshing_extents.complete")
-        return True
+        return rv is not None
 
     @classmethod
     def create(
