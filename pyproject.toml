@@ -79,7 +79,6 @@ deployment = [
 ]
 test = [
     "datacube-explorer[deployment]",
-    "boltons",
     "deepdiff",
     "docker",
     "docutils",
