@@ -79,7 +79,6 @@ deployment = [
 ]
 test = [
     "datacube-explorer[deployment]",
-    "blinker",
     "boltons",
     "deepdiff",
     "docker",
@@ -88,7 +87,6 @@ test = [
     "lxml_html_clean",
     "mypy",
     "pre-commit",
-    "prometheus-flask-exporter",
     "pytest",
     "pytest-benchmark[histogram]",
     "pytest-cov",

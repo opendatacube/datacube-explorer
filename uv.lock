@@ -938,7 +938,6 @@ doc = [
 [package.metadata]
 requires-dist = [
     { name = "blinker", marker = "extra == 'deployment'" },
-    { name = "blinker", marker = "extra == 'test'" },
     { name = "boltons", marker = "extra == 'test'" },
     { name = "bottleneck", marker = "extra == 'deployment'" },
     { name = "cachetools" },
@@ -966,7 +965,6 @@ requires-dist = [
     { name = "orjson", specifier = ">=3" },
     { name = "pre-commit", marker = "extra == 'test'" },
     { name = "prometheus-flask-exporter", marker = "extra == 'deployment'" },
-    { name = "prometheus-flask-exporter", marker = "extra == 'test'" },
     { name = "psycopg", extras = ["c"] },
     { name = "pygeofilter", specifier = ">=0.2.2" },
     { name = "pyproj" },
