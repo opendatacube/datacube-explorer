@@ -28,7 +28,6 @@ dependencies = [
     "pyorbital",
     "pyproj",
     "pystac",
-    "sentry-sdk[flask]",
     "shapely",
     "simplekml",
     "sqlalchemy>=1.4",
@@ -77,6 +76,7 @@ deployment = [
     # The default run.sh and docs use gunicorn+meinheld
     "gevent",
     "gunicorn>=22.0.0",
+    "sentry-sdk[flask]",
     "setproctitle",
     # Monitoring.
     "blinker",
