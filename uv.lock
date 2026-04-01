@@ -884,7 +884,6 @@ deployment = [
 ]
 test = [
     { name = "blinker" },
-    { name = "boltons" },
     { name = "bottleneck" },
     { name = "ciso8601" },
     { name = "deepdiff" },
@@ -938,7 +937,6 @@ doc = [
 [package.metadata]
 requires-dist = [
     { name = "blinker", marker = "extra == 'deployment'" },
-    { name = "boltons", marker = "extra == 'test'" },
     { name = "bottleneck", marker = "extra == 'deployment'" },
     { name = "cachetools" },
     { name = "ciso8601", marker = "extra == 'deployment'" },
