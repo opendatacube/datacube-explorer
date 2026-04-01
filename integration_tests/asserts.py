@@ -110,7 +110,7 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
     return data
 
 
-def get_normalized_text(node: LexborNode | LexborHTMLParser) -> str:
+def get_normalized_text(node: LexborNode | LexborHTMLParser | None) -> str:
     """Extract text from a selectolax node, normalizes whitespace."""
     if node is None:
         return ""
