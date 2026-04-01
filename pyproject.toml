@@ -74,10 +74,8 @@ deployment = [
     "bottleneck",
     "ciso8601",
     # The default run.sh and docs use gunicorn+meinheld
-    "gevent",
-    "gunicorn>=22.0.0",
+    "gunicorn[gevent,setproctitle]>=22.0.0",
     "sentry-sdk[flask]",
-    "setproctitle",
     # Monitoring.
     "blinker",
     "prometheus-flask-exporter",

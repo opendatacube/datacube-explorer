@@ -881,11 +881,9 @@ deployment = [
     { name = "blinker" },
     { name = "bottleneck" },
     { name = "ciso8601" },
-    { name = "gevent" },
-    { name = "gunicorn" },
+    { name = "gunicorn", extra = ["gevent", "setproctitle"] },
     { name = "prometheus-flask-exporter" },
     { name = "sentry-sdk", extra = ["flask"] },
-    { name = "setproctitle" },
 ]
 test = [
     { name = "blinker" },
@@ -895,8 +893,7 @@ test = [
     { name = "deepdiff" },
     { name = "docker" },
     { name = "docutils" },
-    { name = "gevent" },
-    { name = "gunicorn" },
+    { name = "gunicorn", extra = ["gevent", "setproctitle"] },
     { name = "jsonschema" },
     { name = "lxml-html-clean" },
     { name = "mypy" },
@@ -908,7 +905,6 @@ test = [
     { name = "ruff" },
     { name = "selectolax" },
     { name = "sentry-sdk", extra = ["flask"] },
-    { name = "setproctitle" },
     { name = "types-cachetools" },
     { name = "types-docker" },
     { name = "types-pyyaml" },
@@ -964,8 +960,7 @@ requires-dist = [
     { name = "flask-themer", specifier = ">=1.4.3" },
     { name = "geoalchemy2", specifier = ">=0.8" },
     { name = "geographiclib" },
-    { name = "gevent", marker = "extra == 'deployment'" },
-    { name = "gunicorn", marker = "extra == 'deployment'", specifier = ">=22.0.0" },
+    { name = "gunicorn", extras = ["gevent", "setproctitle"], marker = "extra == 'deployment'", specifier = ">=22.0.0" },
     { name = "jinja2" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4.18" },
     { name = "lxml-html-clean", marker = "extra == 'test'" },
@@ -987,7 +982,6 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'test'" },
     { name = "selectolax", marker = "extra == 'test'" },
     { name = "sentry-sdk", extras = ["flask"], marker = "extra == 'deployment'" },
-    { name = "setproctitle", marker = "extra == 'deployment'" },
     { name = "shapely" },
     { name = "simplekml" },
     { name = "sqlalchemy", specifier = ">=1.4" },
@@ -1458,6 +1452,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/13/ef67f59f6a7896fdc2c1d62b5665c5219d6b0a9a1784938eb9a28e55e128/gunicorn-25.1.0.tar.gz", hash = "sha256:1426611d959fa77e7de89f8c0f32eed6aa03ee735f98c01efba3e281b1c47616", size = 594377, upload-time = "2026-02-13T11:09:58.989Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/da/73/4ad5b1f6a2e21cf1e85afdaad2b7b1a933985e2f5d679147a1953aaa192c/gunicorn-25.1.0-py3-none-any.whl", hash = "sha256:d0b1236ccf27f72cfe14bce7caadf467186f19e865094ca84221424e839b8b8b", size = 197067, upload-time = "2026-02-13T11:09:57.146Z" },
+]
+
+[package.optional-dependencies]
+gevent = [
+    { name = "gevent" },
+]
+setproctitle = [
+    { name = "setproctitle" },
 ]
 
 [[package]]
