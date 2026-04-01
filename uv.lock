@@ -859,19 +859,16 @@ dependencies = [
     { name = "flask-cors" },
     { name = "flask-themer" },
     { name = "geoalchemy2" },
-    { name = "geographiclib" },
     { name = "jinja2" },
     { name = "markupsafe" },
     { name = "odc-geo" },
     { name = "orjson" },
     { name = "psycopg", extra = ["c"] },
     { name = "pygeofilter" },
-    { name = "pyorbital" },
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pystac" },
     { name = "shapely" },
-    { name = "simplekml" },
     { name = "sqlalchemy" },
     { name = "structlog" },
 ]
@@ -959,7 +956,6 @@ requires-dist = [
     { name = "flask-cors" },
     { name = "flask-themer", specifier = ">=1.4.3" },
     { name = "geoalchemy2", specifier = ">=0.8" },
-    { name = "geographiclib" },
     { name = "gunicorn", extras = ["gevent", "setproctitle"], marker = "extra == 'deployment'", specifier = ">=22.0.0" },
     { name = "jinja2" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4.18" },
@@ -973,7 +969,6 @@ requires-dist = [
     { name = "prometheus-flask-exporter", marker = "extra == 'test'" },
     { name = "psycopg", extras = ["c"] },
     { name = "pygeofilter", specifier = ">=0.2.2" },
-    { name = "pyorbital" },
     { name = "pyproj" },
     { name = "pystac" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -983,7 +978,6 @@ requires-dist = [
     { name = "selectolax", marker = "extra == 'test'" },
     { name = "sentry-sdk", extras = ["flask"], marker = "extra == 'deployment'" },
     { name = "shapely" },
-    { name = "simplekml" },
     { name = "sqlalchemy", specifier = ">=1.4" },
     { name = "structlog", specifier = ">=20.2.0" },
     { name = "types-cachetools", marker = "extra == 'test'" },
@@ -1122,18 +1116,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ae/ed/aefcc8cd0ba62a0560c3c18c33925362d46c6075480bfa4df87b28e169a9/docutils-0.21.2.tar.gz", hash = "sha256:3a6b18732edf182daa3cd12775bbb338cf5691468f91eeeb109deff6ebfa986f", size = 2204444, upload-time = "2024-04-23T18:57:18.24Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/d7/9322c609343d929e75e7e5e6255e614fcc67572cfd083959cdef3b7aad79/docutils-0.21.2-py3-none-any.whl", hash = "sha256:dafca5b9e384f0e419294eb4d2ff9fa826435bf15f15b7bd45723e8ad76811b2", size = 587408, upload-time = "2024-04-23T18:57:14.835Z" },
-]
-
-[[package]]
-name = "donfig"
-version = "0.8.1.post1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyyaml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/25/71/80cc718ff6d7abfbabacb1f57aaa42e9c1552bfdd01e64ddd704e4a03638/donfig-0.8.1.post1.tar.gz", hash = "sha256:3bef3413a4c1c601b585e8d297256d0c1470ea012afa6e8461dc28bfb7c23f52", size = 19506, upload-time = "2024-05-23T14:14:31.513Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/d5/c5db1ea3394c6e1732fb3286b3bd878b59507a8f77d32a2cebda7d7b7cd4/donfig-0.8.1.post1-py3-none-any.whl", hash = "sha256:2a3175ce74a06109ff9307d90a230f81215cbac9a751f4d1c6194644b8204f9d", size = 21592, upload-time = "2024-05-23T14:13:55.283Z" },
 ]
 
 [[package]]
@@ -1319,15 +1301,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ec/9d/02d54b0d61a2f331044ea7b4216ee1c98a8ad3a69906dfc3967c51501623/geoalchemy2-0.18.4.tar.gz", hash = "sha256:5719e2bb040d5c406d5d03425fec87997ce9351843b053ca11373a0f5a31971b", size = 239766, upload-time = "2026-03-02T14:48:48.43Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/56/92/60ee150773376aa9b542dcd44660e4ae9f5f14e690c8795be476156de598/geoalchemy2-0.18.4-py3-none-any.whl", hash = "sha256:89e6680dcbb6b8d8c784dcaa889e48ab2783aa42487ee5730fdbd7a7c7ddf6ec", size = 81097, upload-time = "2026-03-02T14:48:47.456Z" },
-]
-
-[[package]]
-name = "geographiclib"
-version = "2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/df/78/4892343230a9d29faa1364564e525307a37e54ad776ea62c12129dbba704/geographiclib-2.1.tar.gz", hash = "sha256:6a6545e6262d0ed3522e13c515713718797e37ed8c672c31ad7b249f372ef108", size = 37004, upload-time = "2025-08-21T21:34:26Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/b3/802576f2ea5dcb48501bb162e4c7b7b3ca5654a42b2c968ef98a797a4c79/geographiclib-2.1-py3-none-any.whl", hash = "sha256:e2a873b9b9e7fc38721ad73d5f4e6c9ed140d428a339970f505c07056997d40b", size = 40740, upload-time = "2025-08-21T21:34:24.955Z" },
 ]
 
 [[package]]
@@ -2946,26 +2919,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyorbital"
-version = "1.12.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "defusedxml" },
-    { name = "donfig" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "requests" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/27/2e/a6b56186b14c20db29c7b6b616b3daa2b41b0e83b9ccd2b5a9628da6312f/pyorbital-1.12.1.tar.gz", hash = "sha256:5bb2d7edb98ef641be3be5a7362d161d619276578746cafa20b5416586fd854d", size = 107568, upload-time = "2026-03-05T13:19:34.451Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/5f/2e122eeaebc37f866a19c6d61c9f38d7968867c4c9756396fb7bd5f44da1/pyorbital-1.12.1-py3-none-any.whl", hash = "sha256:50f6a358d24f7439fb6a714092cd3d9ecf0af7b1bcaa747ccdcec568fdb5cabc", size = 95553, upload-time = "2026-03-05T13:19:32.435Z" },
-]
-
-[[package]]
 name = "pyparsing"
 version = "3.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -4229,12 +4182,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/f7/b3d1d6d18ebf55236eec1c681ce5e665742aab3c0b7b232720a7d43df7b6/shapely-2.1.2-cp314-cp314t-win32.whl", hash = "sha256:b54df60f1fbdecc8ebc2c5b11870461a6417b3d617f555e5033f1505d36e5735", size = 1602607, upload-time = "2025-09-24T13:51:37.757Z" },
     { url = "https://files.pythonhosted.org/packages/9a/f6/f09272a71976dfc138129b8faf435d064a811ae2f708cb147dccdf7aacdb/shapely-2.1.2-cp314-cp314t-win_amd64.whl", hash = "sha256:0036ac886e0923417932c2e6369b6c52e38e0ff5d9120b90eef5cd9a5fc5cae9", size = 1796682, upload-time = "2025-09-24T13:51:39.233Z" },
 ]
-
-[[package]]
-name = "simplekml"
-version = "1.3.6"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/15/e4/c333a93b7e3346437ad1ff42b8e362b853eb405ad6243ab6163f9af2a460/simplekml-1.3.6.tar.gz", hash = "sha256:cda687be2754395fcab664e908ebf589facd41e8436d233d2be37a69efb1c536", size = 52999, upload-time = "2021-09-16T17:08:27.038Z" }
 
 [[package]]
 name = "six"
