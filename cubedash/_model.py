@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import TypeAlias
 
 import flask
-import sentry_sdk
 import structlog
 from datacube.index import index_connect
 from datacube.model import Product
@@ -17,7 +16,6 @@ from flask_cors import CORS
 from flask_themer import Themer
 
 # pylint: disable=import-error
-from sentry_sdk.integrations.flask import FlaskIntegration
 from shapely.geometry.base import BaseGeometry
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -35,6 +33,9 @@ BASE_DIR = Path(__file__).parent.parent
 
 
 if os.getenv("SENTRY_DSN"):
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
         environment=(

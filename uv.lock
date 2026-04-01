@@ -870,7 +870,6 @@ dependencies = [
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pystac" },
-    { name = "sentry-sdk", extra = ["flask"] },
     { name = "shapely" },
     { name = "simplekml" },
     { name = "sqlalchemy" },
@@ -885,6 +884,7 @@ deployment = [
     { name = "gevent" },
     { name = "gunicorn" },
     { name = "prometheus-flask-exporter" },
+    { name = "sentry-sdk", extra = ["flask"] },
     { name = "setproctitle" },
 ]
 test = [
@@ -907,6 +907,7 @@ test = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "selectolax" },
+    { name = "sentry-sdk", extra = ["flask"] },
     { name = "setproctitle" },
     { name = "types-cachetools" },
     { name = "types-docker" },
@@ -985,7 +986,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "ruff", marker = "extra == 'test'" },
     { name = "selectolax", marker = "extra == 'test'" },
-    { name = "sentry-sdk", extras = ["flask"] },
+    { name = "sentry-sdk", extras = ["flask"], marker = "extra == 'deployment'" },
     { name = "setproctitle", marker = "extra == 'deployment'" },
     { name = "shapely" },
     { name = "simplekml" },
