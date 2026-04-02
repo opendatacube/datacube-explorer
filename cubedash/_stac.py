@@ -209,10 +209,6 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             ),
         )
     else:
-        if ds._gs is None:
-            print(ds.metadata_doc)
-            print(ds.product.metadata_type.definition)
-            print(dataset.geom_geojson)
         if not ds.is_eo3 and dataset.geometry is not None:
             # TODO: needs a rethink/deeper dive - can we do this without projecting to 4326
             ds.metadata_doc["grid_spatial"]["projection"]["spatial_reference"] = str(
