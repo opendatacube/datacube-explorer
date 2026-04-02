@@ -163,9 +163,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     )
     ds_yaml_url = url_for("dataset.raw_doc", id_=dataset.dataset_id)
 
-    if (
-        ds is None
-    ):  # or ds._gs is None:  # not certain about this. Is there stuff we can do with ds but not ds._gs?
+    if ds is None or ds._gs is None:
         # Since we'd have to cobble together a metadata_doc anyway,
         # creating a pystac.Item directly is probably easier
         item = pystac.Item(
