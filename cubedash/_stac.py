@@ -158,8 +158,14 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     Get a dict corresponding to a stac item
     """
     ds = dataset.odc_dataset
+    self_url = url_for(
+        ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
+    )
+    ds_yaml_url = url_for("dataset.raw_doc", id_=dataset.dataset_id)
 
-    if ds is None or ds._gs is None:
+    if (
+        ds is None
+    ):  # or ds._gs is None:  # not certain about this. Is there stuff we can do with ds but not ds._gs?
         # Since we'd have to cobble together a metadata_doc anyway,
         # creating a pystac.Item directly is probably easier
         item = pystac.Item(
@@ -174,17 +180,41 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             },
             datetime=utc(dataset.center_time),
             collection=dataset.product_name,
-            href=url_for(
-                ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
-            ),
+            href=self_url,
         )
         item.links.append(
             Link(
                 rel="collection",
                 target=url_for(".collection", collection=dataset.product_name),
-            )
+            ),
+            Link(
+                title="ODC Dataset YAML",
+                rel="odc_yaml",
+                media_type="text/yaml",
+                target=ds_yaml_url,
+            ),
+            Link(
+                title="ODC Product Overview",
+                rel="product_overview",
+                media_type="text/html",
+                target=url_for("pages.product_page", product_name=dataset.product_name),
+            ),
+            Link(
+                title="ODC Dataset Overview",
+                rel="alternative",
+                media_type="text/html",
+                target=url_for(
+                    "dataset.dataset_full_page",
+                    product_name=dataset.product_name,
+                    id_=dataset.dataset_id,
+                ),
+            ),
         )
     else:
+        if ds._gs is None:
+            print(ds.metadata_doc)
+            print(ds.product.metadata_type.definition)
+            print(dataset.geom_geojson)
         if not ds.is_eo3 and dataset.geometry is not None:
             # TODO: needs a rethink/deeper dive - can we do this without projecting to 4326
             ds.metadata_doc["grid_spatial"]["projection"]["spatial_reference"] = str(
@@ -196,10 +226,8 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
         item = ds2stac(
             dataset=ds,
             base_url=url_for("pages.default_redirect"),
-            self_url=url_for(
-                ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
-            ),
-            ds_yaml_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
+            self_url=self_url,
+            ds_yaml_url=ds_yaml_url,
             asset_location=ds.uri,
         )
         # add canonical ref pointing to the JSON file on s3
