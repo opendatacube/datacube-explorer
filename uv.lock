@@ -545,10 +545,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.3.1"
-source = { git = "https://github.com/pjonsson/click.git?rev=one-close-only#17680224aa471016d7e53d00c8f17562b386993a" }
+version = "8.3.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/75/31212c6bf2503fdf920d87fee5d7a86a2e3bcf444984126f13d8e4016804/click-8.3.2.tar.gz", hash = "sha256:14162b8b3b3550a7d479eafa77dfd3c38d9dc8951f6f69c78913a8f9a7540fd5", size = 302856, upload-time = "2026-04-03T19:14:45.118Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/20/71885d8b97d4f3dde17b1fdb92dbd4908b00541c5a3379787137285f602e/click-8.3.2-py3-none-any.whl", hash = "sha256:1924d2c27c5653561cd2cae4548d1406039cb79b858b747cfea24924bbc1616d", size = 108379, upload-time = "2026-04-03T19:14:43.505Z" },
 ]
 
 [[package]]
@@ -940,7 +944,7 @@ requires-dist = [
     { name = "bottleneck", marker = "extra == 'deployment'" },
     { name = "cachetools" },
     { name = "ciso8601", marker = "extra == 'deployment'" },
-    { name = "click", git = "https://github.com/pjonsson/click.git?rev=one-close-only" },
+    { name = "click", specifier = ">=8.3.2" },
     { name = "datacube", extras = ["postgres"], specifier = ">=1.9.17,<1.10.0" },
     { name = "datacube-explorer", extras = ["deployment"], marker = "extra == 'test'" },
     { name = "deepdiff", marker = "extra == 'test'" },
