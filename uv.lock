@@ -845,6 +845,10 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+performance = [
+    { name = "bottleneck" },
+    { name = "ciso8601" },
+]
 postgres = [
     { name = "psycopg2" },
 ]
@@ -880,16 +884,14 @@ dependencies = [
 [package.optional-dependencies]
 deployment = [
     { name = "blinker" },
-    { name = "bottleneck" },
-    { name = "ciso8601" },
+    { name = "datacube", extra = ["performance"] },
     { name = "gunicorn", extra = ["gevent", "setproctitle"] },
     { name = "prometheus-flask-exporter" },
     { name = "sentry-sdk", extra = ["flask"] },
 ]
 test = [
     { name = "blinker" },
-    { name = "bottleneck" },
-    { name = "ciso8601" },
+    { name = "datacube", extra = ["performance"] },
     { name = "deepdiff" },
     { name = "docker" },
     { name = "docutils" },
@@ -941,10 +943,9 @@ doc = [
 [package.metadata]
 requires-dist = [
     { name = "blinker", marker = "extra == 'deployment'" },
-    { name = "bottleneck", marker = "extra == 'deployment'" },
     { name = "cachetools" },
-    { name = "ciso8601", marker = "extra == 'deployment'" },
     { name = "click", specifier = ">=8.3.2" },
+    { name = "datacube", extras = ["performance"], marker = "extra == 'deployment'" },
     { name = "datacube", extras = ["postgres"], specifier = ">=1.9.17,<1.10.0" },
     { name = "datacube-explorer", extras = ["deployment"], marker = "extra == 'test'" },
     { name = "deepdiff", marker = "extra == 'test'" },

@@ -65,10 +65,7 @@ dev = [
 
 [project.optional-dependencies]
 deployment = [
-    # Performance.
-    "bottleneck",
-    "ciso8601",
-    # The default run.sh and docs use gunicorn+meinheld
+    "datacube[performance]",
     "gunicorn[gevent,setproctitle]>=22.0.0",
     "sentry-sdk[flask]",
     # Monitoring.
