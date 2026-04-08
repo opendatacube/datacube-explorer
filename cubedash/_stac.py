@@ -180,33 +180,37 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             collection=dataset.product_name,
             href=self_url,
         )
-        item.links.append(
-            Link(
-                rel="collection",
-                target=url_for(".collection", collection=dataset.product_name),
-            ),
-            Link(
-                title="ODC Dataset YAML",
-                rel="odc_yaml",
-                media_type="text/yaml",
-                target=ds_yaml_url,
-            ),
-            Link(
-                title="ODC Product Overview",
-                rel="product_overview",
-                media_type="text/html",
-                target=url_for("pages.product_page", product_name=dataset.product_name),
-            ),
-            Link(
-                title="ODC Dataset Overview",
-                rel="alternative",
-                media_type="text/html",
-                target=url_for(
-                    "dataset.dataset_full_page",
-                    product_name=dataset.product_name,
-                    id_=dataset.dataset_id,
+        item.links.extend(
+            [
+                Link(
+                    rel="collection",
+                    target=url_for(".collection", collection=dataset.product_name),
                 ),
-            ),
+                Link(
+                    title="ODC Dataset YAML",
+                    rel="odc_yaml",
+                    media_type="text/yaml",
+                    target=ds_yaml_url,
+                ),
+                Link(
+                    title="ODC Product Overview",
+                    rel="product_overview",
+                    media_type="text/html",
+                    target=url_for(
+                        "pages.product_page", product_name=dataset.product_name
+                    ),
+                ),
+                Link(
+                    title="ODC Dataset Overview",
+                    rel="alternative",
+                    media_type="text/html",
+                    target=url_for(
+                        "dataset.dataset_full_page",
+                        product_name=dataset.product_name,
+                        id_=dataset.dataset_id,
+                    ),
+                ),
+            ]
         )
     else:
         if not ds.is_eo3 and dataset.geometry is not None:
