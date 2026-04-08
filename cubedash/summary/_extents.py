@@ -21,6 +21,7 @@ from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
+from shapely.geometry.base import BaseGeometry
 from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql.elements import Label
@@ -351,7 +352,7 @@ class RegionSummary:
     region_code: str
     count: int
     generation_time: datetime
-    footprint_wgs84: Geometry
+    footprint_wgs84: BaseGeometry
 
     @property
     def footprint_geojson(self) -> dict[str, Any] | None:
@@ -360,7 +361,7 @@ class RegionSummary:
             return None
         return {
             "type": "Feature",
-            "geometry": extent.__geo_interface__,  # type: ignore[attr-defined]
+            "geometry": extent.__geo_interface__,
             "properties": {"region_code": self.region_code, "count": self.count},
         }
 

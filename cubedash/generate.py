@@ -510,7 +510,9 @@ def cli(
         )
         if updated > 0 and refresh_stats:
             user_message("Refreshing statistics...", nl=False)
-            store.refresh_stats(concurrently=force_concurrently)
+            if not store.refresh_stats(concurrently=force_concurrently):
+                user_message("Failed to refresh statistics, aborting.")
+                sys.exit(1)
             user_message("done", fg="green")
             _LOG.info("stats.refresh")
     finally:

@@ -410,7 +410,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         bbox: tuple[float, float, float, float] | None,
         time: tuple[datetime, datetime] | None,
         q: Sequence[str] | None,
-    ) -> Result:
+    ) -> list[Row]:
         # STAC Collections only hold a bounding box in EPSG:4326, no polygons
         # Calculate the bounding box on the server, it's far more efficient.
 
@@ -947,7 +947,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return True
 
     @override
-    def init_schema(self, grouping_epsg_code: int):
+    def init_schema(self, grouping_epsg_code: int) -> bool | None:
         with self.engine.connect() as conn:
             return init_elements(conn, grouping_epsg_code)
 

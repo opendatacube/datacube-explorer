@@ -17,9 +17,7 @@ from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
 from odc.geo import BoundingBox, MaybeCRS
-from pygeofilter.backends.sqlalchemy.evaluate import (
-    SQLAlchemyFilterEvaluator as FilterEvaluator,
-)
+from pygeofilter.backends.sqlalchemy import to_filter
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from shapely.geometry.base import BaseGeometry
@@ -50,7 +48,6 @@ from cubedash.summary._extents import (
     RegionSummary,
     SceneRegionInfo,
 )
-from cubedash.summary._schema import PleaseRefresh
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 90
@@ -291,11 +288,11 @@ class SummaryStore:
         try:
             if not self.e_index.create_schema():
                 return False
-            refresh_also = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
+            rv = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
         except ProgrammingError as e:
             _LOG.error(str(e))
             return False
-        if refresh_also:
+        if rv:
             # Refresh product information after a schema update, plus the given kind of data.
             for product in self.all_products():
                 name = product.name
@@ -303,13 +300,9 @@ class SummaryStore:
                 if self.get_product_summary(name) is None:
                     continue
                 _LOG.info("data.refreshing_extents", product=name)
-                self.refresh_product_extent(
-                    name,
-                    scan_for_deleted=PleaseRefresh.DATASET_EXTENTS
-                    in refresh_also,  # I believe this is always True
-                )
+                self.refresh_product_extent(name, scan_for_deleted=True)
             _LOG.info("data.refreshing_extents.complete")
-        return True
+        return rv is not None
 
     @classmethod
     def create(
@@ -332,10 +325,10 @@ class SummaryStore:
         self.index.close()
         self.e_index.engine.dispose()
 
-    def refresh_all_product_extents(self) -> None:
+    def refresh_all_product_extents(self) -> bool:
         for product in self.all_products():
             self.refresh_product_extent(product.name)
-        self.refresh_stats()
+        return self.refresh_stats()
 
     def find_months_needing_update(
         self, product_name: str, only_those_newer_than: datetime
@@ -504,13 +497,18 @@ class SummaryStore:
         self._persist_product_extent(new_summary)
         return change_count, new_summary
 
-    def refresh_stats(self, concurrently: bool = False) -> None:
+    def refresh_stats(self, concurrently: bool = False) -> bool:
         """
         Refresh general statistics tables that cover all products.
 
         This is ideally done once after all needed products have been refreshed.
         """
-        self.e_index.refresh_stats(concurrently)
+        try:
+            self.e_index.refresh_stats(concurrently)
+        except ProgrammingError as e:
+            _LOG.error(str(e))
+            return False
+        return True
 
     def _find_product_fixed_metadata(
         self, product: Product, sample_datasets_size: int
@@ -527,7 +525,14 @@ class SummaryStore:
             iter(self.index.datasets.search(product=product.name, limit=1))
         ).metadata.fields
 
-        simple_field_types = {"string", "numeric", "double", "integer", "datetime"}
+        simple_field_types = {
+            "string",
+            "numeric",
+            "double",
+            "integer",
+            "datetime",
+            "boolean",
+        }
 
         candidate_fields: list[tuple[str, Field]] = [
             (name, field)
@@ -985,12 +990,15 @@ class SummaryStore:
         filter_cql: str | dict,
     ) -> Select:
         # use pygeofilter's SQLAlchemy integration to construct the filter query
-        filter_cql = (
-            parse_cql2_text(filter_cql)
-            if filter_lang == "cql2-text"
-            else parse_cql2_json(filter_cql)
+        return query.filter(
+            to_filter(
+                parse_cql2_text(filter_cql)
+                if filter_lang == "cql2-text"
+                else parse_cql2_json(filter_cql),
+                field_exprs,
+                True,
+            )
         )
-        return query.filter(FilterEvaluator(field_exprs, True).evaluate(filter_cql))
 
     def _add_order_to_query(
         self, query: Select, field_exprs: dict[str, Any], sortby: list[dict[str, str]]
