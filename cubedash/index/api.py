@@ -12,7 +12,7 @@ from sqlalchemy import CursorResult, Result, Row, Select
 from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
-from cubedash.summary._schema import CUBEDASH_SCHEMA, PleaseRefresh
+from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 
 class EmptyDbError(Exception):
@@ -156,7 +156,7 @@ class ExplorerAbstractIndex(ABC):
         bbox: tuple[float, float, float, float] | None,
         time: tuple[datetime, datetime] | None,
         q: Sequence[str] | None,
-    ) -> Result: ...
+    ) -> list[Row]: ...
 
     @abstractmethod
     def upsert_product_record(
@@ -237,7 +237,8 @@ class ExplorerAbstractIndex(ABC):
             drop_schema(conn, CUBEDASH_SCHEMA)
 
     @abstractmethod
-    def init_schema(self, grouping_epsg_code: int) -> set[PleaseRefresh]: ...
+    def init_schema(self, grouping_epsg_code: int) -> bool | None:
+        """Returns None on failure, true if product information needs to be refreshed."""
 
     @abstractmethod
     def refresh_stats(self, concurrently: bool) -> None: ...

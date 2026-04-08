@@ -1,6 +1,5 @@
 import json
 import re
-from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pformat, pprint
@@ -110,7 +109,7 @@ def get_json(client: FlaskClient, url: str, expect_status_code=200) -> dict:
     return data
 
 
-def get_normalized_text(node: LexborNode | LexborHTMLParser) -> str:
+def get_normalized_text(node: LexborNode | LexborHTMLParser | None) -> str:
     """Extract text from a selectolax node, normalizes whitespace."""
     if node is None:
         return ""
@@ -361,7 +360,7 @@ def _add_context(e: AssertionError, context_message: str) -> None:
     e.args = tuple(args)
 
 
-def format_doc_diffs(left: dict, right: dict) -> Iterable[str]:
+def format_doc_diffs(left: dict, right: dict) -> list[str]:
     """
     Get a human-readable list of differences in the given documents.
 

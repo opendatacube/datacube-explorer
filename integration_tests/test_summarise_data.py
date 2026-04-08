@@ -193,6 +193,7 @@ def test_generate_incremental_adds(run_generate, summary_store: SummaryStore) ->
 
     dataset_id = _one_dataset(index, "ga_ls9c_ard_3")
     dataset = index.datasets.get(dataset_id)
+    assert dataset is not None
     try:
         # Remove the dataset from the summary
         index.datasets.archive([dataset_id])
@@ -406,8 +407,8 @@ def test_generate_empty_time(run_generate, summary_store: SummaryStore) -> None:
 
 
 def test_calc_empty(summary_store: SummaryStore) -> None:
-    summary_store.refresh_all_product_extents()
-
+    result = summary_store.refresh_all_product_extents()
+    assert result is True
     # Should not exist.
     summary = summary_store.get("ls8_fake_product", year=2006, month=None, day=None)
     assert summary is None
@@ -616,12 +617,14 @@ def test_computed_regions_match_those_summarised(summary_store: SummaryStore) ->
     The region code for all datasets should be computed identically when
     done in both SQL and Python.
     """
-    summary_store.refresh_all_product_extents()
-
-    # Loop through all datasets in the test data to check that the the DB and Python
+    result = summary_store.refresh_all_product_extents()
+    assert result is True
+    # Loop through all datasets in the test data to check that the DB and Python
     # functions give identical region codes.
     for product in summary_store.index.products.get_all():
         region_info = GridRegionInfo.for_product(product, None)
+        if region_info is None:
+            continue
         for dataset in summary_store.index.datasets.search(product=product.name):
             _, alchemy_calculated_region_code = (
                 summary_store.get_dataset_footprint_region(dataset.id)

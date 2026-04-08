@@ -114,7 +114,8 @@ def unpopulated_client(
     empty_client: FlaskClient, summary_store: SummaryStore
 ) -> FlaskClient:
     with disable_logging():
-        _model.STORE.refresh_all_product_extents()
+        success = _model.STORE.refresh_all_product_extents()
+    assert success is True
     return empty_client
 
 
@@ -167,7 +168,7 @@ def fix_utc_timezone():
 
 
 def pytest_assertrepr_compare(
-    config: pytest.Config, op: str, left: object, right: object
+    config: pytest.Config, op: str, left: dict, right: dict
 ) -> list[str] | None:
     """Custom pytest error messages for large documents.
 
@@ -177,7 +178,7 @@ def pytest_assertrepr_compare(
     We just want to know which fields differ.
     """
 
-    def is_a_doc(o: object):
+    def is_a_doc(o: object) -> bool:
         """
         Is it a dict that's not printable on one line?
         """
