@@ -53,6 +53,8 @@ Drop all of Explorer’s additions to the database:
 
 """
 
+from __future__ import annotations
+
 import collections
 import multiprocessing
 import re
@@ -76,13 +78,12 @@ from datacube.ui.click import environment_option, pass_config
 from typing_extensions import override
 
 from cubedash.logs import init_logging
-from cubedash.summary import (
-    GenerateResult,
-    SummaryStore,
-    TimePeriodOverview,
-    UnsupportedWKTProductCRSError,
-)
+from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError
 from cubedash.summary.defaults import DEFAULT_EPSG, DEFAULT_TIMEZONE
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from cubedash.summary._model import TimePeriodOverview
 
 # Machine (json) logging.
 _LOG = structlog.stdlib.get_logger()
