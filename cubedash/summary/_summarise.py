@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import structlog
-from datacube.model import Range
 from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
@@ -56,15 +55,13 @@ class Summariser:
         """
         Create a summary of the given product/time range.
         """
-        time = _utils.as_time_range(year, month, day)
+        time = _utils.as_time_range(year, month, day, self._grouping_time_zone_tz)
         assert time is not None  # Guaranteed by passing in a year to as_time_range.
         log = self.log.bind(product_name=product_name, time=time)
         log.debug("summary.query")
 
-        begin_time = self._with_default_tz(time.begin)
-        end_time = self._with_default_tz(time.end)
         where_clause = self.e_index.summary_where_clause(
-            product_name, begin_time, end_time
+            product_name, time.begin, time.end
         )
 
         rows = self.e_index.srid_summary(where_clause).fetchall()
@@ -98,7 +95,7 @@ class Summariser:
             {
                 d.date(): 0
                 for d in pd.date_range(
-                    begin_time, end_time, inclusive="left", nonexistent="shift_forward"
+                    time.begin, time.end, inclusive="left", nonexistent="shift_forward"
                 )
             }
         )
@@ -129,7 +126,7 @@ class Summariser:
             day=day,
             product_refresh_time=product_refresh_time,
             timeline_period="day",
-            time_range=Range(begin_time, end_time),
+            time_range=time,
             timeline_dataset_counts=day_counts,
             region_dataset_counts=region_counts,
             # TODO: filter invalid from the counts?
@@ -142,8 +139,3 @@ class Summariser:
             footprints_missing=summary.dataset_count - summary.footprint_count,
         )
         return summary
-
-    def _with_default_tz(self, d: datetime) -> datetime:
-        if d.tzinfo is None:
-            return d.replace(tzinfo=self._grouping_time_zone_tz)
-        return d
