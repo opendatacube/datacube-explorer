@@ -82,8 +82,7 @@ from cubedash.summary import (
     TimePeriodOverview,
     UnsupportedWKTProductCRSError,
 )
-from cubedash.summary._stores import DEFAULT_EPSG
-from cubedash.summary._summarise import DEFAULT_TIMEZONE
+from cubedash.summary.defaults import DEFAULT_EPSG, DEFAULT_TIMEZONE
 
 # Machine (json) logging.
 _LOG = structlog.stdlib.get_logger()

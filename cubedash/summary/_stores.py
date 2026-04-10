@@ -48,20 +48,15 @@ from cubedash.summary._extents import (
     RegionSummary,
     SceneRegionInfo,
 )
-from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
-
-DEFAULT_TTL = 90
-
-_DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
+from cubedash.summary._summarise import Summariser
+from cubedash.summary.defaults import (
+    DEFAULT_EPSG,
+    DEFAULT_GROUPING_TIMEZONE,
+    DEFAULT_TIMEZONE,
+    DEFAULT_TTL,
+)
 
 _LOG = structlog.stdlib.get_logger()
-
-# The default grouping epsg code to use on init of a new Explorer schema.
-#
-# We'll use a global equal area.
-DEFAULT_EPSG = 6933
-
-default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 
 
 def explorer_index(index: PostgisIndex | PostgresIndex) -> ExplorerIndex:
@@ -1190,10 +1185,10 @@ class SummaryStore:
             # ('definition', 'name', 'bbox', 'time_earliest', 'time_latest')
             yield CollectionItem(
                 name=r.name,
-                time_earliest=r.time_earliest.astimezone(default_timezone)
+                time_earliest=r.time_earliest.astimezone(DEFAULT_GROUPING_TIMEZONE)
                 if r.time_earliest
                 else None,
-                time_latest=r.time_latest.astimezone(default_timezone)
+                time_latest=r.time_latest.astimezone(DEFAULT_GROUPING_TIMEZONE)
                 if r.time_latest
                 else None,
                 bbox=r.bbox,
