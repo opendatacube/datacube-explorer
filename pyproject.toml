@@ -21,7 +21,6 @@ dependencies = [
     "jinja2",
     "markupsafe",
     "odc-geo",
-    "orjson>=3",
     "psycopg[c]",
     "pygeofilter>=0.2.2",
     "pyproj",

@@ -18,7 +18,7 @@ from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
 from flask.testing import FlaskClient
 from jsonschema import SchemaError
-from orjson import JSONDecodeError, dumps, loads
+from rapidjson import JSONDecodeError, dumps, loads
 from referencing import Registry, Resource
 from referencing.exceptions import NoSuchResource
 from referencing.typing import URI

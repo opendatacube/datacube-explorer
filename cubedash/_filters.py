@@ -8,12 +8,12 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 import flask
-import orjson
 import structlog
 from datacube.index.fields import Field
 from datacube.model import Dataset, Product, Range
 from flask import Blueprint
 from markupsafe import Markup
+from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from shapely.geometry import MultiPolygon
 
 from . import _model, _utils
@@ -62,7 +62,7 @@ def _dataset_label(dataset):
 @bp.app_template_filter("torapidjson")
 def _fast_tojson(obj):
     # FIXME: looks prone to XSS.
-    return Markup(orjson.dumps(obj).decode("utf-8"))  # noqa: S704
+    return Markup(dumps(obj, datetime_mode=DM_ISO8601, uuid_mode=UM_CANONICAL))  # noqa: S704
 
 
 @bp.app_template_filter("printable_data_size")
