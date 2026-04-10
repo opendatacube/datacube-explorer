@@ -78,7 +78,8 @@ from datacube.ui.click import environment_option, pass_config
 from typing_extensions import override
 
 from cubedash.logs import init_logging
-from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError
+from cubedash.summary._errors import UnsupportedWKTProductCRSError
+from cubedash.summary._stores import GenerateResult, SummaryStore
 from cubedash.summary.defaults import DEFAULT_EPSG, DEFAULT_TIMEZONE
 
 TYPE_CHECKING = False

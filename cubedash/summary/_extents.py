@@ -35,6 +35,7 @@ from cubedash._utils import (
     jsonb_doc_expression,
 )
 from cubedash.index import ExplorerIndex
+from cubedash.summary._errors import UnsupportedWKTProductCRSError
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -45,13 +46,6 @@ _WRS_PATH_ROW = [
 
 PgDocField: TypeAlias = PgresDocField | PgisDocField
 RangeDocField: TypeAlias = PgresRangeDocField | PgisRangeDocField
-
-
-class UnsupportedWKTProductCRSError(NotImplementedError):
-    """We can't, within Postgis, support arbitrary WKT CRSes at the moment."""
-
-    def __init__(self, reason: str) -> None:
-        self.reason = reason
 
 
 def get_dataset_extent_alchemy_expression(
