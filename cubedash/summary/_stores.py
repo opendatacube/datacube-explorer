@@ -37,17 +37,19 @@ from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 
-from cubedash import _utils
+from cubedash._utils import as_time_range, common_uri_prefix, default_utc
 from cubedash.index import EmptyDbError, ExplorerIndex
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
-from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
 from cubedash.summary._extents import (
     GridRegionInfo,
     ProductArrival,
+    RegionInfo,
     RegionSummary,
     SceneRegionInfo,
+    refresh_spatial_extents,
 )
+from cubedash.summary._model import TimePeriodOverview
 from cubedash.summary._summarise import Summariser
 from cubedash.summary.defaults import (
     DEFAULT_EPSG,
@@ -428,7 +430,7 @@ class SummaryStore:
         product = self.get_product(product_name)
 
         _LOG.info("init.product", product_name=product.name)
-        change_count = _extents.refresh_spatial_extents(
+        change_count = refresh_spatial_extents(
             self.e_index,
             product,
             clean_up_deleted=scan_for_deleted,
@@ -758,7 +760,7 @@ class SummaryStore:
         """
         search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
-            time = _utils.as_time_range(year, month, day)
+            time = as_time_range(year, month, day)
             assert time is not None
             search_args["time"] = time
         # Sample 100 dataset uris
@@ -922,10 +924,7 @@ class SummaryStore:
         if time:
             query = query.where(
                 func.tstzrange(
-                    _utils.default_utc(time[0]),
-                    _utils.default_utc(time[1]),
-                    "[]",
-                    type_=TSTZRANGE,
+                    default_utc(time[0]), default_utc(time[1]), "[]", type_=TSTZRANGE
                 ).contains(field_exprs["datetime"])
             )
 
@@ -1468,9 +1467,7 @@ class SummaryStore:
         limit: int,
         offset: int,
     ) -> Generator[Dataset]:
-        time_range = _utils.as_time_range(
-            year, month, day, tzinfo=self.grouping_timezone
-        )
+        time_range = as_time_range(year, month, day, tzinfo=self.grouping_timezone)
         return self.e_index.datasets_by_region(
             product, region_code, time_range, limit, offset=offset
         )
@@ -1484,9 +1481,7 @@ class SummaryStore:
         limit: int,
         offset: int,
     ) -> Iterable[Product]:
-        time_range = _utils.as_time_range(
-            year, month, day, tzinfo=self.grouping_timezone
-        )
+        time_range = as_time_range(year, month, day, tzinfo=self.grouping_timezone)
         return (
             self._product_by_id(res)
             for res in self.e_index.products_by_region(
@@ -1622,7 +1617,7 @@ def _common_paths_for_uris(
         #              ⮤ we use a set for when len < 3
 
         yield ProductLocationSample(
-            scheme, _utils.common_uri_prefix(uris), sorted(example_uris)
+            scheme, common_uri_prefix(uris), sorted(example_uris)
         )
 
 

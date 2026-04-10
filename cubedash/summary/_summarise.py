@@ -8,7 +8,7 @@ from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
 from cubedash.index import ExplorerIndex
-from cubedash.summary import TimePeriodOverview
+from cubedash.summary._model import TimePeriodOverview
 from cubedash.summary.defaults import DEFAULT_TIMEZONE
 
 _LOG = structlog.stdlib.get_logger()
