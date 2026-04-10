@@ -15,7 +15,7 @@ its existing settings.
 
 Install Explorer:
 
-    pip install datacube-explorer
+    pip install datacube-explorer[webserver]
 
 Generate summaries for all of your products:
 
