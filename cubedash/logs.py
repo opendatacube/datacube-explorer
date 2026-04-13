@@ -39,7 +39,7 @@ def init_logging(
             datetime_mode=DM_ISO8601,
             uuid_mode=UM_CANONICAL,
             default=lenient_json_fallback,
-        )
+        ).encode("utf-8")
 
     # Direct structlog into standard logging.
     processors: list = [
