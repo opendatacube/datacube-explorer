@@ -33,8 +33,8 @@ from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import Geometry, geom
 from odc.geo.crs import CRS
-from orjson import OPT_INDENT_2, dumps
 from pyproj import CRS as PJCRS
+from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
@@ -500,7 +500,11 @@ def as_json(
 
     response = flask.Response(
         dumps(
-            o, option=OPT_INDENT_2 if prefer_formatted else 0, default=_json_fallback
+            o,
+            indent=2 if prefer_formatted else 0,
+            datetime_mode=DM_ISO8601,
+            uuid_mode=UM_CANONICAL,
+            default=_json_fallback,
         ),
         content_type=content_type,
     )
@@ -515,7 +519,7 @@ def _json_fallback(o, *args, **kwargs):
     if isinstance(o, (geom.BoundingBox, Affine)):
         return tuple(o)
 
-    # I think orjson swallows our nicer error message?
+    # Does rapidjson swallow our nicer error message?
     raise TypeError(
         "Cannot (yet) serialise object type to json: "
         f"{o.__module__}.{type(o).__qualname__}"
