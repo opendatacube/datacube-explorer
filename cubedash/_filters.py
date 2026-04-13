@@ -226,7 +226,7 @@ def _product_license(product: Product):
     if license_ is None:
         return "-"
 
-    if license_ in ("various", "proprietry"):
+    if license_ in ("various", "proprietary"):
         return license_
 
     return Markup(
