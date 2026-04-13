@@ -6,6 +6,7 @@ from typing import BinaryIO
 
 import structlog
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
+from structlog.types import EventDict, WrappedLogger
 from typing_extensions import override
 
 
@@ -77,7 +78,9 @@ def init_logging(
 
 class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
     """
-    A console renderer that shows types in a readable manner.
+    A console renderer that shows types in a readable manner, and emits bytes.
+
+    (json dumps expected in bytes, so we want to be consistent)
     """
 
     @override
@@ -87,6 +90,12 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
         if isinstance(val, pathlib.PurePath):
             return val.as_posix()
         return super()._repr(val)
+
+    @override
+    def __call__(  # type: ignore[override]
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> bytes:
+        return super().__call__(logger, name, event_dict).encode("utf-8")
 
 
 def _filter_levels(logger, log_method, event_dict, hide_levels=("debug", "info")):
