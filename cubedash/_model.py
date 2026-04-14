@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 import json
 import os
 import time
-from collections import Counter
-from collections.abc import Sequence
 from pathlib import Path
 from typing import TypeAlias
 
@@ -10,23 +10,29 @@ import flask
 import structlog
 from datacube.index import index_connect
 from datacube.model import Product
-from flask.typing import ResponseValue
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_themer import Themer
-
-# pylint: disable=import-error
-from shapely.geometry.base import BaseGeometry
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from cubedash import _monitoring
-from cubedash.summary import SummaryStore, TimePeriodOverview
-from cubedash.summary._extents import RegionInfo
+from cubedash.summary import SummaryStore
 from cubedash.summary._stores import ProductSummary
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
 
 from . import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections import Counter
+    from collections.abc import Sequence
+
+    from flask.typing import ResponseValue
+    from shapely.geometry.base import BaseGeometry
+
+    from cubedash.summary import TimePeriodOverview
+    from cubedash.summary._extents import RegionInfo
 
 NAME = "cubedash"
 BASE_DIR = Path(__file__).parent.parent

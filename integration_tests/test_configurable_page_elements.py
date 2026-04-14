@@ -1,8 +1,14 @@
-import pytest
-from flask.testing import FlaskClient
+from __future__ import annotations
 
-from cubedash.summary import SummaryStore
+import pytest
+
 from integration_tests.asserts import get_html
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
+
+    from cubedash.summary import SummaryStore
 
 METADATA_TYPES = [
     "metadata/eo3_metadata.yaml",

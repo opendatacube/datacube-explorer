@@ -2,17 +2,18 @@
 Tests that load pages and check the contained text.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from io import StringIO
 from zoneinfo import ZoneInfo
 
 import flask
 import pytest
-from flask.testing import FlaskClient
 from ruamel.yaml import YAML, YAMLError
 
 from cubedash import _model
-from cubedash.summary import SummaryStore, _extents, show
+from cubedash.summary import _extents, show
 from cubedash.summary._stores import explorer_index
 from integration_tests.asserts import (
     assert_text_contains,
@@ -26,6 +27,12 @@ from integration_tests.asserts import (
     get_normalized_text,
     get_text_response,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
+
+    from cubedash.summary import SummaryStore
 
 DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 

@@ -11,11 +11,9 @@ import io
 import itertools
 import re
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, timedelta, timezone
-from datetime import tzinfo as e_tzinfo
 from io import StringIO
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import eodatasets3.serialise
@@ -26,22 +24,29 @@ import structlog
 from affine import Affine
 from datacube import utils as dc_utils
 from datacube.index.eo3 import is_doc_eo3
-from datacube.index.fields import Field
-from datacube.model import Dataset, MetadataType, Product, Range
+from datacube.model import MetadataType, Range
 from datacube.utils import InvalidDocException, jsonify_document
 from eodatasets3 import serialise
 from flask_themer import render_template
-from odc.geo import Geometry, geom
+from odc.geo import geom
 from odc.geo.crs import CRS
 from pyproj import CRS as PJCRS
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 from sqlalchemy import TIMESTAMP, func
-from werkzeug.datastructures import MultiDict
 
+TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from datetime import tzinfo as e_tzinfo
+
+    from datacube.index.fields import Field
+    from datacube.model import Dataset, Product
+    from odc.geo import Geometry
+    from shapely.geometry.base import BaseGeometry
+    from werkzeug.datastructures import MultiDict
+
     from cubedash._model import ProductWithSummary
 
 _TARGET_CRS = "EPSG:4326"

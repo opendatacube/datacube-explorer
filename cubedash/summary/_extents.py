@@ -3,9 +3,9 @@ from __future__ import annotations
 import functools
 import json
 import uuid
-from collections.abc import Generator, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, TypeAlias
 
@@ -17,14 +17,11 @@ from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
 from datacube.drivers.postgres._fields import NativeField as PgresNativeField
 from datacube.drivers.postgres._fields import PgDocField as PgresDocField
 from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
-from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.sql.elements import Label
 from sqlalchemy.types import TIMESTAMP
 from typing_extensions import override
 
@@ -34,7 +31,17 @@ from cubedash._utils import (
     infer_crs,
     jsonb_doc_expression,
 )
-from cubedash.index import ExplorerIndex
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from datetime import date
+
+    from datacube.model import Dataset, MetadataType, Product
+    from shapely.geometry.base import BaseGeometry
+    from sqlalchemy.sql.elements import Label
+
+    from cubedash.index import ExplorerIndex
 
 _LOG = structlog.stdlib.get_logger()
 

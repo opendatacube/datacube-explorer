@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 import pytest
-from datacube import Datacube
-from datacube.index import Index
 from datacube.model import Range
 from werkzeug.datastructures import MultiDict
 
 from cubedash._utils import query_to_search
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube import Datacube
+    from datacube.index import Index
 
 DEFAULT_PLATFORM_END_DATE = {
     "LANDSAT_5": datetime(2011, 11, 30),

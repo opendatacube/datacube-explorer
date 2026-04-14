@@ -5,12 +5,17 @@ Tests rendered raw yaml pages by passing the rendered content to datacube cli to
 - odc-metadata.yaml (cli command: datacube dataset)
 """
 
+from __future__ import annotations
+
 import tempfile
 
 import datacube.scripts.cli_app
 import pytest
 from click.testing import CliRunner
-from flask.testing import FlaskClient
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
 
 METADATA_TYPES = [
     "metadata/qga_eo.yaml",

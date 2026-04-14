@@ -53,11 +53,12 @@ Drop all of Explorer’s additions to the database:
 
 """
 
+from __future__ import annotations
+
 import collections
 import multiprocessing
 import re
 import sys
-from collections.abc import Generator, Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
@@ -67,23 +68,26 @@ import click
 import structlog
 from click import secho as click_secho
 from click import style
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ODCConfig
 from datacube.index import index_connect
 from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
-from datacube.model import Product
 from datacube.ui.click import environment_option, pass_config
 from typing_extensions import override
 
 from cubedash.logs import init_logging
-from cubedash.summary import (
-    GenerateResult,
-    SummaryStore,
-    TimePeriodOverview,
-    UnsupportedWKTProductCRSError,
-)
+from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError
 from cubedash.summary._stores import DEFAULT_EPSG
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+
+    from datacube.cfg import ODCEnvironment
+    from datacube.model import Product
+
+    from cubedash.summary import TimePeriodOverview
 
 # Machine (json) logging.
 _LOG = structlog.stdlib.get_logger()

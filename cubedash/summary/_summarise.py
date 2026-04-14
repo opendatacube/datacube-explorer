@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import os
 from collections import Counter
-from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -8,8 +9,13 @@ import structlog
 from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
-from cubedash.index import ExplorerIndex
 from cubedash.summary import TimePeriodOverview
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from cubedash.index import ExplorerIndex
 
 _LOG = structlog.stdlib.get_logger()
 

@@ -8,7 +8,7 @@ from datetime import date, datetime
 from datacube.model import Range
 from shapely.geometry import shape
 
-from cubedash._model import TimePeriodOverview
+from cubedash.summary._model import TimePeriodOverview
 from integration_tests.asserts import assert_shapes_mostly_equal
 
 ANTIMERIDIAN_POLY = shape(

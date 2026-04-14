@@ -4,10 +4,15 @@ Tests that use the app monitoring.
 The timing decorator modifies global state, run these tests last.
 """
 
+from __future__ import annotations
+
 import pytest
-from flask.testing import FlaskClient
 
 from cubedash import _monitoring
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
 
 
 # this test fails in gh with the postgis driver for unknown reasons

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import json
 import uuid
-from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
@@ -12,17 +13,24 @@ import structlog
 from datacube.metadata import ds2stac
 from datacube.utils import parse_time
 from flask import abort, current_app, request
-from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
+from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 from toolz import dicttoolz
-from werkzeug.datastructures import ImmutableMultiDict, TypeConversionDict
+from werkzeug.datastructures import TypeConversionDict
 from werkzeug.exceptions import BadRequest, HTTPException
-
-from cubedash.summary._stores import CollectionItem, DatasetItem
 
 from . import _model, _utils
 from .summary import ItemSort
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from pystac import Item
+    from shapely.geometry.base import BaseGeometry
+    from werkzeug.datastructures import ImmutableMultiDict
+
+    from cubedash.summary._stores import CollectionItem, DatasetItem
 
 _LOG = structlog.stdlib.get_logger()
 bp = flask.Blueprint("stac", __name__, url_prefix="/stac")

@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 from textwrap import indent
 
 import pytest
-from datacube import Datacube
-from flask.testing import FlaskClient
 from sqlalchemy import text
 
-from cubedash.summary import SummaryStore
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube import Datacube
+    from flask.testing import FlaskClient
+
+    from cubedash.summary import SummaryStore
 
 METADATA_TYPES = [
     "metadata/eo3_metadata.yaml",
