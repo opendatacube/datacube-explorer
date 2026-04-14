@@ -1,12 +1,11 @@
 import datetime
 import pathlib
 import sys
-import uuid
 from functools import partial
 from typing import BinaryIO
 
 import structlog
-from orjson import OPT_SORT_KEYS, dumps
+from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from structlog.types import EventDict, WrappedLogger
 from typing_extensions import override
 
@@ -35,7 +34,13 @@ def init_logging(
     # Note that we can't use functools.partial: it JSONRendering will pass its
     # own 'default' property that overrides our own.
     def lenient_json_dump(obj, *args, **kwargs):
-        return dumps(obj, option=OPT_SORT_KEYS, default=lenient_json_fallback)
+        return dumps(
+            obj,
+            sort_keys=True,
+            datetime_mode=DM_ISO8601,
+            uuid_mode=UM_CANONICAL,
+            default=lenient_json_fallback,
+        ).encode("utf-8")
 
     # Direct structlog into standard logging.
     processors: list = [
@@ -75,7 +80,7 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
     """
     A console renderer that shows types in a readable manner, and emits bytes.
 
-    (orjson emits bytes, so we want to be consistent)
+    (json dumps expected in bytes, so we want to be consistent)
     """
 
     @override
@@ -108,12 +113,12 @@ def lenient_json_fallback(obj):
     (intended for use in places such as json-based logs where you always want the
     message recorded)
     """
-    if isinstance(obj, (datetime.datetime, datetime.date)):
-        return obj.isoformat()
-
-    if isinstance(obj, (pathlib.Path, uuid.UUID)):
+    if isinstance(obj, pathlib.Path):
         return str(obj)
 
+    # python-rapidjson docs state that by default any iterable will get encoded as a JSON array,
+    # however this currently doesn't work for sets
+    # https://github.com/python-rapidjson/python-rapidjson/issues/168
     if isinstance(obj, set):
         return list(obj)
 
