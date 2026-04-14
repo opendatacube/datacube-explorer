@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import time
 import urllib.request
@@ -7,10 +9,13 @@ from urllib.parse import urljoin
 
 import click
 from click import echo, secho, style
-from datacube.index import Index
 from datacube.ui.click import config_option, environment_option, pass_index
 
 from cubedash.summary import RegionInfo
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.index import Index
 
 
 def find_examples_of_all_public_urls(index: Index):

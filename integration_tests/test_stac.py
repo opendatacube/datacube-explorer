@@ -2,10 +2,11 @@
 Tests that hit the stac api
 """
 
+from __future__ import annotations
+
 import urllib.parse
 import warnings
 from collections import Counter
-from collections.abc import Generator, Iterable
 from functools import lru_cache
 from pathlib import Path
 from pprint import pformat
@@ -16,12 +17,10 @@ import jsonschema
 import pytest
 from datacube.migration import ODC2DeprecationWarning
 from datacube.utils import is_url, read_documents
-from flask.testing import FlaskClient
 from jsonschema import SchemaError
 from rapidjson import JSONDecodeError, dumps, loads
 from referencing import Registry, Resource
 from referencing.exceptions import NoSuchResource
-from referencing.typing import URI
 from shapely.geometry import shape as shapely_shape
 from shapely.validation import explain_validity
 
@@ -33,6 +32,13 @@ from integration_tests.asserts import (
     get_json,
     get_text_response,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from flask.testing import FlaskClient
+    from referencing.typing import URI
 
 DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 

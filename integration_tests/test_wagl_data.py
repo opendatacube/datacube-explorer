@@ -2,14 +2,20 @@
 Tests that load pages and check the contained text.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
 import pytest
 from datacube.model import Range
-from flask.testing import FlaskClient
 
-from cubedash.summary import SummaryStore
 from integration_tests.asserts import expect_values, get_html
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
+
+    from cubedash.summary import SummaryStore
 
 METADATA_TYPES = ["metadata/qga_eo.yaml"]
 PRODUCTS = ["products/ga_s2_ard.odc-product.yaml"]

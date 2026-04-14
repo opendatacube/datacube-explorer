@@ -164,6 +164,7 @@ filterwarnings = [
 target-version = "py310"
 
 [tool.ruff.lint]
+future-annotations = true
 select = [
     "A",  # Don't shadow built-ins
     "B",  # flake8-bugbear
@@ -182,6 +183,7 @@ select = [
     "S",  # flake8-bandit
     "SIM", # flake8-simplify
     "T10", # flake8-debugger
+    "TC",  # Import types in TYPE_CHECKING block
     "UP",  # pyupgrade
     "W",  # pycodestyle warnings
 ]

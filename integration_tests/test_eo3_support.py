@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -5,10 +7,7 @@ from textwrap import dedent
 from uuid import UUID
 
 import pytest
-from datacube import Datacube
-from datacube.index import Index
 from datacube.utils import parse_time
-from flask.testing import FlaskClient
 from geoalchemy2.shape import to_shape
 from ruamel.yaml import YAML
 
@@ -19,6 +18,12 @@ from cubedash.warmup import find_examples_of_all_public_urls
 from integration_tests.asserts import assert_matching_eo3
 from integration_tests.test_pages_render import assert_all_urls_render
 from integration_tests.test_stac import get_item, get_items
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube import Datacube
+    from datacube.index import Index
+    from flask.testing import FlaskClient
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 

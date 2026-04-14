@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from textwrap import dedent
 
@@ -33,7 +35,6 @@ from sqlalchemy import (
 )
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
 
 from cubedash.summary._schema import (
@@ -48,6 +49,10 @@ from cubedash.summary._schema import (
     pg_column_exists,
     pg_create_index,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Connection
 
 DATASET_SPATIAL = Table(
     "dataset_spatial",

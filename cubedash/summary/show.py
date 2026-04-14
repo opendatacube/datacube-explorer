@@ -6,6 +6,8 @@ Useful for testing Explorer-generated summaries from
 scripts and the command-line.
 """
 
+from __future__ import annotations
+
 import sys
 import time
 from textwrap import dedent
@@ -13,7 +15,6 @@ from textwrap import dedent
 import click
 import structlog
 from click import echo, secho
-from datacube.cfg import ODCEnvironment
 from datacube.index import index_connect
 from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
@@ -22,6 +23,10 @@ from datacube.ui.click import environment_option, pass_config
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
 
 _LOG = structlog.stdlib.get_logger()
 

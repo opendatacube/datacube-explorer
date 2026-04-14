@@ -4,11 +4,15 @@ Indexes 20 datasets for ga_ls8c_ard_3,
 - 16 datasets have maturity level: final
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
 
-from cubedash.summary import SummaryStore
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from cubedash.summary import SummaryStore
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 

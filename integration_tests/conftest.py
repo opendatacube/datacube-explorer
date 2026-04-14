@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import time
 from contextlib import contextmanager
@@ -8,8 +10,6 @@ import pytest
 import sqlalchemy
 import structlog
 from click.testing import CliRunner
-from datacube import Datacube
-from flask.testing import FlaskClient
 from structlog import DropEvent
 
 from cubedash import _model, generate, logs
@@ -24,6 +24,11 @@ from cubedash.warmup import find_examples_of_all_public_urls
 #          default index/dea_index fixtures, as they'll override data from
 #          the same db.
 from .asserts import format_doc_diffs
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube import Datacube
+    from flask.testing import FlaskClient
 
 ######################################################
 # Prepare DB for integration test

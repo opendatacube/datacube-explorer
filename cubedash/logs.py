@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import pathlib
 import sys
@@ -6,8 +8,11 @@ from typing import BinaryIO
 
 import structlog
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
-from structlog.types import EventDict, WrappedLogger
 from typing_extensions import override
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from structlog.types import EventDict, WrappedLogger
 
 
 def init_logging(

@@ -2,6 +2,8 @@
 Util script to dump datasets from a datacube for use as test data.
 """
 
+from __future__ import annotations
+
 import gzip
 import random
 from datetime import datetime
@@ -11,7 +13,11 @@ from typing import Any
 import click
 import yaml
 from datacube import Datacube
-from datacube.model import Dataset, Range
+from datacube.model import Range
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import Dataset
 
 
 def _sample(iterable, sample_count):

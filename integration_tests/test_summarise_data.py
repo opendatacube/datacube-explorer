@@ -4,21 +4,29 @@ Load a lot of real-world DEA datasets (very slow)
 And then check their statistics match expected.
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
-from datacube import Datacube
-from datacube.index import Index
-from datacube.model import Product, Range
+from datacube.model import Range
 from sqlalchemy import text
 
-from cubedash.summary import SummaryStore
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 
 from .asserts import expect_values as _expect_values
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from datacube import Datacube
+    from datacube.index import Index
+    from datacube.model import Product
+
+    from cubedash.summary import SummaryStore
 
 DEFAULT_TZ = ZoneInfo("Australia/Darwin")
 

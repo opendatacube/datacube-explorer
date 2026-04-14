@@ -1,24 +1,33 @@
+from __future__ import annotations
+
 import json
 import re
-from datetime import datetime, timezone
+from datetime import timezone
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
-from types import TracebackType
 
 import jsonschema
 import pytest
-from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 from deepdiff import DeepDiff
-from flask.testing import FlaskClient
-from selectolax.lexbor import LexborHTMLParser, LexborNode
+from selectolax.lexbor import LexborHTMLParser
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
-from werkzeug.test import TestResponse
 
 from cubedash._utils import default_utc
-from cubedash.summary import TimePeriodOverview
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datetime import datetime
+    from types import TracebackType
+
+    from datacube.model import Range
+    from flask.testing import FlaskClient
+    from selectolax.lexbor import LexborNode
+    from shapely.geometry.base import BaseGeometry
+    from werkzeug.test import TestResponse
+
+    from cubedash.summary import TimePeriodOverview
 
 # GeoJSON schema from https://geojson.org/schema/FeatureCollection.json
 

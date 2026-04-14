@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datacube.drivers.common_psql import (
     grant_role,
     has_roles,
@@ -26,7 +28,6 @@ from sqlalchemy import (
 )
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.engine import Connection
 from sqlalchemy.orm import registry
 
 from cubedash.summary._schema import (
@@ -38,6 +39,10 @@ from cubedash.summary._schema import (
     epsg_to_srid,
     pg_create_index,
 )
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Connection
 
 orm_registry = registry()
 

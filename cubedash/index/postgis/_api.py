@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Generator, Iterable, Mapping, Sequence
-from datetime import date, datetime, timedelta
 from typing import Any
-from uuid import UUID
 
 import shapely.ops
 import structlog
@@ -17,18 +14,10 @@ from datacube.drivers.postgis._schema import (  # isort: skip
     Dataset as ODC_DATASET,  # noqa: N814
     Product as ODC_PRODUCT,  # noqa: N814
 )
-from datacube.index.postgis.index import Index
-from datacube.model import Dataset, Field, MetadataType, Product, Range
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
-    ClauseElement,
-    CursorResult,
     Integer,
-    Label,
-    Result,
-    Row,
-    Select,
     SmallInteger,
     String,
     and_,
@@ -48,7 +37,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy.sql import ColumnElement
 from sqlalchemy.types import TIMESTAMP
 
 import cubedash.summary._schema as _schema
@@ -70,6 +58,15 @@ from ._schema import (  # isort: skip
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Mapping, Sequence
+    from datetime import date, datetime, timedelta
+    from uuid import UUID
+
+    from datacube.index.postgis.index import Index
+    from datacube.model import Dataset, Field, MetadataType, Product, Range
+    from sqlalchemy import ClauseElement, CursorResult, Label, Result, Row, Select
+    from sqlalchemy.sql import ColumnElement
+
     from cubedash.summary._extents import PgDocField
 
 
