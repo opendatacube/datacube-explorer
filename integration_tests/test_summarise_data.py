@@ -611,6 +611,11 @@ def test_cubedash_gen_refresh(
         "Product sequence was incremented without any new products being added."
     )
 
+    # Refresh with non-initialized store.
+    run_generate("--drop-database")
+    run_generate("--all", expect_success=False)
+    run_generate("--init")
+
 
 def test_computed_regions_match_those_summarised(summary_store: SummaryStore) -> None:
     """
