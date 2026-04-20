@@ -555,7 +555,9 @@ class SummaryStore:
             sampled_dataset_count=sample_datasets_size,
         )
         result = self.e_index.find_fixed_columns(
-            first_dataset_fields, candidate_fields, dataset_samples
+            first_dataset_fields,
+            candidate_fields,  # type:ignore[arg-type]
+            dataset_samples,
         ).fetchall()
         assert len(result) == 1
 

@@ -470,7 +470,8 @@ def datetime_from_metadata(dataset: Dataset) -> datetime:
         t = properties.get("datetime") or properties.get("dtr:start_datetime")
         return default_utc(dc_utils.parse_time(t))
     # stick with center time for EO datasets
-    return default_utc(dataset.center_time)
+    # FIXME: dataset.center_time can be None.
+    return default_utc(dataset.center_time)  # type:ignore[arg-type]
 
 
 def as_rich_json(o):

@@ -350,9 +350,10 @@ def _polygon_chain(valid_geometries: Iterable[TimePeriodOverview]) -> list:
     polygonlist = []
     for poly in valid_geometries:
         if type(poly.footprint_geometry) is MultiPolygon:
+            assert poly.footprint_geometry is not None  # For type checker.
             for p in list(poly.footprint_geometry.geoms):
                 polygonlist.append(p)
-        else:
+        elif poly.footprint_geometry is not None:
             polygonlist.append(poly.footprint_geometry)
     return polygonlist
 
