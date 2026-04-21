@@ -94,7 +94,7 @@ class GenerateResult(Enum):
     NO_CHANGES = 1
     # Exception was thrown
     ERROR = 4
-    # A unsupported product (eg. Unsupported CRS)
+    # An unsupported product (e.g. Unsupported CRS)
     UNSUPPORTED = 5
 
 
