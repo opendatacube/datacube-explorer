@@ -487,7 +487,6 @@ def inject_globals():
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
         "datacube_metadata_types": list(_model.STORE.all_metadata_types()),
-        "current_time": datetime.now(timezone.utc),
         "datacube_version": datacube.__version__,
         "app_version": cubedash.__version__,
         "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
