@@ -50,7 +50,7 @@ from cubedash.summary._extents import (
 )
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
-DEFAULT_TTL = 90
+DEFAULT_TTL = 180
 
 _DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
 
