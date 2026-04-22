@@ -52,8 +52,6 @@ from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
 DEFAULT_TTL = 180
 
-_DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
-
 _LOG = structlog.stdlib.get_logger()
 
 # The default grouping epsg code to use on init of a new Explorer schema.
