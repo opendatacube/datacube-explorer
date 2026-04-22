@@ -1,4 +1,5 @@
-from ._extents import RegionInfo, UnsupportedWKTProductCRSError
+from ._errors import UnsupportedWKTProductCRSError
+from ._extents import RegionInfo
 from ._model import TimePeriodOverview
 from ._stores import (
     DatasetItem,

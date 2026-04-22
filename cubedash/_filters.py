@@ -5,7 +5,6 @@ Common global filters for templates.
 import calendar
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 
 import flask
 import structlog
@@ -16,7 +15,8 @@ from markupsafe import Markup
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from shapely.geometry import MultiPolygon
 
-from . import _model, _utils
+from cubedash.summary.defaults import DEFAULT_GROUPING_TIMEZONE
+
 from . import _utils as utils
 
 # How far to step the number when the user hits up/down.
@@ -47,7 +47,7 @@ def _get_metadata_center_time(dataset):
 
 @bp.app_template_filter("localised_metadata_center_time")
 def _get_localised_metadata_center_time(date):
-    return date.astimezone(ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE))
+    return date.astimezone(DEFAULT_GROUPING_TIMEZONE)
 
 
 @bp.app_template_filter("printable_dataset")
@@ -221,7 +221,7 @@ def _max_val(ls):
 
 @bp.app_template_filter("product_license_link")
 def _product_license(product: Product):
-    license_ = _utils.product_license(product)
+    license_ = utils.product_license(product)
 
     if license_ is None:
         return "-"
@@ -273,7 +273,7 @@ def _field_step(field: Field):
 
 @bp.app_template_filter("only_alnum")
 def only_alphanumeric(s):
-    return _utils.only_alphanumeric(s)
+    return utils.only_alphanumeric(s)
 
 
 @bp.app_template_filter("timesince")

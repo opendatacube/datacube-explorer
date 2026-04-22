@@ -1,11 +1,11 @@
 from datetime import date, datetime
-from zoneinfo import ZoneInfo
 
 import flask
 import structlog
 from flask import Blueprint, abort, request
 
 from cubedash import _utils
+from cubedash.summary.defaults import DEFAULT_GROUPING_TIMEZONE
 
 from . import _model
 from ._utils import as_geojson, as_json
@@ -34,9 +34,7 @@ def datasets_geojson(
     if limit > hard_limit:
         limit = hard_limit
 
-    time = _utils.as_time_range(
-        year, month, day, tzinfo=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE)
-    )
+    time = _utils.as_time_range(year, month, day, tzinfo=DEFAULT_GROUPING_TIMEZONE)
 
     return as_geojson(
         {

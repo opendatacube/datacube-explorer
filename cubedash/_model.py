@@ -24,7 +24,7 @@ from cubedash import _monitoring
 from cubedash.summary import SummaryStore, TimePeriodOverview
 from cubedash.summary._extents import RegionInfo
 from cubedash.summary._stores import ProductSummary
-from cubedash.summary._summarise import DEFAULT_TIMEZONE
+from cubedash.summary.defaults import DEFAULT_TIMEZONE
 
 from . import _utils as utils
 
@@ -57,10 +57,8 @@ if os.getenv("SENTRY_DSN"):
 
 cache = Cache()
 
-DEFAULT_GROUPING_TIMEZONE = DEFAULT_TIMEZONE
-
 # Thread and multiprocess safe.
-# As long as we don't run queries (ie. open db connections) before forking
+# As long as we don't run queries (i.e. open db connections) before forking
 # (hence validate=False).
 STORE: SummaryStore = SummaryStore.create(
     index=index_connect(application_name=NAME, validate_connection=False),

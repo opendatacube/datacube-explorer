@@ -1,4 +1,3 @@
-import os
 from collections import Counter
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -9,24 +8,10 @@ from geoalchemy2 import shape as geo_shape
 
 from cubedash import _utils
 from cubedash.index import ExplorerIndex
-from cubedash.summary import TimePeriodOverview
+from cubedash.summary._model import TimePeriodOverview
+from cubedash.summary.defaults import DEFAULT_TIMEZONE
 
 _LOG = structlog.stdlib.get_logger()
-
-
-# Get default timezone via CUBEDASH_SETTINGS specified config file if it exists,
-# otherwise default to Australia/Darwin
-default_timezone = "Australia/Darwin"
-settings_file = os.environ.get("CUBEDASH_SETTINGS", "settings.env.py")
-try:
-    with open(os.path.join(os.getcwd(), settings_file)) as config_file:
-        for line in config_file:
-            val = line.rstrip().split("=")
-            if val[0] == "CUBEDASH_DEFAULT_TIMEZONE":
-                default_timezone = val[1]
-except FileNotFoundError:
-    pass
-DEFAULT_TIMEZONE = default_timezone
 
 
 class Summariser:

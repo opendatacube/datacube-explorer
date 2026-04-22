@@ -1,7 +1,7 @@
 import decimal
 import re
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfoNotFoundError
 
 import datacube
 import flask
@@ -25,6 +25,7 @@ from cubedash._model import ProductWithSummary
 from cubedash._utils import default_utc
 from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
+from cubedash.summary.defaults import DEFAULT_GROUPING_TIMEZONE
 
 from . import _model, _stac
 from . import _utils as utils
@@ -166,9 +167,7 @@ def search_page(
         year_selector_summary,
         time_selector_summary,
     ) = _load_product(product_name, year, month, day)
-    time_range = utils.as_time_range(
-        year, month, day, tzinfo=ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE)
-    )
+    time_range = utils.as_time_range(year, month, day, tzinfo=DEFAULT_GROUPING_TIMEZONE)
 
     args = MultiDict(flask.request.args)
     try:
@@ -490,7 +489,7 @@ def inject_globals():
         "current_time": datetime.now(timezone.utc),
         "datacube_version": datacube.__version__,
         "app_version": cubedash.__version__,
-        "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
+        "grouping_timezone": DEFAULT_GROUPING_TIMEZONE,
         "last_updated_time": last_updated,
         "explorer_instance_title": current_app.config.get("CUBEDASH_INSTANCE_TITLE")
         or current_app.config.get("STAC_ENDPOINT_TITLE", ""),
