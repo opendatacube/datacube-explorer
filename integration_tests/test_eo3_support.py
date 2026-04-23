@@ -280,6 +280,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
         "stac_version": "1.1.0",
         "stac_extensions": [
             "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+            "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
             "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
             "https://stac-extensions.github.io/view/v1.0.0/schema.json",
         ],
@@ -441,6 +442,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": 0,
+                        "data_type": "uint8",
+                        "unit": "1",
+                    },
+                ],
             },
             "nbar_blue": {
                 "title": "nbar_blue",
@@ -481,6 +489,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "nbart_red": {
                 "title": "nbart_red",
@@ -500,6 +515,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
                 ],
             },
             "nbar_green": {
@@ -540,6 +562,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
                 ],
             },
             "nbar_swir_1": {
@@ -601,6 +630,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "nbart_swir_1": {
                 "title": "nbart_swir_1",
@@ -620,6 +656,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
                 ],
             },
             "nbart_swir_2": {
@@ -642,6 +685,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": -999,
+                        "data_type": "int16",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_time_delta": {
                 "title": "oa_time_delta",
@@ -662,6 +712,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_solar_zenith": {
@@ -684,6 +741,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_exiting_angle": {
                 "title": "oa_exiting_angle",
@@ -704,6 +768,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_solar_azimuth": {
@@ -726,6 +797,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_incident_angle": {
                 "title": "oa_incident_angle",
@@ -746,6 +824,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_relative_slope": {
@@ -768,6 +853,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_satellite_view": {
                 "title": "oa_satellite_view",
@@ -788,6 +880,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_nbar_contiguity": {
@@ -831,6 +930,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": 255,
+                        "data_type": "uint8",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_relative_azimuth": {
                 "title": "oa_relative_azimuth",
@@ -851,6 +957,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_azimuthal_exiting": {
@@ -873,6 +986,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_satellite_azimuth": {
                 "title": "oa_satellite_azimuth",
@@ -893,6 +1013,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
                 ],
             },
             "oa_azimuthal_incident": {
@@ -915,6 +1042,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     1.0,
                 ],
+                "raster:bands": [
+                    {
+                        "nodata": float("nan"),
+                        "data_type": "float32",
+                        "unit": "1",
+                    },
+                ],
             },
             "oa_combined_terrain_shadow": {
                 "title": "oa_combined_terrain_shadow",
@@ -935,6 +1069,13 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                     0.0,
                     0.0,
                     1.0,
+                ],
+                "raster:bands": [
+                    {
+                        "nodata": 255,
+                        "data_type": "uint8",
+                        "unit": "1",
+                    },
                 ],
             },
             "checksum:sha1": {

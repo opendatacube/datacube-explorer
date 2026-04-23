@@ -1,6 +1,6 @@
 import json
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from datetime import time as dt_time
 from functools import partial
@@ -9,13 +9,8 @@ from typing import Any, TypeAlias
 import flask
 import pystac
 import structlog
-from datacube.index.eo3 import is_doc_eo3
-from datacube.model import Range
-from datacube.utils import DocReader, parse_time
-from eodatasets3 import serialise
-from eodatasets3 import stac as eo3stac
-from eodatasets3.model import AccessoryDoc, DatasetDoc, MeasurementDoc, ProductDoc
-from eodatasets3.properties import Eo3Dict
+from datacube.metadata import ds2stac
+from datacube.utils import parse_time
 from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, Item, ItemCollection, Link, STACObject
 from shapely.geometry import shape
@@ -158,110 +153,97 @@ def url_for(*args, **kwargs):
 # Conversions
 
 
-def _band_to_measurement(band: Mapping[str, Any]) -> MeasurementDoc:
-    """Create EO3 measurement from an EO1 band dict"""
-    return MeasurementDoc(
-        path=band.get("path", "Unknown"),
-        band=band.get("band"),
-        layer=band.get("layer"),
-        name=band.get("name"),
-        alias=band.get("label"),
-    )
-
-
 def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     """
     Get a dict corresponding to a stac item
     """
     ds = dataset.odc_dataset
-
-    if ds is not None and is_doc_eo3(ds.metadata_doc):
-        dataset_doc = serialise.from_doc(ds.metadata_doc, skip_validation=True)
-        dataset_doc.locations = None if ds.uri is None else [ds.uri]
-
-        # Geometry is optional in eo3, and needs to be calculated from grids if missing.
-        # We can use ODC's own calculation that happens on index.
-        if dataset_doc.geometry is None:
-            fallback_extent = ds.extent
-            if fallback_extent is not None:
-                dataset_doc.geometry = fallback_extent.geom
-                dataset_doc.crs = str(ds.crs)
-
-        if ds.sources:
-            dataset_doc.lineage = {
-                classifier: [d.id] for classifier, d in ds.sources.items()
-            }
-        # Does ODC still put legacy lineage into indexed documents?
-        elif ("source_datasets" in dataset_doc.lineage) and len(
-            dataset_doc.lineage
-        ) == 1:
-            # From old to new lineage type.
-            # FIXME: remove type ignores and fix the issues.
-            dataset_doc.lineage = {  # type: ignore[misc]
-                classifier: [dataset["id"]]  # type: ignore[has-type]
-                for classifier, dataset in dataset_doc.lineage["source_datasets"]
-            }
-
-    else:
-        # eo1 to eo3
-
-        dataset_doc = DatasetDoc(
-            id=dataset.dataset_id,
-            # Filled-in below.
-            label=None,
-            product=ProductDoc(dataset.product_name),
-            locations=None if ds is None or ds.uri is None else [ds.uri],
-            crs=str(dataset.geometry.crs) if dataset.geometry is not None else None,
-            geometry=dataset.geometry.geom if dataset.geometry is not None else None,
-            grids=None,
-            # TODO: Convert these from stac to eo3
-            properties=Eo3Dict(
-                {
-                    "datetime": utc(dataset.center_time),
-                    **(dict(_build_properties(ds.metadata)) if ds else {}),
-                    "odc:processing_datetime": utc(dataset.creation_time),
-                }
-            ),
-            measurements=(
-                {name: _band_to_measurement(b) for name, b in ds.measurements.items()}
-                if ds is not None
-                else {}
-            ),
-            accessories=(
-                _accessories_from_eo1(ds.metadata_doc) if ds is not None else {}
-            ),
-            # TODO: Fill in lineage. The datacube API only gives us full datasets, which is
-            #       expensive. We only need a list of IDs here.
-            lineage={},
-        )
-
-    if dataset_doc.label is None and ds is not None:
-        dataset_doc.label = _utils.dataset_label(ds)
-
-    item = eo3stac.to_pystac_item(
-        dataset=dataset_doc,
-        stac_item_destination_url=url_for(
-            ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
-        ),
-        odc_dataset_metadata_url=url_for("dataset.raw_doc", id_=dataset.dataset_id),
-        explorer_base_url=url_for("pages.default_redirect"),
+    self_url = url_for(
+        ".item", collection=dataset.product_name, dataset_id=dataset.dataset_id
     )
+    ds_yaml_url = url_for("dataset.raw_doc", id_=dataset.dataset_id)
+
+    # TODO: improve telemetry handling (must be coupled with ds2stac update)
+    if ds is None or ds._gs is None:
+        # Since we'd have to cobble together a metadata_doc anyway,
+        # creating a pystac.Item directly is probably easier
+        item = pystac.Item(
+            id=str(dataset.dataset_id),
+            geometry=dataset.geom_geojson,
+            bbox=list(dataset.bbox) if dataset.bbox is not None else None,
+            properties={
+                "created": utc(dataset.creation_time),
+                "proj:code": str(dataset.geometry.crs)
+                if dataset.geometry is not None
+                else None,
+            },
+            datetime=utc(dataset.center_time),
+            collection=dataset.product_name,
+            href=self_url,
+        )
+        item.links.extend(
+            [
+                Link(
+                    rel="collection",
+                    target=url_for(".collection", collection=dataset.product_name),
+                ),
+                Link(
+                    title="ODC Dataset YAML",
+                    rel="odc_yaml",
+                    media_type="text/yaml",
+                    target=ds_yaml_url,
+                ),
+                Link(
+                    title="ODC Product Overview",
+                    rel="product_overview",
+                    media_type="text/html",
+                    target=url_for(
+                        "pages.product_page", product_name=dataset.product_name
+                    ),
+                ),
+                Link(
+                    title="ODC Dataset Overview",
+                    rel="alternative",
+                    media_type="text/html",
+                    target=url_for(
+                        "dataset.dataset_full_page",
+                        product_name=dataset.product_name,
+                        id_=dataset.dataset_id,
+                    ),
+                ),
+            ]
+        )
+    else:
+        if not ds.is_eo3 and dataset.geometry is not None:
+            # TODO: needs a rethink/deeper dive - can we do this without projecting to 4326
+            ds.metadata_doc["grid_spatial"]["projection"]["spatial_reference"] = str(
+                dataset.geometry.crs
+            )
+            ds.metadata_doc["grid_spatial"]["projection"]["valid_data"] = (
+                dataset.geom_geojson
+            )
+        item = ds2stac(
+            dataset=ds,
+            base_url=url_for("pages.default_redirect"),
+            self_url=self_url,
+            ds_yaml_url=ds_yaml_url,
+            asset_location=ds.uri,
+        )
+        # add canonical ref pointing to the JSON file on s3
+        if ds.uri:
+            media_type = "application/json" if ds.uri.endswith("json") else "text/yaml"
+            item.links.append(
+                Link(
+                    rel="canonical",
+                    media_type=media_type,
+                    target=_utils.as_resolved_remote_url(None, ds.uri),
+                )
+            )
 
     # Add the region code that Explorer inferred.
     # (Explorer's region codes predate ODC's and support
     #  many more products.
     item.properties["cubedash:region_code"] = dataset.region_code
-
-    # add canonical ref pointing to the JSON file on s3
-    if ds is not None and ds.uri:
-        media_type = "application/json" if ds.uri.endswith("json") else "text/yaml"
-        item.links.append(
-            Link(
-                rel="canonical",
-                media_type=media_type,
-                target=_utils.as_resolved_remote_url(None, ds.uri),
-            )
-        )
 
     return item
 
@@ -308,91 +290,6 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
     )
 
     return stac_collection
-
-
-def _accessories_from_eo1(metadata_doc: dict) -> dict[str, AccessoryDoc]:
-    """Create and EO3 accessories section from an EO1 document"""
-    accessories = {}
-
-    # Browse image -> thumbnail
-    if "browse" in metadata_doc:
-        for name, browse in metadata_doc["browse"].items():
-            accessories[f"thumbnail:{name}"] = AccessoryDoc(
-                path=browse["path"], name=name
-            )
-
-    # Checksum
-    if "checksum_path" in metadata_doc:
-        accessories["checksum:sha1"] = AccessoryDoc(
-            path=metadata_doc["checksum_path"], name="checksum:sha1"
-        )
-    return accessories
-
-
-def field_platform(key, value):
-    yield "eo:platform", value.lower().replace("_", "-")
-
-
-def field_instrument(key, value):
-    yield "eo:instrument", value
-
-
-def field_path_row(key, value):
-    # Path/Row fields are ranges in datacube but 99% of the time
-    # they are a single value
-    # (they are ranges in telemetry products)
-    # Stac doesn't accept a range here, so we'll skip it in those products,
-    # but we can handle the 99% case when lower==higher.
-    if key == "sat_path":
-        kind = "landsat:wrs_path"
-    elif key == "sat_row":
-        kind = "landsat:wrs_row"
-    else:
-        raise ValueError(f"Path/row kind {key!r}")
-
-    # If there's only one value in the range, return it.
-    if isinstance(value, Range):
-        if value.end is None or value.begin == value.end:
-            # Standard stac
-            yield kind, int(value.begin)
-        else:
-            # Our questionable output. Only present in telemetry products?
-            yield f"odc:{key}", [value.begin, value.end]
-
-
-# Other Property examples:
-# collection	"landsat-8-l1"
-# eo:gsd	15
-# eo:platform	"landsat-8"
-# eo:instrument	"OLI_TIRS"
-# eo:off_nadir	0
-# datetime	"2019-02-12T19:26:08.449265+00:00"
-# eo:sun_azimuth	-172.29462212
-# eo:sun_elevation	-6.62176054
-# eo:cloud_cover	-1
-# eo:row	"135"
-# eo:column	"044"
-# landsat:product_id	"LC08_L1GT_044135_20190212_20190212_01_RT"
-# landsat:scene_id	"LC80441352019043LGN00"
-# landsat:processing_level	"L1GT"
-# landsat:tier	"RT"
-
-_STAC_PROPERTY_MAP = {
-    "platform": field_platform,
-    "instrument": field_instrument,
-    # "measurements": field_bands,
-    "sat_path": field_path_row,
-    "sat_row": field_path_row,
-}
-
-
-def _build_properties(d: DocReader):
-    for key, val in d.fields.items():
-        if val is None:
-            continue
-        converter = _STAC_PROPERTY_MAP.get(key)
-        if converter:
-            yield from converter(key, val)
 
 
 # Search arguments

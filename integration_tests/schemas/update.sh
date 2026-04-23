@@ -10,6 +10,8 @@ declare -A exts=(["eo"]="v1.1.0" \
   ["projection"]="v2.0.0" \
   ["raster"]="v1.1.0" \
   ["view"]="v1.0.0" \
+  ["sat"]="v1.1.0" \
+  ["sar"]="v1.3.0" \
 )
 
 function get() {

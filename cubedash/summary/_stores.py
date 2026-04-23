@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo
 
 import structlog
 from cachetools.func import ttl_cache
-from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
@@ -34,6 +33,7 @@ except ModuleNotFoundError:
 from datacube.index import Index
 from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
+from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from datacube.model import Dataset, Field, MetadataType, Product, Range
 from odc.geo.geom import Geometry
 

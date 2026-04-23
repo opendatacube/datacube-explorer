@@ -16,7 +16,6 @@ dependencies = [
     "psycopg[c]",
     "pygeofilter>=0.2.2",
     "pyproj",
-    "pystac",
     "python-rapidjson",
     "shapely",
     "sqlalchemy>=1.4",

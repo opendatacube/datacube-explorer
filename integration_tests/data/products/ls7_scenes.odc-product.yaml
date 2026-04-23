@@ -19,6 +19,47 @@ metadata:
   product_type: level1
   format:
     name: GeoTIFF
+measurements:
+  - name: '1'
+    dtype: int16
+    units: '1'
+    nodata: -999
+    aliases: [band_1, blue]
+  - name: '2'
+    dtype: int16
+    units: '1'
+    nodata: -999
+    aliases: [band_2, green]
+  - name: '3'
+    dtype: int16
+    units: '1'
+    nodata: -999
+    aliases: [band_3, red]
+  - name: '4'
+    dtype: int16
+    units: '1'
+    nodata: -999
+    aliases: [band_4, nir]
+  - name: '5'
+    dtype: int16
+    units: '1'
+    nodata: -999
+  - name: '7'
+    dtype: int16
+    units: '1'
+    nodata: -999
+  - name: '8'
+    dtype: int16
+    units: '1'
+    nodata: -999
+  - name: 6_vcid_1
+    dtype: int16
+    units: '1'
+    nodata: -999
+  - name: 6_vcid_2
+    dtype: int16
+    units: '1'
+    nodata: -999
 ---
 name: ls7_nbar_scene
 description: Landsat 7 NBAR 25 metre

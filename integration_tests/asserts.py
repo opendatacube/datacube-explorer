@@ -67,9 +67,9 @@ def assert_matching_eo3(actual_doc: dict, expected_doc: dict) -> None:
 
     # Do the remaining fields match?
     # (note that we have installed a nicer dict comparison in our pytest config)
-    assert actual_doc == expected_doc, "\n".join(
-        format_doc_diffs(actual_doc, expected_doc)
-    )
+    # Use DeepDiff for all comparisons since we expect documents may contain NaNs.
+    diff = DeepDiff(actual_doc, expected_doc, ignore_nan_inequality=True)
+    assert not diff, "\n".join(format_doc_diffs(actual_doc, expected_doc))
 
 
 def get_geojson(client: FlaskClient, url: str) -> dict:
@@ -366,13 +366,13 @@ def format_doc_diffs(left: dict, right: dict) -> list[str]:
 
     Returns a list of lines to print.
     """
-    doc_diffs = DeepDiff(left, right, significant_digits=6)
+    doc_diffs = DeepDiff(left, right, significant_digits=6, ignore_nan_inequality=True)
     out = []
     if doc_diffs:
         out.append("Documents differ:")
     else:
         out.append("Doc differs in minor float precision:")
-        doc_diffs = DeepDiff(left, right)
+        doc_diffs = DeepDiff(left, right, ignore_nan_inequality=True)
 
     out.append(indent(pformat(doc_diffs), " " * 4))
 
