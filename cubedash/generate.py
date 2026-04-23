@@ -57,11 +57,12 @@ import collections
 import multiprocessing
 import re
 import sys
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
 from textwrap import dedent
+from typing import Literal
 
 import click
 import structlog
@@ -103,9 +104,8 @@ class GenerateSettings:
 
 # pylint: disable=broad-except
 def generate_report(
-    item: tuple[str, GenerateSettings, str],
+    product_name: str, settings: GenerateSettings, grouping_time_zone: str
 ) -> tuple[str, GenerateResult, TimePeriodOverview | None]:
-    product_name, settings, grouping_time_zone = item
     log = _LOG.bind(product=product_name)
 
     started_years = set()
@@ -177,43 +177,35 @@ def run_generation(
 
     user_message("Generating product summaries...")
 
-    def on_complete(
-        product_name: str, result: GenerateResult, summary: TimePeriodOverview | None
-    ) -> None:
-        counts[result] += 1
-        result_color = {
-            GenerateResult.ERROR: "red",
-            GenerateResult.UNSUPPORTED: "yellow",
-            GenerateResult.CREATED: "blue",
-            GenerateResult.UPDATED: "green",
-        }.get(result)
-        extra = ""
-        if summary is not None:
-            extra = f" (contains {summary.dataset_count} total datasets)"
+    color: Mapping[GenerateResult, Literal["red", "yellow", "blue", "green"]] = {
+        GenerateResult.ERROR: "red",
+        GenerateResult.UNSUPPORTED: "yellow",
+        GenerateResult.CREATED: "blue",
+        GenerateResult.UPDATED: "green",
+    }
 
-        user_message(
-            f"{style(product_name, fg=result_color)} {result.name.lower()}{extra}"
-        )
-
-    # If one worker, avoid any subprocesses/forking.
-    # This makes test tracing far easier.
-    if workers == 1:
-        for p in products:
-            on_complete(*generate_report((p.name, settings, grouping_time_zone)))
-    else:
-        # Shut down pool nicely to keep pytest-cov happy.
-        # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
-        pool = multiprocessing.Pool(workers)
-        try:
-            for product_name, result, summary in pool.imap_unordered(
-                generate_report,
-                ((p.name, settings, grouping_time_zone) for p in products),
-                chunksize=1,
-            ):
-                on_complete(product_name, result, summary)
-        finally:
-            pool.close()
-            pool.join()
+    # Shut down pool nicely to keep pytest-cov happy.
+    # https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html#if-you-use-multiprocessing-pool
+    pool = multiprocessing.Pool(workers)
+    try:
+        results = [
+            pool.apply_async(generate_report, (p.name, settings, grouping_time_zone))
+            for p in products
+        ]
+        for res in results:
+            product_name, result, summary = res.get()
+            counts[result] += 1
+            extra = (
+                ""
+                if summary is None
+                else f" (contains {summary.dataset_count} total datasets)"
+            )
+            user_message(
+                f"{style(product_name, fg=color.get(result))} {result.name.lower()}{extra}"
+            )
+    finally:
+        pool.close()
+        pool.join()
 
     status_messages = ", ".join(
         f"{count_} {status.name.lower()}" for status, count_ in counts.items()
