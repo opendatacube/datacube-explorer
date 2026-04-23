@@ -50,9 +50,7 @@ from cubedash.summary._extents import (
 )
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
-DEFAULT_TTL = 90
-
-_DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
+DEFAULT_TTL = 180
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -94,7 +92,7 @@ class GenerateResult(Enum):
     NO_CHANGES = 1
     # Exception was thrown
     ERROR = 4
-    # A unsupported product (eg. Unsupported CRS)
+    # An unsupported product (e.g. Unsupported CRS)
     UNSUPPORTED = 5
 
 
@@ -555,7 +553,9 @@ class SummaryStore:
             sampled_dataset_count=sample_datasets_size,
         )
         result = self.e_index.find_fixed_columns(
-            first_dataset_fields, candidate_fields, dataset_samples
+            first_dataset_fields,
+            candidate_fields,  # type:ignore[arg-type]
+            dataset_samples,
         ).fetchall()
         assert len(result) == 1
 

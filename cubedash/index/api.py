@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from datetime import date, datetime, timedelta
@@ -13,6 +15,10 @@ from sqlalchemy.sql import ColumnElement
 from sqlalchemy.sql.elements import ClauseElement, Label
 
 from cubedash.summary._schema import CUBEDASH_SCHEMA
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from cubedash.summary._extents import PgDocField
 
 
 class EmptyDbError(Exception):
@@ -181,7 +187,7 @@ class ExplorerAbstractIndex(ABC):
     def find_fixed_columns(
         self,
         field_values: dict,
-        candidate_fields: Sequence[tuple[str, Field]],
+        candidate_fields: Sequence[tuple[str, PgDocField]],
         sample_ids: Iterable[tuple],
     ) -> Result: ...
 

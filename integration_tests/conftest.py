@@ -12,7 +12,8 @@ from datacube import Datacube
 from flask.testing import FlaskClient
 from structlog import DropEvent
 
-from cubedash import _model, create_app, generate, logs
+from cubedash import _model, generate, logs
+from cubedash.startup_utils import create_app
 from cubedash.summary import SummaryStore
 from cubedash.summary._schema import METADATA as CUBEDASH_METADATA
 from cubedash.warmup import find_examples_of_all_public_urls

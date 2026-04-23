@@ -76,8 +76,8 @@ def cli(
     event_log_file: str,
     verbose: int,
 ) -> None:
-    from cubedash import create_app
     from cubedash.logs import init_logging
+    from cubedash.startup_utils import create_app
 
     init_logging(
         open(event_log_file, "ab") if event_log_file else None, verbosity=verbose

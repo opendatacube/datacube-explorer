@@ -15,7 +15,7 @@ its existing settings.
 
 Install Explorer:
 
-    pip install datacube-explorer
+    pip install datacube-explorer[webserver]
 
 Generate summaries for all of your products:
 
@@ -68,7 +68,7 @@ A `cubedash-run` command is available to run Explorer locally:
 But Explorer can be run using any typical Python WSGI server, for example [gunicorn](https://gunicorn.org/):
 
     pip install gunicorn
-    gunicorn -b '127.0.0.1:8080' -w 4 cubedash:create_app()
+    gunicorn -b '127.0.0.1:8080' -w 4 cubedash.startup_utils:create_app()
 
 Products will begin appearing one-by-one as the summaries are generated in the
 background.  If impatient, you can manually navigate to a product using
@@ -147,7 +147,7 @@ Git)
 
 ### How can I configure the deployment?
 
-refer to [deployment instructions](https://datacube-explorer.readthedocs.io/en/latest/deploying.html) and [app-config](https://datacube-explorer.readthedocs.io/en/latest/config.html)
+Refer to [deployment instructions](https://datacube-explorer.readthedocs.io/en/latest/deploying.html) and [app-config](https://datacube-explorer.readthedocs.io/en/latest/config.html)
 
 ### How do I modify the CSS/Javascript?
 
@@ -292,4 +292,4 @@ The `filter` extension supports both `cql2-text` and `cql2-json` for both GET an
 
 ## Release process
 
-Create a release using the Github release interface.
+Create a release using the GitHub release interface.

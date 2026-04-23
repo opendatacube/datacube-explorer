@@ -6,17 +6,13 @@ authors = [
     {name = "Geoscience Australia", email = "earth.observation@ga.gov.au"},
 ]
 dependencies = [
-    "Flask-Caching",
     "cachetools",
     "click>=8.3.2", # Tests require 8.3.2 to work.
     "datacube[postgres]>=1.9.17,<1.10.0",
     "eodatasets3>=1.9",
     "fiona>=1.10.0",
-    "flask",
-    "flask-cors",
-    "flask-themer>=1.4.3",
-    "jinja2",
-    "markupsafe",
+    "geoalchemy2>=0.8",
+    "odc-geo",
     "psycopg[c]",
     "pygeofilter>=0.2.2",
     "python-rapidjson",
@@ -60,6 +56,7 @@ dev = [
 [project.optional-dependencies]
 deployment = [
     "datacube[performance]",
+    "datacube-explorer[webserver]",
     "gunicorn[gevent,setproctitle]>=22.0.0",
     "sentry-sdk[flask]",
     # Monitoring.
@@ -83,6 +80,15 @@ test = [
     "types-cachetools",
     "types-docker",
     "types-pyyaml"
+]
+webserver = [
+    "flask",
+    "flask-caching",
+    "flask-cors",
+    "flask-themer>=1.4.3",
+    "jinja2",
+    "markupsafe",
+    "pystac",
 ]
 
 [project.scripts]
