@@ -163,6 +163,7 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
     )
     ds_yaml_url = url_for("dataset.raw_doc", id_=dataset.dataset_id)
 
+    # TODO: improve telemetry handling (must be coupled with ds2stac update)
     if ds is None or ds._gs is None:
         # Since we'd have to cobble together a metadata_doc anyway,
         # creating a pystac.Item directly is probably easier
