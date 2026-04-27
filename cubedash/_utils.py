@@ -461,7 +461,7 @@ def dataset_created(dataset: Dataset) -> datetime | None:
     return None
 
 
-def datetime_from_metadata(dataset: Dataset) -> datetime:
+def datetime_from_metadata(dataset: Dataset) -> datetime | None:
     """
     This function shares similar logic to datetime_expression (above),
     but retrieves values for the flask template.
@@ -475,8 +475,7 @@ def datetime_from_metadata(dataset: Dataset) -> datetime:
         t = properties.get("datetime") or properties.get("dtr:start_datetime")
         return default_utc(dc_utils.parse_time(t))
     # stick with center time for EO datasets
-    # FIXME: dataset.center_time can be None.
-    return default_utc(dataset.center_time)  # type:ignore[arg-type]
+    return None if dataset.center_time is None else default_utc(dataset.center_time)
 
 
 def as_rich_json(o):
