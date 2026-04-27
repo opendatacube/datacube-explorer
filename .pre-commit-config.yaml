@@ -6,7 +6,7 @@ repos:
     # Ensure uv.lock is up-to-date if pyproject.toml has changed.
     - id: uv-lock
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.11
+    rev: v0.15.12
     hooks:
     - id: ruff-check
       args: [--fix, --show-fixes, --output-format, grouped]
