@@ -2,10 +2,15 @@
 Tests that indexes DEA C3 Summary products region tiles
 """
 
+from __future__ import annotations
+
 import pytest
-from flask.testing import FlaskClient
 
 from integration_tests.asserts import check_dataset_count, get_html
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
 
 METADATA_TYPES = [
     "metadata/eo3_metadata.yaml",

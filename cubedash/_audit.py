@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import time
-from collections.abc import Generator
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import flask
 import structlog
@@ -10,6 +11,11 @@ from flask import Blueprint, Response, redirect, url_for
 
 from . import _model
 from . import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from datetime import datetime
 
 _LOG = structlog.stdlib.get_logger()
 bp = Blueprint("audit", __name__)

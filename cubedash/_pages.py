@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import decimal
 import re
 from datetime import datetime, timedelta, timezone
@@ -6,7 +8,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import datacube
 import flask
 import structlog
-from datacube.model import Product, Range
+from datacube.model import Range
 from datacube.scripts.dataset import build_dataset_info
 from flask import (
     Blueprint,
@@ -21,13 +23,18 @@ from sqlalchemy.exc import DataError, ProgrammingError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
-from cubedash._model import ProductWithSummary
 from cubedash._utils import default_utc
-from cubedash.summary import TimePeriodOverview
-from cubedash.summary._stores import ProductSummary
 
 from . import _model, _stac
 from . import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.model import Product
+
+    from cubedash._model import ProductWithSummary
+    from cubedash.summary import TimePeriodOverview
+    from cubedash.summary._stores import ProductSummary
 
 bp = Blueprint("pages", __name__)
 
@@ -487,7 +494,6 @@ def inject_globals():
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
         "datacube_metadata_types": list(_model.STORE.all_metadata_types()),
-        "current_time": datetime.now(timezone.utc),
         "datacube_version": datacube.__version__,
         "app_version": cubedash.__version__,
         "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),

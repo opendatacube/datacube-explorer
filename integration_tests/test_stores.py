@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 import time
 from collections import Counter
@@ -7,8 +9,12 @@ import pytest
 from datacube.model import Range
 from shapely import geometry as geo
 
-from cubedash.summary import SummaryStore, TimePeriodOverview
+from cubedash.summary import TimePeriodOverview
 from cubedash.summary._stores import GenerateResult, ProductSummary, default_timezone
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from cubedash.summary import SummaryStore
 
 METADATA_TYPES = ["metadata/eo3_landsat_l1.odc-type.yaml"]
 PRODUCTS = ["products/l1_ls8_ga.odc-product.yaml"]

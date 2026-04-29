@@ -2,17 +2,22 @@
 Tests that load pages and check the contained text.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
 from datacube.model import Range
-from flask.testing import FlaskClient
 
 from cubedash._utils import datetime_from_metadata, default_utc
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import check_dataset_count, get_html
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 

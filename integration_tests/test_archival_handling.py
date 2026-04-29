@@ -5,10 +5,15 @@ while the other dataset has datetime outside of
 end_datetime and start_datetime range (deliberate test setup sample)
 """
 
+from __future__ import annotations
+
 import pytest
-from flask.testing import FlaskClient
 
 from integration_tests.asserts import check_dataset_count, get_html
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from flask.testing import FlaskClient
 
 METADATA_TYPES = ["metadata/eo3_landsat_ard.odc-type.yaml"]
 PRODUCTS = ["products/ga_ls7e_ard_3.odc-product.yaml"]

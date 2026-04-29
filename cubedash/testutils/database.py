@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import os
 import time
@@ -7,11 +9,12 @@ from pathlib import Path
 # There is a docker directory in the root, skip sorting that import until
 # this repository uses a src layout.
 import docker  # isort: skip
+
 import psycopg2
 import psycopg2.extensions
 import pytest
 from datacube import Datacube
-from datacube.cfg import ODCConfig, ODCEnvironment
+from datacube.cfg import ODCConfig
 from datacube.drivers.common_psql import drop_schema
 from datacube.drivers.postgis import _core as pgis_core
 from datacube.drivers.postgres import _core as pgres_core
@@ -21,6 +24,10 @@ from datacube.model import MetadataType
 from datacube.utils import read_documents
 from datacube.utils.documents import InvalidDocException, UnknownMetadataType
 from sqlalchemy import text
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datacube.cfg import ODCEnvironment
 
 GET_DB_FROM_ENV = "get-the-db-from-the-environment-variable"
 

@@ -3,9 +3,9 @@ from __future__ import annotations
 import functools
 import json
 import uuid
-from collections.abc import Generator, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any, TypeAlias
 
@@ -17,14 +17,11 @@ from datacube.drivers.postgis._fields import RangeDocField as PgisRangeDocField
 from datacube.drivers.postgres._fields import NativeField as PgresNativeField
 from datacube.drivers.postgres._fields import PgDocField as PgresDocField
 from datacube.drivers.postgres._fields import RangeDocField as PgresRangeDocField
-from datacube.model import Dataset, MetadataType, Product
 from geoalchemy2 import Geometry, WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
 from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
-from sqlalchemy.sql.elements import Label
 from sqlalchemy.types import TIMESTAMP
 from typing_extensions import override
 
@@ -34,7 +31,17 @@ from cubedash._utils import (
     infer_crs,
     jsonb_doc_expression,
 )
-from cubedash.index import ExplorerIndex
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from datetime import date
+
+    from datacube.model import Dataset, MetadataType, Product
+    from shapely.geometry.base import BaseGeometry
+    from sqlalchemy.sql.elements import Label
+
+    from cubedash.index import ExplorerIndex
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -269,7 +276,10 @@ def _select_dataset_extent_columns(
         and product.grid_spec
         and product.grid_spec.resolution
     ):
-        resolution = min(abs(r) for r in product.grid_spec.resolution)
+        res = product.grid_spec.resolution
+        resolution = min(
+            abs(r) for r in (res if isinstance(res, Iterable) else (res.x, res.y))
+        )
         footprint_expression = func.ST_SimplifyPreserveTopology(
             footprint_expression, resolution / 4
         )
@@ -497,8 +507,15 @@ class GridRegionInfo(RegionInfo):
         )
 
         # todo: look at grid_spec crs. Use it for defaults, conversion.
-        size_x, size_y = grid_spec.tile_size or (1000.0, 1000.0)
-        origin_x, origin_y = grid_spec.origin
+        # FIXME: grid_spec.tile_size and origin can be XY which is not iterable.
+        size_x, size_y = (
+            grid_spec.tile_size  # type: ignore[misc]
+            if grid_spec and grid_spec.tile_size
+            else (1000.0, 1000.0)
+        )
+        origin_x, origin_y = (
+            grid_spec.origin if grid_spec and grid_spec.origin else (0.0, 0.0)  # type: ignore[misc]
+        )
         return func.concat(
             func.floor((func.ST_X(center_point) - origin_x) / size_x).cast(String),
             "_",
@@ -507,12 +524,16 @@ class GridRegionInfo(RegionInfo):
 
     @override
     def dataset_region_code(self, dataset: Dataset) -> str | None:
-        tiles = [
-            tile
-            for tile, _ in dataset.product.grid_spec.tiles(
-                dataset.extent.centroid.boundingbox
-            )
-        ]
+        tiles = (
+            [
+                tile
+                for tile, _ in dataset.product.grid_spec.tiles(
+                    dataset.extent.centroid.boundingbox
+                )
+            ]
+            if dataset.extent and dataset.product.grid_spec
+            else []
+        )
         if not len(tiles) == 1:
             raise ValueError(
                 "Tiled dataset should only have one tile? "

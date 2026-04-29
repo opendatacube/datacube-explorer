@@ -15,7 +15,7 @@ its existing settings.
 
 Install Explorer:
 
-    pip install datacube-explorer
+    pip install datacube-explorer[webserver]
 
 Generate summaries for all of your products:
 
@@ -147,7 +147,7 @@ Git)
 
 ### How can I configure the deployment?
 
-refer to [deployment instructions](https://datacube-explorer.readthedocs.io/en/latest/deploying.html) and [app-config](https://datacube-explorer.readthedocs.io/en/latest/config.html)
+Refer to [deployment instructions](https://datacube-explorer.readthedocs.io/en/latest/deploying.html) and [app-config](https://datacube-explorer.readthedocs.io/en/latest/config.html)
 
 ### How do I modify the CSS/Javascript?
 
@@ -292,4 +292,4 @@ The `filter` extension supports both `cql2-text` and `cql2-json` for both GET an
 
 ## Release process
 
-Create a release using the Github release interface.
+Create a release using the GitHub release interface.

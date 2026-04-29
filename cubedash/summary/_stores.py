@@ -1,58 +1,63 @@
+from __future__ import annotations
+
 import math
 import re
 from collections import Counter
-from collections.abc import Generator, Iterable, Sequence
 from copy import copy
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, tzinfo
+from datetime import date, datetime, timedelta
 from enum import Enum, auto
 from itertools import groupby
 from typing import Any, Literal, Protocol
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import structlog
 from cachetools.func import ttl_cache
-from datacube.metadata._utils import EO3_TO_STAC_RENAMES
-from geoalchemy2 import WKBElement
 from geoalchemy2 import shape as geo_shape
 from geoalchemy2.shape import from_shape, to_shape
-from odc.geo import BoundingBox, MaybeCRS
 from pygeofilter.backends.sqlalchemy import to_filter
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
-from shapely.geometry.base import BaseGeometry
-from sqlalchemy import RowMapping, func, select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
 from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.sql import Select
 
 try:
     from cubedash._version import version as explorer_version
 except ModuleNotFoundError:
     explorer_version = "ci-test-pipeline"
-from datacube.index import Index
 from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
-from datacube.model import Dataset, Field, MetadataType, Product, Range
+from datacube.metadata._utils import EO3_TO_STAC_RENAMES
+from datacube.model import Range
 from odc.geo.geom import Geometry
 
 from cubedash import _utils
-from cubedash.index import EmptyDbError, ExplorerIndex
+from cubedash.index import EmptyDbError
 from cubedash.index.postgis import ExplorerPgisIndex
 from cubedash.index.postgres import ExplorerPgIndex
 from cubedash.summary import RegionInfo, TimePeriodOverview, _extents
-from cubedash.summary._extents import (
-    GridRegionInfo,
-    ProductArrival,
-    RegionSummary,
-    SceneRegionInfo,
-)
+from cubedash.summary._extents import ProductArrival, RegionSummary
 from cubedash.summary._summarise import DEFAULT_TIMEZONE, Summariser
 
-DEFAULT_TTL = 90
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable, Sequence
+    from datetime import tzinfo
+    from uuid import UUID
 
-_DEFAULT_REFRESH_OLDER_THAN = timedelta(hours=23)
+    from datacube.index import Index
+    from datacube.model import Dataset, Field, MetadataType, Product
+    from geoalchemy2 import WKBElement
+    from odc.geo import BoundingBox, MaybeCRS
+    from shapely.geometry.base import BaseGeometry
+    from sqlalchemy import RowMapping
+    from sqlalchemy.sql import Select
+
+    from cubedash.index import ExplorerIndex
+    from cubedash.summary._extents import GridRegionInfo, SceneRegionInfo
+
+DEFAULT_TTL = 180
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -94,7 +99,7 @@ class GenerateResult(Enum):
     NO_CHANGES = 1
     # Exception was thrown
     ERROR = 4
-    # A unsupported product (eg. Unsupported CRS)
+    # An unsupported product (e.g. Unsupported CRS)
     UNSUPPORTED = 5
 
 
@@ -307,7 +312,7 @@ class SummaryStore:
     @classmethod
     def create(
         cls, index: Index, log=_LOG, grouping_time_zone: str = DEFAULT_TIMEZONE
-    ) -> "SummaryStore":
+    ) -> SummaryStore:
         if not isinstance(index, (PostgisIndex, PostgresIndex)):
             raise ValueError(f"Cannot run explorer with index {index.name}")
         e_index = explorer_index(index)
@@ -555,7 +560,9 @@ class SummaryStore:
             sampled_dataset_count=sample_datasets_size,
         )
         result = self.e_index.find_fixed_columns(
-            first_dataset_fields, candidate_fields, dataset_samples
+            first_dataset_fields,
+            candidate_fields,  # type:ignore[arg-type]
+            dataset_samples,
         ).fetchall()
         assert len(result) == 1
 

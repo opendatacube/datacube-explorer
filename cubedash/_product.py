@@ -1,10 +1,14 @@
-from datetime import timedelta
+from __future__ import annotations
 
 import structlog
 from flask import Blueprint, Response, abort, redirect, url_for
 
 from cubedash import _model, _utils
 from cubedash import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datetime import timedelta
 
 _LOG = structlog.stdlib.get_logger()
 bp = Blueprint("product", __name__)
@@ -203,6 +207,7 @@ def _iso8601_duration(tdelta: timedelta) -> str:
     """
     Format a timedelta as an iso8601 duration
 
+    >>> from datetime import timedelta
     >>> _iso8601_duration(timedelta(seconds=0))
     'PT0S'
     >>> _iso8601_duration(timedelta(seconds=1))

@@ -1,4 +1,4 @@
-from uuid import UUID
+from __future__ import annotations
 
 import flask
 import structlog
@@ -6,6 +6,10 @@ from flask import Blueprint, abort, current_app, url_for
 
 from . import _model
 from . import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from uuid import UUID
 
 _LOG = structlog.stdlib.get_logger()
 bp = Blueprint("dataset", __name__)

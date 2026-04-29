@@ -11,6 +11,6 @@ services:
       - ./:/code
       - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
       - ./.docker/settings_docker.py:/code/settings.env.py
-    command: flask run --host 0.0.0.0
+    command: flask --app 'cubedash.startup_utils:create_app()' run --host 0.0.0.0
     ports:
       - "5000:5000"

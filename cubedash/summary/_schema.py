@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import structlog
 from geoalchemy2 import Geometry
 from sqlalchemy import MetaData, func, select, text
-from sqlalchemy.engine import Connection
 from sqlalchemy.sql.functions import GenericFunction
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Connection
 
 _LOG = structlog.stdlib.get_logger()
 

@@ -1,24 +1,33 @@
+from __future__ import annotations
+
 import json
 import re
-from datetime import datetime, timezone
+from datetime import timezone
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
-from types import TracebackType
 
 import jsonschema
 import pytest
-from datacube.model import Range
 from datacube.utils import InvalidDocException, validate_document
 from deepdiff import DeepDiff
-from flask.testing import FlaskClient
-from selectolax.lexbor import LexborHTMLParser, LexborNode
+from selectolax.lexbor import LexborHTMLParser
 from shapely.geometry import shape
-from shapely.geometry.base import BaseGeometry
-from werkzeug.test import TestResponse
 
 from cubedash._utils import default_utc
-from cubedash.summary import TimePeriodOverview
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from datetime import datetime
+    from types import TracebackType
+
+    from datacube.model import Range
+    from flask.testing import FlaskClient
+    from selectolax.lexbor import LexborNode
+    from shapely.geometry.base import BaseGeometry
+    from werkzeug.test import TestResponse
+
+    from cubedash.summary import TimePeriodOverview
 
 # GeoJSON schema from https://geojson.org/schema/FeatureCollection.json
 
@@ -67,9 +76,9 @@ def assert_matching_eo3(actual_doc: dict, expected_doc: dict) -> None:
 
     # Do the remaining fields match?
     # (note that we have installed a nicer dict comparison in our pytest config)
-    assert actual_doc == expected_doc, "\n".join(
-        format_doc_diffs(actual_doc, expected_doc)
-    )
+    # Use DeepDiff for all comparisons since we expect documents may contain NaNs.
+    diff = DeepDiff(actual_doc, expected_doc, ignore_nan_inequality=True)
+    assert not diff, "\n".join(format_doc_diffs(actual_doc, expected_doc))
 
 
 def get_geojson(client: FlaskClient, url: str) -> dict:
@@ -366,13 +375,13 @@ def format_doc_diffs(left: dict, right: dict) -> list[str]:
 
     Returns a list of lines to print.
     """
-    doc_diffs = DeepDiff(left, right, significant_digits=6)
+    doc_diffs = DeepDiff(left, right, significant_digits=6, ignore_nan_inequality=True)
     out = []
     if doc_diffs:
         out.append("Documents differ:")
     else:
         out.append("Doc differs in minor float precision:")
-        doc_diffs = DeepDiff(left, right)
+        doc_diffs = DeepDiff(left, right, ignore_nan_inequality=True)
 
     out.append(indent(pformat(doc_diffs), " " * 4))
 

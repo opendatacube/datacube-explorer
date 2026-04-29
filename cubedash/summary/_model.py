@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import warnings
 from collections import Counter
-from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 
@@ -12,8 +11,13 @@ import structlog
 from datacube.model import Range
 from odc.geo.geom import Geometry
 from shapely.geometry import MultiPolygon
-from shapely.geometry.base import BaseGeometry
 from typing_extensions import override
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from shapely.geometry.base import BaseGeometry
 
 _LOG = structlog.stdlib.get_logger()
 
@@ -350,9 +354,10 @@ def _polygon_chain(valid_geometries: Iterable[TimePeriodOverview]) -> list:
     polygonlist = []
     for poly in valid_geometries:
         if type(poly.footprint_geometry) is MultiPolygon:
+            assert poly.footprint_geometry is not None  # For type checker.
             for p in list(poly.footprint_geometry.geoms):
                 polygonlist.append(p)
-        else:
+        elif poly.footprint_geometry is not None:
             polygonlist.append(poly.footprint_geometry)
     return polygonlist
 

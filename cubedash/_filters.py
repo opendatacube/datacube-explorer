@@ -2,22 +2,29 @@
 Common global filters for templates.
 """
 
+from __future__ import annotations
+
 import calendar
-from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 import flask
 import structlog
-from datacube.index.fields import Field
-from datacube.model import Dataset, Product, Range
+from datacube.model import Range
 from flask import Blueprint
 from markupsafe import Markup
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
-from shapely.geometry import MultiPolygon
 
 from . import _model, _utils
 from . import _utils as utils
+
+TYPE_CHECKING = False
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
+    from datacube.index.fields import Field
+    from datacube.model import Dataset, Product
+    from shapely.geometry import MultiPolygon
 
 # How far to step the number when the user hits up/down.
 NUMERIC_STEP_SIZE = {
