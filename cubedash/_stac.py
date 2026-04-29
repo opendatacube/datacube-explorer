@@ -645,7 +645,7 @@ def _handle_collection_search(
 # Item search extensions
 
 
-def _get_field(field: str, item: dict, no_default: bool = False):
+def _get_field(field: str, item: dict, no_default: bool = False) -> Any | None:
     """So that we don't have to keep using this bulky expression"""
     return dicttoolz.get_in(field.split("."), item, no_default=no_default)
 
@@ -664,7 +664,9 @@ def _set_field(field: str, filtered: dict, item: dict) -> dict:
     return dicttoolz.assoc(filtered, field, item.get(field))
 
 
-def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[ItemLike]:
+def _handle_fields_extension(
+    items: Sequence[Item], fields: dict[str, list[str] | None]
+) -> Sequence[ItemLike]:
     """
     Implementation of fields extension (https://github.com/stac-api-extensions/fields/blob/main/README.md)
     This implementation differs slightly from the documented semantics in that the default fields will always
@@ -688,16 +690,16 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
         "collection",
     }
     include_set = (
-        set(fields.get("include")) if fields.get("include") else default_fields
+        set(fields.get("include")) if fields.get("include") else default_fields  # type: ignore[arg-type]
     )
-    exclude_set = set(fields.get("exclude")) if fields.get("exclude") else set()
+    exclude_set = set(fields.get("exclude")) if fields.get("exclude") else set()  # type: ignore[arg-type]
 
     for item in items:
-        item = item.to_dict()
+        item_dict = item.to_dict()
         include, exclude = include_set, exclude_set
         # datetime is a default field, but might be included as start_datetime/end_datetime
         # stick with just 'datetime' if both it and the start/end pair are present
-        if _get_field("properties.datetime", item) is not None:
+        if _get_field("properties.datetime", item_dict) is not None:
             include.add("properties.datetime")
         else:
             include.update(["properties.start_datetime", "properties.end_datetime"])
@@ -706,18 +708,18 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
         # the minimum number of additional fields needed for a valid stac item
         # otherwise, start with all available fields for the item
         if "include" in fields:
-            filtered_item = {}
+            filtered_item: dict[str, Any] = {}
             # filter out fields that don't have values in the item
-            include = set(filter(lambda i: _has_field(i, item), include))
+            include = set(filter(lambda i: _has_field(i, item_dict), include))
             for i in include:
-                filtered_item = _set_field(i, filtered_item, item)
+                filtered_item = _set_field(i, filtered_item, item_dict)
             # ensure all default fields are included without overwriting any nested fields in 'include'
             missing_default = default_fields - set(filtered_item.keys())
             for f in missing_default:
                 include.add(f)
-                filtered_item[f] = item.get(f)
+                filtered_item[f] = item_dict.get(f)
         else:
-            filtered_item = item
+            filtered_item = item_dict
 
         # 'include' takes preferrence over 'exclude'
         exclude = exclude - include
@@ -728,7 +730,7 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
         # This is the simplest way to account for the possibility of multiple levels of nesting
         nested = set(filter(lambda i: any(i.startswith(x) for x in exclude), include))
         for n in nested:
-            filtered_item = _set_field(n, filtered_item, item)
+            filtered_item = _set_field(n, filtered_item, item_dict)
 
         res.append(filtered_item)
 
