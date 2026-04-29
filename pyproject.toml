@@ -13,6 +13,7 @@ dependencies = [
     "fiona>=1.10.0",
     "geoalchemy2>=0.8",
     "odc-geo",
+    "pandas",
     "psycopg[c]",
     "pygeofilter>=0.2.2",
     "pyproj",
