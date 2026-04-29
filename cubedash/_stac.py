@@ -740,9 +740,23 @@ def _handle_collection_search(
 # Item search extensions
 
 
-def _get_property(prop: str, item: Item, no_default: bool = False):
+def _get_field(field: str, item: dict, no_default: bool = False):
     """So that we don't have to keep using this bulky expression"""
-    return dicttoolz.get_in(prop.split("."), item.to_dict(), no_default=no_default)
+    return dicttoolz.get_in(field.split("."), item, no_default=no_default)
+
+
+def _has_field(field: str, item: dict) -> bool:
+    try:
+        _get_field(field, item, True)
+        return True
+    except KeyError:
+        return False
+
+
+def _set_field(field: str, filtered: dict, item: dict) -> dict:
+    if len(field.split(".")) > 1:
+        return dicttoolz.assoc_in(filtered, field.split("."), _get_field(field, item))
+    return dicttoolz.assoc(filtered, field, item.get(field))
 
 
 def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[ItemLike]:
@@ -754,64 +768,62 @@ def _handle_fields_extension(items: Sequence[Item], fields: dict) -> Sequence[It
     fields = {'include': [...], 'exclude': [...]}
     """
     res = []
+    # default set of fields for a valid stac item
+    # (datetime inclusion handled separately since that can vary between items)
+    default_fields = {
+        "id",
+        "type",
+        "geometry",
+        "bbox",
+        "links",
+        "assets",
+        "stac_version",
+        # while not necessary for a valid stac item, we still want them included
+        "stac_extensions",
+        "collection",
+    }
+    include_set = (
+        set(fields.get("include")) if fields.get("include") else default_fields
+    )
+    exclude_set = set(fields.get("exclude")) if fields.get("exclude") else set()
 
     for item in items:
-        # minimum fields needed for a valid stac item
-        default_fields = [
-            "id",
-            "type",
-            "geometry",
-            "bbox",
-            "links",
-            "assets",
-            "stac_version",
-            # while not necessary for a valid stac item, we still want them included
-            "stac_extensions",
-            "collection",
-        ]
-
-        # datetime is one of the default fields, but might be included as start_datetime/end_datetime instead
-        if _get_property("properties.start_datetime", item) is None:
-            dt_field = ["properties.start_datetime", "properties.end_datetime"]
+        item = item.to_dict()
+        include, exclude = include_set, exclude_set
+        # datetime is a default field, but might be included as start_datetime/end_datetime
+        # stick with just 'datetime' if both it and the start/end pair are present
+        if _get_field("properties.datetime", item) is not None:
+            include.add("properties.datetime")
         else:
-            dt_field = ["properties.datetime"]
+            include.update(["properties.start_datetime", "properties.end_datetime"])
 
-        try:
-            # if 'include' is present at all, start with default fields to add to or extract from
-            include = fields["include"]
-            if include is None:
-                include = []
+        # if 'include' is present at all, include only the specified fields, plus
+        # the minimum number of additional fields needed for a valid stac item
+        # otherwise, start with all available fields for the item
+        if "include" in fields:
+            filtered_item = {}
+            # filter out fields that don't have values in the item
+            include = set(filter(lambda i: _has_field(i, item), include))
+            for i in include:
+                filtered_item = _set_field(i, filtered_item, item)
+            # ensure all default fields are included without overwriting any nested fields in 'include'
+            missing_default = default_fields - set(filtered_item.keys())
+            for f in missing_default:
+                include.add(f)
+                filtered_item[f] = item.get(f)
+        else:
+            filtered_item = item
 
-            filtered_item = {k: _get_property(k, item) for k in default_fields}
-            # handle datetime separately due to nested keys
-            for f in dt_field:
-                filtered_item = dicttoolz.assoc_in(
-                    filtered_item, f.split("."), _get_property(f, item)
-                )
-        except KeyError:
-            # if 'include' wasn't provided, remove 'exclude' fields from set of all available fields
-            filtered_item = item.to_dict()
-            include = []
+        # 'include' takes preferrence over 'exclude'
+        exclude = exclude - include
+        for exc in exclude:
+            filtered_item = dissoc_in(filtered_item, exc)
 
-        # add datetime field names to list of defaults for easy access
-        default_fields.extend(dt_field)
-        include = list(set(include + default_fields))
-
-        for exc in fields.get("exclude", []):
-            if exc not in default_fields:
-                filtered_item = dissoc_in(filtered_item, exc)
-
-        # include takes precedence over exclude, plus account for a nested field of an excluded field
-        for inc in include:
-            # we don't want to insert None values if a field doesn't exist, but we also don't want to error
-            try:
-                filtered_item = dicttoolz.update_in(
-                    d=filtered_item,
-                    keys=inc.split("."),
-                    func=lambda _: _get_property(inc, item, no_default=True),
-                )
-            except KeyError:
-                continue
+        # If 'include' contains a nested field of an 'exclude' field, we need to add it back
+        # This is the simplest way to account for the possibility of multiple levels of nesting
+        nested = set(filter(lambda i: any(i.startswith(x) for x in exclude), include))
+        for n in nested:
+            filtered_item = _set_field(n, filtered_item, item)
 
         res.append(filtered_item)
 

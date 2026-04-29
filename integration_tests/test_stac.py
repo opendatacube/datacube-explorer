@@ -1304,7 +1304,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
 
     # invalid field
     rv = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.foo"
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.foo,-properties.bar"
     )
     assert rv.status_code == 200
     doc = rv.json
@@ -1323,6 +1323,39 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
+
+    # only include minimum addiitional fields needed to return a valid item
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=assets.nbart_red"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    assets = doc["features"][0]["assets"]
+    assert {"nbart_red"} == set(assets.keys())
+
+    # ensure nested include fields of exclude fields are included
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-assets,assets.nbart_red"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    assets = doc["features"][0]["assets"]
+    assert {"nbart_red"} == set(assets.keys())
+
+    rv = stac_client.get(
+        "/stac/search?collection=ga_s1_nrb_iw_hh_hv_0&fields=-properties.storage:schemes,properties.storage:schemes.aws.bucket"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime", "storage:schemes"} == set(properties.keys())
+    assert properties["storage:schemes"] == {"aws": {"bucket": "deant-data-public-dev"}}
 
     # empty include and exclude should return just default fields
     rv = stac_client.get("/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=")
