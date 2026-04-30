@@ -43,18 +43,22 @@ bp = Blueprint("filters", __name__)
 
 
 @bp.app_template_filter("printable_time")
-def _format_datetime(date):
-    return date.strftime("%Y-%m-%d %H:%M:%S")
+def _format_datetime(date: datetime | None) -> str:
+    return "(unknown time)" if date is None else date.strftime("%Y-%m-%d %H:%M:%S")
 
 
 @bp.app_template_filter("metadata_center_time")
-def _get_metadata_center_time(dataset):
+def _get_metadata_center_time(dataset) -> datetime | None:
     return utils.datetime_from_metadata(dataset)
 
 
 @bp.app_template_filter("localised_metadata_center_time")
-def _get_localised_metadata_center_time(date):
-    return date.astimezone(ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE))
+def _get_localised_metadata_center_time(date: datetime | None) -> datetime | None:
+    return (
+        None
+        if date is None
+        else date.astimezone(ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE))
+    )
 
 
 @bp.app_template_filter("printable_dataset")
