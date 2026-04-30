@@ -21,6 +21,7 @@ dependencies = [
     "shapely",
     "sqlalchemy>=1.4",
     "structlog>=20.2.0",
+    "werkzeug",
 ]
 requires-python = ">=3.10"
 readme = "README.md"

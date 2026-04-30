@@ -873,6 +873,7 @@ dependencies = [
     { name = "shapely" },
     { name = "sqlalchemy" },
     { name = "structlog" },
+    { name = "werkzeug" },
 ]
 
 [package.optional-dependencies]
@@ -1003,6 +1004,7 @@ requires-dist = [
     { name = "types-cachetools", marker = "extra == 'test'" },
     { name = "types-docker", marker = "extra == 'test'" },
     { name = "types-pyyaml", marker = "extra == 'test'" },
+    { name = "werkzeug" },
 ]
 provides-extras = ["deployment", "test", "webserver"]
 
