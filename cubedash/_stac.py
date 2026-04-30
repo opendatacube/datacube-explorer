@@ -689,10 +689,8 @@ def _handle_fields_extension(
         "stac_extensions",
         "collection",
     }
-    include_set = (
-        set(fields.get("include")) if fields.get("include") else default_fields  # type: ignore[arg-type]
-    )
-    exclude_set = set(fields.get("exclude")) if fields.get("exclude") else set()  # type: ignore[arg-type]
+    include_set = set(inc) if (inc := fields.get("include")) else default_fields
+    exclude_set = set(exc) if (exc := fields.get("exclude")) else set()
 
     for item in items:
         item_dict = item.to_dict()
@@ -714,8 +712,7 @@ def _handle_fields_extension(
             for i in include:
                 filtered_item = _set_field(i, filtered_item, item_dict)
             # ensure all default fields are included without overwriting any nested fields in 'include'
-            missing_default = default_fields - set(filtered_item.keys())
-            for f in missing_default:
+            for f in default_fields - set(filtered_item.keys()):
                 include.add(f)
                 filtered_item[f] = item_dict.get(f)
         else:
@@ -723,13 +720,13 @@ def _handle_fields_extension(
 
         # 'include' takes preferrence over 'exclude'
         exclude = exclude - include
-        for exc in exclude:
-            filtered_item = dissoc_in(filtered_item, exc)
+        for x in exclude:
+            filtered_item = dissoc_in(filtered_item, x)
 
         # If 'include' contains a nested field of an 'exclude' field, we need to add it back
-        # This is the simplest way to account for the possibility of multiple levels of nesting
-        nested = set(filter(lambda i: any(i.startswith(x) for x in exclude), include))
-        for n in nested:
+        # Doing this as a second pass is the simplest way to account for the possibility of
+        # multiple levels of nesting
+        for n in set(filter(lambda i: any(i.startswith(x) for x in exclude), include)):
             filtered_item = _set_field(n, filtered_item, item_dict)
 
         res.append(filtered_item)
