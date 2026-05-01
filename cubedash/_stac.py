@@ -694,7 +694,7 @@ def _handle_fields_extension(
 
     for item in items:
         item_dict = item.to_dict()
-        include, exclude = include_set, exclude_set
+        include, exclude = include_set.copy(), exclude_set.copy()
         # datetime is a default field, but might be included as start_datetime/end_datetime
         # stick with just 'datetime' if both it and the start/end pair are present
         if _get_field("properties.datetime", item_dict) is not None:

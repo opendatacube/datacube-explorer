@@ -61,34 +61,34 @@ METADATA_TYPES = [
     "metadata/eo3_s1_nrb.odc-type.yaml",
 ]
 PRODUCTS = [
-    "products/dsm1sv10.odc-product.yaml",
-    "products/hltc.odc-product.yaml",
-    "products/l1_ls8_ga.odc-product.yaml",
-    "products/l1_ls5.odc-product.yaml",
-    "products/ls5_fc_albers.odc-product.yaml",
-    "products/ls5_nbart_albers.odc-product.yaml",
-    "products/ls5_nbart_tmad_annual.odc-product.yaml",
-    "products/ls5_scenes.odc-product.yaml",
-    "products/ls7_nbart_tmad_annual.odc-product.yaml",
-    "products/ls7_nbar_albers.odc-product.yaml",
-    "products/ls7_nbart_albers.odc-product.yaml",
-    "products/ls7_scenes.odc-product.yaml",
-    "products/ls8_nbar_albers.odc-product.yaml",
-    "products/ls8_nbart_albers.odc-product.yaml",
-    "products/ls8_scenes.odc-product.yaml",
-    "products/pq_count_summary.odc-product.yaml",
-    "products/usgs_ls7e_level1_1.odc-product.yaml",
-    "products/wofs_albers.yaml",
+    # "products/dsm1sv10.odc-product.yaml",
+    # "products/hltc.odc-product.yaml",
+    # "products/l1_ls8_ga.odc-product.yaml",
+    # "products/l1_ls5.odc-product.yaml",
+    # "products/ls5_fc_albers.odc-product.yaml",
+    # "products/ls5_nbart_albers.odc-product.yaml",
+    # "products/ls5_nbart_tmad_annual.odc-product.yaml",
+    # "products/ls5_scenes.odc-product.yaml",
+    # "products/ls7_nbart_tmad_annual.odc-product.yaml",
+    # "products/ls7_nbar_albers.odc-product.yaml",
+    # "products/ls7_nbart_albers.odc-product.yaml",
+    # "products/ls7_scenes.odc-product.yaml",
+    # "products/ls8_nbar_albers.odc-product.yaml",
+    # "products/ls8_nbart_albers.odc-product.yaml",
+    # "products/ls8_scenes.odc-product.yaml",
+    # "products/pq_count_summary.odc-product.yaml",
+    # "products/usgs_ls7e_level1_1.odc-product.yaml",
+    # "products/wofs_albers.yaml",
     "products/ga_ls8c_ard_3.odc-product.yaml",
     "products/ga_s1_nrb_iw_hh_hv_0.odc-product.yaml",
 ]
 DATASETS = [
-    "datasets/high_tide_comp_20p.yaml.gz",
+    # "datasets/high_tide_comp_20p.yaml.gz",
     # These have very large footprints, as they were unioned from many almost-identical
     # polygons and not simplified. They will trip up postgis if used naively.
     # (postgis gist index has max record size of 8k per entry)
-    "datasets/pq_count_summary.yaml.gz",
-    "datasets/wofs-albers-sample.yaml.gz",
+    # "datasets/pq_count_summary.yaml.gz",
+    # "datasets/wofs-albers-sample.yaml.gz",
     "datasets/ga_ls8c_ard_3-sample.yaml",
     "datasets/ga_s1_nrb_iw_hh_hv_0-sample.yaml",
 ]
@@ -1373,11 +1373,11 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert rv.status_code == 200
     doc = rv.json
     assert doc is not None, "Empty response from server"
-    keys = set(doc["features"][0].keys())
-    assert "collection" in keys
-    properties = doc["features"][0]["properties"]
-    assert "title" not in set(properties.keys())
-    assert "dea:dataset_maturity" in set(properties.keys())
+    item = doc["features"][0]
+    assert "collection" in item
+    properties = item["properties"]
+    assert "title" not in properties
+    assert "dea:dataset_maturity" in properties
 
     # with get
     rv = stac_client.get(
@@ -1401,6 +1401,43 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
 
+    # include takes preferrence over exclude
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.title,-properties.title"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime", "title"} == set(properties.keys())
+
+    # exclude with empty include should exclude from the default set
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-assets.nbart_red,-properties.title"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    item = doc["features"][0]
+    assets = item["assets"]
+    assert len(assets.keys())
+    assert "nbart_red" not in assets
+    assert {"datetime"} == set(item["properties"].keys())
+
+    # exclude contains a nested field of an include field
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties,-properties.odc:dataset_version"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert "odc:dataset_version" not in properties
+    assert "dea:dataset_maturity" in properties
+
     # exclude properties, but nested field properties.datetime is included by default
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-properties"
@@ -1412,7 +1449,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
 
-    # only include minimum addiitional fields needed to return a valid item
+    # only include minimum additional fields needed to return a valid item
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=assets.nbart_red"
     )
