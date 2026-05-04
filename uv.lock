@@ -863,6 +863,8 @@ dependencies = [
     { name = "fiona" },
     { name = "geoalchemy2" },
     { name = "odc-geo" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "psycopg", extra = ["c"] },
     { name = "pygeofilter" },
     { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -871,6 +873,7 @@ dependencies = [
     { name = "shapely" },
     { name = "sqlalchemy" },
     { name = "structlog" },
+    { name = "werkzeug" },
 ]
 
 [package.optional-dependencies]
@@ -981,6 +984,7 @@ requires-dist = [
     { name = "markupsafe", marker = "extra == 'webserver'" },
     { name = "mypy", marker = "extra == 'test'" },
     { name = "odc-geo" },
+    { name = "pandas" },
     { name = "pre-commit", marker = "extra == 'test'" },
     { name = "prometheus-flask-exporter", marker = "extra == 'deployment'" },
     { name = "psycopg", extras = ["c"] },
@@ -1000,6 +1004,7 @@ requires-dist = [
     { name = "types-cachetools", marker = "extra == 'test'" },
     { name = "types-docker", marker = "extra == 'test'" },
     { name = "types-pyyaml", marker = "extra == 'test'" },
+    { name = "werkzeug" },
 ]
 provides-extras = ["deployment", "test", "webserver"]
 

@@ -15,6 +15,7 @@ from sqlalchemy import text
 
 from cubedash.summary._extents import GridRegionInfo
 from cubedash.summary._schema import CUBEDASH_SCHEMA
+from cubedash.summary._stores import DatacubeIndex as Index
 
 from .asserts import expect_values as _expect_values
 
@@ -23,7 +24,6 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from datacube import Datacube
-    from datacube.index import Index
     from datacube.model import Product
 
     from cubedash.summary import SummaryStore
@@ -156,6 +156,7 @@ def test_generate_incremental_archivals(
 ) -> None:
     run_generate("ga_ls9c_ard_3")
     index = summary_store.index
+    assert isinstance(index, Index)
 
     # When we have a summarised product...
     original_summary = summary_store.get("ga_ls9c_ard_3")
@@ -194,6 +195,7 @@ def test_generate_incremental_adds(run_generate, summary_store: SummaryStore) ->
     # the summary should be updated
     run_generate("ga_ls9c_ard_3")
     index = summary_store.index
+    assert isinstance(index, Index)
 
     original_summary = summary_store.get("ga_ls9c_ard_3")
     assert original_summary is not None
@@ -242,7 +244,7 @@ def test_dataset_changing_product(run_generate, summary_store: SummaryStore) -> 
     """
     run_generate("ga_ls9c_ard_3")
     index = summary_store.index
-
+    assert isinstance(index, Index)
     dataset_id = _one_dataset(index, "ga_ls9c_ard_3")
     our_product = summary_store.get_product("ga_ls9c_ard_3")
     other_product = summary_store.get_product("ga_ls8c_ard_3")
@@ -600,6 +602,7 @@ def test_cubedash_gen_refresh(
     """
 
     def _get_product_seq_value():
+        assert isinstance(odc_test_db.index, Index)
         with odc_test_db.index._active_connection() as conn:
             [new_val] = conn.execute(
                 text(f"select last_value from {CUBEDASH_SCHEMA}.product_id_seq;")

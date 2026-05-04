@@ -22,8 +22,9 @@ from integration_tests.test_stac import get_item, get_items
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     from datacube import Datacube
-    from datacube.index import Index
     from flask.testing import FlaskClient
+
+    from cubedash.summary._stores import DatacubeIndex as Index
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
