@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum, auto
 from itertools import groupby
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypeAlias
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -69,7 +69,10 @@ DEFAULT_EPSG = 6933
 default_timezone = ZoneInfo(DEFAULT_TIMEZONE)
 
 
-def explorer_index(index: PostgisIndex | PostgresIndex) -> ExplorerIndex:
+DatacubeIndex: TypeAlias = PostgresIndex | PostgisIndex
+
+
+def explorer_index(index: DatacubeIndex) -> ExplorerIndex:
     if isinstance(index, PostgresIndex):
         return ExplorerPgIndex(index)
     if isinstance(index, PostgisIndex):
@@ -313,7 +316,7 @@ class SummaryStore:
     def create(
         cls, index: Index, log=_LOG, grouping_time_zone: str = DEFAULT_TIMEZONE
     ) -> SummaryStore:
-        if not isinstance(index, (PostgisIndex, PostgresIndex)):
+        if not isinstance(index, DatacubeIndex):
             raise ValueError(f"Cannot run explorer with index {index.name}")
         e_index = explorer_index(index)
         return cls(

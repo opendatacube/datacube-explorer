@@ -2,13 +2,14 @@
 Tests related to the store
 """
 
+import json
 from collections import Counter
 from datetime import date, datetime
 
 from datacube.model import Range
 from shapely.geometry import shape
 
-from cubedash.summary._model import TimePeriodOverview
+from cubedash.summary._model import TimePeriodOverview, _filter_geom
 from integration_tests.asserts import assert_shapes_mostly_equal
 
 ANTIMERIDIAN_POLY = shape(
@@ -249,3 +250,9 @@ def test_computed_properties() -> None:
 
     o.dataset_count = 321
     assert str(o) == "test_product 2018 4 6 (321 datasets)"
+
+
+def test_filter_geom() -> None:
+    assert _filter_geom([]) == []
+    geom = shape(json.loads('{"type": "Point", "coordinates": [0.0, 0.0]}'))
+    assert _filter_geom([geom])

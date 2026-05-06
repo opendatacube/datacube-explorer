@@ -16,13 +16,12 @@ import click
 import structlog
 from click import echo, secho
 from datacube.index import index_connect
-from datacube.index.postgis.index import Index as PostgisIndex
-from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.ui.click import environment_option, pass_config
 
 from cubedash._filters import sizeof_fmt
 from cubedash.logs import init_logging
 from cubedash.summary import SummaryStore
+from cubedash.summary._stores import DatacubeIndex
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -35,7 +34,7 @@ def _get_store(cfg_env: ODCEnvironment, variant: str, log=_LOG) -> SummaryStore:
     index = index_connect(
         cfg_env, application_name=f"cubedash.show.{variant}", validate_connection=False
     )
-    if isinstance(index, (PostgisIndex, PostgresIndex)):
+    if isinstance(index, DatacubeIndex):
         return SummaryStore.create(index, log=log)
     raise ValueError(f"Cannot run explorer with index {index.name}")
 

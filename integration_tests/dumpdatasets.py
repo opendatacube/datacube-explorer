@@ -65,7 +65,7 @@ def dump_datasets(
         ) as progress,
         gzip.open(path, "w") as f,
     ):
-        yaml.safe_dump_all(
+        yaml.safe_dump_all(  # type:ignore[call-overload]
             (_get_dumpable_doc(dc, d, include_sources) for d in progress),
             stream=f,
             encoding="utf-8",

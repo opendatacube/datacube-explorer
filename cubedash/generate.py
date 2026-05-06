@@ -70,14 +70,12 @@ from click import secho as click_secho
 from click import style
 from datacube.cfg import ODCConfig
 from datacube.index import index_connect
-from datacube.index.postgis.index import Index as PostgisIndex
-from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.ui.click import environment_option, pass_config
 from typing_extensions import override
 
 from cubedash.logs import init_logging
 from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError
-from cubedash.summary._stores import DEFAULT_EPSG
+from cubedash.summary._stores import DEFAULT_EPSG, DatacubeIndex
 from cubedash.summary._summarise import DEFAULT_TIMEZONE
 
 TYPE_CHECKING = False
@@ -156,12 +154,12 @@ def generate_report(
         store.close()
 
 
-def _get_index(config: ODCEnvironment, variant: str) -> PostgisIndex | PostgresIndex:
+def _get_index(config: ODCEnvironment, variant: str) -> DatacubeIndex:
     # Avoid long names as they will print warnings all the time.
     prefix = "gen."
     name = f"{prefix}{variant.replace('_', '')[: 64 - len(prefix)]}"
     ix = index_connect(config, application_name=name, validate_connection=False)
-    if isinstance(ix, (PostgisIndex, PostgresIndex)):
+    if isinstance(ix, DatacubeIndex):
         return ix
     raise ValueError(f"Cannot run explorer with index {ix.name}")
 

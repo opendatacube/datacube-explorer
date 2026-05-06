@@ -5,6 +5,8 @@ from textwrap import indent
 import pytest
 from sqlalchemy import text
 
+from cubedash.summary._stores import DatacubeIndex
+
 TYPE_CHECKING = False
 if TYPE_CHECKING:
     from datacube import Datacube
@@ -91,7 +93,8 @@ def test_allows_null_product_fixed_fields(
         "There's no summarised products to test"
     )
 
-    # AND there's some with null fixed_metadata (ie. pre-Explorer0-EO3-update)
+    assert isinstance(odc_test_db.index, DatacubeIndex)
+    # AND there's some with null fixed_metadata (i.e. pre-Explorer0-EO3-update)
     with odc_test_db.index._active_connection() as conn:
         update_count = conn.execute(
             text("update cubedash.product set fixed_metadata = null")
