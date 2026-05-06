@@ -1325,7 +1325,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     For ease of comprehension, the test case comments reference the row numbers
     of the include/exclude semantics summary table in the spec, with the caveat that
     our implementation requires a set of required fields to always be included. See:
-    https://github.com/stac-api-extensions/fields/blob/main/README.md#null-vs-empty-vs-missing
+    https://github.com/stac-api-extensions/fields/blob/d0e1994f0508d45ca6da9df7a7aa41e02f4cd002/README.md?plain=1#L122-L131
     """
     default_fields = {
         "id",
