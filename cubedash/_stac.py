@@ -372,7 +372,7 @@ def _bool_argument(s: str | bool):
     return s.strip().lower() in ("1", "true", "on", "yes")
 
 
-def _dict_arg(arg: str | dict[str, Any]) -> dict[str, Any]:
+def _dict_arg(arg: str | dict[str, Any | None]) -> dict[str, Any | None]:
     """
     Parse stac extension arguments as dicts
     """
@@ -381,7 +381,7 @@ def _dict_arg(arg: str | dict[str, Any]) -> dict[str, Any]:
     return arg
 
 
-def _field_arg(arg: str | list[str] | dict) -> dict[str, list[str]]:
+def _field_arg(arg: str | list[str] | dict | None) -> dict[str, list[str] | None]:
     """
     Parse field argument into a dict
     """

@@ -1321,6 +1321,25 @@ def test_stac_search_by_post(stac_client: FlaskClient) -> None:
 
 @pytest.mark.parametrize("env_name", ("default",), indirect=True)
 def test_stac_fields_extension(stac_client: FlaskClient) -> None:
+    """
+    For ease of comprehension, the test case comments reference the row numbers
+    of the include/exclude semantics summary table in the spec, with the caveat that
+    our implementation requires a set of required fields to always be included. See:
+    https://github.com/stac-api-extensions/fields/blob/main/README.md#null-vs-empty-vs-missing
+    """
+    default_fields = {
+        "id",
+        "type",
+        "geometry",
+        "bbox",
+        "links",
+        "assets",
+        "properties",
+        "stac_version",
+        "stac_extensions",
+        "collection",
+    }
+    # include without exclude should return only the specified and required fields (row 2)
     fields = {"include": ["properties.dea:dataset_maturity"]}
     rv = stac_client.post(
         "/stac/search",
@@ -1339,23 +1358,23 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     doc = rv.json
     assert doc is not None, "Empty response from server"
     assert doc.get("features")
-    keys = set(doc["features"][0].keys())
-    assert {
-        "id",
-        "type",
-        "geometry",
-        "bbox",
-        "links",
-        "assets",
-        "properties",
-        "stac_version",
-        "stac_extensions",
-        "collection",
-    } == keys
+    assert default_fields == set(doc["features"][0].keys())
     properties = doc["features"][0]["properties"]
     assert {"datetime", "dea:dataset_maturity"} == set(properties.keys())
 
-    # exclude without include should remove from full set of properties
+    # with GET
+    rv = stac_client.get(
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=+properties.title"
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    assert default_fields == set(doc["features"][0].keys())
+    properties = doc["features"][0]["properties"]
+    assert {"datetime", "title"} == set(properties.keys())
+
+    # exclude without include should remove from full set of properties (row 3)
     fields = {"exclude": ["properties.title"]}
     rv = stac_client.post(
         "/stac/search",
@@ -1379,18 +1398,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert "title" not in properties
     assert "dea:dataset_maturity" in properties
 
-    # with get
-    rv = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=+properties.title"
-    )
-    assert rv.status_code == 200
-    doc = rv.json
-    assert doc is not None, "Empty response from server"
-    assert doc.get("features")
-    properties = doc["features"][0]["properties"]
-    assert {"datetime", "title"} == set(properties.keys())
-
-    # invalid field
+    # invalid/missing field should not raise an error
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.foo,-properties.bar"
     )
@@ -1401,18 +1409,18 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
 
-    # include takes preferrence over exclude
+    # include takes preferrence over exclude (rows 5 & 6)
     rv = stac_client.get(
-        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.title,-properties.title"
+        "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties.title,properties.gsd,-properties.title,-properties.odc:region_code"
     )
     assert rv.status_code == 200
     doc = rv.json
     assert doc is not None, "Empty response from server"
     assert doc.get("features")
     properties = doc["features"][0]["properties"]
-    assert {"datetime", "title"} == set(properties.keys())
+    assert {"datetime", "title", "gsd"} == set(properties.keys())
 
-    # exclude with empty include should exclude from the default set
+    # exclude with null/empty include should exclude from the default set (row 4)
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-assets.nbart_red,-properties.title"
     )
@@ -1426,7 +1434,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert "nbart_red" not in assets
     assert {"datetime"} == set(item["properties"].keys())
 
-    # exclude contains a nested field of an include field
+    # exclude contains a nested field of an include field (row 8)
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=properties,-properties.odc:dataset_version"
     )
@@ -1449,7 +1457,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     properties = doc["features"][0]["properties"]
     assert {"datetime"} == set(properties.keys())
 
-    # only include minimum additional fields needed to return a valid item
+    # only include minimum additional fields from the default set
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=assets.nbart_red"
     )
@@ -1460,7 +1468,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assets = doc["features"][0]["assets"]
     assert {"nbart_red"} == set(assets.keys())
 
-    # ensure nested include fields of exclude fields are included
+    # ensure nested include fields of exclude fields are included (row 7)
     rv = stac_client.get(
         "/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=-assets,assets.nbart_red"
     )
@@ -1471,6 +1479,7 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assets = doc["features"][0]["assets"]
     assert {"nbart_red"} == set(assets.keys())
 
+    # with multiple levels of nesting
     rv = stac_client.get(
         "/stac/search?collection=ga_s1_nrb_iw_hh_hv_0&fields=-properties.storage:schemes,properties.storage:schemes.aws.bucket"
     )
@@ -1482,8 +1491,50 @@ def test_stac_fields_extension(stac_client: FlaskClient) -> None:
     assert {"datetime", "storage:schemes"} == set(properties.keys())
     assert properties["storage:schemes"] == {"aws": {"bucket": "deant-data-public-dev"}}
 
-    # empty include and exclude should return just default fields
+    # empty include and exclude should return just default fields (row 1)
     rv = stac_client.get("/stac/search?collection=ga_ls8c_ard_3&limit=5&fields=")
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime"} == set(properties.keys())
+
+    # missing include and exclude with null fields object (row 1)
+    rv = stac_client.post(
+        "/stac/search",
+        data=dumps(
+            {
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "fields": None,
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    assert rv.status_code == 200
+    doc = rv.json
+    assert doc is not None, "Empty response from server"
+    assert doc.get("features")
+    properties = doc["features"][0]["properties"]
+    assert {"datetime"} == set(properties.keys())
+
+    # mix of missing and null (row 1)
+    rv = stac_client.post(
+        "/stac/search",
+        data=dumps(
+            {
+                "collections": ["ga_ls8c_ard_3"],
+                "datetime": "2022-01-01T00:00:00/2022-12-31T00:00:00",
+                "limit": OUR_DATASET_LIMIT,
+                "_full": True,
+                "fields": {"include": None},
+            }
+        ),
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
     assert rv.status_code == 200
     doc = rv.json
     assert doc is not None, "Empty response from server"
