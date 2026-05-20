@@ -425,7 +425,7 @@ def _sort_arg(arg: str | list[str] | list[dict[str, Any]]) -> list[dict[str, Any
         arg_work = arg
     if len(arg_work):
         if isinstance(arg_work[0], str):
-            return [_format(a) for a in arg_work]
+            return [_format(a) for a in arg_work]  # type: ignore[arg-type]
         if isinstance(arg_work[0], dict):
             for a in arg_work:
                 assert isinstance(a, dict)

@@ -422,7 +422,7 @@ def _field_parser(field: Field):
         field = field.lower  # type: ignore[attr-defined]
 
     try:
-        parser = field.parse_value  # type: ignore[attr-defined]
+        parser = field.parse_value  # type: ignore[union-attr]
     except AttributeError:
         parser = _unchanged_value
     return parser
