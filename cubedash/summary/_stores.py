@@ -20,7 +20,7 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import TSTZRANGE
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 try:
     from cubedash._version import version as explorer_version
@@ -297,7 +297,7 @@ class SummaryStore:
             if not self.e_index.create_schema():
                 return False
             rv = self.e_index.init_schema(grouping_epsg_code or DEFAULT_EPSG)
-        except ProgrammingError as e:
+        except (OperationalError, ProgrammingError) as e:
             _LOG.error(str(e))
             return False
         if rv:
@@ -513,7 +513,7 @@ class SummaryStore:
         """
         try:
             self.e_index.refresh_stats(concurrently)
-        except ProgrammingError as e:
+        except (OperationalError, ProgrammingError) as e:
             _LOG.error(str(e))
             return False
         return True

@@ -19,7 +19,7 @@ from flask import (
     request,
     url_for,
 )
-from sqlalchemy.exc import DataError, ProgrammingError
+from sqlalchemy.exc import DataError, OperationalError, ProgrammingError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
@@ -240,6 +240,8 @@ def search_page(
         )
     except (DataError, ProgrammingError):
         abort(400, "Invalid field value provided in query")
+    except OperationalError:
+        abort(500, "Internal server error")
 
     more_datasets_exist = False
     if len(datasets) > hard_search_limit:
