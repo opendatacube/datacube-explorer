@@ -481,21 +481,35 @@ def inject_globals():
     # The default is the currently-viewed product's summary refresh date.
     last_updated = None
     if flask.request.view_args and ("product_name" in flask.request.view_args):
-        product_summary = _model.STORE.get_product_summary(
-            flask.request.view_args["product_name"]
-        )
+        try:
+            product_summary = _model.STORE.get_product_summary(
+                flask.request.view_args["product_name"]
+            )
+        except OperationalError as e:
+            _LOG.error(str(e))
+            abort(500, "Internal server error")
+
         if product_summary:
             last_updated = product_summary.last_successful_summary_time
-
+    try:
+        products = list(_model.STORE.all_products())
+    except OperationalError as e:
+        _LOG.error(str(e))
+        abort(500, "Internal server error")
+    try:
+        metadata_types = list(_model.STORE.all_metadata_types())
+    except OperationalError as e:
+        _LOG.error(str(e))
+        abort(500, "Internal server error")
     return {
         # Only the known, summarised products in groups.
         "grouped_products": _get_grouped_products(),
         # All products in the datacube, summarised or not.
-        "datacube_products": list(_model.STORE.all_products()),
+        "datacube_products": products,
         "hidden_product_list": current_app.config.get(
             "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST", []
         ),
-        "datacube_metadata_types": list(_model.STORE.all_metadata_types()),
+        "datacube_metadata_types": metadata_types,
         "datacube_version": datacube.__version__,
         "app_version": cubedash.__version__,
         "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
