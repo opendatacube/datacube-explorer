@@ -136,9 +136,9 @@ class TimePeriodOverview:
         # Lower value will have a more accurate footprint and much larger page load times.
         footprint_tolerance: float = 1000.0,
     ) -> TimePeriodOverview:
-        periods = [p for p in periods if p is not None and p.dataset_count > 0]
+        ps = [p for p in periods if p is not None and p.dataset_count > 0]
         period = "day"
-        crses = {p.footprint_crs for p in periods}
+        crses = {p.footprint_crs for p in ps}
         if not crses:
             footprint_crs = None
         elif len(crses) == 1:
@@ -149,7 +149,7 @@ class TimePeriodOverview:
             raise NotImplementedError("Time summaries use inconsistent CRSes.")
 
         timeline_counter: Counter = Counter()
-        for p in periods:
+        for p in ps:
             timeline_counter.update(p.timeline_dataset_counts)
             period = p.timeline_period
         timeline_counter, period = cls._group_counter_if_needed(
@@ -158,12 +158,10 @@ class TimePeriodOverview:
 
         # The period elements that are the same across all of them.
         # (it will be the period of the result)
-        common_time_period = (
-            list(periods[0].period_tuple[1:4]) if periods else [None] * 3
-        )
+        common_time_period = list(ps[0].period_tuple[1:4]) if ps else [None] * 3
         region_counter: Counter = Counter()
 
-        for time_period in periods:
+        for time_period in ps:
             region_counter.update(time_period.region_dataset_counts)
 
             # Attempt to fix broken geometries.
@@ -190,7 +188,7 @@ class TimePeriodOverview:
 
         with_valid_geometries = [
             p
-            for p in periods
+            for p in ps
             if p.footprint_count
             and p.footprint_geometry
             and p.footprint_geometry.is_valid
@@ -200,17 +198,15 @@ class TimePeriodOverview:
         geometry_union = _create_unified_footprint(
             with_valid_geometries, footprint_tolerance
         )
-        total_datasets = sum(p.dataset_count for p in periods)
+        total_datasets = sum(p.dataset_count for p in ps)
 
         # Non-null properties here are the ones that are the same across all inputs.
         year, month, day = common_time_period
 
         start_range = min(
-            (r.time_range.begin for r in periods if r.time_range), default=None
+            (r.time_range.begin for r in ps if r.time_range), default=None
         )
-        end_range = max(
-            (r.time_range.end for r in periods if r.time_range), default=None
-        )
+        end_range = max((r.time_range.end for r in ps if r.time_range), default=None)
         return TimePeriodOverview(
             product_name=product_name,
             year=year,
@@ -229,22 +225,22 @@ class TimePeriodOverview:
             newest_dataset_creation_time=max(
                 (
                     p.newest_dataset_creation_time
-                    for p in periods
+                    for p in ps
                     if p.newest_dataset_creation_time is not None
                 ),
                 default=None,
             ),
-            crses=set.union(*(o.crses for o in periods)) if periods else set(),
+            crses=set.union(*(o.crses for o in ps)) if ps else set(),
             # Why choose the max version? Because we assume older ones didn't need to be replaced,
             # so the most recent refresh time is the version that we are current with.
             product_refresh_time=max(
-                (p.product_refresh_time for p in periods), default=product_refresh_time
+                (p.product_refresh_time for p in ps), default=product_refresh_time
             ),
             summary_gen_time=min(
-                (p.summary_gen_time for p in periods if p.summary_gen_time is not None),
+                (p.summary_gen_time for p in ps if p.summary_gen_time is not None),
                 default=None,
             ),
-            size_bytes=sum(p.size_bytes for p in periods if p.size_bytes is not None),
+            size_bytes=sum(p.size_bytes for p in ps if p.size_bytes is not None),
         )
 
     @property
