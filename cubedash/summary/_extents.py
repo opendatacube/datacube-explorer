@@ -221,7 +221,7 @@ def refresh_spatial_extents(
     }
 
     if assume_after_date is None:
-        log.warning("spatial_update.recreating_everything")
+        log.info("spatial_update.recreating_everything")
 
     # Update any changed datasets
     log.info("spatial_upsert", product_name=product.name, after_date=assume_after_date)
