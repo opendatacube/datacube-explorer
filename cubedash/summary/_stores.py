@@ -1089,7 +1089,7 @@ class SummaryStore:
             query = self._add_filter_to_query(
                 query, field_exprs, filter_lang, filter_cql
             )
-        result = self.e_index.execute_query(query)
+        result = self.e_index.run_query(query)
 
         if len(result) != 0:
             return result[0][0]
@@ -1168,7 +1168,7 @@ class SummaryStore:
             offset
         )
 
-        for r in self.e_index.execute_query(query):
+        for r in self.e_index.run_query(query):
             yield DatasetItem(
                 dataset_id=r.id,
                 bbox=_box2d_to_bbox(r.bbox) if r.bbox else None,
@@ -1442,7 +1442,7 @@ class SummaryStore:
         Any change timestamps stored in the database are using database-local
         time, which could be different to the time on this current machine!
         """
-        return self.e_index.execute_query_scalar(select(func.now()))
+        return self.e_index.run_scalar_query(select(func.now()))
 
     def _newest_known_dataset_addition_time(self, product_name: str) -> datetime | None:
         """
