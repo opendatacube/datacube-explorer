@@ -491,10 +491,10 @@ class SummaryStore:
         log.info("refresh.regions.start")
         log.info("refresh.regions.update.count.and.insert.new")
         result = self.e_index.upsert_product_regions(product.id)
-        log.info("refresh.regions.inserted", result=list(result))
+        log.info("refresh.regions.inserted", result=result)
         log.info(
             "refresh.regions.update.count.and.insert.new.end",
-            changed_rows=result.rowcount,
+            changed_rows=len(result),
         )
         # delete region rows with no related datasets in dataset_spatial table
         log.info("refresh.regions.delete.empty.regions")
@@ -566,7 +566,7 @@ class SummaryStore:
             first_dataset_fields,
             candidate_fields,  # type:ignore[arg-type]
             dataset_samples,
-        ).fetchall()
+        )
         assert len(result) == 1
 
         fixed_fields = {
@@ -610,7 +610,7 @@ class SummaryStore:
 
         rv = self.e_index.linked_products_search(
             product.id, sample_sql, kind
-        ).fetchone()
+        )
         linked_product_names = [] if rv is None else rv[0]
         _LOG.info(
             "product.links.{kind}",
@@ -649,7 +649,7 @@ class SummaryStore:
 
         res = self.e_index.product_time_summary(
             product.id_, start_day, period
-        ).fetchone()
+        )
 
         if not res:
             return None
@@ -788,8 +788,7 @@ class SummaryStore:
         return list(_common_paths_for_uris(uri_samples))
 
     def get_quality_stats(self) -> Generator[dict]:
-        stats = self.e_index.select_spatial_stats()
-        for s in stats:
+        for s in self.e_index.select_spatial_stats():
             row = s._mapping
             d = dict(row)
             d["product"] = self._product_by_id(row["product_ref"])
@@ -881,9 +880,9 @@ class SummaryStore:
                 "newest_dataset_creation_time": summary.newest_dataset_creation_time,
                 "crses": summary.crses,
             },
-        ).fetchone()
+        )
         if ret is not None:
-            summary.summary_gen_time = ret[0]
+            summary.summary_gen_time = ret
 
     def has(
         self, product_name: str, year: int | None, month: int | None, day: int | None
@@ -1542,10 +1541,9 @@ class SummaryStore:
 
         Note that these will be None if the product has not been summarised.
         """
-        rows = self.e_index.dataset_footprint_region(dataset_id).fetchall()
-        if not rows:
+        row = self.e_index.dataset_footprint_region(dataset_id)
+        if not row:
             return None, None
-        row = rows[0]
 
         footprint = row.footprint
         return (to_shape(footprint) if footprint is not None else None, row.region_code)

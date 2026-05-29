@@ -70,11 +70,10 @@ class Summariser:
             product_name, time.begin, time.end
         )
 
-        rows = self.e_index.srid_summary(where_clause).fetchall()
-        log.debug("summary.query.done", srid_rows=len(rows))
+        _row = self.e_index.srid_summary(where_clause)
+        log.debug("summary.query.done")
 
-        assert len(rows) == 1
-        row = dict(rows[0]._mapping)
+        row = dict(_row._mapping)
         row["dataset_count"] = int(row["dataset_count"]) if row["dataset_count"] else 0
         if row["footprint_geometry"] is not None:
             row["footprint_crs"] = self.e_index.get_srid_name(

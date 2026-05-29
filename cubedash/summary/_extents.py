@@ -631,7 +631,7 @@ def get_sample_dataset(products, e_index: ExplorerIndex) -> Iterable[dict]:
     for product in products:
         res = e_index.sample_dataset(
             product.id, _select_dataset_extent_columns(e_index, product)
-        ).fetchone()
+        )
         if res:
             yield dict(res._mapping)
 
@@ -657,6 +657,6 @@ def get_mapped_crses(products, e_index: ExplorerIndex) -> Generator[dict]:
             get_dataset_srid_alchemy_expression(e_index, product.metadata_type).label(
                 "crs"
             ),
-        ).fetchone()
+        )
         if res:
             yield dict(res._mapping)
