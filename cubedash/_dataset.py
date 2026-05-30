@@ -3,6 +3,7 @@ from __future__ import annotations
 import flask
 import structlog
 from flask import Blueprint, abort, current_app, url_for
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from . import _model
 from . import _utils as utils
@@ -70,7 +71,11 @@ def dataset_full_page(product_name: str, id_: UUID):
     )
     derived_datasets = sorted(derived_datasets, key=utils.dataset_label)
 
-    footprint, region_code = store.get_dataset_footprint_region(id_)
+    try:
+        footprint, region_code = store.get_dataset_footprint_region(id_)
+    except (OperationalError, ProgrammingError) as e:
+        _LOG.error(str(e))
+        abort(500, "Internal server error")
     # We only have a footprint in the spatial table above if summarisation has been
     # run for the product (...and done so after the dataset was added).
     #
