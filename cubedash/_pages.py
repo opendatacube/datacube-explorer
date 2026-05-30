@@ -501,9 +501,15 @@ def inject_globals():
     except OperationalError as e:
         _LOG.error(str(e))
         abort(500, "Internal server error")
+    try:
+        grouped_products = _get_grouped_products()
+    except RuntimeError as e:
+        # Database is probably missing summarised products.
+        _LOG.error(str(e))
+        abort(500, "Internal server error")
     return {
         # Only the known, summarised products in groups.
-        "grouped_products": _get_grouped_products(),
+        "grouped_products": grouped_products,
         # All products in the datacube, summarised or not.
         "datacube_products": products,
         "hidden_product_list": current_app.config.get(
