@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from datacube.drivers.common_psql import drop_schema, has_schema
+from datacube.drivers.common_psql import catch_timeout, drop_schema, has_schema
 
 from cubedash.summary._schema import CUBEDASH_SCHEMA
 
@@ -227,6 +227,7 @@ class ExplorerAbstractIndex(ABC):
     @abstractmethod
     def select_spatial_stats(self) -> Sequence[Row]: ...
 
+    @catch_timeout
     def schema_initialised(self) -> bool:
         return has_schema(self.engine, CUBEDASH_SCHEMA)
 
@@ -238,6 +239,7 @@ class ExplorerAbstractIndex(ABC):
     @abstractmethod
     def create_schema(self) -> bool: ...
 
+    @catch_timeout
     def drop_all(self) -> None:
         """
         Drop all explorer-specific tables/schema
