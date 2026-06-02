@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="panel">
-    <h4>Internal error</h4>
+    <h4>{% if message %}{{ message }}{% else %}Internal error{% endif %}</h4>
 
     This has been logged.
 </div>
