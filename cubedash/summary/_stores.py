@@ -459,7 +459,10 @@ class SummaryStore:
         if product.id is None:
             return None
         # if change_count or force_dataset_extent_recompute:
-        earliest, latest, total_count = self.e_index.product_time_overview(product.id)
+        _row = self.e_index.product_time_overview(product.id)
+        if _row is None:
+            return None
+        earliest, latest, total_count = _row
 
         source_products = []
         derived_products = []
@@ -490,17 +493,17 @@ class SummaryStore:
         log = _LOG.bind(product_name=product.name)  # , engine=str(self._engine))
         log.info("refresh.regions.start")
         log.info("refresh.regions.update.count.and.insert.new")
-        result = self.e_index.upsert_product_regions(product.id)
-        log.info("refresh.regions.inserted", result=list(result))
+        upsert_result = self.e_index.upsert_product_regions(product.id)
+        log.info("refresh.regions.inserted", result=upsert_result)
         log.info(
             "refresh.regions.update.count.and.insert.new.end",
-            changed_rows=result.rowcount,
+            changed_rows=len(upsert_result),
         )
         # delete region rows with no related datasets in dataset_spatial table
         log.info("refresh.regions.delete.empty.regions")
-        result = self.e_index.delete_product_empty_regions(product.id)
+        del_result = self.e_index.delete_product_empty_regions(product.id)
         log.info("refresh.regions.delete.empty.regions.end")
-        log.info("refresh.regions.end", changed_regions=result.rowcount)
+        log.info("refresh.regions.end", changed_regions=del_result)
 
         self._persist_product_extent(new_summary)
         return change_count, new_summary
@@ -566,7 +569,7 @@ class SummaryStore:
             first_dataset_fields,
             candidate_fields,  # type:ignore[arg-type]
             dataset_samples,
-        ).fetchall()
+        )
         assert len(result) == 1
 
         fixed_fields = {
@@ -608,9 +611,7 @@ class SummaryStore:
         if sample_percentage < 100:
             sample_sql = f"tablesample system ({sample_percentage})"
 
-        rv = self.e_index.linked_products_search(
-            product.id, sample_sql, kind
-        ).fetchone()
+        rv = self.e_index.linked_products_search(product.id, sample_sql, kind)
         linked_product_names = [] if rv is None else rv[0]
         _LOG.info(
             "product.links.{kind}",
@@ -647,9 +648,7 @@ class SummaryStore:
         if product is None or product.id_ is None:
             return None
 
-        res = self.e_index.product_time_summary(
-            product.id_, start_day, period
-        ).fetchone()
+        res = self.e_index.product_time_summary(product.id_, start_day, period)
 
         if not res:
             return None
@@ -788,8 +787,7 @@ class SummaryStore:
         return list(_common_paths_for_uris(uri_samples))
 
     def get_quality_stats(self) -> Generator[dict]:
-        stats = self.e_index.select_spatial_stats()
-        for s in stats:
+        for s in self.e_index.select_spatial_stats():
             row = s._mapping
             d = dict(row)
             d["product"] = self._product_by_id(row["product_ref"])
@@ -830,8 +828,8 @@ class SummaryStore:
 
         row = self.e_index.upsert_product_record(product.name, fields)
         self._product.cache_clear()
+        assert row is not None
         product_id, _ = row
-
         product.id_ = product_id
 
     def _put(self, summary: TimePeriodOverview) -> None:
@@ -881,9 +879,9 @@ class SummaryStore:
                 "newest_dataset_creation_time": summary.newest_dataset_creation_time,
                 "crses": summary.crses,
             },
-        ).fetchone()
+        )
         if ret is not None:
-            summary.summary_gen_time = ret[0]
+            summary.summary_gen_time = ret
 
     def has(
         self, product_name: str, year: int | None, month: int | None, day: int | None
@@ -1216,7 +1214,7 @@ class SummaryStore:
         year: int | None,
         month: int | None,
         product_refresh_time: datetime,
-    ) -> TimePeriodOverview:
+    ) -> TimePeriodOverview | None:
         """Recalculate the given period and store it in the DB"""
         if year and month:
             summary = self._summariser.calculate_summary(
@@ -1250,6 +1248,8 @@ class SummaryStore:
             )
         else:
             summary = TimePeriodOverview.empty(product.name, product_refresh_time)
+        if summary is None:
+            return None
         # FIXME: these should be set inside the methods.
         summary.period_tuple = (product.name, year, month, None)
 
@@ -1542,10 +1542,9 @@ class SummaryStore:
 
         Note that these will be None if the product has not been summarised.
         """
-        rows = self.e_index.dataset_footprint_region(dataset_id).fetchall()
-        if not rows:
+        row = self.e_index.dataset_footprint_region(dataset_id)
+        if not row:
             return None, None
-        row = rows[0]
 
         footprint = row.footprint
         return (to_shape(footprint) if footprint is not None else None, row.region_code)
