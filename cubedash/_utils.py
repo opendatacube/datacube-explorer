@@ -96,6 +96,13 @@ def render(template, **context):
     return render_template(template, **context)
 
 
+def render_without_context_processors(app, template, **context):
+    # When e.g. rendering error pages, we don't want to trigger the context processors
+    # Use native Jinja template rendering instead (bypassing flask)
+    template = app.jinja_env.get_template(template)
+    return template.render(**context)
+
+
 def expects_eo3_metadata_type(md: MetadataType) -> bool:
     """
     Does the given metadata type expect EO3 datasets?
