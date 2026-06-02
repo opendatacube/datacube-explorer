@@ -119,7 +119,8 @@ def create_app(test_config=None) -> flask.Flask:
 
     @app.errorhandler(500)
     def internal_server_error(error):
-        return flask.render_template("500.html")
+        # Bypass inject_globals for rendering the 500 error page
+        return utils.render_without_context_processors(app, "500.html")
 
     @app.errorhandler(HTTPException)
     def handle_exception(e: HTTPException) -> tuple[ResponseValue, int]:
