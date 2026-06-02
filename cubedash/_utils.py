@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
     from datacube.index.fields import Field
     from datacube.model import Dataset, Product
+    from flask import Flask
     from odc.geo import Geometry
     from shapely.geometry.base import BaseGeometry
     from werkzeug.datastructures import MultiDict
@@ -94,6 +95,12 @@ def infer_crs(crs_str: str) -> str | None:
 
 def render(template, **context):
     return render_template(template, **context)
+
+
+def render_without_context_processors(app: Flask, template, **context):
+    # When e.g. rendering error pages, we don't want to trigger the context processors
+    # Use native Jinja template rendering instead (bypassing flask)
+    return app.jinja_env.get_template(template).render(**context)
 
 
 def expects_eo3_metadata_type(md: MetadataType) -> bool:
