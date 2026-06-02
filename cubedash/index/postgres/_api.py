@@ -5,7 +5,12 @@ from typing import Any
 import shapely.ops
 import structlog
 from cachetools.func import lru_cache
-from datacube.drivers.common_psql import as_role, catch_timeout, create_schema, has_roles
+from datacube.drivers.common_psql import (
+    as_role,
+    catch_timeout,
+    create_schema,
+    has_roles,
+)
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import SimpleDocField
 from typing_extensions import override
@@ -61,7 +66,7 @@ if TYPE_CHECKING:
 
     from datacube.index.postgres.index import Index
     from datacube.model import Dataset, Field, MetadataType, Product, Range
-    from sqlalchemy import ClauseElement, CursorResult, Label, Result, Row, Select
+    from sqlalchemy import ClauseElement, Label, Result, Row, Select
     from sqlalchemy.sql import ColumnElement
 
     from cubedash.summary._extents import PgDocField
@@ -122,7 +127,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
                         select(func.count())
                         .select_from(DATASET_SOURCE)
                         .where(DATASET_SOURCE.c.dataset_ref == dataset_id)
-                    ) - limit
+                    )
+                    - limit
                 )
 
         source_ids = [res[0] for res in source_ids]  # unpack the result tuples
@@ -279,7 +285,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
             # Product doesn't exist, so insert it
             fields["name"] = product_name
-            rows =  conn.run_query(
+            rows = conn.run_query(
                 insert(PRODUCT)
                 .returning(PRODUCT.c.id, PRODUCT.c.last_refresh)
                 .values(**fields)
@@ -383,7 +389,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_time_overview(self, product_id: int) -> tuple[datetime, datetime, int] | None:
+    def product_time_overview(
+        self, product_id: int
+    ) -> tuple[datetime, datetime, int] | None:
         with self.index._active_connection() as conn:
             rows = conn.run_query(
                 select(
@@ -520,8 +528,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
             # shouldn't this be getting from agdc.dataset combined with dataset_spatial?
             # no point returning datasets that have been added in the odc database but not the cubedash one
-            return list(conn.execute(
-                text("""
+            return list(
+                conn.execute(
+                    text("""
                     select
                     date_trunc('day', added) as arrival_date,
                     (select name from agdc.dataset_type where id = d.dataset_type_ref) product_name,
@@ -532,8 +541,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     group by arrival_date, product_name
                     order by arrival_date desc, product_name;
                 """),
-                {"datasets_since": datasets_since_date},
-            ).fetchall())
+                    {"datasets_since": datasets_since_date},
+                ).fetchall()
+            )
 
     @override
     def already_summarised_period(self, period: str, product_id: int) -> Sequence[Row]:
@@ -1047,7 +1057,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return rows[0] if rows else None
 
     @override
-    def day_counts(self, grouping_time_zone, where_clause: ColumnElement) -> Sequence[Row]:
+    def day_counts(
+        self, grouping_time_zone, where_clause: ColumnElement
+    ) -> Sequence[Row]:
         with self.index._active_connection() as conn:
             return conn.run_query(
                 select(

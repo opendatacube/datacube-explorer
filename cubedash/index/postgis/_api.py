@@ -5,10 +5,14 @@ from typing import Any
 import shapely.ops
 import structlog
 from cachetools.func import lru_cache
-from datacube.drivers.common_psql import as_role, catch_timeout, create_schema, has_roles
+from datacube.drivers.common_psql import (
+    as_role,
+    catch_timeout,
+    create_schema,
+    has_roles,
+)
 from datacube.drivers.postgis._api import PostgisDbAPI
 from datacube.drivers.postgis._fields import SimpleDocField
-from distributed.utils_comm import retry
 from typing_extensions import override
 
 from datacube.drivers.postgis._schema import (  # isort: skip
@@ -37,7 +41,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import aliased
 from sqlalchemy.types import TIMESTAMP
 
 import cubedash.summary._schema as _schema
@@ -65,7 +69,7 @@ if TYPE_CHECKING:
 
     from datacube.index.postgis.index import Index
     from datacube.model import Dataset, Field, MetadataType, Product, Range
-    from sqlalchemy import ClauseElement, CursorResult, Label, Result, Row, Select
+    from sqlalchemy import ClauseElement, Label, Result, Row, Select
     from sqlalchemy.sql import ColumnElement
 
     from cubedash.summary._extents import PgDocField
@@ -333,7 +337,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_time_overview(self, product_id: int) -> tuple[datetime, datetime, int] | None:
+    def product_time_overview(
+        self, product_id: int
+    ) -> tuple[datetime, datetime, int] | None:
         with self.index._active_connection() as conn:
             rows = conn.run_query(
                 select(
@@ -464,8 +470,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
             # shouldn't this be getting from odc.dataset combined with dataset_spatial?
             # no point returning datasets that have been added in the odc database but not the cubedash one
-            return list(conn.execute(
-                text("""
+            return list(
+                conn.execute(
+                    text("""
                     select
                     date_trunc('day', added) as arrival_date,
                     (select name from odc.product where id = d.product_ref) product_name,
@@ -476,8 +483,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     group by arrival_date, product_name
                     order by arrival_date desc, product_name;
                 """),
-                {"datasets_since": datasets_since_date},
-            ).fetchall())
+                    {"datasets_since": datasets_since_date},
+                ).fetchall()
+            )
 
     @override
     def already_summarised_period(self, period: str, product_id: int) -> Sequence[Row]:
@@ -669,9 +677,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             .limit(bindparam("limit", limit))
             .offset(bindparam("offset", offset))
         )
-        with (
-            self.index._active_connection() as conn
-        ):
+        with self.index._active_connection() as conn:
             return (
                 self.index.datasets._sqldataset_to_dataset(res)
                 for res in conn.run_query(query, orm=True, orm_scalars=True)
@@ -880,9 +886,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 )
             )
             if owner != "odc_admin":
-                self.execute(
-                    text(f"alter schema {CUBEDASH_SCHEMA} owner to odc_admin")
-                )
+                self.execute(text(f"alter schema {CUBEDASH_SCHEMA} owner to odc_admin"))
         return True
 
     @override
@@ -975,7 +979,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return rows[0] if rows else None
 
     @override
-    def day_counts(self, grouping_time_zone, where_clause: ColumnElement) -> Sequence[Row]:
+    def day_counts(
+        self, grouping_time_zone, where_clause: ColumnElement
+    ) -> Sequence[Row]:
         with self.index._active_connection() as conn:
             return conn.run_query(
                 select(

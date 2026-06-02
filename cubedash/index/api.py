@@ -13,10 +13,9 @@ if TYPE_CHECKING:
     from datetime import date, datetime, timedelta
     from uuid import UUID
 
-    from datacube.index import Indestream_query
     from datacube.model import Dataset, MetadataType, Product, Range
     from datacube.model.fields import Field
-    from sqlalchemy import CursorResult, Result, Row, Select
+    from sqlalchemy import Result, Row, Select
     from sqlalchemy.sql import ColumnElement
     from sqlalchemy.sql.elements import ClauseElement, Label
 
@@ -134,7 +133,9 @@ class ExplorerAbstractIndex(ABC):
     def outdated_years(self, product_id: int) -> Sequence[Row]: ...
 
     @abstractmethod
-    def already_summarised_period(self, period: str, product_id: int) -> Sequence[Row]: ...
+    def already_summarised_period(
+        self, period: str, product_id: int
+    ) -> Sequence[Row]: ...
 
     @abstractmethod
     def product_time_overview(
@@ -280,7 +281,9 @@ class ExplorerAbstractIndex(ABC):
     ) -> ClauseElement: ...
 
     @abstractmethod
-    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Row | None: ...
+    def sample_dataset(
+        self, product_id: int, columns: Sequence[Label]
+    ) -> Row | None: ...
 
     @abstractmethod
     def mapped_crses(self, product: Product, srid_expression: Label) -> Row | None: ...

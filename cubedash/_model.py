@@ -128,9 +128,7 @@ def create_app(test_config=None) -> flask.Flask:
         # Bypass inject_globals for rendering the 50(3) error page
         return (
             utils.render_without_context_processors(
-                app,
-                "500.html",
-                message="Database query cancelled due to timeout"
+                app, "500.html", message="Database query cancelled due to timeout"
             ),
             # 503 == "Service unavailable: The server can’t handle the request due
             #         to temporary overload or maintenance. Check the Retry-After
@@ -143,8 +141,7 @@ def create_app(test_config=None) -> flask.Flask:
     @app.errorhandler(HTTPException)
     def handle_exception(e: HTTPException) -> tuple[ResponseValue, int]:
         return (
-            utils.render( "message.html",
-                title=e.code, message=e.description, e=e),
+            utils.render("message.html", title=e.code, message=e.description, e=e),
             e.code or 500,
         )
 

@@ -608,9 +608,7 @@ class SummaryStore:
         if sample_percentage < 100:
             sample_sql = f"tablesample system ({sample_percentage})"
 
-        rv = self.e_index.linked_products_search(
-            product.id, sample_sql, kind
-        )
+        rv = self.e_index.linked_products_search(product.id, sample_sql, kind)
         linked_product_names = [] if rv is None else rv[0]
         _LOG.info(
             "product.links.{kind}",
@@ -647,9 +645,7 @@ class SummaryStore:
         if product is None or product.id_ is None:
             return None
 
-        res = self.e_index.product_time_summary(
-            product.id_, start_day, period
-        )
+        res = self.e_index.product_time_summary(product.id_, start_day, period)
 
         if not res:
             return None
