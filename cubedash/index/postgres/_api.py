@@ -937,14 +937,14 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     conn, CUBEDASH_SCHEMA, if_exists=False, owner="agdc_admin"
                 )
         else:
-            owner = self.execute_query_scalar(
+            owner = self.run_scalar_query(
                 text(
                     "select pg_catalog.pg_get_userbyid(nspowner) from pg_catalog.pg_namespace "
                     f"where nspname='{CUBEDASH_SCHEMA}'"
                 )
             )
             if owner != "agdc_admin":
-                self.execute_ddl(
+                self.execute(
                     text(f"alter schema {CUBEDASH_SCHEMA} owner to agdc_admin")
                 )
         return True

@@ -37,17 +37,16 @@ class ExplorerAbstractIndex(ABC):
         # but either approach involves accessing a protected attribute - which is better?
         self.engine = index._db._engine  # type: ignore[attr-defined]
 
-    # need to add an odc_index accessor
-    def execute_query(self, query) -> list[Row]:
-        with self.engine.connect() as conn:
-            return conn.execute(query).fetchall()
+    def run_query(self, query) -> Sequence[Row]:
+        with self.index._active_connection() as conn:  # type: ignore[attr-defined]
+            return conn.run_query(query)
 
-    def execute_query_scalar(self, query) -> Any:
-        with self.engine.connect() as conn:
-            return conn.execute(query).scalar()
+    def run_scalar_query(self, query) -> Any:
+        with self.index._active_connection() as conn:  # type: ignore[attr-defined]
+            return conn.run_scalar_query(query)
 
-    def execute_ddl(self, query) -> int:
-        with self.engine.connect() as conn:
+    def execute(self, query) -> int:
+        with self.index._active_connection() as conn:  # type: ignore[attr-defined]
             results = conn.execute(query)
             return results.rowcount
 

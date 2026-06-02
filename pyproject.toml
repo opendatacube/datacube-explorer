@@ -8,7 +8,7 @@ authors = [
 dependencies = [
     "cachetools",
     "click>=8.3.2", # Tests require 8.3.2 to work.
-    "datacube[postgres]>=1.9.17,<1.10.0",
+    "datacube[postgres]>=1.9.20,<1.10.0",
     "eodatasets3>=1.9",
     "fiona>=1.10.0",
     "geoalchemy2>=0.8",
