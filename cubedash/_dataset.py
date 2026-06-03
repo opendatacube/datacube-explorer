@@ -101,7 +101,8 @@ def dataset_full_page(product_name: str, id_: UUID):
 @bp.route("/dataset/<uuid:id_>.odc-metadata.yaml")
 def raw_doc(id_):
     index = _model.STORE.index
-    dataset = index.datasets.get(id_, include_sources=True)
+    dataset = index.datasets.get(id_, include_sources=False)
+    lineage = index.lineage.get_source_ids(id_)
 
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
@@ -109,6 +110,6 @@ def raw_doc(id_):
     # Format for readability
     return utils.as_yaml(
         utils.prepare_dataset_formatting(
-            dataset, include_source_url=True, include_locations=True
+            dataset, include_source_url=True, include_locations=True, lineage=lineage
         )
     )
