@@ -36,7 +36,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import TSTZRANGE, array, insert
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import aliased
 from sqlalchemy.types import TIMESTAMP
 
 import cubedash.summary._schema as _schema
@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
     from datacube.index.postgis.index import Index
     from datacube.model import Dataset, Field, MetadataType, Product, Range
-    from sqlalchemy import ClauseElement, CursorResult, Label, Result, Row, Select
+    from sqlalchemy import ClauseElement, Label, Result, Row, Select
     from sqlalchemy.sql import ColumnElement
 
     from cubedash.summary._extents import PgDocField
@@ -130,13 +130,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def outdated_months(
         self, product: Product, only_those_newer_than: datetime
-    ) -> Result:
+    ) -> Sequence[Row]:
         """
         What months have had dataset changes since they were last generated?
         """
         # Find the most-recently updated datasets and group them by month.
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     func.date_trunc(
                         "month", datetime_expression(product.metadata_type)
@@ -155,12 +155,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def outdated_years(self, product_id: int) -> Result:
+    def outdated_years(self, product_id: int) -> Sequence[Row]:
         updated_months = aliased(TimeOverview, name="updated_months")
         years = aliased(TimeOverview, name="years_needing_update")
 
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 # Select years
                 select(years.start_day)
                 .where(years.period_type == "year")
@@ -181,9 +181,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_ds_count_per_period(self) -> Result:
+    def product_ds_count_per_period(self) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     ProductSpatial.name,
                     TimeOverview.start_day,
@@ -203,7 +203,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def upsert_product_record(
         self, product_name: str, fields: dict[str, Any]
-    ) -> tuple[int, datetime]:
+    ) -> tuple[int, datetime] | None:
         # Dear future reader. This section used to use an 'UPSERT' statement (as in,
         # insert, on_conflict...) and while this works, it triggers the sequence
         # `product_id_seq` to increment as part of the check for insertion. This
@@ -211,34 +211,37 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # a couple of times! So, It appears that this update-else-insert must be done
         # in two statements...
         with self.index._active_connection(transaction=True) as conn:
-            row = conn.execute(
+            rows = conn.run_query(
                 select(ProductSpatial.id, ProductSpatial.last_refresh).where(
                     ProductSpatial.name == product_name
                 )
-            ).fetchone()
+            )
+            row = rows[0] if rows else None
 
             if row:
                 # Product already exists, so update it
-                return conn.execute(
+                rows = conn.run_query(
                     update(ProductSpatial)
                     .returning(ProductSpatial.id, ProductSpatial.last_refresh)
                     .where(ProductSpatial.id == row[0])
                     .values(**fields)
-                ).fetchone()
+                )
+                return rows[0] if rows else None
             # Product doesn't exist, so insert it
             fields["name"] = product_name
-            return conn.execute(
+            rows = conn.run_query(
                 insert(ProductSpatial)
                 .returning(ProductSpatial.id, ProductSpatial.last_refresh)
                 .values(**fields)
-            ).fetchone()
+            )
+            return rows[0] if rows else None
 
     @override
     def put_summary(
         self, product_id: int, start_day: date, period: str, summary_row: dict
-    ) -> Result:
+    ) -> Any:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_scalar_query(
                 insert(TimeOverview)
                 .on_conflict_do_update(
                     index_elements=["product_ref", "start_day", "period_type"],
@@ -259,9 +262,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def product_summary_cols(self, product_name: str) -> Row:
+    def product_summary_cols(self, product_name: str) -> Row | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(
                     ProductSpatial.dataset_count,
                     ProductSpatial.time_earliest,
@@ -275,13 +278,14 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     ProductSpatial.derived_product_refs,
                     ProductSpatial.fixed_metadata,
                 ).where(ProductSpatial.name == product_name)
-            ).fetchone()
+            )
+            return rows[0] if rows else None
 
     @override
-    def upsert_product_regions(self, product_id: int) -> CursorResult:
+    def upsert_product_regions(self, product_id: int) -> Sequence[Row]:
         # add new regions row and/or update existing regions based on dataset_spatial
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 text(f"""
             with srid_groups as (
                 select cubedash.dataset_spatial.product_ref                         as product_ref,
@@ -309,12 +313,11 @@ class ExplorerIndex(ExplorerAbstractIndex):
                             generation_time = now(),
                             footprint       = excluded.footprint
             returning product_ref, region_code, footprint, count
-
                 """)
             )
 
     @override
-    def delete_product_empty_regions(self, product_id: int) -> CursorResult:
+    def delete_product_empty_regions(self, product_id: int) -> int:
         with self.index._active_connection() as conn:
             return conn.execute(
                 text(f"""
@@ -326,25 +329,28 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 group by cubedash.dataset_spatial.region_code
             )
                 """)
-            )
+            ).rowcount
 
     @override
-    def product_time_overview(self, product_id: int) -> tuple[datetime, datetime, int]:
+    def product_time_overview(
+        self, product_id: int
+    ) -> tuple[datetime, datetime, int] | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(
                     func.min(DatasetSpatial.center_time),
                     func.max(DatasetSpatial.center_time),
                     func.count(),
                 ).where(DatasetSpatial.product_ref == product_id)
-            ).fetchone()
+            )
+        return rows[0] if rows else None
 
     @override
     def product_time_summary(
         self, product_id: int, start_day: date, period: str
-    ) -> Result:
+    ) -> Row | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(TimeOverview).where(
                     and_(
                         TimeOverview.product_ref == product_id,
@@ -353,6 +359,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     )
                 )
             )
+        return rows[0] if rows else None
 
     @override
     def collections_search_query(
@@ -443,14 +450,14 @@ class ExplorerIndex(ExplorerAbstractIndex):
         query = query.limit(limit).offset(offset)
 
         with self.index._active_connection() as conn:
-            return conn.execute(query)
+            return conn.run_query(query)
 
     @override
-    def latest_arrivals(self, period_length: timedelta) -> Result:
-        with self.engine.begin() as conn:
-            latest_arrival_date = conn.execute(
+    def latest_arrivals(self, period_length: timedelta) -> Sequence[Row]:
+        with self.index._active_connection() as conn:
+            latest_arrival_date = conn.run_scalar_query(
                 text("select max(added) from odc.dataset;")
-            ).scalar()
+            )
             if latest_arrival_date is None:
                 raise EmptyDbError()
 
@@ -471,12 +478,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     order by arrival_date desc, product_name;
                 """),
                 {"datasets_since": datasets_since_date},
-            )
+            ).fetchall()
 
     @override
-    def already_summarised_period(self, period: str, product_id: int) -> Result:
+    def already_summarised_period(self, period: str, product_id: int) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(TimeOverview.start_day).where(
                     and_(
                         TimeOverview.product_ref == product_id,
@@ -488,13 +495,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def linked_products_search(
         self, product_id: int, sample_sql: str, direction: str
-    ) -> Result:
+    ) -> Row | None:
         from_ref, to_ref = "source_dataset_ref", "derived_dataset_ref"
         if direction == "derived":
             to_ref, from_ref = from_ref, to_ref
 
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 text(f"""
                 with datasets as (
                     select id from odc.dataset {sample_sql}
@@ -517,11 +524,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 inner join linked_products sp on id = product_ref;
             """)
             )
+            return rows[0] if rows else None
 
     @override
-    def product_region_summary(self, product_id: int) -> Result:
+    def product_region_summary(self, product_id: int) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     Region.region_code,
                     Region.count,
@@ -533,9 +541,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def dataset_footprint_region(self, dataset_id: UUID) -> Result:
+    def dataset_footprint_region(self, dataset_id: UUID) -> Row | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(
                     func.ST_Transform(DatasetSpatial.footprint, 4326).label(
                         "footprint"
@@ -543,6 +551,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     DatasetSpatial.region_code,
                 ).where(DatasetSpatial.id == dataset_id)
             )
+            return rows[0] if rows else None
 
     @override
     def latest_dataset_added_time(self, product_id: int) -> datetime:
@@ -550,12 +559,12 @@ class ExplorerIndex(ExplorerAbstractIndex):
         # so we have to get that info from ODC_DATASET
         # join might not be necessary
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_scalar_query(
                 select(func.max(ODC_DATASET.added))
                 .select_from(DatasetSpatial)
                 .join(ODC_DATASET, onclause=DatasetSpatial.id == ODC_DATASET.id)
                 .where(DatasetSpatial.product_ref == product_id)
-            ).scalar()
+            )
 
     @override
     def update_product_refresh_timestamp(
@@ -581,9 +590,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         field_values: dict,
         candidate_fields: Sequence[tuple[str, PgDocField]],
         sample_ids: Iterable[tuple],
-    ) -> Result:
+    ) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     *[
                         (
@@ -609,7 +618,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     @override
     def all_products_location_samples(
         self, products: Sequence[Product], sample_size: int
-    ) -> Result:
+    ) -> Sequence[Row]:
         queries = []
         for product in products:
             subquery = (
@@ -629,7 +638,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         if queries:  # Don't run invalid SQL on empty database
             with self.index._active_connection() as conn:
-                return conn.execute(union_all(*queries))
+                return conn.run_query(union_all(*queries))
         else:
             raise EmptyDbError()
 
@@ -661,13 +670,10 @@ class ExplorerIndex(ExplorerAbstractIndex):
             .limit(bindparam("limit", limit))
             .offset(bindparam("offset", offset))
         )
-        with (
-            self.index._active_connection() as dbapi,
-            Session(dbapi._connection) as sess,
-        ):
+        with self.index._active_connection() as conn:
             return (
                 self.index.datasets._sqldataset_to_dataset(res)
-                for res in sess.execute(query).scalars().all()
+                for res in conn.run_query(query, orm=True, orm_scalars=True)
             )
 
     @override
@@ -690,7 +696,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             .offset(bindparam("offset", offset))
         )
         with self.index._active_connection() as conn:
-            return (res.product_ref for res in conn.execute(query).fetchall())
+            return (res.product_ref for res in conn.run_query(query))
 
     @override
     def delete_datasets(
@@ -761,10 +767,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
             ).rowcount
 
     @override
-    def synthesize_dataset_footprint(
-        self, rows: Sequence[tuple], shapes: dict
-    ) -> Result:
-        with self.engine.begin() as conn:
+    def synthesize_dataset_footprint(self, rows: Sequence[tuple], shapes: dict) -> int:
+        with self.index._active_connection() as conn:
             return conn.execute(
                 update(DatasetSpatial)
                 .where(DatasetSpatial.id == bindparam("dataset_id"))
@@ -787,7 +791,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     }
                     for id_, sat_path, sat_row in rows
                 ],
-            )
+            ).rowcount
 
     @override
     def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
@@ -818,9 +822,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return query.select_from(DatasetSpatial)
 
     @override
-    def select_spatial_stats(self):
+    def select_spatial_stats(self) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     SpatialQualityStats.product_ref.label("product_ref"),
                     SpatialQualityStats.count,
@@ -920,7 +924,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
 
     @override
-    def srid_summary(self, where_clause: ColumnElement):
+    def srid_summary(self, where_clause: ColumnElement) -> Row | None:
         select_by_srid = (
             select(
                 func.ST_SRID(DatasetSpatial.footprint).label("srid"),
@@ -942,7 +946,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         # Union all srid groups into one summary.
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(
                     # do we still need .c. notation here?
                     func.sum(select_by_srid.c.dataset_count).label("dataset_count"),
@@ -958,11 +962,14 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     func.now().label("summary_gen_time"),
                 )
             )
+        return rows[0] if rows else None
 
     @override
-    def day_counts(self, grouping_time_zone, where_clause: ColumnElement):
+    def day_counts(
+        self, grouping_time_zone, where_clause: ColumnElement
+    ) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(
                     func.date_trunc(
                         "day",
@@ -977,9 +984,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
-    def region_counts(self, where_clause):
+    def region_counts(self, where_clause) -> Sequence[Row]:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            return conn.run_query(
                 select(DatasetSpatial.region_code.label("region_code"), func.count())
                 .where(where_clause)
                 .group_by("region_code")
@@ -1068,9 +1075,9 @@ class ExplorerIndex(ExplorerAbstractIndex):
         )
 
     @override
-    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Result:
+    def sample_dataset(self, product_id: int, columns: Sequence[Label]) -> Row | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(ODC_DATASET.id, ODC_DATASET.product_ref, *columns)
                 .where(
                     and_(
@@ -1083,13 +1090,15 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
             # at this point can we not select the values from DATASET_SPATIAL,
             # or is there a reason we need them to be calculated?
+        return rows[0] if rows else None
 
     @override
-    def mapped_crses(self, product, srid_expression):
+    def mapped_crses(self, product, srid_expression) -> Row | None:
         with self.index._active_connection() as conn:
-            return conn.execute(
+            rows = conn.run_query(
                 select(literal(product.name).label("product"), srid_expression)
                 .where(ODC_DATASET.product_ref == product.id)
                 .where(ODC_DATASET.archived.is_(None))
                 .limit(1)
             )
+        return rows[0] if rows else None
