@@ -815,13 +815,6 @@ EODATASETS_PROPERTY_ORDER = [
     "lineage",
     "product_flags",
 ]
-EODATASETS_LINEAGE_PROPERTY_ORDER = [
-    "algorithm",
-    "machine",
-    "ancillary_quality",
-    "ancillary",
-    "source_datasets",
-]
 
 
 def dataset_shape(ds: Dataset) -> tuple[BaseGeometry | None, bool]:
