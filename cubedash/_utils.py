@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
     from datacube.index.fields import Field
     from datacube.model import Dataset, Product
+    from datacube.model.lineage import Eo3LineageDict
     from flask import Flask
     from odc.geo import Geometry
     from shapely.geometry.base import BaseGeometry
@@ -658,7 +659,10 @@ def as_csv(
 
 
 def prepare_dataset_formatting(
-    dataset: Dataset, include_source_url=False, include_locations=False
+    dataset: Dataset,
+    include_source_url=False,
+    include_locations=False,
+    lineage: Eo3LineageDict | None = None,
 ) -> CommentedMap:
     """
     Try to format a raw Dataset document for readability.
@@ -669,6 +673,9 @@ def prepare_dataset_formatting(
 
     if include_locations:
         doc["location"] = dataset.uri
+
+    if lineage:
+        doc["lineage"] = lineage
 
     # If it's EO3, use eodatasets's formatting. It's better.
     if is_doc_eo3(doc):
@@ -721,25 +728,6 @@ def prepare_document_formatting(
         )
     )
 
-    # Order any embedded ones too.
-    if "lineage" in ordered_metadata:
-        ordered_metadata["lineage"] = dict(
-            sorted(
-                ordered_metadata["lineage"].items(),
-                key=functools.partial(
-                    get_property_priority, EODATASETS_LINEAGE_PROPERTY_ORDER
-                ),
-            )
-        )
-
-        if "source_datasets" in ordered_metadata["lineage"]:
-            for type_, source_dataset_doc in ordered_metadata["lineage"][
-                "source_datasets"
-            ].items():
-                ordered_metadata["lineage"]["source_datasets"][type_] = (
-                    prepare_document_formatting(source_dataset_doc)
-                )
-
     # Products have an embedded metadata doc (subset of dataset metadata)
     if "metadata" in ordered_metadata:
         ordered_metadata["metadata"] = prepare_document_formatting(
@@ -783,18 +771,7 @@ def undo_eo3_compatibility(doc) -> None:
     if "extent" in doc:
         del doc["extent"]
 
-    lineage = doc.get("lineage", {})
-    # If old EO1-style lineage was built (as it is on dataset.get(include_sources=True),
-    # flatten to EO3-style ID lists.
-
-    # TODO: It's incredibly inefficient that the whole source-dataset tree has been loaded by ODC
-    #       and we're now throwing it all away except the top-level ids.
-
-    if "source_datasets" in lineage:
-        new_lineage: dict = {}
-        for classifier, dataset_doc in lineage["source_datasets"].items():
-            new_lineage.setdefault(classifier, []).append(dataset_doc["id"])
-        doc["lineage"] = new_lineage
+    # Lineage is already handled by core
 
 
 EODATASETS_PROPERTY_ORDER = [
@@ -837,13 +814,6 @@ EODATASETS_PROPERTY_ORDER = [
     "image",
     "lineage",
     "product_flags",
-]
-EODATASETS_LINEAGE_PROPERTY_ORDER = [
-    "algorithm",
-    "machine",
-    "ancillary_quality",
-    "ancillary",
-    "source_datasets",
 ]
 
 
