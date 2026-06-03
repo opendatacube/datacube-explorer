@@ -102,11 +102,10 @@ def dataset_full_page(product_name: str, id_: UUID):
 def raw_doc(id_):
     index = _model.STORE.index
     dataset = index.datasets.get(id_, include_sources=False)
-    lineage = index.lineage.get_source_ids(id_)
-
     if dataset is None:
         abort(404, f"No dataset found with id {id_}")
 
+    lineage = index.lineage.get_source_ids(id_)
     # Format for readability
     return utils.as_yaml(
         utils.prepare_dataset_formatting(
