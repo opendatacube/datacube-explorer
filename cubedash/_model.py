@@ -9,6 +9,7 @@ from typing import TypeAlias
 import flask
 import structlog
 from datacube.index import index_connect
+from datacube.index.exceptions import QueryTimeout
 from datacube.model import Product
 from flask_caching import Cache
 from flask_cors import CORS
@@ -121,6 +122,21 @@ def create_app(test_config=None) -> flask.Flask:
     def internal_server_error(error):
         # Bypass inject_globals for rendering the 500 error page
         return utils.render_without_context_processors(app, "500.html")
+
+    @app.errorhandler(QueryTimeout)
+    def handle_query_timeout(error):
+        # Bypass inject_globals for rendering the 50(3) error page
+        return (
+            utils.render_without_context_processors(
+                app, "500.html", message="Database query cancelled due to timeout"
+            ),
+            # 503 == "Service unavailable: The server can't handle the request due
+            #         to temporary overload or maintenance. Check the Retry-After
+            #         header to see when to try again. Temporary condition."
+            # Seems to be the appropriate response code here.
+            503,
+            {"Retry-After": "90"},
+        )
 
     @app.errorhandler(HTTPException)
     def handle_exception(e: HTTPException) -> tuple[ResponseValue, int]:
