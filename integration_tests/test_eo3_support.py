@@ -190,10 +190,12 @@ def test_undo_eo3_doc_compatibility(eo3_index: Index) -> None:
 
     # Get our EO3 ARD document that was indexed.
     indexed_dataset = eo3_index.datasets.get(
-        UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14"), include_sources=True
+        UUID("5b2f2c50-e618-4bef-ba1f-3d436d9aed14"),
     )
     assert indexed_dataset is not None
     indexed_doc = with_parsed_datetimes(indexed_dataset.metadata_doc)
+    indexed_lineage = eo3_index.lineage.get_source_ids(indexed_dataset.id)
+    indexed_doc["lineage"] = indexed_lineage
 
     # Undo the changes.
     _utils.undo_eo3_compatibility(indexed_doc)
