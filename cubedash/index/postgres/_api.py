@@ -5,7 +5,12 @@ from typing import Any
 import shapely.ops
 import structlog
 from cachetools.func import lru_cache
-from datacube.drivers.common_psql import as_role, create_schema, has_roles
+from datacube.drivers.common_psql import (
+    as_role,
+    catch_timeout,
+    create_schema,
+    has_roles,
+)
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import SimpleDocField
 from typing_extensions import override
@@ -820,8 +825,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         column_values: dict[str, Label],
         after_date: datetime | None,
     ) -> int:
-        column_values["id"] = ODC_DATASET.c.id
-        column_values["dataset_type_ref"] = ODC_DATASET.c.dataset_type_ref
+        column_values["id"] = ODC_DATASET.c.id  # type: ignore[assignment]
+        column_values["dataset_type_ref"] = ODC_DATASET.c.dataset_type_ref  # type: ignore[assignment]
         only_where = [
             ODC_DATASET.c.dataset_type_ref
             == bindparam("product_ref", product_id, type_=SmallInteger),
@@ -889,7 +894,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def spatial_select_query(
         self, clauses: Sequence[Label | ClauseElement], full: bool = False
     ) -> Select:
-        query = select(*clauses)
+        query = select(*clauses)  # type: ignore[arg-type]
         if full:
             return query.select_from(
                 DATASET_SPATIAL.join(
@@ -916,6 +921,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
+    @catch_timeout
     def schema_compatible_info(
         self, for_writing_operations_too=False
     ) -> tuple[str, bool]:
@@ -930,6 +936,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
             )
 
     @override
+    @catch_timeout
     def create_schema(self) -> bool:
         # Ensure ODC roles exist (roles were formerly optional but not using them is now deprecated)
         with self.engine.connect() as conn:
@@ -958,11 +965,13 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return True
 
     @override
+    @catch_timeout
     def init_schema(self, grouping_epsg_code: int) -> bool | None:
         with self.engine.connect() as conn:
             return init_elements(conn, grouping_epsg_code)
 
     @override
+    @catch_timeout
     def refresh_stats(self, concurrently: bool) -> None:
         """
         Refresh general statistics tables that cover all products.
@@ -977,6 +986,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
     @lru_cache()
     @override
+    @catch_timeout
     def get_srid_name(self, srid: int) -> str | None:
         """
         Convert an internal postgres srid key to a string auth code: eg: 'EPSG:1234'
