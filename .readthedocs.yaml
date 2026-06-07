@@ -6,9 +6,12 @@ sphinx:
 # uv build from the documentation at:
 # https://docs.readthedocs.com/platform/latest/build-customization.html#install-dependencies-with-uv
 build:
-  os: ubuntu-24.04
+  os: ubuntu-26.04
+  # No Fiona 1.10.1 binary wheel for Python 3.14.
+  apt_packages:
+    - libgdal-dev
   tools:
-    python: "3.12"
+    python: "3.14"
   jobs:
     post_checkout:
       - git fetch --prune --unshallow
