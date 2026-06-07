@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import decimal
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import datacube
@@ -222,7 +222,7 @@ def search_page(
                 creation_time.begin or product_summary.duration[0],
                 # product time bounds don't necessarily include the creation time
                 # so use today's date instead as our end bound if needed
-                creation_time.end or datetime.now(timezone.utc),
+                creation_time.end or datetime.now(UTC),
             )
         query["creation_time"] = creation_time
 

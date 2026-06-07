@@ -4,11 +4,10 @@ import datetime
 import pathlib
 import sys
 from functools import partial
-from typing import BinaryIO
+from typing import BinaryIO, override
 
 import structlog
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
-from typing_extensions import override
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:

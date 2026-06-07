@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import dedent
 from uuid import UUID
@@ -83,11 +83,11 @@ def test_eo3_extents(eo3_index: Index) -> None:
     # On older products, the center time was calculated from the range.
     # But on EO3 we have a singular 'datetime' to use directly.
     assert dataset_extent_row["center_time"] == datetime(
-        1988, 3, 30, 1, 41, 16, 892044, tzinfo=timezone.utc
+        1988, 3, 30, 1, 41, 16, 892044, tzinfo=UTC
     )
 
     assert dataset_extent_row["creation_time"] == datetime(
-        2020, 6, 5, 7, 15, 26, 599544, tzinfo=timezone.utc
+        2020, 6, 5, 7, 15, 26, 599544, tzinfo=UTC
     )
     product = eo3_index.products.get_by_name("ga_ls5t_ard_3")
     assert product is not None
@@ -145,9 +145,7 @@ def test_eo3_dateless_extents(eo3_index: Index) -> None:
 
     # Since it has no datetime, the chosen one should default to the start
     time_record = dataset_extent_row["center_time"]
-    assert time_record.astimezone(timezone.utc) == datetime(
-        2017, 7, 1, 0, 0, tzinfo=timezone.utc
-    )
+    assert time_record.astimezone(UTC) == datetime(2017, 7, 1, 0, 0, tzinfo=UTC)
 
     # Dataset has no creation time, but will fall back to index time.
     assert dataset_extent_row["creation_time"] is not None
@@ -234,7 +232,7 @@ def with_parsed_datetimes(v: dict | str | datetime | list, name=""):
         dt = parse_time(v)
         # Strip/normalise timezone to match default yaml.load()
         if dt.tzinfo:
-            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            dt = dt.astimezone(UTC).replace(tzinfo=None)
         return dt
     if isinstance(v, dict):
         return {k: with_parsed_datetimes(v, name=k) for k, v in v.items()}

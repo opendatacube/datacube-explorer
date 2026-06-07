@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, override
 
 import fiona
 import structlog
@@ -23,7 +23,6 @@ from shapely.geometry import shape
 from sqlalchemy import BigInteger, String, case, cast, func, null
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.types import TIMESTAMP
-from typing_extensions import override
 
 from cubedash._utils import (
     datetime_expression,

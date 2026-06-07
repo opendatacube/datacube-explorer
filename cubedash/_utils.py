@@ -11,7 +11,7 @@ import io
 import itertools
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from io import StringIO
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -442,12 +442,12 @@ def _unchanged_value(a):
 
 def default_utc(d: datetime) -> datetime:
     if d.tzinfo is None:
-        return d.replace(tzinfo=timezone.utc)
+        return d.replace(tzinfo=UTC)
     return d
 
 
 def now_utc() -> datetime:
-    return default_utc(datetime.now(timezone.utc))
+    return default_utc(datetime.now(UTC))
 
 
 def dataset_created(dataset: Dataset) -> datetime | None:

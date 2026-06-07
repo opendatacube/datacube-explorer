@@ -4,7 +4,7 @@ Tests that load pages and check the contained text.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from datacube.model import Range
@@ -34,12 +34,10 @@ def test_s2_ard_summary(run_generate, summary_store: SummaryStore) -> None:
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
-            begin=datetime(2017, 9, 30, 14, 30, tzinfo=timezone.utc),
-            end=datetime(2017, 10, 31, 14, 30, tzinfo=timezone.utc),
+            begin=datetime(2017, 9, 30, 14, 30, tzinfo=UTC),
+            end=datetime(2017, 10, 31, 14, 30, tzinfo=UTC),
         ),
-        newest_creation_time=datetime(
-            2018, 7, 26, 23, 49, 25, 684_327, tzinfo=timezone.utc
-        ),
+        newest_creation_time=datetime(2018, 7, 26, 23, 49, 25, 684_327, tzinfo=UTC),
         timeline_period="day",
         timeline_count=31,
         crses={"EPSG:32753"},
@@ -55,10 +53,10 @@ def test_s2a_l1_summary(run_generate, summary_store: SummaryStore) -> None:
         dataset_count=8,
         footprint_count=8,
         time_range=Range(
-            begin=datetime(2017, 9, 30, 14, 30, tzinfo=timezone.utc),
-            end=datetime(2017, 10, 31, 14, 30, tzinfo=timezone.utc),
+            begin=datetime(2017, 9, 30, 14, 30, tzinfo=UTC),
+            end=datetime(2017, 10, 31, 14, 30, tzinfo=UTC),
         ),
-        newest_creation_time=datetime(2017, 10, 23, 1, 13, 7, tzinfo=timezone.utc),
+        newest_creation_time=datetime(2017, 10, 23, 1, 13, 7, tzinfo=UTC),
         timeline_period="day",
         timeline_count=31,
         crses={"EPSG:32753"},

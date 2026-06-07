@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import timezone
+from datetime import UTC
 from pathlib import Path
 from pprint import pformat, pprint
 from textwrap import indent
@@ -284,9 +284,9 @@ def expect_values(
         dataset_count {s.dataset_count}
         footprint_count {s.footprint_count}
         time range:
-            - {s.time_range.begin.astimezone(timezone.utc)!r}
-            - {s.time_range.end.astimezone(timezone.utc)!r}
-        newest: {s.newest_dataset_creation_time.astimezone(timezone.utc)!r}
+            - {s.time_range.begin.astimezone(UTC)!r}
+            - {s.time_range.end.astimezone(UTC)!r}
+        newest: {s.newest_dataset_creation_time.astimezone(UTC)!r}
         crses: {s.crses!r}
         size_bytes: {s.size_bytes}
         timeline
