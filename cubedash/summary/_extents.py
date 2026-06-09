@@ -239,7 +239,6 @@ def refresh_spatial_extents(
         if "sat_path" in product.metadata_type.dataset_fields:
             # We can synthesize the polygons!
             log.info("spatial_synthesizing")
-            shapes = _get_path_row_shapes()
             rows = [
                 row
                 for row in e_index.ds_search_returning(
@@ -248,7 +247,7 @@ def refresh_spatial_extents(
                 if row.sat_path.lower is not None
             ]
             if rows:
-                e_index.synthesize_dataset_footprint(rows, shapes)
+                e_index.synthesize_dataset_footprint(rows, _get_path_row_shapes())
         log.info("spatial_synthesizing.end")
 
     return changed
