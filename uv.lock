@@ -835,7 +835,7 @@ dependencies = [
     { name = "odc-geo" },
     { name = "pandas" },
     { name = "psycopg", extra = ["c"] },
-    { name = "pygeofilter" },
+    { name = "pygeofilter", extra = ["backend-sqlalchemy"] },
     { name = "pyproj" },
     { name = "python-rapidjson" },
     { name = "shapely" },
@@ -952,7 +952,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'test'" },
     { name = "prometheus-flask-exporter", marker = "extra == 'deployment'" },
     { name = "psycopg", extras = ["c"] },
-    { name = "pygeofilter", specifier = ">=0.2.2" },
+    { name = "pygeofilter", extras = ["backend-sqlalchemy"], specifier = ">=0.2.2" },
     { name = "pyproj" },
     { name = "pystac", marker = "extra == 'webserver'" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -2461,6 +2461,12 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/40/f0/30b916dc05ff1242eb9cc391e1bac367d34c9f403c0bd634923b87024c23/pygeofilter-0.3.3.tar.gz", hash = "sha256:8b9fec05ba144943a1e415b6ac3752ad6011f44aad7d1bb27e7ef48b073460bd", size = 63419, upload-time = "2025-12-20T08:47:59.619Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/e3/c777c08e9519c1d49fcfad726c84d7b0e7934e9f414430eaa3d1ab41ecf7/pygeofilter-0.3.3-py2.py3-none-any.whl", hash = "sha256:e719fcb929c6b60bca99de0cfde5f95bc3245cab50516c103dae1d4f12c4c7b6", size = 96568, upload-time = "2025-12-20T08:47:58.178Z" },
+]
+
+[package.optional-dependencies]
+backend-sqlalchemy = [
+    { name = "geoalchemy2" },
+    { name = "sqlalchemy" },
 ]
 
 [[package]]
