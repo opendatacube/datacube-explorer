@@ -877,6 +877,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
     def dataset_spatial_field_exprs(self) -> dict[str, ColumnElement]:
         geom = func.ST_Transform(DATASET_SPATIAL.c.footprint, 4326)
         return {
+            "collection_id": DATASET_SPATIAL.c.dataset_type_ref,
             "collection": (
                 select(ODC_PRODUCT.c.name)
                 .where(ODC_PRODUCT.c.id == DATASET_SPATIAL.c.dataset_type_ref)
