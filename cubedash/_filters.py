@@ -5,7 +5,7 @@ Common global filters for templates.
 from __future__ import annotations
 
 import calendar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 import flask
@@ -298,7 +298,7 @@ def timesince(dt, default="just now"):
     if dt is None:
         return "an unrecorded time ago"
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     diff = now - utils.default_utc(dt)
 
     periods = (
@@ -319,7 +319,7 @@ def timesince(dt, default="just now"):
 
 
 def _time(label: str, actual_time: datetime) -> Markup:
-    as_utc = actual_time.astimezone(timezone.utc)
+    as_utc = actual_time.astimezone(UTC)
     return Markup('<time datetime={} title="{}">{}</time>').format(
         as_utc.isoformat(), actual_time.strftime("%a, %d %b %Y %H:%M:%S%Z"), label
     )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
 from typing import Any, TypeAlias
@@ -86,8 +86,8 @@ def dissoc_in(d: dict, key: str):
 
 def utc(d: datetime):
     if d.tzinfo is None:
-        return d.replace(tzinfo=timezone.utc)
-    return d.astimezone(timezone.utc)
+        return d.replace(tzinfo=UTC)
+    return d.astimezone(UTC)
 
 
 def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:

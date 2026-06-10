@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, override
 
 import shapely.ops
 import structlog
@@ -13,7 +13,6 @@ from datacube.drivers.common_psql import (
 )
 from datacube.drivers.postgres._api import _DATASET_SELECT_FIELDS, PostgresDbAPI
 from datacube.drivers.postgres._fields import SimpleDocField
-from typing_extensions import override
 
 from datacube.drivers.postgres._schema import (  # isort: skip
     DATASET as ODC_DATASET,

@@ -63,6 +63,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from functools import partial
 from textwrap import dedent
+from typing import override
 
 import click
 import structlog
@@ -71,7 +72,6 @@ from click import style
 from datacube.cfg import ODCConfig
 from datacube.index import index_connect
 from datacube.ui.click import environment_option, pass_config
-from typing_extensions import override
 
 from cubedash.logs import init_logging
 from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError

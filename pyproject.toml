@@ -15,7 +15,7 @@ dependencies = [
     "odc-geo",
     "pandas",
     "psycopg[c]",
-    "pygeofilter>=0.2.2",
+    "pygeofilter[backend-sqlalchemy]>=0.2.2",
     "pyproj",
     "python-rapidjson",
     "shapely",
@@ -23,16 +23,15 @@ dependencies = [
     "structlog>=20.2.0",
     "werkzeug",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.md"
 license = "Apache-2.0"
 classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 [project.urls]
@@ -141,7 +140,7 @@ exclude_also = [
 precision = 2
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 allow_redefinition = true
 check_untyped_defs = true
 enable_error_code = ["explicit-override"]
@@ -163,7 +162,9 @@ filterwarnings = [
 ]
 
 [tool.ruff]
-target-version = "py310"
+extend-exclude = [
+    "cubedash/_version.py",
+]
 
 [tool.ruff.lint]
 future-annotations = true
@@ -196,6 +197,7 @@ ignore = [
     "S310",
     "S608",
     "SIM115",
+    "UP040",
 ]
 
 [tool.ruff.lint.per-file-ignores]

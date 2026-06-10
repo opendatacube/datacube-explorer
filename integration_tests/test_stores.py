@@ -3,7 +3,7 @@ from __future__ import annotations
 import operator
 import time
 from collections import Counter
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 from datacube.model import Range
@@ -38,17 +38,17 @@ def _overview(
         dataset_count=4,
         timeline_dataset_counts=Counter(
             [
-                datetime(2017, 1, 2, tzinfo=timezone.utc),
-                datetime(2017, 1, 3, tzinfo=timezone.utc),
-                datetime(2017, 1, 3, tzinfo=timezone.utc),
-                datetime(2017, 1, 1, tzinfo=timezone.utc),
+                datetime(2017, 1, 2, tzinfo=UTC),
+                datetime(2017, 1, 3, tzinfo=UTC),
+                datetime(2017, 1, 3, tzinfo=UTC),
+                datetime(2017, 1, 1, tzinfo=UTC),
             ]
         ),
         region_dataset_counts=Counter(["1_2", "1_2", "3_4", "4_5"]),
         timeline_period="day",
         time_range=Range(
-            datetime(2017, 1, 2, tzinfo=timezone.utc),
-            datetime(2017, 2, 3, tzinfo=timezone.utc),
+            datetime(2017, 1, 2, tzinfo=UTC),
+            datetime(2017, 2, 3, tzinfo=UTC),
         ),
         footprint_geometry=geo.Polygon(
             [
@@ -64,15 +64,15 @@ def _overview(
         ),
         footprint_crs="EPSG:3577",
         footprint_count=3,
-        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=timezone.utc),
+        newest_dataset_creation_time=datetime(2018, 1, 1, 1, 1, 1, tzinfo=UTC),
         crses={"epsg:1234"},
         size_bytes=123_400_000,
-        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=timezone.utc),
+        product_refresh_time=datetime(2018, 2, 3, 1, 1, 1, tzinfo=UTC),
     )
 
 
 def test_add_period_list() -> None:
-    product_refresh_time = datetime(2024, 10, 17, tzinfo=timezone.utc)
+    product_refresh_time = datetime(2024, 10, 17, tzinfo=UTC)
     total = TimePeriodOverview.add_periods("test_product", product_refresh_time, [])
     assert total.dataset_count == 0
 
@@ -228,7 +228,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     assert loaded.footprint_geometry.area == pytest.approx(o.footprint_geometry.area)
 
     o.dataset_count = 4321
-    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc)
+    o.newest_dataset_creation_time = datetime(2018, 2, 2, 2, 2, 2, tzinfo=UTC)
     time.sleep(1)
     summary_store._put(o)
     assert o.summary_gen_time != original_gen_time
@@ -236,7 +236,7 @@ def test_put_get_summaries(summary_store: SummaryStore) -> None:
     loaded = summary_store.get(product_name, 2017, None, None)
     assert loaded.dataset_count == 4321
     assert loaded.newest_dataset_creation_time == datetime(
-        2018, 2, 2, 2, 2, 2, tzinfo=timezone.utc
+        2018, 2, 2, 2, 2, 2, tzinfo=UTC
     )
     assert loaded.summary_gen_time != original_gen_time, (
         "An update should update the generation time"

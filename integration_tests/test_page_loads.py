@@ -4,7 +4,7 @@ Tests that load pages and check the contained text.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import StringIO
 from zoneinfo import ZoneInfo
 
@@ -807,8 +807,8 @@ def test_show_summary_cli(clirunner, client: FlaskClient) -> None:
     res = clirunner(show.cli, ["ls7_nbar_scene", "2017", "5"])
 
     # Expect it to show the dates in local timezone.
-    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=timezone.utc)
-    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=timezone.utc)
+    expected_from = datetime(2017, 4, 20, 0, 3, 26, tzinfo=UTC)
+    expected_to = datetime(2017, 5, 3, 1, 6, 41, 500000, tzinfo=UTC)
 
     expected_header = "\n".join(
         (
@@ -962,7 +962,7 @@ def test_all_give_404s(client: FlaskClient) -> None:
             )
 
     name = "does_not_exist"
-    time = datetime.now(timezone.utc)
+    time = datetime.now(UTC)
     region_code = "not_a_region"
     dataset_id = "37296b9a-e6ec-4bfd-ab80-cc32902429d1"
 

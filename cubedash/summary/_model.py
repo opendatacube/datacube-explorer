@@ -4,6 +4,7 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime
+from typing import override
 
 import shapely
 import shapely.ops
@@ -11,7 +12,6 @@ import structlog
 from datacube.model import Range
 from odc.geo.geom import Geometry
 from shapely.geometry import MultiPolygon
-from typing_extensions import override
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
