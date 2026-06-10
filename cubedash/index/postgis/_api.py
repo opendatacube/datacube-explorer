@@ -93,6 +93,16 @@ class ExplorerIndex(ExplorerAbstractIndex):
         return self.index._db.get_dataset_fields(md.definition)
 
     @override
+    def product_names_to_ids(self, names: list[str]) -> list[int]:
+        with self.index._active_connection() as conn:
+            return [
+                row.id
+                for row in conn.run_query(
+                    select(ODC_PRODUCT.id).where(ODC_PRODUCT.name.in_(names))
+                )
+            ]
+
+    @override
     def ds_added_expr(self):
         return ODC_DATASET.added
 

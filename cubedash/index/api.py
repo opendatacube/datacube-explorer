@@ -74,13 +74,19 @@ class ExplorerAbstractIndex(ABC):
     @abstractmethod
     def get_mutable_dataset_search_fields(
         self, md: MetadataType
-    ) -> Mapping[str, Field]: ...
-
-    """
+    ) -> Mapping[str, Field]:
+        """
         Get a copy of a metadata type's fields that we can mutate.
-
         (the ones returned by the Index are cached and so may be shared among callers)
-    """
+        """
+        ...
+
+    @abstractmethod
+    def product_names_to_ids(self, names: list[str]) -> list[int]:
+        """
+        Convert a list of product names to a list of product ids.
+        """
+        ...
 
     @abstractmethod
     def get_datasets_derived(
