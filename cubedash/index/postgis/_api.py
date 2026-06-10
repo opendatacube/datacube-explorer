@@ -759,8 +759,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
         column_values: dict[str, Label],
         after_date: datetime | None,
     ) -> int:
-        column_values["id"] = ODC_DATASET.id
-        column_values["product_ref"] = ODC_DATASET.product_ref
+        column_values["id"] = ODC_DATASET.id  # type: ignore[assignment]
+        column_values["product_ref"] = ODC_DATASET.product_ref  # type: ignore[assignment]
         only_where = [
             ODC_DATASET.product_ref
             == bindparam("product_ref", product_id, type_=SmallInteger),

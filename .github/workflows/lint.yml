@@ -35,7 +35,7 @@ jobs:
         python-version: ["3.12"]
         lintcommand:
           - "ruff check --output-format=github"
-          - "mypy --follow-imports=silent cubedash/*.py cubedash/index/*.py cubedash/startup_utils cubedash/summary cubedash/testutils integration_tests"
+          - "mypy --follow-imports=silent cubedash/*.py cubedash/index/*.py cubedash/index/postg*/_api.py cubedash/startup_utils cubedash/summary cubedash/testutils integration_tests"
     name: Linting
     steps:
       - name: checkout git
