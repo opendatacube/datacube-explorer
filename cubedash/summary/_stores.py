@@ -951,7 +951,8 @@ class SummaryStore:
                 field_exprs["geometry"].intersects(from_shape(intersects))
             )
         if product_names:
-            query = query.where(field_exprs["collection"].in_(product_names))
+            product_ids = self.e_index.product_names_to_ids(product_names)
+            query = query.where(field_exprs["collection_id"].in_(product_ids))
 
         return query
 
