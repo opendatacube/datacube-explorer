@@ -721,7 +721,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -749,7 +749,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -777,7 +777,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -805,7 +805,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -833,7 +833,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -861,7 +861,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -889,7 +889,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -966,7 +966,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -994,7 +994,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -1022,7 +1022,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
@@ -1050,7 +1050,7 @@ def test_eo3_stac_item(eo3_index, client: FlaskClient) -> None:
                 ],
                 "raster:bands": [
                     {
-                        "nodata": float("nan"),
+                        "nodata": "nan",
                         "data_type": "float32",
                         "unit": "1",
                     },
