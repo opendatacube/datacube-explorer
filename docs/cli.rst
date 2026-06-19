@@ -1,21 +1,32 @@
 Command Line Interface
 ======================
-Installing Datacube-explorer installs the ``cubedash-gen`` script, a `Click`_ command line
-interface, in your virtualenv. Executed from the terminal, this script gives
-access to built-in, extension, and application-defined commands. The ``--help``
-option will give more information about any commands and options.
 
-.. _Click: https://click.palletsprojects.com/
+ODC Explorer includes the ``cubedash-gen`` CLI tool. This tool is
+used to setup an ODC Database ready for use with Explorer, and
+update the pre-computed summary information as new Products or
+Datasets are added to the database.
 
-Summary generation
--------------------
 
-Initialise and create product summaries:
+Database Initialisation
+-----------------------
+
+Create Explorer database tables:
 
 .. code-block:: text
 
-    cubedash-gen --init --all
+    cubedash-gen --init
 
+Summary generation
+------------------
+
+Create product summaries:
+
+.. code-block:: text
+
+    cubedash-gen --all
+
+All CLI Options
+---------------
 
 .. click:: cubedash.generate:cli
     :prog: cubedash-gen
@@ -40,7 +51,7 @@ A simple `cubedash-run` command is available to run Explorer locally:
 
 (see `cubedash-run --help` for list of options)
 
-But Explorer can be run using any typical python wsgi server, for example gunicorn:
+But Explorer can be run using any Python WSGI server, for example gunicorn:
 
 .. code-block:: text
 

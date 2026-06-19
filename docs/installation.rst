@@ -1,6 +1,0 @@
-Installation
-============
-
-
-Python Version
---------------
