@@ -1,6 +1,9 @@
 Deploying
 =========
 
+.. todo::
+   Describe deployment options, docker container, Kubernetes Helm chart, etc.
+
 Configure deployment
 --------------------
 
@@ -8,7 +11,7 @@ Add a file to the current directory called ``settings.env.py``
 
 You can alter default config values, all the Explorer application config settings can be found at :any:`explorer-app-settings`.
 
-.. code-block:: text
+.. code-block:: python
 
     # Default product to display (picks first available)
     CUBEDASH_DEFAULT_PRODUCTS = ('ls8_nbar_albers', 'ls7_nbar_albers')
@@ -96,6 +99,9 @@ Sentry error reporting is supported and can be setup as per :any:`sentry-env`
 
 Roles for production deployments
 ---------------------------------
+
+.. todo:: The way database roles has changed in 2026 and this information is no longer
+   correct.
 
 The `roles`_ directory contains sql files for creating
 Postgres roles for Explorer. These are suitable for running each Explorer

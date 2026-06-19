@@ -1,17 +1,15 @@
-How to contribute to Datacube-explorer
-======================================
+How to contribute to ODC Explorer
+=================================
 
-Thank you for considering contributing to Datacube-explorer!
+Thank you for considering contributing to ODC Explorer!
 
 Community
 ---------
 
 This project welcomes community participation.
 
-`Join the ODC Slack <http://slack.opendatacube.org>`__ if you need help
-setting up or using this project, or the Open Data Cube more generally.
-Conversation about datacube-explorer is mostly concentrated in the Slack
-channel ``#explorer``.
+Join us on the `ODC Discord <https://discord.com/invite/4hhBQVas5U>`__
+ if you need help setting up or using this project, or the Open Data Cube more generally.
 
 Please help us to keep the Open Data Cube community open and inclusive by
 reading and following our `Code of Conduct <code-of-conduct.md>`__.
@@ -45,7 +43,7 @@ and "help wanted" is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-datacube-explorer could always use more documentation, whether as part of the
+ODC Explorer could always use more documentation, whether as part of the
 official datacube-explorer docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 

@@ -78,3 +78,6 @@ cubedash/_version.py
 
 # Ignore vscode
 .vscode
+
+# Ignore helix editor config
+.helix

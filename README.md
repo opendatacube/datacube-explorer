@@ -6,7 +6,19 @@
 [![coverage](https://codecov.io/gh/opendatacube/datacube-explorer/branch/develop/graph/badge.svg)](https://codecov.io/gh/opendatacube/datacube-explorer)
 [![Doc](https://readthedocs.org/projects/datacube-explorer/badge/?version=latest)](http://datacube-explorer.readthedocs.org/en/latest/)
 
-![Explorer Screenshot](screenshot.png)
+## Overview
+
+ODC Explorer is part of the Open Data Cube ecosystem of software for geospatial data management and access.
+It is what you need to answer "What's in my datacube?".
+
+It is a web application for exploring which products and data are available,
+and visualising what is available through time and space.
+
+It also includes a STAC API for HTTP based programmatic access to an Open Data Cube
+database, rather than the PostgreSQL access required by the Core ODC library.
+
+![Explorer Screenshot](docs/images/screenshot.png)
+
 
 ## Usage (quick-start)
 

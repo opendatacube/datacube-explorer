@@ -9,9 +9,9 @@ a production environment.** The debugger allows executing arbitrary
 Python code from the browser. It's protected by a pin, but that should
 not be relied on for security.
 
-Use an error logging tool, such as Sentry, as described in
-:ref:`error-logging-tools`, or enable logging and notifications as
-described in :doc:`/logging`.
+Use an error logging tool, such as Sentry, as described below
+, or enable logging and access them via your system or Kubernetes log tool
+of choice.
 
 If you have access to the server, you could add some code to start an
 external debugger if ``request.remote_addr`` matches your IP. Some IDE
@@ -25,11 +25,11 @@ Explorer Sentry setup
 
 To enable Sentry reporting set environment
 
-.. py:data:: SENTRY_DSN
+.. confval:: SENTRY_DSN
 
     Enable Sentry reporting.
 
-.. py:data:: SENTRY_ENV_TAG
+.. confval:: SENTRY_ENV_TAG
 
     Add environment for Sentry reporting.
 

@@ -23,4 +23,4 @@ Run Explorer locally:
 
     cubedash-run
 
-It will now be viewable on [http://localhost:8090](https://localhost:8090)
+It will now be viewable on https://localhost:8090
