@@ -3,7 +3,7 @@
 Developing
 ==========
 
-Information on the internals of ODC Explorer and how to contribute
+Information on the internals of Dataube Explorer and how to contribute
 to it's development.
 
 .. toctree::

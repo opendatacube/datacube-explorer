@@ -4,12 +4,12 @@
 Configuration
 =============
 
-ODC Explorer can be configured either from a file or environment variables.
+Dataube Explorer can be configured either from a file or environment variables.
 
 Configuring from Python Files
 -----------------------------
 
-On startup, ODC Explorer looks for and loads the file named
+On startup, Dataube Explorer looks for and loads the file named
 :file:`settings.env.py`, a Python file with options as
 top level global variables.
 
@@ -33,7 +33,7 @@ server:
 Server Settings
 ---------------
 
-The following configuration settings are provided by ODC Explorer:
+The following configuration settings are provided by Dataube Explorer:
 
 
 .. confval:: CACHE_TYPE
@@ -217,7 +217,7 @@ STAC API Configuration
 
     title shown on ``/stac`` page.
 
-    :default: ``Default ODC Explorer instance``
+    :default: ``Default Dataube Explorer instance``
 
 .. confval:: STAC_DEFAULT_PAGE_SIZE
 

@@ -1,7 +1,7 @@
 Command Line Interface
 ======================
 
-ODC Explorer includes the ``cubedash-gen`` CLI tool. This tool is
+Dataube Explorer includes the ``cubedash-gen`` CLI tool. This tool is
 used to setup an ODC Database ready for use with Explorer, and
 update the pre-computed summary information as new Products or
 Datasets are added to the database.

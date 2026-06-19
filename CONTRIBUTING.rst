@@ -1,7 +1,7 @@
-How to contribute to ODC Explorer
+How to contribute to Dataube Explorer
 =================================
 
-Thank you for considering contributing to ODC Explorer!
+Thank you for considering contributing to Dataube Explorer!
 
 Community
 ---------
@@ -43,7 +43,7 @@ and "help wanted" is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-ODC Explorer could always use more documentation, whether as part of the
+Dataube Explorer could always use more documentation, whether as part of the
 official datacube-explorer docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 

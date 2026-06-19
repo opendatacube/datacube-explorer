@@ -2,7 +2,7 @@
 Operations Guide
 ================
 
-How to install, configure and manage an ODC Explorer server.
+How to install, configure and manage a Dataube Explorer server.
 
 .. toctree::
    :caption: Operating
