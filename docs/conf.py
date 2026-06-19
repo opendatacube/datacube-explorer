@@ -102,7 +102,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/opendatacube/datacube-core",
+            "url": "https://github.com/opendatacube/datacube-explorer",
             "icon": "fab fa-github",
         },
         {
