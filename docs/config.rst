@@ -169,7 +169,7 @@ The following configuration settings are provided by ODC Explorer:
     S3 buckets for which to return a browseable bucket link instead of the plain S3 link
 
     :default: ``{}``
-    :type: ``dict[str, str]```
+    :type: ``Mapping[str, str]```
 
     Example: :python:`{ 'dea-public-data': 'data.dea.ga.gov.au'}`
 
