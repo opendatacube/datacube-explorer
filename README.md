@@ -8,7 +8,7 @@
 
 ## Overview
 
-ODC Explorer is part of the Open Data Cube ecosystem of software for geospatial data management and access.
+Dataube Explorer is part of the Open Data Cube ecosystem of software for geospatial data management and access.
 It is what you need to answer "What's in my datacube?".
 
 It is a web application for exploring which products and data are available,
