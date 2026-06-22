@@ -54,7 +54,7 @@ source_suffix = {".rst": "restructuredtext"}
 # source_encoding = 'utf-8-sig'
 
 todo_include_todos = True
-todo_emit_warnings = True
+# todo_emit_warnings = True
 
 # The master toctree document.
 master_doc = "index"
