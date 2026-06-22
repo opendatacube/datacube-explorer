@@ -1,10 +1,11 @@
----
-version: 2
-sphinx:
-  configuration: docs/conf.py
+# .readthedocs.yaml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# uv build from the documentation at:
-# https://docs.readthedocs.com/platform/latest/build-customization.html#install-dependencies-with-uv
+# Required
+version: 2
+
+# Set the version of Python and other tools you might need
 build:
   os: ubuntu-26.04
   # No Fiona 1.10.1 binary wheel for Python 3.14.
@@ -23,3 +24,12 @@ build:
        - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" UV_LINK_MODE=copy uv sync --frozen --group doc
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+   configuration: docs/conf.py
+   fail_on_warning: true
+
+# If using Sphinx, optionally build your docs in additional formats such as PDF
+# formats:
+#    - pdf
