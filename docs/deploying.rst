@@ -98,26 +98,14 @@ Sentry error reporting is supported and can be setup as per :any:`sentry-env`
 
 
 Roles for production deployments
----------------------------------
+--------------------------------
 
-.. todo:: The way database roles has changed in 2026 and this information is no longer
-   correct.
+In versions of Datacube Explorer released before 2026, separate database roles
+were created named **explorer-viewer**, **explorer-generator** and **explorer-owner**.
 
-The `roles`_ directory contains sql files for creating
-Postgres roles for Explorer. These are suitable for running each Explorer
-task with minimum needed security permissions.
+Since 2026, these roles are no longer generated or used. Instead, Datacube Explorer
+uses the :ref:`same roles as ODC Core <odc-core:user-and-permissions-management>` and the OWS server.
 
-Three roles are created:
-
-- **explorer-viewer**: A read-only user of datacube and Explorer. Suitable for the web interface and cli (`cubedash-view`) commands.
-- **explorer-generator**: Suitable for generating and updating summaries (ie. Running ``cubedash-gen``)
-- **explorer-owner**: For creating and updating the schema. (ie. Running ``cubedash-gen --init``)
-
-Note that these roles extend the built-in datacube role ``agdc_user``. If you
-created your datacube without permissions, a stand-alone creator of the ``agdc_user``
-role is available as a prerequisite in the same `roles`_
-
-.. _roles: https://github.com/opendatacube/datacube-explorer/tree/develop/cubedash/summary/roles
 
 
 Deploying with Helm Chart
