@@ -1,7 +1,7 @@
 How to contribute to Dataube Explorer
-=================================
+=====================================
 
-Thank you for considering contributing to Dataube Explorer!
+Thank you for considering contributing to Datacube Explorer!
 
 Community
 ---------

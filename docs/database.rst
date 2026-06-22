@@ -1,5 +1,5 @@
-Database Documentation
-=======================
+Database Structure
+==================
 
 Database relationship diagram
 ------------------------------

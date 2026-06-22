@@ -1,5 +1,6 @@
-Deploying
-=========
+Deployment
+==========
+
 
 .. todo::
    Describe deployment options, docker container, Kubernetes Helm chart, etc.
