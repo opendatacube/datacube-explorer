@@ -9,9 +9,8 @@ a production environment.** The debugger allows executing arbitrary
 Python code from the browser. It's protected by a pin, but that should
 not be relied on for security.
 
-Use an error logging tool, such as Sentry, as described below
-, or enable logging and access them via your system or Kubernetes log tool
-of choice.
+Use an error logging tool, such as Sentry, as described below, or enable
+logging and access them via your system or Kubernetes log tool of choice.
 
 If you have access to the server, you could add some code to start an
 external debugger if ``request.remote_addr`` matches your IP. Some IDE

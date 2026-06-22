@@ -1,5 +1,5 @@
 Dataube Explorer
-============
+================
 
 
 .. image:: ./images/screenshot.png
@@ -30,7 +30,6 @@ Development Guide
 -----------------
 
 .. toctree::
-   :caption: Developing
    :maxdepth: 2
 
-   developing
+   development
