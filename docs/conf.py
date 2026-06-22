@@ -42,6 +42,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx_click",
     "sphinx.ext.todo",
+    "sphinx.ext.intersphinx",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,6 +56,10 @@ source_suffix = {".rst": "restructuredtext"}
 
 todo_include_todos = True
 # todo_emit_warnings = True
+
+intersphinx_mapping = {
+    "odc-core": ("https://opendatacube.readthedocs.io/en/latest/", None)
+}
 
 # The master toctree document.
 master_doc = "index"
