@@ -4,7 +4,7 @@ Development
 ===========
 
 Information on the internals of Datacube Explorer and how to contribute
-to it's development.
+to its development.
 
 .. toctree::
 
