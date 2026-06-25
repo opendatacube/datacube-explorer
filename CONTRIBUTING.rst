@@ -1,4 +1,4 @@
-How to contribute to Dataube Explorer
+How to contribute to Datacube Explorer
 =====================================
 
 Thank you for considering contributing to Datacube Explorer!
@@ -43,7 +43,7 @@ and "help wanted" is open to whoever wants to implement it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-Dataube Explorer could always use more documentation, whether as part of the
+Datacube Explorer could always use more documentation, whether as part of the
 official datacube-explorer docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
