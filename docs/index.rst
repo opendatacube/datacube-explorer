@@ -1,5 +1,5 @@
 Datacube Explorer
-================
+=================
 
 
 .. image:: ./images/screenshot.png
