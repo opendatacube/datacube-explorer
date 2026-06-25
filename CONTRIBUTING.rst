@@ -1,5 +1,5 @@
 How to contribute to Datacube Explorer
-=====================================
+======================================
 
 Thank you for considering contributing to Datacube Explorer!
 
