@@ -1,4 +1,4 @@
-Dataube Explorer
+Datacube Explorer
 ================
 
 
@@ -7,7 +7,7 @@ Dataube Explorer
    :width: 40%
    :alt: Screenshot of ODC Exploring showing a map of Australia overlaid with a heatmap grid of Landsat scenes, a bar chart of number of datasets through time and detailed Landsat Product specific information.
 
-Dataube Explorer is part of the Open Data Cube ecosystem of software for geospatial data management and access.
+Datacube Explorer is part of the Open Data Cube ecosystem of software for geospatial data management and access.
 It is what you need to answer "What's in my datacube?".
 
 It is a web application for exploring which products and data are available,
