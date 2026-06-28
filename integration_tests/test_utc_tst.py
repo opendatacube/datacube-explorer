@@ -10,8 +10,9 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from datacube.model import Range
+from datacube.utils.dates import tz_aware
 
-from cubedash._utils import datetime_from_metadata, default_utc
+from cubedash._utils import datetime_from_metadata
 from cubedash.summary import SummaryStore
 from integration_tests.asserts import check_dataset_count, get_html
 
@@ -159,12 +160,12 @@ def test_dataset_day_link(summary_store) -> None:
     ds = summary_store.index.datasets.get("6293ac37-7f1d-430e-8d7e-ffdc1bfd556c")
     t = datetime_from_metadata(ds)
     assert t is not None
-    t = default_utc(t).astimezone(ZoneInfo("Australia/Darwin"))
+    t = tz_aware(t).astimezone(ZoneInfo("Australia/Darwin"))
     assert t.year == 2022
     assert t.month == 1
     assert t.day == 1
 
-    t = default_utc(t).astimezone(ZoneInfo("America/Chicago"))
+    t = tz_aware(t).astimezone(ZoneInfo("America/Chicago"))
     assert t.year == 2021
     assert t.month == 12
     assert t.day == 31

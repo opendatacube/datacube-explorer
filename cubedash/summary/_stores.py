@@ -30,6 +30,7 @@ from datacube.index.postgis.index import Index as PostgisIndex
 from datacube.index.postgres.index import Index as PostgresIndex
 from datacube.metadata._utils import EO3_TO_STAC_RENAMES
 from datacube.model import Range
+from datacube.utils.dates import tz_aware
 from odc.geo.geom import Geometry
 
 from cubedash import _utils
@@ -935,10 +936,7 @@ class SummaryStore:
         if time:
             query = query.where(
                 func.tstzrange(
-                    _utils.default_utc(time[0]),
-                    _utils.default_utc(time[1]),
-                    "[]",
-                    type_=TSTZRANGE,
+                    tz_aware(time[0]), tz_aware(time[1]), "[]", type_=TSTZRANGE
                 ).contains(field_exprs["datetime"])
             )
 

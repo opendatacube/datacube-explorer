@@ -26,6 +26,7 @@ from datacube import utils as dc_utils
 from datacube.index.eo3 import is_doc_eo3
 from datacube.model import MetadataType, Range
 from datacube.utils import InvalidDocException, jsonify_document
+from datacube.utils.dates import tz_aware
 from eodatasets3 import serialise
 from flask_themer import render_template
 from odc.geo import geom
@@ -440,14 +441,8 @@ def _unchanged_value(a):
     return a
 
 
-def default_utc(d: datetime) -> datetime:
-    if d.tzinfo is None:
-        return d.replace(tzinfo=UTC)
-    return d
-
-
 def now_utc() -> datetime:
-    return default_utc(datetime.now(UTC))
+    return tz_aware(datetime.now(UTC))
 
 
 def dataset_created(dataset: Dataset) -> datetime | None:
@@ -457,7 +452,7 @@ def dataset_created(dataset: Dataset) -> datetime | None:
     value = dataset.metadata.creation_dt
     if value:
         try:
-            return default_utc(dc_utils.parse_time(value))
+            return tz_aware(dc_utils.parse_time(value))
         except ValueError:
             _LOG.warning(
                 "invalid_dataset.creation_dt", dataset_id=dataset.id, value=value
@@ -465,7 +460,7 @@ def dataset_created(dataset: Dataset) -> datetime | None:
     # like in _dataset_creation_expression, if there's no creation time
     # then we fall back to indexed time (if it exists)
     if dataset.indexed_time:
-        return default_utc(dc_utils.parse_time(dataset.indexed_time))
+        return tz_aware(dc_utils.parse_time(dataset.indexed_time))
     return None
 
 
@@ -481,9 +476,9 @@ def datetime_from_metadata(dataset: Dataset) -> datetime | None:
         # prefer using datetime or start_datetime directly
         properties = dataset.metadata_doc["properties"]
         t = properties.get("datetime") or properties.get("dtr:start_datetime")
-        return default_utc(dc_utils.parse_time(t))
+        return tz_aware(dc_utils.parse_time(t))
     # stick with center time for EO datasets
-    return None if dataset.center_time is None else default_utc(dataset.center_time)
+    return None if dataset.center_time is None else tz_aware(dataset.center_time)
 
 
 def as_rich_json(o):

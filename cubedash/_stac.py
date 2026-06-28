@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from datetime import time as dt_time
 from functools import partial
 from typing import Any, TypeAlias
@@ -12,6 +12,7 @@ import pystac
 import structlog
 from datacube.metadata import ds2stac
 from datacube.utils import parse_time
+from datacube.utils.dates import tz_as_utc
 from flask import abort, current_app, request
 from pystac import Catalog, Collection, Extent, ItemCollection, Link, STACObject
 from shapely.geometry import shape
@@ -82,12 +83,6 @@ def dissoc_in(d: dict, key: str):
 
 
 # Time-related
-
-
-def utc(d: datetime):
-    if d.tzinfo is None:
-        return d.replace(tzinfo=UTC)
-    return d.astimezone(UTC)
 
 
 def _parse_time_range(time: str) -> tuple[datetime, datetime] | None:
@@ -180,12 +175,12 @@ def as_stac_item(dataset: DatasetItem) -> pystac.Item:
             geometry=dataset.geom_geojson,
             bbox=list(dataset.bbox) if dataset.bbox is not None else None,
             properties={
-                "created": utc(dataset.creation_time),
+                "created": tz_as_utc(dataset.creation_time),
                 "proj:code": str(dataset.geometry.crs)
                 if dataset.geometry is not None
                 else None,
             },
-            datetime=utc(dataset.center_time),
+            datetime=tz_as_utc(dataset.center_time),
             collection=dataset.product_name,
             href=self_url,
         )
@@ -276,8 +271,8 @@ def as_stac_collection(res: CollectionItem) -> pystac.Collection:
             temporal=pystac.TemporalExtent(
                 intervals=[
                     [
-                        utc(res.time_earliest) if res.time_earliest else None,
-                        utc(res.time_latest) if res.time_latest else None,
+                        tz_as_utc(res.time_earliest) if res.time_earliest else None,
+                        tz_as_utc(res.time_latest) if res.time_latest else None,
                     ]
                 ]
             ),

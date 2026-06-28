@@ -10,11 +10,10 @@ from textwrap import indent
 import jsonschema
 import pytest
 from datacube.utils import InvalidDocException, validate_document
+from datacube.utils.dates import tz_aware
 from deepdiff import DeepDiff
 from selectolax.lexbor import LexborHTMLParser
 from shapely.geometry import shape
-
-from cubedash._utils import default_utc
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -225,7 +224,7 @@ def expect_values(
             assert s.footprint_geometry.area > 0, "Empty footprint"
 
         assert s.time_range == time_range, "wrong dataset time range"
-        assert s.newest_dataset_creation_time == default_utc(newest_creation_time), (
+        assert s.newest_dataset_creation_time == tz_aware(newest_creation_time), (
             "wrong newest dataset creation"
         )
         assert s.timeline_period == timeline_period, (
