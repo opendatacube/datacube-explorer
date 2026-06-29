@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 import flask
 import structlog
 from datacube.model import Range
+from datacube.utils.dates import tz_aware
 from flask import Blueprint
 from markupsafe import Markup
 from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
@@ -154,7 +155,7 @@ def _dataset_day_link(dataset: Dataset, timezone=None):
     if t is None:
         return "(unknown time)"
     if timezone:
-        t = utils.default_utc(t).astimezone(timezone)
+        t = tz_aware(t).astimezone(timezone)
     url = flask.url_for(
         "pages.product_page",
         product_name=dataset.product.name,
@@ -299,7 +300,7 @@ def timesince(dt, default="just now"):
         return "an unrecorded time ago"
 
     now = datetime.now(UTC)
-    diff = now - utils.default_utc(dt)
+    diff = now - tz_aware(dt)
 
     periods = (
         (diff.days // 365, "year", "years"),

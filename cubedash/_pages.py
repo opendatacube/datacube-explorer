@@ -10,6 +10,7 @@ import flask
 import structlog
 from datacube.model import Range
 from datacube.scripts.dataset import build_dataset_info
+from datacube.utils.dates import tz_aware
 from flask import (
     Blueprint,
     abort,
@@ -23,7 +24,6 @@ from sqlalchemy.exc import DataError, OperationalError, ProgrammingError
 from werkzeug.datastructures import MultiDict
 
 import cubedash
-from cubedash._utils import default_utc
 
 from . import _model, _stac
 from . import _utils as utils
@@ -236,7 +236,7 @@ def search_page(
     try:
         datasets = sorted(
             index.datasets.search(**query, limit=hard_search_limit + 1),
-            key=lambda d: default_utc(d.center_time),
+            key=lambda d: tz_aware(d.center_time),
         )
     except (DataError, ProgrammingError):
         abort(400, "Invalid field value provided in query")

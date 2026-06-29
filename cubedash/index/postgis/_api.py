@@ -18,6 +18,7 @@ from datacube.drivers.postgis._schema import (  # isort: skip
     Dataset as ODC_DATASET,  # noqa: N814
     Product as ODC_PRODUCT,  # noqa: N814
 )
+from datacube.utils.dates import tz_aware
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import from_shape
 from sqlalchemy import (
@@ -44,7 +45,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.types import TIMESTAMP
 
 import cubedash.summary._schema as _schema
-from cubedash._utils import datetime_expression, default_utc
+from cubedash._utils import datetime_expression
 from cubedash.index.api import EmptyDbError, ExplorerAbstractIndex
 
 from ._schema import (  # isort: skip
@@ -429,8 +430,8 @@ class ExplorerIndex(ExplorerAbstractIndex):
 
         if time:
             query = query.where(
-                default_utc(time[0]) <= ProductSpatial.time_latest,
-                ProductSpatial.time_earliest <= default_utc(time[1]),
+                tz_aware(time[0]) <= ProductSpatial.time_latest,
+                ProductSpatial.time_earliest <= tz_aware(time[1]),
             )
 
         if q:
