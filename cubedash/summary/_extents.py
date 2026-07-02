@@ -127,9 +127,10 @@ def _bounds_polygon(doc, projection_offset):
 
 
 def _size_bytes_field(product: Product):
-    md_fields = product.metadata_type.dataset_fields
-    if "size_bytes" in md_fields:
-        return md_fields["size_bytes"].alchemy_expression  # type: ignore[attr-defined]
+    if (
+        size_bytes := product.metadata_type.dataset_fields.get("size_bytes")
+    ) is not None:
+        return size_bytes.alchemy_expression  # type: ignore[attr-defined]
 
     return jsonb_doc_expression(product.metadata_type)["size_bytes"].astext.cast(
         BigInteger
