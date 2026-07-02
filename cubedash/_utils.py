@@ -11,7 +11,7 @@ import io
 import itertools
 import re
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from io import StringIO
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -439,10 +439,6 @@ def _field_parser(field: Field):
 
 def _unchanged_value(a):
     return a
-
-
-def now_utc() -> datetime:
-    return tz_aware(datetime.now(UTC))
 
 
 def dataset_created(dataset: Dataset) -> datetime | None:
