@@ -30,8 +30,7 @@ def datasets_geojson(
         default=flask.current_app.config["CUBEDASH_DEFAULT_API_LIMIT"],
         type=int,
     )
-    hard_limit = flask.current_app.config["CUBEDASH_HARD_API_LIMIT"]
-    if limit > hard_limit:
+    if limit > (hard_limit := flask.current_app.config["CUBEDASH_HARD_API_LIMIT"]):
         limit = hard_limit
 
     time = _utils.as_time_range(

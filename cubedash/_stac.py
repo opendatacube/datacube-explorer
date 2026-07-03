@@ -1154,8 +1154,7 @@ def item(collection: str, dataset_id: uuid.UUID):
     if not dataset:
         abort(404, f"No dataset found with id {dataset_id!r}")
 
-    actual_product_name = dataset.product_name
-    if collection != actual_product_name:
+    if collection != (actual_product_name := dataset.product_name):
         # We're not doing a redirect as we don't want people to rely on wrong urls
         # (and we're unkind)
         actual_url = url_for(

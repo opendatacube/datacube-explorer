@@ -285,8 +285,7 @@ def dataset_label(dataset: Dataset) -> str:
     Get a human-readable label for the dataset
     """
     # Identify by label if they have one
-    label = dataset.metadata.fields.get("label")
-    if label is not None:
+    if (label := dataset.metadata.fields.get("label")) is not None:
         return label
 
     # Otherwise try to get a file/folder name for the dataset's location.
@@ -445,8 +444,7 @@ def dataset_created(dataset: Dataset) -> datetime | None:
     if "created" in dataset.metadata.fields:
         return dataset.metadata.created
 
-    value = dataset.metadata.creation_dt
-    if value:
+    if value := dataset.metadata.creation_dt:
         try:
             return tz_aware(dc_utils.parse_time(value))
         except ValueError:

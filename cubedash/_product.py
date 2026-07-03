@@ -228,8 +228,7 @@ def _iso8601_duration(tdelta: timedelta) -> str:
 
     parts = ["P"]
 
-    days = int(all_secs // 86400)
-    if days:
+    if days := int(all_secs // 86400):
         parts.append(f"{days}D")
     if any(h_m_s):
         parts.append("T")
