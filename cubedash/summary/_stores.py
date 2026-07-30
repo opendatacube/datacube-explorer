@@ -755,7 +755,6 @@ class SummaryStore:
         except EmptyDbError:
             return {}
 
-    @ttl_cache(ttl=DEFAULT_TTL)
     def product_location_samples(
         self,
         name: str,
@@ -771,11 +770,25 @@ class SummaryStore:
 
         Returns one row for each uri scheme found (http, file etc.).
         """
-        search_args: dict[str, str | Range] = {"product": name}
         if year or month or day:
+            search_args: dict[str, str | Range] = {"product": name}
             time = _utils.as_time_range(year, month, day)
             assert time is not None
             search_args["time"] = time
+            return self._product_location_samples(search_args, sample_size)
+        return self.products_location_samples_all(sample_size)[name]
+
+    def _product_location_samples(
+        self,
+        search_args: dict[str, str | Range],
+        sample_size: int = 100,
+    ) -> list[ProductLocationSample]:
+        """
+        Sample some dataset locations for the given product, and return
+        the common location.
+
+        Returns one row for each uri scheme found (http, file etc.).
+        """
         # Sample 100 dataset uris
         uri_samples = sorted(
             uri
