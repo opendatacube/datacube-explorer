@@ -743,6 +743,9 @@ class SummaryStore:
         (It's faster because it does only one DB query round-trip instead of N (where N is
          number of products). The latency of repeated round-trips adds up tremendously on
          cloud instances.)
+
+        N.B. still requires a longer query timeout than most explorer queries. Only
+             used by obscure /audit endpoints.
         """
         product_urls = {}
         try:
@@ -765,8 +768,10 @@ class SummaryStore:
         sample_size: int = 100,
     ) -> list[ProductLocationSample]:
         """
-        Sample some dataset locations for the given product, and return
-        the common location.
+        Sample some dataset locations for the given product (and optional date), and return
+        sample locations.
+
+        Not cached with a date, but the date-less version calls through a cached method.
 
         Returns one row for each uri scheme found (http, file etc.).
         """
@@ -776,7 +781,23 @@ class SummaryStore:
             assert time is not None
             search_args["time"] = time
             return self._product_location_samples(search_args, sample_size)
-        return self.products_location_samples_all(sample_size).get(name, [])
+        return self._product_location_samples_no_date(name, sample_size)
+
+    @ttl_cache(ttl=DEFAULT_TTL)
+    def _product_location_samples_no_date(
+        self,
+        name: str,
+        sample_size: int = 100,
+    ) -> list[ProductLocationSample]:
+        """
+        Sample some dataset locations for the given product, and return
+        the common location.
+
+        Covers whole product, does not support date, and is cached.
+
+        Returns one row for each uri scheme found (http, file etc.).
+        """
+        return self._product_location_samples({"product": name}, sample_size)
 
     def _product_location_samples(
         self,
@@ -786,6 +807,8 @@ class SummaryStore:
         """
         Sample some dataset locations for the given product, and return
         the common location.
+
+        Base implementation, supports both dated and dateless methods above.
 
         Returns one row for each uri scheme found (http, file etc.).
         """
