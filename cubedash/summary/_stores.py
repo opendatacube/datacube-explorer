@@ -776,7 +776,7 @@ class SummaryStore:
             assert time is not None
             search_args["time"] = time
             return self._product_location_samples(search_args, sample_size)
-        return self.products_location_samples_all(sample_size)[name]
+        return self.products_location_samples_all(sample_size).get(name, [])
 
     def _product_location_samples(
         self,
