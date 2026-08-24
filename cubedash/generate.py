@@ -72,6 +72,7 @@ from click import style
 from datacube.cfg import ODCConfig
 from datacube.index import index_connect
 from datacube.ui.click import environment_option, pass_config
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from cubedash.logs import init_logging
 from cubedash.summary import GenerateResult, SummaryStore, UnsupportedWKTProductCRSError
@@ -517,6 +518,9 @@ def cli(
                 sys.exit(1)
             user_message("done", fg="green")
             _LOG.info("stats.refresh")
+    except (OperationalError, ProgrammingError) as e:
+        user_message(f"Database error: {e}")
+        sys.exit(1)
     finally:
         store.close()
     sys.exit(1 if failures else 0)
