@@ -1,74 +1,42 @@
-# Files that are only used by docker/docker compose.
-docker-compose.yaml
-docker-compose.*.yaml
-docker-compose.yml
-docker-compose.*.yml
-.docker
-.dockerignore
+# .dockerignore
+#
+# With BuildKit (this repo uses `# syntax=docker/dockerfile:1`), the build
+# context is transferred incrementally and only the files referenced by the
+# Dockerfile are sent, so an exhaustive ignore list is no longer needed for
+# efficiency. This keeps only the exclusions that genuinely matter:
+#
+#   - VCS metadata: large, and the image build deliberately avoids needing git
+#     (it uses SETUPTOOLS_SCM_PRETEND_VERSION), so `.git` must never be copied.
+#   - Local virtualenvs and caches: potentially huge and host-specific.
+#   - Local secrets / environment-specific files: must never leak into an image.
+#   - OS/editor cruft.
 
-# Byte-compiled / optimized / DLL files
-**/__pycache__
-**/*.py[cod]
-
-#Git/VCS
+# VCS
 .git
 .jj
 
-# CI / distribution / packaging
-**/*.egg-info
-.github
-.gitignore
-.mergify.yml
-.pre-commit-config.yaml
-.readthedocs.yaml
-.stylelintrc
-.venv
-.yamllint
-build
-dist
-Makefile
-pylintrc
+# Docker's own files (not needed inside the image)
+.dockerignore
 
-# Test and coverage reports
-**/htmlcov
+# Local virtualenvs and tool caches
+.venv
+**/__pycache__
+**/*.py[cod]
+**/.cache
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
 **/.tox
+**/.hypothesis
 **/.coverage
 **/.coverage.*
-**/.cache
-**/nosetests.xml
-**/coverage.xml
-**/*.cover
-**/.hypothesis
-.mypy_cache
-.pytest_cache
-.ruff_cache
-conftest.py
-integration_tests
-tests
 
-# Django stuff:
-**/*.log
-
-# Documentation
-*.md
-*.png
-*.rst
-docs
-LICENSE
-
-# PyBuilder
-**/target
-
-# iPython Notebook
-**/.ipynb_checkpoints
-
-# Mac OS X
-**/.DS_Store
-
-# Environment-specific templates
+# Local secrets / environment-specific files
+**/*.env.py
 **/*.env.html
 **/settings.env.py
 
-# IDE settings
+# OS / editor cruft
+**/.DS_Store
 .idea
 .vscode
