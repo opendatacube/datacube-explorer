@@ -442,13 +442,16 @@ class SummaryStore:
         product = self.get_product(product_name)
 
         _LOG.info("init.product", product_name=product.name)
-        change_count = _extents.refresh_spatial_extents(
-            self.e_index,
-            product,
-            clean_up_deleted=scan_for_deleted,
-            assume_after_date=only_those_newer_than,
-        )
-
+        try:
+            change_count = _extents.refresh_spatial_extents(
+                self.e_index,
+                product,
+                clean_up_deleted=scan_for_deleted,
+                assume_after_date=only_those_newer_than,
+            )
+        except (OperationalError, ProgrammingError) as e:
+            _LOG.error(str(e))
+            return None
         existing_summary = self.get_product_summary(product_name)
         # Did nothing change at all? Just bump the refresh time.
         if change_count == 0 and existing_summary and not force:
