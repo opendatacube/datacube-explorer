@@ -392,6 +392,12 @@ def update_schema(conn: Connection) -> bool:
             "timestamp with time zone null",
         )
 
+        # Ensure the safe_transform function exists. It's created during initial
+        # schema creation (create_all), but databases initialised by older Explorer
+        # versions won't have it, so (re)create it here on update. It's idempotent
+        # (create or replace).
+        create_safe_transform_func(admin_conn, "agdc_admin")
+
         check_or_update_odc_schema(admin_conn)
 
     return refresh
