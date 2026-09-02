@@ -324,7 +324,7 @@
     {{ super() }}
 
     {% from "layout/macros.html" import chart_timeline %}
-    <script src="{{ url_for('static', filename='overview.js') }}"></script>
+    <script src="{{ static_asset('overview.js') }}"></script>
     <script type="application/javascript">
         (function () {
             'use strict';
