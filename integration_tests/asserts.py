@@ -80,6 +80,25 @@ def assert_matching_eo3(actual_doc: dict, expected_doc: dict) -> None:
     assert not diff, "\n".join(format_doc_diffs(actual_doc, expected_doc))
 
 
+def assert_matching_doc(
+    actual_doc: dict, expected_doc: dict, significant_digits: int = 6
+) -> None:
+    """
+    Assert two documents match, ignoring minor floating-point precision.
+
+    Use this instead of ``assert actual == {...}`` for document-like dicts
+    containing floats (bboxes, coordinates, areas, etc.).
+    """
+    # __tracebackhide__ = operator.methodcaller("errisinstance", AssertionError)
+    diff = DeepDiff(
+        actual_doc,
+        expected_doc,
+        significant_digits=significant_digits,
+        ignore_nan_inequality=True,
+    )
+    assert not diff, "\n".join(format_doc_diffs(actual_doc, expected_doc))
+
+
 def get_geojson(client: FlaskClient, url: str) -> dict:
     data = get_json(client, url)
     validate_document(
