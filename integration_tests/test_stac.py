@@ -27,6 +27,7 @@ from shapely.validation import explain_validity
 from cubedash import _model, _stac
 from integration_tests.asserts import (
     DebugContext,
+    assert_matching_doc,
     assert_matching_eo3,
     get_geojson,
     get_json,
@@ -613,45 +614,51 @@ def test_stac_collection(stac_client: FlaskClient):
         raise AssertionError("high_tide_comp_20p not found in collection list")
 
     scene_collection = get_collection(stac_client, collection_href, validate=False)
-    assert scene_collection == {
-        "stac_version": "1.1.0",
-        "type": "Collection",
-        "id": "high_tide_comp_20p",
-        "title": "high_tide_comp_20p",
-        "license": "CC-BY-4.0",
-        "description": "High Tide 20 percentage composites for entire coastline",
-        "extent": {
-            "spatial": {
-                "bbox": [
-                    [
-                        112.223_058_990_767_51,
-                        -43.829_196_553_065_4,
-                        153.985_054_424_922_77,
-                        -10.237_104_814_250_783,
+    assert_matching_doc(
+        scene_collection,
+        {
+            "stac_version": "1.1.0",
+            "type": "Collection",
+            "id": "high_tide_comp_20p",
+            "title": "high_tide_comp_20p",
+            "license": "CC-BY-4.0",
+            "description": "High Tide 20 percentage composites for entire coastline",
+            "extent": {
+                "spatial": {
+                    "bbox": [
+                        [
+                            112.223_058_990_767_51,
+                            -43.829_196_553_065_4,
+                            153.985_054_424_922_77,
+                            -10.237_104_814_250_783,
+                        ]
                     ]
-                ]
+                },
+                "temporal": {
+                    "interval": [["2008-06-01T00:00:00Z", "2008-06-01T00:00:00Z"]]
+                },
             },
-            "temporal": {
-                "interval": [["2008-06-01T00:00:00Z", "2008-06-01T00:00:00Z"]]
-            },
+            "links": [
+                {
+                    "rel": "root",
+                    "href": "http://localhost/stac",
+                    "type": "application/json",
+                    "title": "Default ODC Explorer instance",
+                },
+                {"rel": "self", "href": stac_url("collections/high_tide_comp_20p")},
+                {
+                    "rel": "items",
+                    "href": stac_url("collections/high_tide_comp_20p/items"),
+                },
+                {
+                    "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    "href": stac_url("collections/high_tide_comp_20p/queryables"),
+                },
+            ],
+            # "providers": [], // FIXME: These disappeared somewhere along the way ?
+            # "stac_extensions": [],
         },
-        "links": [
-            {
-                "rel": "root",
-                "href": "http://localhost/stac",
-                "type": "application/json",
-                "title": "Default ODC Explorer instance",
-            },
-            {"rel": "self", "href": stac_url("collections/high_tide_comp_20p")},
-            {"rel": "items", "href": stac_url("collections/high_tide_comp_20p/items")},
-            {
-                "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
-                "href": stac_url("collections/high_tide_comp_20p/queryables"),
-            },
-        ],
-        # "providers": [], // FIXME: These disappeared somewhere along the way ?
-        # "stac_extensions": [],
-    }
+    )
     assert_collection(scene_collection)
     item_links = None
     for link in scene_collection["links"]:
