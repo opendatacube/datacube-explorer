@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-free-6.2.0-web/css/solid.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome-free-6.2.0-web/css/regular.min.css') }}">
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='maplibre-gl-5.24.0/maplibre-gl.css') }}">
+
     <link rel="icon" href="{{ theme_static('favicon.ico') }}">
     {% block head %}{% endblock %}
 </head>
@@ -121,6 +123,8 @@
 </footer>
 
 <script src="{{ url_for('static', filename='leaflet-1.7.1/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='maplibre-gl-5.24.0/maplibre-gl.js') }}"></script>
+<script src="{{ url_for('static', filename='maplibre-gl-leaflet-0.1.4/leaflet-maplibre-gl.js') }}"></script>
 <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
 
 {% if sentry_public_dsn %}

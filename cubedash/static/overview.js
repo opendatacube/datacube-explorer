@@ -223,10 +223,11 @@ var OverviewMap = /** @class */ (function (_super) {
             zoom: defaultZoom,
             center: defaultCenter,
             layers: [
-                L.tileLayer("//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png", {
+                L.maplibreGL({
+                    style: "https://tiles.openfreemap.org/styles/positron",
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                        ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                        ' &copy; <a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>'
                 })
             ],
             zoomControl: false,
