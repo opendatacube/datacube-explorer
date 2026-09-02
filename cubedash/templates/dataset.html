@@ -184,12 +184,12 @@
     {% if extent_geojson %}
         <script type="application/javascript">
 
-            const osm_carto_light = L.tileLayer(
-                "//cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
+            const osm_carto_light = L.maplibreGL(
                 {
+                    style: "https://tiles.openfreemap.org/styles/positron",
                     maxZoom: 10,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                    ' &copy; <a href="https://cartodb.com/attributions">CartoDB</a>'
+                    ' &copy; <a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>'
                 }
             );
             var coords = [];
