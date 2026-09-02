@@ -4,11 +4,13 @@ Common global filters and util methods.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import difflib
 import functools
 import io
 import itertools
+import os
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -36,6 +38,8 @@ from rapidjson import DM_ISO8601, UM_CANONICAL, dumps
 from ruamel.yaml.comments import CommentedMap
 from shapely.geometry import shape
 from sqlalchemy import TIMESTAMP, func
+
+import cubedash
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -103,6 +107,22 @@ def render_without_context_processors(app: Flask, template, **context):
     # When e.g. rendering error pages, we don't want to trigger the context processors
     # Use native Jinja template rendering instead (bypassing flask)
     return app.jinja_env.get_template(template).render(**context)
+
+
+def static_asset_url(filename: str) -> str:
+    """
+    Build a URL for a static file with a cache-busting query string.
+
+    In Production, the installed app version is used.
+
+    In development the file's modification time is used.
+    """
+    version: str | int = cubedash.__version__
+    if flask.current_app.debug:
+        static_folder = flask.current_app.static_folder or ""
+        with contextlib.suppress(OSError):
+            version = int(os.stat(os.path.join(static_folder, filename)).st_mtime)
+    return flask.url_for("static", filename=filename, v=version)
 
 
 def expects_eo3_metadata_type(md: MetadataType) -> bool:

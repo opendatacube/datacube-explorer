@@ -518,6 +518,8 @@ def inject_globals():
         "datacube_metadata_types": metadata_types,
         "datacube_version": datacube.__version__,
         "app_version": cubedash.__version__,
+        # Helper for cache-busted static asset URLs (see utils.static_asset_url).
+        "static_asset": utils.static_asset_url,
         "grouping_timezone": ZoneInfo(_model.DEFAULT_GROUPING_TIMEZONE),
         "last_updated_time": last_updated,
         "explorer_instance_title": current_app.config.get("CUBEDASH_INSTANCE_TITLE")
