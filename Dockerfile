@@ -5,6 +5,11 @@ ARG SOURCE_DATE_EPOCH=1704067200
 
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.13.3@sha256:64250faf833c06d4b21afce4c27190039ba7ab58d70f0eebc87cf77d929c0b40 AS base
 
+LABEL org.opencontainers.image.source=https://github.com/opendatacube/datacube-explorer
+LABEL org.opencontainers.image.description="Datacube Explorer"
+LABEL org.opencontainers.image.licences="Apache-2.0"
+LABEL org.opencontainers.image.title="Datacube Explorer"
+
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -70,7 +75,7 @@ ARG EXPLORER_VERSION=""
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
-    && export SETUPTOOLS_SCM_PRETEND_VERSION="${EXPLORER_VERSION}" \
+    && export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER="${EXPLORER_VERSION}" \
     && uv sync --frozen $EXTRAS --no-editable \
     && ([ "$ENVIRONMENT" != "deployment" ] || \
         (chmod 644 /usr/local/bin/uv* && \
