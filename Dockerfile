@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # See https://reproducible-builds.org/docs/source-date-epoch/
-ARG SOURCE_DATE_EPOCH=1704067200
+ARG SOURCE_DATE_EPOCH
 
 FROM ghcr.io/osgeo/gdal:ubuntu-small-3.13.3@sha256:64250faf833c06d4b21afce4c27190039ba7ab58d70f0eebc87cf77d929c0b40 AS base
 
