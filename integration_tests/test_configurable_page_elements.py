@@ -45,7 +45,7 @@ def app_configured_client(client: FlaskClient) -> FlaskClient:
                 "usgs_ls7e_level1_1",
             ],
             "CUBEDASH_BASEMAP_URL_TEMPLATE": "https://vector.example.com/styles/dummy",
-            "CUBEDASH_BASEMAP_ATTRIBUTION": """&copy; <a href="https://example.com/attribution">Test Vector Basemaps</a>""",
+            "CUBEDASH_BASEMAP_ATTRIBUTION": '&copy;<a href="https://example.com/attribution">Vector Basemaps</a>',
         }
     )
     return client
@@ -66,7 +66,7 @@ def app_configured_raster_basemap_client(client: FlaskClient) -> FlaskClient:
                 "usgs_ls7e_level1_1",
             ],
             "CUBEDASH_BASEMAP_URL_TEMPLATE": "https://raster.example.com/styles/dummy/{z}/{y}/{x}.png?api_key=test_api_key",
-            "CUBEDASH_BASEMAP_ATTRIBUTION": """&copy; <a href="https://example.com/attribution">Test Raster Basemaps</a>""",
+            "CUBEDASH_BASEMAP_ATTRIBUTION": '&copy;<a href="https://example.com/attribution">Raster Basemaps</a>',
         }
     )
     return client
@@ -185,13 +185,13 @@ def test_vector_basemap(app_configured_client: FlaskClient) -> None:
         "/products/ga_ls7e_ard_3/datasets/50014f19-5546-4853-be8d-0185a798c083",
         "/product/ga_ls7e_ard_3/regions/093074",
     ):
-        txt, response = get_text_response(app_configured_client, url)
+        txt, _ = get_text_response(app_configured_client, url)
 
         # Check defaults not displayed
         assert "tiles.openfreemap.org/styles/positron" not in txt
         assert "https://vector.example.com/styles/dummy" in txt
         assert "https://example.com/attribution" in txt
-        assert "Test Vector Basemaps" in txt
+        assert "Vector Basemaps" in txt
 
 
 def test_raster_basemap(app_configured_raster_basemap_client: FlaskClient) -> None:
@@ -200,10 +200,10 @@ def test_raster_basemap(app_configured_raster_basemap_client: FlaskClient) -> No
         "/products/ga_ls7e_ard_3/datasets/50014f19-5546-4853-be8d-0185a798c083",
         "/product/ga_ls7e_ard_3/regions/093074",
     ):
-        txt, response = get_text_response(app_configured_raster_basemap_client, url)
+        txt, _ = get_text_response(app_configured_raster_basemap_client, url)
 
         # Check defaults not displayed
         assert "tiles.openfreemap.org/styles/positron" not in txt
         assert "https://raster.example.com/styles/dummy/" in txt
         assert "https://example.com/attribution" in txt
-        assert "Test Raster Basemaps" in txt
+        assert "Raster Basemaps" in txt
