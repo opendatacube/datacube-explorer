@@ -183,15 +183,25 @@
 
     {% if extent_geojson %}
         <script type="application/javascript">
+            const osm_carto_light =
+                {% if basemap_is_raster %}
+                    L.tileLayer(
+                        "{{ basemap_url_template }}",
+                        {
+                            maxZoom: 7,
+                            attribution: "{{ basemap_attribution }}"
+                        }
+                    );
+                {% else %}
+                    L.maplibreGL(
+                        {
+                            style: "{{ basemap_url_template }}",
+                            maxZoom: 7,
+                            attribution: "{{ basemap_attribution }}"
+                        }
+                    );
+                {%  endif %}
 
-            const osm_carto_light = L.maplibreGL(
-                {
-                    style: "https://tiles.openfreemap.org/styles/positron",
-                    maxZoom: 10,
-                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                    ' &copy; <a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>'
-                }
-            );
             var coords = [];
             const dataset_data = L.geoJson({{ extent_geojson | torapidjson }},
                 {

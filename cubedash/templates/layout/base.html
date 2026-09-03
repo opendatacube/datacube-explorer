@@ -151,8 +151,8 @@
             function updateAttribution(e) {
                 var attributions = Object.keys(map._layers).map(function (name) {
                     var layer = map._layers[name];
-                    if (layer.getAttribution) {
-                        return layer.getAttribution();
+                    if (layer.options && layer.options.attribution) {
+                        return layer.options.attribution;
                     }
                     return null;
                 });
