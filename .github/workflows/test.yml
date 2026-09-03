@@ -1,5 +1,5 @@
 ---
-name: Tests
+name: Test and Release
 
 on:
   pull_request:
