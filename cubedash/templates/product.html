@@ -324,6 +324,11 @@
     {{ super() }}
 
     {% from "layout/macros.html" import chart_timeline %}
+    <script type="application/javascript">
+        const basemapTemplateUrl = "{{ basemap_url_template }}";
+        const basemapAttribution = "{{ basemap_attribution }}";
+        const basemapIsRaster = {% if basemap_is_raster %}true{%  else %}false{% endif %};
+    </script>
     <script src="{{ static_asset('overview.js') }}"></script>
     <script type="application/javascript">
         (function () {
