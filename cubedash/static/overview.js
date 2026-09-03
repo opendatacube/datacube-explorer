@@ -1,33 +1,17 @@
 "use strict";
 /// <reference path="../../node_modules/@types/leaflet/index.d.ts"/>
 /// <reference path="../../node_modules/@types/geojson/index.d.ts"/>
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var DataLayer = /** @class */ (function () {
-    function DataLayer(name, dataURL, layer, data, showAlongside) {
-        if (data === void 0) { data = null; }
-        if (showAlongside === void 0) { showAlongside = []; }
+class DataLayer {
+    constructor(name, dataURL, layer, data = null, showAlongside = []) {
         this.name = name;
         this.dataURL = dataURL;
         this.layer = layer;
         this.data = data;
         this.showAlongside = showAlongside;
     }
-    return DataLayer;
-}());
-var ApplicationRoutes = /** @class */ (function () {
-    function ApplicationRoutes(regionSearchURLPattern, regionViewURLPattern, datasetURLPattern, geojsonRegionsURL, geojsonDatasetsURL, geojsonFootprintURL) {
+}
+class ApplicationRoutes {
+    constructor(regionSearchURLPattern, regionViewURLPattern, datasetURLPattern, geojsonRegionsURL, geojsonDatasetsURL, geojsonFootprintURL) {
         this.regionSearchURLPattern = regionSearchURLPattern;
         this.regionViewURLPattern = regionViewURLPattern;
         this.datasetURLPattern = datasetURLPattern;
@@ -35,46 +19,42 @@ var ApplicationRoutes = /** @class */ (function () {
         this.geojsonDatasetsURL = geojsonDatasetsURL;
         this.geojsonFootprintURL = geojsonFootprintURL;
     }
-    ApplicationRoutes.prototype.getRegionSearchURL = function (regionCode) {
+    getRegionSearchURL(regionCode) {
         return this.regionSearchURLPattern.replace('__REGION_CODE__', regionCode);
-    };
-    ApplicationRoutes.prototype.getRegionViewURL = function (regionCode) {
-        return this.regionViewURLPattern.replace('__REGION_CODE__', regionCode);
-    };
-    ApplicationRoutes.prototype.getDatasetViewURL = function (datasetId) {
-        return this.datasetURLPattern.replace('__DATASET_ID__', datasetId);
-    };
-    return ApplicationRoutes;
-}());
-var RecenterMapControl = /** @class */ (function (_super) {
-    __extends(RecenterMapControl, _super);
-    function RecenterMapControl(targetLayer) {
-        var _this = _super.call(this, { position: "bottomleft" }) || this;
-        _this.targetLayer = targetLayer;
-        _this._div = L.DomUtil.create('div', 'recenter-map');
-        _this._map = null;
-        _this._isDirty = false;
-        _this._button = L.DomUtil.create('button', 'small');
-        _this._button.innerText = 'Recenter';
-        return _this;
     }
-    RecenterMapControl.prototype.onAdd = function (map) {
-        var _this = this;
+    getRegionViewURL(regionCode) {
+        return this.regionViewURLPattern.replace('__REGION_CODE__', regionCode);
+    }
+    getDatasetViewURL(datasetId) {
+        return this.datasetURLPattern.replace('__DATASET_ID__', datasetId);
+    }
+}
+class RecenterMapControl extends L.Control {
+    constructor(targetLayer) {
+        super({ position: "bottomleft" });
+        this.targetLayer = targetLayer;
+        this._div = L.DomUtil.create('div', 'recenter-map');
+        this._map = null;
+        this._isDirty = false;
+        this._button = L.DomUtil.create('button', 'small');
+        this._button.innerText = 'Recenter';
+    }
+    onAdd(map) {
         this._map = map;
-        this._map.on("moveend", function () {
-            if (!_this._isDirty && _this._div) {
-                _this._isDirty = true;
-                _this._div.appendChild(_this._button);
+        this._map.on("moveend", () => {
+            if (!this._isDirty && this._div) {
+                this._isDirty = true;
+                this._div.appendChild(this._button);
             }
         });
-        this._button.addEventListener('click', function () {
-            _this.doRecenter();
+        this._button.addEventListener('click', () => {
+            this.doRecenter();
         });
         this._isDirty = false;
         return this._div;
-    };
+    }
     ;
-    RecenterMapControl.prototype.doRecenter = function () {
+    doRecenter() {
         if (this.targetLayer && this._map) {
             this._map.fitBounds(this.targetLayer.getBounds(), {
                 animate: false,
@@ -83,14 +63,11 @@ var RecenterMapControl = /** @class */ (function (_super) {
             this._div.removeChild(this._button);
             this._isDirty = false;
         }
-    };
-    return RecenterMapControl;
-}(L.Control));
-var FootprintLayer = /** @class */ (function (_super) {
-    __extends(FootprintLayer, _super);
-    function FootprintLayer(footprintData, showAlone) {
-        if (showAlone === void 0) { showAlone = false; }
-        return _super.call(this, footprintData, {
+    }
+}
+class FootprintLayer extends L.GeoJSON {
+    constructor(footprintData, showAlone = false) {
+        super(footprintData, {
             interactive: false,
             style: function (feature) {
                 return {
@@ -102,36 +79,33 @@ var FootprintLayer = /** @class */ (function (_super) {
                     clickable: false
                 };
             }
-        }) || this;
+        });
     }
-    return FootprintLayer;
-}(L.GeoJSON));
-var RegionsLayer = /** @class */ (function (_super) {
-    __extends(RegionsLayer, _super);
-    function RegionsLayer(regionData, routes) {
-        var _this = this;
+}
+class RegionsLayer extends L.GeoJSON {
+    constructor(regionData, routes) {
         function getBin(v, bin_count, min_v, max_v) {
-            var range = max_v - min_v, val = v - min_v;
+            let range = max_v - min_v, val = v - min_v;
             if (range < bin_count) {
-                var padding = bin_count - range;
+                const padding = bin_count - range;
                 return padding + val - 1;
             }
             else {
-                var bin_width = range / bin_count;
+                const bin_width = range / bin_count;
                 return Math.floor(val / bin_width);
             }
         }
         function getColor(count, min_count, max_count) {
-            var colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'], bin = getBin(count, colorSteps.length - 1, min_count, max_count);
+            let colorSteps = ['#eff3ff', '#c6dbef', '#9ecae1', '#6baed6', '#3182bd', '#08519c'], bin = getBin(count, colorSteps.length - 1, min_count, max_count);
             return colorSteps[bin];
         }
-        _this = _super.call(this, regionData, {
-            style: function (feature) {
+        super(regionData, {
+            style: (feature) => {
                 var _a;
                 if (!regionData.properties) {
                     throw Error("Invalid data: no properties");
                 }
-                var min_v = regionData.properties.min_count, max_v = regionData.properties.max_count, count = (_a = feature === null || feature === void 0 ? void 0 : feature.properties) === null || _a === void 0 ? void 0 : _a.count, color = getColor(count, min_v, max_v);
+                const min_v = regionData.properties.min_count, max_v = regionData.properties.max_count, count = (_a = feature === null || feature === void 0 ? void 0 : feature.properties) === null || _a === void 0 ? void 0 : _a.count, color = getColor(count, min_v, max_v);
                 return {
                     color: "#f2f2f2",
                     fill: true,
@@ -141,24 +115,27 @@ var RegionsLayer = /** @class */ (function (_super) {
                     weight: 1,
                 };
             },
-            onEachFeature: function (feature, layer) {
-                var props = feature.properties, template = "<div>\n                                    <strong>" + (props.label || props.region_code) + "</strong>\n                                </div>\n                                " + props.count + " dataset" + (props.count === 1 ? '' : 's');
+            onEachFeature: (feature, layer) => {
+                let props = feature.properties, template = `<div>
+                                    <strong>${props.label || props.region_code}</strong>
+                                </div>
+                                ${props.count} dataset${props.count === 1 ? '' : 's'}`;
                 layer.bindTooltip(template, {
                     className: 'regions-tooltip',
                     opacity: 1,
                 });
                 layer.on({
                     mouseover: function (e) {
-                        var layer = e.target;
+                        const layer = e.target;
                         layer.setStyle({
                             color: '#375400',
                         });
                     },
-                    mouseout: function (e) {
-                        _this.resetStyle(e.target);
+                    mouseout: (e) => {
+                        this.resetStyle(e.target);
                     },
-                    click: function (e) {
-                        var props = e.target.feature.properties;
+                    click: (e) => {
+                        let props = e.target.feature.properties;
                         // If only one, jump straight to that dataset.
                         if (props.count === 1) {
                             window.location.href = routes.getRegionViewURL(props.region_code);
@@ -169,15 +146,12 @@ var RegionsLayer = /** @class */ (function (_super) {
                     }
                 });
             }
-        }) || this;
-        return _this;
+        });
     }
-    return RegionsLayer;
-}(L.GeoJSON));
-var DatasetsLayer = /** @class */ (function (_super) {
-    __extends(DatasetsLayer, _super);
-    function DatasetsLayer(routes) {
-        var _this = _super.call(this, undefined, {
+}
+class DatasetsLayer extends L.GeoJSON {
+    constructor(routes) {
+        super(undefined, {
             style: function (feature) {
                 return {
                     color: "#637c6b",
@@ -188,101 +162,100 @@ var DatasetsLayer = /** @class */ (function (_super) {
                     clickable: true
                 };
             },
-            onEachFeature: function (feature, layer) {
-                var props = feature.properties, template = "<div>\n                                    <strong>\n                                        " + (props.label || props['cubedash:region_code'] || '') + "\n                                    </strong>\n                                    <div>" + props['datetime'] + "</div>\n                                  </div>";
+            onEachFeature: (feature, layer) => {
+                const props = feature.properties, template = `<div>
+                                    <strong>
+                                        ${props.label || props['cubedash:region_code'] || ''}
+                                    </strong>
+                                    <div>${props['datetime']}</div>
+                                  </div>`;
                 layer.bindTooltip(template, {
                     className: 'datasets-tooltip',
                     opacity: 1,
                 });
                 layer.on({
                     mouseover: function (e) {
-                        var layer = e.target;
+                        const layer = e.target;
                         layer.setStyle({
                             color: '#375400',
                             fillOpacity: 0.6,
                         });
                     },
-                    mouseout: function (e) {
-                        _this.resetStyle(e.target);
+                    mouseout: (e) => {
+                        this.resetStyle(e.target);
                     },
                     click: function (e) {
-                        var feature = e.target.feature;
+                        let feature = e.target.feature;
                         window.location.href = routes.getDatasetViewURL(feature.id);
                     }
                 });
             }
-        }) || this;
-        return _this;
+        });
     }
-    return DatasetsLayer;
-}(L.GeoJSON));
-var OverviewMap = /** @class */ (function (_super) {
-    __extends(OverviewMap, _super);
-    function OverviewMap(dataLayers, activeLayer, defaultZoom, defaultCenter) {
-        var _this = _super.call(this, "map", {
+}
+class OverviewMap extends L.Map {
+    constructor(dataLayers, activeLayer, defaultZoom, defaultCenter) {
+        super("map", {
             zoom: defaultZoom,
             center: defaultCenter,
             layers: [
-                L.maplibreGL({
-                    style: "https://tiles.openfreemap.org/styles/positron",
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
-                        ' &copy; <a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>'
-                })
+                basemapIsRaster
+                    ? L.tileLayer(basemapTemplateUrl, {
+                        attribution: basemapAttribution,
+                        maxZoom: 19,
+                    })
+                    // maplibre-gl-leaflet binding (vendored) attaches L.maplibreGL at
+                    // runtime; it isn't in @types/leaflet, so access it via a cast.
+                    : L.maplibreGL({
+                        style: "https://tiles.openfreemap.org/styles/positron",
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors,' +
+                            ' &copy; <a href="https://openfreemap.org">OpenFreeMap</a> <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>'
+                    })
             ],
             zoomControl: false,
             attributionControl: false,
             scrollWheelZoom: false
-        }) || this;
-        _this.dataLayers = dataLayers;
-        L.control.zoom({ position: "bottomright" }).addTo(_this);
+        });
+        this.dataLayers = dataLayers;
+        L.control.zoom({ position: "bottomright" }).addTo(this);
         if (activeLayer) {
-            var recenter_1 = new RecenterMapControl(activeLayer.layer);
-            var _loop_1 = function (dataLayer) {
-                var optBox = getViewToggle(dataLayer.name);
+            const recenter = new RecenterMapControl(activeLayer.layer);
+            for (const dataLayer of dataLayers) {
+                const optBox = getViewToggle(dataLayer.name);
                 optBox.selected = true;
                 if (dataLayer.data) {
                     optBox.disabled = false;
                 }
                 else {
-                    requestData(dataLayer.name, dataLayer.dataURL, function (enabled) { return (optBox.disabled = !enabled); }, dataLayer.layer);
+                    requestData(dataLayer.name, dataLayer.dataURL, (enabled) => (optBox.disabled = !enabled), dataLayer.layer);
                 }
-                optBox.addEventListener('click', function () {
-                    _this.changeActive(dataLayer);
-                    recenter_1.targetLayer = dataLayer.layer;
+                optBox.addEventListener('click', () => {
+                    this.changeActive(dataLayer);
+                    recenter.targetLayer = dataLayer.layer;
                 });
-            };
-            for (var _i = 0, dataLayers_1 = dataLayers; _i < dataLayers_1.length; _i++) {
-                var dataLayer = dataLayers_1[_i];
-                _loop_1(dataLayer);
             }
-            _this.changeActive(activeLayer);
-            recenter_1.addTo(_this);
-            recenter_1.doRecenter();
+            this.changeActive(activeLayer);
+            recenter.addTo(this);
+            recenter.doRecenter();
         }
-        return _this;
     }
     ;
-    OverviewMap.prototype.changeActive = function (d) {
-        for (var _i = 0, _a = this.dataLayers; _i < _a.length; _i++) {
-            var otherD = _a[_i];
+    changeActive(d) {
+        for (const otherD of this.dataLayers)
             if (otherD !== d)
                 this.removeLayer(otherD.layer);
-        }
         this.addLayer(d.layer);
-        for (var _b = 0, _c = d.showAlongside; _b < _c.length; _b++) {
-            var pairedD = _c[_b];
+        for (const pairedD of d.showAlongside)
             this.addLayer(pairedD.layer);
-        }
-    };
+    }
     ;
-    return OverviewMap;
-}(L.Map));
+}
 function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData, footprintData, defaultZoom, defaultCenter) {
-    var layers = [];
-    var activeLayer = null;
+    const layers = [];
+    let activeLayer = null;
     if (hasDisplayableData) {
-        var footprint = new DataLayer('footprint', routes.geojsonFootprintURL, new FootprintLayer(footprintData, !regionData), footprintData);
+        const footprint = new DataLayer('footprint', routes.geojsonFootprintURL, new FootprintLayer(footprintData, !regionData), footprintData);
         if (regionData) {
             layers.push(new DataLayer('regions', routes.geojsonRegionsURL, new RegionsLayer(regionData, routes), regionData, [footprint]));
         }
@@ -297,26 +270,26 @@ function initPage(hasDisplayableData, showIndividualDatasets, routes, regionData
     return new OverviewMap(layers, activeLayer, defaultZoom, defaultCenter);
 }
 function getViewToggle(name) {
-    var el = document.querySelector('input[name="map_display_view"][value="' + name + '"]');
+    const el = document.querySelector('input[name="map_display_view"][value="' + name + '"]');
     if (!el) {
-        throw new Error("No option box on page for " + name);
+        throw new Error(`No option box on page for ${name}`);
     }
     return el;
 }
 function requestData(name, url, setEnabled, dataLayer) {
     function showError(msg) {
         // TODO: message box?
-        var er = document.getElementById('quiet-page-errors');
+        let er = document.getElementById('quiet-page-errors');
         if (er) {
             er.innerHTML += msg + '<br/>';
         }
     }
-    var request = new XMLHttpRequest();
+    const request = new XMLHttpRequest();
     setEnabled(false);
     request.open('GET', url, true);
     request.onload = function () {
         if (request.status >= 200 && request.status < 400) {
-            var geojsonResponse = JSON.parse(request.responseText);
+            const geojsonResponse = JSON.parse(request.responseText);
             if (geojsonResponse && geojsonResponse.features && geojsonResponse.features.length > 0) {
                 dataLayer.addData(geojsonResponse);
                 setEnabled(true);
@@ -324,12 +297,12 @@ function requestData(name, url, setEnabled, dataLayer) {
         }
         else {
             // We reached our target server, but it returned an error
-            showError("Error fetching " + name);
+            showError(`Error fetching ${name}`);
         }
     };
     request.onerror = function () {
         // There was a connection error of some sort
-        showError("Error fetching " + name);
+        showError(`Error fetching ${name}`);
     };
     request.send();
 }

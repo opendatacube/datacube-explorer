@@ -222,6 +222,11 @@ class DatasetsLayer extends L.GeoJSON {
     }
 }
 
+// These values are injected in the previous <script> tag in the product.html template.
+declare const basemapTemplateUrl: string;
+declare const basemapAttribution: string;
+declare const basemapIsRaster: boolean;
+
 class OverviewMap extends L.Map {
     constructor(private dataLayers: DataLayer[],
                 activeLayer: DataLayer | null,
@@ -231,9 +236,17 @@ class OverviewMap extends L.Map {
             zoom: defaultZoom,
             center: defaultCenter,
             layers: [
+                basemapIsRaster
+                ? L.tileLayer(
+                        basemapTemplateUrl,
+                        {
+                            attribution: basemapAttribution,
+                            maxZoom: 19,
+                        }
+                )
                 // maplibre-gl-leaflet binding (vendored) attaches L.maplibreGL at
                 // runtime; it isn't in @types/leaflet, so access it via a cast.
-                (L as any).maplibreGL(
+                : (L as any).maplibreGL(
                     {
                         style: "https://tiles.openfreemap.org/styles/positron",
                         maxZoom: 19,
