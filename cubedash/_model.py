@@ -104,6 +104,18 @@ def create_app(test_config=None) -> flask.Flask:
     if app.config.get("CUBEDASH_CORS", True):
         CORS(app, resources=[r"/stac/*", r"/api/*"])
 
+    # Basemap defaults
+    app.config.setdefault(
+        "CUBEDASH_BASEMAP_URL_TEMPLATE", "https://tiles.openfreemap.org/styles/positron"
+    )
+    app.config.setdefault(
+        "CUBEDASH_BASEMAP_ATTRIBUTION",
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, '
+        + '&copy; <a href="https://openfreemap.org">OpenFreeMap</a>, '
+        + '&copy; <a href="https://www.openmaptiles.org">OpenMapTiles</a>',
+    )
+    app.config.setdefault("CUBEDASH_BASEMAP_TILE_TYPE", "vector")
+
     app.config.setdefault("CUBEDASH_THEME", "odc")
     themer = Themer(app)
 
@@ -182,6 +194,11 @@ def create_app(test_config=None) -> flask.Flask:
         app.register_blueprint(_pages.bp)
 
     return app
+
+
+def basemap_is_raster(url: str) -> bool:
+    """Basemap URL is raster if it contains x, y and z placeholders."""
+    return all(placeholder in url for placeholder in ("{x}", "{y}", "{z}"))
 
 
 _LOG = structlog.stdlib.get_logger()

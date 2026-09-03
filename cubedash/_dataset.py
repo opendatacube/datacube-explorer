@@ -63,6 +63,11 @@ def dataset_full_page(product_name: str, id_: UUID):
         id_, limit=provenance_display_limit
     )
 
+    # Basemap config
+    basemap_url_template = current_app.config["CUBEDASH_BASEMAP_URL_TEMPLATE"]
+    basemap_attribution = current_app.config["CUBEDASH_BASEMAP_ATTRIBUTION"]
+    basemap_raster = _model.basemap_is_raster(basemap_url_template)
+
     dataset.metadata.sources = {}
     ordered_metadata = utils.prepare_dataset_formatting(dataset)
 
@@ -93,6 +98,9 @@ def dataset_full_page(product_name: str, id_: UUID):
         source_datasets=source_datasets,
         derived_dataset_overflow=derived_dataset_overflow,
         source_dataset_overflow=source_dataset_overflow,
+        basemap_url_template=basemap_url_template,
+        basemap_attribution=basemap_attribution,
+        basemap_is_raster=basemap_raster,
         # get dataset bounds for better image overlay
         dataset_bounds=utils.bbox_as_geom(dataset),
     )

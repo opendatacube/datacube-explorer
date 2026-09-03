@@ -17,8 +17,7 @@ top level global variables.
 Configuring from Environment Variables
 --------------------------------------
 
-Environment variables can be set in the shell before starting the
-server:
+Environment variables can be set in the shell before starting the server:
 
 .. code-block:: console
 
@@ -27,6 +26,20 @@ server:
    $ export CUBEDASH_DEFAULT_TIMEZONE=Australia/Darwin
    $ cubedash-run
     * Running on http://localhost:8080/ (Press CTRL+C to quit)
+
+WARNING: Currently this only works for a handful of configuration settings (e.g.
+CUBEDASH_DEFAULT_TIMEZONE).  Most Explorer configuration settings can only be set
+in the :file:`settings.env.py` file.  This will be fixed in a future release.
+
+In the meantime, if configuration by environment variables is required, settings can
+be read from the environment in the settings.env.py file in the normal manner:
+
+.. code-block:: python
+
+    import os
+
+    CUBEDASH_BASEMAP_URL_TEMPLATE = os.environ.get("CUBEDASH_BASEMAP_URL_TEMPLATE")
+    ...
 
 .. _explorer-app-settings:
 
@@ -41,6 +54,31 @@ The following configuration settings are provided by Datacube Explorer:
     Enable `Flask-Cache <https://pythonhosted.org/Flask-Caching/#configuring-flask-caching>`__ settings.
 
     :default: ``NullCache``
+
+.. confval:: CUBEDASH_BASEMAP_URL_TEMPLATE
+
+    Set the template URL for the Leaflet basemap.
+
+    For vector tile base maps, this is the style URL passed to MapLibre.
+
+    For raster tile base maps, this is the URL template passed to Leaflet, and should
+    contain `{z}`, `{x}` and `{y}` placeholders.  The presence of these template
+    placeholders is used to distinguish between vector and raster tile implementations.
+
+    The default is the positron-style vector basemap from OpenFreeMap. (`https://tiles.openfreemap.org/styles/positron`)
+
+    For raster tile providers that require an API Key, embed the API key in the raster map url template as
+    per the provider's instructions.
+
+.. confval:: CUBEDASH_BASEMAP_ATTRIBUTION
+
+    Set the attribution/copyright message for the Leaflet basemap.
+
+    The default are the attributions appropriate for the default OpenFreeMap basemap.
+
+    Override with e.g.:
+
+        CUBEDASH_BASEMAP_ATTRIBUTION='&copy; <a href="http://www.basemap.provider/copyright">Generic Basemap Provider</a>
 
 .. confval:: CUBEDASH_CORS
 
