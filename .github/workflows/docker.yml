@@ -11,9 +11,6 @@ on:
   release:
     types: [published]
 
-env:
-  REGISTRY: ghcr.io
-
 permissions: {}
 
 # When a PR is updated, cancel the jobs from the previous version. Merges
@@ -57,83 +54,47 @@ jobs:
       output: image
       push: true
       platforms: linux/amd64,linux/arm64
-      cache: true
-      cache-mode: max
+      # cache: true
+      # cache-mode: max
       sbom: true
       meta-images:  ghcr.io/${{ github.repository_owner }}/explorer
       meta-tags: |
         type=ref,event=tag
         type=ref,event=branch
         type=pep440,pattern={{version}}
-        type=sha
         type=raw,value=${{ needs.prepare.outputs.version }}
       set-meta-labels: true
       set-meta-annotations: true
-      # meta-labels: |
-      #   org.opencontainers.image.vendor=Open Data Cube
-      #   org.opencontainers.image.licenses=Apache-2.0
-      #   org.opencontainers.image.url=https://github.com/${{ github.repository}}
-      #   org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io
-      # org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
-      # org.opencontainers.image.title=Datacube Explorer
-      # org.opencontainers.image.description=Web-based exploration of Open Data Cube collections
-      #   org.opencontainers.image.source=https://github.com/${{ github.repository}}
-      # meta-annotations: |
-
       build-args: |
         ENVIRONMENT=deployment
         EXPLORER_VERSION=${{ needs.prepare.outputs.version }}
-      # SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.source-date-epoch }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-  # Add GitHub-native artifact attestations for every pushed image.
-  #
-  # The github-builder workflow above signs SLSA provenance and embeds it in the
-  # image index (verifiable with `cosign verify-attestation` / `docker buildx
-  # imagetools inspect`), but it does NOT push to GitHub's attestation store /
-  # the OCI Referrers API (see docker/github-builder#183). Without that,
-  # `gh attestation verify oci://...` and the repo Attestations UI don't work.
-  #
-  # This job re-adds that GitHub-native attestation by attesting the pushed
-  # image digest. `needs.build.outputs.digest` is the index (manifest list)
-  # digest, so attesting it makes `gh attestation verify oci://<image>:<tag>`
-  # succeed (the tag resolves to that index digest).
+  # Also do GitHub-native attestations for the pushed image
   attest:
     needs: [build]
-    # Attest whenever the build job actually pushed an image (every run of this
-    # workflow pushes; there is no pull_request trigger). Guarded on the build
-    # digest so it is skipped if the build produced nothing.
-    if: needs.build.outputs.digest != ''
     runs-on: ubuntu-latest
     permissions:
-      id-token: write        # mint the OIDC token used to sign the attestation
+      id-token: write        # create an OIDC token to sign the attestation
       contents: read         # required by the action
       packages: write        # push the attestation alongside the image in GHCR
       attestations: write    # write the attestation to the GitHub store
     steps:
-      # Login is required only because of `push-to-registry: true` below:
-      # attest-build-provenance writes the signed attestation as an OCI referrer
-      # manifest into GHCR (so `gh attestation verify oci://...` can resolve it
-      # from the registry), which needs registry write auth. The GitHub-store
-      # copy (Attestations UI) is written via the API and needs no login.
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Attest image provenance
-        # v4+ of this action is a thin wrapper over actions/attest; either works.
-        # Keeping the purpose-built provenance action for its simpler inputs.
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          # Fully-qualified image name, no tag (per action requirements).
-          subject-name: ${{ fromJSON(needs.build.outputs.meta-json).labels['org.opencontainers.image.created'] }}
-          # Index/manifest-list digest of the image the build job pushed.
+          # Fully-qualified image name without no tag
+          subject-name:  ghcr.io/${{ github.repository_owner }}/explorer
           subject-digest: ${{ needs.build.outputs.digest }}
           push-to-registry: true
