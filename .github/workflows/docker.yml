@@ -62,13 +62,15 @@ jobs:
         type=ref,event=tag
         type=ref,event=branch
         type=pep440,pattern={{version}}
-        type=raw,value=${{ needs.prepare.outputs.version }}
+        type=raw,value=${{ needs.prepare.outputs.version }},priority=650
       meta-annotations: |
         org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io/
-        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal
+        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal:ubuntu-small
+        org.opencontainers.image.title=Datacube Explorer
       meta-labels: |
         org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io/
-        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal
+        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal:ubuntu-small
+        org.opencontainers.image.title=Datacube Explorer
       set-meta-labels: true
       set-meta-annotations: true
       build-args: |
