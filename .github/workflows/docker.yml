@@ -60,7 +60,7 @@ jobs:
       cache: true
       cache-mode: max
       sbom: true
-      meta-images:  ${{ github.repository_owner }}/explorer
+      meta-images:  ghcr.io/${{ github.repository_owner }}/explorer
       meta-tags: |
         type=ref,event=tag
         type=ref,event=branch
