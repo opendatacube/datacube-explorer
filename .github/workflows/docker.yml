@@ -23,112 +23,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Compute the git-describe based version/tags and reproducible-build epoch.
-  prepare:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      # setuptools_scm-compatible version string passed as EXPLORER_VERSION build-arg.
-      version: ${{ steps.meta.outputs.version }}
-      meta-tags: ${{ steps.meta.outputs.meta-tags }}
-      # Base image name (registry/repo, no tag) consumed as meta-images.
-      meta-images: ${{ steps.meta.outputs.meta-images }}
-      # Repo URL for the source/url OCI labels (derived so forks are correct).
-      repo-url: ${{ steps.meta.outputs.repo-url }}
-      # Unix timestamp for reproducible builds (SOURCE_DATE_EPOCH build-arg).
-      source-date-epoch: ${{ steps.meta.outputs.source-date-epoch }}
-    steps:
-      - name: Checkout git
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Compute version, tags and build epoch
-        id: meta
-        env:
-          # github.* context values consumed by the script below. Using env
-          # avoids interpolating untrusted values directly into the shell.
-          OWNER: ${{ github.repository_owner }}
-          SERVER_URL: ${{ github.server_url }}
-          REPOSITORY: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-
-          # Image name: <registry>/<owner-lowercased>/explorer. Deriving the
-          # owner from the running repo means this works in any fork without
-          # editing the workflow (e.g. ghcr.io/omad/explorer in a fork).
-          OWNER_LC=$(echo "${OWNER}" | tr '[:upper:]' '[:lower:]')
-          echo "meta-images=${REGISTRY}/${OWNER_LC}/explorer" >> "$GITHUB_OUTPUT"
-
-          # Source/url labels point at the repo that actually built the image.
-          echo "repo-url=${SERVER_URL}/${REPOSITORY}" >> "$GITHUB_OUTPUT"
-
-          # Reproducible-build epoch: timestamp of the last commit that touched
-          # files which affect the built image.
-          SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct -- pyproject.toml uv.lock cubedash)
-          echo "source-date-epoch=${SOURCE_DATE_EPOCH}" >> "$GITHUB_OUTPUT"
-
-          if [ "${EVENT_NAME}" = "release" ]; then
-            # Released image: vN.N.N AND :latest
-            RELEASE_VERSION=$(git describe --abbrev=0 --tags)
-            VERSION="${RELEASE_VERSION}"
-            META_TAGS=$(printf '%s\n%s' \
-              "type=raw,value=${RELEASE_VERSION}" \
-              "type=raw,value=latest")
-          else
-            # Unstable (develop) build: full git describe tag only
-            UNSTABLE_TAG=$(git describe --tags)
-            # setuptools_scm compatible version string (replace -g with +g).
-            VERSION="${UNSTABLE_TAG/-g/+g}"
-            META_TAGS="type=raw,value=${UNSTABLE_TAG}"
-          fi
-          {
-            echo "version=${VERSION}"
-            echo "meta-tags<<EOF"
-            echo "${META_TAGS}"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
   # Build (and push) a combined linux/amd64 + linux/arm64
   # See https://docs.docker.com/build/ci/github-actions/github-builder/build/
   # for documentation on this docker maintained workflow.
   build:
-    needs: prepare
     uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
     permissions:
       contents: read      # fetch the repository content
       id-token: write     # sign attestations and cache entries via OIDC
       packages: write     # push to GHCR
-      attestations: write # write the attestation storage record
     with:
       output: image
       push: true
       platforms: linux/amd64,linux/arm64
       cache: true
       cache-mode: max
-      # Generate an SBOM attestation (BuildKit emits SPDX) embedded in the image
-      # index alongside the SLSA provenance. Viewable with
-      # `docker buildx imagetools inspect <img> --format '{{ json .SBOM }}'`.
       sbom: true
-      meta-images: ${{ needs.prepare.outputs.meta-images }}
-      meta-tags: ${{ needs.prepare.outputs.meta-tags }}
+      meta-images:  ${{ github.repository_owner }}/explorer
+      meta-tags: |
+        type=ref,event=branch
+        type=ref,event=tag
+        type=pep440,pattern={{version}}
       set-meta-labels: true
-      meta-labels: |
-        org.opencontainers.image.title=Datacube Explorer
-        org.opencontainers.image.description=Web-based exploration of Open Data Cube collections
-        org.opencontainers.image.vendor=Open Data Cube
-        org.opencontainers.image.licenses=Apache-2.0
-        org.opencontainers.image.source=${{ needs.prepare.outputs.repo-url }}
-        org.opencontainers.image.url=${{ needs.prepare.outputs.repo-url }}
-        org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io
-        org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+      set-meta-annotations: true
+      # meta-labels: |
+      #   org.opencontainers.image.vendor=Open Data Cube
+      #   org.opencontainers.image.licenses=Apache-2.0
+      #   org.opencontainers.image.url=https://github.com/${{ github.repository}}
+      #   org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io
+      # org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+      # org.opencontainers.image.title=Datacube Explorer
+      # org.opencontainers.image.description=Web-based exploration of Open Data Cube collections
+      #   org.opencontainers.image.source=https://github.com/${{ github.repository}}
+      # meta-annotations: |
+
       build-args: |
         ENVIRONMENT=deployment
-        EXPLORER_VERSION=${{ needs.prepare.outputs.version }}
-        SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.source-date-epoch }}
+        EXPLORER_VERSION={{meta.version}}
+      # SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.source-date-epoch }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
@@ -148,7 +80,7 @@ jobs:
   # digest, so attesting it makes `gh attestation verify oci://<image>:<tag>`
   # succeed (the tag resolves to that index digest).
   attest:
-    needs: [prepare, build]
+    needs: [build]
     # Attest whenever the build job actually pushed an image (every run of this
     # workflow pushes; there is no pull_request trigger). Guarded on the build
     # digest so it is skipped if the build produced nothing.
@@ -178,7 +110,7 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           # Fully-qualified image name, no tag (per action requirements).
-          subject-name: ${{ needs.prepare.outputs.meta-images }}
+          subject-name: ${{ fromJSON(needs.build.outputs.meta-json).labels['org.opencontainers.image.created'] }}
           # Index/manifest-list digest of the image the build job pushed.
           subject-digest: ${{ needs.build.outputs.digest }}
           push-to-registry: true
