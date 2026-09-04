@@ -63,6 +63,12 @@ jobs:
         type=ref,event=branch
         type=pep440,pattern={{version}}
         type=raw,value=${{ needs.prepare.outputs.version }}
+      meta-annotations: |
+        org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io/
+        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal
+      meta-labels: |
+        org.opencontainers.image.documentation=https://datacube-explorer.readthedocs.io/
+        org.opencontainers.image.base.name=ghcr.io/osgeo/gdal
       set-meta-labels: true
       set-meta-annotations: true
       build-args: |
