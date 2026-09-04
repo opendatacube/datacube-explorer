@@ -70,7 +70,7 @@ ARG EXPLORER_VERSION=""
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
                  echo "--extra=test") \
-    && export SETUPTOOLS_SCM_PRETEND_VERSION="${EXPLORER_VERSION}" \
+    && export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER="${EXPLORER_VERSION}" \
     && uv sync --frozen $EXTRAS --no-editable \
     && ([ "$ENVIRONMENT" != "deployment" ] || \
         (chmod 644 /usr/local/bin/uv* && \

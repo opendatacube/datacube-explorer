@@ -40,10 +40,7 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          # Unstable (develop) build: full git describe tag only
-          UNSTABLE_TAG=$(git describe --tags)
-          # setuptools_scm compatible version string (replace -g with +g).
-          VERSION="${UNSTABLE_TAG/-g/+g}"
+          VERSION="$(pipx run setuptools-scm)"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
   # Build (and push) a combined linux/amd64 + linux/arm64
