@@ -23,10 +23,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout git
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compute version, tags and build epoch
+        id: meta
+        run: |
+          set -euo pipefail
+          # Unstable (develop) build: full git describe tag only
+          UNSTABLE_TAG=$(git describe --tags)
+          # setuptools_scm compatible version string (replace -g with +g).
+          VERSION="${UNSTABLE_TAG/-g/+g}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
   # Build (and push) a combined linux/amd64 + linux/arm64
   # See https://docs.docker.com/build/ci/github-actions/github-builder/build/
   # for documentation on this docker maintained workflow.
   build:
+    needs: prepare
     uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
     permissions:
       contents: read      # fetch the repository content
@@ -41,9 +65,11 @@ jobs:
       sbom: true
       meta-images:  ${{ github.repository_owner }}/explorer
       meta-tags: |
-        type=ref,event=branch
         type=ref,event=tag
+        type=ref,event=branch
         type=pep440,pattern={{version}}
+        type=sha
+        type=raw,value=${{ needs.prepare.outputs.version }}
       set-meta-labels: true
       set-meta-annotations: true
       # meta-labels: |
@@ -59,7 +85,7 @@ jobs:
 
       build-args: |
         ENVIRONMENT=deployment
-        EXPLORER_VERSION={{meta.version}}
+        EXPLORER_VERSION=${{ needs.prepare.outputs.version }}
       # SOURCE_DATE_EPOCH=${{ needs.prepare.outputs.source-date-epoch }}
     secrets:
       registry-auths: |
