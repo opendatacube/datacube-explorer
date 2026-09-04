@@ -101,6 +101,11 @@ def product_page(
     default_zoom = current_app.config["default_map_zoom"]
     default_center = current_app.config["default_map_center"]
 
+    # Basemap config
+    basemap_url_template = current_app.config["CUBEDASH_BASEMAP_URL_TEMPLATE"]
+    basemap_attribution = current_app.config["CUBEDASH_BASEMAP_ATTRIBUTION"]
+    basemap_raster = _model.basemap_is_raster(basemap_url_template)
+
     region_geojson = _model.get_regions_geojson(product_name, year, month, day)
 
     return utils.render(
@@ -113,6 +118,9 @@ def product_page(
         datasets_geojson=None,  # _model.get_datasets_geojson(product_name, year, month, day),
         footprint_geojson=_model.get_footprint_geojson(product_name, year, month, day),
         product=product,
+        basemap_url_template=basemap_url_template,
+        basemap_attribution=basemap_attribution,
+        basemap_is_raster=basemap_raster,
         product_region_info=(
             _model.STORE.get_product_region_info(product_name)
             if region_geojson
@@ -350,6 +358,11 @@ def region_page(
         )
     ]
 
+    # Basemap config
+    basemap_url_template = current_app.config["CUBEDASH_BASEMAP_URL_TEMPLATE"]
+    basemap_attribution = current_app.config["CUBEDASH_BASEMAP_ATTRIBUTION"]
+    basemap_raster = _model.basemap_is_raster(basemap_url_template)
+
     def url_with_offset(new_offset: int):
         """Currently request url with a different offset."""
         page_args = dict(flask.request.view_args or {})
@@ -381,6 +394,9 @@ def region_page(
         region_code=region_code,
         product=product,
         product_region_info=region_info,
+        basemap_url_template=basemap_url_template,
+        basemap_attribution=basemap_attribution,
+        basemap_is_raster=basemap_raster,
         # Summary for the whole product
         product_summary=product_summary,
         # Summary for the users' currently selected filters.

@@ -122,10 +122,14 @@
     <div id="quiet-page-errors"></div>
 </footer>
 
-<script src="{{ url_for('static', filename='leaflet-1.7.1/leaflet.js') }}"></script>
-<script src="{{ url_for('static', filename='maplibre-gl-5.24.0/maplibre-gl.js') }}"></script>
-<script src="{{ url_for('static', filename='maplibre-gl-leaflet-0.1.4/leaflet-maplibre-gl.js') }}"></script>
-<script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+{% if basemap_url_template %}
+    <script src="{{ url_for('static', filename='leaflet-1.9.4/leaflet.js') }}"></script>
+    {% if not basemap_is_raster %}
+        <script src="{{ url_for('static', filename='maplibre-gl-5.24.0/maplibre-gl.js') }}"></script>
+        <script src="{{ url_for('static', filename='maplibre-gl-leaflet-0.1.4/leaflet-maplibre-gl.js') }}"></script>
+    {% endif %}
+    <script src="{{ url_for('static', filename='leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js') }}"></script>
+{% endif %}
 
 {% if sentry_public_dsn %}
     <script src="https://cdn.ravenjs.com/3.26.4/raven.min.js" crossorigin="anonymous"></script>
@@ -151,8 +155,8 @@
             function updateAttribution(e) {
                 var attributions = Object.keys(map._layers).map(function (name) {
                     var layer = map._layers[name];
-                    if (layer.getAttribution) {
-                        return layer.getAttribution();
+                    if (layer.options && layer.options.attribution) {
+                        return layer.options.attribution;
                     }
                     return null;
                 });

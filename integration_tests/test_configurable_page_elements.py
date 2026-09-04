@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from integration_tests.asserts import get_html
+from integration_tests.asserts import get_html, get_text_response
 
 TYPE_CHECKING = False
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.fixture()
-def app_configured_client(client: FlaskClient):
+def app_configured_client(client: FlaskClient) -> FlaskClient:
     client.application.config.update(
         {
             "CUBEDASH_INSTANCE_TITLE": "Development - ODC",
@@ -44,6 +44,29 @@ def app_configured_client(client: FlaskClient):
                 "ga_ls8c_level1_3",
                 "usgs_ls7e_level1_1",
             ],
+            "CUBEDASH_BASEMAP_URL_TEMPLATE": "https://vector.example.com/styles/dummy",
+            "CUBEDASH_BASEMAP_ATTRIBUTION": '&copy;<a href="https://example.com/attribution">Vector Basemaps</a>',
+        }
+    )
+    return client
+
+
+@pytest.fixture()
+def app_configured_raster_basemap_client(client: FlaskClient) -> FlaskClient:
+    client.application.config.update(
+        {
+            "CUBEDASH_INSTANCE_TITLE": "Development - ODC",
+            "CUBEDASH_SISTER_SITES": (
+                ("Production - ODC", "http://prod.odc.example"),
+                ("Production - NCI", "http://nci.odc.example"),
+            ),
+            "CUBEDASH_HIDE_PRODUCTS_BY_NAME_LIST": [
+                "usgs_ls5t_level1_1",
+                "ga_ls8c_level1_3",
+                "usgs_ls7e_level1_1",
+            ],
+            "CUBEDASH_BASEMAP_URL_TEMPLATE": "https://raster.example.com/styles/dummy/{z}/{y}/{x}.png?api_key=test_api_key",
+            "CUBEDASH_BASEMAP_ATTRIBUTION": '&copy;<a href="https://example.com/attribution">Raster Basemaps</a>',
         }
     )
     return client
@@ -154,3 +177,33 @@ def test_sister_sites_request_path(app_configured_client: FlaskClient) -> None:
         href = sister_instance.css_first("a.sister-link").attributes["href"]
         assert href is not None
         assert "/products/ga_ls5t_ard_3/datasets" in href
+
+
+def test_vector_basemap(app_configured_client: FlaskClient) -> None:
+    for url in (
+        "/products/ga_ls7e_ard_3",
+        "/products/ga_ls7e_ard_3/datasets/50014f19-5546-4853-be8d-0185a798c083",
+        "/product/ga_ls7e_ard_3/regions/093074",
+    ):
+        txt, _ = get_text_response(app_configured_client, url)
+
+        # Check defaults not displayed
+        assert "tiles.openfreemap.org/styles/positron" not in txt
+        assert "https://vector.example.com/styles/dummy" in txt
+        assert "https://example.com/attribution" in txt
+        assert "Vector Basemaps" in txt
+
+
+def test_raster_basemap(app_configured_raster_basemap_client: FlaskClient) -> None:
+    for url in (
+        "/products/ga_ls7e_ard_3",
+        "/products/ga_ls7e_ard_3/datasets/50014f19-5546-4853-be8d-0185a798c083",
+        "/product/ga_ls7e_ard_3/regions/093074",
+    ):
+        txt, _ = get_text_response(app_configured_raster_basemap_client, url)
+
+        # Check defaults not displayed
+        assert "tiles.openfreemap.org/styles/positron" not in txt
+        assert "https://raster.example.com/styles/dummy/" in txt
+        assert "https://example.com/attribution" in txt
+        assert "Raster Basemaps" in txt
