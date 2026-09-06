@@ -34,11 +34,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Compute version, tags and build epoch
+      - name: Compute version, tags and build epoch (setuptools-scm)
         id: meta
         run: |
           set -euo pipefail
-          VERSION="$(pipx run setuptools-scm)"
+
+          VERSION="$(pipx run --spec setuptools-scm==10.2.3 setuptools-scm)"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
           # Reproducible-build epoch: timestamp of the last commit that touched
