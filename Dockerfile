@@ -127,8 +127,6 @@ CMD ["gunicorn", \
      "--threads=2", \
      "-k", \
      "gthread", \
-     "--timeout", \
-     "90", \
      "--config", \
      "python:cubedash.gunicorn_config", \
      "cubedash.startup_utils:create_app()"]
