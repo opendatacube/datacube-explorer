@@ -1,5 +1,7 @@
 .DEFAULT_GOAL := help
 
+TSCONFIG = cubedash/static/tsconfig.json
+
 help: ## Display this help text
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
@@ -37,8 +39,8 @@ node_modules:
 .PHONY: js ## Compile Typescript to JS
 js: cubedash/static/overview.js node_modules
 
-cubedash/static/overview.js: cubedash/static/overview.ts
-	tsc --build cubedash/static/tsconfig.json
+cubedash/static/overview.js: cubedash/static/overview.ts $(TSCONFIG)
+	tsc --build $(TSCONFIG)
 
 .PHONY: test
 test: ## Run tests using pytest
