@@ -39,7 +39,7 @@ repos:
         args: [--allow-multiple-documents]
       - id: debug-statements # Avoid commiting debug/breakpoints
       - id: end-of-file-fixer # Normalise on exactly one newline
-        exclude: '^cubedash/static/base.css|^integration_tests/schemas/'
+        exclude: '^cubedash/static/base.css|^cubedash/static/overview.js|^integration_tests/schemas/'
       - id: fix-byte-order-marker # No UTF-8 byte order marks
         exclude: '^cubedash/static/base.css'
       - id: mixed-line-ending # Don't allow mixed line endings
