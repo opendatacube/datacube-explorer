@@ -319,7 +319,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                 select srid_groups.product_ref,
                     coalesce(srid_groups.region_code, '')                          as region_code,
                     ST_SimplifyPreserveTopology(
-                            ST_Union(ST_Buffer(srid_groups.footprint, 0)), 0.0001) as footprint,
+                            ST_Union(ST_MakeValid(srid_groups.footprint)), 0.0001) as footprint,
                     sum(srid_groups.count)                                         as count
                 from srid_groups
                 group by srid_groups.product_ref, srid_groups.region_code
@@ -974,7 +974,7 @@ class ExplorerIndex(ExplorerAbstractIndex):
                     func.array_agg(select_by_srid.c.srid).label("srids"),
                     func.sum(select_by_srid.c.size_bytes).label("size_bytes"),
                     func.ST_Union(
-                        func.ST_Buffer(select_by_srid.c.footprint_geometry, 0),
+                        func.ST_MakeValid(select_by_srid.c.footprint_geometry),
                         type_=Geometry(),
                     ).label("footprint_geometry"),
                     func.max(select_by_srid.c.newest_dataset_creation_time).label(
