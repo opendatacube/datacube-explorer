@@ -1,5 +1,9 @@
 .DEFAULT_GOAL := help
 
+SWC_CONFIG = .swcrc
+TS_CONFIG = cubedash/static/tsconfig.json
+TS_DIST = cubedash/static/ts-dist
+
 help: ## Display this help text
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
@@ -32,13 +36,14 @@ cubedash/static/base.css: cubedash/static/base.sass
 	npx sass $< $@
 
 node_modules:
-	npm install @types/geojson @types/leaflet
+	npm install typescript @swc/cli @swc/core @types/geojson @types/leaflet
 
 .PHONY: js ## Compile Typescript to JS
 js: cubedash/static/overview.js node_modules
 
-cubedash/static/overview.js: cubedash/static/overview.ts
-	tsc --build cubedash/static/tsconfig.json
+cubedash/static/overview.js: cubedash/static/overview.ts $(TS_CONFIG) $(SWC_CONFIG)
+	tsc --noEmit $(TS_CONFIG)
+	swc $< --out-file $@
 
 .PHONY: test
 test: ## Run tests using pytest
