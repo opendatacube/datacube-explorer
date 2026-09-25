@@ -39,12 +39,13 @@ repos:
         args: [--allow-multiple-documents]
       - id: debug-statements # Avoid commiting debug/breakpoints
       - id: end-of-file-fixer # Normalise on exactly one newline
-        exclude: '^integration_tests/schemas/'
+        exclude: '^cubedash/static/base.css|^integration_tests/schemas/'
       - id: fix-byte-order-marker # No UTF-8 byte order marks
+        exclude: '^cubedash/static/base.css'
       - id: mixed-line-ending # Don't allow mixed line endings
       - id: pretty-format-json
         args: ['--no-sort-keys', '--indent=4', '--autofix']
         # (Exclude Typescript config: it uses json5 extensions)
         exclude: 'tsconfig.json|^integration_tests/schemas/'
       - id: trailing-whitespace # Auto remove trailing whitespace
-        exclude: '^integration_tests/schemas/'
+        exclude: '^cubedash/static/base.css|^integration_tests/schemas/'
