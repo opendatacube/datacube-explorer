@@ -99,8 +99,9 @@ def epsg_to_srid(conn: Connection, code: int) -> int | None:
     """
     return conn.execute(
         text(
-            f"select srid from spatial_ref_sys where auth_name = 'EPSG' and auth_srid={code}"
-        )
+            "select srid from spatial_ref_sys where auth_name = 'EPSG' and auth_srid=:code"
+        ),
+        {"code": code},
     ).scalar()
 
 
