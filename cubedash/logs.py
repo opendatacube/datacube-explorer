@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import pathlib
 import sys
 from functools import partial
@@ -89,7 +89,7 @@ class BytesConsoleRenderer(structlog.dev.ConsoleRenderer):
 
     @override
     def _repr(self, val):
-        if isinstance(val, datetime.datetime):
+        if isinstance(val, dt.datetime):
             return val.isoformat()
         if isinstance(val, pathlib.PurePath):
             return val.as_posix()
