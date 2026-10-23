@@ -67,7 +67,7 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
 
     res = get_html(client, "/product-audit/")
     assert (
-        res.css_first(".unavailable-metadata .search-result .product-name").text(
+        res.css_first(".unavailable-metadata .search-result .product-name").text(  # type: ignore[union-attr]
             strip=True
         )
         == "s2_l2a"
@@ -75,7 +75,7 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     assert (
         res.css_first(
             ".unavailable-metadata .search-result .missing-footprint"
-        ).attributes["title"]
+        ).attributes["title"]  # type: ignore[union-attr]
         == "0 of 5 missing footprint"
     )
 

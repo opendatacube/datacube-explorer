@@ -71,13 +71,15 @@ def test_dataset_search_page_localised_time(client: FlaskClient) -> None:
     html = get_html(client, "/products/ga_ls9c_ard_3/datasets/2022")
 
     assert "2022-01-01 08:11:00" in [
-        a.css_first("td").text(strip=True).strip() for a in html.css(".search-result")
+        a.css_first("td").text(strip=True).strip()  # type: ignore[union-attr]
+        for a in html.css(".search-result")
     ], (
         "datestring does not match expected center_time recorded in dataset_spatial table"
     )
 
     assert "Time UTC: 2021-12-31 22:41:00" in [
-        a.css_first("td").attributes["title"] for a in html.css(".search-result")
+        a.css_first("td").attributes["title"]  # type: ignore[union-attr]
+        for a in html.css(".search-result")
     ], (
         "datestring does not match expected center_time recorded in dataset_spatial table"
     )
@@ -85,7 +87,8 @@ def test_dataset_search_page_localised_time(client: FlaskClient) -> None:
     html = get_html(client, "/products/ga_ls9c_ard_3/datasets/2021")
 
     assert "2021-12-04 11:05:22" in [
-        a.css_first("td").text(strip=True).strip() for a in html.css(".search-result")
+        a.css_first("td").text(strip=True).strip()  # type: ignore[union-attr]
+        for a in html.css(".search-result")
     ], (
         "datestring does not match expected center_time recorded in dataset_spatial table"
     )
