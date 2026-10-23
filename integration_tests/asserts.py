@@ -184,13 +184,14 @@ def get_html(client: FlaskClient, url: str) -> LexborHTMLParser:
 
 def check_area(area_pattern, html: LexborNode | LexborHTMLParser) -> None:
     assert re.match(
-        area_pattern + r" \(approx", html.css_first(".coverage-footprint-area").text()
+        area_pattern + r" \(approx",
+        html.css_first(".coverage-footprint-area").text(),  # type: ignore[union-attr]
     )
 
 
 def check_last_processed(html: LexborNode | LexborHTMLParser, time: str) -> None:
     __tracebackhide__ = True
-    when = html.css_first(".last-processed time").attributes["datetime"]
+    when = html.css_first(".last-processed time").attributes["datetime"]  # type: ignore[union-attr]
     assert when is not None
     assert when.startswith(time)
 

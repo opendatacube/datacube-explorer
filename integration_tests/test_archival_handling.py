@@ -32,17 +32,17 @@ def test_pre_archival_dataset_count(client: FlaskClient) -> None:
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-- td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "1"
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "1"
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "1"
 
 
@@ -57,15 +57,15 @@ def test_post_archival_dataset_count(odc_test_db, run_generate, client) -> None:
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-- td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "0"
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-1999- td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "0"
 
     dataset_count = html.css_first(
         "table.data-table tr#ga_ls7e_ard_3-1999-7 td.numeric"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert dataset_count == "0"

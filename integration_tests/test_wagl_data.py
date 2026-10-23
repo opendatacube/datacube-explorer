@@ -74,9 +74,9 @@ def test_product_audit(unpopulated_client: FlaskClient, run_generate) -> None:
     assert len(largest_footprint_size) == 2
 
     largest_product_footprint = (
-        largest_footprint_size[0].css_first(".product-name").text(strip=True)
+        largest_footprint_size[0].css_first(".product-name").text(strip=True)  # type: ignore[union-attr]
     )
-    largest_val = largest_footprint_size[0].css_first(".size-value").text(strip=True)
+    largest_val = largest_footprint_size[0].css_first(".size-value").text(strip=True)  # type: ignore[union-attr]
     # They're both the same :/
     assert largest_product_footprint in ("s2a_ard_granule", "s2a_level1c_granule")
     assert largest_val == "181.6B"

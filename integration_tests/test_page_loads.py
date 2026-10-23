@@ -217,7 +217,7 @@ def test_uninitialised_overview(
 
     # The page should load without error, but will display 'unknown' fields
     assert (
-        html.css_first("h2").text(strip=True)
+        html.css_first("h2").text(strip=True)  # type: ignore[union-attr]
         == "usgs_ls7e_level1_1: United States Geological Survey Landsat 7 \
 Enhanced Thematic Mapper Plus Level 1 Collection 1"
     )
@@ -241,14 +241,14 @@ def test_uninitialised_product(
     html = get_html(empty_client, "/products/ls7_nbar_scene")
 
     # The page should load without error, but will mention its lack of information
-    assert "ls7_nbar_scene" in html.css_first("h2").text(strip=True)
-    assert "not yet summarised" in html.css_first("#content", strict=True).text(
+    assert "ls7_nbar_scene" in html.css_first("h2").text(strip=True)  # type: ignore[union-attr]
+    assert "not yet summarised" in html.css_first("#content", strict=True).text(  # type: ignore[union-attr]
         strip=True
     )
 
     # ... and a product that we populated does not have the message:
     html = get_html(empty_client, "/products/ls7_nbar_albers")
-    assert "not yet summarised" not in html.css_first("#content", strict=True).text(
+    assert "not yet summarised" not in html.css_first("#content", strict=True).text(  # type: ignore[union-attr]
         strip=True
     )
 
@@ -298,7 +298,7 @@ def test_view_dataset(client: FlaskClient) -> None:
     # Label of dataset is header
     assert "usgs_ls7e_level1_1-0-20200628_097068_2020-06-01" in html.css_first(
         "h2"
-    ).text(strip=True)
+    ).text(strip=True)  # type: ignore[union-attr]
     assert not html.css_first(".key-creation_dt")
 
     # ga_ls_wo_fq_nov_mar_3 dataset (has no label or location)
@@ -328,7 +328,7 @@ def test_view_product(client: FlaskClient) -> None:
 def test_view_metadata_type(client: FlaskClient, odc_test_db) -> None:
     # Does it load without error?
     html = get_html(client, "/metadata-type/eo3")
-    assert html.css_first("h2").text(strip=True) == "eo3"
+    assert html.css_first("h2").text(strip=True) == "eo3"  # type: ignore[union-attr]
 
     how_many_are_eo3 = len(
         [
@@ -338,7 +338,7 @@ def test_view_metadata_type(client: FlaskClient, odc_test_db) -> None:
         ]
     )
     assert (
-        html.css_first(".header-follow").text(strip=True)
+        html.css_first(".header-follow").text(strip=True)  # type: ignore[union-attr]
         == f"metadata type of {how_many_are_eo3} products"
     )
 
@@ -389,7 +389,7 @@ def test_loading_high_low_tide_comp(client: FlaskClient) -> None:
     check_area("2,984,...km2", html)
 
     assert (
-        html.css_first(".last-processed time", strict=True).attributes["datetime"]
+        html.css_first(".last-processed time", strict=True).attributes["datetime"]  # type: ignore[union-attr]
         == "2017-06-08T20:58:07.014314+00:00"
     )
 
@@ -532,12 +532,12 @@ def test_search_time_completion(client: FlaskClient) -> None:
     # They only specified a begin time, so the end time should be filled in with the product extent.
     html = get_html(client, "/datasets/ga_ls8c_ard_3?time-begin=1999-05-28")
     assert (
-        html.css_first("#search-time-before", strict=True).attributes["value"]
+        html.css_first("#search-time-before", strict=True).attributes["value"]  # type: ignore[union-attr]
         == "1999-05-28"
     )
     # One day after the product extent end (range is exclusive)
     assert (
-        html.css_first("#search-time-after", strict=True).attributes["value"]
+        html.css_first("#search-time-after", strict=True).attributes["value"]  # type: ignore[union-attr]
         == "2022-10-28"
     )
     search_results = html.css(".search-result a")
@@ -546,11 +546,11 @@ def test_search_time_completion(client: FlaskClient) -> None:
     # if not provided as a span, it should become a span of one day
     html = get_html(client, "/datasets/ga_ls8c_ard_3?time=2022-07-18")
     assert (
-        html.css_first("#search-time-before", strict=True).attributes["value"]
+        html.css_first("#search-time-before", strict=True).attributes["value"]  # type: ignore[union-attr]
         == "2022-07-18"
     )
     assert (
-        html.css_first("#search-time-after", strict=True).attributes["value"]
+        html.css_first("#search-time-after", strict=True).attributes["value"]  # type: ignore[union-attr]
         == "2022-07-19"
     )
     search_results = html.css(".search-result a")
@@ -728,7 +728,7 @@ def test_undisplayable_product(client: FlaskClient) -> None:
     """
     html = get_html(client, "/ls7_satellite_telemetry_data")
     check_dataset_count(html, 4)
-    assert "36.6GiB" in html.css_first(".coverage-filesize", strict=True).text(
+    assert "36.6GiB" in html.css_first(".coverage-filesize", strict=True).text(  # type: ignore[union-attr]
         strip=True
     )
     assert "(None displayable)" in html.text()
