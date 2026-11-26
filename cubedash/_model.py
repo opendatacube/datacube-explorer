@@ -197,8 +197,8 @@ def create_app(test_config=None) -> flask.Flask:
 
 
 def basemap_is_raster(url: str) -> bool:
-    """Basemap URL is raster if it contains x, y and z placeholders."""
-    return all(placeholder in url for placeholder in ("{x}", "{y}", "{z}"))
+    """Basemap URL is raster if it contains x, y (or inverted -y) and z placeholders."""
+    return "{x}" in url and "{z}" in url and ("{y}" in url or "{-y}" in url)
 
 
 _LOG = structlog.stdlib.get_logger()
